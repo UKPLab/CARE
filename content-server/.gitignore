@@ -1,4 +1,8 @@
 
+# ignore files of hypothesis submodules
+hypothesis/client
+hypothesis/h
+
 # ignore build files
 build/
 node_modules/
