@@ -1,0 +1,6 @@
+[submodule "content-server/hypothesis/h"]
+	path = content-server/hypothesis/h
+	url = https://github.com/hypothesis/h.git
+[submodule "content-server/hypothesis/client"]
+	path = content-server/hypothesis/client
+	url = https://github.com/hypothesis/client.git
