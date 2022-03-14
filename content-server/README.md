@@ -14,3 +14,9 @@ For development use:
     make dev
 
 The webserver should start on http://localhost:3000.
+
+## Main Frameworks
+- [Hypothesis](https://web.hypothes.is/) is used for annotating text passages in the PDFs.
+- [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used for including the current project files of Hypothesis into the content-server.
+
+__Note__: See also the architecture overview for further information about the frameworks!
