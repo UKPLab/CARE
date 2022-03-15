@@ -2,15 +2,66 @@
   "name": "PEERContentServer",
   "version": "0.0.1",
   "dependencies": {
-    "express": "^4.14.1",
-    "mustache": "^4.0.1",
-    "mustache-express": "^1.3.0"
+    "alert": "^5.0.10",
+    "axios": "^0.21.1",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-es2015": "^6.24.1",
+    "express-fileupload": "^1.2.1",
+    "express-rate-limit": "^5.2.6"
   },
   "devDependencies": {
-    "gulp": "^4.0.0",
+    "@babel/core": "^7.17.7",
+    "@babel/preset-env": "^7.16.11",
+    "@babel/preset-react": "^7.16.7",
+    "@sentry/browser": "^6.0.2",
+    "autoprefixer": "^10.4.2",
+    "babel-plugin-inject-args": "^1.0.0",
+    "babel-plugin-istanbul": "^6.0.0",
+    "babel-plugin-mockable-imports": "^1.5.1",
+    "babel-plugin-transform-async-to-promises": "^0.8.6",
+    "babelify": "^10.0.0",
+    "browserify": "^17.0.0",
+    "browserify-versionify": "^1.0.6",
+    "exorcist": "^1.0.1",
     "express": "^4.14.1",
+    "glob": "^7.2.0",
+    "gulp": "^4.0.0",
+    "katex": "^0.12.0",
+    "gulp-changed": "^4.0.0",
+    "loose-envify": "^1.4.0",
     "mustache": "^4.0.1",
-    "mustache-express": "^1.3.0"
+    "mustache-express": "^1.3.0",
+    "postcss": "^8.4.8",
+    "postcss-url": "^10.1.3",
+    "preact": "^10.4.0",
+    "sass": "^1.49.9",
+    "showdown": "^1.6.4",
+    "stringify": "^5.1.0",
+    "terser": "^5.0.0",
+    "watchify": "^3.7.0"
+  },
+  "prettier": {
+    "arrowParens": "avoid",
+    "singleQuote": true
+  },
+  "browser": {
+    "fetch-mock": "./node_modules/fetch-mock/cjs/client.js"
+  },
+  "browserify": {
+    "transform": [
+      "browserify-versionify",
+      [
+        "stringify",
+        {
+          "appliesTo": {
+            "includeExtensions": [
+              ".html",
+              ".svg"
+            ]
+          }
+        }
+      ]
+    ]
   },
   "browserslist": ""
 }

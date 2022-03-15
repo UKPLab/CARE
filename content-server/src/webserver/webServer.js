@@ -1,35 +1,48 @@
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const mustacheExpress = require('mustache-express');
 
 const { createServer, useSsl } = require('./createServer');
 
-const HTML_PATH = `${__dirname}/html/`;
+const HTML_STATIC_PATH = `${__dirname}/../../html/`;
+const TEMPLATES_PATH = `${__dirname}/../templates/`;
+const BUILD_PATH = `${__dirname}/../../build/`;
 
 /**
  * The main HTTP server which serves all files to the client
  *
- * @param {number} port - The port that the webserver should listen on.
+ * @param {{port: number, page: {subtitle: string, title: string}}} config - The port that the webserver should listen on.
  */
-function webServer(port) {
+function webServer(config) {
     const app = express()
 
     //Set up engine framework
     app.engine('mustache', mustacheExpress())
     app.set('view engine', 'mustache');
-    app.set('views', [path.join(HTML_PATH, '/templates')]);
+    app.set('views', [TEMPLATES_PATH]);
 
     // Make all static files public available
-    app.use(express.static(path.join(HTML_PATH, 'static')));
+    app.use(express.static(HTML_STATIC_PATH));
+    // And also the build files
+    app.use(express.static(BUILD_PATH));
 
+    // Landing Page
+    app.get('/', (req, res) => {
+        res.render('index', config);
+    });
 
+    // Error pages
+    app.use((req, res) => {
+        res.render('404');
+    });
 
     // serve server on port
-    createServer(app).listen(port, () => {
+    createServer(app).listen(config.port, () => {
        const scheme = useSsl ? 'https':'http';
-       console.log(`Web Server started at ${scheme}://localhost:${port}/`)
+       console.log(`Web Server started at ${scheme}://localhost:${config.port}/`)
     });
 }
 

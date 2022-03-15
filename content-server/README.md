@@ -11,6 +11,7 @@ __Note:__ If you change anything on the structure, also update the architecture 
 ## Installation
 For development use:
 
+    npm install --global yarn # if yarn is not installed yet
     make dev
 
 The webserver should start on http://localhost:3000.
