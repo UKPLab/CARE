@@ -1,0 +1,55 @@
+// SASS entry point for landing page index
+
+@use "sass:meta";
+@use "sass:color" as color;
+@use './variables' as var;
+
+.logo {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+
+    //half of the body width
+    width: 60%; 
+
+    img {
+        //full logo width, else >=200px
+        min-width: 200px; 
+        max-width: calc(min(500px, 100%));
+        width: 100%;
+    }
+}
+
+body {
+    font-family: var.$sans-font-family;
+    text-align: center;
+    font-size: calc(min(20px, 14px + 1.0vw));
+
+    h1 {
+        margin-top: 1.0vh;
+        font-size: calc(min(36px, 20px + 1.0vw));
+    }
+
+    h2 {
+        margin-top: 10px;
+        font-size: calc(min(30px, 16px + 1.0vw));
+        color: grey;
+    }
+}
+
+/*.upbtn {
+    font-size: 2vw;
+    border: none;
+    cursor:pointer;
+    background-color: var.$color-btn;
+    padding: 10px 15px;
+}
+.upbtn2 {
+    font-size: 2vw;
+    border: none;
+    cursor:pointer;
+    background-color: var.$color-btn;
+    padding: 10px 15px;
+    font-family: var.$sans-font-family;
+}
+*/
