@@ -9,6 +9,8 @@ For an overview of the complete architecture, see ./docs/architecture.drawio\
 __Note:__ If you change anything on the structure, also update the architecture file!
 
 ## Installation
+Check if all git submodules files (in Folder frameworks) are downloaded, otherwise use ``git pull --recurse-submodules``  
+
 For development use:
 
     npm install --global yarn # if yarn is not installed yet
