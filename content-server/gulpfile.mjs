@@ -104,6 +104,14 @@ gulp.task('build-css', function () {
   return Promise.all(bundles);
 });
 
+// Copy files from pdf.js
+gulp.task('build-pdf.js', function() {
+    const pdfjs_dir = path.join(SCRIPT_DIR, "/pdfjs")
+    fs.mkdirSync(pdfjs_dir, {recursive:true})
+    return gulp.src(['frameworks/pdf.js/build/generic/**/*'])
+        .pipe(gulp.dest(pdfjs_dir))
+});
+
 // Webserver
 gulp.task("start-web-server", function() {
     webServer({
@@ -115,5 +123,5 @@ gulp.task("start-web-server", function() {
 });
 
 // Build content server
-gulp.task("build-all", gulp.parallel(['build-images', 'build-css', 'build-js']))
+gulp.task("build-all", gulp.parallel(['build-images', 'build-css', 'build-js', 'build-pdf.js']))
 gulp.task('build', gulp.series(['build-all'], ['start-web-server']))
