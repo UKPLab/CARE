@@ -1,0 +1,50 @@
+// Admin area
+// ============================================================================
+
+// Core
+// ----------------------------------------------------------------------------
+
+@use 'core/color';
+@use 'core/typography';
+@use 'core/layout';
+@use 'core/icons';
+@use 'core/utilities';
+
+// Components
+// ----------------------------------------------------------------------------
+
+@use 'components/admin-navbar';
+@use 'components/btn';
+@use 'components/form';
+@use 'components/form-actions';
+@use 'components/form-checkbox';
+@use 'components/form-container';
+@use 'components/form-input';
+@use 'components/list-input';
+@use 'components/search-form';
+@use 'components/tooltip';
+@use 'components/warning-box';
+
+// Rules
+// ----------------------------------------------------------------------------
+
+.flashbar {
+  margin-top: 20px;
+}
+
+.table-auto {
+  table-layout: auto;
+  width: auto;
+}
+
+.users-activate-form {
+  display: inline;
+}
+
+.pager .pager__item--more {
+  border: none;
+}
+
+.form-input__error-list {
+  list-style-type: none;
+}

@@ -1,4 +1,7 @@
 
+# files dir
+files
+
 # ignore files of hypothesis submodules
 hypothesis/client
 hypothesis/h

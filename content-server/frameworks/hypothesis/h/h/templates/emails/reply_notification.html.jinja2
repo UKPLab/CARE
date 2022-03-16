@@ -1,0 +1,42 @@
+<p>
+  {% if reply_user_url %}
+    <a href="{{ reply_user_url }}">{{ reply_user_display_name }}</a>
+  {% else %}
+    {{ reply_user_display_name }}
+  {% endif %}
+  has
+  <a href="{{ reply_url }}">replied to your annotation</a>
+  on
+  <a href="{{ document_url }}">&ldquo;{{ document_title }}&rdquo;</a>:
+</p>
+
+<p>
+  On
+  {{ parent.created | human_timestamp }}
+  {% if parent_user_url %}
+    <a href="{{ parent_user_url }}">{{ parent_user_display_name }}</a>
+  {% else %}
+    {{ parent_user_display_name }}
+  {% endif %}
+  commented:
+</p>
+
+<blockquote>{{ parent.text or "" }}</blockquote>
+
+<p>
+  On
+  {{ reply.created | human_timestamp }}
+  {% if reply_user_url %}
+    <a href="{{ reply_user_url }}">{{ reply_user_display_name }}</a>
+  {% else %}
+    {{ reply_user_display_name }}
+  {% endif %}
+  replied:
+</p>
+
+<blockquote>{{ reply.text or "" }}</blockquote>
+
+<p><a href="{{ reply_url }}">View the thread and respond</a>.</p>
+
+<p><small>If you'd rather not receive these notifications you can
+<a href="{{ unsubscribe_url }}">unsubscribe now</a>.</small></p>

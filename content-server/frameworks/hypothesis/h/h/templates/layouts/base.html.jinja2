@@ -1,0 +1,79 @@
+{#- Controls the name of the default style bundle included on the page. -#}
+{%- set style_bundle = style_bundle|default('site_css') -%}
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns#">
+  <head>
+    {% block meta %}
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width,initial-scale=1" />
+      {% for attrs in meta_attrs -%}
+        <meta {% for key, value in attrs.items() %}{{ key }}="{{ value }}" {% endfor %}/>
+      {% endfor -%}
+    {% endblock %}
+
+    <title>
+      {%- block title -%}
+        {%- if self.page_title %}{{self.page_title()}} | {% endif -%}
+        Hypothesis
+      {%- endblock -%}
+    </title>
+
+    {% if link_tags %}
+      {% for link in link_tags %}
+        <link rel="{{ link.rel }}" type="{{ link.type }}"
+              href="{{ link.href }}"/>
+      {% endfor %}
+    {% endif %}
+
+    {% for attrs in link_attrs -%}
+      <link {% for key, value in attrs.items() %}{{ key }}="{{ value }}" {% endfor %}/>
+    {% endfor -%}
+
+    {% block styles %}
+      {% for url in asset_urls(style_bundle) %}
+      <link rel="stylesheet" href="{{ url }}">
+      {% endfor %}
+    {% endblock %}
+
+    <link rel="apple-touch-icon" sizes="180x180"
+          href="{{ asset_url('images/apple-touch-icon-180x180.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16"
+          href="{{ asset_url('images/favicons/favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32"
+          href="{{ asset_url('images/favicons/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96"
+          href="{{ asset_url('images/favicons/favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192"
+          href="{{ asset_url('images/favicons/android-chrome-192x192.png') }}">
+    <link rel="shortcut icon"
+          href="{{ asset_url('images/favicons/favicon.ico') }}">
+
+    {% if ga_tracking_id %}
+    <meta name="google-analytics-tracking-id" content="{{ ga_tracking_id }}">
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+    {# N.B. The "ga" command queue is set up by header.js. The meta tag must be
+            in the DOM before header.js is included. #}
+    {% endif %}
+
+    {% include 'h:templates/includes/settings.html.jinja2' %}
+
+    {% for url in asset_urls("header_js") %}
+    <script type="module" src="{{ url }}"></script>
+    {% endfor %}
+  </head>
+  <body class="body">
+    {% block header %}{% endblock %}
+
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+
+    {% block footer %}{% endblock %}
+
+    {% block scripts %}
+    {% for url in asset_urls("site_js") %}
+    <script type="module" src="{{ url }}"></script>
+    {% endfor %}
+    {% endblock %}
+  </body>
+</html>

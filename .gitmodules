@@ -1,6 +1,9 @@
-[submodule "content-server/hypothesis/h"]
-	path = content-server/hypothesis/h
+[submodule "content-server/frameworks/hypothesis/h"]
+	path = content-server/frameworks/hypothesis/h
 	url = https://github.com/hypothesis/h.git
-[submodule "content-server/hypothesis/client"]
-	path = content-server/hypothesis/client
+[submodule "content-server/frameworks/hypothesis/client"]
+	path = content-server/frameworks/hypothesis/client
 	url = https://github.com/hypothesis/client.git
+[submodule "content-server/frameworks/pdf.js"]
+	path = content-server/frameworks/pdf.js
+	url = https://github.com/mozilla/pdf.js.git

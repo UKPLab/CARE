@@ -59,7 +59,7 @@ const appBundles = [
   {
     // The landing page script
     name: 'landing',
-    entry: './src/html/landing/index',
+    entry: './src/html/scripts/index',
     transforms: ['babel']
   }
 ];
