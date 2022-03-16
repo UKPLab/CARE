@@ -3,8 +3,9 @@
 files
 
 # ignore files of hypothesis submodules
-hypothesis/client
-hypothesis/h
+frameworks/hypothesis/client
+frameworks/hypothesis/h
+frameworks/pdf.js
 
 # ignore build files
 build/
