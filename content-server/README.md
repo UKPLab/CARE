@@ -19,7 +19,8 @@ For development use:
 The webserver should start on http://localhost:3000.
 
 ## Main Frameworks
-- [Hypothesis](https://web.hypothes.is/) is used for annotating text passages in the PDFs.
-- [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used for including additional frameworks
+- [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
+    - [PDFjs](https://mozilla.github.io/pdf.js) - to display the PDFs
+    - [Hypothesis](https://web.hypothes.is/) - to annotating text in the PDFs
 
-__Note__: See also the architecture overview for further information about the frameworks!
+__Note__: See also the architecture overview for further information how the frameworks interact!
