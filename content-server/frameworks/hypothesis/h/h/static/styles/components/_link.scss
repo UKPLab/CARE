@@ -1,0 +1,41 @@
+@use "../core/reset";
+
+// Text links
+// ----------
+
+@mixin link {
+  color: inherit;
+  &:visited {
+    color: inherit;
+  }
+}
+
+@mixin link-underline($style) {
+  padding-bottom: 1px;
+  border-bottom: 1px #{$style};
+}
+
+// A standard text link.
+.link {
+  @include link;
+  @include link-underline(solid);
+}
+
+// A text link that appears in the footer of a page.
+.link--footer {
+  @include link;
+  @include link-underline(dotted);
+}
+
+// A link with no decoration.
+.link--plain {
+  @include link;
+}
+
+// A variant of `link` used when the style is applied to a button rather than
+// an anchor.
+.link--btn {
+  @include reset.reset-button;
+  @include link;
+  @include link-underline(solid);
+}

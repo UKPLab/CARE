@@ -1,0 +1,127 @@
+{% extends "h:templates/layouts/admin.html.jinja2" %}
+
+{% set page_id = 'users' %}
+{% set page_title = 'Users' %}
+
+{% block content %}
+  <p>
+    On this page you can look up users by username and see their details.
+  </p>
+
+  <form method="GET" class="form-inline">
+    <div class="form-group">
+      <label for="username">Username or email</label>
+      <input type="text" class="form-control" name="username">
+    </div>
+    <div class="form-group">
+      <label for="authority">Authority</label>
+      <input type="text" class="form-control" name="authority" value="{{ authority or default_authority }}">
+      <input type="submit" class="btn btn-default" value="Find">
+    </div>
+  </form>
+  {% if username %}
+  <hr>
+    {% if user %}
+      <table class="table table-auto table-striped">
+        <tbody>
+          <tr><th>Username</th><td>{{ user.username }}</td></tr>
+          <tr><th>Authority</th><td>{{ user.authority }}</td></tr>
+          <tr><th>Email</th><td>{{ user.email }}</td></tr>
+          <tr><th>Registered</th><td>{{ format_date(user.registered_date) }}</td></tr>
+          <tr><th>Last login</th><td>{{ format_date(user.last_login_date) }}</td></tr>
+          <tr>
+            <th>Is activated?</th>
+            <td>
+              {% if user.is_activated %}
+                &#x2714;
+                {% if user.activation_date %}({{ format_date(user.activation_date) }}){% endif %}
+              {% else %}
+                &#x2718;
+                <form action="{{request.route_path('admin.users_activate')}}"
+                      class="users-activate-form"
+                      method="POST">
+                  <input type="hidden"
+                         name="csrf_token"
+                         value="{{ get_csrf_token() }}">
+                  <input type="hidden"
+                         name="userid"
+                         value="{{user.userid}}">
+                  <button class="btn btn-primary btn-xs" type="submit">
+                    Activate
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th>Is admin?</th>
+            <td>{% if user.admin %}&#x2714;{% else %}&#x2718;{% endif %}</td>
+          </tr>
+          <tr>
+            <th>Is staff?</th>
+            <td>{% if user.staff %}&#x2714;{% else %}&#x2718;{% endif %}</td>
+          </tr>
+          <tr>
+            <th>Annotations</th>
+            <td>{{ user_meta['annotations_count'] }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Please-be-careful Zone</h3>
+
+      <form method="POST" action="{{request.route_path('admin.users_rename')}}" class="form-inline">
+        <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}">
+        <input type="hidden" name="userid" value="{{user.userid}}">
+        <input type="text" name="new_username" placeholder="New Username" pattern="^[A-Za-z0-9._]+$">
+        <button class="btn" type="submit">Change username</button>
+      </form>
+
+      <h3>Danger Zone</h3>
+
+      <form method="POST"
+            action="{{request.route_path('admin.users_delete')}}"
+            class="form-inline js-users-delete-form">
+        <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}">
+        <input type="hidden" name="userid" value="{{user.userid}}">
+
+        {% if user_meta['annotations_count'] > 100 %}
+          <div class="alert alert-warning" role="alert">
+            User has a lot of annotations, it might be safer to delete this user
+            directly in a shell.
+          </div>
+        {% endif %}
+
+        <button class="btn btn-danger" type="submit">Delete user</button>
+      </form>
+
+      {% if user.groups %}
+        <hr>
+
+        <h2>Groups this user belongs to</h2>
+
+        <table class="table table-auto table-striped">
+          <thead>
+            <th>Name</th>
+            <th>URL</th>
+          </thead>
+          <tbody>
+            {% for group in user.groups %}
+              <tr>
+                <td>{{group.name}}</td>
+                <td>
+                  {% set group_url = request.route_url('group_read', pubid=group.pubid, slug=group.slug) %}
+                  <a href="{{ group_url }}">
+                    {{ group_url }}
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    {% else %}
+      <p>No user found with username or email <em>{{ username }}</em> and authority <em>{{ authority }}</em>!</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}
