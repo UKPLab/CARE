@@ -61,7 +61,13 @@ const appBundles = [
     name: 'landing',
     entry: './src/html/scripts/index',
     transforms: ['babel']
-  }
+  },
+    {
+        //Annotate Script which loads pdf.js
+        name: 'annotate',
+        entry: './src/html/scripts/annotate',
+        transforms: ['babel']
+    }
 ];
 
 const polyfillBundles= [];
@@ -105,9 +111,9 @@ gulp.task('build-css', function () {
 });
 
 // Copy files from pdf.js
-gulp.task('build-pdf.js', function() {
+gulp.task('build-pdf.js', function(done) {
     const pdfjs_dir = path.join(SCRIPT_DIR, "/pdfjs")
-    fs.mkdirSync(pdfjs_dir, {recursive:true})
+    fs.mkdirSync(pdfjs_dir, {recursive: true})
     return gulp.src(['frameworks/pdf.js/build/generic/**/*'])
         .pipe(gulp.dest(pdfjs_dir))
 });
