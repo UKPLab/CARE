@@ -27,7 +27,7 @@ function webServer(config) {
     //Set up engine framework
     app.engine('mustache', mustacheExpress())
     app.set('view engine', 'mustache');
-    app.set('views', [TEMPLATES_PATH]);
+    app.set('views', TEMPLATES_PATH);
 
     // Make all static files public available
     app.use(express.static(HTML_STATIC_PATH));

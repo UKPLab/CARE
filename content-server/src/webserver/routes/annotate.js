@@ -11,9 +11,24 @@ const PDF_PATH = `${__dirname}/../../../files/`;
 router.get('/annotate/:pdf', (req, res, next) => {
     console.log(`${PDF_PATH}${req.params.pdf}.pdf`)
 
+    // TODO: url still wrong
     res.render("annotate", {
-
+        pdf_path: `/pdf/${req.params.pdf}`,
+        documentUrl: "http://localhost:3000/annotate/test",
     })
+  });
+
+router.get('/pdf/:pdf', (req, res, next) => {
+
+    // TODO: here we can implement some security feature
+    // e.g., (that you can access only the pdf files which are assigned to you)
+    console.log(`${PDF_PATH}${req.params.pdf}.pdf`)
+    var data = fs.readFileSync(`${PDF_PATH}${req.params.pdf}.pdf`)
+    var stat = fs.statSync(`${PDF_PATH}${req.params.pdf}.pdf`);
+    res.setHeader('Content-Length', stat.size);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=quote.pdf');
+    res.send(data);
   });
 
 module.exports = router;
