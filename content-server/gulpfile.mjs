@@ -49,23 +49,23 @@ gulp.task('build-vendor-js', function () {
 });
 
 const appBundleBaseConfig = {
-  path: SCRIPT_DIR,
-  external: vendorModules,
-  minify: IS_PRODUCTION_BUILD,
-  noParse: vendorBundles.noParseModules,
+    path: SCRIPT_DIR,
+    external: vendorModules,
+    minify: IS_PRODUCTION_BUILD,
+    noParse: vendorBundles.noParseModules,
 };
 
 const appBundles = [
-  {
-    // The landing page script
-    name: 'landing',
-    entry: './src/html/scripts/index',
-    transforms: ['babel']
-  },
+    {
+        // The landing page script
+        name: 'landing',
+        entry: './src/html/scripts/index',
+        transforms: ['babel']
+    },
     {
         //Annotate Script which loads pdf.js
-        name: 'annotate',
-        entry: './src/html/scripts/annotate',
+        name: 'annotater',
+        entry: './src/html/scripts/annotater',
         transforms: ['babel']
     }
 ];

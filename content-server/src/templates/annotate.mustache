@@ -6,14 +6,22 @@
         <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
         <title>{{page.title}} {{page.subtitle}}</title>
         <meta charset="utf-8">
+        <link rel="stylesheet" href="/scripts/pdfjs/web/viewer.css">
+        <link rel="resource" type="application/l10n" href="/scripts/pdfjs/web/locale/locale.properties">
+        <script src="/scripts/pdfjs/build/pdf.js"></script>
+        <script src="/scripts/pdfjs/web/viewer.js"></script>
     </head>
 
     <body>
-        <div id="main">
-            <canvas id="the-canvas"></canvas>
-        </div>
 
-        <script src="/scripts/pdfjs/build/pdf.js"></script>
-        <script src="/scripts/annotate.bundle.js"></script>
+        <link rel="canonical" href="{{{ documentUrl }}}"/>
+        <script>
+        window.DOCUMENT_URL = '{{{documentUrl}}}';
+        window.PDF_URL = '{{{ pdf_path }}}';
+        </script>
+
+        <script src="/scripts/annotater.bundle.js"></script>
+
+        {{> pdfjs_viewer}}
     </body>
 </html>
