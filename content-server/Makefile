@@ -59,4 +59,3 @@ h_server: frameworks/hypothesis/h/package.json
 
 h_client: frameworks/hypothesis/client/package.json
 	cd frameworks/hypothesis/client && make build
-	cd frameworks/hypothesis/client && make dev

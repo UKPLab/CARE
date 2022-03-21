@@ -12,9 +12,11 @@ const TEMPLATES_PATH = `${__dirname}/../templates/`;
 const BUILD_PATH = `${__dirname}/../../build/`;
 
 // routes
-const uploader = require("./routes/upload")
-const annotate = require("./routes/annotate")
-
+const routes = [
+    require("./routes/upload"),
+    require("./routes/annotate"),
+    require("./routes/hypothesis")
+]
 
 /**
  * The main HTTP server which serves all files to the client
@@ -35,8 +37,7 @@ function webServer(config) {
     app.use(express.static(BUILD_PATH));
 
     // additional routes from routes directory
-    app.use(uploader)
-    app.use(annotate)
+    routes.forEach(route => app.use(route))
 
     // Landing Page
     app.get('/', (req, res) => {
