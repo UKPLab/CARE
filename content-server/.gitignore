@@ -1,6 +1,6 @@
 
 # files dir
-files
+files/git
 
 # ignore files of hypothesis submodules
 frameworks/hypothesis/client
