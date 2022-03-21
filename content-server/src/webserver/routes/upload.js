@@ -41,7 +41,7 @@ router.post(
                       res.send('Internal error during upload');
                   } else {
                       console.log('Uploading...');
-                      res.send("uploaded!");
+                      res.send({id: filename});
                   }
             });
 

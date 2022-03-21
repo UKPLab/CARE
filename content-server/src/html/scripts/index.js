@@ -25,6 +25,7 @@ document.getElementById("uploadButton").onclick = () => {
             }
       }).then(res => {
           console.log(res.data)
-          console.log(res.data.url)
+          console.log(res.data.id)
+          window.location.href = `/annotate/${res.data.id}`;
       })
 }
