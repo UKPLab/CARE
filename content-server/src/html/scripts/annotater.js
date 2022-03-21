@@ -1,10 +1,7 @@
 'use strict';
 
-
-const CLIENT_ORIGIN = window.CLIENT_ORIGIN;
-
 function loadClient() {
-    const src = `${CLIENT_ORIGIN}/embed.js`
+    const src = `http://localhost:5000/embed.js`
     const scriptEl = document.createElement('script');
     scriptEl.src = src
     document.body.appendChild(scriptEl);
