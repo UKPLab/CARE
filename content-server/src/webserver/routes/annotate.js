@@ -13,7 +13,6 @@ router.get('/annotate/:pdf', (req, res, next) => {
 
     // TODO: url still wrong
     res.render("annotate", {
-        client_url: "http://localhost:5000",
         pdf_path: `/pdf/${req.params.pdf}`,
     })
   });

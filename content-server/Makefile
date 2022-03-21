@@ -18,7 +18,7 @@ ifeq (,$(wildcard frameworks/pdf.js/build/generic/build/pdf.js))
 	@echo "Building pdfjs..."
 	make pdfjs
 endif
-ifeq (,$(wildcard frameworks/hypothesis/client/build/manifest.js))
+ifeq (,$(wildcard frameworks/hypothesis/client/build/manifest.json))
 	@echo "Building h_client..."
 	make h_client
 endif
