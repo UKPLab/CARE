@@ -10,6 +10,10 @@ help:
 
 .PHONY: dev
 dev: node_modules/.uptodate
+ifeq ("$(wildcard $(frameworks/pdf.js/build/pdf.js))", "")
+	@echo "First building pdfjs..."
+	pdfjs
+endif
 	node_modules/.bin/gulp build
 
 .PHONY: clean
