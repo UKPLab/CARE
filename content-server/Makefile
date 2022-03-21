@@ -33,3 +33,7 @@ pdfjs: frameworks/pdf.js/package.json
 	cd frameworks/pdf.js &&	npm install gulp-cli
 	cd frameworks/pdf.js && npm install
 	cd frameworks/pdf.js && node_modules/.bin/gulp generic
+
+h_server:
+	cd frameworks/hypothesis/h && make services
+	cd frameworks/hypothesis/h && make dev

@@ -14,7 +14,6 @@ router.get('/annotate/:pdf', (req, res, next) => {
     // TODO: url still wrong
     res.render("annotate", {
         pdf_path: `/pdf/${req.params.pdf}`,
-        documentUrl: "http://localhost:3000/annotate/test",
     })
   });
 
