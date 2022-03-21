@@ -10,9 +10,9 @@ help:
 
 .PHONY: dev
 dev: node_modules/.uptodate
-ifeq ("$(wildcard $(frameworks/pdf.js/build/pdf.js))", "")
+ifeq (,$(wildcard frameworks/pdf.js/build/generic/build/pdf.js))
 	@echo "First building pdfjs..."
-	pdfjs
+	make pdfjs
 endif
 	node_modules/.bin/gulp build
 
@@ -37,3 +37,7 @@ pdfjs: frameworks/pdf.js/package.json
 h_server:
 	cd frameworks/hypothesis/h && make services
 	cd frameworks/hypothesis/h && make dev
+
+h_client:
+	cd frameworks/hypothesis/client && make build
+	cd frameworks/hypothesis/client && make dev

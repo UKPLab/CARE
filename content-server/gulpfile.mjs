@@ -124,7 +124,7 @@ gulp.task("start-web-server", function() {
         page:{
             title:"PEER",
             subtitle:"Annotation-powered peer review"},
-        port:3000}
+        port:3005}
     );
 });
 

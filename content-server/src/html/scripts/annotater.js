@@ -1,5 +1,15 @@
 'use strict';
 
+
+const CLIENT_ORIGIN = window.CLIENT_ORIGIN;
+
+function loadClient() {
+    const src = `${CLIENT_ORIGIN}/embed.js`
+    const scriptEl = document.createElement('script');
+    scriptEl.src = src
+    document.body.appendChild(scriptEl);
+}
+
 // Note: This file is not transpiled.
 // Listen for `webviewerloaded` event to configure the viewer after its files
 // have been loaded but before it is initialized.
@@ -59,6 +69,10 @@ document.addEventListener('webviewerloaded', () => {
       // is the URL associated with annotations.
       originalUrl: document.URL,
     });
+
+    // Load hypothesis client
+    loadClient()
+
   });
 
   /*

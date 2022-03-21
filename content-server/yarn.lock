@@ -3451,7 +3451,7 @@ gulp-changed@^4.0.0:
     through2 "^3.0.1"
     touch "^3.1.0"
 
-gulp-cli@^2.2.0:
+gulp-cli@^2.2.0, gulp-cli@^2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/gulp-cli/-/gulp-cli-2.3.0.tgz#ec0d380e29e52aa45e47977f0d32e18fd161122f"
   integrity sha512-zzGBl5fHo0EKSXsHzjspp3y5CONegCm8ErO5Qh0UzFzk2y4tMvzLWhoDokADbarfZRL2pGpRp7yt6gfJX4ph7A==
