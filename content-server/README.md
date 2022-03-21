@@ -16,11 +16,17 @@ For development use:
     npm install --global yarn # if yarn is not installed yet
     make dev
 
-The webserver should start on http://localhost:3000.
+The webserver should start on http://localhost:3005.
 
-## Main Frameworks
+### Frameworks
 - [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
     - [PDFjs](https://mozilla.github.io/pdf.js) - to display the PDFs
     - [Hypothesis](https://web.hypothes.is/) - to annotating text in the PDFs
+  
+#### Build Frameworks individually
+
+    make pdfjs     # build PDFjs Framework
+    make h_client  # build Hypothesis Client
+    make h_server  # build Hypothesis Server
 
 __Note__: See also the architecture overview for further information how the frameworks interact!
