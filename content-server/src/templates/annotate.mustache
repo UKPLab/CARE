@@ -8,19 +8,20 @@
         <meta charset="utf-8">
         <link rel="stylesheet" href="/scripts/pdfjs/web/viewer.css">
         <link rel="resource" type="application/l10n" href="/scripts/pdfjs/web/locale/locale.properties">
-        <script src="/scripts/pdfjs/build/pdf.js"></script>
-        <script src="/scripts/pdfjs/web/viewer.js"></script>
     </head>
 
     <body>
 
         <link rel="canonical" href="{{{ documentUrl }}}"/>
+        <script src="/scripts/pdfjs/build/pdf.js"></script>
+        <script src="/scripts/pdfjs/web/viewer.js"></script>
         <script>
-        window.DOCUMENT_URL = '{{{documentUrl}}}';
-        window.PDF_URL = '{{{ pdf_path }}}';
+            window.DOCUMENT_URL = '{{{documentUrl}}}';
+            window.PDF_URL = '{{{ pdf_path }}}';
         </script>
 
         <script src="/scripts/annotater.bundle.js"></script>
+
 
         {{> pdfjs_viewer}}
     </body>

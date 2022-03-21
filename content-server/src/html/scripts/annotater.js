@@ -4,8 +4,11 @@
 // Listen for `webviewerloaded` event to configure the viewer after its files
 // have been loaded but before it is initialized.
 document.addEventListener('webviewerloaded', () => {
+
   const appOptions = window.PDFViewerApplicationOptions;
   const app = window.PDFViewerApplication;
+
+  appOptions.set('workerSrc', "/scripts/pdfjs/build/pdf.worker.js")
 
   // Ensure that PDF.js viewer events such as "documentloaded" are dispatched
   // to the DOM. The client relies on this.
@@ -97,7 +100,8 @@ document.addEventListener('webviewerloaded', () => {
       // is the URL associated with annotations.
       originalUrl: documentUrl,
     });
-  });
-  */
+  }); */
+
 
 });
+
