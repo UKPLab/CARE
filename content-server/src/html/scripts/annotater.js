@@ -21,8 +21,6 @@ document.addEventListener('webviewerloaded', () => {
   // Prevent loading of default viewer PDF.
   appOptions.set('defaultUrl', '');
 
-  // Read configuration rendered into template as global vars.
-  const documentUrl = window.DOCUMENT_URL;
   const url = window.PDF_URL;
 
   // Wait for the PDF viewer to be fully initialized and then load the Hypothesis client.
@@ -59,7 +57,7 @@ document.addEventListener('webviewerloaded', () => {
 
       // Make sure `PDFViewerApplication.url` returns the original URL, as this
       // is the URL associated with annotations.
-      originalUrl: documentUrl,
+      originalUrl: document.URL,
     });
   });
 
