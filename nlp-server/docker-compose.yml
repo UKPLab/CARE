@@ -1,0 +1,37 @@
+version: "3.1"
+
+services:
+  nlp:
+    build: .
+    depends_on:
+      - rabbitmq
+      - celery-worker
+      - grobid
+      - flower
+    command: python3 app.py
+    ports:
+      - ${NLP_PORT}:6000
+  grobid:
+    image: lfoppiano/grobid:0.7.0
+    ports: 
+      - ${GROBID_PORT}:8070
+  rabbitmq:
+    image: rabbitmq:3.9-management-alpine
+    ports:
+      - ${RABBITMQ_PORT}:5672
+      - 15672:15672
+  celery-worker:
+    build: .
+    depends_on:
+      - rabbitmq
+    command: celery -A app.celery worker -l INFO -E
+  flower:
+    image: mher/flower
+    depends_on:
+      - rabbitmq
+      - celery-worker
+    command: celery flower --broker=amqp://rabbitmq:${RABBITMQ_PORT} --port=8888
+    ports:
+      - ${FLOWER_PORT}:8888
+
+
