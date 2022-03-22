@@ -11,3 +11,4 @@ frameworks/pdf.js
 build/
 node_modules/
 yarn-error.log
+.tox
