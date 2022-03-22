@@ -15,8 +15,9 @@ For development use:
 
     npm install --global yarn # if yarn is not installed yet
     make dev
+    make h_server             # to start the Hypothesis Server on Port 5000
 
-The webserver should start on http://localhost:3005.
+The webserver should start on http://localhost:3001.
 
 ## Setting up hypothesis server
 
@@ -34,8 +35,6 @@ Note: You have to [sign in](http://localhost:5000/) before you can access this u
   Redirect URL: http://localhost:5000/app.html
 
 Get Client ID and add it into the Makefile!
-
-
 
 ### Frameworks
 - [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
