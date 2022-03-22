@@ -25,13 +25,13 @@ The webserver should start on http://localhost:3001.
     tox -qe dev -- sh bin/hypothesis --dev user add --username <username> --email <email> --password <password>
     tox -qe dev -- sh bin/hypothesis --dev user admin <username>
 
-Setting up OAuth client token under http://localhost:5000/admin/oauthclients/new 
-Note: You have to [sign in](http://localhost:5000/) before you can access this url!
+Setting up OAuth client token under http://localhost:5000/admin/oauthclients/new  
+__Note:__ You have to [sign in](http://localhost:5000/) before you can access this url!
   
-  Name: <custom name>
-  Authority: localhost
-  Grand type: authorization_code
-  Trusted: Yes
+  Name: < custom name > \
+  Authority: localhost \
+  Grand type: authorization_code\
+  Trusted: Yes\
   Redirect URL: http://localhost:5000/app.html
 
 Get Client ID and add it into the Makefile!
