@@ -1,3 +1,6 @@
+
+#export CLIENT_URL=http://localhost:3001/hypothesis
+
 .PHONY: default
 default: help
 
@@ -39,6 +42,8 @@ all: node_modules/.uptodate
 clean:
 	rm -f node_modules/.uptodate
 	rm -rf build
+	cd frameworks/hypothesis/h && make clean
+	cd frameworks/hypothesis/client && make clean
 
 .PHONY: build
 build: node_modules/.uptodate
@@ -53,7 +58,9 @@ pdfjs: frameworks/pdf.js/package.json
 	cd frameworks/pdf.js && npm install
 	cd frameworks/pdf.js && node_modules/.bin/gulp generic
 
+
 h_server: frameworks/hypothesis/h/package.json
+	echo ${CLIENT_URL}
 	cd frameworks/hypothesis/h && make services
 	cd frameworks/hypothesis/h && make dev
 

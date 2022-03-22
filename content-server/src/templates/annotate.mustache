@@ -8,6 +8,7 @@
         <meta charset="utf-8">
         <link rel="stylesheet" href="/scripts/pdfjs/web/viewer.css">
         <link rel="resource" type="application/l10n" href="/scripts/pdfjs/web/locale/locale.properties">
+
     </head>
 
     <body>
@@ -19,7 +20,13 @@
         <script src="/scripts/pdfjs/web/viewer.js"></script>
         <script>
             window.PDF_URL = '{{{ pdf_path }}}';
-
+        </script>
+        <script type="application/json" class="js-hypothesis-config">
+          {
+            "openSidebar": true,
+            "assetRoot": "/hypothesis/",
+            "apiUrl": "/hypothesis/"
+          }
         </script>
         <script src="/scripts/annotater.bundle.js"></script>
     </body>

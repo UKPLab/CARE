@@ -19,8 +19,16 @@ const serveBootScript = function (req, res) {
     res.send(entryScript);
 };
 
+// Enable CORS for assets so that cross-origin font loading works.
+router.use((req, res, next) => {
+    res.append('Access-Control-Allow-Origin', '*');
+    res.append('Access-Control-Allow-Methods', 'GET');
+    next();
+  });
+
 router.get('/hypothesis', serveBootScript);
 router.get(`/hypothesis/${version}`, serveBootScript)
-router.use(`/hypothesis/${version}/`, express.static(`${HYPOTHESIS_CLIENT_PATH}/dev-server`))
+router.use(`/hypothesis/${version}/build/`, express.static(`${HYPOTHESIS_CLIENT_PATH}/build`))
+router.use(`/hypothesis/build/`, express.static(`${HYPOTHESIS_CLIENT_PATH}/build`))
 
 module.exports = router;
