@@ -1,5 +1,7 @@
 
+export CLIENT_OAUTH_ID=a2556958-a9cc-11ec-a061-17298d8dd357
 #export CLIENT_URL=http://localhost:3001/hypothesis
+#export WEBSOCKET_URL=ws://localhost:5001/ws
 
 .PHONY: default
 default: help

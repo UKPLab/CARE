@@ -18,6 +18,25 @@ For development use:
 
 The webserver should start on http://localhost:3005.
 
+## Setting up hypothesis server
+
+    cd frameworks/hypothesis/h
+    tox -qe dev -- sh bin/hypothesis --dev user add --username <username> --email <email> --password <password>
+    tox -qe dev -- sh bin/hypothesis --dev user admin <username>
+
+Setting up OAuth client token under http://localhost:5000/admin/oauthclients/new 
+Note: You have to [sign in](http://localhost:5000/) before you can access this url!
+  
+  Name: <custom name>
+  Authority: localhost
+  Grand type: authorization_code
+  Trusted: Yes
+  Redirect URL: http://localhost:5000/app.html
+
+Get Client ID and add it into the Makefile!
+
+
+
 ### Frameworks
 - [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
     - [PDFjs](https://mozilla.github.io/pdf.js) - to display the PDFs
