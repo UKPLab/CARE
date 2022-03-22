@@ -2,3 +2,49 @@
 
 ## Description
 This directory contains all files to serve the frontend website to the user.
+
+## Architecture
+For an overview of the complete architecture, see ./docs/architecture.drawio\
+(You can use either the [PyCharm Plugin](https://plugins.jetbrains.com/plugin/15635-diagrams-net-integration) as well as the [Website](http://app.diagrams.net))\
+__Note:__ If you change anything on the structure, also update the architecture file!
+
+## Installation
+Check if all git submodules files (in Folder frameworks) are downloaded, otherwise use ``git pull --recurse-submodules``  
+
+For development use:
+
+    npm install --global yarn # if yarn is not installed yet
+    make dev
+    make h_server             # to start the Hypothesis Server on Port 5000
+
+The webserver should start on http://localhost:3001.
+
+## Setting up hypothesis server
+
+    cd frameworks/hypothesis/h
+    tox -qe dev -- sh bin/hypothesis --dev user add --username <username> --email <email> --password <password>
+    tox -qe dev -- sh bin/hypothesis --dev user admin <username>
+
+Setting up OAuth client token under http://localhost:5000/admin/oauthclients/new  
+__Note:__ You have to [sign in](http://localhost:5000/) before you can access this url!
+  
+  Name: < custom name > \
+  Authority: localhost \
+  Grand type: authorization_code\
+  Trusted: Yes\
+  Redirect URL: http://localhost:5000/app.html
+
+Get Client ID and add it into the Makefile!
+
+### Frameworks
+- [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
+    - [PDFjs](https://mozilla.github.io/pdf.js) - to display the PDFs
+    - [Hypothesis](https://web.hypothes.is/) - to annotating text in the PDFs
+  
+#### Build Frameworks individually
+
+    make pdfjs     # build PDFjs Framework
+    make h_client  # build Hypothesis Client
+    make h_server  # build Hypothesis Server
+
+__Note__: See also the architecture overview for further information how the frameworks interact!

@@ -1,0 +1,14 @@
+
+# files dir
+files/git
+
+# ignore files of hypothesis submodules
+frameworks/hypothesis/client
+frameworks/hypothesis/h
+frameworks/pdf.js
+
+# ignore build files
+build/
+node_modules/
+yarn-error.log
+.tox

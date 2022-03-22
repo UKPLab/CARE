@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="/styles/index.css">
+        <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+        <title>{{page.title}} {{page.subtitle}}</title>
+        <meta charset="utf-8">
+    </head>
+
+    <body>
+        <div id="main" style="width:600px;display:inline-block">
+            <div class="jumbotron my-auto">
+                <h1>{{page.title}}</h1>
+                <h2>{{page.subtitle}}</h2>
+
+                <div class="logo">
+                  <img src="/images/logo.svg" alt="Logo">
+                </div>
+
+                <div class="w3-container w3-section">
+                    <input class="w3-input w3-border w3-round w3-margin" id="fileInput" type="file" name="file"/>
+                    <button class="w3-btn w3-blue w3-margin" id="uploadButton">upload</button>
+                </div>
+            </div>
+        </div>
+
+    <script src="/scripts/landing.bundle.js"></script>
+    </body>
+</html>
