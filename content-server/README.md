@@ -22,8 +22,6 @@ For development use:
     make dev        # developing environment - start content server on port 3001
     make h_server   # to start the Hypothesis Server on Port 5000
 
-The webserver should start on http://localhost:3001.
-
 ## Setting up hypothesis server
 
     cd frameworks/hypothesis/h
@@ -40,12 +38,6 @@ __Note:__ You have to [sign in](http://localhost:5000/) before you can access th
   Redirect URL: http://localhost:5000/app.html
 
 Get Client ID and add it into the Makefile!
-
-### Production Build - Docker
-
-    sudo docker build .
-
-
 
 ### Frameworks
 - [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
