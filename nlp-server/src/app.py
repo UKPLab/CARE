@@ -59,7 +59,7 @@ def computehello_resviasocketio(self, data, sid):
 
         res = "-".join(parts) + "_" + str(res)
 
-        socket.emit("celery-result", res, room=session)
+        socket.emit("celery-result", res, room=sid)
 
         return res
 
