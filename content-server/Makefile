@@ -11,12 +11,12 @@ default: help
 help:
 	@echo "make help              Show this help message"
 	@echo "make dev               Run the app in the development server"
-	@echo "make all               Build everything"
 	@echo "make pdfjs             Build Framework PDFjs"
 	@echo "make h_server          Build Framework Hypothesis Server"
 	@echo "make h_client          Build Framework Hypothesis Client"
 	@echo "make build             Create a production build of the client"
 	@echo "make clean             Delete development files"
+	@echo "make docker			  Generate docker images"
 
 .PHONY: dev
 dev: node_modules/.uptodate
@@ -34,18 +34,14 @@ ifeq (,$(wildcard frameworks/hypothesis/h/build/manifest.json))
 endif
 	node_modules/.bin/gulp build
 
-.PHONY: all
-all: node_modules/.uptodate
-	make pdfjs
-	make h_client
-	make h_server
-	node_modules/.bin/gulp build
+.PHONY: docker
+docker:
+	docker-compose -f docker-compose.yml -f frameworks/hypothesis/h/docker-compose.yml up
 
 .PHONY: clean
 clean:
 	rm -f node_modules/.uptodate
 	rm -rf build
-	cd frameworks/hypothesis/h && make clean
 	cd frameworks/hypothesis/client && make clean
 
 .PHONY: build
@@ -57,15 +53,14 @@ node_modules/.uptodate: package.json yarn.lock
 	@touch $@
 
 pdfjs: frameworks/pdf.js/package.json
-	cd frameworks/pdf.js &&	npm install gulp-cli
+	cd frameworks/pdf.js &&	npm install -g gulp-cli
 	cd frameworks/pdf.js && npm install
 	cd frameworks/pdf.js && node_modules/.bin/gulp generic
 
-
 h_server: frameworks/hypothesis/h/package.json
-	echo ${CLIENT_URL}
 	cd frameworks/hypothesis/h && make services
 	cd frameworks/hypothesis/h && make dev
 
 h_client: frameworks/hypothesis/client/package.json
 	cd frameworks/hypothesis/client && make build
+

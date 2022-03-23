@@ -12,11 +12,15 @@ __Note:__ If you change anything on the structure, also update the architecture 
 
 Check if all git submodules files (in Folder frameworks) are downloaded, otherwise use ``git pull --recurse-submodules``  
 
+    sudo npm install --global yarn      # if yarn is not installed yet
+    sudo npm install --global gulp-cli  # needed for pdf.js
+    make docker                         # build docker images from code and start 
+
 For development use:
 
-    npm install --global yarn # if yarn is not installed yet
-    make dev
-    make h_server             # to start the Hypothesis Server on Port 5000
+    make clean      # clean everything
+    make dev        # developing environment - start content server on port 3001
+    make h_server   # to start the Hypothesis Server on Port 5000
 
 The webserver should start on http://localhost:3001.
 
@@ -39,9 +43,7 @@ Get Client ID and add it into the Makefile!
 
 ### Production Build - Docker
 
-UserToken: glpat-Va4aonp9e-ZU8kXczWF4
-
-    sudo apt-get install docker-compose
+    sudo docker build .
 
 
 
