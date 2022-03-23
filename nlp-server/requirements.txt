@@ -2,3 +2,5 @@ Flask~=2.0.3
 flask-socketio~=5.1.1
 eventlet~=0.33.0
 celery==4.4.2
+redis~=4.1.4
+flask_session~=0.4.0
