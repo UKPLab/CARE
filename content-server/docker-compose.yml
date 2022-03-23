@@ -1,0 +1,28 @@
+version: "3"
+services:
+  content_server:
+    build:
+      context: .
+    depends_on:
+      - h_server
+    ports:
+      - "80:3001"
+  h_server:
+    build: frameworks/hypothesis/h
+    depends_on:
+      - elasticsearch
+      - postgres
+      - rabbit
+    ports:
+      - "5000:5000"
+    environment:
+      - APP_URL=http://localhost:5000
+      - AUTHORITY=localhost
+      - BROKER_URL=amqp://guest:guest@localhost:5672//
+      - CLIENT_OAUTH_ID=${CLIENT_OAUTH_ID}
+      - CLIENT_URL=http://localhost:80/hypothesis
+      - DATABASE_URL=postgresql://postgres@localhost/postgres
+      - ELASTICSEARCH_URL=http://localhost:9200
+      - NEW_RELIC_APP_NAME=h (dev)
+      - NEW_RELIC_LICENSE_KEY=
+      - SECRET_KEY=notasecret
