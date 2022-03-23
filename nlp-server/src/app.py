@@ -1,112 +1,157 @@
-from eventlet import monkey_patch #crucial! else won't work
+import hashlib
+
+from celery.result import AsyncResult
+from eventlet import monkey_patch
 monkey_patch()
 
-from celery import Celery
+import os
+from grobid_client.grobid_client import GrobidClient, ServerUnavailableException
 
-from flask import Flask, jsonify, request, session
-from flask_socketio import SocketIO
-from flask_session import Session
-import time
-import redis
+from celery import Celery, chain
+from flask import Flask, session, request
+from flask_socketio import SocketIO, join_room, emit
 
+import WebConfiguration
+
+# load default web server configuration
+config = WebConfiguration.instance()
+
+# flask server
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'pssst!'
-app.config['CELERY_RESULT_BACKEND'] = "redis://redis:6379" # old "rpc://rabbitmq:5672"  # todo use env variable, add user cred
-app.config['CELERY_BROKER_URL'] = "amqp://guest:guest@rabbitmq:5672"
+app.config.update(config.flask)
+app.config.update(config.session)
 
-app.config['SESSION_TYPE'] = 'redis'
-app.config['SESSION_PERMANENT'] = False
-app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_REDIS'] = redis.from_url("redis://redis:6379")
-
+# socketio
 socketio = SocketIO()
-socketio.init_app(app,
-                  cors_allowed_origins='*',
-                  message_queue=app.config['CELERY_BROKER_URL'],
-                  logger=True,
-                  engineio_logger=True)
+socketio.init_app(app, **config.socketio)
 
-celery = Celery(app.name,
-                backend=app.config['CELERY_RESULT_BACKEND'],
-                broker=app.config['CELERY_BROKER_URL']
-                )
+# celery
+celery = Celery(app.name, **config.celery)
 celery.conf.update(app.config)
 
-server_session = Session(app)
+####### To be moved into sub-directories ########
+def init():
+    # update config
+    app.config.update(config.grobid)
+
+    # check connection to GROBID (ignore object, use just the test)
+    try:
+        GrobidClient(**config.grobid)
+        print("SUCCESS: GROBID client reached GROBID server")
+    except ServerUnavailableException as e:
+        print("WARNING: GROBID server seems unavailable for the given config. Probably cannot process PDFs!")
+        print(e)
+
+    # check file system
+    if not os.path.exists(app.config["UPLOAD_FOLDER"]) or not os.path.isdir(app.config["UPLOAD_FOLDER"]):
+        print("Creating temporary file storage directory at %s" % app.config["UPLOAD_FOLDER"])
+        os.mkdir(app.config["UPLOAD_FOLDER"])
+
+
+def parse_pdf(filepath):
+    client = GrobidClient(**config.grobid)
+
+    _, status, parsed = client.process_pdf("processFulltextDocument",
+                                           filepath,
+                                           generateIDs=False,
+                                           consolidate_header=True,
+                                           consolidate_citations=False,
+                                           include_raw_citations=False,
+                                           include_raw_affiliations=False,
+                                           tei_coordinates=False,
+                                           segment_sentences=False)
+
+    return status, parsed
+
+
+### CELERY #####################################
+@celery.task
+def store_pdf(raw_pdf, title, sid):
+    filename = hashlib.sha256((title + sid).encode("utf-8")).hexdigest() + ".pdf"
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+    with open(filepath, "wb+") as file:
+        file.write(raw_pdf)
+
+    return filepath
+
 
 @celery.task
-def printhello(data):
-    print("Hello world!" + data)
+def process_pdf(raw_pdf_path, sid):
+    statussocket = SocketIO(message_queue=app.config["CELERY_BROKER_URL"])
+
+    # call grobid
+    status, parsed = parse_pdf(raw_pdf_path)
+
+    statussocket.emit("req_pdf", parsed, room=sid)
+
+    # return result
+    return parsed
 
 
-@celery.task(bind=True)
-def computehello_resviasocketio(self, data, sid):
-    with app.app_context():
-        # instantiate a socketio interface on the worker
-        socket = SocketIO(message_queue=app.config["CELERY_BROKER_URL"])
-                          #channel=session) # if we have mutliple sockets in different apps (i assume)
-
-        parts = data.split(" ")
-        print("hello" + "-".join(parts))
-
-        # testing bounded methods
-        self.update_state(state='PROGRESS', meta={'current': 10, 'total': 100})
-
-        res = 0
-        for i in range(20):
-            res += i
-            time.sleep(0.5)
-
-        res = "-".join(parts) + "_" + str(res)
-
-        socket.emit("celery-result", res, room=sid)
-
-        return res
-
-
-@celery.task
-def startworker():
-    socket = SocketIO(message_queue=app.config["CELERY_BROKER_URL"])
-
-    def do():
-        print("connected to celery!")
-
-    socket.on("connect", do)
-
-    socket.emit("hello2", "hello there, you talk to celery")
-
-
-@app.route("/test")
-def test():
-    print("/test being called... starting celery")
-    task = printhello.delay("testdata")
-
-    return jsonify({}), 202, {'Location': "lalala"}
-
-
+### SOCKETIO ###################################
 @socketio.on("connect")
-def connect():
-    print("Client connected..." + str(request.sid))
+def connect(data):
+    sid = request.sid
+    session["sid"] = sid
+    join_room(sid)
+
+    return sid
 
 
-@socketio.on("hello")
-def test(data):
-    print("Client messaged...!")
+@socketio.on("disconnect")
+def disconnect():
+    #terminate running jobs
+    #clear pending results
+    #clear session
+    ...
 
-    if "c" not in session:
-        session["c"] = []
 
-    task = computehello_resviasocketio.delay(data, request.sid)
+@socketio.on("push_pdf")
+def push_pdf(blob, metadata):
+    # store in session
+    session["raw_pdf"] = blob
+    session["meta_pdf"] = metadata
+    sid = session["sid"]
 
-    if "state" not in session:
-        session["state"]=[]
-    session["state"] += ["hello received"]
+    # start processing
+    task = chain(store_pdf.s(blob, metadata["title"], sid) | process_pdf.s(sid))()
+    session["pdf_processing"] = task.id
 
-    socketio.emit("hello2", str(task) + str(session["state"]), room=request.sid)
+@socketio.on("req_pdf")
+def req_pdf(req):
+    if "pdf_processing" not in session:
+        emit("req_pdf", "no result")
+        return
+    else:
+        res = AsyncResult(session["pdf_processing"])
+        if res.status != "SUCCESS":
+            emit("req_pdf", "no result")
+        else:
+            emit("req_pdf", res)
 
+@socketio.on("push_xml")
+def push_mapping(xml, metadata):
+    raise NotImplementedError()
+
+
+@socketio.on("init_bot")
+def init_bot(bot_config):
+    pass
+
+@socketio.on("classify_doc")
+def classify_doc():
+    pass
+
+@socketio.on("classify_anno")
+def push_anno(annotation):
+    ...
+
+### FLASK ######################################
+#nothing, for now
+
+#################################################
 
 if __name__ == '__main__':
-    socketio.run(app,
-                 host="0.0.0.0",
-                 debug=True,
-                 port=6000)
+    init()
+    socketio.run(app, **config.app)
