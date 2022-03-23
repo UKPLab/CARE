@@ -7,7 +7,7 @@ services:
       - rabbitmq
       - celery-worker
       - grobid
-      - flower
+      - redis
     command: python3 app.py
     ports:
       - ${NLP_PORT}:6000
@@ -20,10 +20,15 @@ services:
     ports:
       - ${RABBITMQ_PORT}:5672
       - 15672:15672
+  redis:
+    image: redis
+    ports:
+      - ${REDIS_PORT}:6379
   celery-worker:
     build: .
     depends_on:
       - rabbitmq
+      - redis
     command: celery -A app.celery worker -l INFO -E
   flower:
     image: mher/flower
