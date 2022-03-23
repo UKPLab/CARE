@@ -9,6 +9,7 @@ For an overview of the complete architecture, see ./docs/architecture.drawio\
 __Note:__ If you change anything on the structure, also update the architecture file!
 
 ## Installation
+
 Check if all git submodules files (in Folder frameworks) are downloaded, otherwise use ``git pull --recurse-submodules``  
 
 For development use:
@@ -35,6 +36,14 @@ __Note:__ You have to [sign in](http://localhost:5000/) before you can access th
   Redirect URL: http://localhost:5000/app.html
 
 Get Client ID and add it into the Makefile!
+
+### Production Build - Docker
+
+UserToken: glpat-Va4aonp9e-ZU8kXczWF4
+
+    sudo apt-get install docker-compose
+
+
 
 ### Frameworks
 - [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
