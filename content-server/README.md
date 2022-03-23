@@ -9,15 +9,18 @@ For an overview of the complete architecture, see ./docs/architecture.drawio\
 __Note:__ If you change anything on the structure, also update the architecture file!
 
 ## Installation
+
 Check if all git submodules files (in Folder frameworks) are downloaded, otherwise use ``git pull --recurse-submodules``  
+
+    sudo npm install --global yarn      # if yarn is not installed yet
+    sudo npm install --global gulp-cli  # needed for pdf.js
+    make docker                         # build docker images from code and start 
 
 For development use:
 
-    npm install --global yarn # if yarn is not installed yet
-    make dev
-    make h_server             # to start the Hypothesis Server on Port 5000
-
-The webserver should start on http://localhost:3001.
+    make clean      # clean everything
+    make dev        # developing environment - start content server on port 3001
+    make h_server   # to start the Hypothesis Server on Port 5000
 
 ## Setting up hypothesis server
 
