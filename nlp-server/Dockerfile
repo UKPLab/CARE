@@ -17,6 +17,6 @@ WORKDIR nlp-server
 RUN python3 -m pip install -r requirements.txt
 
 # RUN SERVER
-WORKDIR nlp
-RUN export PYTHON_PATH=/nlp-server/nlp
-CMD python3 nlp/app.py
+WORKDIR src
+RUN export PYTHON_PATH=/nlp-server/src
+CMD python3 src/app.py
