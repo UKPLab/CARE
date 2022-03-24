@@ -24,20 +24,31 @@ For development use:
 
 ## Setting up hypothesis server
 
+### Short way
+1. Change Environment Variables in Makefile
+2. `make init`
+
+### Long way
+
+1. Add admin account to hypothesis server:
+
+
     cd frameworks/hypothesis/h
     tox -qe dev -- sh bin/hypothesis --dev user add --username <username> --email <email> --password <password>
     tox -qe dev -- sh bin/hypothesis --dev user admin <username>
 
-Setting up OAuth client token under http://localhost:5000/admin/oauthclients/new  
-__Note:__ You have to [sign in](http://localhost:5000/) before you can access this url!
-  
-  Name: < custom name > \
-  Authority: localhost \
-  Grand type: authorization_code\
-  Trusted: Yes\
-  Redirect URL: http://localhost:5000/app.html
+2. Sign in on the hypothesis server: http://localhost:5000/
+3. Create oAuth client token: http://localhost:5000/admin/oauthclients/new
+4. Create oAuth
 
-Get Client ID and add it into the Makefile!
+  
+    Name: < custom name > 
+    Authority: localhost 
+    Grand type: authorization_code
+    Trusted: Yes
+    Redirect URL: http://localhost:5000/app.html
+
+5. Get Client ID and add it into the Makefile!
 
 ### Frameworks
 - [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
