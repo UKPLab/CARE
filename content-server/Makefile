@@ -3,6 +3,9 @@ export CLIENT_OAUTH_ID=a2556958-a9cc-11ec-a061-17298d8dd357
 export GIT_ACCESS_TOKEN=glpat-nyWsHEGiURVW2yft7inS
 #export CLIENT_URL=http://localhost:3001/hypothesis
 #export WEBSOCKET_URL=ws://localhost:5001/ws
+export H_SERVER_ADMIN_USER=admin
+export H_SERVER_ADMIN_MAIL=admin@admin.de
+export H_SERVER_ADMIN_PASSWORD=test
 
 .PHONY: default
 default: help
@@ -17,6 +20,7 @@ help:
 	@echo "make build             Create a production build of the client"
 	@echo "make clean             Delete development files"
 	@echo "make docker			  Generate docker images"
+	@echo "make init              Auto-Config h server"
 
 .PHONY: dev
 dev: node_modules/.uptodate
@@ -63,4 +67,12 @@ h_server: frameworks/hypothesis/h/package.json
 
 h_client: frameworks/hypothesis/client/package.json
 	cd frameworks/hypothesis/client && make build
+
+.PHONY: init
+init:
+	cd frameworks/hypothesis/h && make services
+	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
+	node_modules/.bin/gulp init
+	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password test3 --password ${H_SERVER_ADMIN_PASSWORD}
+
 
