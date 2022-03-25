@@ -8,23 +8,31 @@ For an overview of the complete architecture, see ./docs/architecture.drawio\
 (You can use either the [PyCharm Plugin](https://plugins.jetbrains.com/plugin/15635-diagrams-net-integration) as well as the [Website](http://app.diagrams.net))\
 __Note:__ If you change anything on the structure, also update the architecture file!
 
+### Architecture of the Content Server
+
+![architecture_content_server](docs/architecture-content_server.png)
+
 ## Installation
 
 There are two possible situation for an installation:
 1. The **production** environment in order to generate data or use the software with the current state of development.
 2. The **development** environment to further develop the software and test changes directly.
 
-Both is tested with a clean Ubuntu 20.04 LTS Installation (minimal installation).
-
-### Installation for Production 
-
-The software will be installed in a Docker Environment. 
-
+For all installations, we need the current data from the git repository and have to install some dependencies
+    
     sudo apt-get install git
     git clone --recursive https://git.ukp.informatik.tu-darmstadt.de/zyska/peer.git
     cd peer/content-server
     chmod +x install.sh
     sudo ./install.sh           # Install needed software packages
+
+Both is tested with a clean Ubuntu 20.04 LTS Installation (minimal installation).\
+If something goes wrong, clean environment with ```make clean```.
+
+### Installation for Production 
+
+The software will be installed in a Docker Environment. 
+
     sudo make docker
 
 The Content-Server should be available on port 80.\
@@ -35,23 +43,20 @@ For installation see [Install Instructions](https://docs.portainer.io/v/ce-2.9/s
 
 ### Installation for Development
 
-
-
-
-
-
-
-Check if all git submodules files (in Folder frameworks) are downloaded, otherwise use ``git pull --recurse-submodules``  
+This will run the main development code locally in addition to some docker container (i.e., PostgreSQL).
 
     sudo npm install --global yarn      # if yarn is not installed yet
     sudo npm install --global gulp-cli  # needed for pdf.js
-    make docker                         # build docker images from code and start 
+    make dev     # Build only the content-server 
 
-For development use:
+Here the Hypothesis Server should be running. 
+You can either start the docker container with
 
-    make clean      # clean everything
-    make dev        # developing environment - start content server on port 3001
-    make h_server   # to start the Hypothesis Server on Port 5000
+    make h_server_docker
+
+or build a local environment with in an extra console (in directory content-server):
+
+    make h_server 
 
 ## Setting up hypothesis server
 
