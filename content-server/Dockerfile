@@ -10,7 +10,6 @@ WORKDIR /
 ADD . /content-server/
 WORKDIR content-server
 
-RUN make all
 CMD make dev
 
 
