@@ -39,10 +39,6 @@ ifeq (,$(wildcard frameworks/hypothesis/h/build/manifest.json))
 endif
 	node_modules/.bin/gulp build
 
-.PHONY: docker
-docker:
-	docker-compose -f docker-compose.yml -f frameworks/hypothesis/h/docker-compose.yml up
-
 .PHONY: clean
 clean:
 	rm -f node_modules/.uptodate
@@ -50,8 +46,8 @@ clean:
 	cd frameworks/hypothesis/client && make clean
 
 .PHONY: build
-build: node_modules/.uptodate
-	yarn run build
+build:
+	docker-compose -f docker-compose.yml -f frameworks/hypothesis/h/docker-compose.yml up
 
 node_modules/.uptodate: package.json yarn.lock
 	yarn install
@@ -65,6 +61,9 @@ pdfjs: frameworks/pdf.js/package.json
 h_server: frameworks/hypothesis/h/package.json
 	cd frameworks/hypothesis/h && make services
 	cd frameworks/hypothesis/h && make dev
+
+h_server_docker:
+	docker-compose -f frameworks/hypothesis/h/docker-compose.yml up
 
 h_client: frameworks/hypothesis/client/package.json
 	cd frameworks/hypothesis/client && make build
