@@ -14,7 +14,7 @@ fi
 #
 # install required system tools
 echo "> Installing required software"
-sudo apt-get install curl git make
+sudo apt-get install curl git make python3-pip
 
 # install docker (by adding repo). Only do this when necessary
 echo "> Installing docker"
@@ -63,6 +63,11 @@ else
 
   #sudo groupadd docker # apparently this happens automatically, if not do it yourself
   sudo usermod -aG docker $USER
+
+  # add docker composer
+  echo "Install docker-compose!"
+  sudo pip3 install docker-compose
+
   #newgrp docker
 fi
 
