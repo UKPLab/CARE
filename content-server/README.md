@@ -10,6 +10,37 @@ __Note:__ If you change anything on the structure, also update the architecture 
 
 ## Installation
 
+There are two possible situation for an installation:
+1. The **production** environment in order to generate data or use the software with the current state of development.
+2. The **development** environment to further develop the software and test changes directly.
+
+Both is tested with a clean Ubuntu 20.04 LTS Installation (minimal installation).
+
+### Installation for Production 
+
+The software will be installed in a Docker Environment. 
+
+    sudo apt-get install git
+    git clone --recursive https://git.ukp.informatik.tu-darmstadt.de/zyska/peer.git
+    cd peer/content-server
+    chmod +x install.sh
+    sudo ./install.sh           # Install needed software packages
+    sudo make docker
+
+The Content-Server should be available on port 80.\
+Please make sure that the other ports are **not accessible** from outside, this applies above all for  the PostgreSQL Database!
+
+__Hint:__  Use [Portainer CE](https://hub.docker.com/r/portainer/portainer-ce) for managing the docker containers with a GUI.\
+For installation see [Install Instructions](https://docs.portainer.io/v/ce-2.9/start/install/server/docker/linux)
+
+### Installation for Development
+
+
+
+
+
+
+
 Check if all git submodules files (in Folder frameworks) are downloaded, otherwise use ``git pull --recurse-submodules``  
 
     sudo npm install --global yarn      # if yarn is not installed yet
