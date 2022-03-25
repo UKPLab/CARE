@@ -86,15 +86,27 @@ or build a local environment with in an extra console (in directory content-serv
 
 5. Get Client ID and add it into the Makefile!
 
-### Frameworks
+## Frameworks
 - [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
     - [PDFjs](https://mozilla.github.io/pdf.js) - to display the PDFs
     - [Hypothesis](https://web.hypothes.is/) - to annotating text in the PDFs
   
-#### Build Frameworks individually
+__Note__: See also the architecture overview for further information how the frameworks interact!
+
+### Build Frameworks individually
 
     make pdfjs     # build PDFjs Framework
     make h_client  # build Hypothesis Client
     make h_server  # build Hypothesis Server
 
-__Note__: See also the architecture overview for further information how the frameworks interact!
+### Further information about the Hypothesis Framework
+
+* Client setup manual: https://h.readthedocs.io/projects/client/en/latest/developers/developing/#setting-up-a-client-development-environment
+* Server setup manual: https://h.readthedocs.io/en/latest/developing/install/#you-will-need
+* Connecting Server & Client: https://h.readthedocs.io/en/latest/developing/integrating-client/
+* Creating a User and Accessing the Admin Interface: https://h.readthedocs.io/en/latest/developing/administration/
+* Hypothesis API:  https://h.readthedocs.io/en/latest/api-reference/v1/
+* Hypothesis Server DOC: https://h.readthedocs.io/_/downloads/en/latest/pdf/
+* Hypothesis Client DOC: https://h.readthedocs.io/_/downloads/client/en/latest/pdf/ 
+* Server git repo: https://github.com/hypothesis/h 
+* Client git repo: https://github.com/hypothesis/client
