@@ -14,7 +14,7 @@ fi
 #
 # install required system tools
 echo "> Installing required software"
-sudo apt-get install curl git make python3-pip npm
+sudo apt-get -y install curl git make python3-pip
 
 # install docker (by adding repo). Only do this when necessary
 echo "> Installing docker"
@@ -23,7 +23,7 @@ then
   echo "Docker is already installed! Skipping installation."
 else
   sudo apt-get update
-  sudo apt-get install \
+  sudo apt-get -y install \
       apt-transport-https \
       ca-certificates \
       gnupg \
@@ -80,7 +80,11 @@ else
   curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
   echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
   sudo apt update
-  sudo apt install yarn
+  sudo apt install -y yarn
+  curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -^C
+  sudo apt-get install -y nodejs
+
+
 fi
 
 
