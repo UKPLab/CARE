@@ -7,6 +7,7 @@ import glob from 'glob';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import webServer from './src/webserver/webServer.js';
+import init from './src/gulp/init.js'
 
 import createBundle from './src/gulp/create-bundle.js';
 import createStyleBundle from './src/gulp/create-style-bundles.js';
