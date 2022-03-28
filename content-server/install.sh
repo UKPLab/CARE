@@ -71,6 +71,18 @@ else
   #newgrp docker
 fi
 
+# install yarn (by adding repo). Only do this when necessary
+echo "> Installing yarn"
+if [ -n "$(command -v yarn)" ]  #docker already installed
+then
+  echo "Yarn is already installed! Skipping installation."
+else
+  curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+  echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+  sudo apt update
+  sudo apt install yarn
+fi
+
 
 
 
