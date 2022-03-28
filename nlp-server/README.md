@@ -4,6 +4,83 @@
 This directory contains all files associated with the NLP Server, which receives, 
 evaluates and answers all requests related to NLP.
 
+## Running the Server
+### Start-up
+To run the server you simply need to run:
+```
+docker-compose up 
+```
+
+During development you should enforce re-building of the containers instead of using the cached ones:
+```
+docker-compose up  --build
+```
+
+### Management
+The RabbitMQ status monitor and Flower for surveilance of celery workers are used. To check-in on the RabbitMQ instance 
+you should visit in your browser:
+```
+localhost:15672
+```
+You can access the server via providing username and password. Per default these are both `guest`.
+
+The Flower monitor is accessible at port 8888. To check-in on the Celery tasks visit in your browser:
+```
+localhost:8888
+```
+
+### Deployment
 TBA
 
-flask blueprints for structure
+## Server Infrastructure
+### Technologies
+The NLP server uses Flask, SocketIO and Celery to manage requests via web sockets. RabbitMQ is used as a message broker,
+Redis as a persistent result backend and for session management, Flower for Celery surveilance. Additionally, the
+official GROBID server runs to process PDFs.
+
+### Process Architecture
+The following figure outlines the architecture of the NLP server, where a request is passed to a flask instance, which 
+establishes a socketio connection. Upon request a celery worker is requestes via the celery client and broker. The 
+pool worker then performs the task while optionally sending messages via socketio (and indirectly the message queue) to
+the client. The result is written to the redis backend and can be grabbed from there.
+
+![Overview](docs/tech.png?raw=true "Process Architecture")
+
+Note that the celery worker has no application context (of the flask app) and all necessary parameters have to be passed
+by value or read from disk/backend. This should inform the design of the task architecture
+
+### Dataflow 
+The following figure makes the data and call flow explicit. The flask app spans a celery process via the broker interface
+to the worker. The worker performs the task and the result can be read from the flask app (or the celery workers).
+
+![Overview](docs/flow.png?raw=true "Process Architecture")
+
+## Adding Components
+Warning: This is WIP and will be specified in more detail later. This is the first proposal to approach the issue.
+
+### Data and Task Model
+Any task that requires computing or IO waiting time should be realized within a celery worker and hence specified as
+a celery task. These tasks are decorated methods that can be specified under the celery task path (TODO!).
+
+To manage the connection the flask app maintains a session. The session management should be realized within the flask
+app. This includes keeping track of results, running celery tasks etc. The session object contains all relevant data
+or pointers to the result backend to perform tasks. As of now, we do not provide any particular endpoint via flask, but
+authentication would need to be required through a flask end-point (not supported by WS). This should be realized via
+so-called blueprints.
+
+To have an easy to manage web socket you can use Namespaces. After registering them (one should be enough) on the 
+socketio server, requests on the specified path will be forwarded to the respective class. The class can import 
+the session object and socketio convenience methods as usually. The session management should evolve around this 
+Namespace class.
+
+### Life Cycle
+Generally speaking the NLP server receives a sequence of inputs -- a document, annotations, etc. -- as well as the
+hyper-parameters for performing some task -- like model type, expected output type, task type etc. -- and upon 
+request performs the task. After the request there are status updates (if necessary) and finally a result is 
+pushed via the websocket to the client. The connection remains open to get new partial inputs and re-run the task or
+to provide the results again. After some time the connection is closed and the session discarded.
+
+### Server Components
+There is a session manager running on the flask app. It is responsible for managing inputs in the session and providing
+the required information to submodules. There is a module responsible for cleaning celery tasks and results. There is a
+moduler responsible for managing inputs and one for results. There is a module managing NLP models.

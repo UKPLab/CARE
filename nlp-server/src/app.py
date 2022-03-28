@@ -1,8 +1,10 @@
+from eventlet import monkey_patch
+monkey_patch()
+
+from TestClass import TestNamespace, Manager
 import hashlib
 
 from celery.result import AsyncResult
-from eventlet import monkey_patch
-monkey_patch()
 
 import os
 from grobid_client.grobid_client import GrobidClient, ServerUnavailableException
@@ -30,6 +32,12 @@ celery = Celery(app.name, **config.celery)
 celery.conf.update(app.config)
 
 ####### To be moved into sub-directories ########
+## use Blueprint for flask
+## use Namespace for socketio combine with flask sessions and only use emit importet from socketio
+#### /doc
+####
+## use celery task registry for celery tasks
+
 def init():
     # update config
     app.config.update(config.grobid)
@@ -90,11 +98,15 @@ def process_pdf(raw_pdf_path, sid):
 
 
 ### SOCKETIO ###################################
+socketio.on_namespace(TestNamespace("/test"))
+
 @socketio.on("connect")
 def connect(data):
     sid = request.sid
     session["sid"] = sid
     join_room(sid)
+
+    session["mng"] = Manager()
 
     return sid
 
