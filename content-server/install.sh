@@ -14,7 +14,7 @@ fi
 #
 # install required system tools
 echo "> Installing required software"
-sudo apt-get install curl git make python3-pip
+sudo apt-get install curl git make python3-pip npm
 
 # install docker (by adding repo). Only do this when necessary
 echo "> Installing docker"
@@ -70,6 +70,8 @@ else
 
   #newgrp docker
 fi
+
+
 
 
 
