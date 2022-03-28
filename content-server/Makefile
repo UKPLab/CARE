@@ -1,8 +1,12 @@
 
 export CLIENT_OAUTH_ID=a2556958-a9cc-11ec-a061-17298d8dd357
+export CLIENT_OAUTH_REDIRECT_URL=http://localhost:5000/app.html
 export GIT_ACCESS_TOKEN=glpat-nyWsHEGiURVW2yft7inS
 #export CLIENT_URL=http://localhost:3001/hypothesis
 #export WEBSOCKET_URL=ws://localhost:5001/ws
+export H_SERVER_ADMIN_USER=admin
+export H_SERVER_ADMIN_MAIL=admin@admin.de
+export H_SERVER_ADMIN_PASSWORD=test
 
 .PHONY: default
 default: help
@@ -17,6 +21,7 @@ help:
 	@echo "make build             Create a production build of the client"
 	@echo "make clean             Delete development files"
 	@echo "make docker			  Generate docker images"
+	@echo "make init              Auto-Config h server"
 
 .PHONY: dev
 dev: node_modules/.uptodate
@@ -34,10 +39,6 @@ ifeq (,$(wildcard frameworks/hypothesis/h/build/manifest.json))
 endif
 	node_modules/.bin/gulp build
 
-.PHONY: docker
-docker:
-	docker-compose -f docker-compose.yml -f frameworks/hypothesis/h/docker-compose.yml up
-
 .PHONY: clean
 clean:
 	rm -f node_modules/.uptodate
@@ -45,8 +46,8 @@ clean:
 	cd frameworks/hypothesis/client && make clean
 
 .PHONY: build
-build: node_modules/.uptodate
-	yarn run build
+build:
+	docker-compose -f docker-compose.yml -f frameworks/hypothesis/h/docker-compose.yml up
 
 node_modules/.uptodate: package.json yarn.lock
 	yarn install
@@ -61,6 +62,17 @@ h_server: frameworks/hypothesis/h/package.json
 	cd frameworks/hypothesis/h && make services
 	cd frameworks/hypothesis/h && make dev
 
+h_server_docker:
+	docker-compose -f frameworks/hypothesis/h/docker-compose.yml up
+
 h_client: frameworks/hypothesis/client/package.json
 	cd frameworks/hypothesis/client && make build
+
+.PHONY: init
+init:
+	cd frameworks/hypothesis/h && make services
+	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
+	node_modules/.bin/gulp init
+	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password ${H_SERVER_ADMIN_USER} --password ${H_SERVER_ADMIN_PASSWORD}
+
 
