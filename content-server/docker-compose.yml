@@ -18,11 +18,11 @@ services:
     environment:
       - APP_URL=http://localhost:5000
       - AUTHORITY=localhost
-      - BROKER_URL=amqp://guest:guest@localhost:5672//
+      - BROKER_URL=amqp://guest:guest@rabbit:5672//
       - CLIENT_OAUTH_ID=${CLIENT_OAUTH_ID}
-      - CLIENT_URL=http://localhost:80/hypothesis
-      - DATABASE_URL=postgresql://postgres@localhost/postgres
-      - ELASTICSEARCH_URL=http://localhost:9200
+      - CLIENT_URL=http://content_serve:3001/hypothesis
+      - DATABASE_URL=postgresql://postgres@postgres/postgres
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
       - NEW_RELIC_APP_NAME=h (dev)
       - NEW_RELIC_LICENSE_KEY=
       - SECRET_KEY=notasecret
