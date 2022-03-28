@@ -131,3 +131,9 @@ gulp.task("start-web-server", function() {
 // Build content server
 gulp.task("build-all", gulp.parallel(['build-images', 'build-css', 'build-js', 'build-pdf.js']))
 gulp.task('build', gulp.series(['build-all'], ['start-web-server']))
+
+// Configure h-server
+gulp.task("init", function(done) {
+    init();
+    done();
+});
