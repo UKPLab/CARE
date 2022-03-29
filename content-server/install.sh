@@ -82,12 +82,6 @@ else
   #newgrp docker
 fi
 
-# install yarn (by adding repo). Only do this when necessary
-curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-sudo apt update
-sudo apt install -y yarn
-
 # update node
 echo "> Updating node to last version"
 curl -sL https://deb.nodesource.com/setup_14.x -o nodesource_setup.sh
@@ -95,8 +89,14 @@ sudo bash nodesource_setup.sh
 sudo apt-get update
 sudo apt-get install -y nodejs
 
-echo "> Installing Yarn and Gulp-CLI global"
-sudo npm install --global yarn      # if yarn is not installed yet
+# install yarn (by adding repo). Only do this when necessary
+curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+sudo apt update
+sudo apt install -y yarn
+sudo npm install --global yarn
+
+echo "> Installing Gulp-CLI global"
 sudo npm install --global gulp-cli  # needed for pdf.js
 
 # install pyenv
