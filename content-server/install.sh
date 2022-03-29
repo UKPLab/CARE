@@ -83,8 +83,27 @@ else
   sudo apt install -y yarn
   curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -^C
   sudo apt-get install -y nodejs
+fi
 
+# install docker (by adding repo). Only do this when necessary
+echo "> Installing pyenv"
+if [ -n "$(command -v pyenv)" ]  #docker already installed
+then
+  echo "PyEnv is already installed! Skipping installation."
+else
 
+  #install pip if necessary
+  sudo apt install python3-venv python3-pip -y
+
+  # install pyenv
+  echo "> Installing pyenv"
+  curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+
+  echo "export PATH=\"/home/$USER/.pyenv/bin:\$PATH\"" >> ~/.bashrc
+  echo "eval \"\$(pyenv init -)\"" >> ~/.bashrc
+  echo "eval \"\$(pyenv virtualenv-init -)\"" >> ~/.bashrc
+
+  export PATH="/home/$USER/.pyenv/bin:$PATH"
 fi
 
 
