@@ -55,7 +55,6 @@ node_modules/.uptodate: package.json yarn.lock
 	@touch $@
 
 pdfjs: frameworks/pdf.js/package.json
-	cd frameworks/pdf.js &&	npm install -g gulp-cli
 	cd frameworks/pdf.js && npm install
 	cd frameworks/pdf.js && node_modules/.bin/gulp generic
 
