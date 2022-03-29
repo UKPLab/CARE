@@ -15,6 +15,7 @@ fi
 # install required system tools
 echo "> Installing required software"
 sudo apt-get -y install curl git make python3-pip python3-venv
+sudo pip install tox
 
 # install docker (by adding repo). Only do this when necessary
 echo "> Installing docker"
@@ -81,9 +82,13 @@ else
   echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
   sudo apt update
   sudo apt install -y yarn
-  curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -^C
-  sudo apt-get install -y nodejs
+
 fi
+
+# update node
+echo "> Updating node to last version"
+curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -^C
+sudo apt-get install -y nodejs
 
 
 

@@ -23,7 +23,6 @@ For all installations, we need the current data from the git repository and have
     sudo apt-get install git
     git clone --recursive https://git.ukp.informatik.tu-darmstadt.de/zyska/peer.git
     cd peer/content-server
-    chmod +x install.sh
     sudo ./install.sh           # Install needed software packages
 
 Both is tested with a clean Ubuntu 20.04 LTS Installation (minimal installation).\
