@@ -75,11 +75,5 @@ init:
 	node_modules/.bin/gulp init
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password ${H_SERVER_ADMIN_USER} --password ${H_SERVER_ADMIN_PASSWORD}
 
-check_pyenv:
-ifeq (,$(shell command -v pyenv 2> /dev/null))
-	@echo "PyEnv not exists, set it up..."
-	sh pyenv.sh
-endif
-
 
 
