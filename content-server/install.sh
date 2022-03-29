@@ -18,7 +18,9 @@ echo $homedir
 #
 # install required system tools
 echo "> Installing required software"
-sudo apt-get -y install curl git make python3-pip python3-venv libedit-dev
+sudo apt-get -y install curl git make python3-pip python3-venv libedit-dev \
+      make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
+      wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
 sudo pip install tox
 
 # install docker (by adding repo). Only do this when necessary
@@ -67,7 +69,10 @@ else
   sudo apt-get install docker-ce docker-ce-cli containerd.io -y
 
   #sudo groupadd docker # apparently this happens automatically, if not do it yourself
+  sudo groupadd docker
   sudo usermod -aG docker $SUDO_USER
+  sudo chmod 666 /var/run/docker.sock
+
 
   # add docker composer
   echo "Install docker-compose!"
@@ -104,12 +109,3 @@ else
   echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> $homedir/.bashrc
   echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> $homedir/.bashrc
 fi
-
-
-
-
-
-
-
-
-
