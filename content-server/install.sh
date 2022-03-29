@@ -20,7 +20,8 @@ echo $homedir
 echo "> Installing required software"
 sudo apt-get -y install curl git make python3-pip python3-venv libedit-dev \
       make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
-      wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+      wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev\
+      libpq-dev
 sudo pip install tox
 
 # install docker (by adding repo). Only do this when necessary

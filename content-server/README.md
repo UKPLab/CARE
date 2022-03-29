@@ -25,10 +25,14 @@ For all installations, we need the current data from the git repository and have
     cd peer/content-server
     sudo ./install.sh           # Install needed software packages
 
-Please restart after running the install script or use `source pyenv.sh`.
-
-Both is tested with a clean Ubuntu 20.04 LTS Installation (minimal installation).\
+Please restart the terminal after running the install script or use `source pyenv.sh`.\
 If something goes wrong, clean environment with ```make clean```.
+
+### Minimum requirements
+Both environments are tested with a clean Ubuntu 20.04 LTS Installation (minimal installation).
+
+For development run you will need a disk space at least of ~16 GB in total.\
+Also the docker container of elastic search needs at least 2GB of RAM!
 
 ### Installation for Production 
 
@@ -47,9 +51,7 @@ For installation see [Install Instructions](https://docs.portainer.io/v/ce-2.9/s
 This will run the main development code locally in addition to some docker container (i.e., PostgreSQL).
 (Note: The first run will take some time...)
 
-    sudo npm install --global yarn      # if yarn is not installed yet
-    sudo npm install --global gulp-cli  # needed for pdf.js
-    make dev     # Build only the content-server 
+    make dev     # Build everything and start content-server
 
 Here the Hypothesis Server should be running. 
 You can either start the docker container with
