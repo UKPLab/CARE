@@ -87,7 +87,9 @@ fi
 
 # update node
 echo "> Updating node to last version"
-curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -^C
+curl -sL https://deb.nodesource.com/setup_14.x -o nodesource_setup.sh
+sudo bash nodesource_setup.sh
+sudo apt-get update
 sudo apt-get install -y nodejs
 
 
