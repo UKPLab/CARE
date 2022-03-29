@@ -77,17 +77,10 @@ else
 fi
 
 # install yarn (by adding repo). Only do this when necessary
-echo "> Installing yarn"
-if [ -n "$(command -v yarn)" ]  #docker already installed
-then
-  echo "Yarn is already installed! Skipping installation."
-else
-  curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-  echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-  sudo apt update
-  sudo apt install -y yarn
-
-fi
+curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+sudo apt update
+sudo apt install -y yarn
 
 # update node
 echo "> Updating node to last version"
@@ -106,7 +99,6 @@ sudo su -c 'curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyen
 echo 'export PYENV_ROOT="$HOME/.pyenv"' >> $homedir/.bashrc
 echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> $homedir/.bashrc
 echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> $homedir/.bashrc
-su -c 'exec "$SHELL"'  $SUDO_USER
 
 
 
