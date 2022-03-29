@@ -24,7 +24,7 @@ help:
 	@echo "make init              Auto-Config h server"
 
 .PHONY: dev
-dev: node_modules/.uptodate check_pyenv
+dev: node_modules/.uptodate
 ifeq (,$(wildcard frameworks/pdf.js/build/generic/build/pdf.js))
 	@echo "Building pdfjs..."
 	make pdfjs
