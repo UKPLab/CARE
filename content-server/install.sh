@@ -92,6 +92,12 @@ sudo bash nodesource_setup.sh
 sudo apt-get update
 sudo apt-get install -y nodejs
 
+echo "> Installing Yarn and Gulp-CLI global"
+sudo npm install --global yarn      # if yarn is not installed yet
+sudo npm install --global gulp-cli  # needed for pdf.js
+
+
+
 
 
 
