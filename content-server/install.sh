@@ -9,6 +9,10 @@ then
   exit 1
 fi
 
+echo "Getting home directory:"
+homedir=$( getent passwd "$SUDO_USER" | cut -d: -f6 )
+echo $homedir
+
 #
 ## Installation of required software
 #
@@ -63,7 +67,7 @@ else
   sudo apt-get install docker-ce docker-ce-cli containerd.io -y
 
   #sudo groupadd docker # apparently this happens automatically, if not do it yourself
-  sudo usermod -aG docker $USER
+  sudo usermod -aG docker $SUDO_USER
 
   # add docker composer
   echo "Install docker-compose!"
@@ -96,6 +100,13 @@ echo "> Installing Yarn and Gulp-CLI global"
 sudo npm install --global yarn      # if yarn is not installed yet
 sudo npm install --global gulp-cli  # needed for pdf.js
 
+# install pyenv
+echo "> Installing pyenv"
+sudo su -c 'curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash' $SUDO_USER
+echo 'export PYENV_ROOT="$homedir/.pyenv"' >> $homedir/.bashrc
+echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> $homedir/.bashrc
+echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> $homedir/.bashrc
+su -c 'exec "$SHELL"'  $SUDO_USER
 
 
 
