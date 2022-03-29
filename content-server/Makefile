@@ -24,7 +24,7 @@ help:
 	@echo "make init              Auto-Config h server"
 
 .PHONY: dev
-dev: node_modules/.uptodate
+dev: node_modules/.uptodate check_pyenv
 ifeq (,$(wildcard frameworks/pdf.js/build/generic/build/pdf.js))
 	@echo "Building pdfjs..."
 	make pdfjs
@@ -75,5 +75,12 @@ init:
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
 	node_modules/.bin/gulp init
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password ${H_SERVER_ADMIN_USER} --password ${H_SERVER_ADMIN_PASSWORD}
+
+check_pyenv:
+ifeq (,$(shell command -v pyenv 2> /dev/null))
+	@echo "PyEnv not exists, set it up..."
+	sh pyenv.sh
+endif
+
 
 
