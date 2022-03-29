@@ -18,7 +18,7 @@ echo $homedir
 #
 # install required system tools
 echo "> Installing required software"
-sudo apt-get -y install curl git make python3-pip python3-venv
+sudo apt-get -y install curl git make python3-pip python3-venv libedit-dev
 sudo pip install tox
 
 # install docker (by adding repo). Only do this when necessary
@@ -103,7 +103,7 @@ sudo npm install --global gulp-cli  # needed for pdf.js
 # install pyenv
 echo "> Installing pyenv"
 sudo su -c 'curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash' $SUDO_USER
-echo 'export PYENV_ROOT="$homedir/.pyenv"' >> $homedir/.bashrc
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> $homedir/.bashrc
 echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> $homedir/.bashrc
 echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> $homedir/.bashrc
 su -c 'exec "$SHELL"'  $SUDO_USER
