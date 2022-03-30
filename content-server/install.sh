@@ -82,6 +82,8 @@ else
   #newgrp docker
 fi
 
+sudo apt-get install curl -y
+
 # update node
 echo "> Updating node to last version"
 curl -sL https://deb.nodesource.com/setup_14.x -o nodesource_setup.sh
