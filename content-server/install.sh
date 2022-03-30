@@ -18,7 +18,7 @@ echo $homedir
 #
 # install required system tools
 echo "> Installing required software"
-sudo apt-get install curl git make python3-pip python3-venv python3-dev libedit-dev  -y
+sudo apt-get install curl git make python3-pip python3-venv libedit-dev  -y
 sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev -y
 sudo apt-get install wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev -y
 sudo apt-get install libpq-dev tox -y
@@ -112,3 +112,9 @@ else
   echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> $homedir/.bashrc
   echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> $homedir/.bashrc
 fi
+
+echo "> Install Python3-Dev"
+sudo apt-get update && sudo apt-get install python3-dev -y
+
+echo "> Installation finished!"
+echo "> If there was no errors, you can build the environment now!"

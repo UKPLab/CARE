@@ -33,10 +33,6 @@ ifeq (,$(wildcard frameworks/hypothesis/client/build/manifest.json))
 	@echo "Building h_client..."
 	make h_client
 endif
-ifeq (,$(wildcard frameworks/hypothesis/h/build/manifest.json))
-	@echo "Building h_server..."
-	make h_server
-endif
 	node_modules/.bin/gulp build
 
 .PHONY: clean
