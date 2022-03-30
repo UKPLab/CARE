@@ -18,10 +18,10 @@ echo $homedir
 #
 # install required system tools
 echo "> Installing required software"
-sudo apt-get install curl git make python3-pip python3-venv libedit-dev  -y
+sudo apt-get install curl git make python3-pip python3-venv python3-dev libedit-dev  -y
 sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev -y
 sudo apt-get install wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev -y
-sudo apt-get install libpq-dev -y
+sudo apt-get install libpq-dev tox -y
 sudo pip install tox
 
 # install docker (by adding repo). Only do this when necessary
