@@ -20,7 +20,7 @@ There are two possible situation for an installation:
 
 For all installations, we need the current data from the git repository and have to install some dependencies
     
-    sudo apt-get install git
+    sudo apt-get install git -y
     git clone --recursive https://git.ukp.informatik.tu-darmstadt.de/zyska/peer.git
     cd peer/content-server
     sudo ./install.sh           # Install needed software packages
