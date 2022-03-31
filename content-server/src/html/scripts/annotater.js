@@ -2,6 +2,14 @@
 
 function loadClient() {
     const src = `http://localhost:5000/embed.js`
+
+    window.hypothesisConfig = function() {
+      return {
+        "openSidebar": true,
+        "assetRoot": "/hypothesis/",
+      };
+    };
+
     const scriptEl = document.createElement('script');
     scriptEl.src = src
     document.body.appendChild(scriptEl);
