@@ -62,7 +62,7 @@ h_server_docker:
 	docker-compose -f frameworks/hypothesis/h/docker-compose.yml up
 
 h_client: frameworks/hypothesis/client/package.json
-	cd frameworks/hypothesis/client && make build
+	cd frameworks/hypothesis/client && node_modules/.bin/gulp build
 
 .PHONY: init
 init:
