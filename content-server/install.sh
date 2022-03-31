@@ -113,8 +113,10 @@ else
   echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> $homedir/.bashrc
 fi
 
-echo "> Install Python3-Dev"
-sudo apt-get update && sudo apt-get install python3-dev -y
+echo "> Install Python3-Dev and pip "
+sudo apt-get update && sudo apt-get install python3-dev python3-pip -y
+echo "> Install Docker Compose "
+sudo pip3 install docker-compose
 
 echo "> Installation finished!"
 echo "> If there was no errors, you can build the environment now!"
