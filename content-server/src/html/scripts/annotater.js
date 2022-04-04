@@ -1,14 +1,21 @@
 'use strict';
 
-function loadClient() {
-    const src = `http://localhost:5000/embed.js`
+const clientConfig = {
+  sidebarAppUrl: '/app.html',
+  notebookAppUrl: '/notebook.html',
+  openSidebar: true,
+  assetRoot: "/hypothesis/",
+};
 
-    window.hypothesisConfig = function() {
-      return {
-        "openSidebar": true,
-        "assetRoot": "/hypothesis/",
-      };
-    };
+const configScript = document.createElement("script");
+configScript.type = 'application/json';
+configScript.className = 'js-hypothesis-config';
+configScript.textContent = JSON.stringify(clientConfig);
+document.head.appendChild(configScript);
+
+
+function loadClient() {
+    const src = `/hypothesis/`
 
     const scriptEl = document.createElement('script');
     scriptEl.src = src
