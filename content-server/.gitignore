@@ -1,11 +1,10 @@
 
 # files dir
-files/git
+files
 
 # ignore files of hypothesis submodules
-frameworks/hypothesis/client
-frameworks/hypothesis/h
-frameworks/pdf.js
+frameworks/hypothesis/
+frameworks
 
 # ignore build files
 build/
