@@ -5,7 +5,8 @@ This directory contains all files to serve the frontend website to the user.
 
 ## Architecture
 For an overview of the complete architecture, see ./docs/architecture.drawio\
-(You can use either the [PyCharm Plugin](https://plugins.jetbrains.com/plugin/15635-diagrams-net-integration) as well as the [Website](http://app.diagrams.net))\
+__Remark__: You can use either the [PyCharm Plugin](https://plugins.jetbrains.com/plugin/15635-diagrams-net-integration) as well as the [Website](http://app.diagrams.net) \
+(For Pycharm Dark Mode User set it to Light (Kennedy) under Settings -> Languages & Frameworks -> diagrams.net) \
 __Note:__ If you change anything on the structure, also update the architecture file!
 
 ### Architecture of the Content Server
