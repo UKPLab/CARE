@@ -39,7 +39,7 @@ Also the docker container of elastic search needs at least 2GB of RAM!
 
 The software will be installed in a Docker Environment. 
 
-    sudo make docker
+    make build
 
 The Content-Server should be available on port 80.\
 Please make sure that the other ports are **not accessible** from outside, this applies above all for  the PostgreSQL Database!
@@ -49,21 +49,21 @@ For installation see [Install Instructions](https://docs.portainer.io/v/ce-2.9/s
 
 ### Installation for Development
 
-This will run the main development code locally in addition to some docker container (i.e., PostgreSQL).
+This will run the main development code locally.
 (Note: The first run will take some time...)
 
     make dev     # Build everything and start content-server
 
-Here the Hypothesis Server should be running. 
-You can either start the docker container with
+Also the Hypothesis Server should be running. 
+You can start it with (in an additional terminal in directory content-server):
 
-    make h_server_docker
+    make h_server
 
-or build a local environment with in an extra console (in directory content-server):
-
-    make h_server 
+It will start some docker container (i.e., PostgreSQL), as well as the h_server in dev mode.
 
 ## Setting up hypothesis server
+Note: To set these settings, the Hypothesis Server must be running! 
+In case of doubt you can use `make services`.
 
 ### Short way
 1. Change Environment Variables in Makefile

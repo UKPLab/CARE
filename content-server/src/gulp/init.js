@@ -19,7 +19,8 @@ function init() {
         (id, "name", authority, grant_type, response_type, redirect_uri, trusted)
         VALUES
         ($1, 'API', 'localhost', 'authorization_code', 'code', $2, true)
-        ON CONFLICT DO NOTHING`,
+        ON CONFLICT (id) 
+            DO UPDATE SET redirect_uri = $2`,
         [process.env.CLIENT_OAUTH_ID, process.env.CLIENT_OAUTH_REDIRECT_URL])
 
     return Promise.resolve([user_result, oauth_result])

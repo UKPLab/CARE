@@ -1,8 +1,8 @@
-
 export CLIENT_OAUTH_ID=a2556958-a9cc-11ec-a061-17298d8dd357
-export CLIENT_OAUTH_REDIRECT_URL=http://localhost:5000/app.html
+export CLIENT_OAUTH_REDIRECT_URL=http://localhost/app.html
 export GIT_ACCESS_TOKEN=glpat-nyWsHEGiURVW2yft7inS
 export CLIENT_URL=http://localhost:3001/hypothesis
+export APP_URL=http://localhost:5000
 #export WEBSOCKET_URL=ws://localhost:5001/ws
 export H_SERVER_ADMIN_USER=admin
 export H_SERVER_ADMIN_MAIL=admin@admin.de
@@ -44,29 +44,33 @@ clean:
 
 .PHONY: build
 build:
-	docker-compose -f docker-compose.yml -f frameworks/hypothesis/h/docker-compose.yml up
+	docker-compose -f docker-compose.yml up
 
 node_modules/.uptodate: package.json yarn.lock
 	yarn install
 	@touch $@
 
+.PHONY: pdfjs
 pdfjs: frameworks/pdf.js/package.json
 	cd frameworks/pdf.js && npm install
 	cd frameworks/pdf.js && node_modules/.bin/gulp generic
 
+.PHONY: h_server
 h_server: frameworks/hypothesis/h/package.json
 	cd frameworks/hypothesis/h && make services
 	cd frameworks/hypothesis/h && make dev
 
-h_server_docker:
-	docker-compose -f frameworks/hypothesis/h/docker-compose.yml up
-
+.PHONY: h_client
 h_client: frameworks/hypothesis/client/package.json
 	cd frameworks/hypothesis/client && make build
 
+.PHONY: services
+services:
+	cd frameworks/hypothesis/h && make services
+
+
 .PHONY: init
 init:
-	cd frameworks/hypothesis/h && make services
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
 	node_modules/.bin/gulp init
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password ${H_SERVER_ADMIN_USER} --password ${H_SERVER_ADMIN_PASSWORD}
