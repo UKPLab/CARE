@@ -27,8 +27,14 @@ router.use((req, res, next) => {
   });
 
 router.get('/hypothesis', serveBootScript);
-router.get(`/hypothesis/${version}`, serveBootScript)
-router.use(`/hypothesis/${version}/build/`, express.static(`${HYPOTHESIS_CLIENT_PATH}/build`))
-router.use(`/hypothesis/build/`, express.static(`${HYPOTHESIS_CLIENT_PATH}/build`))
+router.get(`/hypothesis/${version}`, serveBootScript);
+router.use(`/hypothesis/${version}/build/`, express.static(`${HYPOTHESIS_CLIENT_PATH}/build`));
+router.use(`/hypothesis/build/`, express.static(`${HYPOTHESIS_CLIENT_PATH}/build`));
+
+// Loading app.html
+router.get('/app.html', (req, res) => {
+    res.render('sidebar');
+});
+
 
 module.exports = router;
