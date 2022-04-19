@@ -7,7 +7,10 @@ frameworks/hypothesis/
 frameworks
 
 # ignore build files
-build/
+dist/
 node_modules/
 yarn-error.log
 .tox
+
+# building files
+nodesource_setup.sh

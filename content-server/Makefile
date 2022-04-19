@@ -33,12 +33,13 @@ ifeq (,$(wildcard frameworks/hypothesis/client/build/manifest.json))
 	@echo "Building h_client..."
 	make h_client
 endif
-	node_modules/.bin/gulp build
+	npm run frontend-build
+	npm run backend-dev
 
 .PHONY: clean
 clean:
 	rm -f node_modules/.uptodate
-	rm -rf build
+	rm -rf dist
 	cd frameworks/hypothesis/client && make clean
 	docker image prune -a
 
@@ -72,7 +73,7 @@ services:
 .PHONY: init
 init:
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
-	node_modules/.bin/gulp init
+	npm run init-db
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password ${H_SERVER_ADMIN_USER} --password ${H_SERVER_ADMIN_PASSWORD}
 
 
