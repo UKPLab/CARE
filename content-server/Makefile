@@ -7,6 +7,8 @@ export APP_URL=http://localhost:5000
 export H_SERVER_ADMIN_USER=admin
 export H_SERVER_ADMIN_MAIL=admin@admin.de
 export H_SERVER_ADMIN_PASSWORD=test
+export POSTGRES_HOST=localhost
+export POSTGRES_PORT=5432
 
 .PHONY: default
 default: help
@@ -73,8 +75,11 @@ services:
 .PHONY: init
 init:
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
-	npm run init-db
+
+	npm run init-db -- --host ${POSTGRES_HOST} \
+					   --port $(POSTGRES_PORT) \
+					   --admin_name ${H_SERVER_ADMIN_USER} \
+					   --admin_email ${H_SERVER_ADMIN_MAIL} \
+					   --admin_pwd "change_me"
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password ${H_SERVER_ADMIN_USER} --password ${H_SERVER_ADMIN_PASSWORD}
-
-
 
