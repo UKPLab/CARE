@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const mustacheExpress = require('mustache-express');
+const history = require('connect-history-api-fallback');
 
 const { createServer, useSsl } = require('./createServer');
 
@@ -14,8 +15,8 @@ const BUILD_PATH = `${__dirname}/../../dist/`;
 // routes
 const routes = [
     require("./routes/upload"),
-    require("./routes/annotate"),
-    require("./routes/hypothesis")
+    require("./routes/pdf"),
+    require("./routes/hypothesis"),
 ]
 
 /**
@@ -48,6 +49,8 @@ function webServer(config) {
     /*app.use((req, res) => {
         res.render('404');
     });*/
+
+    app.use(history({verbose: true}));
 
     // serve server on port
     createServer(app).listen(config.port, () => {

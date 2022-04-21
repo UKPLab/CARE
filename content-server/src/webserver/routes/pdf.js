@@ -7,15 +7,10 @@ const path = require('path');
 const router = express.Router();
 
 const PDF_PATH = `${__dirname}/../../../files/`;
+const PDFJS_PATH = `${__dirname}/../../../frameworks/pdf.js/build/generic`;
 
-router.get('/annotate/:pdf', (req, res, next) => {
-    console.log(`${PDF_PATH}${req.params.pdf}.pdf`)
-
-    // TODO: url still wrong
-    res.render("annotate", {
-        pdf_path: `/pdf/${req.params.pdf}`,
-    })
-  });
+//make pdfjs available
+router.use("/pdfjs", express.static(PDFJS_PATH));
 
 router.get('/pdf/:pdf', (req, res, next) => {
 

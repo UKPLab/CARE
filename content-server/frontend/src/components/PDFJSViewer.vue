@@ -1,5 +1,6 @@
-
-    <div id="outerContainer">
+<template>
+  <teleport to="body">
+  <div id="outerContainer">
 
       <div id="sidebarContainer">
         <div id="toolbarSidebar">
@@ -365,3 +366,26 @@
 
     </div> <!-- outerContainer -->
     <div id="printContainer"></div>
+    </teleport>
+</template>
+
+<script>
+export default {
+  name: "PDFJSViewer",
+  mounted() {
+    let style = document.createElement("link");
+    style.rel = "stylesheet";
+    style.href = "/pdfjs/web/viewer.css";
+    document.head.appendChild(style);
+
+    let resource = document.createElement("link");
+    resource.type = "application/l10n";
+    resource.rel = "resource";
+    resource.href = "/pdfjs/web/locale/locale.properties";
+    document.head.appendChild(resource);
+  }
+}
+</script>
+
+<style scoped>
+</style>
