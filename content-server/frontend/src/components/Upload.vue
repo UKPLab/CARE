@@ -1,7 +1,15 @@
+<template>
+  <div class="w3-container w3-section">
+     <input class="w3-input w3-border w3-round w3-margin" id="fileInput" type="file" name="file"/>
+     <button class="w3-btn w3-blue w3-margin" id="uploadButton" @click="upload">upload</button>
+  </div>
+</template>
+
 <script>
 import axios from "axios";
 
 export default {
+  name: "Upload",
   methods: {
     upload() {
       let fileElement = document.getElementById('fileInput')
@@ -28,21 +36,12 @@ export default {
           }).then(res => {
         console.log(res.data)
         console.log(res.data.id)
-        window.location.href = `/annotate/${res.data.id}`;
+        this.$router.push(`/annotate/${res.data.id}`);
       })
     }
   }
 }
 </script>
 
-<template>
-  <div class="w3-container w3-section">
-     <input class="w3-input w3-border w3-round w3-margin" id="fileInput" type="file" name="file"/>
-     <button class="w3-btn w3-blue w3-margin" id="uploadButton" @click="upload">upload</button>
-  </div>
-</template>
-
-<style>
-
-
+<style scoped>
 </style>
