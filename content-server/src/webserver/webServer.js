@@ -36,6 +36,7 @@ function webServer(config) {
     //app.use(express.static(HTML_STATIC_PATH));
     // And also the build files
     app.use(express.static(BUILD_PATH));
+    app.use("/index.html", express.static(`${__dirname}/../../dist/index.html`));
 
     // additional routes from routes directory
     routes.forEach(route => app.use(route))
@@ -50,7 +51,8 @@ function webServer(config) {
         res.render('404');
     });*/
 
-    app.use(history({verbose: true}));
+    app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
+    app.use(history({verbose: true, index: "index.html"}));
 
     // serve server on port
     createServer(app).listen(config.port, () => {
