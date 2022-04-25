@@ -1,7 +1,5 @@
 <template>
-
     <PDFJSViewer></PDFJSViewer>
-
 </template>
 
 <script>
