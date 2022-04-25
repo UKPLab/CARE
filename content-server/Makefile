@@ -1,6 +1,7 @@
 export CLIENT_OAUTH_ID=a2556958-a9cc-11ec-a061-17298d8dd357
 export CLIENT_OAUTH_REDIRECT_URL=http://localhost/app.html
 export GIT_ACCESS_TOKEN=glpat-nyWsHEGiURVW2yft7inS
+export CONTENT_SERVER_PORT=3001
 export CLIENT_URL=http://localhost:3001/hypothesis
 export APP_URL=http://localhost:5000
 #export WEBSOCKET_URL=ws://localhost:5001/ws

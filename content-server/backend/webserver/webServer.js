@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const mustacheExpress = require('mustache-express');
-const history = require('connect-history-api-fallback');
 
 const { createServer, useSsl } = require('./createServer');
 
@@ -42,7 +41,6 @@ function webServer(config) {
     routes.forEach(route => app.use(route))
 
     app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
-    app.use(history({verbose: true, index: "index.html"}));
 
     // serve server on port
     createServer(app).listen(config.port, () => {
@@ -51,4 +49,4 @@ function webServer(config) {
     });
 }
 
-webServer({port:3001});
+webServer({port:process.env.CONTENT_SERVER_PORT});
