@@ -24,8 +24,6 @@ const router = VueRouter.createRouter({
 const app = Vue.createApp({
     render: () => Vue.h(App)
 })
-// define window as a global property (needed for vue3)
-app.config.globalProperties.window = window
 
 app.use(router)
 app.mount('#app')

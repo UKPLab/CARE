@@ -5,8 +5,8 @@
     "frontend-dev": "vite",
     "frontend-preview": "vite preview --port 5050",
     "frontend-build": "vite build",
-    "backend-dev": "node src/webserver/webServer.js",
-    "init-db": "node src/tools/init.js"
+    "backend-dev": "node backend/webserver/webServer.js",
+    "init-db": "node backend/tools/init.js"
   },
   "dependencies": {
     "alert": "^5.0.10",
@@ -14,7 +14,6 @@
     "babel-preset-env": "^1.7.0",
     "babel-preset-es2015": "^6.24.1",
     "bcrypt": "^5.0.1",
-    "connect-history-api-fallback": "^1.6.0",
     "express-fileupload": "^1.2.1",
     "express-rate-limit": "^5.2.6",
     "gulp-cli": "^2.3.0",
