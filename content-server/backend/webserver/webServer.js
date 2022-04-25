@@ -35,7 +35,6 @@ function webServer(config) {
     //app.use(express.static(HTML_STATIC_PATH));
     // And also the build files
     app.use(express.static(BUILD_PATH));
-    app.use("/index.html", express.static(`${__dirname}/../../dist/index.html`));
 
     // additional routes from routes directory
     routes.forEach(route => app.use(route))
