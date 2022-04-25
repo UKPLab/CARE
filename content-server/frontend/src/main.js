@@ -1,29 +1,18 @@
 import * as Vue from 'vue'
-import * as VueRouter from 'vue-router'
 import App from './App.vue'
-import Annotater from "./components/Annotater.vue";
-import LandingPage from "./components/LandingPage.vue";
-import NotFoundPage from "./components/NotFoundPage.vue";
-
-
-const routes = [
-    { path: "/", component: LandingPage},
-    { path: "/index.html", component: LandingPage},
-    { path: "/annotate/:pdf_path", component: Annotater, props: true },
-    { path: "/:catchAll(.*)", name: "NotFound", component: NotFoundPage}
-]
-
-const router = VueRouter.createRouter({
-    history: VueRouter.createWebHistory(),
-    hashbang: false,
-    routes: routes,
-    mode: 'html5',
-    root: "/"
-})
+import BootstrapVue3 from "bootstrap-vue-3";
 
 const app = Vue.createApp({
     render: () => Vue.h(App)
-})
+});
 
-app.use(router)
-app.mount('#app')
+//Bootstrap v5
+import 'bootstrap/dist/css/bootstrap.css';
+import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
+app.use(BootstrapVue3);
+
+//Routing
+import router from './routes.js';
+app.use(router);
+
+app.mount('#app');
