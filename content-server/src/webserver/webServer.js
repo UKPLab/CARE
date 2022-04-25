@@ -41,16 +41,6 @@ function webServer(config) {
     // additional routes from routes directory
     routes.forEach(route => app.use(route))
 
-    // Landing Page
-    /*app.get('/', (req, res) => {
-        res.render('index', config);
-    });*/
-
-    // Error pages
-    /*app.use((req, res) => {
-        res.render('404');
-    });*/
-
     app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
     app.use(history({verbose: true, index: "index.html"}));
 
@@ -62,5 +52,3 @@ function webServer(config) {
 }
 
 webServer({port:3001});
-
-/*module.exports = webServer*/
