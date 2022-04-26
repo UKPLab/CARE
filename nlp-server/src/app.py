@@ -24,8 +24,8 @@ app.config.update(config.flask)
 app.config.update(config.session)
 
 # socketio
-socketio = SocketIO()
-socketio.init_app(app, **config.socketio)
+socketio = SocketIO(app, **config.socketio)
+# socketio.init_app(app, **config.socketio)
 
 # celery
 celery = Celery(app.name, **config.celery)
@@ -102,6 +102,8 @@ socketio.on_namespace(TestNamespace("/test"))
 
 @socketio.on("connect")
 def connect(data):
+    print("new Connection to websocket ...")
+    print(data)
     sid = request.sid
     session["sid"] = sid
     join_room(sid)

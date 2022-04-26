@@ -25,6 +25,7 @@ localhost:15672
 You can access the server via providing username and password. Per default these are both `guest`.
 
 The Flower monitor is accessible at port 8888. To check-in on the Celery tasks visit in your browser:
+(currently, there are connection problems -- so no proper updates to jobs show)
 ```
 localhost:8888
 ```
@@ -84,3 +85,6 @@ to provide the results again. After some time the connection is closed and the s
 There is a session manager running on the flask app. It is responsible for managing inputs in the session and providing
 the required information to submodules. There is a module responsible for cleaning celery tasks and results. There is a
 moduler responsible for managing inputs and one for results. There is a module managing NLP models.
+
+### Websocket
+Test: `curl "http://localhost:6000/socket.io/?EIO=4&transport=polling"`

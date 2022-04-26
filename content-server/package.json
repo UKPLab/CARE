@@ -21,8 +21,11 @@
     "express-rate-limit": "^5.2.6",
     "gulp-cli": "^2.3.0",
     "pg-promise": "^10.11.1",
+    "socket.io-client": "^4.5.0",
     "vue": "^3.2.33",
-    "vue-router": "^4.0.14"
+    "vue-3-socket.io": "^1.0.5",
+    "vue-router": "^4.0.14",
+    "vuex": "^4.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.17.7",
