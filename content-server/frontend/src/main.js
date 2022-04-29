@@ -30,7 +30,7 @@ app.use(router);
 const options = { path:'' };
 app.use(new VueSocketIO({
     debug: true,
-    connection: SocketIO('http://127.0.0.1:6000', options),
+    connection: SocketIO('http://127.0.0.1:6001', options),
     vuex: {
         MyVuexStore,
         actionPrefix: 'SOCKET_',
