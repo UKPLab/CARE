@@ -12,9 +12,14 @@ const store = createStore({
 });
 
 const app = Vue.createApp({
-    store: store,
     render: () => Vue.h(App)
 });
+app.use(MyVuexStore);
+
+// devtools
+if (process.env.NODE_ENV === 'development') {
+    app.config.devtools = true;
+}
 
 //Bootstrap v5
 import 'bootstrap/dist/css/bootstrap.css';
