@@ -34,6 +34,7 @@ ifeq (,$(wildcard frameworks/hypothesis/client/build/manifest.json))
 	@echo "Building h_client..."
 	make h_client
 endif
+	NODE_ENV="development"
 	npm run frontend-build
 	npm run backend-dev
 
