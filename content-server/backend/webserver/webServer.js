@@ -4,10 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const mustacheExpress = require('mustache-express');
-
+const { Server } = require("socket.io");
 const { createServer, useSsl } = require('./createServer');
 
-//const HTML_STATIC_PATH = `${__dirname}/../../html/`;
+// define PATHs
 const TEMPLATES_PATH = `${__dirname}/../templates/`;
 const BUILD_PATH = `${__dirname}/../../dist/`;
 
@@ -16,7 +16,12 @@ const routes = [
     require("./routes/upload"),
     require("./routes/pdf"),
     require("./routes/hypothesis"),
-]
+];
+
+// sockets
+const sockets = [
+    require("./sockets/basic")
+];
 
 /**
  * The main HTTP server which serves all files to the client
@@ -37,14 +42,21 @@ function webServer(config) {
     app.use(express.static(BUILD_PATH));
 
     // additional routes from routes directory
-    routes.forEach(route => app.use(route))
+    routes.forEach(route => app.use(route));
 
     app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
 
+    // add websocket server socket.io
+    const httpServer = createServer(app);
+    const io = new Server(httpServer, {
+        //options
+    })
+    sockets.forEach(socket => socket(io));
+
     // serve server on port
-    createServer(app).listen(config.port, () => {
-       const scheme = useSsl ? 'https':'http';
-       console.log(`Web Server started at ${scheme}://localhost:${config.port}/`)
+    httpServer.listen(config.port, () => {
+        const scheme = useSsl ? 'https' : 'http';
+        console.log(`Web Server started at ${scheme}://localhost:${config.port}/`)
     });
 }
 
