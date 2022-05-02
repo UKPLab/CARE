@@ -1,7 +1,7 @@
 # Content Server
 
 ## Description
-This directory contains all files to serve the frontend website to the user.
+This directory contains all files to serve the website to the user.
 
 ## Architecture
 For an overview of the complete architecture, see ./docs/architecture.drawio\
@@ -92,13 +92,23 @@ In case of doubt you can use `make services`.
 5. Get Client ID and add it into the Makefile!
 
 ## Frameworks
+
+See also the architecture overview for further information how the frameworks interact!
+
+### Frontend
+
+- [Vue 3](https://vuejs.org/) - Progressive JavaScript Framework
+  - [Vuex](https://vuex.vuejs.org/) - State Management
+  - [Vue Router](https://router.vuejs.org/) - Official Router for Vue.js
+  - [Vue 3 - socket.io](https://www.npmjs.com/package/vue-3-socket.io) - Socket.io Client for Vue3
+  - [Vue 3 - bootstrap](https://www.npmjs.com/package/bootstrap-vue-3) - Bootstrap for Vue 3
+  
+### Backend
 - [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
     - [PDFjs](https://mozilla.github.io/pdf.js) - to display the PDFs
     - [Hypothesis](https://web.hypothes.is/) - to annotating text in the PDFs
   
-__Note__: See also the architecture overview for further information how the frameworks interact!
-
-### Build Frameworks individually
+### Build Backend Frameworks individually
 
     make pdfjs     # build PDFjs Framework
     make h_client  # build Hypothesis Client
