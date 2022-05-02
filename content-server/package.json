@@ -4,6 +4,7 @@
   "scripts": {
     "frontend-dev": "vite",
     "frontend-preview": "vite preview --port 5050",
+    "frontend-dev-build": "vite build --mode development",
     "frontend-build": "vite build",
     "backend-dev": "node backend/webserver/webServer.js",
     "init-db": "node backend/tools/init.js"

@@ -18,6 +18,7 @@ app.use(MyVuexStore);
 
 // devtools
 if (process.env.NODE_ENV === 'development') {
+    console.log(process.env.NODE_ENV);
     app.config.devtools = true;
 }
 

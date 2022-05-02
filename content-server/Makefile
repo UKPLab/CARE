@@ -34,8 +34,7 @@ ifeq (,$(wildcard frameworks/hypothesis/client/build/manifest.json))
 	@echo "Building h_client..."
 	make h_client
 endif
-	NODE_ENV="development"
-	npm run frontend-build
+	npm run frontend-dev-build
 	npm run backend-dev
 
 .PHONY: clean
@@ -49,8 +48,8 @@ clean:
 build:
 	docker-compose -f docker-compose.yml up
 
-node_modules/.uptodate: package.json yarn.lock
-	yarn install
+node_modules/.uptodate: package.json package-lock.json
+	npm install
 	@touch $@
 
 .PHONY: pdfjs
