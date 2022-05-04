@@ -5,12 +5,25 @@ export default createStore({
     isConnected: false,
     socketMessage: ''
   },
-
+  namespaced: false,
+  actions: {
+    "SOCKET_connect"(context, data) {
+      context.commit("connect", data);
+      console.log("test");
+    }
+  },
   mutations:{
-    SOCKET_CONNECT(state) {
+    connect(data) {
       state.isConnected = true;
     },
-
+    SOCKET_connect(state) {
+      state.isConnected = true;
+      alert(state.isConnected);
+    },
+    SOCKET_CONNECT(state) {
+      state.isConnected = true;
+      alert(state.isConnected);
+    },
     SOCKET_DISCONNECT(state) {
       state.isConnected = false;
     },

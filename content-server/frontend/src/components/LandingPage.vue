@@ -8,16 +8,16 @@
         <img alt="Logo" src="../assets/logo.svg">
       </div>
 
-      <Upload></Upload>
+      <Login></Login>
     </div>
   </div>
 </template>
 
 <script>
-import Upload from "./Upload.vue";
+import Login from "./Login.vue";
 
 export default {
-  components: {Upload},
+  components: {Login},
   name: "LandingPage",
   data() {
     return {
