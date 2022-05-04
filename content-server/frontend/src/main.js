@@ -2,12 +2,15 @@ import * as Vue from 'vue'
 import App from './App.vue'
 import BootstrapVue3 from "bootstrap-vue-3";
 import SocketIO from 'socket.io-client';
-import VueSocketIO from 'vue-3-socket.io'
-import MyVuexStore from './vuex-store.js'
+import VueSocketIO from 'vue-3-socket.io';
+import WebsocketStore from './store/modules/websocket.js';
+import store from "./store";
 
 const app = Vue.createApp({
     render: () => Vue.h(App)
 });
+
+
 
 // devtools
 if (process.env.NODE_ENV !== 'production') {
@@ -27,13 +30,16 @@ app.use(router);
 // Socket IO
 // https://www.npmjs.com/package/vue-3-socket.io
 app.use(new VueSocketIO({
-    debug: true,
+    debug: false,
     connection: SocketIO(import.meta.env.VITE_APP_WEBSOCKET_URL, { path:'' }),
     vuex: {
-        MyVuexStore,
+        store,
         actionPrefix: 'SOCKET_',
         mutationPrefix: 'SOCKET_'
     }
 }));
+
+// using Vuex Store
+app.use(store);
 
 app.mount('#app');
