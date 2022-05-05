@@ -1,9 +1,11 @@
 <template>
-  <button type="button" class="btn btn-primary" @click="guest_login()">Login as Guest</button>
+  <button type="button" class="btn btn-primary" @click="guest_login2()">Login as Guest</button>
+  <button type="button" class="btn btn-primary" @click="guest_login3()">Login as Failure</button>
 </template>
 
 <script>
 import { mapActions } from "vuex";
+import axios from "axios";
 
 export default {
   name: "Login",
@@ -14,6 +16,12 @@ export default {
   },
   methods: {
     ...mapActions(["auth/GuestLogin"]),
+    guest_login2() {
+      axios.post('/auth/guest_login', {username: "guest", password:"guestguest"});
+    },
+        guest_login3() {
+      axios.post('/auth/guest_login', {username: "guest", password:"adsfadsf"});
+    },
     async guest_login() {
       try {
         await this.GuestLogin()

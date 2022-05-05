@@ -65,7 +65,7 @@ services:
 
 
 .PHONY: init
-init:
+init: node_modules/.uptodate
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
 	npm run init-db
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password ${H_SERVER_ADMIN_USER} --password ${H_SERVER_ADMIN_PASSWORD}
