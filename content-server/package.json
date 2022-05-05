@@ -12,6 +12,7 @@
   "dependencies": {
     "@popperjs/core": "^2.11.5",
     "alert": "^5.0.10",
+    "argparse": "^2.0.1",
     "axios": "^0.21.1",
     "babel-preset-env": "^1.7.0",
     "babel-preset-es2015": "^6.24.1",
