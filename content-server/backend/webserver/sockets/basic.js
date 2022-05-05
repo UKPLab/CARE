@@ -13,7 +13,7 @@ const client_socket = io("http://localhost:6001", {
 
 exports = module.exports = function(io) {
      io.on("connection", (socket) => {
-        console.log(socket);
+        //console.log(socket);
         //send hello world message to nlp server websocket
         client_socket.emit("hello_world", {key: "value"});
     })

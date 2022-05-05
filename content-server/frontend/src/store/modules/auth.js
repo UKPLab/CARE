@@ -34,7 +34,7 @@ export default {
     },
     actions: {
         async GuestLogin(commit, user) {
-            await axios.post('/auth/guest_login', user);
+            await axios.post('/auth/guest_login', {username: "guest", password:"guestguest"});
             await commit('setUser', user.get('username'));
         },
         logout: ({commit}) => {

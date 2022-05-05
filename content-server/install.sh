@@ -78,6 +78,7 @@ else
   # add docker composer
   echo "Install docker-compose!"
   sudo pip3 install docker-compose
+  sudo chmod 666 /var/run/docker.sock
 
   #newgrp docker
 fi

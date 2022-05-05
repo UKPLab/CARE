@@ -14,6 +14,9 @@ parser.add_argument('--admin_pwd', { help: 'password of admin' })
 const args = parser.parse_args();
 console.log(args.host)
 
+// hashing and passwords
+const crypto = require('crypto');
+
 // db
 const pgp = require('pg-promise')();
 
@@ -101,8 +104,10 @@ async function init_peer_db() {
             sys_role character varying(10) NOT NULL,
             first_name character varying(50) COLLATE pg_catalog."default" NOT NULL,
             last_name character varying(50) COLLATE pg_catalog."default" NOT NULL,
-            email character varying(50) COLLATE pg_catalog."default" NOT NULL,
+            user_name character varying(50) COLLATE pg_catalog."default" NOT NULL UNIQUE,
+            email character varying(100) COLLATE pg_catalog."default" NOT NULL UNIQUE,
             password_hash character varying(32) COLLATE pg_catalog."default",
+            salt character varying(32) COLLATE pg_catalog."default",
             registered_at time with time zone,
             last_login_at time with time zone,
             CONSTRAINT user_pkey PRIMARY KEY (uid),
@@ -171,17 +176,27 @@ async function init_peer_db() {
     }
 
     //create admin user, if not existent
-    await pdb.query(`
-        INSERT INTO public."user" (hid, sys_role, first_name, last_name, email, password_hash)
-        VALUES (
-        '0'::integer,
-        'admin'::character varying,
-        $1::character varying, 
-        'User'::character varying, 
-        $2::character varying,
-        $3::character varying)
-        ON CONFLICT DO NOTHING;
-    `, [args.admin_name, args.admin_email, args.admin_pwd])
+    async function addUser(user_name, user_email, password) {
+        const salt = crypto.randomBytes(16);
+        await crypto.pbkdf2(password, salt, 310000, 32, 'sha256', (err, derivedKey) => {
+            if (err) throw err;
+
+            pdb.query(`
+                INSERT INTO public."user" (hid, sys_role, first_name, last_name, user_name, email, password_hash, salt)
+                VALUES ('0'::integer,
+                        $1::character varying,
+                        $1::character varying,
+                        'User'::character varying,
+                        $1,
+                        $2::character varying,
+                        derivedKey.toString('hex')::character varying,
+                        salt::character varying) ON CONFLICT DO NOTHING;
+            `, [user_name, user_email])
+        });
+    }
+    console.log(typeof (args.admin_pwd))
+    await addUser(args.admin_name, args.admin_email, "admin");
+    await addUser("guest", "guest@email.com", "guestguest");
 }
 
 init_h_db().then(r =>
