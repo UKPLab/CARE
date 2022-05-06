@@ -26,7 +26,7 @@ passport.use(new LocalStrategy(function verify(username, password, cb) {
 
             const row = rows[0];
 
-            crypto.pbkdf2(password, Buffer.from(row.salt, "hex"), 310000, 32, 'sha256', function(err, hashedPassword) {
+            crypto.pbkdf2(password, row.salt, 310000, 32, 'sha256', function(err, hashedPassword) {
               if (err) { return cb(err); }
 
               console.log(hashedPassword);
