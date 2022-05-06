@@ -67,7 +67,11 @@ services:
 .PHONY: init
 init: node_modules/.uptodate
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
-	npm run init-db
+	npm run init-db -- --host ${POSTGRES_HOST} \
+				   --port $(POSTGRES_PORT) \
+				   --admin_name ${H_SERVER_ADMIN_USER} \
+				   --admin_email ${H_SERVER_ADMIN_MAIL} \
+				   --admin_pwd ${H_SERVER_ADMIN_PASSWORD}
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password ${H_SERVER_ADMIN_USER} --password ${H_SERVER_ADMIN_PASSWORD}
 
 
