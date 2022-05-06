@@ -21,17 +21,16 @@ passport.use(new LocalStrategy(function verify(username, password, cb) {
     //return cb(null, false, {message: "incorrect username or password"});
 
     pdb.query('SELECT * FROM public."user" WHERE "user_name" = $1 OR "email" = $2', [ username, password ])
-        .then((row) => {
-            console.log(row);
+        .then((rows) => {
+            if (!rows || rows.length !== 1) { return cb(null, false, { message: 'Incorrect username or password.' }); }
 
-            if (!row) { return cb(null, false, { message: 'Incorrect username or password.' }); }
-
-            console.log(password);
+            const row = rows[0];
 
             crypto.pbkdf2(password, Buffer.from(row.salt, "hex"), 310000, 32, 'sha256', function(err, hashedPassword) {
               if (err) { return cb(err); }
 
-              console.log("inside key compute");
+              console.log(hashedPassword);
+              console.log(Buffer.from(row.password_hash, 'hex'));
 
               if (!crypto.timingSafeEqual(Buffer.from(row.password_hash, 'hex'), hashedPassword)) {
                 return cb(null, false, { message: 'Incorrect username or password.' });
@@ -42,10 +41,9 @@ passport.use(new LocalStrategy(function verify(username, password, cb) {
         .catch((err) => {
             return cb(err);
         })
-
 }));
 
-/* not necessary apparently, but typically done...
+
 passport.serializeUser(function(user, done) {
     done(null, user);
 });
@@ -53,7 +51,7 @@ passport.serializeUser(function(user, done) {
 passport.deserializeUser(function(user, done) {
     done(null, user);
 });
-*/
+
 
 router.post(
     '/auth/guest_login',
