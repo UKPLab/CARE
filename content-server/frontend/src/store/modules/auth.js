@@ -34,7 +34,7 @@ export default {
     },
     actions: {
         async login(commit, login_data) {
-            await axios.post('/auth/guest_login', login_data).then(
+            await axios.post('/auth/login', login_data).then(
                 (response) => {
                     console.log(response);
                     //TODO process result and add relevant information to vuex store
@@ -49,6 +49,7 @@ export default {
             );
         },
         logout: ({commit}) => {
+            axios.post('/auth/logout', {})
             commit('RESET', "");
         }
     }
