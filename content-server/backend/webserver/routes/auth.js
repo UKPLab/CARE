@@ -14,9 +14,6 @@ const pdb = pgp({ //todo move to an own module
         password: ""
 })
 
-function logIn(a, b, c) {
-    console.log(b);
-}
 
 passport.use(new LocalStrategy(function verify(username, password, cb) {
     console.log(username);
@@ -71,21 +68,17 @@ router.post(
 
  */
 
-
-router.post(
-    '/auth/login',
-    function(req, res, next) {
-        passport.authenticate('local', function (err, user, info) {
-            if (err) { return next(err); }
-            if (!user) { return res.status(500); }
-            console.log(req);
-            //TODO error, but need return the information back instead of redirect
-            req.logIn(user, function() {
-                res.status(err ? 500: 200).send(err ? err: account);
-            })
-        })(this.req, this.res, this.next);
-    }
-)
+router.post('/auth/login', function(req, res, next) {
+    passport.authenticate('local', function(err, user, info) {
+    if (err) { return next(err); }
+    if (!user) { return res.status(500); }
+    req.logIn(user, function(err) {
+      if (err) { return next(err); }
+      //TODO return user data to website
+       res.status(err ? 500 : 200).send(err ? err : user);
+    });
+  })(req, res, next);
+});
 
 // Logout Procedure, no feedback needed since vuex also deletes the session
 router.post(
