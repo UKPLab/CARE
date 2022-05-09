@@ -19,8 +19,10 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 //Bootstrap v5
-import 'bootstrap/dist/css/bootstrap.css';
+//import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap"
 app.use(BootstrapVue3);
 
 //Routing

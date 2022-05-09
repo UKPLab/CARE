@@ -1,9 +1,12 @@
 <template>
-  <span v-if="isLoggedIn">
-    <a @click="logout">Logout</a>
-  </span>
-
-  <router-view></router-view>
+  <div class="row">
+    <div class="col-md-8 mx-auto my-4">
+        <span v-if="isLoggedIn">
+          <a @click="logout">Logout</a>
+        </span>
+        <router-view></router-view>
+      </div>
+  </div>
 </template>
 
 
@@ -39,4 +42,8 @@
 </script>
 
 <style>
+  #mainContainer {
+    float: none;
+    margin:0 auto;
+  }
 </style>
