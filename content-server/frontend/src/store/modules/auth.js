@@ -33,9 +33,20 @@ export default {
         }
     },
     actions: {
-        async GuestLogin(commit, user) {
-            await axios.post('/auth/guest_login', {username: "guest", password:"guestguest"});
-            await commit('setUser', user.get('username'));
+        async login(commit, login_data) {
+            await axios.post('/auth/guest_login', login_data).then(
+                (response) => {
+                    console.log(response);
+                    //TODO process result and add relevant information to vuex store
+                }
+            );
+        },
+        async register(commit, register_data) {
+            await axios.post('/auth/register', register_data).then(
+                (response) => {
+                    console.log(response);
+                }
+            );
         },
         logout: ({commit}) => {
             commit('RESET', "");
