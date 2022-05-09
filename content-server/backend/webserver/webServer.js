@@ -46,6 +46,8 @@ function webServer(config) {
         resave: false,
         saveUninitialized: true
     }));
+
+    // Session Initialization
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.json());
     app.use(passport.initialize());
