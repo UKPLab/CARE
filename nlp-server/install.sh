@@ -48,10 +48,8 @@ else
   sudo usermod -aG docker $SUDO_USER
   sudo chmod 666 /var/run/docker.sock
 
-
   # add docker composer
   echo "Install docker-compose!"
   sudo pip3 install docker-compose
-
-  #newgrp docker
 fi
+

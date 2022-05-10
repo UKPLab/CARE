@@ -1,11 +1,20 @@
 # NLP Server
 
+## DISCLAIMER
+This component is under continuous development and refactoring. Specifically, the following features are not implemented
+yet, although they might be referenced in the following documentation:
+* adding a gunicorn (or any WSGI server) in-front of the flask app
+* structuring of the server components using:
+  * Blueprints for flask routes (checkout documentation on that)
+  * Celery task registry (checkout documentation on that)
+  * Flower does not connect properly yet (for monitoring Celery)
+
 ## Description
 This directory contains all files associated with the NLP Server, which receives, 
 evaluates and answers all requests related to NLP.
 
-## Running the Server
-### Start-up
+## Running the Server 
+### Start-up ("manually")
 To run the server you simply need to run:
 ```
 docker-compose up 
@@ -15,6 +24,24 @@ During development you should enforce re-building of the containers instead of u
 ```
 docker-compose up  --build
 ```
+
+### Start-up (via Make)
+To start the server in dev mode, i.e. on your local machine with only services in docker, run in two terminals:
+```
+make services
+```
+
+```
+make dev
+```
+
+Hereby, any changes to the actual flask server, can be integrated via just running "make dev" in isolation.
+
+If you want to start the server with services in a docker containers use:
+```
+make docker
+```
+This does the same as the above docker-compose commands.
 
 ### Management
 The RabbitMQ status monitor and Flower for surveilance of celery workers are used. To check-in on the RabbitMQ instance 
