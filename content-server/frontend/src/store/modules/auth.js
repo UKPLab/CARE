@@ -33,14 +33,16 @@ export default {
         }
     },
     actions: {
-        async login(commit, login_data) {
-            await axios.post('/auth/login', login_data).then(
-                (response) => {
-                    console.log(response);
-                    //TODO process result and add relevant information to vuex store
-                }
-            );
+        async login({commit}, login_data) {
+            const response = await axios.post('/auth/login',
+                    login_data,
+                    { validateStatus: function(status) {
+                        return status == 200 || status == 401;}});
+            if (response.status == 401) throw response.data.message;
+            commit('SET_USER', response.data);
+            //TODO get session token and set it to axios header for further requests
         },
+        //TODO register, evaulate which data are needed and send to register route
         async register(commit, register_data) {
             await axios.post('/auth/register', register_data).then(
                 (response) => {
