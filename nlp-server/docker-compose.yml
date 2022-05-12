@@ -13,7 +13,7 @@ services:
       - redis
     command: python3 app.py
     ports:
-      - ${NLP_PORT}:6000
+      - ${NLP_PORT}:6001
     volumes:
       - pdfstore:/upload
   grobid:

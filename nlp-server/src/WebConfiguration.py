@@ -1,8 +1,24 @@
+""" WebConfiguration -- Singleton for holding global configuration
+
+This file defines the global configuration and makes it accessible as a
+singleton variable. Any changes made to an instance of the configuration
+are propagated to all other instances.
+
+A default configuration is loaded, if not specified otherwise.
+
+Author: Nils Dycke (dycke@ukp...)
+"""
+
 import os
 
 import redis
 
+# holds the configuration object
 _singleton = None
+
+# default config of all environmental parameters.
+# the parameters in "app" are passed to the flask app specifically
+# the parameters in "grobid" are passed to grobid specifically
 DEFAULT = {
     "log": True,
     "debug": True,
@@ -15,7 +31,7 @@ DEFAULT = {
 
     "app": {
         "host": "0.0.0.0",
-        "port": "6000",
+        "port": "6001",
     },
 
     "grobid": {
@@ -28,8 +44,40 @@ DEFAULT = {
     },
 }
 
+DEFAULT_DEV = {
+    "log": True,
+    "debug": True,
+
+    "secret_key": "DEBUGGING-SECRET-KEY",
+    "session_backend": "redis://localhost:6379",
+    "result_backend": "redis://localhost:6379",
+    "broker": "amqp://guest:guest@localhost:5672",
+    "resources_dir": "./upload",
+
+    "app": {
+        "host": "0.0.0.0",
+        "port": "6001",
+    },
+
+    "grobid": {
+        "grobid_server": "localhost",
+        "grobid_port": "8070",
+        "batch_size": 1000,
+        "coordinates": ["persName", "figure", "ref", "biblStruct", "formula", "s" ],
+        "sleep_time": 5,
+        "timeout": 60
+    }
+}
+
 
 def instance(**kwargs):
+    """
+    Returns the global configuration; if not existent yet, a new one is created by the
+    given paramters.
+
+    :param kwargs: see WebConfiguration
+    :return: the web configuration object in use
+    """
     global _singleton
 
     if _singleton is None:
@@ -41,8 +89,24 @@ def instance(**kwargs):
 
 
 class WebConfiguration:
+    """
+    Object for getting and updating the paramters for running the web server.
+
+    If you need to add more components to this configuration, add an attribute
+    to the class, add a parameter to the update function and update the
+    conf attribute accordingly.
+    """
     def __init__(self, **kwargs):
-        self.conf = DEFAULT.copy()
+        if "dev" in kwargs:
+            self.dev = kwargs["dev"]
+            del kwargs["dev"]
+        else:
+            self.dev = False
+
+        if self.dev:
+            self.conf = DEFAULT_DEV.copy()
+        else:
+            self.conf = DEFAULT.copy()
 
         self.flask = None
         self.session = None
