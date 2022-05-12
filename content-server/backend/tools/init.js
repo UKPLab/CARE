@@ -1,4 +1,5 @@
 const { ArgumentParser } = require('argparse');
+const dayjs = require('dayjs');
 
 // global parameters
 const parser = new ArgumentParser({
@@ -139,7 +140,7 @@ async function init_peer_db() {
         CREATE TABLE IF NOT EXISTS public.document (
             uid integer NOT NULL DEFAULT nextval('document_uid_seq'::regclass),
             name character varying(64) COLLATE pg_catalog."default",
-            hash character varying(32) COLLATE pg_catalog."default" NOT NULL,
+            hash character varying(64) COLLATE pg_catalog."default" NOT NULL,
             hid integer NOT NULL,
             creator integer NOT NULL,
             created_at time with time zone,
@@ -208,6 +209,39 @@ async function init_peer_db() {
 
     await addUser(args.admin_name, args.admin_email, "admin", "admin", "1");
     await addUser("guest", "guest@email.com", "guestguest", "regular", "2");
+
+
+    async function addDoc(doc_name, hid, creator) {
+        console.log(`Creating document ${doc_name}`);
+
+        // todo add salt if we want to make it more secure (against guessing)
+        //const salt = crypto.randomBytes(16).toString("hex");
+
+        const cuser = await pdb.query(`SELECT uid FROM public.user WHERE user_name = $1;`, [creator]);
+        let cuid;
+
+        if(cuser.length !== 1){
+           throw Error(creator + " does not exist. Cannot create document in their name.");
+        } else {
+           cuid = cuser[0]["uid"];
+        }
+        const doc_id = await pdb.query(`SELECT last_value FROM public.document_uid_seq;`);
+        const hash = crypto.createHash("sha256").update(doc_id + doc_name).digest("hex");
+
+        const now = "2022-05-12 13:51:14.999394 +00:00"; //TODO do with dayjs().format();
+        await pdb.query(`
+                    INSERT INTO public."document" (name, hash, hid, creator, created_at, deleted)
+                    VALUES ($1::character varying,
+                            $2::character varying,
+                            $3::integer,
+                            $4::integer,
+                            $5::time with time zone,
+                            $6::boolean)
+                    ON CONFLICT DO NOTHING;`,
+            [doc_name, hash, hid, cuid, now, false]);
+    }
+
+    await addDoc("showcase", 0, "guest");
 }
 
 init_h_db().then(r =>

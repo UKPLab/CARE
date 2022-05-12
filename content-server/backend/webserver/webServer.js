@@ -18,6 +18,7 @@ const routes = [
     require("./routes/pdf"),
     require("./routes/hypothesis"),
     require("./routes/auth"),
+    require("./routes/user")
 ];
 
 // sockets
