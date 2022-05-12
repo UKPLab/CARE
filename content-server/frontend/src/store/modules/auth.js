@@ -3,7 +3,6 @@ import axios from 'axios';
 
 const getDefaultState = () => {
     return {
-        token: "",
         user: {}
     };
 };
@@ -15,16 +14,13 @@ export default {
     state: getDefaultState(),
     getters: {
         isAuthenticated: state => {
-            return state.token;
+            return state['user'] && Object.keys(state.user).length > 0;
         },
         getUser: state => {
             return state.user;
         }
     },
     mutations: {
-        SET_TOKEN: (state, token) => {
-            state.token = token;
-        },
         SET_USER: (state, user) => {
             state.user = user;
         },
@@ -33,16 +29,19 @@ export default {
         }
     },
     actions: {
+        async check({commit}) {
+            const response = await axios.get('/auth/check');
+            commit('SET_USER', response.data.user);
+        },
         async login({commit}, login_data) {
             const response = await axios.post('/auth/login',
                     login_data,
                     { validateStatus: function(status) {
-                        return status == 200 || status == 401;}});
-            if (response.status == 401) throw response.data.message;
-            commit('SET_USER', response.data);
-            //TODO get session token and set it to axios header for further requests
+                        return status === 200 || status === 401;}});
+            if (response.status === 401) throw response.data.message;
+            commit('SET_USER', response.data.user);
         },
-        //TODO register, evaulate which data are needed and send to register route
+        //TODO register, evaluate which data are needed and send to register route
         async register(commit, register_data) {
             await axios.post('/auth/register', register_data).then(
                 (response) => {
@@ -50,8 +49,8 @@ export default {
                 }
             );
         },
-        logout: ({commit}) => {
-            axios.post('/auth/logout', {})
+        async logout({commit}) {
+            await axios.get('/auth/logout')
             commit('RESET', "");
         }
     }

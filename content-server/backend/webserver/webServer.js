@@ -4,12 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const mustacheExpress = require('mustache-express');
+
 const { Server } = require("socket.io");
 const { createServer, useSsl } = require('./createServer');
-
-const session = require('express-session')
-const passport = require('passport')
-const bodyParser = require('body-parser');
 
 // define PATHs
 const TEMPLATES_PATH = `${__dirname}/../templates/`;
@@ -41,26 +38,13 @@ function webServer(config) {
     app.set('view engine', 'mustache');
     app.set('views', TEMPLATES_PATH);
 
-    app.use(session({
-        secret: 'thatsecretthinggoeshere',
-        resave: false,
-        saveUninitialized: true
-    }));
-
-    // Session Initialization
-    app.use(bodyParser.urlencoded({ extended: false }));
-    app.use(bodyParser.json());
-    app.use(passport.initialize());
-    app.use(passport.session());
-
     // Make all static files public available
-    //app.use(express.static(HTML_STATIC_PATH));
-    // And also the build files
     app.use(express.static(BUILD_PATH));
 
     // additional routes from routes directory
-    routes.forEach(route => app.use(route));
+    routes.forEach(route => route(app));
 
+    // all further urls reference to frontend
     app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
 
     // add websocket server socket.io

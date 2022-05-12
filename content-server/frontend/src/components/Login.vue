@@ -20,6 +20,7 @@
         <div class="col-md-6 offset-md-4">
             <button type="button" class="btn btn-primary btn-block" @click="login_user()">Login</button>
             <a href="#" class="btn btn-link" @click="login_guest()">Login as Guest</a>
+            <a href="#" class="btn btn-link" @click="check()">Check Login</a>
 
         </div>
       </div>
@@ -29,6 +30,7 @@
 
 <script>
 import { mapActions } from "vuex";
+import axios from "axios";
 
 export default {
   name: "Login",
@@ -41,8 +43,11 @@ export default {
 
     }
   },
+  mounted() {
+    this.check();
+  },
   methods: {
-    ...mapActions({login: "auth/login"}),
+    ...mapActions({login: "auth/login", check: "auth/check"}),
     async login_user() {
       try {
         await this.login({username: this.username, password: this.password})

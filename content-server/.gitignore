@@ -1,6 +1,7 @@
 
 # files dir
 files
+sessions
 
 # ignore files of hypothesis submodules
 frameworks/hypothesis/
