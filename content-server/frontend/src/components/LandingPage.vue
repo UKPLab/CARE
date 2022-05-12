@@ -1,12 +1,14 @@
 <template>
       <Login></Login>
+      <DocumentManagement></DocumentManagement>
 </template>
 
 <script>
 import Login from "./Login.vue";
+import DocumentManagement from "./DocumentManagement.vue";
 
 export default {
-  components: {Login},
+  components: {DocumentManagement, Login},
   name: "LandingPage",
   data() {
     return {
