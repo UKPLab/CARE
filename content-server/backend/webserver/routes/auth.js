@@ -2,17 +2,12 @@ const express = require('express');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const crypto = require('crypto');
-const pgp = require('pg-promise')();
+const pdb = require("../../tools/db.js")
 
-const router = express.Router();
+const session = require('express-session');
+const FileStore = require('session-file-store')(session);
+const bodyParser = require('body-parser');
 
-const pdb = pgp({ //todo move to an own module
-        host: process.env.POSTGRES_HOST,
-        port: process.env.POSTGRES_PORT,
-        database: process.env.POSTGRES_PEERDB,
-        user: "postgres",
-        password: ""
-})
 
 // Login
 passport.use(new LocalStrategy(function verify(username, password, cb) {
@@ -43,19 +38,6 @@ passport.use(new LocalStrategy(function verify(username, password, cb) {
         })
 }));
 
-router.post('/auth/login', function(req, res, next) {
-    passport.authenticate('local', function(err, user, info) {
-    if (err) { return res.status(500).send(err); }
-    if (!user) { return res.status(401).send(info); }
-    req.logIn(user, function(err) {
-      if (err) { return next(err); }
-        //TODO send back session code, but where is it?
-       res.status(200).send(user);
-    });
-  })(req, res, next);
-});
-
-
 passport.serializeUser(function(user, done) {
     done(null, user);
 });
@@ -64,13 +46,57 @@ passport.deserializeUser(function(user, done) {
     done(null, user);
 });
 
+module.exports = function(app) {
 
-// Logout Procedure, no feedback needed since vuex also deletes the session
-router.post(
-    'auth/logout',
-    function(req, res, next) {
-        req.logout();
-    }
-)
+    // Session Initialization
+    app.use(session({
+        /*genid: (req) => {
+            console.log('Inside session middleware genid function')
+            console.log(`Request object sessionID from client: ${req.sessionID}`)
+            return uuidv4(); // use UUIDs for session IDs
+        },*/
+        store: new FileStore(), //TODO store session data into database
+        secret: 'thatsecretthinggoeshere',
+        resave: false,
+        saveUninitialized: true
+    }));
+    app.use(bodyParser.urlencoded({ extended: false }));
+    app.use(bodyParser.json());
+    app.use(passport.initialize());
+    app.use(passport.session());
 
-module.exports = router;
+    app.post('/auth/login', function(req, res, next) {
+        passport.authenticate('local', function(err, user, info) {
+        if (err) { return res.status(500).send(err); } // TODO dont use 500 error code for missing or wrong credentials
+        if (!user) { return res.status(401).send(info); }
+        req.logIn(user, function(err) {
+          if (err) { return next(err); }
+           res.status(200).send({user:user});
+        });
+      })(req, res, next);
+    });
+
+    // Logout Procedure, no feedback needed since vuex also deletes the session
+    app.get(
+        '/auth/logout',
+        function(req, res) {
+            req.logout()
+            req.session.destroy();
+            res.status(200).send("Session destroyed!");
+        }
+    )
+
+    app.get(
+        '/auth/check',
+        function(req, res) {
+            if (req.user) {
+                res.status(200).send({user:req.user});
+            } else {
+                res.status(401);
+            }
+            console.log(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
+            console.log(`req.user: ${JSON.stringify(req.user)}`);
+        }
+    );
+
+};
