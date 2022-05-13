@@ -1,26 +1,56 @@
 <template>
   <div>
-    <b-table striped :items="items" :fields="fields"></b-table>
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th v-for="field in fields" scope="col">{{field.name}}</th>
+          <th scope="col">Access</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in items">
+          <td v-for="field in fields">{{item[field.col]}}</td>
+          <td>
+            <button type="button" class="btn btn-outline-secondary" @click="accessDoc(item.hash)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"></path>
+                <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"></path>
+              </svg>
+              <span class="visually-hidden">Access</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+  </table>
   </div>
 </template>
 
 <script>
-import {mapActions} from "vuex";
+import {mapGetters, mapActions} from "vuex";
 
 export default {
+  name: "DocumentManagement",
   data() {
     return {
-      fields: [ "documentId", "title", "created_at"],
-      items: [
-        {documentId: 1, title: "Showcase", created_at: "2022-05-12"}
+      fields: [
+          {name: "ID", col: "uid"},
+          {name: "Title", col: "name"},
+          {name: "Created At", col: "created_at"}
       ]
     }
   },
   mounted() {
-    this.load()
+    this.load();
+  },
+  computed: {
+    ...mapGetters({items: 'user/getDocuments'})
   },
   methods: {
-    ...mapActions({load: "user/load"})
+    ...mapActions({load: "user/load"}),
+    accessDoc(docHash) {
+      let routeData = this.$router.resolve(`/annotate/${docHash}`);
+      window.open(routeData.href, '_blank');
+    }
   }
 }
 </script>
