@@ -1,43 +1,21 @@
 <template>
   <div class="row">
     <div class="col-md-8 mx-auto my-4">
-        <span v-if="isLoggedIn">
-          <a @click="logout">Logout</a>
-        </span>
-        <router-view></router-view>
-      </div>
+        <Dashboard v-if="isLoggedIn"></Dashboard>
+        <LandingPage v-else></LandingPage>
+    </div>
   </div>
 </template>
 
-
 <script>
+  import LandingPage from "./components/LandingPage.vue";
+  import Dashboard from "./components/Dashboard.vue";
+
   export default {
-    created() {
-      this.$socket.on('connect', (data) => { console.log('socket connected') });
-    },
+    components: {LandingPage, Dashboard},
     computed: {
       isLoggedIn: function() { return this.$store.getters['auth/isAuthenticated'] }
     },
-    methods: {
-      async logout() {
-        await this.$store.dispatch('auth/logout');
-        await this.$router.push("/");
-      }
-    },
-
-    sockets: {
-      connect: function () {
-        console.log('socket connected')
-      }
-    },
-   mounted() {
-     //this.$socket.emit("push_pdf", {"key": "value"});
-
-     /*this.sockets.subscribe("topic", data => {
-       console.log("Received message on topic");
-       console.log(data);
-     });*/
-   }
   }
 </script>
 

@@ -1,36 +1,27 @@
 <template>
-   <div class="col-md-8">
-    <div class="card">
-      <div class="card-header">Login</div>
-      <div class="card-body">
-        <p v-if="showError" class="text-danger text-center">{{ this.errorMessage }}</p>
-        <div class="form-group row">
-          <label for="username" class="col-md-4 col-form-label text-md-right">Username or E-Mail</label>
-          <div class="col-md-6">
-            <input v-model="username" type="text" id="username" placeholder="Username or email" class="form-control" autocomplete="username" required autofocus>
-          </div>
-        </div>
 
-        <div class="form-group row">
-          <label for="password" class="col-md-4 col-form-label text-md-right">Password</label>
-          <div class="col-md-6">
-            <input v-model="password" name="password" id="password" class="form-control" type="password" placeholder="Password" autocomplete="current-password" required>          </div>
-        </div>
-
-        <div class="col-md-6 offset-md-4">
-            <button type="button" class="btn btn-primary btn-block" @click="login_user()">Login</button>
-            <a href="#" class="btn btn-link" @click="login_guest()">Login as Guest</a>
-            <a href="#" class="btn btn-link" @click="check()">Check Login</a>
-
-        </div>
-      </div>
+  <p v-if="showError" class="text-danger text-center">{{ this.errorMessage }}</p>
+  <div class="form-group row my-2">
+    <label for="username" class="col-md-4 col-form-label text-md-right">Username</label>
+    <div class="col-md-6">
+      <input v-model="username" type="text" id="username" placeholder="Username or email" class="form-control" autocomplete="username" required autofocus>
     </div>
+  </div>
+
+  <div class="form-group row my-2">
+    <label for="password" class="col-md-4 col-form-label text-md-right">Password</label>
+    <div class="col-md-6">
+      <input v-model="password" name="password" id="password" class="form-control" type="password" placeholder="Password" autocomplete="current-password" required>          </div>
+  </div>
+
+  <div class="col-md-6 offset-md-4 my-4">
+      <button type="button" class="btn btn-primary btn-block" @click="login_user()">Login</button>
+      <a href="#" class="btn btn-link" @click="login_guest()">Login as Guest</a>
   </div>
 </template>
 
 <script>
 import { mapActions } from "vuex";
-import axios from "axios";
 
 export default {
   name: "Login",
@@ -60,6 +51,9 @@ export default {
         console.log(error);
         this.errorMessage = error;
       }
+    },
+    register() {
+      this.$router.push("/register");
     },
     login_guest() {
       this.login({username: "guest", password: "guestguest"})
