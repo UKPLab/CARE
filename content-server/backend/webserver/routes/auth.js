@@ -99,4 +99,13 @@ module.exports = function(app) {
         }
     );
 
+    app.post(
+        '/auth/register',
+        function(req, res) {
+            //TODO add user into database... data are in req.body
+            console.log(req.body);
+            //TODO return info for sucess or failure
+        }
+    );
+
 };

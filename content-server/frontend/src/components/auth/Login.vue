@@ -31,7 +31,6 @@ export default {
       errorMessage: "",
       username: "",
       password: ""
-
     }
   },
   mounted() {
