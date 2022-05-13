@@ -1,6 +1,9 @@
 
-# files dir
-files
+# files dir (except the showcase file)
+files/*.pdf
+!files/778527bb27d47d4bb676163c5d7d662aebd5ada31c2656ee43a236a5f15ece0b.pdf
+
+# sessions dir
 sessions
 
 # ignore files of hypothesis submodules
