@@ -2,7 +2,7 @@ const express = require('express');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const crypto = require('crypto');
-const pdb = require("../../tools/db.js")
+const { pdb, addUser } = require('../../tools/db.js');
 
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
@@ -11,7 +11,7 @@ const bodyParser = require('body-parser');
 
 // Login
 passport.use(new LocalStrategy(function verify(username, password, cb) {
-    pdb.query('SELECT * FROM public."user" WHERE "user_name" = $1 OR "email" = $2', [ username, password ])
+    pdb.query('SELECT * FROM public."user" WHERE "user_name" = $1 OR "email" = $1', [ username ])
         .then((rows) => {
             if (!rows || rows.length !== 1) { return cb(null, false, { message: 'Incorrect username or password.' }); }
 
@@ -46,8 +46,29 @@ passport.deserializeUser(function(user, done) {
     done(null, user);
 });
 
-module.exports = function(app) {
+// register
+async function register(user_credentials, res){
+    const user_name = user_credentials["user_name"];
+    const email = user_credentials["email"];
+    const first_name = user_credentials["first_name"];
+    const last_name = user_credentials["last_name"];
+    const pwd = user_credentials["password"];
+    const agree = user_credentials["terms"];
 
+    if(!user_name || !email || !first_name || !last_name || !pwd || !agree){
+        res.status(400).send("All credential fields need to be provided");
+    }
+
+    addUser(user_name, email, pwd, "regular", 1)
+        .then((success) => {
+            res.status(201).send("User was created");
+        })
+        .catch((err) => {
+            res.status(400).send("Cannot create a user with the given user name or email.");
+        });
+}
+
+module.exports = function(app) {
     // Session Initialization
     app.use(session({
         /*genid: (req) => {
@@ -102,10 +123,7 @@ module.exports = function(app) {
     app.post(
         '/auth/register',
         function(req, res) {
-            //TODO add user into database... data are in req.body
-            console.log(req.body);
-            //TODO return info for sucess or failure
+            register(req.body, res);
         }
     );
-
 };

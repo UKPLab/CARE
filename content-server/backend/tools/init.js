@@ -1,4 +1,5 @@
 const { ArgumentParser } = require('argparse');
+const { pdb, addUser } = require('./db.js');
 
 // global parameters
 const parser = new ArgumentParser({
@@ -25,15 +26,6 @@ const hdb = pgp({
         host: args["host"],
         port: args["port"],
         database: "postgres",
-        user: "postgres",
-        password: ""
-})
-
-// peer database connector
-const pdb = pgp({
-        host: args.host,
-        port: args.port,
-        database: "peer",
         user: "postgres",
         password: ""
 })
@@ -175,39 +167,14 @@ async function init_peer_db() {
         `, role);
     }
 
-    //create admin + guest user, if not existent
-    async function createPwd(password, salt) {
-        return new Promise((res, rej) => {
-            crypto.pbkdf2(password, salt, 310000, 32, 'sha256', (err, derivedKey) => {
-                err ? rej(err) : res(derivedKey);
-            });
-        });
-    }
-
-    async function addUser(user_name, user_email, password, role, hid) {
-        console.log(`Creating user ${user_name}`);
-
-        const salt = crypto.randomBytes(16).toString("hex");
-
-        let derivedKey = await createPwd(password, salt);
-        derivedKey = derivedKey.toString('hex');
-
-        await pdb.query(`
-                    INSERT INTO public."user" (hid, sys_role, first_name, last_name, user_name, email, password_hash, salt)
-                    VALUES ($1::integer,
-                            $6::character varying,
-                            $2::character varying,
-                            'User'::character varying,
-                            $2,
-                            $3::character varying,
-                            $4::character varying,
-                            $5::character varying)
-                    ON CONFLICT DO NOTHING;`,
-            [hid, user_name, user_email, derivedKey, salt, role]);
-    }
-
-    await addUser(args.admin_name, args.admin_email, "admin", "admin", "1");
-    await addUser("guest", "guest@email.com", "guestguest", "regular", "2");
+    addUser(args.admin_name, args.admin_email, "admin", "admin", "1")
+        .catch((err) => {
+            console.log(err);
+        })
+    addUser("guest", "guest@email.com", "guestguest", "regular", "2")
+        .catch((err) => {
+            console.log(err);
+        })
 }
 
 init_h_db().then(r =>
