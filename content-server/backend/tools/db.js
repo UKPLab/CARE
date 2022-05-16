@@ -54,8 +54,6 @@ exports.addUser = async function addUser(user_name, user_email, password, role, 
 exports.addDoc = async function addDoc(doc_name, creator_id) {
     console.log(`Creating document ${doc_name}`);
 
-    console.log("Getting new document id in peer db");
-
     // create document identifier
     const doc_id_res = await pdb.query(`SELECT last_value FROM public.document_uid_seq;`);
     const doc_id = doc_id_res[0].last_value;
@@ -97,4 +95,44 @@ exports.addDoc = async function addDoc(doc_name, creator_id) {
     //TODO check existence of the document in the h database (by URL) and point to that instead
 
     return hash;
+}
+
+exports.deleteDoc = async function deleteDoc(doc_id) {
+    console.log("Deleting " + doc_id);
+
+    // set date
+    const now = dayjs().format("YYYY-MM-DD HH:mm:ss.SSS Z");
+
+    // check for document in peer DB
+    const docs = await pdb.query(`SELECT * FROM public."document" WHERE uid = $1`, [doc_id]);
+    if(!docs || docs.length !== 1){
+        throw Error("Document not found in database.");
+    }
+    const doc = docs[0];
+
+    // set delete flag in database
+    await pdb.query(`UPDATE peer.public.document 
+                        SET deleted = true
+                        WHERE uid = $1;`,
+        [doc_id]);
+}
+
+exports.renameDoc = async function renameDoc(doc_id, new_name) {
+    console.log("Renaming " + doc_id);
+
+    // set date
+    const now = dayjs().format("YYYY-MM-DD HH:mm:ss.SSS Z");
+
+    // check for document in peer DB
+    const docs = await pdb.query(`SELECT * FROM public."document" WHERE uid = $1`, [doc_id]);
+    if(!docs || docs.length !== 1){
+        throw Error("Document not found in database.");
+    }
+    const doc = docs[0];
+
+    // set delete flag in database
+    await pdb.query(`UPDATE peer.public.document 
+                        SET name = $2
+                        WHERE uid = $1;`,
+        [doc_id, new_name]);
 }

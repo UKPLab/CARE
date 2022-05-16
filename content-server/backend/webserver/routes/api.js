@@ -4,7 +4,7 @@ const rateLimit = require('express-rate-limit');
 const upload = require('express-fileupload');
 const path = require('path');
 
-const {addDoc} = require('../../tools/db.js');
+const {addDoc, deleteDoc, renameDoc} = require('../../tools/db.js');
 
 
 const PDF_PATH = `${__dirname}/../../../files`;
@@ -60,4 +60,15 @@ module.exports = function(app) {
             }
         });
 
+    app.post('/api/delete', (req, res) => {
+        deleteDoc(req.body.docId)
+            .then((out) => res.status(200).send("Document deleted"))
+            .catch((err) => res.status(400).send("Failed to delete"));
+    });
+
+    app.post('/api/rename', (req, res) => {
+        renameDoc(req.body.docId, req.body.newName)
+            .then((out) => res.status(200).send("Document deleted"))
+            .catch((err) => res.status(400).send("Failed to delete"));
+    });
 }
