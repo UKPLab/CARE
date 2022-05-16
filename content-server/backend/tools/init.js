@@ -1,35 +1,17 @@
 const { ArgumentParser } = require('argparse');
 const dayjs = require('dayjs');
-const { pdb, addUser } = require('./db.js');
+const { pdb, hdb, addUser } = require('./db.js');
 
 // global parameters
 const parser = new ArgumentParser({
   description: 'Initialize h and peer databases. Does not override existing entries and tables.'
 });
 
-parser.add_argument('--host', { help: 'host of postgres databases'})
-parser.add_argument('--port', { help: 'port of postgres databases' })
 parser.add_argument('--admin_name', { help: 'name of default admin. Considered as first name.' })
 parser.add_argument('--admin_email', { help: 'email of default admin.' })
 parser.add_argument('--admin_pwd', { help: 'password of admin' })
 
 const args = parser.parse_args();
-console.log(args.host)
-
-// hashing and passwords
-const crypto = require('crypto');
-
-// db
-const pgp = require('pg-promise')();
-
-// h database connector
-const hdb = pgp({
-        host: args["host"],
-        port: args["port"],
-        database: "postgres",
-        user: "postgres",
-        password: ""
-})
 
 function init_h_db() {
     console.log("Initializing h database")
