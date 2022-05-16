@@ -23,7 +23,7 @@ passport.use(new LocalStrategy(function verify(username, password, cb) {
               }
 
               // filter row object, because not everything is the right information for website
-                const relevantKeys = ['email', 'first_name', 'last_name', 'sys_role', 'user_name', 'uid'];
+                const relevantKeys = ['email', 'first_name', 'last_name', 'sys_role', 'user_name', 'uid', 'hid'];
                 const return_values = Object.keys(rows[0])
                     .filter((key) => relevantKeys.includes(key))
                     .reduce((obj, key) => {
@@ -57,15 +57,15 @@ async function register(user_credentials, res){
 
     if(!user_name || !email || !first_name || !last_name || !pwd || !agree){
         res.status(400).send("All credential fields need to be provided");
+    } else {
+        addUser(user_name, email, pwd, "regular")
+            .then((success) => {
+                res.status(201).send("User was created");
+            })
+            .catch((err) => {
+                res.status(400).send("Cannot create a user with the given user name or email. Error: " + err);
+            });
     }
-
-    addUser(user_name, email, pwd, "regular", 1)
-        .then((success) => {
-            res.status(201).send("User was created");
-        })
-        .catch((err) => {
-            res.status(400).send("Cannot create a user with the given user name or email.");
-        });
 }
 
 module.exports = function(app) {
