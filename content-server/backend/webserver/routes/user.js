@@ -1,5 +1,5 @@
 const connectEnsureLogin = require('connect-ensure-login');
-const pdb = require("../../tools/db.js")
+const { pdb } = require('../../tools/db.js');
 
 module.exports = function(app) {
     app.use("/user/*", connectEnsureLogin.ensureLoggedIn("/login"));

@@ -1,5 +1,10 @@
 <template>
-  <div>
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      Documents
+      <Upload></Upload>
+    </div>
+    <div class="card-body">
     <table class="table table-hover">
       <thead>
         <tr>
@@ -22,14 +27,17 @@
         </tr>
       </tbody>
   </table>
+    </div>
   </div>
 </template>
 
 <script>
 import {mapGetters, mapActions} from "vuex";
+import Upload from "./Upload.vue";
 
 export default {
-  name: "DocumentManagement",
+  name: "List",
+  components: {Upload},
   data() {
     return {
       fields: [
