@@ -28,37 +28,21 @@ async function createPwd(password, salt) {
     });
 }
 
-exports.addUser = async function addUser(user_name, user_email, password, role, hid) {
+exports.addUser = async function addUser(user_name, user_email, password, role) {
     const salt = crypto.randomBytes(16).toString("hex");
 
     let derivedKey = await createPwd(password, salt);
     derivedKey = derivedKey.toString('hex');
 
-    //create user in h database
-    //TODO ...
-    /*
-    await exports.hdb.query(`
-        INSERT INTO public."user" (username, authority, )
-                VALUES ($1::integer,
-                        $6::character varying,
-                        $2::character varying,
-                        'User'::character varying,
-                        $2,
-                        $3::character varying,
-                        $4::character varying,
-                        $5::character varying)`,
-        [hid, user_name, user_email, derivedKey, salt, role]);
-    )*/
-
     await exports.pdb.query(`
                 INSERT INTO public."user" (hid, sys_role, first_name, last_name, user_name, email, password_hash, salt)
-                VALUES ($1::integer,
-                        $6::character varying,
-                        $2::character varying,
+                VALUES (0,
+                        $5::character varying,
+                        $1::character varying,
                         'User'::character varying,
-                        $2,
+                        $1,
+                        $2::character varying,
                         $3::character varying,
-                        $4::character varying,
-                        $5::character varying)`,
-        [hid, user_name, user_email, derivedKey, salt, role]);
+                        $4::character varying)`,
+        [user_name, user_email, derivedKey, salt, role]);
 }

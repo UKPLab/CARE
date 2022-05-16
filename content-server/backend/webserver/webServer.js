@@ -14,10 +14,10 @@ const BUILD_PATH = `${__dirname}/../../dist/`;
 
 // routes
 const routes = [
+    require("./routes/auth"),  //has to be first to make sure, session is available in req
     require("./routes/upload"),
     require("./routes/pdf"),
     require("./routes/hypothesis"),
-    require("./routes/auth"),
     require("./routes/user")
 ];
 
