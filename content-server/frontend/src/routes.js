@@ -1,17 +1,13 @@
 import * as VueRouter from 'vue-router'
 
 // Set Vue Routing
-import Annotater from "./components/Annotater.vue";
-import LandingPage from "./components/LandingPage.vue";
+import Annotater from "./components/dashboard/Annotater.vue";
+import Overview from "./components/dashboard/Overview.vue";
 import NotFoundPage from "./components/NotFoundPage.vue";
-import Login from "./components/Login.vue";
-import Register from "./components/Register.vue";
 
 const routes = [
-    { path: "/", component: LandingPage},
-    { path: "/login", component: Login},
-    { path: "/register", component: Register},
-    { path: "/index.html", component: LandingPage},
+    { path: "/", component: Overview},
+    { path: "/index.html", component: Overview},
     { path: "/annotate/:pdf_path", component: Annotater, props: true },
     { path: "/:catchAll(.*)", name: "NotFound", component: NotFoundPage}
 ]

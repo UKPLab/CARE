@@ -1,5 +1,6 @@
 const { ArgumentParser } = require('argparse');
 const dayjs = require('dayjs');
+const { pdb, addUser } = require('./db.js');
 
 // global parameters
 const parser = new ArgumentParser({
@@ -26,15 +27,6 @@ const hdb = pgp({
         host: args["host"],
         port: args["port"],
         database: "postgres",
-        user: "postgres",
-        password: ""
-})
-
-// peer database connector
-const pdb = pgp({
-        host: args.host,
-        port: args.port,
-        database: "peer",
         user: "postgres",
         password: ""
 })
@@ -242,6 +234,14 @@ async function init_peer_db() {
     }
 
     await addDoc("showcase", 0, "guest");
+    addUser(args.admin_name, args.admin_email, "admin", "admin", "1")
+        .catch((err) => {
+            console.log(err);
+        })
+    addUser("guest", "guest@email.com", "guestguest", "regular", "2")
+        .catch((err) => {
+            console.log(err);
+        })
 }
 
 init_h_db().then(r =>

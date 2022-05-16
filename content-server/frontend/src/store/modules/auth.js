@@ -41,10 +41,10 @@ export default {
             if (response.status === 401) throw response.data.message;
             commit('SET_USER', response.data.user);
         },
-        //TODO register, evaluate which data are needed and send to register route
         async register(commit, register_data) {
             await axios.post('/auth/register', register_data).then(
                 (response) => {
+                    // TODO show error or success message and got to login page again...
                     console.log(response);
                 }
             );
