@@ -14,11 +14,11 @@ const BUILD_PATH = `${__dirname}/../../dist/`;
 
 // routes
 const routes = [
-    require("./routes/upload"),
-    require("./routes/pdf"),
     require("./routes/hypothesis"),
     require("./routes/auth"),
-    require("./routes/user")
+    require("./routes/user"),
+    require("./routes/upload"),
+    require("./routes/pdf")
 ];
 
 // sockets
