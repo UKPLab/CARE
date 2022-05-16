@@ -17,7 +17,7 @@ const routes = [
     require("./routes/hypothesis"),
     require("./routes/auth"),
     require("./routes/user"),
-    require("./routes/upload"),
+    require("./routes/api"),
     require("./routes/pdf")
 ];
 
