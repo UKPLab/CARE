@@ -28,8 +28,11 @@ export default {
     actions: {
         async load({commit}) {
             const response = await axios.get('/user/docs',
-                    { validateStatus: function(status) {
-                        return status === 200 || status === 401;}});
+                {
+                    validateStatus: function (status) {
+                        return status === 200 || status === 401;
+                    }
+                });
             if (response.status === 401) throw response.data.message;
             commit('SET_DOCUMENTS', response.data["docs"]);
         }

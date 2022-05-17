@@ -72,6 +72,8 @@ export default {
         while(elements.length > 0){
             elements[0].parentNode.removeChild(elements[0]);
         }
+
+        this.$emit("addedDoc");
       })
     }
   }

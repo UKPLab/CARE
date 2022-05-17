@@ -9,7 +9,6 @@ module.exports = function(app) {
 
         pdb.query('SELECT * FROM public."document" WHERE "creator" = $1 and "deleted" = False', [ req.user.uid ])
             .then((rows) => {
-                console.log(rows);
                 if (!rows) {
                     return res.status(200).end(JSON.stringify({"docs": [], "status": "FAIL"}));
                 }
