@@ -67,7 +67,7 @@ module.exports = function(app) {
 
     app.post('/auth/login', function(req, res, next) {
         passport.authenticate('local', function(err, user, info) {
-        if (err) { return res.status(500).send(err); } // TODO dont use 500 error code for missing or wrong credentials
+        if (err) { return res.status(500).send(err); }
         if (!user) { return res.status(401).send(info); }
         req.logIn(user, function(err) {
           if (err) { return next(err); }
