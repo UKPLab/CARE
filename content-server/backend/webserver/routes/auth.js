@@ -1,13 +1,7 @@
-const express = require('express');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const crypto = require('crypto');
 const { pdb, addUser } = require('../../tools/db.js');
-
-const session = require('express-session');
-const FileStore = require('session-file-store')(session);
-const bodyParser = require('body-parser');
-
 
 // Login
 passport.use(new LocalStrategy(function verify(username, password, cb) {
@@ -69,22 +63,7 @@ async function register(user_credentials, res){
 }
 
 module.exports = function(app) {
-    // Session Initialization
-    app.use(session({
-        /*genid: (req) => {
-            console.log('Inside session middleware genid function')
-            console.log(`Request object sessionID from client: ${req.sessionID}`)
-            return uuidv4(); // use UUIDs for session IDs
-        },*/
-        store: new FileStore(), //TODO store session data into database
-        secret: 'thatsecretthinggoeshere',
-        resave: false,
-        saveUninitialized: true
-    }));
-    app.use(bodyParser.urlencoded({ extended: false }));
-    app.use(bodyParser.json());
-    app.use(passport.initialize());
-    app.use(passport.session());
+
 
     app.post('/auth/login', function(req, res, next) {
         passport.authenticate('local', function(err, user, info) {

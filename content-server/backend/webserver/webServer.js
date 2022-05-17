@@ -8,6 +8,11 @@ const mustacheExpress = require('mustache-express');
 const { Server } = require("socket.io");
 const { createServer, useSsl } = require('./createServer');
 
+const passport = require("passport");
+const session = require('express-session');
+const FileStore = require('session-file-store')(session);
+const bodyParser = require('body-parser');
+
 // define PATHs
 const TEMPLATES_PATH = `${__dirname}/../templates/`;
 const BUILD_PATH = `${__dirname}/../../dist/`;
@@ -17,7 +22,6 @@ const routes = [
     require("./routes/auth"),  //has to be first to make sure, session is available in req
     require("./routes/pdf"),
     require("./routes/hypothesis"),
-    require("./routes/user"),
     require("./routes/api"),
 ];
 
@@ -41,6 +45,23 @@ function webServer(config) {
 
     // Make all static files public available
     app.use(express.static(BUILD_PATH));
+
+    // Session Initialization
+    app.use(session({
+        /*genid: (req) => {
+            console.log('Inside session middleware genid function')
+            console.log(`Request object sessionID from client: ${req.sessionID}`)
+            return uuidv4(); // use UUIDs for session IDs
+        },*/
+        store: new FileStore(), //TODO store session data into database
+        secret: 'thatsecretthinggoeshere',
+        resave: false,
+        saveUninitialized: true
+    }));
+    app.use(bodyParser.urlencoded({ extended: false }));
+    app.use(bodyParser.json());
+    app.use(passport.initialize());
+    app.use(passport.session());
 
     // additional routes from routes directory
     routes.forEach(route => route(app));

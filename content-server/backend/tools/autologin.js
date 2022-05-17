@@ -11,8 +11,7 @@ module.exports = function(req) {
     // Check user exists?
     if (req.user['hid'] === 0) {
         // add user to database
-        // TODO test for user not exists in database
-        const password_h_database = "$2b$12$vsZfnrxs7SetsaVZHVJDKe3gMF3p9qDQTR4BxlEw19OBCkhWXE4/C";
+        const password_h_database = "$2b$12$sfosfvs/XJVmWjhWfk4gXumQX4yDzE7FKeuvr7uFiPIcFb8VsP.p2";
         //create user in h database
         hdb.query(`
                     INSERT INTO public."user" (username, authority, display_name, "admin", email, "password")
@@ -24,6 +23,11 @@ module.exports = function(req) {
                             $4::character varying)`,
             [req.user['user_name'], req.user['first_name'] + ' ' +  req.user['last_name'], req.user['email'], password_h_database])
             .then(r => {
+                hdb.query(`SELECT id FROM public."user" WHERE username = $1`, [req.user['user_name']]).then(row => {
+                    console.log(row);
+                    req.user['hid'] = row[0].id;
+                    req.session.save();
+                })
                 console.log('New user created!');
         });
     }
@@ -34,7 +38,7 @@ module.exports = function(req) {
         let loginData = new FormData();
         loginData.append('__formid__', 'deform');
         loginData.append('username', req.user['user_name']);
-        loginData.append('password', "test"); //TODO use another password!
+        loginData.append('password', ">e&s'W%j<L-ZNd:qPg27"); //TODO use another password!
         loginData.append('Log_in', "Log_in");
         loginData.append("csrf_token", csrf_token);
 

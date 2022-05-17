@@ -36,16 +36,22 @@ module.exports = function(app) {
     app.get('/app.html', async (req, res) => {
 
         // Hypothesis Autologin
-        let login_data = await autologin(req);
+        if (!('login_data' in req.session)) {
+            req.session['login_data'] = await autologin(req);
+            req.session.save();
+        }
 
-        // TODO save login data for later use or check if someone is already logged in
         // TODO try catch for error during login process (what should then be displayed in frontend)?
         // TODO login process can sometimes take some seconds, what should be displayed then?)
 
         //set Cookies
-        res.cookie(login_data.sessionCookie.name, login_data.sessionCookie.cookie, login_data.sessionCookie.options);
-        res.cookie(login_data.authCookie.name, login_data.authCookie.cookie, login_data.authCookie.options);
-        res.render('sidebar', {oauth: JSON.stringify(login_data.oauth)});
+        res.cookie(req.session['login_data'].sessionCookie.name,
+            req.session['login_data'].sessionCookie.cookie,
+            req.session['login_data'].sessionCookie.options);
+        res.cookie(req.session['login_data'].authCookie.name,
+            req.session['login_data'].authCookie.cookie,
+            req.session['login_data'].authCookie.options);
+        res.render('sidebar', {oauth: JSON.stringify(req.session['login_data'].oauth)});
 
     });
 

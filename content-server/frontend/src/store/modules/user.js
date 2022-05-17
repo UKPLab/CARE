@@ -27,7 +27,7 @@ export default {
     },
     actions: {
         async load({commit}) {
-            const response = await axios.get('/user/docs',
+            const response = await axios.get('/api/docs',
                 {
                     validateStatus: function (status) {
                         return status === 200 || status === 401;
