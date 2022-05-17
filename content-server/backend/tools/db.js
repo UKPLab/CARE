@@ -93,9 +93,6 @@ exports.addDoc = async function addDoc(doc_name, creator_id) {
                         $3::text);`,
         [now, doc_name, uri]);
 
-    //TODO need to add document_meta and _uri when we know what they do
-    //TODO check existence of the document in the h database (by URL) and point to that instead
-
     return hash;
 }
 

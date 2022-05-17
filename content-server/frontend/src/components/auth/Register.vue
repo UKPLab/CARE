@@ -67,7 +67,7 @@ export default {
   methods: {
     ...mapActions({register: "auth/register"}),
     async register_user() {
-      await this.register({
+      let response = await this.register({
         first_name: this.first_name,
         last_name: this.last_name,
         user_name: this.user_name,
@@ -75,6 +75,10 @@ export default {
         password: this.password,
         terms: this.terms,
       });
+      console.log(response);
+      if (response.statusText === "Created") {
+        await this.$router.push("/");
+      }
     }
   }
 }

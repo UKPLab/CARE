@@ -53,7 +53,7 @@ function webServer(config) {
             console.log(`Request object sessionID from client: ${req.sessionID}`)
             return uuidv4(); // use UUIDs for session IDs
         },*/
-        store: new FileStore(), //TODO store session data into database
+        store: new FileStore(),
         secret: 'thatsecretthinggoeshere',
         resave: false,
         saveUninitialized: true

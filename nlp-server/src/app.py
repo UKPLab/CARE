@@ -51,11 +51,6 @@ celery = Celery(app.name, **config.celery)
 celery.conf.update(app.config)
 
 
-### Future refactoring
-# TODO Blueprint for flask
-# TODO celery task registry for celery tasks
-
-
 def init():
     """
     Initialize the flask app and check for the connection to the GROBID client.

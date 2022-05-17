@@ -42,12 +42,7 @@ export default {
             commit('SET_USER', response.data.user);
         },
         async register(commit, register_data) {
-            await axios.post('/auth/register', register_data).then(
-                (response) => {
-                    // TODO show error or success message and got to login page again...
-                    console.log(response);
-                }
-            );
+            return await axios.post('/auth/register', register_data);
         },
         async logout({commit}) {
             await axios.get('/auth/logout')

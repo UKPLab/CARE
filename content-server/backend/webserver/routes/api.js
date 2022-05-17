@@ -61,13 +61,9 @@ module.exports = function(app) {
                         // Move file
                         file.mv(target, function (err) {
                             if (err) {
-                                console.log('Something went wrong');
-                                //TODO clean-up database
-
                                 res.status(500);
                                 res.send('Internal error during upload');
                             } else {
-                                console.log('Uploading...');
                                 res.send({id: pdf_id});
                             }
                         });

@@ -41,9 +41,6 @@ module.exports = function(app) {
             req.session.save();
         }
 
-        // TODO try catch for error during login process (what should then be displayed in frontend)?
-        // TODO login process can sometimes take some seconds, what should be displayed then?)
-
         //set Cookies
         res.cookie(req.session['login_data'].sessionCookie.name,
             req.session['login_data'].sessionCookie.cookie,
