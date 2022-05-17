@@ -5,12 +5,30 @@ const upload = require('express-fileupload');
 const path = require('path');
 
 const {addDoc, deleteDoc, renameDoc} = require('../../tools/db.js');
+const connectEnsureLogin = require("connect-ensure-login");
+const {pdb} = require("../../tools/db");
 
 
 const PDF_PATH = `${__dirname}/../../../files`;
 
 module.exports = function(app) {
-    //TODO add check for login
+    app.use("/api/*", connectEnsureLogin.ensureLoggedIn("/login"));
+
+    app.get('/api/docs', function(req, res) {
+        res.setHeader('Content-Type', 'application/json');
+
+        pdb.query('SELECT * FROM public."document" WHERE "creator" = $1 and "deleted" = False', [ req.user.uid ])
+            .then((rows) => {
+                if (!rows) {
+                    return res.status(200).end(JSON.stringify({"docs": [], "status": "FAIL"}));
+                }
+
+                return res.status(200).end(JSON.stringify({"docs": rows, "status": "OK"}));
+            })
+            .catch((err) => {
+                return res.status(401).end(JSON.stringify({"docs": [], "status": "FAIL"}));
+            });
+    });
 
     app.post(
         '/api/upload',

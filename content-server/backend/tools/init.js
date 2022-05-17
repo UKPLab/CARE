@@ -185,8 +185,8 @@ async function init_peer_db() {
             [hid, user_name, user_email, derivedKey, salt, role]);
     }
 
-    await addUser(args.admin_name, args.admin_email, "admin", "admin", "1");
-    await addUser("guest", "guest@email.com", "guestguest", "regular", "2");
+    await addUser(args.admin_name, args.admin_email, "admin", "admin", "0");
+    await addUser("guest", "guest@email.com", "guestguest", "regular", "0");
 
     const cuser = await pdb.query(`SELECT uid FROM public.user WHERE user_name = $1;`, ["guest"]);
     let cuid;

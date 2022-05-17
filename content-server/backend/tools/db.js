@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const dayjs = require("dayjs");
 const pgp = require('pg-promise')();
+const { v4: uuidv4 } = require('uuid');
 
 const DOC_URI = process.env.VITE_APP_WEBSOCKET_URL + "/annotate/"
 
@@ -23,15 +24,6 @@ const hdb = pgp({
 });
 exports.hdb = hdb;
 
-// h database connector
-const hdb = pgp({
-        host: process.env.POSTGRES_HOST,
-        port: process.env.POSTGRES_PORT,
-        database: "postgres",
-        user: "postgres",
-        password: ""
-});
-exports.hdb = hdb;
 
 //create admin + guest user, if not existent
 async function createPwd(password, salt) {
@@ -67,7 +59,7 @@ exports.addDoc = async function addDoc(doc_name, creator_id) {
     // create document identifier
     const doc_id_res = await pdb.query(`SELECT last_value FROM public.document_uid_seq;`);
     const doc_id = doc_id_res[0].last_value;
-    const hash = crypto.createHash("sha256").update(doc_id).digest("hex");
+    const hash = uuidv4(); // '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
 
     // set date
     const now = dayjs().format("YYYY-MM-DD HH:mm:ss.SSS Z");
