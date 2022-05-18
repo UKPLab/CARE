@@ -54,19 +54,18 @@ exports.addUser = async function addUser(user_name, user_email, password, role) 
 }
 
 exports.addDoc = async function addDoc(doc_name, creator_id) {
-    console.log(`Creating document ${doc_name}`);
+    // create unique document id
+    var hash;
+    while(true){
+        hash = uuidv4();
 
-    // create document identifier
-    const doc_id_res = await pdb.query(`SELECT last_value FROM public.document_uid_seq;`);
-    const doc_id = doc_id_res[0].last_value;
-    const hash = uuidv4(); // '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
-
-    // set date
-    const now = dayjs().format("YYYY-MM-DD HH:mm:ss.SSS Z");
+        const duplicate = await pdb.query(`SELECT * FROM public.document WHERE hash = $1;`, [hash]);
+        if(duplicate.length == 0){
+            break;
+        }
+    }
 
     // get hid
-    console.log("Getting hid from DB");
-
     const last_docid = await hdb.query(`SELECT last_value::integer FROM document_id_seq;`);
     if(!last_docid || last_docid.length !== 1){
         throw Error("Could not created document in h database. Lacks initialization?");
@@ -75,23 +74,21 @@ exports.addDoc = async function addDoc(doc_name, creator_id) {
 
     // create document in peer DB
     await pdb.query(`
-                INSERT INTO public."document" (name, hash, hid, creator, created_at, deleted)
+                INSERT INTO public."document" (name, hash, hid, creator, deleted)
                 VALUES ($1::character varying,
                         $2::character varying,
                         $3::integer,
                         $4::integer,
-                        $5::time with time zone,
-                        $6::boolean);`,
-        [doc_name, hash, hid, creator_id, now, false]);
+                        false::boolean);`,
+        [doc_name, hash, hid, creator_id]);
 
     // create document in h DB
     const uri = DOC_URI + hash;
     await hdb.query(`
-                INSERT INTO public."document" (created, title, web_uri)
-                VALUES ($1::timestamp,
-                        $2::text,
-                        $3::text);`,
-        [now, doc_name, uri]);
+                INSERT INTO public."document" (title, web_uri)
+                VALUES ($1::text,
+                        $2::text);`,
+        [doc_name, uri]);
 
     return hash;
 }
