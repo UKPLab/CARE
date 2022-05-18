@@ -155,10 +155,10 @@ async function init_peer_db() {
     }
 
     // add basic users
-    await addUser(args.admin_name, args.admin_email, "admin", "admin")
-        .catch((err) => console.log("WARN: Failed to create admin -- probably already exists"));
-    await addUser("guest", "guest@email.com", "guestguest", "regular")
-        .catch((err) => console.log("WARN: Failed to create guest -- probably already exists"));
+    await addUser(args.admin_name, "admin", "user", args.admin_email, "admin", "admin")
+        .catch((err) => console.log("WARN: Failed to create admin -- probably already exists" + err));
+    await addUser("guest", "guest", "user", "guest@email.com", "guestguest", "regular")
+        .catch((err) => console.log("WARN: Failed to create guest -- probably already exists" + err));
 
     // create showcase document in DB
     const cuser = await pdb.query(`SELECT uid FROM public.user WHERE user_name = $1;`, ["guest"]);

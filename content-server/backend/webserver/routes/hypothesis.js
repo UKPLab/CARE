@@ -34,11 +34,15 @@ module.exports = function(app) {
 
     // Loading app.html
     app.get('/app.html', async (req, res) => {
+        console.log("app.html world!");
 
         // Hypothesis Autologin
         if (!('login_data' in req.session)) {
+            console.log("USER not logged into hypothesis yet!");
             req.session['login_data'] = await autologin(req);
             req.session.save();
+
+            console.log("After autologin world");
         }
 
         //set Cookies
@@ -49,7 +53,6 @@ module.exports = function(app) {
             req.session['login_data'].authCookie.cookie,
             req.session['login_data'].authCookie.options);
         res.render('sidebar', {oauth: JSON.stringify(req.session['login_data'].oauth)});
-
     });
 
 }
