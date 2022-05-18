@@ -34,15 +34,36 @@ async function createPwd(password, salt) {
     });
 }
 
-exports.addUser = async function addUser(user_name, user_email, password, role) {
+exports.addUser = async function addUser(user_name, first_name, last_name, user_email, password, role) {
     const salt = crypto.randomBytes(16).toString("hex");
 
     let derivedKey = await createPwd(password, salt);
     derivedKey = derivedKey.toString('hex');
 
+    // add user to database
+    // h database
+    let rows = await hdb.query(`SELECT id FROM public."user" WHERE email = $1`, [user_email]);
+    if(rows.length === 0){
+        const password_h_database = process.env.H_USER_PWD;
+        await hdb.query(`
+                INSERT INTO public."user" (username, authority, display_name, "admin", email, "password")
+                VALUES ($1::character varying,
+                        'localhost',
+                        $2::character varying,
+                        false,
+                        $3::character varying,
+                        $4::character varying)`,
+        [user_name, first_name + ' ' +  last_name, user_email, password_h_database]);
+
+        rows = await hdb.query(`SELECT id FROM public."user" WHERE username = $1`, [req.user['user_name']]);
+    }
+
+    // peer database
+    const hid = rows[0].id;
+
     await pdb.query(`
                 INSERT INTO public."user" (hid, sys_role, first_name, last_name, user_name, email, password_hash, salt)
-                VALUES (0,
+                VALUES ($6,
                         $5::character varying,
                         $1::character varying,
                         'User'::character varying,
@@ -50,7 +71,7 @@ exports.addUser = async function addUser(user_name, user_email, password, role) 
                         $2::character varying,
                         $3::character varying,
                         $4::character varying)`,
-        [user_name, user_email, derivedKey, salt, role]);
+        [user_name, user_email, derivedKey, salt, role, hid]);
 }
 
 exports.addDoc = async function addDoc(doc_name, creator_id) {
