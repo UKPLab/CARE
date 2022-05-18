@@ -1,5 +1,5 @@
 const { ArgumentParser } = require('argparse');
-const dayjs = require('dayjs');
+const fs = require('fs');
 const { pdb, hdb, addUser, addDoc } = require('./db.js');
 
 // global parameters
@@ -87,8 +87,8 @@ async function init_peer_db() {
             email character varying(100) COLLATE pg_catalog."default" NOT NULL UNIQUE,
             password_hash character varying(64) COLLATE pg_catalog."default",
             salt character varying(32) COLLATE pg_catalog."default",
-            registered_at time with time zone,
-            last_login_at time with time zone,
+            registered_at timestamp default now(),
+            last_login_at timestamp,
             CONSTRAINT user_pkey PRIMARY KEY (uid),
             CONSTRAINT email UNIQUE (email),
             CONSTRAINT role FOREIGN KEY (sys_role)
@@ -116,15 +116,15 @@ async function init_peer_db() {
 
     await pdb.query(`
         CREATE TABLE IF NOT EXISTS public.document (
-            uid integer NOT NULL DEFAULT nextval('document_uid_seq'::regclass),
+            uid character varying(64) NOT NULL DEFAULT nextval('document_uid_seq'::regclass),
             name character varying(64) COLLATE pg_catalog."default",
             hash character varying(64) COLLATE pg_catalog."default" NOT NULL UNIQUE,
             hid integer NOT NULL,
             creator integer NOT NULL,
-            created_at time with time zone,
-            updated_at time with time zone,
+            created_at timestamp default now(),
+            updated_at timestamp,
             deleted boolean,
-            deleted_at time with time zone,
+            deleted_at timestamp,
             CONSTRAINT document_pkey PRIMARY KEY (uid),
             CONSTRAINT creator FOREIGN KEY (creator)
                 REFERENCES public."user" (uid) MATCH SIMPLE
@@ -154,58 +154,35 @@ async function init_peer_db() {
         `, role);
     }
 
-    //create admin + guest user, if not existent
-    async function createPwd(password, salt) {
-        return new Promise((res, rej) => {
-            crypto.pbkdf2(password, salt, 310000, 32, 'sha256', (err, derivedKey) => {
-                err ? rej(err) : res(derivedKey);
-            });
+    // add basic users
+    await addUser(args.admin_name, args.admin_email, "admin", "admin")
+        .catch((err) => console.log("WARN: Failed to create admin -- probably already exists"));
+    await addUser("guest", "guest@email.com", "guestguest", "regular")
+        .catch((err) => console.log("WARN: Failed to create guest -- probably already exists"));
+
+    // create showcase document in DB
+    const cuser = await pdb.query(`SELECT uid FROM public.user WHERE user_name = $1;`, ["guest"]);
+    const cuid = cuser[0]["uid"];
+
+    const sdoc = await pdb.query(`SELECT hash FROM public.document WHERE name = $1 and creator = $2;`, ["showcase", cuid]);
+    var docid;
+    if(sdoc.length === 0){
+        docid = await addDoc("showcase", cuid);
+    } else {
+        console.log("Showcase document already exists in database");
+        docid = sdoc[0]["hash"];
+    }
+
+    // create the showcase document in files (if necessary)
+    const inPath = 'resources/showcase.pdf';
+    const targetPath = `files/${docid}.pdf`;
+
+    if(!fs.existsSync(targetPath)){
+        fs.copyFile(inPath, targetPath, (err) => {
+          if (err) throw err;
+          console.log('Copied showcase document');
         });
     }
-
-    async function addUser(user_name, user_email, password, role, hid) {
-        console.log(`Creating user ${user_name}`);
-
-        const salt = crypto.randomBytes(16).toString("hex");
-
-        let derivedKey = await createPwd(password, salt);
-        derivedKey = derivedKey.toString('hex');
-
-        await pdb.query(`
-                    INSERT INTO public."user" (hid, sys_role, first_name, last_name, user_name, email, password_hash, salt)
-                    VALUES ($1::integer,
-                            $6::character varying,
-                            $2::character varying,
-                            'User'::character varying,
-                            $2,
-                            $3::character varying,
-                            $4::character varying,
-                            $5::character varying)
-                    ON CONFLICT DO NOTHING;`,
-            [hid, user_name, user_email, derivedKey, salt, role]);
-    }
-
-    await addUser(args.admin_name, args.admin_email, "admin", "admin", "0");
-    await addUser("guest", "guest@email.com", "guestguest", "regular", "0");
-
-    const cuser = await pdb.query(`SELECT uid FROM public.user WHERE user_name = $1;`, ["guest"]);
-    let cuid;
-
-    if(cuser.length !== 1){
-       throw Error(creator + " does not exist. Cannot create document in their name.");
-    } else {
-       cuid = cuser[0]["uid"];
-    }
-
-    await addDoc("showcase", cuid);
-    addUser(args.admin_name, args.admin_email, "admin", "admin", "1")
-        .catch((err) => {
-            console.log(err);
-        })
-    addUser("guest", "guest@email.com", "guestguest", "regular", "2")
-        .catch((err) => {
-            console.log(err);
-        })
 }
 
 init_h_db().then(r =>
