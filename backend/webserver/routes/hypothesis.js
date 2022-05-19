@@ -57,7 +57,11 @@ module.exports = function(app) {
             res.cookie(req.session['login_data'].authCookie.name,
                 req.session['login_data'].authCookie.cookie,
                 req.session['login_data'].authCookie.options);
-            res.render('sidebar', {oauth: JSON.stringify(req.session['login_data'].oauth)});
+            res.render('sidebar', {
+                oauth: JSON.stringify(req.session['login_data'].oauth),
+                oauthClientId: process.env.CLIENT_OAUTH_ID,
+                appUrl: process.env.APP_URL
+            });
         } else {
             // TODO: Doesn't have a login
             console.log("don't have a login ... what to do?")
