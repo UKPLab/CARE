@@ -1,10 +1,18 @@
 <template>
-  <router-view></router-view>
+    <div class="row">
+    <div class="col-md-8 mx-auto my-4">
+   <List></List>
+  <a href="#" @click="logout()">Logout</a>
+    </div>
+    </div>
 </template>
 
 <script>
+import List from "./dashboard/documents/List.vue";
+
 export default {
   name: "Dashboard",
+  components: {List},
   created() {
       this.$socket.on('connect', (data) => { console.log('socket connected') });
     },
@@ -12,6 +20,12 @@ export default {
   sockets: {
       connect: function () {
         console.log('socket connected')
+      }
+    },
+  methods: {
+      async logout() {
+        await this.$store.dispatch('auth/logout');
+        await this.$router.push("/login");
       }
     },
    mounted() {
@@ -26,5 +40,4 @@ export default {
 </script>
 
 <style scoped>
-
 </style>

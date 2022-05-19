@@ -3,19 +3,19 @@ import store from "./store";
 
 // Set Vue Routing
 import Annotater from "./components/dashboard/Annotater.vue";
-import Overview from "./components/dashboard/Overview.vue";
+import Dashboard from "./components/Dashboard.vue";
 import NotFoundPage from "./components/NotFoundPage.vue";
 import Login from "./components/auth/Login.vue";
 import Register from "./components/auth/Register.vue";
 
 
 const routes = [
-    { path: "/", component: Overview},
-    { path: "/index.html", component: Overview},
-    { path: "/login", component: Login},
-    { path: "/register", component: Register},
-    { path: "/annotate/:pdf_path", component: Annotater, props: true },
-    { path: "/:catchAll(.*)", name: "NotFound", component: NotFoundPage}
+    { path: "/", component: Dashboard, meta: { requiresAuth: true }},
+    { path: "/index.html", component: Dashboard, meta: { requiresAuth: true }},
+    { path: "/login", component: Login, meta: { requiresAuth: false }},
+    { path: "/register", component: Register, meta: { requiresAuth: false }},
+    { path: "/annotate/:pdf_path", component: Annotater, props: true, meta: { requiresAuth: true } },
+    { path: "/:catchAll(.*)", name: "NotFound", component: NotFoundPage, meta: { requiresAuth: false }}
 ]
 
 const router = VueRouter.createRouter({
@@ -26,11 +26,11 @@ const router = VueRouter.createRouter({
     root: "/"
 })
 
-//TODO see issue #14
-/*
-router.beforeEach((to, from, next) => {
-    if (!store.auth.isAuthenticated() && to.path !== '/register') next('/login')
-    next();
-})*/
+router.beforeEach(async (to, from, next) => {
+    await store.restored;
+    if (to.meta.requiresAuth && store.getters['auth/isAuthenticated'] === false) next("/login");
+    else if (store.getters['auth/isAuthenticated'] && (to.path === '/register' || to.path === '/login')) next('/');
+    else next();
+})
 
 export default router;

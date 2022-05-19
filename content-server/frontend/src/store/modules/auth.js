@@ -1,4 +1,3 @@
-import createPersistedState from 'vuex-persistedstate';
 import axios from 'axios';
 
 const getDefaultState = () => {
@@ -10,7 +9,6 @@ const getDefaultState = () => {
 export default {
     namespaced: true,
     strict: true,
-    plugins: [createPersistedState()],
     state: getDefaultState(),
     getters: {
         isAuthenticated: state => {
