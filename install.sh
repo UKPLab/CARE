@@ -119,5 +119,12 @@ sudo apt-get update && sudo apt-get install python3-dev python3-pip -y
 echo "> Install Docker Compose "
 sudo pip3 install docker-compose
 
+echo "> Installing GROBID for NLP Processing"
+cd ./backend/nlp
+git clone https://github.com/kermitt2/grobid_client_python
+cd grobid_client_python
+sudo python3 setup.py install
+cd ../../..
+
 echo "> Installation finished!"
 echo "> If there was no errors, you can build the environment now!"

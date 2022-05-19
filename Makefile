@@ -85,20 +85,21 @@ init: node_modules/.uptodate
 
 
 .PHONY: nlp_dev
-dev:
-	export PYTHON_PATH="$(CURDIR)/src"
-	python3 src/app.py --dev
+nlp_dev:
+	export PYTHON_PATH="$(CURDIR)/backend/nlp/src"
+	python3 ./backend/nlp/src/app.py --dev
 
 
 .PHONY: nlp_celery
-celery:
+nlp_celery:
 	export C_FORCE_ROOT=true
-	cd src && \
+	cd ./backend/nlp/src && \
 	celery --app app.celery worker -l INFO -E
 
 
+
 .PHONY: nlp_services
-services:
+nlp_services:
 	docker-compose up grobid \
  					  rabbitmq \
  					  redis \

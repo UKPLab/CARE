@@ -75,8 +75,6 @@ services:
       - rabbitmq
       - redis
     command: celery -A app.celery worker -l INFO -E
-    volumes:
-      - pdfstore:/upload
   flower:
     image: mher/flower
     depends_on:
