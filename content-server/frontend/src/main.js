@@ -25,10 +25,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap"
 app.use(BootstrapVue3);
 
-//Routing
-import router from './routes.js';
-app.use(router);
-
 // Socket IO
 // https://www.npmjs.com/package/vue-3-socket.io
 app.use(new VueSocketIO({
@@ -43,5 +39,9 @@ app.use(new VueSocketIO({
 
 // using Vuex Store
 app.use(store);
+
+//Routing
+import router from './routes.js';
+app.use(router);
 
 app.mount('#app');
