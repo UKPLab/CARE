@@ -13,52 +13,6 @@ yet, although they might be referenced in the following documentation:
 This directory contains all files associated with the NLP Server, which receives, 
 evaluates and answers all requests related to NLP.
 
-## Running the Server 
-### Start-up ("manually")
-To run the server you simply need to run:
-```
-docker-compose up 
-```
-
-During development you should enforce re-building of the containers instead of using the cached ones:
-```
-docker-compose up  --build
-```
-
-### Start-up (via Make)
-To start the server in dev mode, i.e. on your local machine with only services in docker, run in two terminals:
-```
-make services
-```
-
-```
-make dev
-```
-
-Hereby, any changes to the actual flask server, can be integrated via just running "make dev" in isolation.
-
-If you want to start the server with services in a docker containers use:
-```
-make docker
-```
-This does the same as the above docker-compose commands.
-
-### Management
-The RabbitMQ status monitor and Flower for surveilance of celery workers are used. To check-in on the RabbitMQ instance 
-you should visit in your browser:
-```
-localhost:15672
-```
-You can access the server via providing username and password. Per default these are both `guest`.
-
-The Flower monitor is accessible at port 8888. To check-in on the Celery tasks visit in your browser:
-(currently, there are connection problems -- so no proper updates to jobs show)
-```
-localhost:8888
-```
-
-### Deployment
-TBA
 
 ## Server Infrastructure
 ### Technologies
@@ -72,7 +26,7 @@ establishes a socketio connection. Upon request a celery worker is requestes via
 pool worker then performs the task while optionally sending messages via socketio (and indirectly the message queue) to
 the client. The result is written to the redis backend and can be grabbed from there.
 
-![Overview](docs/tech.png?raw=true "Process Architecture")
+![Overview](../../../nlp-server/docs/tech.png?raw=true "Process Architecture")
 
 Note that the celery worker has no application context (of the flask app) and all necessary parameters have to be passed
 by value or read from disk/backend. This should inform the design of the task architecture
@@ -81,7 +35,7 @@ by value or read from disk/backend. This should inform the design of the task ar
 The following figure makes the data and call flow explicit. The flask app spans a celery process via the broker interface
 to the worker. The worker performs the task and the result can be read from the flask app (or the celery workers).
 
-![Overview](docs/flow.png?raw=true "Process Architecture")
+![Overview](../../../nlp-server/docs/flow.png?raw=true "Process Architecture")
 
 ## Adding Components
 Warning: This is WIP and will be specified in more detail later. This is the first proposal to approach the issue.
