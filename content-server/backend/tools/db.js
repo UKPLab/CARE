@@ -55,7 +55,7 @@ exports.addUser = async function addUser(user_name, first_name, last_name, user_
                         $4::character varying)`,
         [user_name, first_name + ' ' +  last_name, user_email, password_h_database]);
 
-        rows = await hdb.query(`SELECT id FROM public."user" WHERE username = $1`, [user_name]);
+        rows = await hdb.query(`SELECT id FROM public."user" WHERE username = $1`, [req.user['user_name']]);
     }
 
     // peer database
