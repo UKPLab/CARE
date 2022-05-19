@@ -15,7 +15,7 @@ module.exports = function(req) {
         let loginData = new FormData();
         loginData.append('__formid__', 'deform');
         loginData.append('username', req.user['user_name']);
-        loginData.append('password', ">e&s'W%j<L-ZNd:qPg27");
+        loginData.append('password', "ewfaoij2343oijf");
         loginData.append('Log_in', "Log_in");
         loginData.append("csrf_token", csrf_token);
 

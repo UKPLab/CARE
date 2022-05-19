@@ -39,20 +39,29 @@ module.exports = function(app) {
         // Hypothesis Autologin
         if (!('login_data' in req.session)) {
             console.log("USER not logged into hypothesis yet!");
-            req.session['login_data'] = await autologin(req);
-            req.session.save();
+            try {
+               req.session['login_data'] = await autologin(req);
+               req.session.save();
+            } catch (e) {
+                console.log(e);
+            }
 
             console.log("After autologin world");
         }
 
-        //set Cookies
-        res.cookie(req.session['login_data'].sessionCookie.name,
-            req.session['login_data'].sessionCookie.cookie,
-            req.session['login_data'].sessionCookie.options);
-        res.cookie(req.session['login_data'].authCookie.name,
-            req.session['login_data'].authCookie.cookie,
-            req.session['login_data'].authCookie.options);
-        res.render('sidebar', {oauth: JSON.stringify(req.session['login_data'].oauth)});
+        if (('login_data' in req.session)) {
+            //set Cookies
+            res.cookie(req.session['login_data'].sessionCookie.name,
+                req.session['login_data'].sessionCookie.cookie,
+                req.session['login_data'].sessionCookie.options);
+            res.cookie(req.session['login_data'].authCookie.name,
+                req.session['login_data'].authCookie.cookie,
+                req.session['login_data'].authCookie.options);
+            res.render('sidebar', {oauth: JSON.stringify(req.session['login_data'].oauth)});
+        } else {
+            // TODO: Doesn't have a login
+            console.log("don't have a login ... what to do?")
+        }
     });
 
 }
