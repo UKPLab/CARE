@@ -17,3 +17,6 @@ yarn-error.log
 
 # building files
 nodesource_setup.sh
+
+*/__pycache__
+.idea

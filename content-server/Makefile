@@ -16,9 +16,15 @@ help:
 	@echo "make clean             Delete development files"
 	@echo "make docker			  Generate docker images"
 	@echo "make init              Auto-Config h server"
+	@echo "make nlp_dev           Run the flask app. Requires you to run make services in another terminal first"
+	@echo "make nlp_services      Run required services"
+
 
 .PHONY: dev
-dev: node_modules/.uptodate
+dev: frontend_dev nlp_dev
+
+.PHONY: frontend_dev
+frontend_dev: node_modules/.uptodate
 ifeq (,$(wildcard frameworks/pdf.js/build/generic/build/pdf.js))
 	@echo "Building pdfjs..."
 	make pdfjs
@@ -35,6 +41,7 @@ clean:
 	rm -f node_modules/.uptodate
 	rm -rf dist
 	cd frameworks/hypothesis/client && make clean
+	rm -r backend/nlp/grobid_client_python
 	docker image prune -a
 
 .PHONY: build
@@ -60,7 +67,10 @@ h_client: frameworks/hypothesis/client/package.json
 	cd frameworks/hypothesis/client && make build
 
 .PHONY: services
-services:
+services: h_services nlp_services
+
+.PHONY: h_services
+h_services:
 	cd frameworks/hypothesis/h && make services
 
 
@@ -74,4 +84,27 @@ init: node_modules/.uptodate
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password ${H_SERVER_ADMIN_USER} --password ${H_SERVER_ADMIN_PASSWORD}
 
 
+.PHONY: nlp_dev
+dev:
+	export PYTHON_PATH="$(CURDIR)/src"
+	python3 src/app.py --dev
 
+
+.PHONY: nlp_celery
+celery:
+	export C_FORCE_ROOT=true
+	cd src && \
+	celery --app app.celery worker -l INFO -E
+
+
+.PHONY: nlp_services
+services:
+	docker-compose up grobid \
+ 					  rabbitmq \
+ 					  redis \
+ 					  celery-worker
+
+
+.PHONY: docker
+docker:
+	docker-compose up  --build

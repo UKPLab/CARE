@@ -1,7 +1,9 @@
-# Content Server
+# PEER
 
-## Description
-This directory contains all files to serve the website to the user.
+PEER is a tool to support the peer review process of scientific papers.
+
+For project newcomers the central launch point will be the [Wiki](https://git.ukp.informatik.tu-darmstadt.de/zyska/peer/-/wikis) of the GitLab Project.
+
 
 ## Architecture
 For an overview of the complete architecture, see ./docs/architecture.drawio\
@@ -53,6 +55,13 @@ This will run the main development code locally.
 (Note: The first run will take some time...)
 
     make dev     # Build everything and start content-server
+    # OR for individual dev builds:
+    make frontend_dev 
+    make nlp_dev
+
+You can start the docker environment with
+
+    make docker
 
 Also the Hypothesis Server should be running. 
 You can start it with (in an additional terminal in directory content-server):
@@ -90,6 +99,21 @@ In case of doubt you can use `make services`.
     Redirect URL: http://localhost:5000/app.html
 
 5. Get Client ID and add it into the Makefile!
+
+
+## Services
+The RabbitMQ status monitor and Flower for surveilance of celery workers are used. To check-in on the RabbitMQ instance 
+you should visit in your browser:
+```
+localhost:15672
+```
+You can access the server via providing username and password. Per default these are both `guest`.
+
+The Flower monitor is accessible at port 8888. To check-in on the Celery tasks visit in your browser:
+(currently, there are connection problems -- so no proper updates to jobs show)
+```
+localhost:8888
+```
 
 ## Frameworks
 
