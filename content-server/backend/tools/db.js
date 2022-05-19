@@ -44,7 +44,7 @@ exports.addUser = async function addUser(user_name, first_name, last_name, user_
     // h database
     let rows = await hdb.query(`SELECT id FROM public."user" WHERE email = $1`, [user_email]);
     if(rows.length === 0){
-        const password_h_database = process.env.H_USER_PWD;
+        const password_h_database = "$2b$12$LH1m4MHpQxoEBj.bG19jlefP5TQVnhBDyTrXvmPyMgqjqdbg7VSS2";
         await hdb.query(`
                 INSERT INTO public."user" (username, authority, display_name, "admin", email, "password")
                 VALUES ($1::character varying,
