@@ -370,19 +370,42 @@
 </template>
 
 <script>
+import workerSrc from "pdfjs-dist/build/pdf.worker.min"
+import pdfjsLib from "pdfjs-dist/build/pdf";
+import { PDFViewer } from "pdfjs-dist/web/pdf_viewer";
+import "pdfjs-dist/web/pdf_viewer.css";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+
 export default {
   name: "PDFJSViewer",
+  props: ['pdf_path'],
+  methods: {
+    async getPdf() {
+
+      let pdfViewer = new PDFViewer({
+        container: document.getElementById('viewerContainer')
+      })
+      let loadingTask = pdfjsLib.getDocument("/pdf/" + this.pdf_path);
+      let pdf = await loadingTask.promise;
+      pdfViewer.setDocument(pdf);
+    }
+  },
   mounted() {
+    this.getPdf();
+
+    /*
     let style = document.createElement("link");
     style.rel = "stylesheet";
-    style.href = "/pdfjs/web/viewer.css";
+    style.href = "../../assets/pdfjs/web/viewer.css";
     document.head.appendChild(style);
 
     let resource = document.createElement("link");
     resource.type = "application/l10n";
     resource.rel = "resource";
-    resource.href = "/pdfjs/web/locale/locale.properties";
+    resource.href = "../../assets/pdfjs/web/locale/locale.properties";
     document.head.appendChild(resource);
+    */
   }
 }
 </script>

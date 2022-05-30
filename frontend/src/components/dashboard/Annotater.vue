@@ -1,5 +1,5 @@
 <template>
-    <PDFJSViewer></PDFJSViewer>
+    <PDFJSViewer :pdf_path="pdf_path"></PDFJSViewer>
 </template>
 
 <script>
@@ -16,13 +16,16 @@ export default {
       const scriptEl = document.createElement('script');
       scriptEl.src = src
       document.body.appendChild(scriptEl);
-    }
+    },
+
+
   },
   created() {
 
+    /*
     const scripts = [
-      "/pdfjs/build/pdf.js",
-      "/pdfjs/web/viewer.js"
+      "/pdfjs-dist/build/pdf.js",
+      "/pdfjs-dist/web/viewer.js"
     ];
     scripts.forEach(script => {
       let tag = document.createElement("script");
@@ -31,6 +34,8 @@ export default {
     })
     console.log("Document URL:" + document.URL);
     console.log("PDF URL: " + "/pdf/" + this.pdf_path);
+
+     */
 
   },
   mounted() {
@@ -48,6 +53,8 @@ export default {
     configScript.textContent = JSON.stringify(clientConfig);
     document.head.appendChild(configScript);
 
+
+    /*
     // Listen for `webviewerloaded` event to configure the viewer after its files
     // have been loaded but before it is initialized.
     document.addEventListener('webviewerloaded', () => {
@@ -55,7 +62,7 @@ export default {
       const appOptions = window.PDFViewerApplicationOptions;
       const app = window.PDFViewerApplication;
 
-      appOptions.set('workerSrc', "/pdfjs/build/pdf.worker.js")
+      appOptions.set('workerSrc', "/pdfjs-dist/build/pdf.worker.js")
 
       // Ensure that PDF.js viewer events such as "documentloaded" are dispatched
       // to the DOM. The client relies on this.
@@ -111,6 +118,8 @@ export default {
 
       });
     });
+
+     */
   }
 }
 </script>
