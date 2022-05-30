@@ -2,8 +2,9 @@
 # files dir
 files/*.pdf
 
-# sessions dir
-sessions
+# backend
+backend/sessions
+backend/node_modules
 
 # ignore files of hypothesis submodules
 frameworks/hypothesis/
@@ -11,7 +12,9 @@ frameworks
 
 # ignore build files
 dist/
-node_modules/
+node_modules
+
+
 yarn-error.log
 .tox
 

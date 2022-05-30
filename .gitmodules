@@ -4,6 +4,3 @@
 [submodule "frameworks/hypothesis/client"]
 	path = frameworks/hypothesis/client
 	url = https://github.com/hypothesis/client.git
-[submodule "frameworks/pdf.js"]
-	path = frameworks/pdf.js
-	url = https://github.com/mozilla/pdf.js.git
