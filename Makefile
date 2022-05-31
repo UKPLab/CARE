@@ -41,7 +41,7 @@ clean:
 
 .PHONY: build
 build:
-	docker-compose -f docker-compose.yml up
+	docker-compose -f docker-compose.yml up --build
 
 node_modules/.uptodate: package.json package-lock.json
 	npm install
@@ -53,8 +53,10 @@ backend/node_modules/.uptodate: backend/package.json backend/package-lock.json
 
 .PHONY: h_server
 h_server: frameworks/hypothesis/h/package.json
-	cd frameworks/hypothesis/h && make services
-	cd frameworks/hypothesis/h && make dev
+	docker-compose up postgres \
+	                  elasticsearch \
+	                  rabbit \
+	                  h_server
 
 .PHONY: h_client
 h_client: frameworks/hypothesis/client/package.json
@@ -71,7 +73,7 @@ h_services:
 .PHONY: init
 init: node_modules/.uptodate
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
-	npm run init-db -- \
+	cd backend && npm run init-db -- \
 				   --admin_name ${H_SERVER_ADMIN_USER} \
 				   --admin_email ${H_SERVER_ADMIN_MAIL} \
 				   --admin_pwd ${H_SERVER_ADMIN_PASSWORD}
@@ -80,14 +82,14 @@ init: node_modules/.uptodate
 
 .PHONY: nlp_dev
 nlp_dev:
-	export PYTHON_PATH="$(CURDIR)/backend/nlp/src"
-	python3 ./backend/nlp/src/app.py --dev
+	export PYTHON_PATH="$(CURDIR)/nlp/src"
+	python3 ./nlp/src/app.py --dev
 
 
 .PHONY: nlp_celery
 nlp_celery:
 	export C_FORCE_ROOT=true
-	cd ./backend/nlp/src && \
+	cd ./nlp/src && \
 	celery --app app.celery worker -l INFO -E
 
 
@@ -98,8 +100,3 @@ nlp_services:
  					  rabbitmq \
  					  redis \
  					  celery-worker
-
-
-.PHONY: docker
-docker:
-	docker-compose up  --build
