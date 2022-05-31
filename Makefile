@@ -34,10 +34,10 @@ endif
 .PHONY: clean
 clean:
 	rm -f node_modules/.uptodate
+	rm -f backend/node_modules/.uptodate
 	rm -rf dist
 	cd frameworks/hypothesis/client && make clean
-	rm -r backend/nlp/grobid_client_python
-	docker image prune -a
+	rm -r nlp/grobid_client_python
 
 .PHONY: build
 build:

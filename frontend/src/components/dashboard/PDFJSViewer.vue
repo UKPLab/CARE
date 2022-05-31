@@ -370,53 +370,21 @@
 </template>
 
 <script>
-/*
-import workerSrc from "pdfjs-dist/build/pdf.worker.min"
-import * as pdfjsLib from "pdfjs-dist/build/pdf";
-import { PDFViewer } from "pdfjs-dist/web/pdf_viewer";
-import "pdfjs-dist/web/pdf_viewer.css";
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-
-*/
 
 
 export default {
   name: "PDFJSViewer",
   props: ['pdf_path'],
   methods: {
-    async getPdf() {
-      document.addEventListener('localized', function() {
-console.log('here...'+pdfjsLib.linkService.eventBus);
-});
-      document.addEventListener('webviewerloaded', () => {
-        console.log("Test");
-        const pdfjsInitialized = new Promise(resolve => {
-          const timer = setInterval(function () {
-            if (pdfjsLib.initialized) {
-              clearTimeout(timer);
-              resolve();
-            }
-          }, 20);
-        });
-        pdfjsInitialized.then(async () => {
-          let pdfViewer = new PDFViewer({
-            container: document.getElementById('viewerContainer')
-          })
-          let loadingTask = pdfjsLib.getDocument("/pdf/" + this.pdf_path);
-          let pdf = await loadingTask.promise;
-          pdfViewer.setDocument(pdf);
-        });
-      });
+    loadClient() {
+      const src = `/hypothesis/`
 
-    }
-  },
-  created() {
-
+      const scriptEl = document.createElement('script');
+      scriptEl.src = src
+      document.body.appendChild(scriptEl);
+    },
   },
   mounted() {
-    //this.getPdf();
 
     const scripts = [
       "/pdfjs-dist/build/pdf.js",
