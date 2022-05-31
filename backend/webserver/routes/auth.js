@@ -1,9 +1,20 @@
+/* auth.js - Routes for login
+
+Here the routes for login into the content server are provided. This includes checking of tokens and
+register, login and logout.
+
+Author: Nils Dycke (dycke@ukp.informatik...)
+Co-Author: Dennis Zyska (zyska@ukp.informatik....)
+Source: Inspired by https://heynode.com/tutorial/authenticate-users-node-expressjs-and-passportjs/
+*/
+
+
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const crypto = require('crypto');
 const { pdb, addUser } = require('../../tools/db.js');
 
-// Login
+// internal login procedure using passport and postgres
 passport.use(new LocalStrategy(function verify(username, password, cb) {
     pdb.query('SELECT * FROM public."user" WHERE "user_name" = $1 OR "email" = $1', [ username ])
         .then((rows) => {
@@ -32,10 +43,12 @@ passport.use(new LocalStrategy(function verify(username, password, cb) {
         })
 }));
 
+// required to work -- defines strategy for storing user information
 passport.serializeUser(function(user, done) {
     done(null, user);
 });
 
+// required to work -- defines strategy for loading user information
 passport.deserializeUser(function(user, done) {
     done(null, user);
 });
@@ -63,8 +76,7 @@ async function register(user_credentials, res){
 }
 
 module.exports = function(app) {
-
-
+    // user login
     app.post('/auth/login', function(req, res, next) {
         passport.authenticate('local', function(err, user, info) {
         if (err) { return res.status(500).send(err); }
@@ -86,6 +98,7 @@ module.exports = function(app) {
         }
     )
 
+    // check whether user is logged in
     app.get(
         '/auth/check',
         function(req, res) {
@@ -99,6 +112,7 @@ module.exports = function(app) {
         }
     );
 
+    // register a user
     app.post(
         '/auth/register',
         function(req, res) {

@@ -1,3 +1,14 @@
+/* autologin.js - Realizes the autologin in hypothesis
+
+This module provides a function for realizing an automatic login to the hypothesis
+server given user credentials. The output is a response with cookies mimicking how
+the hypothesis client sets these cookies with API tokens.
+
+Author: Dennis Zyska (zyska@ukp.informatik....)
+Co-Author: Nils Dycke (dycke@ukp.informatik...)
+Source: --
+*/
+
 const axios = require('axios');
 const { hdb } = require('./db.js');
 const extractCookie = require('./extractCookie');

@@ -1,3 +1,10 @@
+/* basic.js - Example web socket
+
+Provides a websocket with a simple example interface.
+
+Author: Dennis Zyska (zyska@ukp.informatik....)
+Source: --
+*/
 
 const { io } = require("socket.io-client");
 
