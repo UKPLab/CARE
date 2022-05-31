@@ -11,7 +11,7 @@ module.exports = function(app) {
 
     app.use("/pdf/*", connectEnsureLogin.ensureLoggedIn("/login"));
 
-    //app.use("/pdfjs-dist", express.static(PDFJS_PATH));
+    app.use("/pdfjs-dist", express.static(PDFJS_PATH));
 
     app.get('/pdf/:pdf', (req, res, next) => {
         const data = fs.readFileSync(`${PDF_PATH}${req.params.pdf}.pdf`);
