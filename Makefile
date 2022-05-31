@@ -9,7 +9,6 @@ default: help
 help:
 	@echo "make help              Show this help message"
 	@echo "make dev               Run the app in the development server"
-	@echo "make pdfjs             Build Framework PDFjs"
 	@echo "make h_server          Build Framework Hypothesis Server"
 	@echo "make h_client          Build Framework Hypothesis Client"
 	@echo "make build             Create a production build of the client"
@@ -24,25 +23,21 @@ help:
 dev: frontend_dev nlp_dev
 
 .PHONY: frontend_dev
-frontend_dev: node_modules/.uptodate
-ifeq (,$(wildcard frameworks/pdf.js/build/generic/build/pdf.js))
-	@echo "Building pdfjs..."
-	make pdfjs
-endif
+frontend_dev: node_modules/.uptodate backend/node_modules/.uptodate
 ifeq (,$(wildcard frameworks/hypothesis/client/build/manifest.json))
 	@echo "Building h_client..."
 	make h_client
 endif
 	npm run frontend-dev-build
-	npm run backend-dev
+	cd backend && npm run backend-dev
 
 .PHONY: clean
 clean:
 	rm -f node_modules/.uptodate
+	rm -f backend/node_modules/.uptodate
 	rm -rf dist
 	cd frameworks/hypothesis/client && make clean
-	rm -r backend/nlp/grobid_client_python
-	docker image prune -a
+	rm -r nlp/grobid_client_python
 
 .PHONY: build
 build:
@@ -52,10 +47,9 @@ node_modules/.uptodate: package.json package-lock.json
 	npm install
 	@touch $@
 
-.PHONY: pdfjs
-pdfjs: frameworks/pdf.js/package.json
-	cd frameworks/pdf.js && npm install
-	cd frameworks/pdf.js && node_modules/.bin/gulp generic
+backend/node_modules/.uptodate: backend/package.json backend/package-lock.json
+	cd backend && npm install
+	@touch $@
 
 .PHONY: h_server
 h_server: frameworks/hypothesis/h/package.json

@@ -70,7 +70,7 @@ services:
   celery-worker:
     environment:
       - C_FORCE_ROOT=true
-    build: backend/nlp
+    build: nlp
     depends_on:
       - rabbitmq
       - redis

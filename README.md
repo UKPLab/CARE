@@ -51,7 +51,8 @@ For all installations, we need the current data from the git repository and have
     sudo ./install.sh           # Install needed software packages
 
 Please restart the terminal after running the install script or use `source pyenv.sh`.\
-If something goes wrong, clean environment with ```make clean```.
+If something goes wrong, clean environment with ```make clean```.\
+Note: If the submodules were not downloaded, use `git submodule update --init --recursive`\
 
 ### Development Build
 
