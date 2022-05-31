@@ -26,7 +26,7 @@ establishes a socketio connection. Upon request a celery worker is requestes via
 pool worker then performs the task while optionally sending messages via socketio (and indirectly the message queue) to
 the client. The result is written to the redis backend and can be grabbed from there.
 
-![Overview](../../../nlp-server/docs/tech.png?raw=true "Process Architecture")
+![Overview](docs/tech.png?raw=true "Process Architecture")
 
 Note that the celery worker has no application context (of the flask app) and all necessary parameters have to be passed
 by value or read from disk/backend. This should inform the design of the task architecture
@@ -35,7 +35,7 @@ by value or read from disk/backend. This should inform the design of the task ar
 The following figure makes the data and call flow explicit. The flask app spans a celery process via the broker interface
 to the worker. The worker performs the task and the result can be read from the flask app (or the celery workers).
 
-![Overview](../../../nlp-server/docs/flow.png?raw=true "Process Architecture")
+![Overview](docs/flow.png?raw=true "Process Architecture")
 
 ## Adding Components
 Warning: This is WIP and will be specified in more detail later. This is the first proposal to approach the issue.
