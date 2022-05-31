@@ -20,6 +20,20 @@ The NLP server uses Flask, SocketIO and Celery to manage requests via web socket
 Redis as a persistent result backend and for session management, Flower for Celery surveilance. Additionally, the
 official GROBID server runs to process PDFs.
 
+### Monitoring Services
+The RabbitMQ status monitor and Flower for surveilance of celery workers are used. To check-in on the RabbitMQ instance 
+you should visit in your browser:
+```
+localhost:15672
+```
+You can access the server via providing username and password. Per default these are both `guest`.
+
+The Flower monitor is accessible at port 8888. To check-in on the Celery tasks visit in your browser:
+(currently, there are connection problems -- so no proper updates to jobs show)
+```
+localhost:8888
+```
+
 ### Process Architecture
 The following figure outlines the architecture of the NLP server, where a request is passed to a flask instance, which 
 establishes a socketio connection. Upon request a celery worker is requestes via the celery client and broker. The 

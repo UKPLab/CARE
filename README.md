@@ -16,19 +16,23 @@ cd peer/content-server
 sudo ./install.sh           # Install needed software packages
 source pyenv.sh
 ```
-2. Start the h server in one terminal:
+
+2. Change the environment variables in the `.env` file.
+
+3. Start the h server in one terminal:
 ```
 make h_server
 ```
-3. Initialize the database:
+
+4. Initialize the database:
 ```
 make init
 ```
-4. Start our app in another terminal in development mode:
+5. Start our app in another terminal in development mode:
 ```
 make dev
 ```
-5. Visit localhost:3001 in your browser. You should see a login page. Login via guest and access the default document 
+6. Visit localhost:3001 in your browser. You should see a login page. Login via guest and access the default document 
    to start annotating.
 
 ## Installation Manual
@@ -77,7 +81,7 @@ make init
 make dev # Build everything and start content-server
 ```
 
-#### Individual Development Builds
+#### ALTERNATIVE: Individual Development Builds
 * Instead of step 3. above, you may not want to start the NLP server along with the content server
   if you are developing for only one of them. In that case, use one of the following commands to
   start them individually:
@@ -99,57 +103,6 @@ __Hint:__  Use [Portainer CE](https://hub.docker.com/r/portainer/portainer-ce) f
 For installation see [Install Instructions](https://docs.portainer.io/v/ce-2.9/start/install/server/docker/linux)
 
 
-## Configuring Hypothesis and PEER
-
-To make these settings, the Hypothesis Server must be running! (see above). If you are not sure
-whether all required services have started properly, you can use `make services`.
-
-You have two options to configure hypothesis. The easiest ist the __short way__ using the 
-provided init script; the __long way__ that does this manually. You should basically always 
-pick the short way, but if you want to adapt some part of the setup to your particular use
-case, you may choose the long way.
-
-### Short way
-
-1. Change the environment variables in the `.env` file.
-2. `make init`
-
-### Long way (opt)
-
-1. Add admin account to hypothesis server:
-```
-cd frameworks/hypothesis/h
-tox -qe dev -- sh bin/hypothesis --dev user add --username <username> --email <email> --password <password>
-tox -qe dev -- sh bin/hypothesis --dev user admin <username>
-```
-
-2. Sign in on the hypothesis server: http://localhost:5000/
-3. Create oAuth client token: http://localhost:5000/admin/oauthclients/new
-4. Create oAuth
-```
-  Name: < custom name > 
-  Authority: localhost 
-  Grand type: authorization_code
-  Trusted: Yes
-  Redirect URL: http://localhost:5000/app.html
-```
-
-5. Get Client ID and add it into the Makefile!
-
-
-## Monitoring Services
-The RabbitMQ status monitor and Flower for surveilance of celery workers are used. To check-in on the RabbitMQ instance 
-you should visit in your browser:
-```
-localhost:15672
-```
-You can access the server via providing username and password. Per default these are both `guest`.
-
-The Flower monitor is accessible at port 8888. To check-in on the Celery tasks visit in your browser:
-(currently, there are connection problems -- so no proper updates to jobs show)
-```
-localhost:8888
-```
 
 
 ## Architecture
@@ -171,7 +124,7 @@ For an overview of the complete architecture, see ./docs/architecture.drawio\
 
 ### Architecture of the NLP Server
 
-![architecture_nlp_server](backend/nlp/docs/tech.png)
+![architecture_nlp_server](nlp/docs/tech.png)
 
 
 ## Code Structure
@@ -214,20 +167,5 @@ __NLP Server__:
 - [Celery](https://docs.celeryq.dev/en/stable/getting-started/introduction.html) for running
   compute tasks
 
-### Build Backend Frameworks individually
 
-    make pdfjs     # build PDFjs Framework
-    make h_client  # build Hypothesis Client
-    make h_server  # build Hypothesis Server
 
-### Further information about the Hypothesis Framework
-
-* Client setup manual: https://h.readthedocs.io/projects/client/en/latest/developers/developing/#setting-up-a-client-development-environment
-* Server setup manual: https://h.readthedocs.io/en/latest/developing/install/#you-will-need
-* Connecting Server & Client: https://h.readthedocs.io/en/latest/developing/integrating-client/
-* Creating a User and Accessing the Admin Interface: https://h.readthedocs.io/en/latest/developing/administration/
-* Hypothesis API:  https://h.readthedocs.io/en/latest/api-reference/v1/
-* Hypothesis Server DOC: https://h.readthedocs.io/_/downloads/en/latest/pdf/
-* Hypothesis Client DOC: https://h.readthedocs.io/_/downloads/client/en/latest/pdf/ 
-* Server git repo: https://github.com/hypothesis/h 
-* Client git repo: https://github.com/hypothesis/client
