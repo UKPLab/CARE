@@ -1,3 +1,14 @@
+/* db.js - Creates Database Connections
+
+This module provides basic database connections and standardized methods for interacting with them.
+Import this module when you need to access the database of PEER or h, e.g. for adding documents or
+users.
+
+Author: Nils Dycke (dycke@ukp.informatik...)
+Co-Author: Dennis Zyska (zyska@ukp.informatik....)
+Source: --
+*/
+
 const crypto = require("crypto");
 const dayjs = require("dayjs");
 const pgp = require('pg-promise')();

@@ -1,3 +1,13 @@
+/* api.js - Document API
+
+Provides routes to interact with documents on the content server. This includes adding, deleting and
+renaming documents.
+
+Author: Nils Dycke (dycke@ukp.informatik...)
+Co-Author: Dennis Zyska (zyska@ukp.informatik....)
+Source: ---
+*/
+
 const fs = require('fs');
 const express = require('express');
 const rateLimit = require('express-rate-limit');

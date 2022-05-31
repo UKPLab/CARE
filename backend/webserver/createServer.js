@@ -1,3 +1,11 @@
+/* createServer.js - Starts the content server
+
+Starts the content web server with the given configuration.
+
+Author: Dennis Zyska (zyska@ukp.informatik....)
+Source: hypothesis client
+*/
+
 'use strict';
 
 const { existsSync, readFileSync } = require('fs');

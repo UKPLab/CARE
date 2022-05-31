@@ -1,3 +1,19 @@
+/* init.js - Initialization Script for PEER and h Databases
+
+Run this script (via node or through npm) to initialize the PEER and h database
+with the basic necessary schema and entries. This script should be idempotent,
+but we cannot guarantee that; i.e. there might be changes to the databases on
+re-run.
+
+__DISCLAIMER__: This script will be replaced in the near future through a proper
+database management framework like alembic or similar.
+
+Author: Nils Dycke (dycke@ukp.informatik...)
+Co-Author: Dennis Zyska (zyska@ukp.informatik....)
+Source: --
+*/
+
+
 const { ArgumentParser } = require('argparse');
 const fs = require('fs');
 const { pdb, hdb, addUser, addDoc } = require('./db.js');

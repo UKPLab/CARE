@@ -85,7 +85,7 @@ make frontend_dev   # build only the front-end / content server in dev mode
 make nlp_dev        # build only the nlp server in dev mode
 ```
 
-### Installation for Production 
+### Production Build
 
 The software will be installed in a Docker environment and in production mode. 
 

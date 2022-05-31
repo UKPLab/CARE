@@ -1,3 +1,15 @@
+/* webServer.js - Defines Express Webserver of Content Server
+
+This module is the heart of the content server. Here the server is configured and
+started. The content server uses express to provide the routes found in the
+subdirectory "routes", the sockets in "sockets" and the front-end compiled into
+the "dist" directory.
+
+Author: Dennis Zyska (zyska@ukp.informatik....)
+Co-Author: Nils Dycke (dycke@ukp.informatik...)
+Source: --
+*/
+
 'use strict';
 
 const fs = require('fs');

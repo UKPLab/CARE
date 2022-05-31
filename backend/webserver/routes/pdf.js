@@ -1,3 +1,11 @@
+/* pdf.js - Provides PDF files and pdf.js
+
+Here the routes for loading PDFs from disc and for loading pdf.js are defined.
+
+Author: Dennis Zyska (zyska@ukp.informatik....)
+Source: --
+*/
+
 const fs = require('fs');
 const express = require('express');
 const connectEnsureLogin = require("connect-ensure-login");

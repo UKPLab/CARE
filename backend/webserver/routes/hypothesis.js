@@ -1,4 +1,10 @@
-/* structure mainly from /frameworks/hypothesis/client/dev-server/serve-package.js */
+/* hypothesis.js - Provides the hypothesis client
+
+Here the routes for loading the hypothesis client are provided.
+
+Author: Dennis Zyska (zyska@ukp.informatik....)
+Source: structure mainly from /frameworks/hypothesis/client/dev-server/serve-package.js
+*/
 
 const fs = require('fs');
 const express = require('express');
