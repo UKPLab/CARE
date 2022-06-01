@@ -384,19 +384,7 @@ export default {
       document.body.appendChild(scriptEl);
     },
   },
-  mounted() {
-
-    const scripts = [
-      "/pdfjs-dist/build/pdf.js",
-      "/pdfjs-dist/web/viewer.js"
-    ];
-    scripts.forEach(script => {
-      let tag = document.createElement("script");
-      tag.setAttribute("src", script);
-      tag.async = true;
-      document.head.appendChild(tag);
-    })
-
+  created() {
     let style = document.createElement("link");
     style.rel = "stylesheet";
     style.href = "/pdfjs-dist/web/viewer.css";
@@ -407,7 +395,18 @@ export default {
     resource.rel = "resource";
     resource.href = "/pdfjs-dist/web/locale/locale.properties";
     document.head.appendChild(resource);
+  },
+  mounted() {
 
+    const scripts = [
+      "/pdfjs-dist/build/pdf.js",
+      "/pdfjs-dist/web/viewer.js"
+    ];
+    scripts.forEach(script => {
+      let tag = document.createElement("script");
+      tag.setAttribute("src", script);
+      document.head.appendChild(tag);
+    })
 
     // Listen for `webviewerloaded` event to configure the viewer after its files
     // have been loaded but before it is initialized.
