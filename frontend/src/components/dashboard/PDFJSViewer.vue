@@ -395,18 +395,21 @@ export default {
     resource.rel = "resource";
     resource.href = "/pdfjs-dist/web/locale/locale.properties";
     document.head.appendChild(resource);
+
+    let script = document.createElement("script");
+    script.setAttribute("src", "/pdfjs-dist/build/pdf.js");
+    document.head.appendChild(script);
+
   },
   mounted() {
 
-    const scripts = [
-      "/pdfjs-dist/build/pdf.js",
-      "/pdfjs-dist/web/viewer.js"
-    ];
-    scripts.forEach(script => {
-      let tag = document.createElement("script");
-      tag.setAttribute("src", script);
-      document.head.appendChild(tag);
-    })
+    const loadViewer = setInterval(function () {
+      if (window["pdfjs-dist/build/pdf"]) {
+        clearTimeout(loadViewer);
+        let script = document.createElement("script");
+        script.setAttribute("src", "/pdfjs-dist/web/viewer.js");
+        document.head.appendChild(script);
+      }}, 50);
 
     // Listen for `webviewerloaded` event to configure the viewer after its files
     // have been loaded but before it is initialized.
@@ -448,6 +451,9 @@ export default {
       });
 
       pdfjsInitialized.then(() => {
+
+
+
         // Load the PDF specified in the URL.
         //
         // This is done after the viewer components are initialized to avoid some

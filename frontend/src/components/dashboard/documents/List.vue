@@ -73,8 +73,9 @@ export default {
   methods: {
     ...mapActions({load: "user/load", delete: "user/delete"}),
     accessDoc(docHash) {
-      let routeData = this.$router.resolve(`/annotate/${docHash}`);
-      window.open(routeData.href, '_blank');
+      this.$router.push(`/annotate/${docHash}`);
+      //let routeData = this.$router.resolve(`/annotate/${docHash}`);
+      //window.open(routeData.href, '_blank');
     },
     onAddedDoc(){
       this.load();
