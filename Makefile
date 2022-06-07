@@ -13,14 +13,13 @@ help:
 	@echo "make h_client          Build Framework Hypothesis Client"
 	@echo "make build             Create a production build of the client"
 	@echo "make clean             Delete development files"
-	@echo "make docker			  Generate docker images"
 	@echo "make init              Auto-Config h server"
 	@echo "make nlp_dev           Run the flask app. Requires you to run make services in another terminal first"
 	@echo "make nlp_services      Run required services"
 
 
 .PHONY: dev
-dev: frontend_dev nlp_dev
+dev: frontend_dev
 
 .PHONY: frontend_dev
 frontend_dev: node_modules/.uptodate backend/node_modules/.uptodate
@@ -71,7 +70,6 @@ services: h_services nlp_services
 h_services:
 	cd frameworks/hypothesis/h && make services
 
-
 .PHONY: init
 init: node_modules/.uptodate
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
@@ -81,20 +79,16 @@ init: node_modules/.uptodate
 				   --admin_pwd ${H_SERVER_ADMIN_PASSWORD}
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev user password ${H_SERVER_ADMIN_USER} --password ${H_SERVER_ADMIN_PASSWORD}
 
-
 .PHONY: nlp_dev
 nlp_dev:
 	export PYTHON_PATH="$(CURDIR)/nlp/src"
 	python3 ./nlp/src/app.py --dev
-
 
 .PHONY: nlp_celery
 nlp_celery:
 	export C_FORCE_ROOT=true
 	cd ./nlp/src && \
 	celery --app app.celery worker -l INFO -E
-
-
 
 .PHONY: nlp_services
 nlp_services:

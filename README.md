@@ -120,7 +120,7 @@ __Note:__ If you change anything on the structure, also update the architecture 
 For an overview of the complete architecture, see ./docs/architecture.drawio\
 
 
-![architecture_content_server](docs/architecture-content_server.png)
+![architecture_content_server](docs/architecture.png)
 
 ### Architecture of the NLP Server
 
