@@ -1,3 +1,6 @@
+# Hypothesis
+
+The architecture of the Hypothesis Framework is drawn in hypothesis.drawio.
 
 ## Manual Configuring 
 
