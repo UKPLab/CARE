@@ -1,9 +1,21 @@
+/* main.js - Main entry point for the vue app
+
+This is the main entry point to start the Vue app. Here
+the app is configured with:
+* vuex store
+* boostrap vue3
+* router
+
+Load this script in your webpage HTML to create and mount the Vue app.
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import * as Vue from 'vue'
 import App from './App.vue'
 import BootstrapVue3 from "bootstrap-vue-3";
 import SocketIO from 'socket.io-client';
 import VueSocketIO from 'vue-3-socket.io';
-import WebsocketStore from './store/modules/websocket.js';
 import store from "./store";
 
 const app = Vue.createApp({
@@ -19,7 +31,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 //Bootstrap v5
-//import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap"
@@ -44,4 +55,5 @@ app.use(store);
 import router from './routes.js';
 app.use(router);
 
+//mount the app on the component in index.html
 app.mount('#app');
