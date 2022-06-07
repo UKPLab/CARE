@@ -190,8 +190,9 @@ async function init_peer_db() {
     }
 
     // create the showcase document in files (if necessary)
-    const inPath = 'resources/showcase.pdf';
-    const targetPath = `files/${docid}.pdf`;
+    const inPath = '../resources/showcase.pdf';
+    const targetPath = `../files/${docid}.pdf`;
+    console.log(`Loading showcase document from ${inPath} relative to ${process.cwd()}`)
 
     if(!fs.existsSync(targetPath)){
         fs.copyFile(inPath, targetPath, (err) => {
