@@ -57,6 +57,7 @@ function webServer(config) {
 
     // Make all static files public available
     app.use(express.static(BUILD_PATH));
+    app.use(express.static(`${__dirname}/../assets`));
 
     // Session Initialization
     app.use(session({
