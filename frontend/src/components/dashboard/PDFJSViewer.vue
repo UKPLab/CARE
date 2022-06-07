@@ -375,17 +375,6 @@
 export default {
   name: "PDFJSViewer",
   props: ['pdf_path'],
-  data() {
-      return {
-        hypothesis_script: null,
-        hypothesis_config: null,
-        pdfjs_style: null,
-        pdfjs_resource: null,
-        pdfjs_script: null,
-        pdfjs_viewer: null,
-
-      }
-    },
   methods: {
     loadClient() {
       const src = `/hypothesis/`
