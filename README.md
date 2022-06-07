@@ -129,13 +129,13 @@ For an overview of the complete architecture, see ./docs/architecture.drawio\
 
 ## Code Structure
 
-The code is structured in two main components: the content server and the NLP
-server. The content server has a frontend and a backend part, while the NLP 
-server resides only on the backend. The code is grouped accordingly.
+The code is structured in three main components: the backend and frontend of the _content server_ 
+and the _NLP server_ acting as a service to the backend (third tier). The code is grouped accordingly.
 
 ```
-> backend
-> frontend
+> backend         # backend of content server (express-based)
+> frontend        # frontend of content server (vue-based)
+> nlp             # nlp server
 > frameworks      
 > docs            # all documentation files (e.g. diagrams) go here
 > resources       # resource files used during building/configuring
