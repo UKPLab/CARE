@@ -375,13 +375,24 @@
 export default {
   name: "PDFJSViewer",
   props: ['pdf_path'],
+  data() {
+      return {
+        hypothesis_script: null,
+        hypothesis_config: null,
+        pdfjs_style: null,
+        pdfjs_resource: null,
+        pdfjs_script: null,
+        pdfjs_viewer: null,
+
+      }
+    },
   methods: {
     loadClient() {
       const src = `/hypothesis/`
 
-      const scriptEl = document.createElement('script');
-      scriptEl.src = src
-      document.body.appendChild(scriptEl);
+      this.hypothesis_script = document.createElement('script');
+      this.hypothesis_script.src = src
+      document.body.appendChild(this.hypothesis_script);
     },
   },
   created() {
@@ -401,14 +412,31 @@ export default {
     document.head.appendChild(script);
 
   },
+  beforeDestroy() {
+    document.body.removeChild(this.hypothesis_script);
+    document.head.removeChild(this.pdfjs_viewer);
+  },
   mounted() {
+
+    const clientConfig = {
+      sidebarAppUrl: '/app.html',
+      notebookAppUrl: '/notebook.html',
+      openSidebar: true,
+      assetRoot: "/hypothesis/",
+    };
+
+    const configScript = document.createElement("script");
+    configScript.type = 'application/json';
+    configScript.className = 'js-hypothesis-config';
+    configScript.textContent = JSON.stringify(clientConfig);
+    document.head.appendChild(configScript);
 
     const loadViewer = setInterval(function () {
       if (window["pdfjs-dist/build/pdf"]) {
         clearTimeout(loadViewer);
-        let script = document.createElement("script");
-        script.setAttribute("src", "/pdfjs-dist/web/viewer.js");
-        document.head.appendChild(script);
+        this.pdfjs_viewer = document.createElement("script");
+        this.pdfjs_viewer.setAttribute("src", "/pdfjs-dist/web/viewer.js");
+        document.head.appendChild(this.pdfjs_viewer);
       }}, 50);
 
     // Listen for `webviewerloaded` event to configure the viewer after its files
