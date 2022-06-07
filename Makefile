@@ -38,6 +38,8 @@ clean:
 	rm -rf dist
 	cd frameworks/hypothesis/client && make clean
 	rm -r nlp/grobid_client_python
+	docker-compose rm -f -s -v
+	docker network rm peer_default
 
 .PHONY: build
 build:

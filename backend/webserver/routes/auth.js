@@ -92,9 +92,13 @@ module.exports = function(app) {
     app.get(
         '/auth/logout',
         function(req, res) {
-            req.logout()
-            req.session.destroy();
-            res.status(200).send("Session destroyed!");
+            req.logout(function(err) {
+                if (err) {
+                    return next(err);
+                }
+                req.session.destroy();
+                return res.status(200).send("Session destroyed!");
+            });
         }
     )
 
