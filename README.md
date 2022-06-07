@@ -12,7 +12,7 @@ Before starting, check the system requirements and supported OS below.
 ```
 sudo apt-get install git -y
 git clone --recursive https://git.ukp.informatik.tu-darmstadt.de/zyska/peer.git
-cd peer/content-server
+cd peer
 sudo ./install.sh           # Install needed software packages
 source pyenv.sh
 ```
