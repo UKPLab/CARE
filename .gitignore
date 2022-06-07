@@ -8,7 +8,6 @@ backend/node_modules
 
 # ignore files of hypothesis submodules
 frameworks/hypothesis/
-frameworks
 
 # ignore build files
 dist/
