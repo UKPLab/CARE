@@ -71,7 +71,7 @@ h_services:
 	cd frameworks/hypothesis/h && make services
 
 .PHONY: init
-init: node_modules/.uptodate
+init: node_modules/.uptodate backend/node_modules/.uptodate
 	cd frameworks/hypothesis/h && tox -qe dev -- sh bin/hypothesis --dev init
 	cd backend && npm run init-db -- \
 				   --admin_name ${H_SERVER_ADMIN_USER} \
