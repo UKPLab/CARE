@@ -36,9 +36,10 @@ clean:
 	rm -f backend/node_modules/.uptodate
 	rm -rf dist
 	cd frameworks/hypothesis/client && make clean
-	rm -r nlp/grobid_client_python
 	docker-compose rm -f -s -v
 	docker network rm peer_default
+	rm -r nlp/grobid_client_python
+
 
 .PHONY: build
 build:
