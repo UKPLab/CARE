@@ -59,17 +59,23 @@ function init_h_db() {
 }
 
 async function init_peer_db() {
-    console.log("Initializing peer database")
+    console.log("Initializing peer database");
 
-    try {
-        const connection = await pdb.connect()
-    } catch(error) {
-        console.log("Peer database does not exist yet. Creating it.")
-        await hdb.none(`
-            CREATE DATABASE peer
-        `)
-    }
+    return pdb.connect()
+        .then(async (res) => {
+                return await config_peer_db();
+            }
+        )
+        .catch(async (err) => {
+                console.log("Peer database does not exist yet. Creating it.");
 
+                await hdb.none(`CREATE DATABASE peer`);
+                return await config_peer_db();
+            }
+        );
+}
+
+async function config_peer_db(){
     // create system roles table
     console.log("Creating system roles")
     await pdb.query(`
@@ -191,20 +197,34 @@ async function init_peer_db() {
 
     // create the showcase document in files (if necessary)
     const inPath = '../resources/showcase.pdf';
-    const targetPath = `../files/${docid}.pdf`;
-    console.log(`Loading showcase document from ${inPath} relative to ${process.cwd()}`)
+    const filesPath = '../files'
+    const targetPath = `${filesPath}/${docid}.pdf`;
+    console.log(`Loading showcase document from ${inPath} relative to ${process.cwd()}`);
+
+    if(!fs.existsSync(filesPath)){
+        console.log("Creating files directory...");
+        fs.mkdirSync(filesPath);
+    }
 
     if(!fs.existsSync(targetPath)){
         fs.copyFile(inPath, targetPath, (err) => {
           if (err) throw err;
           console.log('Copied showcase document');
         });
+    } else {
+        console.log("Showcase document already exists in files folder");
     }
 }
 
-init_h_db().then(r =>
+init_h_db().then(r => {
     init_peer_db().then(r2 => {
         console.log("finished")
         process.exit()
-    })
-)
+    }).catch(err => {
+        console.log("Could not initialize peer DB -- ABORTING");
+        console.log(err);
+    });
+}).catch(err => {
+   console.log("Could not initialize h DB -- ABORTING");
+   console.log(err);
+});
