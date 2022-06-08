@@ -379,36 +379,70 @@ export default {
     loadClient() {
       const src = `/hypothesis/`
 
-      const scriptEl = document.createElement('script');
-      scriptEl.src = src
-      document.body.appendChild(scriptEl);
+      const hypothesis_script = document.createElement('script');
+      hypothesis_script.src = src
+      hypothesis_script.setAttribute('id', 'script_hypothesis')
+      document.body.appendChild(hypothesis_script);
     },
   },
   created() {
     let style = document.createElement("link");
     style.rel = "stylesheet";
     style.href = "/pdfjs-dist/web/viewer.css";
+    style.setAttribute('id', 'link_pdfjs_style')
     document.head.appendChild(style);
 
     let resource = document.createElement("link");
     resource.type = "application/l10n";
     resource.rel = "resource";
+    resource.setAttribute('id', 'link_pdfjs_resource')
     resource.href = "/pdfjs-dist/web/locale/locale.properties";
     document.head.appendChild(resource);
 
     let script = document.createElement("script");
     script.setAttribute("src", "/pdfjs-dist/build/pdf.js");
+    script.setAttribute("id", "script_pdfjs");
     document.head.appendChild(script);
 
   },
+  beforeUnmount() {
+    const deleteScripts = [
+        'script_pdfjs_viewer',
+        'script_hypothesis_config',
+        'link_pdfjs_resource',
+        'script_pdfjs',
+        'link_pdfjs_style',
+        'script_hypothesis'
+    ]
+
+    deleteScripts.forEach(script_id => {
+      const element = document.getElementById(script_id);
+      if (element !== null) { element.remove() }
+    })
+  },
   mounted() {
+
+    const clientConfig = {
+      sidebarAppUrl: '/app.html',
+      notebookAppUrl: '/notebook.html',
+      openSidebar: true,
+      assetRoot: "/hypothesis/",
+    };
+
+    const configScript = document.createElement("script");
+    configScript.type = 'application/json';
+    configScript.className = 'js-hypothesis-config';
+    configScript.setAttribute("id", "script_hypothesis_config");
+    configScript.textContent = JSON.stringify(clientConfig);
+    document.head.appendChild(configScript);
 
     const loadViewer = setInterval(function () {
       if (window["pdfjs-dist/build/pdf"]) {
         clearTimeout(loadViewer);
-        let script = document.createElement("script");
-        script.setAttribute("src", "/pdfjs-dist/web/viewer.js");
-        document.head.appendChild(script);
+        const pdfjs_viewer = document.createElement("script");
+        pdfjs_viewer.setAttribute("src", "/pdfjs-dist/web/viewer.js");
+        pdfjs_viewer.setAttribute("id", "script_pdfjs_viewer");
+        document.head.appendChild(pdfjs_viewer);
       }}, 50);
 
     // Listen for `webviewerloaded` event to configure the viewer after its files
