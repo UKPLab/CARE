@@ -370,7 +370,14 @@
 </template>
 
 <script>
+/* PDFJSViewer.vue - PDF Viewer are rendered by PDF.js
 
+This component provides the PDF in a classical PDF viewer
+as rendered by PDF.js.
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 
 export default {
   name: "PDFJSViewer",

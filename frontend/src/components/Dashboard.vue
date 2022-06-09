@@ -8,6 +8,17 @@
 </template>
 
 <script>
+/* Dashboard.vue - user-specific dashboard
+
+This component provides the user-specific view of the app.
+It includes a websocket to synchronize with the backend and
+loads all further sub-components.
+
+Author: Dennis Zyska (zyska@ukp...)
+Co-Author: Nils Dycke (dycke@ukp...)
+Source: -
+*/
+
 import List from "./dashboard/documents/List.vue";
 
 export default {

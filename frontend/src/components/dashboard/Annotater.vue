@@ -3,6 +3,14 @@
 </template>
 
 <script>
+/* Annotator.vue - annotation view
+
+This parent component provides the annotation view, which
+currently consists of the PDF viewer.
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import PDFJSViewer from "./PDFJSViewer.vue";
 
 export default {
