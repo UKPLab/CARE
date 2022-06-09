@@ -1,5 +1,11 @@
 #!/bin/bash
 #
+### Complete Installation Script
+### Run this script to install all required software on the device.
+### Should be idempotent -- running twice shouldn't change the state of the machine.
+#
+
+#
 ### Check sudo
 #
 rights=$(sudo -v)
