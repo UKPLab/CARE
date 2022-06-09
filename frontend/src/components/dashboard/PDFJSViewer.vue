@@ -378,10 +378,50 @@ as rendered by PDF.js.
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
+import debounce from "lodash.debounce";
 
 export default {
   name: "PDFJSViewer",
   props: ['pdf_path'],
+  methods: {
+    async loadAnnotator() {
+
+      console.log("Annotator start load...");
+      const pdfViewer = PDFViewerApplication.pdfViewer;
+      pdfViewer.viewer.classList.add('has-transparent-text-layer');
+
+      const pdfContainer = pdfViewer.appConfig?.appContainer ?? document.body;
+      console.log(pdfContainer);
+
+      //see ./frameworks/hypothesis/client/src/annotator/integrations/pdf.js
+
+      const observer = new MutationObserver(debounce(() => this._update(), 100));
+      observer.observe(pdfViewer.viewer, {
+            attributes: true,
+            attributeFilter: ['data-loaded'],
+            childList: true,
+            subtree: true,
+          });
+
+      console.log(observer)
+
+      let pageView = pdfViewer.getPageView(pageIndex);
+
+      if (!pageView || !pageView.pdfPage) {
+        pageView = await new Promise(resolve => {
+          const onPagesLoaded = () => {
+            pdfViewer.eventBus.off('pagesloaded', onPagesLoaded);
+            resolve(pdfViewer.getPageView(pageIndex));
+          };
+          pdfViewer.eventBus.on('pagesloaded', onPagesLoaded);
+        });
+      }
+
+      console.log("Annotator pageViewLoad...");
+
+
+    }
+  },
   created() {
     let style = document.createElement("link");
     style.rel = "stylesheet";
@@ -485,6 +525,9 @@ export default {
           // is the URL associated with annotations.
           originalUrl: document.URL,
         });
+
+        this.loadAnnotator();
+
       });
     });
 
