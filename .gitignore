@@ -1,0 +1,24 @@
+
+# files dir
+files/*.pdf
+
+# backend
+backend/sessions
+backend/node_modules
+
+# ignore files of hypothesis submodules
+frameworks/hypothesis/
+
+# ignore build files
+dist/
+node_modules
+
+
+yarn-error.log
+.tox
+
+# building files
+nodesource_setup.sh
+
+*/__pycache__
+.idea
