@@ -382,16 +382,6 @@ Source: -
 export default {
   name: "PDFJSViewer",
   props: ['pdf_path'],
-  methods: {
-    loadClient() {
-      const src = `/hypothesis/`
-
-      const hypothesis_script = document.createElement('script');
-      hypothesis_script.src = src
-      hypothesis_script.setAttribute('id', 'script_hypothesis')
-      document.body.appendChild(hypothesis_script);
-    },
-  },
   created() {
     let style = document.createElement("link");
     style.rel = "stylesheet";
@@ -415,11 +405,9 @@ export default {
   beforeUnmount() {
     const deleteScripts = [
         'script_pdfjs_viewer',
-        'script_hypothesis_config',
         'link_pdfjs_resource',
         'script_pdfjs',
         'link_pdfjs_style',
-        'script_hypothesis'
     ]
 
     deleteScripts.forEach(script_id => {
@@ -428,20 +416,6 @@ export default {
     })
   },
   mounted() {
-
-    const clientConfig = {
-      sidebarAppUrl: '/app.html',
-      notebookAppUrl: '/notebook.html',
-      openSidebar: true,
-      assetRoot: "/hypothesis/",
-    };
-
-    const configScript = document.createElement("script");
-    configScript.type = 'application/json';
-    configScript.className = 'js-hypothesis-config';
-    configScript.setAttribute("id", "script_hypothesis_config");
-    configScript.textContent = JSON.stringify(clientConfig);
-    document.head.appendChild(configScript);
 
     const loadViewer = setInterval(function () {
       if (window["pdfjs-dist/build/pdf"]) {
@@ -511,11 +485,6 @@ export default {
           // is the URL associated with annotations.
           originalUrl: document.URL,
         });
-
-
-        // Load hypothesis client
-        this.loadClient();
-
       });
     });
 

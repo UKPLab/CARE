@@ -26,14 +26,12 @@ const FileStore = require('session-file-store')(session);
 const bodyParser = require('body-parser');
 
 // define PATHs
-const TEMPLATES_PATH = `${__dirname}/../templates/`;
 const BUILD_PATH = `${__dirname}/../../dist/`;
 
 // routes
 const routes = [
     require("./routes/auth"),
     require("./routes/pdf"),
-    require("./routes/hypothesis"),
     require("./routes/api"),
 ];
 
@@ -49,11 +47,6 @@ const sockets = [
  */
 function webServer(config) {
     const app = express()
-
-    //Set up engine framework
-    app.engine('mustache', mustacheExpress())
-    app.set('view engine', 'mustache');
-    app.set('views', TEMPLATES_PATH);
 
     // Make all static files public available
     app.use(express.static(BUILD_PATH));

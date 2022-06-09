@@ -2,7 +2,7 @@
     <a href="#" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">Add</a>
 
       <!-- Modal -->
-    <teleport to="body">
+    <!--<teleport to="body">-->
     <div class="modal fade" id="uploadModal" tabindex="-1"  data-bs-backdrop="static" role="dialog" aria-labelledby="uploadModalLabel" aria-hidden="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -25,7 +25,7 @@
         </div>
       </div>
     </div>
-    </teleport>
+    <!--</teleport>-->
 </template>
 
 <script>
