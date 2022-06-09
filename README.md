@@ -46,6 +46,9 @@ Both environments are tested with a clean Ubuntu 20.04 LTS Installation (minimal
 For development run you will need a disk space at least of ~16 GB in total.\
 Also the docker container of elastic search needs at least 2GB of RAM!
 
+For production building you should have at least 4GB of RAM to run all containers
+in parallel.
+
 ### Environment Setup
 For all installations, we need the current data from the git repository and have to install some dependencies
     
@@ -92,11 +95,20 @@ make nlp_dev        # build only the nlp server in dev mode
 
 ### Production Build
 
-The software will be installed in a Docker environment and in production mode. 
+Do make sure that your machine meets the minimal requirements listed above. Otherwise,
+individual containers (typically elasticsearch) will be stopped. 
+
+The software will be installed in a Docker environment and in production mode. Run the
+following command in the first terminal (takes quite a while until all containers
+are up; in the range of 10-15min depending on your device):
 
     make build
 
-The Content-Server should be available on port 80.\
+Now, to initialize the DB run: 
+    
+    make init
+
+The Content-Server should be available on port 3001.\
 Please make sure that the other ports are **not accessible** from outside, this applies above all for  the PostgreSQL Database!
 
 __Hint:__  Use [Portainer CE](https://hub.docker.com/r/portainer/portainer-ce) for managing the docker containers with a GUI.\
