@@ -1,0 +1,86 @@
+version: "3"
+services:
+  postgres:
+    image: postgres:11.5-alpine
+    ports:
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 1s
+  elasticsearch:
+    image: hypothesis/elasticsearch:latest
+    ports:
+      - '127.0.0.1:9200:9200'
+    environment:
+      - discovery.type=single-node
+  rabbit:
+    image: rabbitmq:3.6-management-alpine
+    ports:
+      - '127.0.0.1:5672:5672'
+      - '127.0.0.1:15672:15672'
+  content_server:
+    build:
+      context: .
+    depends_on:
+      - h_server
+    ports:
+      - "3001:3001"
+  h_server:
+    build: frameworks/hypothesis/h
+    depends_on:
+      - elasticsearch
+      - postgres
+      - rabbit
+    ports:
+      - ${APP_PORT}:5000
+    environment:
+      - APP_URL=${APP_URL}
+      - AUTHORITY=localhost
+      - BROKER_URL=amqp://guest:guest@rabbit:5672//
+      - WEBSOCKET_URL=${WEBSOCKET_URL}
+      - CLIENT_OAUTH_ID=${CLIENT_OAUTH_ID}
+      - CLIENT_URL=${CLIENT_URL}
+      - DATABASE_URL=postgresql://postgres@postgres/postgres
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - NEW_RELIC_APP_NAME=h (dev)
+      - NEW_RELIC_LICENSE_KEY=
+      - SECRET_KEY=notasecret_
+  nlp:
+    build: .
+    depends_on:
+      - rabbitmq
+      - celery-worker
+      - grobid
+      - redis
+    command: python3 app.py
+    ports:
+      - ${NLP_PORT}:6001
+  grobid:
+    image: lfoppiano/grobid:0.7.0
+    ports:
+      - ${GROBID_PORT}:8070
+  rabbitmq:
+    image: rabbitmq:3.9-management-alpine
+    ports:
+      - ${RABBITMQ_PORT}:5672
+      - 15673:15672
+  redis:
+    image: redis
+    ports:
+      - ${REDIS_PORT}:6379
+  celery-worker:
+    environment:
+      - C_FORCE_ROOT=true
+    build: nlp
+    depends_on:
+      - rabbitmq
+      - redis
+    command: celery -A app.celery worker -l INFO -E
+  flower:
+    image: mher/flower
+    depends_on:
+      - rabbitmq
+      - celery-worker
+    command: celery flower --broker=amqp://rabbitmq:${RABBITMQ_PORT} --port=8888
+    ports:
+    - ${FLOWER_PORT}:8888
