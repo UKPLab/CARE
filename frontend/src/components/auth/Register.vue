@@ -65,6 +65,14 @@
 </template>
 
 <script>
+/* Register.vue - registration component
+
+This component provides a basic mask to enter user information
+and register a user on the server.
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import { mapActions } from "vuex";
 
 export default {

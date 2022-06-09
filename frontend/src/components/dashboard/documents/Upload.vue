@@ -29,6 +29,16 @@
 </template>
 
 <script>
+/* Upload.vue - document upload component
+
+This component provides the functionality for uploading a document
+to the server. The user is prompted the option to select a PDF from
+disk.
+
+Author: Dennis Zyska (zyska@ukp...)
+Co-Author:  Nils Dycke (dycke@ukp...)
+Source: -
+*/
 import axios from "axios";
 import { Modal } from 'bootstrap';
 

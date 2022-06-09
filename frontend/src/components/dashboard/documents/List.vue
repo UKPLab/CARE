@@ -48,6 +48,16 @@
 </template>
 
 <script>
+/* List.vue - document list management
+
+This component loads the user-specific documents from the server
+and allows to interact with them. The user can delete existing
+documents or access the annotator view for the respective pdf.
+
+Author: Nils Dycke (dycke@ukp...)
+Co-Author:  Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import {mapGetters, mapActions} from "vuex";
 import Upload from "./Upload.vue";
 import axios from "axios";
@@ -73,7 +83,6 @@ export default {
   methods: {
     ...mapActions({load: "user/load", delete: "user/delete"}),
     accessDoc(docHash) {
-      //this.$router.push(`/annotate/${docHash}`);
       // has to open a new window, since hypothesis client changes too much on the code
       let routeData = this.$router.resolve(`/annotate/${docHash}`);
       window.open(routeData.href, '_blank');

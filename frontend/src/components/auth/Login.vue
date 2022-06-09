@@ -36,6 +36,15 @@
 </template>
 
 <script>
+/* Login.vue - login component
+
+This component provides a form to enter user credentials and hereby
+login on the server. It links to the registration component.
+
+Author: Dennis Zyska (zyska@ukp...)
+Co-Author:  Nils Dycke (dycke@ukp...)
+Source: -
+*/
 import { mapActions } from "vuex";
 
 export default {
