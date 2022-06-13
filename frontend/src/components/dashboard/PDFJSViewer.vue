@@ -388,6 +388,7 @@ import {SelectionObserver} from "../../../../frameworks/hypothesis/client/src/an
 import Adder from "./Adder.vue";
 import * as rangeUtil from "../../../../frameworks/hypothesis/client/src/annotator/range-util";
 import {TextRange} from "../../../../frameworks/hypothesis/client/src/annotator/anchoring/text-range";
+import {generateHexString} from "../../../../frameworks/hypothesis/client/src/shared/random";
 
 export default {
   name: "PDFJSViewer",
@@ -408,11 +409,8 @@ export default {
     }
   },
   methods: {
-     /**
-     * Show or hide the adder toolbar when the selection changes.
-     *
-     * @param {Range} range
-     */
+
+
 
     async loadAnnotator() {
 

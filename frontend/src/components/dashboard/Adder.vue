@@ -19,7 +19,11 @@
 import { BIconPlusSquare } from 'bootstrap-icons-vue';
 import {SelectionObserver} from "../../../../frameworks/hypothesis/client/src/annotator/selection-observer";
 import * as rangeUtil from "../../../../frameworks/hypothesis/client/src/annotator/range-util";
-import {TextRange} from "../../../../frameworks/hypothesis/client/src/annotator/anchoring/text-range";
+import {TextPosition, TextRange} from "../../../../frameworks/hypothesis/client/src/annotator/anchoring/text-range";
+import {generateHexString} from "../../../../frameworks/hypothesis/client/src/shared/random";
+import {TextQuoteAnchor} from "../../../../frameworks/hypothesis/client/src/annotator/anchoring/types";
+import { describe } from "../../assets/anchoring/anchoring"
+import {highlightRange, setHighlightsFocused} from "../../../../frameworks/hypothesis/client/src/annotator/highlighter";
 
 export default {
   name: "Adder",
@@ -38,9 +42,133 @@ export default {
     this.init();
   },
   methods: {
+
+
+    async createAnnotation({ highlight = false } = {}) {
+    const ranges = this.selectedRanges;
+    this.selectedRanges = [];
+
+    const rangeSelectors = await Promise.all(
+      ranges.map(range => describe(document.body, range))
+    );
+    const target = rangeSelectors.map(selectors => ({
+      // In the Hypothesis API the field containing the selectors is called
+      // `selector`, despite being a list.
+      selector: selectors,
+    }));
+
+    /** @type {AnnotationData} */
+    const annotation = {
+      target,
+      $highlight: highlight,
+      $tag: 'a:' + generateHexString(8),
+    };
+
+    //this.anchor(annotation);
+
+    this.hide();
+
+    console.log(annotation);
+
+    return annotation;
+  },
+    async anchor(annotation) {
+    /**
+     * Resolve an annotation's selectors to a concrete range.
+     *
+     * @param {Target} target
+     * @return {Promise<Anchor>}
+     */
+    const locate = async target => {
+      // Only annotations with an associated quote can currently be anchored.
+      // This is because the quote is used to verify anchoring with other selector
+      // types.
+      if (
+        !target.selector ||
+        !target.selector.some(s => s.type === 'TextQuoteSelector')
+      ) {
+        return { annotation, target };
+      }
+
+      /** @type {Anchor} */
+      let anchor;
+      try {
+        const range = await this._integration.anchor(
+          this.element,
+          target.selector
+        );
+        // Convert the `Range` to a `TextRange` which can be converted back to
+        // a `Range` later. The `TextRange` representation allows for highlights
+        // to be inserted during anchoring other annotations without "breaking"
+        // this anchor.
+        const textRange = TextRange.fromRange(range);
+        anchor = { annotation, target, range: textRange };
+      } catch (err) {
+        anchor = { annotation, target };
+      }
+      return anchor;
+    };
+
+    /**
+     * Highlight the text range that `anchor` refers to.
+     *
+     * @param {Anchor} anchor
+     */
+    const highlight = anchor => {
+      const range = resolveAnchor(anchor);
+      if (!range) {
+        return;
+      }
+
+      const highlights = /** @type {AnnotationHighlight[]} */ (
+        highlightRange(range)
+      );
+      highlights.forEach(h => {
+        h._annotation = anchor.annotation;
+      });
+      anchor.highlights = highlights;
+
+      if (this._focusedAnnotations.has(anchor.annotation.$tag)) {
+        setHighlightsFocused(highlights, true);
+      }
+    };
+
+    // Remove existing anchors for this annotation.
+    this.detach(annotation.$tag, false /* notify */);
+
+    this._annotations.add(annotation.$tag);
+
+    // Resolve selectors to ranges and insert highlights.
+    if (!annotation.target) {
+      annotation.target = [];
+    }
+    const anchors = await Promise.all(annotation.target.map(locate));
+
+    // If the annotation was removed while anchoring, don't save the anchors.
+    if (!this._annotations.has(annotation.$tag)) {
+      return [];
+    }
+
+    for (let anchor of anchors) {
+      highlight(anchor);
+    }
+
+    // Set flag indicating whether anchoring succeeded. For each target,
+    // anchoring is successful either if there are no selectors (ie. this is a
+    // Page Note) or we successfully resolved the selectors to a range.
+    annotation.$orphan =
+      anchors.length > 0 &&
+      anchors.every(anchor => anchor.target.selector && !anchor.range);
+
+    this._updateAnchors(this.anchors.concat(anchors), true /* notify */);
+
+    // Let other frames (eg. the sidebar) know about the new annotation.
+    this._sidebarRPC.call('syncAnchoringStatus', annotation);
+
+    return anchors;
+  },
     onAnnotate() {
-      console.log("adder onAnnotate()");
-      this.$emit("annotate");
+      this.createAnnotation();
     },
     onShowAnnotations() {
        console.log("adder onShowAnnotations()")
