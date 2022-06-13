@@ -366,6 +366,8 @@
 
     </div> <!-- outerContainer -->
     <div id="printContainer"></div>
+
+    <Adder ></Adder>
     </teleport>
 </template>
 
@@ -379,47 +381,151 @@ Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import debounce from "lodash.debounce";
+import {ListenerCollection} from "../../../../frameworks/hypothesis/client/src/shared/listener-collection";
+import {RenderingStates} from "../../../../frameworks/hypothesis/client/src/annotator/anchoring/pdf";
+import {removePlaceholder} from "../../../../frameworks/hypothesis/client/src/annotator/anchoring/placeholder";
+import {SelectionObserver} from "../../../../frameworks/hypothesis/client/src/annotator/selection-observer";
+import Adder from "./Adder.vue";
+import * as rangeUtil from "../../../../frameworks/hypothesis/client/src/annotator/range-util";
+import {TextRange} from "../../../../frameworks/hypothesis/client/src/annotator/anchoring/text-range";
 
 export default {
   name: "PDFJSViewer",
+  components: {Adder},
   props: ['pdf_path'],
+  data() {
+    return {
+      _reanchoringMaxWait: 3000,
+      _listeners: null,
+      observer: null,
+      pdfViewer: null,
+      _adder: null,
+      _selectionObserver: null,
+      anchors: [],
+      _annotations:/** @type {Set<string>} */ (new Set()),
+      _focusedAnnotations: new Set(),
+      selectedRanges: [],
+    }
+  },
   methods: {
+     /**
+     * Show or hide the adder toolbar when the selection changes.
+     *
+     * @param {Range} range
+     */
+
     async loadAnnotator() {
 
-      console.log("Annotator start load...");
-      const pdfViewer = PDFViewerApplication.pdfViewer;
-      pdfViewer.viewer.classList.add('has-transparent-text-layer');
+  /*
+      this._adder = new Adder(this.element, {
+      onAnnotate: () => this.createAnnotation(),
+      onHighlight: () => this.createAnnotation({ highlight: true }),
+      onShowAnnotations: tags => this.selectAnnotations(tags),
+    });
+*/
 
-      const pdfContainer = pdfViewer.appConfig?.appContainer ?? document.body;
+
+
+
+      let fakeAnnotator = {
+        anchor: [],
+        anchors: [],
+        anchoring: null,
+      };
+
+      this.annotator = fakeAnnotator;
+
+      console.log("Annotator start load...");
+      this.pdfViewer = PDFViewerApplication.pdfViewer;
+      this.pdfViewer.viewer.classList.add('has-transparent-text-layer');
+
+      const pdfContainer = this.pdfViewer.appConfig?.appContainer ?? document.body;
       console.log(pdfContainer);
 
-      //see ./frameworks/hypothesis/client/src/annotator/integrations/pdf.js
-
-      const observer = new MutationObserver(debounce(() => this._update(), 100));
-      observer.observe(pdfViewer.viewer, {
+      this.observer = new MutationObserver(debounce(() => this._update(), 100));
+      this.observer.observe(this.pdfViewer.viewer, {
             attributes: true,
             attributeFilter: ['data-loaded'],
             childList: true,
             subtree: true,
           });
 
-      console.log(observer)
+      console.log(this.observer)
 
-      let pageView = pdfViewer.getPageView(pageIndex);
+      this._listeners = new ListenerCollection();
+      this._listeners.add(
+        document,
+        'selectionchange',
+        this._updateAnnotationLayerVisibility
+      );
 
-      if (!pageView || !pageView.pdfPage) {
-        pageView = await new Promise(resolve => {
-          const onPagesLoaded = () => {
-            pdfViewer.eventBus.off('pagesloaded', onPagesLoaded);
-            resolve(pdfViewer.getPageView(pageIndex));
-          };
-          pdfViewer.eventBus.on('pagesloaded', onPagesLoaded);
-        });
+    },
+    // Hide annotation layer when the user is making a selection. The annotation
+    // layer appears above the invisible text layer and can interfere with text
+    // selection. See https://github.com/hypothesis/client/issues/1464.
+    _updateAnnotationLayerVisibility() {
+      const selection = /** @type {Selection} */ (window.getSelection());
+
+      // Add CSS class to indicate whether there is a selection. Annotation
+      // layers are then hidden by a CSS rule in `pdfjs-overrides.scss`.
+      this.pdfViewer.viewer.classList.toggle(
+        'is-selecting',
+        !selection.isCollapsed
+      );
+    },
+      // This method (re-)anchors annotations when pages are rendered and destroyed.
+    _update() {
+      // A list of annotations that need to be refreshed.
+      const refreshAnnotations = /** @type {AnnotationData[]} */ ([]);
+
+      const pageCount = this.pdfViewer.pagesCount;
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+        const page = this.pdfViewer.getPageView(pageIndex);
+        if (!page?.textLayer?.renderingDone) {
+          continue;
+        }
+
+        // Detect what needs to be done by checking the rendering state.
+        switch (page.renderingState) {
+          case RenderingStates.INITIAL:
+            // This page has been reset to its initial state so its text layer
+            // is no longer valid. Null it out so that we don't process it again.
+            page.textLayer = null;
+            break;
+          case RenderingStates.FINISHED:
+            // This page is still rendered. If it has a placeholder node that
+            // means the PDF anchoring module anchored annotations before it was
+            // rendered. Remove this, which will cause the annotations to anchor
+            // again, below.
+            removePlaceholder(page.div);
+            break;
+        }
       }
 
-      console.log("Annotator pageViewLoad...");
+      // Find all the anchors that have been invalidated by page state changes.
+      for (let anchor of this.annotator.anchors) {
+        // Skip any we already know about.
+        if (anchor.highlights) {
+          if (refreshAnnotations.includes(anchor.annotation)) {
+            continue;
+          }
 
+          // If the highlights are no longer in the document it means that either
+          // the page was destroyed by PDF.js or the placeholder was removed above.
+          // The annotations for these anchors need to be refreshed.
+          for (let index = 0; index < anchor.highlights.length; index++) {
+            const hl = anchor.highlights[index];
+            if (!document.body.contains(hl)) {
+              anchor.highlights.splice(index, 1);
+              delete anchor.range;
+              refreshAnnotations.push(anchor.annotation);
+              break;
+            }
+          }
+        }
+      }
 
+      refreshAnnotations.map(annotation => this.annotator.anchor(annotation));
     }
   },
   created() {
@@ -443,6 +549,11 @@ export default {
 
   },
   beforeUnmount() {
+
+    this._listeners.removeAll();
+    this.pdfViewer.viewer.classList.remove('has-transparent-text-layer');
+    this.observer.disconnect();
+
     const deleteScripts = [
         'script_pdfjs_viewer',
         'link_pdfjs_resource',
