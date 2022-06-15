@@ -8,6 +8,7 @@
 import { BIconPlusSquare } from 'bootstrap-icons-vue';
 import { TextRange} from "../../assets/anchoring/text-range";
 import { describe } from "../../assets/anchoring/anchoring"
+import {selectedRange} from "../../../../frameworks/hypothesis/client/src/annotator/selection-observer";
 
 export default {
   name: "Adder",
@@ -18,21 +19,37 @@ export default {
       _height: 0,
       isVisible: false,
       selectedRanges: [],
+      _pendingCallback: null,
     }
   },
   created() {
-    document.body.addEventListener('mouseup',this._onSelection);
+    document.body.addEventListener('mouseup',this.checkSelection);
   },
   beforeUnmount() {
-    document.body.removeEventListener('mouseup', this._onSelection);
+    document.body.removeEventListener('mouseup', this.checkSelection);
   },
   mounted() {
     this.init();
   },
   methods: {
+    checkSelection(event) {
+
+      // cancel pending callbacks
+      if (this._pendingCallback) {
+        clearTimeout(this._pendingCallback);
+        this._pendingCallback = null;
+      }
+
+      // delay for having the right data
+      this._pendingCallback = setTimeout(() => {
+        this._onSelection(event);
+      }, 10);
+    },
     async annotate() {
       const ranges = this.selectedRanges;
       this.selectedRanges = [];
+
+      console.log(ranges);
 
       const rangeSelectors = await Promise.all(
           ranges.map(range => describe(document.body, range))
@@ -48,7 +65,9 @@ export default {
         target,
       };
 
-      this.$emit(annotation);
+      console.log(annotation);
+
+      //this.$emit(annotation);
       this.isVisible = false;
     },
     init() {
@@ -67,6 +86,7 @@ export default {
         this._onClearSelection();
         return;
       }
+      console.log(selection);
 
       // get range of selection
       const range = selection.getRangeAt(0);
@@ -74,6 +94,7 @@ export default {
         this._onClearSelection();
         return;
       }
+      console.log(range);
 
       // check if text exists at all
       try {
