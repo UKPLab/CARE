@@ -8,6 +8,8 @@
 import { BIconPlusSquare } from 'bootstrap-icons-vue';
 import { TextRange } from "../../assets/anchoring/text-range";
 import { describe } from "../../assets/anchoring/anchoring"
+import {mapMutations} from "vuex";
+import {Annotation} from "../../data/annotation.js";
 
 export default {
   name: "Adder",
@@ -31,6 +33,8 @@ export default {
     this.init();
   },
   methods: {
+    ...mapMutations({addAnnotation: "anno/ADD_ANNOTATION"}),
+
     checkSelection(event) {
 
       // cancel pending callbacks
@@ -62,7 +66,9 @@ export default {
         target,
       };
 
-      this.$emit("addAnnotation", annotation);
+      //this.$emit("addAnnotation", annotation);
+      this.addAnnotation(new Annotation("someid", target[0].selector[1].exact, target[0].selector[1].exact,annotation));
+
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
 
