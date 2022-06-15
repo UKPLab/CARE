@@ -5,10 +5,6 @@
 </template>
 
 <script>
-/*
-  Source of most of the code: Hypothesis Client ./client/src/annotator/adder.js
-*/
-
 import { BIconPlusSquare } from 'bootstrap-icons-vue';
 import { TextRange} from "../../assets/anchoring/text-range";
 import { describe } from "../../assets/anchoring/anchoring"
@@ -21,10 +17,7 @@ export default {
       _width: 0,
       _height: 0,
       isVisible: false,
-      _selectionObserver: null,
-      annotationsForSelection: [],
       selectedRanges: [],
-      _pendingCallback: null
     }
   },
   created() {
