@@ -1,8 +1,7 @@
 <template>
-  <teleport to="body">
-  <div id="outerContainer" style="position:absolute">
-
-      <div id="sidebarContainer">
+  <teleport to="main">
+  <div id="outerContainer">
+       <div id="sidebarContainer">
         <div id="toolbarSidebar">
           <div id="toolbarSidebarLeft">
             <div id="sidebarViewButtons" class="splitToolbarButton toggled" role="radiogroup">
