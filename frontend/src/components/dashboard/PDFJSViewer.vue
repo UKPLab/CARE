@@ -366,8 +366,6 @@
 
     </div> <!-- outerContainer -->
     <div id="printContainer"></div>
-
-    <Adder ></Adder>
     </teleport>
 </template>
 

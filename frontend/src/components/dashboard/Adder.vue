@@ -48,8 +48,6 @@ export default {
       const ranges = this.selectedRanges;
       this.selectedRanges = [];
 
-      console.log(ranges);
-
       const rangeSelectors = await Promise.all(
           ranges.map(range => describe(document.body, range))
       );
@@ -64,10 +62,10 @@ export default {
         target,
       };
 
-      console.log(annotation);
-
-      //this.$emit(annotation);
+      this.$emit("addAnnotation", annotation);
       this.isVisible = false;
+      document.getSelection()?.removeAllRanges();
+
     },
     init() {
       const adder = /** @type {Element} */ (document.getElementById("adder"));
@@ -75,9 +73,6 @@ export default {
       this._height = adder.getBoundingClientRect().height;
     },
     _onSelection(event) {
-
-      console.log(event);
-
       // get selection
       const selection = /** @type {Selection} */ (document.getSelection());
       if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
@@ -85,7 +80,6 @@ export default {
         this._onClearSelection();
         return;
       }
-      console.log(selection);
 
       // get range of selection
       const range = selection.getRangeAt(0);
@@ -93,7 +87,6 @@ export default {
         this._onClearSelection();
         return;
       }
-      console.log(range);
 
       // check if text exists at all
       try {
