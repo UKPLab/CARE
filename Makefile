@@ -55,10 +55,8 @@ backend/node_modules/.uptodate: backend/package.json backend/package-lock.json
 
 .PHONY: h_server
 h_server: frameworks/hypothesis/h/package.json
-	docker-compose up postgres \
-	                  elasticsearch \
-	                  rabbit \
-	                  h_server
+	docker-compose up postgres
+
 
 .PHONY: h_client
 h_client: frameworks/hypothesis/client/package.json
