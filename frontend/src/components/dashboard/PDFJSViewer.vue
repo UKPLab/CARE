@@ -389,6 +389,7 @@ import Adder from "./Adder.vue";
 import * as rangeUtil from "../../../../frameworks/hypothesis/client/src/annotator/range-util";
 import {TextRange} from "../../../../frameworks/hypothesis/client/src/annotator/anchoring/text-range";
 import {generateHexString} from "../../../../frameworks/hypothesis/client/src/shared/random";
+import {removeAllHighlights} from "../../../../frameworks/hypothesis/client/src/annotator/highlighter";
 
 export default {
   name: "PDFJSViewer",
@@ -413,17 +414,6 @@ export default {
 
 
     async loadAnnotator() {
-
-  /*
-      this._adder = new Adder(this.element, {
-      onAnnotate: () => this.createAnnotation(),
-      onHighlight: () => this.createAnnotation({ highlight: true }),
-      onShowAnnotations: tags => this.selectAnnotations(tags),
-    });
-*/
-
-
-
 
       let fakeAnnotator = {
         anchor: [],
@@ -563,6 +553,9 @@ export default {
       const element = document.getElementById(script_id);
       if (element !== null) { element.remove() }
     })
+
+    removeAllHighlights(this.element);
+
   },
   mounted() {
 
