@@ -6,9 +6,8 @@
 
 <script>
 import { BIconPlusSquare } from 'bootstrap-icons-vue';
-import { TextRange} from "../../assets/anchoring/text-range";
+import { TextRange } from "../../assets/anchoring/text-range";
 import { describe } from "../../assets/anchoring/anchoring"
-import {selectedRange} from "../../../../frameworks/hypothesis/client/src/annotator/selection-observer";
 
 export default {
   name: "Adder",
