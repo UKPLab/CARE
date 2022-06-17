@@ -1,8 +1,8 @@
 <template>
   <div id="sidebar" v-bind:class="showing">
-      <span v-if="annotations.length === 0">
+      <div v-if="annotations.length === 0" class="list-group border-0 rounded-0 text-sm-start min-vh-100">
             No annotations present...
-      </span>
+      </div>
       <div v-else id="sidebar-nav" class="list-group border-0 rounded-0 text-sm-start min-vh-100">
         <a v-for="anno in annotations" class="list-group-item border-end-0 d-inline-block" data-bs-parent="#sidebar">
           <span>{{anno.comment}}</span></a>
@@ -11,17 +11,17 @@
 </template>
 
 <script>
-import {mapGetters} from "vuex";
 
 export default {
   name: "Sidebar",
+  props: ['document_id'],
   data: function() {
     return {
     }
   },
   computed: {
     sidebarShowing () { return this.$store.getters['anno/isSidebarShowing'] },
-    annotations() { return this.$store.getters['anno/getAnnotations'](1) },
+    annotations() { return this.$store.getters['anno/getAnnotations'](this.document_id) },
 
     showing: function() {
       return this.sidebarShowing ? "collapse collapse-horizontal show border-end" : "collapse collapse-horizontal collapsing border-end"
