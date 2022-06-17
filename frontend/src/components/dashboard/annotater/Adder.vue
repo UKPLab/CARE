@@ -6,15 +6,15 @@
 
 <script>
 import { BIconPlusSquare } from 'bootstrap-icons-vue';
-import { TextRange } from "../../assets/anchoring/text-range";
-import { describe } from "../../assets/anchoring/anchoring"
+import { TextRange } from "../../../assets/anchoring/text-range";
+import { describe } from "../../../assets/anchoring/anchoring"
 import {mapMutations} from "vuex";
-import {Annotation} from "../../data/annotation.js";
-import { uuid } from 'vue-uuid';
+import {Annotation} from "../../../data/annotation.js";
 
 export default {
   name: "Adder",
   components: { BIconPlusSquare },
+  props: ['document_id'],
   data() {
     return {
       _width: 0,
@@ -68,7 +68,7 @@ export default {
       };
 
       //this.$emit("addAnnotation", annotation);
-      this.addAnnotation(new Annotation(uuid.v4(), target[0].selector[1].exact, target[0].selector[1].exact,annotation));
+      this.addAnnotation(new Annotation(this.document_id, target[0].selector[1].exact, target[0].selector[1].exact,annotation));
 
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();

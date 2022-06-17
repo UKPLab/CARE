@@ -1,18 +1,26 @@
+import { v4 } from 'uuid';
+
+
 export class Annotation{
     id;
     comment;
-    anchor;
+    anchors;
     annotationData;
     document_id;
+    orphaned;
 
     // todo: add necessary attributes and methods
 
-    constructor(id, comment, anchor, annotationData) {
-        this.id = id;
+    constructor(document_id, comment, anchor, annotationData) {
+        this.document_id = document_id
+        this.id = v4();
+        this.anchors = null;
+
         this.comment = comment;
-        this.anchor = anchor;
+
         this.annotationData = annotationData;
-        this.document_id = 1;
+        this.orphaned = false;
+
     }
 
     toJson() {

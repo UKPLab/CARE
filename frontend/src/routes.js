@@ -12,7 +12,7 @@ import * as VueRouter from 'vue-router'
 import store from "./store";
 
 // Set Vue Routing
-import Annotater from "./components/dashboard/Annotater.vue";
+import Annotater from "./components/dashboard/annotater/Annotater.vue";
 import Dashboard from "./components/Dashboard.vue";
 import NotFoundPage from "./components/NotFoundPage.vue";
 import Login from "./components/auth/Login.vue";
