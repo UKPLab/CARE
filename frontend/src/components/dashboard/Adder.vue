@@ -10,6 +10,7 @@ import { TextRange } from "../../assets/anchoring/text-range";
 import { describe } from "../../assets/anchoring/anchoring"
 import {mapMutations} from "vuex";
 import {Annotation} from "../../data/annotation.js";
+import { uuid } from 'vue-uuid';
 
 export default {
   name: "Adder",
@@ -67,7 +68,7 @@ export default {
       };
 
       //this.$emit("addAnnotation", annotation);
-      this.addAnnotation(new Annotation("someid", target[0].selector[1].exact, target[0].selector[1].exact,annotation));
+      this.addAnnotation(new Annotation(uuid.v4(), target[0].selector[1].exact, target[0].selector[1].exact,annotation));
 
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
