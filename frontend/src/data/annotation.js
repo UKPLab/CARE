@@ -3,6 +3,7 @@ export class Annotation{
     comment;
     anchor;
     annotationData;
+    document_id;
 
     // todo: add necessary attributes and methods
 
@@ -11,6 +12,7 @@ export class Annotation{
         this.comment = comment;
         this.anchor = anchor;
         this.annotationData = annotationData;
+        this.document_id = 1;
     }
 
     toJson() {
