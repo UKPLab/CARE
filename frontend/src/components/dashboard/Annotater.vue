@@ -54,7 +54,10 @@ export default {
     }
   },
   computed: {
-    ...mapGetters({sidebarShowing: 'anno/isSidebarShowing'})
+    ...mapGetters({
+      sidebarShowing: 'anno/isSidebarShowing',
+      annotations: 'anno/getAnnotations'
+    })
   },
   methods: {
     ...mapMutations({toggleSidebar: "anno/TOGGLE_SIDEBAR"}),
