@@ -5,7 +5,7 @@
       </span>
       <div v-else id="sidebar-nav" class="list-group border-0 rounded-0 text-sm-start min-vh-100">
         <a v-for="anno in annotations" class="list-group-item border-end-0 d-inline-block" data-bs-parent="#sidebar">
-          <span>{{anno.comment}}</span> </a>
+          <span>{{anno.comment}}</span></a>
       </div>
   </div>
 </template>
@@ -20,10 +20,8 @@ export default {
     }
   },
   computed: {
-    ...mapGetters({
-      sidebarShowing: 'anno/isSidebarShowing',
-      annotations: 'anno/getAnnotations'
-    }),
+    sidebarShowing () { return this.$store.getters['anno/isSidebarShowing'] },
+    annotations() { return this.$store.getters['anno/getAnnotations'](1) },
 
     showing: function() {
       return this.sidebarShowing ? "collapse collapse-horizontal show border-end" : "collapse collapse-horizontal collapsing border-end"

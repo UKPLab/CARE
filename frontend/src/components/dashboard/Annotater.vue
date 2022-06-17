@@ -17,6 +17,7 @@
     </div>
   </div>
   <Adder @addAnnotation="addAnnotation" />
+  <button @click="test">Test</button>
   <PDFJSViewer :pdf_path="pdf_path"></PDFJSViewer>
 </template>
 
@@ -54,12 +55,25 @@ export default {
     }
   },
   computed: {
+    annotations () {
+      return this.$store.state.anno.annotations;
+    },
+
     ...mapGetters({
       sidebarShowing: 'anno/isSidebarShowing',
-      annotations: 'anno/getAnnotations'
+      //annotations: 'anno/getAnnotations'
     })
   },
+  watch: {
+    "$store.state.anno.annotations" (value, oldValue) {
+      console.log(this.annotations)
+      console.log(this.$store.state.anno.annotations)
+    }
+  },
   methods: {
+    test() {
+      console.log(this.annotations);
+    },
     ...mapMutations({toggleSidebar: "anno/TOGGLE_SIDEBAR"}),
 
     async addAnnotation(annotation) {

@@ -25,8 +25,8 @@ export default {
     state: getDefaultState(),
     getters: {
         // returns annotations from the store (local)
-        getAnnotations: state => {
-            return state["annotations"]
+        getAnnotations: (state) => (document_id) => {
+            return state.annotations.filter(annotation => annotation.document_id === document_id)
         },
         isSidebarShowing: state => {
             return state["sidebar_showing"]
