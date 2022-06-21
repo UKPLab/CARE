@@ -28,9 +28,6 @@ export default {
         getAnnotations: (state) => (document_id) => {
             return state.annotations.filter(annotation => annotation.document_id === document_id);
         },
-        getAnchoredAnnotations: (state) => (document_id) => {
-            return state.annotations.filter(annotation => annotation.document_id === document_id).filter(annotation => annotation.orphaned);
-        },
         getAnchors: (state) => (document_id) => {
             return state.annotations.filter(annotation => annotation.document_id === document_id && annotation.orphaned === false && annotation.anchors !== null).map(annotation => annotation.anchors)
         },

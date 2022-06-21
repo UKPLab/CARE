@@ -10,17 +10,17 @@
         <span class="visually-hidden">Sidebar</span>
       </button>
       </b-col>
-      <b-col id="annotations" offset="0" padding="0" v-bind:class="showing">
-        <b-container>
-          <b-row>
+      <b-col id="annotations" offset="0" padding="0" class="collapse collapse-horizontal border-end"  v-bind:class="showing">
+        <b-container style="height:100vh;padding:0px">
+          <b-row id="top-row">
             <TopBar></TopBar>
           </b-row>
-          <b-row>
+          <b-row id="pane-row">
             <div id="sidepane">
-              <div v-if="annotations.length === 0" class="list-group border-0 rounded-0 text-sm-start min-vh-100 overflow-auto">
+              <div v-if="annotations.length === 0" class="list-group border-0 rounded-0 text-sm-start min-vh-100">
                     No annotations present...
               </div>
-              <div v-else id="sidebar-nav" class="list-group border-0 rounded-0 text-sm-start min-vh-100 overflow-auto">
+              <div v-else id="anno-list" class="list-group border-0 rounded-0 text-sm-start min-vh-100">
                 <a v-for="anno in annotations" class="list-group-item border-end-0 d-inline-block" data-bs-parent="#sidebar">
                   <span>{{anno.comment}}</span></a>
               </div>
@@ -49,7 +49,7 @@ export default {
     annotations() { return this.$store.getters['anno/getAnnotations'](this.document_id) },
 
     showing: function() {
-      return this.sidebarShowing ? "collapse collapse-horizontal show border-end" : "collapse collapse-horizontal collapsing border-end"
+      return this.sidebarShowing ? "show" : "collapsing"
     }
   },
   methods: {
@@ -60,9 +60,18 @@ export default {
 
 <style scoped>
 #sidebar-container {
+  height:100vh;
 }
 #sidepane {
   background-color: #bfbfbf;
+  height:100%;
+  overflow:scroll;
+}
+#top-row {
+  height: 10%;
+}
+#pane-row {
+  height: 90%;
 }
 #collapsable {
   padding-left: 0;
