@@ -29,7 +29,20 @@ export default {
             return state.annotations.filter(annotation => annotation.document_id === document_id);
         },
         getAnchors: (state) => (document_id) => {
-            return state.annotations.filter(annotation => annotation.document_id === document_id && annotation.orphaned === false && annotation.anchors !== null).map(annotation => annotation.anchors)
+            return state.annotations
+                .filter(annotation => annotation.document_id === document_id)
+                .filter(annotation => annotation.orphaned === false)
+                .filter(annotation => annotation.anchors !== null)
+                .map(annotation => annotation.anchors)
+                .filter(anchors => anchors !== undefined)
+        },
+        getAnchorsFlat: (state) => (document_id) => {
+            return state.annotations
+                .filter(annotation => annotation.document_id === document_id)
+                .filter(annotation => annotation.orphaned === false)
+                .filter(annotation => annotation.anchors !== null)
+                .flatMap(annotation => annotation.anchors)
+                .filter(anchors => anchors !== undefined)
         },
         isSidebarShowing: state => {
             return state["sidebar_showing"]
