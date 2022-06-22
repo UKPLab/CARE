@@ -364,7 +364,7 @@
 
     </div> <!-- outerContainer -->
     <div id="printContainer"></div>
-    <Anchors :document_id="document_id" />
+    <Highlights :document_id="document_id" />
 
 </template>
 
@@ -378,27 +378,103 @@ Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import Adder from "./Adder.vue";
-import Anchors from "./Anchors.vue";
-import {anchor as pdfAnchor} from "../../../assets/anchoring/anchoring";
+import Highlights from "./Highlights.vue";
+import {anchor as pdfAnchor, RenderingStates} from "../../../assets/anchoring/anchoring";
+import { removePlaceholder } from "../../../assets/anchoring/placeholder";
 import {TextRange} from "../../../assets/anchoring/text-range";
+import debounce from "lodash.debounce";
 
 export default {
   name: "PDFViewer",
-  components: {Anchors, Adder},
+  components: {Highlights, Adder},
   props: ['document_id'],
   data() {
     return {
+      pdfViewer: null,
+      pdfContainer: null,
+      observer: null,
     }
   },
   computed: {
     annotations() { return this.$store.getters['anno/getAnnotations'](this.document_id) },
+    anchors() { return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id)) },
+  },
+  unmounted() {
+    this.pdfViewer.viewer.classList.remove('has-transparent-text-layer');
+    this.observer.disconnect();
+    document.removeEventListener('selectionchange', this._updateAnnotationLayerVisibility)
   },
   watch: {
-    annotations () {
-      this.annotations.filter(annotation => annotation.anchors === null).map(this.handle_anchor);
-    }
+    annotations (newVal, oldVal) {
+      // handle only newly added anchors
+      newVal.filter(anchor => !oldVal.includes(anchor))
+          .map(this.handle_anchor)
+    },
   },
   methods: {
+    _update() {
+      const refreshAnnotations = /** @type {AnnotationData[]} */ ([]);
+
+    const pageCount = this.pdfViewer.pagesCount;
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+      const page = this.pdfViewer.getPageView(pageIndex);
+      if (!page?.textLayer?.renderingDone) {
+        continue;
+      }
+
+      // Detect what needs to be done by checking the rendering state.
+      switch (page.renderingState) {
+        case RenderingStates.INITIAL:
+          // This page has been reset to its initial state so its text layer
+          // is no longer valid. Null it out so that we don't process it again.
+          page.textLayer = null;
+          break;
+        case RenderingStates.FINISHED:
+          // This page is still rendered. If it has a placeholder node that
+          // means the PDF anchoring module anchored annotations before it was
+          // rendered. Remove this, which will cause the annotations to anchor
+          // again, below.
+          removePlaceholder(page.div);
+          break;
+      }
+    }
+
+    // Find all the anchors that have been invalidated by page state changes.
+    for (let anchor of this.anchors) {
+
+      // Skip any we already know about.
+      if (anchor.highlights) {
+        if (refreshAnnotations.includes(anchor.annotation)) {
+          continue;
+        }
+
+        // If the highlights are no longer in the document it means that either
+        // the page was destroyed by PDF.js or the placeholder was removed above.
+        // The annotations for these anchors need to be refreshed.
+        for (let index = 0; index < anchor.highlights.length; index++) {
+          const hl = anchor.highlights[index];
+          if (!document.body.contains(hl)) {
+            anchor.highlights.splice(index, 1);
+            delete anchor.range;
+            refreshAnnotations.push(anchor.annotation);
+            break;
+          }
+        }
+      }
+    }
+
+    refreshAnnotations.map(annotation => this.handle_anchor(annotation));
+    },
+    _updateAnnotationLayerVisibility () {
+      const selection = /** @type {Selection} */ (window.getSelection());
+      //TODO CSS Style
+      // Add CSS class to indicate whether there is a selection. Annotation
+      // layers are then hidden by a CSS rule in `pdfjs-overrides.scss`.
+      this.pdfViewer.viewer.classList.toggle(
+        'is-selecting',
+        !selection.isCollapsed
+      );
+    },
     async handle_anchor(annotation) {
       const locate = async target => {
         // Only annotations with an associated quote can currently be anchored.
@@ -441,9 +517,7 @@ export default {
         anchors.every(anchor => anchor.target.selector && !anchor.range);
 
     },
-    init() {
-      this.annotations.map(this.handle_anchor);
-    }
+
   },
   created() {
     let style = document.createElement("link");
@@ -549,9 +623,23 @@ export default {
           originalUrl: document.URL,
 
 
-        });
+        }).then(() => {
 
-        this.init();
+          app.pdfViewer.viewer.classList.add('has-transparent-text-layer');
+          this.pdfContainer = app.appConfig?.appContainer ?? document.body;
+          this.pdfViewer = app.pdfViewer;
+
+          this.observer = new MutationObserver(debounce(() => this._update(), 100));
+          this.observer.observe(this.pdfViewer.viewer, {
+            attributes: true,
+            attributeFilter: ['data-loaded'],
+            childList: true,
+            subtree: true,
+          });
+
+          //document.addEventListener('selectionchange', this._updateAnnotationLayerVisibility)
+
+        });
       });
     });
   }
