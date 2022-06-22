@@ -1,9 +1,9 @@
 <template>
   <div id="sidebar-container" class="collapse collapse-horizontal border-end d-flex flex-column vh-100" v-bind:class="showing">
-    <TopBar id="topbar"></TopBar>
+    <TopBar id="topbar" @closeSidebar="toggleSidebar"></TopBar>
     <div id="sidepane">
-        <div v-if="annotations.length === 0" class="list-group border-0 rounded-0 text-sm-start">
-              No annotations present...
+        <div v-if="annotations.length === 0">
+          <p class="text-center"> No annotations </p>
         </div>
         <div v-else id="anno-list" class="list-group border-0 rounded-0 text-sm-start">
           <a v-for="anno in annotations" class="list-group-item border-end-0 d-inline-block" data-bs-parent="#sidebar">
