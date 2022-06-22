@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid>
+  <b-container fluid id="annotator">
     <b-row flex-nowrap align-v="stretch">
       <b-col id="docview">
         <PDFViewer :document_id="pdf_path"></PDFViewer>
@@ -37,10 +37,14 @@ export default {
 </script>
 
 <style scoped>
+#annotator {
+  height:100vh;
+}
 #docview {
   height:100vh;
 }
 #sidebar {
+  height:100vh;
   padding: 0;
   max-width: 300px;
 }
