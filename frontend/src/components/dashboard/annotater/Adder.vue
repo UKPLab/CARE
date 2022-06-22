@@ -1,6 +1,8 @@
 <template>
-  <div v-show="isVisible" id="adder">
-    <BIconPlusSquare @click="annotate" />
+  <div :style="{visibility: isVisible ? 'visible':'hidden'}" id="adder">
+    <button type="button" @click="annotate" class="adder-btn">
+        <BIconPlusSquare  />
+    </button>
   </div>
 </template>
 
@@ -17,8 +19,7 @@ export default {
   props: ['document_id'],
   data() {
     return {
-      _width: 0,
-      _height: 0,
+      _fadeOutBox: [],
       isVisible: false,
       selectedRanges: [],
       _pendingCallback: null,
@@ -75,9 +76,7 @@ export default {
 
     },
     init() {
-      const adder = /** @type {Element} */ (document.getElementById("adder"));
-      this._width = adder.getBoundingClientRect().width;
-      this._height = adder.getBoundingClientRect().height;
+
     },
     _onSelection(event) {
       // get selection
@@ -112,10 +111,15 @@ export default {
       this.selectedRanges = [];
     },
     show(x, y) {
-      // calculate position
-      x += 10;
-      y -= 40;
-      y -= this._height;
+
+      // get size of the box
+      const adder = /** @type {Element} */ (document.getElementById("adder"));
+      const width = adder.getBoundingClientRect().width;
+      const height = adder.getBoundingClientRect().height;
+
+      // calculate position of adder
+      x = x + 10;
+      y = y - (40 + height);
 
       // get max z index
       const maxZIndex = Math.max(
@@ -132,7 +136,26 @@ export default {
         zIndex: maxZIndex + 1,
       });
 
+      // generate fadeOut Box where the adder is faded out when the mouse is outside of the box
+      // parameter: min_x, min_y, max_x, max_y
+      const additional_size_of_box = 50;
+      this._fadeOutBox = [
+          x - additional_size_of_box,
+          y - additional_size_of_box,
+          x + width + additional_size_of_box,
+          y + height + additional_size_of_box + 40
+      ]
+
+      document.body.addEventListener('mousemove', this.fadeOut);
+
       this.isVisible = true;
+    },
+    fadeOut(event) {
+      if (event.clientX < this._fadeOutBox[0] || event.clientX > this._fadeOutBox[2]
+      || event.clientY < this._fadeOutBox[1] || event.clientY > this._fadeOutBox[3]) {
+        document.body.removeEventListener('mousemove', this.fadeOut);
+        this.isVisible = false;
+      }
     },
     getNodeTextLayer(node) {
       const el = 'closest' in node ? node : node.parentElement;
@@ -166,11 +189,18 @@ export default {
 
 <style scoped>
   #adder {
-      border: 1px solid black;
+      border: 1px solid #999999;
+      box-shadow: 1px 1px #CCCCCC;
       position: absolute;
       top: 0;
       left: 0;
       padding: 2px;
       background-color: white;
+  }
+  .adder-btn {
+    border-width: 0px;
+    padding:2px;
+    width:28px;
+    height:28px;
   }
 </style>
