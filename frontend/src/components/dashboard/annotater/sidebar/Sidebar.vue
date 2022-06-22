@@ -5,10 +5,11 @@
         <div v-if="annotations.length === 0">
           <p class="text-center"> No annotations </p>
         </div>
-        <div v-else id="anno-list" class="list-group border-0 rounded-0 text-sm-start">
-          <a v-for="anno in annotations" class="list-group-item border-end-0 d-inline-block" data-bs-parent="#sidebar">
-            <span>{{anno.comment}}</span></a>
-        </div>
+        <ul v-else id="anno-list" class="list-group">
+          <li v-for="anno in annotations" class="list-group-item">
+            <Annotation :annoData="anno"></Annotation>
+          </li>
+        </ul>
       </div>
   </div>
 </template>
@@ -16,10 +17,11 @@
 <script>
 import {mapMutations} from "vuex";
 import TopBar from "./TopBar.vue"
+import Annotation from "./Annotation.vue";
 
 export default {
   name: "Sidebar",
-  components: {TopBar},
+  components: {Annotation, TopBar},
   props: ['document_id'],
   data: function() {
     return {
@@ -28,7 +30,6 @@ export default {
   computed: {
     sidebarShowing () { return this.$store.getters['anno/isSidebarShowing'] },
     annotations() { return this.$store.getters['anno/getAnnotations'](this.document_id) },
-
     showing: function() {
       return this.sidebarShowing ? "show" : "collapsing"
     }

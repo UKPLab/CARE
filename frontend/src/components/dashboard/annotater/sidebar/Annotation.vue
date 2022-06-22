@@ -1,18 +1,36 @@
 <template>
 <b-card>
+  <div class="card-header">
+    {{ annoData.user }}
+  </div>
   <div class="card-body">
-    <h5 class="card-title">Card title</h5>
-    <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
-    <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-    <a href="#" class="card-link">Card link</a>
-    <a href="#" class="card-link">Another link</a>
+    <h6 class="card-subtitle mb-2 text-muted" v-for="anchor in annoData.anchors">
+        {{ anchor }}
+    </h6>
+    <p v-if="annoData.comment.length > 0" class="card-text">{{ annoData.comment }}</p>
+    <p v-else class="card-text"> - </p>
+  <div class="card-body">
+    <a href="#" class="btn btn-primary">Delete</a>
+  </div>
+  <div class="card-body">
+    <p> tags </p>
+  </div>
   </div>
 </b-card>
 </template>
 
 <script>
 export default {
-  name: "Annotation"
+  name: "Annotation",
+  props: ["annoData"],
+  data: function() {
+    return {
+    }
+  },
+  computed: {
+  },
+  methods: {
+  }
 }
 </script>
 

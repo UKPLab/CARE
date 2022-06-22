@@ -69,7 +69,8 @@ export default {
       };
 
       //this.$emit("addAnnotation", annotation);
-      this.addAnnotation(new Annotation(this.document_id, target[0].selector[1].exact, target[0].selector[1].exact,annotation));
+      const user = this.$store.getters['auth/getUser'].user_name;
+      this.addAnnotation(new Annotation(this.document_id, target[0].selector[1].exact, target[0].selector[1].exact,annotation, user));
 
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
