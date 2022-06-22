@@ -8,10 +8,11 @@ export class Annotation{
     annotationData;
     document_id;
     orphaned;
+    user;
 
     // todo: add necessary attributes and methods
 
-    constructor(document_id, comment, anchor, annotationData) {
+    constructor(document_id, comment, anchor, annotationData, user) {
         this.document_id = document_id
         this.id = v4();
         this.anchors = null;
@@ -21,6 +22,7 @@ export class Annotation{
         this.annotationData = annotationData;
         this.orphaned = false;
 
+        this.user = user;
     }
 
     toJson() {
