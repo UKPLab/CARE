@@ -6,7 +6,7 @@ import {isNodeInRange} from "../../../assets/anchoring/range-util";
 import {isInPlaceholder} from "../../../assets/anchoring/placeholder";
 
 export default {
-  name: "Anchors",
+  name: "Highlights",
   props: ['document_id'],
   data: function() {
     return {
@@ -20,12 +20,10 @@ export default {
   },
   watch: {
     anchors (newVal, oldVal) {
-      //TODO this same concept need to be done at adding annotation in Annotater.vue
       //Remove highlights of deleted anchors
       oldVal.filter(anchor => !newVal.includes(anchor))
         .forEach(anchors => anchors.filter(anchor => "highlights" in anchor)
             .forEach(anchor => this.removeHighlights(anchor.highlights)))
-
 
       newVal.filter(anchor => !oldVal.includes(anchor))
           .map(this.highlight)
@@ -98,8 +96,8 @@ export default {
         // likelihood of highlights being hidden by page styling.
 
         /** @type {HighlightElement} */
-        const highlightEl = document.createElement('span');
-        highlightEl.className = "highlight";
+        const highlightEl = document.createElement('hightlight');
+        highlightEl.className = "hightlight";
 
         const parent = /** @type {Node} */ (nodes[0].parentNode);
         parent.replaceChild(highlightEl, nodes[0]);
@@ -108,8 +106,98 @@ export default {
         highlights.push(highlightEl);
       });
 
+      if (!inPlaceholder) {
+        this.drawHighlightsAbovePdfCanvas(highlights);
+      }
+
       return highlights;
 
+    },
+    drawHighlightsAbovePdfCanvas(highlightEls) {
+      if (highlightEls.length === 0) {
+        return;
+      }
+
+      // Get the <canvas> for the PDF page containing the highlight. We assume all
+      // the highlights are on the same page.
+      const pageEl = highlightEls[0].closest('.page');
+      if (!pageEl) {
+        return null;
+      }
+
+      const canvasEl = pageEl.querySelector('.canvasWrapper > canvas');
+      if (!canvasEl || !canvasEl.parentElement) {
+        return;
+      }
+
+      /** @type {SVGElement|null} */
+      let svgHighlightLayer = canvasEl.parentElement.querySelector(
+        '.hypothesis-highlight-layer'
+      );
+
+      const isCssBlendSupported = CSS.supports('mix-blend-mode', 'multiply');
+
+      if (!svgHighlightLayer) {
+        // Create SVG layer. This must be in the same stacking context as
+        // the canvas so that CSS `mix-blend-mode` can be used to control how SVG
+        // content blends with the canvas below.
+        svgHighlightLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgHighlightLayer.setAttribute('class', 'highlight-layer');
+        canvasEl.parentElement.appendChild(svgHighlightLayer);
+
+        // Overlay SVG layer above canvas.
+        canvasEl.parentElement.style.position = 'relative';
+
+        const svgStyle = svgHighlightLayer.style;
+        svgStyle.position = 'absolute';
+        svgStyle.left = '0';
+        svgStyle.top = '0';
+        svgStyle.width = '100%';
+        svgStyle.height = '100%';
+
+        if (isCssBlendSupported) {
+          // Use multiply blending so that highlights drawn on top of text darken it
+          // rather than making it lighter. This improves contrast and thus readability
+          // of highlighted text, especially for overlapping highlights.
+          //
+          // This choice optimizes for the common case of dark text on a light background.
+          svgStyle.mixBlendMode = 'multiply';
+        } else {
+          // For older browsers (eg. Edge < 79) we draw all the highlights as
+          // opaque and then make the entire highlight layer transparent. This means
+          // that there is no visual indication of whether text has one or multiple
+          // highlights, but it preserves readability.
+          svgStyle.opacity = '0.3';
+        }
+      }
+
+      const canvasRect = canvasEl.getBoundingClientRect();
+      const highlightRects = highlightEls.map(highlightEl => {
+        const highlightRect = highlightEl.getBoundingClientRect();
+
+        // Create SVG element for the current highlight element.
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', (highlightRect.left - canvasRect.left).toString());
+        rect.setAttribute('y', (highlightRect.top - canvasRect.top).toString());
+        rect.setAttribute('width', highlightRect.width.toString());
+        rect.setAttribute('height', highlightRect.height.toString());
+
+        if (isCssBlendSupported) {
+          rect.setAttribute('class', 'svg-highlight');
+        } else {
+          rect.setAttribute('class', 'svg-highlight is-opaque');
+        }
+
+        // Make the highlight in the text layer transparent.
+        highlightEl.classList.add('is-transparent');
+
+        // Associate SVG element with highlight for use by `setHighlightsFocusedhlights`.
+        highlightEl.svgHighlight = rect;
+
+        return rect;
+      });
+
+      svgHighlightLayer.append(...highlightRects);
     },
     resolveAnchor(anchor) {
       if (!anchor.range) {
@@ -121,16 +209,17 @@ export default {
         return null;
       }
     },
-    replaceWith(node, replacements) {
-      const parent = /** @type {Node} */ (node.parentNode);
-      replacements.forEach(r => parent.insertBefore(r, node));
-      node.remove();
-    },
     removeHighlights(highlights) {
       for (let h of highlights) {
         if (h.parentNode) {
           const children = Array.from(h.childNodes);
-          this.replaceWith(h, children);
+          const parent = /** @type {Node} */ (h.parentNode);
+          children.forEach(r => parent.insertBefore(r, h));
+          h.remove();
+        }
+
+        if (h.svgHighlight) {
+          h.svgHighlight.remove();
         }
       }
     },
@@ -202,31 +291,57 @@ export default {
 }
 </script>
 
-<style scoped>
-  .highlight {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    white-space: nowrap;
-    clip: rect(0 0 0 0);
-    overflow: hidden;
-    background: rgba(0,0,255,.2);
-    cursor: pointer;
-  }
- .is-transparent {
-    background-color: transparent !important;
-  }
-  .svg-highlight {
-    fill: rgba(255,255,60,.4);
-  }
- .is-opaque {
-    fill: yellow;
-  }
-  .is-focused {
-    fill: rgba(255,255,240,.4);
-  }
-
-
-
-
+<style>
+.svg-highlight {
+  fill: transparent;
+}
+.svg-highlight {
+  fill: rgba(255, 255, 60, 0.4);
+}
+.svg-highlight.is-opaque {
+  fill: yellow;
+}
+.svg-highlight.is-focused {
+  fill: rgba(156, 230, 255, 0.5);
+}
+.highlight {
+  background-color: rgba(255, 255, 60, 0.4);
+  cursor: pointer;
+}
+.highlight.is-transparent {
+  background-color: transparent;
+}
+.highlight::before {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  white-space: nowrap;
+  clip: rect(0 0 0 0);
+  overflow: hidden;
+  content: ' annotation start ';
+}
+.highlight::after {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  white-space: nowrap;
+  clip: rect(0 0 0 0);
+  overflow: hidden;
+  content: ' annotation end ';
+}
+.highlight.highlight {
+  background-color: rgba(206, 206, 60, 0.4);
+}
+.highlight.highlight.is-transparent {
+  background-color: transparent;
+}
+.highlight.highlight.highlight {
+  background-color: transparent;
+}
+.highlight.highlight.highlight-focus {
+  background-color: rgba(156, 230, 255, 0.5) !important;
+}
+.highlight.highlight.highlight-focus.highlight {
+  background-color: transparent !important;
+}
 </style>
