@@ -410,6 +410,12 @@ export default {
       newVal.filter(anchor => !oldVal.includes(anchor))
           .map(this.handle_anchor)
     },
+    scrollTo () {
+      if (this.scrollTo !== null) {
+        console.log(this.scrollTo);
+        this.scrollTo = null;
+      }
+    }
   },
   methods: {
     _update() {

@@ -6,8 +6,12 @@
           <p class="text-center"> No annotations </p>
         </div>
         <ul v-else id="anno-list" class="list-group">
-          <li v-for="anno in annotations" class="list-group-item" v-bind:id="anno.id">
-            <Annotation v-on:mouseover='hover(anno.id)' v-on:mouseleave="unhover(anno.id)" :annoData="anno"></Annotation>
+          <li v-for="anno in annotations" class="list-group-item"
+              v-bind:id="anno.id"
+              v-on:mouseover='hover(anno.id)'
+              v-on:mouseleave="unhover(anno.id)"
+              v-on:click="scrollTo(anno.id) " >
+            <Annotation :annoData="anno"></Annotation>
           </li>
         </ul>
       </div>
@@ -22,7 +26,7 @@ import Annotation from "./Annotation.vue";
 export default {
   name: "Sidebar",
   components: {Annotation, TopBar},
-  props: ['document_id'],
+  props: ['document_id', 'scrollTo'],
   data: function() {
     return {
     }

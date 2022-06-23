@@ -2,11 +2,11 @@
   <b-container fluid id="annotator">
     <b-row flex-nowrap align-v="stretch">
       <b-col id="docview">
-        <PDFViewer :document_id="pdf_path"></PDFViewer>
+        <PDFViewer :document_id="pdf_path" ref="pdfViewer" ></PDFViewer>
         <Adder :document_id="pdf_path"></Adder>
       </b-col>
       <b-col id="sidebar" cols="sm-auto">
-        <Sidebar :document_id="pdf_path" />
+        <Sidebar :document_id="pdf_path" :scrollTo="scrollTo" />
       </b-col>
     </b-row>
   </b-container>
@@ -25,6 +25,11 @@ Source: -
 import PDFViewer from "./PDFViewer.vue";
 import Adder from "./Adder.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
+import {offsetRelativeTo, scrollElement} from "../../../assets/anchoring/scroll";
+import {isInPlaceholder} from "../../../assets/anchoring/placeholder";
+import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
+
+
 export default {
   name: "Annotater",
   components: {Adder, PDFViewer, Sidebar},
@@ -33,6 +38,86 @@ export default {
     return {
     }
   },
+  methods: {
+    async scrollTo(annotationId) {
+      const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
+
+      if ("anchors" in annotation) {
+        const anchor = annotation.anchors[0]
+        const range = resolveAnchor(anchor);
+        if (!range) {
+          return;
+        }
+
+        // Emit a custom event that the host page can respond to. This is useful,
+        // for example, if the highlighted content is contained in a collapsible
+        // section of the page that needs to be un-collapsed.
+        const event = new CustomEvent('scrolltorange', {
+          bubbles: true,
+          cancelable: true,
+          detail: range,
+        });
+        const defaultNotPrevented = this.$refs.pdfViewer.pdfContainer.dispatchEvent(event);
+
+        if (defaultNotPrevented) {
+          const inPlaceholder = this.anchorIsInPlaceholder(anchor);
+          const offset = this._anchorOffset(anchor);
+          if (offset === null) {
+            return;
+          }
+
+          // nb. We only compute the scroll offset once at the start of scrolling.
+          // This is important as the highlight may be removed from the document during
+          // the scroll due to a page transitioning from rendered <-> un-rendered.
+          await scrollElement(document.querySelector('#viewerContainer'), offset);
+
+          if (inPlaceholder) {
+            const anchor = await this._waitForAnnotationToBeAnchored(
+                annotation,
+                3000
+            );
+            if (!anchor) {
+              return;
+            }
+            const offset = this._anchorOffset(anchor);
+            if (offset === null) {
+              return;
+            }
+            await scrollElement(document.querySelector('#viewerContainer'), offset);
+          }
+        }
+      }
+    },
+    anchorIsInPlaceholder(anchor) {
+      const highlight = anchor.highlights?.[0];
+      return highlight && isInPlaceholder(highlight);
+    },
+    _anchorOffset(anchor) {
+      if (!anchor.highlights) {
+        // This anchor was not resolved to a location in the document.
+        return null;
+      }
+      const highlight = anchor.highlights[0];
+      return offsetRelativeTo(highlight, document.querySelector('#viewerContainer'));
+    },
+    async _waitForAnnotationToBeAnchored(annotation, maxWait) {
+      const start = Date.now();
+      let anchor;
+      do {
+        // nb. Re-anchoring might result in a different anchor object for the
+        // same annotation.
+        anchor = this.annotator.anchors.find(a => a.annotation === annotation);
+        if (!anchor || this.anchorIsInPlaceholder(anchor)) {
+          anchor = null;
+
+          // If no anchor was found, wait a bit longer and check again to see if
+          // re-anchoring completed.
+          await delay(20);
+        }
+      } while (!anchor && Date.now() - start < maxWait);
+      return anchor ?? null;
+    }
+  }
 }
 </script>
 

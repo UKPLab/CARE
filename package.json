@@ -24,6 +24,7 @@
     "socket.io-client": "^4.5.1",
     "vuex": "^4.0.2",
     "vuex-persistedstate": "^4.1.0",
-    "vite": "^2.9.5"
+    "vite": "^2.9.5",
+    "scroll-into-view": "^1.16.1"
   }
 }

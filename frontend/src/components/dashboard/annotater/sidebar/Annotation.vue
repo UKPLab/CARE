@@ -4,9 +4,9 @@
     {{ annoData.user }}
   </div>
   <div class="card-body">
-    <h6 class="card-subtitle mb-2 text-muted" v-for="anchor in annoData.anchors">
+    <!--<h6 class="card-subtitle mb-2 text-muted" v-for="anchor in annoData.anchors">
         {{ anchor }}
-    </h6>
+    </h6>-->
     <p v-if="annoData.comment.length > 0" class="card-text">{{ annoData.comment }}</p>
     <p v-else class="card-text"> - </p>
   <div class="card-body">

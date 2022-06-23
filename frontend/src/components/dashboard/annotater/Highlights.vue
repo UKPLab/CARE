@@ -4,6 +4,7 @@
 <script>
 import {isNodeInRange} from "../../../assets/anchoring/range-util";
 import {isInPlaceholder} from "../../../assets/anchoring/placeholder";
+import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
 
 export default {
   name: "Highlights",
@@ -34,7 +35,7 @@ export default {
     highlight(anchors) {
 
       const highlight_it = anchor => {
-        const range = this.resolveAnchor(anchor);
+        const range = resolveAnchor(anchor);
         if (!range) {
           return;
         }
@@ -198,16 +199,6 @@ export default {
       });
 
       svgHighlightLayer.append(...highlightRects);
-    },
-    resolveAnchor(anchor) {
-      if (!anchor.range) {
-        return null;
-      }
-      try {
-        return anchor.range.toRange();
-      } catch {
-        return null;
-      }
     },
     removeHighlights(highlights) {
       for (let h of highlights) {
