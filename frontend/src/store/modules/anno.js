@@ -28,6 +28,9 @@ export default {
         getAnnotations: (state) => (document_id) => {
             return state.annotations.filter(annotation => annotation.document_id === document_id);
         },
+        getAnnotation: (state) => (annotation_id) => {
+            return state.annotations.find(x => x.id === annotation_id);
+        },
         getAnchors: (state) => (document_id) => {
             return state.annotations
                 .filter(annotation => annotation.document_id === document_id)
