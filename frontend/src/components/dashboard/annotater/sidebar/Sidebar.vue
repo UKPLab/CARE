@@ -6,8 +6,8 @@
           <p class="text-center"> No annotations </p>
         </div>
         <ul v-else id="anno-list" class="list-group">
-          <li v-for="anno in annotations" class="list-group-item">
-            <Annotation :annoData="anno"></Annotation>
+          <li v-for="anno in annotations" class="list-group-item" v-bind:id="anno.id">
+            <Annotation v-on:mouseover='hover(anno.id)' v-on:mouseleave="unhover(anno.id)" :annoData="anno"></Annotation>
           </li>
         </ul>
       </div>
@@ -35,7 +35,11 @@ export default {
     }
   },
   methods: {
-    ...mapMutations({toggleSidebar: "anno/TOGGLE_SIDEBAR"}),
+    ...mapMutations({
+      toggleSidebar: "anno/TOGGLE_SIDEBAR",
+      hover: "anno/HOVER",
+      unhover: "anno/UNHOVER"
+    }),
   }
 }
 </script>

@@ -63,6 +63,12 @@ export default {
         },
         TOGGLE_SIDEBAR: state => {
             state.sidebar_showing = !state.sidebar_showing;
+        },
+        HOVER: (state, id) => {
+            state.annotations.find(x => x.id === id).hover = true;
+        },
+        UNHOVER: (state, id) => {
+            state.annotations.find(x => x.id === id).hover = false;
         }
     },
     actions: {
@@ -70,6 +76,6 @@ export default {
         async load({commit}) {
             // todo
             commit('SET_ANNOTATIONS', []);
-        }
+        },
     }
 };

@@ -9,6 +9,7 @@ export class Annotation{
     document_id;
     orphaned;
     user;
+    hover;
 
     // todo: add necessary attributes and methods
 
@@ -16,7 +17,7 @@ export class Annotation{
         this.document_id = document_id
         this.id = v4();
         this.anchors = null;
-
+        this.hover = false;
         this.comment = comment;
 
         this.annotationData = annotationData;
