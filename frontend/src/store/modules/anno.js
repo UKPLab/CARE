@@ -65,10 +65,30 @@ export default {
             state.sidebar_showing = !state.sidebar_showing;
         },
         HOVER: (state, id) => {
-            state.annotations.find(x => x.id === id).hover = true;
+            let annotation = state.annotations.find(x => x.id === id);
+            annotation.hover = true;
+            if ("anchors" in annotation) {
+                annotation.anchors
+                    .filter(anchor => "highlights" in anchor)
+                    .forEach(anchor => anchor.highlights.map((highlight) => {
+                        if ("svgHighlight" in highlight)
+                            highlight.svgHighlight.classList.add("is-focused");
+                        highlight.classList.add("highlight-focus");
+                    }))
+            }
         },
         UNHOVER: (state, id) => {
-            state.annotations.find(x => x.id === id).hover = false;
+            let annotation = state.annotations.find(x => x.id === id);
+            annotation.hover = false;
+            if ("anchors" in annotation) {
+                annotation.anchors
+                    .filter(anchor => "highlights" in anchor)
+                    .forEach(anchor => anchor.highlights.map((highlight) => {
+                        if ("svgHighlight" in highlight)
+                            highlight.svgHighlight.classList.remove("is-focused");
+                        highlight.classList.remove("highlight-focus");
+                    }))
+            }
         }
     },
     actions: {

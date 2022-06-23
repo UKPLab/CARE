@@ -96,8 +96,8 @@ export default {
         // likelihood of highlights being hidden by page styling.
 
         /** @type {HighlightElement} */
-        const highlightEl = document.createElement('hightlight');
-        highlightEl.className = "hightlight";
+        const highlightEl = document.createElement('highlight');
+        highlightEl.className = "highlight";
 
         const parent = /** @type {Node} */ (nodes[0].parentNode);
         parent.replaceChild(highlightEl, nodes[0]);
