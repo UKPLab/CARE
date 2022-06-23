@@ -467,7 +467,7 @@ export default {
     },
     _updateAnnotationLayerVisibility () {
       const selection = /** @type {Selection} */ (window.getSelection());
-      //TODO CSS Style
+      // TODO CSS Style
       // Add CSS class to indicate whether there is a selection. Annotation
       // layers are then hidden by a CSS rule in `pdfjs-overrides.scss`.
       this.pdfViewer.viewer.classList.toggle(
