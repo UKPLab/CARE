@@ -63,14 +63,11 @@ export default {
         selector: selectors,
       }));
 
-      /** @type {AnnotationData} */
-      const annotation = {
-        target,
-      };
-
-      //this.$emit("addAnnotation", annotation);
-      const user = this.$store.getters['auth/getUser'].user_name;
-      this.addAnnotation(new Annotation(this.document_id, target[0].selector[1].exact, target[0].selector[1].exact,annotation, user));
+      this.$socket.emit('addAnnotation',
+          {
+            "document_id": this.document_id,
+            "annotation": { target }
+          });
 
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();

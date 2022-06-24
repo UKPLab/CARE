@@ -37,7 +37,8 @@ const routes = [
 
 // sockets
 const sockets = [
-    require("./sockets/basic")
+    require("./sockets/basic"),
+    require("./sockets/annotation")
 ];
 
 /**
@@ -53,7 +54,7 @@ function webServer(config) {
     app.use(express.static(`${__dirname}/../assets`));
 
     // Session Initialization
-    app.use(session({
+    const expressSession = session({
         /*genid: (req) => {
             console.log('Inside session middleware genid function')
             console.log(`Request object sessionID from client: ${req.sessionID}`)
@@ -63,7 +64,8 @@ function webServer(config) {
         secret: 'thatsecretthinggoeshere',
         resave: false,
         saveUninitialized: true
-    }));
+    });
+    app.use(expressSession);
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.json());
     app.use(passport.initialize());
@@ -79,7 +81,11 @@ function webServer(config) {
     const httpServer = createServer(app);
     const io = new Server(httpServer, {
         //options
-    })
+    });
+    io.use(function(socket, next){
+        // Wrap the express middleware
+        expressSession(socket.request, {}, next);
+    });
     sockets.forEach(socket => socket(io));
 
     // serve server on port
