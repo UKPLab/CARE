@@ -108,18 +108,6 @@ sudo npm install --global yarn
 echo "> Installing Gulp-CLI global"
 sudo npm install --global gulp-cli  # needed for pdf.js
 
-# install pyenv
-echo "> Installing pyenv"
-if [ -n "$(command -v pyenv)" ]  #pyenv already installed
-then
-  echo "Pyenv is already installed! Skipping installation."
-else
-  sudo su -c 'curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash' $SUDO_USER
-  echo 'export PYENV_ROOT="$HOME/.pyenv"' >> $homedir/.bashrc
-  echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> $homedir/.bashrc
-  echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> $homedir/.bashrc
-fi
-
 echo "> Install Python3-Dev and pip "
 sudo apt-get update && sudo apt-get install python3-dev python3-pip -y
 echo "> Install Docker Compose "
