@@ -56,6 +56,17 @@ export default {
         SET_ANNOTATIONS: (state, annotations) => {
             state.annotations = annotations;
         },
+        SOCKET_newAnnotation: (state, message) => {
+            state.annotations.push(
+                new Annotation(
+                    message.document_id,
+                    message.annotation.target[0].selector[1].exact,
+                    message.annotation.target[0].selector[1].exact,
+                    message.annotation,
+                    message.uid
+                )
+            )
+        },
         // adds an annotation to the local storage
         ADD_ANNOTATION: (state, annotation) => {
             state.annotations.push(annotation);
