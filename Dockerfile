@@ -1,9 +1,8 @@
 # syntax=docker/dockerfile:1
-FROM python:3.10.2-alpine
+FROM node:16-alpine
 
 # Install requirements
-RUN apk add git make yarn npm
-RUN npm install --global gulp-cli
+RUN npm install --global npm gulp-cli
 
 # copy code
 WORKDIR /
