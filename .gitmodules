@@ -1,6 +1,0 @@
-[submodule "frameworks/hypothesis/h"]
-	path = frameworks/hypothesis/h
-	url = https://github.com/hypothesis/h.git
-[submodule "frameworks/hypothesis/client"]
-	path = frameworks/hypothesis/client
-	url = https://github.com/hypothesis/client.git
