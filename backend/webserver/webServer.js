@@ -106,6 +106,7 @@ function webServer(config) {
                 res.writeHead(200, headers);
                 res.end();
             },
+            maxHttpBufferSize: 1e8 // 100 MB for file upload
         };
     }
 
