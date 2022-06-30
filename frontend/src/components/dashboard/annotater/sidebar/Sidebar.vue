@@ -11,7 +11,7 @@
               v-on:mouseover='hover(anno.id)'
               v-on:mouseleave="unhover(anno.id)"
               v-on:click="scrollTo(anno.id) " >
-            <Annotation :annoData="anno"></Annotation>
+            <Annotation v-bind:id="anno.id" :annoData="anno"></Annotation>
           </li>
         </ul>
       </div>
