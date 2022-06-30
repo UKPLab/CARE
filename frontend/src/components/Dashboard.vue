@@ -39,14 +39,6 @@ export default {
         await this.$router.push("/login");
       }
     },
-   mounted() {
-     //this.$socket.emit("push_pdf", {"key": "value"});
-
-     /*this.sockets.subscribe("topic", data => {
-       console.log("Received message on topic");
-       console.log(data);
-     });*/
-   }
 }
 </script>
 

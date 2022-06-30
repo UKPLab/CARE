@@ -9,7 +9,6 @@ Co-Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 import createPersistedState from 'vuex-persistedstate';
-import axios from 'axios';
 
 const getDefaultState = () => {
     return {
@@ -36,19 +35,13 @@ export default {
         // resets the local document store to the default state
         RESET: state => {
             Object.assign(state, getDefaultState());
-        }
+        },
+        SOCKET_update_docs: (state, message) => {
+            if (message.status === "OK") {
+                state.docs = message.docs;
+            }
+        },
     },
     actions: {
-        // loads the documents of a user from the server and stores them
-        async load({commit}) {
-            const response = await axios.get('/api/docs',
-                {
-                    validateStatus: function (status) {
-                        return status === 200 || status === 401;
-                    }
-                });
-            if (response.status === 401) throw response.data.message;
-            commit('SET_DOCUMENTS', response.data["docs"]);
-        }
     }
 };

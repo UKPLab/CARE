@@ -20,6 +20,9 @@ dev: node_modules/.uptodate backend/node_modules/.uptodate
 	npm run frontend-dev-build
 	cd backend && npm run backend-dev
 
+dev2: node_modules/.uptodate backend/node_modules/.uptodate
+	npm run frontend-dev
+
 .PHONY: build
 build:
 	docker-compose -f docker-compose.yml up --build

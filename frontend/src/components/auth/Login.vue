@@ -66,7 +66,7 @@ export default {
       try {
         await this.login({username: this.username, password: this.password})
         {
-          await this.$router.push("/");
+          await this.$router.go(0);
           this.showError = false;
         }
       } catch (error) {
@@ -82,7 +82,7 @@ export default {
       try {
         await this.login({username: "guest", password: "guestguest"})
         {
-          await this.$router.push("/");
+          await this.$router.go(0);
           this.showError = false;
         }
       } catch (error) {
