@@ -2,7 +2,7 @@
 
 Defines the store module responsible for storing annotations.
 
-Author: Nils Dycke (dycke@ukp...)
+Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
 Source: -
 */
 

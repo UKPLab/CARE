@@ -21,7 +21,7 @@ the frontend websocket and the h server websockets.
 > templates             # mustache templates of pages provided through the content server
 
 > webserver             # the actual webserver of the content server
->>> routes              # routes provided via express
+>>> routes              # routes provided via express (especially authentification)
 >>> sockets             # websockets of the server
 >>> createServer.js     # execute this script to start the content server
 >>> webServer.js        # configuration of the web server

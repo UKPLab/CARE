@@ -60,7 +60,6 @@ Source: -
 */
 import {mapGetters, mapActions} from "vuex";
 import Upload from "./Upload.vue";
-import axios from "axios";
 
 export default {
   name: "List",
@@ -81,31 +80,21 @@ export default {
     ...mapGetters({items: 'user/getDocuments'})
   },
   methods: {
-    ...mapActions({load: "user/load", delete: "user/delete"}),
+    load() {
+      this.$socket.emit("docs_get");
+    },
+    deleteDoc(docId) {
+      this.$socket.emit("doc_delete", {docId: docId});
+    },
+    renameDoc(docId, name) {
+      this.$socket.emit("doc_rename", {docId: docId, newName: name});
+    },
     accessDoc(docHash) {
       this.$router.push(`/annotate/${docHash}`);
     },
     onAddedDoc(){
       this.load();
     },
-    async deleteDoc(docId){
-      const response = axios.post('/api/delete', {docId: docId})
-                              .then(async (res) => {
-                                await this.load();
-                              })
-                              .catch((err) => {
-                                throw err;
-                              });
-    },
-    async renameDoc(docId, name){
-      const response = axios.post('/api/rename', {docId: docId, newName: name})
-                                    .then(async (res) => {
-                                      await this.load();
-                                    })
-                                    .catch((err) => {
-                                      throw err;
-                                    });
-    }
   }
 }
 </script>
