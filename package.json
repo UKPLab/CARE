@@ -26,6 +26,6 @@
     "vuex-persistedstate": "^4.1.0",
     "vite": "^2.9.5",
     "scroll-into-view": "^1.16.1",
-    "pdfjs-dist": "^2.14.305"
+    "pdfjs-dist": "=2.13.216"
   }
 }
