@@ -9,9 +9,8 @@
           <li v-for="anno in annotations" class="list-group-item"
               v-bind:id="anno.id"
               v-on:mouseover='hover(anno.id)'
-              v-on:mouseleave="unhover(anno.id)"
-              v-on:click="scrollTo(anno.id) " >
-            <Annotation v-bind:id="anno.id" :annoData="anno"></Annotation>
+              v-on:mouseleave="unhover(anno.id)">
+            <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :scrollTo="scrollTo"></Annotation>
           </li>
         </ul>
       </div>
@@ -26,7 +25,7 @@ import Annotation from "./Annotation.vue";
 export default {
   name: "Sidebar",
   components: {Annotation, TopBar},
-  props: ['document_id', 'scrollTo'],
+  props: ['document_id', 'scrollTo', 'config'],
   data: function() {
     return {
     }
@@ -62,5 +61,9 @@ export default {
   overflow:scroll;
   width:100%;
   height:100%;
+}
+#anno-list .list-group-item {
+  border: none;
+  background-color:transparent;
 }
 </style>

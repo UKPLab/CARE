@@ -49,8 +49,10 @@ const router = VueRouter.createRouter({
 router.beforeEach(async (to, from, next) => {
     await store.restored;
     if (to.meta.requiresAuth && store.getters['auth/isAuthenticated'] === false) next("/login");
-    else if (store.getters['auth/isAuthenticated'] && (to.path === '/register' || to.path === '/login')) next('/');
-    else next();
+    else {
+        if (store.getters['auth/isAuthenticated'] && (to.path === '/register' || to.path === '/login')) next('/');
+        else next();
+    }
 })
 
 export default router;

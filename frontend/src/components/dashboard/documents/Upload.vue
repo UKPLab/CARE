@@ -62,29 +62,7 @@ export default {
         return
       }
 
-      let formData = new FormData();
-      formData.set('file', fileElement.files[0]);
-
-      axios.post(
-          "/api/upload",
-          formData,
-          {
-            onUploadProgress: progressEvent => {
-              const percentCompleted = Math.round(
-                  (progressEvent.loaded * 100) / progressEvent.total
-              );
-              console.log(`upload process: ${percentCompleted}%`);
-            }
-          }).then(res => {
-
-        this.modal.hide();
-        const elements = document.getElementsByClassName("modal-backdrop");
-        while(elements.length > 0){
-            elements[0].parentNode.removeChild(elements[0]);
-        }
-
-        this.$emit("addedDoc");
-      })
+      this.$socket.emit("doc_upload", {file: fileElement.files[0], name: fileElement.files[0].name});
     }
   }
 }

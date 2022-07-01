@@ -2,7 +2,7 @@
 
 Defines the store module responsible for storing annotations.
 
-Author: Nils Dycke (dycke@ukp...)
+Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
 Source: -
 */
 
@@ -11,9 +11,6 @@ import {Annotation} from '../../data/annotation.js';
 const getDefaultState = () => {
     return {
         annotations: [
-            new Annotation("1", "This is a default annotation 1", "This is a default anchor?! 1"),
-            new Annotation("2", "This is a default annotation 2", "This is a default anchor?! 2"),
-            new Annotation("3", "This is a default annotation 3", "This is a default anchor?! 3")
         ],
         sidebar_showing: true
     };
@@ -70,6 +67,11 @@ export default {
         // adds an annotation to the local storage
         ADD_ANNOTATION: (state, annotation) => {
             state.annotations.push(annotation);
+        },
+        // deletes specific annotation from store
+        DELETE_ANNOTATION: (state, annotation) => {
+            const to_delete = state.annotations.findIndex(x => x.id === annotation.id);
+            state.annotations.splice(to_delete, 1);
         },
         // resets the local annotation store to the default state
         RESET: state => {

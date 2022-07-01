@@ -19,6 +19,7 @@ const mustacheExpress = require('mustache-express');
 
 const { Server } = require("socket.io");
 const { createServer, useSsl } = require('./createServer');
+const cors = require('cors');
 
 const passport = require("passport");
 const session = require('express-session');
@@ -27,34 +28,39 @@ const bodyParser = require('body-parser');
 
 // define PATHs
 const BUILD_PATH = `${__dirname}/../../dist/`;
+const port = process.env.CONTENT_SERVER_PORT || 3001;
+
 
 // routes
 const routes = [
     require("./routes/auth"),
     require("./routes/pdf"),
-    require("./routes/api"),
 ];
 
 // sockets
 const sockets = [
-    require("./sockets/basic"),
-    require("./sockets/annotation")
+    require("./sockets/annotation"),
+    require("./sockets/documents")
 ];
 
 /**
  * The main HTTP server which serves all files to the client
  *
- * @param {{port: number, page: {subtitle: string, title: string}}} config - The port that the webserver should listen on.
  */
 function webServer(config) {
     const app = express()
+
+    // enable CORS in Dev Mode
+    if (process.env.BACKEND_ENABLE_CORS === 'true') {
+        app.use(cors({origin: 'http://localhost:3000', credentials: true}));
+    }
 
     // Make all static files public available
     app.use(express.static(BUILD_PATH));
     app.use(express.static(`${__dirname}/../assets`));
 
     // Session Initialization
-    const expressSession = session({
+    const sessionMiddleware = session({
         /*genid: (req) => {
             console.log('Inside session middleware genid function')
             console.log(`Request object sessionID from client: ${req.sessionID}`)
@@ -65,7 +71,7 @@ function webServer(config) {
         resave: false,
         saveUninitialized: true
     });
-    app.use(expressSession);
+    app.use(sessionMiddleware);
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.json());
     app.use(passport.initialize());
@@ -79,13 +85,45 @@ function webServer(config) {
 
     // add websocket server socket.io
     const httpServer = createServer(app);
-    const io = new Server(httpServer, {
-        //options
-    });
-    io.use(function(socket, next){
-        // Wrap the express middleware
-        expressSession(socket.request, {}, next);
-    });
+    // enable CORS in Dev Mode
+    let socketIoOptions = {
+        maxHttpBufferSize: 1e8 // 100 MB for file upload
+    };
+    if (process.env.BACKEND_ENABLE_CORS === 'true') {
+        socketIoOptions = {
+            cors: {
+                origin: "http://localhost:3000",
+                methods: ["GET", "POST"],
+                credentials: true,
+            },
+            origins: ['http://localhost:3000'],
+            handlePreflightRequest: (req, res) => {
+                const headers = {
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                    "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
+                    "Access-Control-Allow-Credentials": true
+                };
+                res.writeHead(200, headers);
+                res.end();
+            },
+            maxHttpBufferSize: 1e8 // 100 MB for file upload
+        };
+    }
+
+    const io = new Server(httpServer, socketIoOptions);
+    const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
+    io.use(wrap(sessionMiddleware));
+    io.use(wrap(passport.initialize()));
+    io.use(wrap(passport.session()));
+    // ignore users that aren't authorized yet!
+    /*io.use((socket, next) => {
+        if (socket.request.session.passport.user) {
+            next();
+        } else {
+            socket.emit("logout");
+            next(new Error('unauthorized!'));
+        }
+    });*/
     sockets.forEach(socket => socket(io));
 
     // serve server on port
@@ -95,4 +133,5 @@ function webServer(config) {
     });
 }
 
-webServer({port:process.env.CONTENT_SERVER_PORT});
+
+webServer({port: port});

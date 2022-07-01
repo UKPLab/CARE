@@ -78,6 +78,7 @@
           </div>
         </div>  <!-- findbar -->
 
+
         <div id="secondaryToolbar" class="secondaryToolbar hidden doorHangerRight">
           <div id="secondaryToolbarButtonContainer">
             <button id="secondaryPresentationMode" class="secondaryToolbarButton presentationMode visibleLargeView" title="Switch to Presentation Mode" tabindex="51" data-l10n-id="presentation_mode">
@@ -166,7 +167,7 @@
               <span data-l10n-id="document_properties_label">Document Properties…</span>
             </button>
           </div>
-        </div>  <!-- secondaryToolbar -->
+        </div> <!-- secondaryToolbar -->
 
         <div class="toolbar">
           <div id="toolbarContainer">
@@ -215,6 +216,11 @@
 
                 <button id="secondaryToolbarToggle" class="toolbarButton" title="Tools" tabindex="36" data-l10n-id="tools" aria-expanded="false" aria-controls="secondaryToolbar">
                   <span data-l10n-id="tools_label">Tools</span>
+                </button>
+
+                <div class="verticalToolbarSeparator hiddenSmallView"></div>
+                <button id="sidebar" class="toolbarButton bookmark hiddenMediumView" title="Open PEER Sidebar" tabindex="37" v-on:click="toggleSidebar()">
+                  <span>PEER Sidebar</span>
                 </button>
               </div>
               <div id="toolbarViewerMiddle">
@@ -383,6 +389,7 @@ import {anchor as pdfAnchor, RenderingStates} from "../../../assets/anchoring/an
 import { removePlaceholder } from "../../../assets/anchoring/placeholder";
 import {TextRange} from "../../../assets/anchoring/text-range";
 import debounce from "lodash.debounce";
+import {mapMutations} from "vuex";
 
 export default {
   name: "PDFViewer",
@@ -418,6 +425,9 @@ export default {
     }
   },
   methods: {
+    ...mapMutations({
+      toggleSidebar: "anno/TOGGLE_SIDEBAR"
+    }),
     _update() {
       const refreshAnnotations = /** @type {AnnotationData[]} */ ([]);
 
@@ -523,7 +533,6 @@ export default {
         anchors.every(anchor => anchor.target.selector && !anchor.range);
 
     },
-
   },
   created() {
     let style = document.createElement("link");

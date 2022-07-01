@@ -10,6 +10,8 @@ export class Annotation{
     orphaned;
     user;
     hover;
+    text;
+    tags;
 
     // todo: add necessary attributes and methods
 
@@ -19,6 +21,8 @@ export class Annotation{
         this.anchors = null;
         this.hover = false;
         this.comment = comment;
+        this.text = null;
+        this.tags = [];
 
         this.annotationData = annotationData;
         this.orphaned = false;
