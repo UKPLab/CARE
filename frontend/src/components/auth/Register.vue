@@ -98,7 +98,6 @@ export default {
         password: this.password,
         terms: this.terms,
       });
-      console.log(response);
       if (response.statusText === "Created") {
         await this.$router.push("/login");
       }

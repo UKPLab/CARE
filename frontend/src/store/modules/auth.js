@@ -40,30 +40,35 @@ export default {
         // resets the user information to default
         RESET: state => {
             Object.assign(state, getDefaultState());
-        }
+        },
+        SOCKET_logout: (state, message) => {
+            Object.assign(state, getDefaultState());
+        },
     },
     actions: {
         // checks if the current user is still logged in on the server
         async check({commit}) {
-            const response = await axios.get('/auth/check');
+            const response = await axios.get(import.meta.env.VITE_APP_SERVER_URL + '/auth/check',
+                {withCredentials:true});
             commit('SET_USER', response.data.user);
         },
         // login on the server with the provided user information and credentials
         async login({commit}, login_data) {
-            const response = await axios.post('/auth/login',
+            const response = await axios.post(import.meta.env.VITE_APP_SERVER_URL + '/auth/login',
                     login_data,
                     { validateStatus: function(status) {
-                        return status === 200 || status === 401;}});
+                        return status === 200 || status === 401;},
+                    withCredentials:true});
             if (response.status === 401) throw response.data.message;
             commit('SET_USER', response.data.user);
         },
         // registers a user with the given credentials and user information
         async register(commit, register_data) {
-            return await axios.post('/auth/register', register_data);
+            return await axios.post(import.meta.env.VITE_APP_SERVER_URL + '/auth/register', register_data);
         },
         // logout of the current user on the server
         async logout({commit}) {
-            await axios.get('/auth/logout')
+            await axios.get(import.meta.env.VITE_APP_SERVER_URL + '/auth/logout', {withCredentials: true})
             commit('RESET', "");
         }
     }
