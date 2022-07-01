@@ -68,6 +68,11 @@ exports = module.exports = function(io) {
                 })
                 .catch((err) => socket.emit("error", {err}));
         });
+
+        socket.on("pdf_get", (data) => {
+            const pdf = fs.readFileSync(`${PDF_PATH}/${data.document_id}.pdf`);
+            socket.emit("pdf", {file: pdf});
+        });
         
     });
 
