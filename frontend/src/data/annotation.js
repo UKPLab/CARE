@@ -2,14 +2,16 @@ import { v4 } from 'uuid';
 
 
 export class Annotation{
-    id;
-    comment;
+    id; //annotation ids
+    comment; // comment (or comments) on top of the annotation -> move the comment outside.
     anchors;
-    annotationData;
+    annotationData; // annotation data itself (so offset etc. information)
     document_id;
     orphaned;
     user;
     hover;
+    text;
+    tags;
 
     // todo: add necessary attributes and methods
 
@@ -19,6 +21,8 @@ export class Annotation{
         this.anchors = null;
         this.hover = false;
         this.comment = comment;
+        this.text = null;
+        this.tags = [];
 
         this.annotationData = annotationData;
         this.orphaned = false;
