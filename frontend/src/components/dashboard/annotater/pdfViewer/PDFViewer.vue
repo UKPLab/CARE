@@ -1,10 +1,14 @@
 <template>
-  <PDFData :document_id="document_id"></PDFData>
-  <div class="pdf-document">
+  <div
+    class="pdf-document scrolling-document"
+    >
     <PDFPage
-      v-for="page in pages"
-      v-bind="{page, scale}"
+      v-for="page in pdf.pages"
+      v-bind="{scale, page, scrollTop, clientHeight}"
       :key="page.pageNumber"
+      class="scrolling-page"
+      @page-rendered="onPageRendered"
+      @page-errored="onPageErrored"
     />
   </div>
 </template>
@@ -21,27 +25,92 @@ https://github.com/rossta/vue-pdfjs-demo/blob/master/src/components/PDFDocument.
 */
 
 import PDFPage from "./PDFPage.vue";
-import PDFData from "./pdfViewer/PDFData.vue";
+
+import scroll from "../../../../assets/pdf/scroll";
+import visible from "../../../../assets/pdf/visible";
+
+import { PDF } from './pdfStore.js';
+import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export default {
-  name: "PDFViewer2",
-  components: {PDFData, PDFPage},
-  props: ['document_id'],
+  name: "PDFViewer",
+  components: {PDFPage},
+  props: {
+    document_id: {
+      type: String,
+      required: true
+    },
+    scale: {
+      type: Number,
+      default: 1.0,
+    },
+  },
+  directives: {
+    visible, scroll
+  },
   data() {
     return {
-      pdfViewer: null,
-      pdfContainer: null,
-      observer: null,
-      scale: 2,
+      pdf: new PDF(),
+      scrollTop: 0,
+      clientHeight: 0,
+      focusedPage: undefined,
+    }
+  },
+  watch: {
+    "pdf.pageCount" () {
+      this.pdf.fetchPages();
+    },
+    pagesLength(count, oldCount) {
+      this.$nextTick(() => {
+        this.focusedPage = this.currentPage;
+      });
+    },
+    currentPage(currentPage) {
+      if (currentPage > this.pages.length) {
+        this.fetchPages(currentPage);
+      } else {
+        this.focusedPage = currentPage;
+      }
     }
   },
   computed: {
+    pagesLength() {
+      return this.pdf.pages.length;
+    }
   },
-
-  unmounted() {
+  sockets: {
+    pdf: function (data) {
+      const loadingTask = pdfjsLib.getDocument(data.file);
+      loadingTask.promise
+          .then((pdf) => {
+            this.pdf.setPDF(pdf);
+          })
+          .catch(response => {
+            console.log(response);
+            this.$router.push("/index.html");
+          });
+    }
+  },
+  mounted() {
+    this.$socket.emit("pdf_get", {document_id: this.document_id});
   },
   methods: {
-
+    onPageJump(scrollTop) {
+      console.log(scrollTop);
+      this.$emit('page-jump', scrollTop);
+    },
+    fetchPages(currentPage) {
+      this.pdf.fetchPages(currentPage);
+    },
+    updateScrollBounds() {
+      const {scrollTop, clientHeight} = this.$el;
+      this.scrollTop = scrollTop;
+      this.clientHeight = clientHeight;
+      console.log("scrollTop:" + scrollTop);
+      console.log("clientheight: " + clientHeight);
+    }
   },
    /*  this.pdf = pdf;
 
@@ -66,7 +135,7 @@ export default {
         console.log(pdf);
       });*/
 
-  mounted() {
+
 
     //const loader = pdfjs.getDocument()
 /*
@@ -158,7 +227,7 @@ export default {
         });
       });
     }); */
-  }
+
 }
 </script>
 

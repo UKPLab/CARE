@@ -2,7 +2,7 @@
   <b-container fluid id="annotator">
     <b-row flex-nowrap align-v="stretch">
       <b-col id="docview">
-        <PDFViewer2 :document_id="document_id" ref="pdfViewer" ></PDFViewer2>
+        <PDFViewer :document_id="document_id" ref="pdfViewer" ></PDFViewer>
         <Adder :document_id="document_id"></Adder>
       </b-col>
       <b-col id="sidebar" cols="sm-auto">
@@ -22,7 +22,7 @@ currently consists of the PDF viewer.
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import PDFViewer2 from "./PDFViewer2.vue";
+import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Adder from "./Adder.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
 import {offsetRelativeTo, scrollElement} from "../../../assets/anchoring/scroll";
@@ -32,7 +32,7 @@ import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
 
 export default {
   name: "Annotater2",
-  components: {Adder, PDFViewer2, Sidebar},
+  components: {Adder, PDFViewer, Sidebar},
   props: ['document_id'],
   data() {
     return {
