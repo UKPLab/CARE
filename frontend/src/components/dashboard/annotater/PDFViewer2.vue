@@ -21,7 +21,7 @@ https://github.com/rossta/vue-pdfjs-demo/blob/master/src/components/PDFDocument.
 */
 
 import PDFPage from "./PDFPage.vue";
-import PDFData from "./pdf/PDFData.vue";
+import PDFData from "./pdfViewer/PDFData.vue";
 
 export default {
   name: "PDFViewer2",
@@ -69,7 +69,7 @@ export default {
   mounted() {
 
     //const loader = pdfjs.getDocument()
-
+/*
     const loadViewer = setInterval(function () {
       if (window["pdfjs-dist/build/pdf"]) {
         clearTimeout(loadViewer);
@@ -157,7 +157,7 @@ export default {
 
         });
       });
-    });
+    }); */
   }
 }
 </script>
