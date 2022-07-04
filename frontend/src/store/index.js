@@ -18,7 +18,6 @@ import AuthStore from './modules/auth.js';
 import WebsocketStore from './modules/websocket.js';
 import UserStore from './modules/user.js';
 import AnnotationStore from './modules/anno.js';
-import PDFStore from './modules/pdf.js';
 import createPersistedState from 'vuex-persistedstate';
 
 
@@ -28,7 +27,6 @@ export default createStore({
         websocket: WebsocketStore,
         user: UserStore,
         anno: AnnotationStore,
-        pdf: PDFStore
     },
     plugins: [
         createPersistedState( {
