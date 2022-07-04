@@ -1,6 +1,12 @@
 <template>
-  <canvas id="pdf-viewer"></canvas>
-  <div class="textLayer"></div>
+  <PDFData :document_id="document_id"></PDFData>
+  <div class="pdf-document">
+    <PDFPage
+      v-for="page in pages"
+      v-bind="{page, scale}"
+      :key="page.pageNumber"
+    />
+  </div>
 </template>
 
 <script>
@@ -10,35 +16,36 @@ This component provides the PDF in a classical PDF viewer
 as rendered by PDF.js.
 
 Author: Dennis Zyska (zyska@ukp...)
-Source: -
+Source: https://rossta.net/blog/building-a-pdf-viewer-with-vue-part-1.html
+https://github.com/rossta/vue-pdfjs-demo/blob/master/src/components/PDFDocument.vue
 */
-import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+import PDFPage from "./PDFPage.vue";
+import PDFData from "./pdf/PDFData.vue";
 
 export default {
   name: "PDFViewer2",
-  components: {},
+  components: {PDFData, PDFPage},
   props: ['document_id'],
   data() {
     return {
       pdfViewer: null,
       pdfContainer: null,
       observer: null,
+      scale: 2,
     }
   },
   computed: {
   },
+
   unmounted() {
   },
   methods: {
 
   },
-  sockets: {
-    pdf: function (data) {
-      var loadingTask = pdfjsLib.getDocument(data.file);
-      loadingTask.promise.then(function(pdf) {
+   /*  this.pdf = pdf;
+
+
 
         let viewer = document.getElementById('pdf-viewer');
 
@@ -57,13 +64,9 @@ export default {
           render(pdf, page, canvas);
         }
         console.log(pdf);
-      });
-    }
-  },
-  mounted() {
+      });*/
 
-    //get pdf per websocket
-    this.$socket.emit("pdf_get", {document_id:this.document_id});
+  mounted() {
 
     //const loader = pdfjs.getDocument()
 
