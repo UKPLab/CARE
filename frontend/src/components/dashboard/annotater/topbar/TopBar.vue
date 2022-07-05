@@ -1,5 +1,5 @@
 <template>
-<nav id="top-navbar" class="navbar navbar-expand-lg navbar-light bg-light">
+<nav id="top-navbar" class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
   <div class="container-fluid" id="top-container">
     <a class="navbar-brand" href="/">PEER</a>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
@@ -30,8 +30,10 @@ export default {
 </script>
 
 <style scoped>
+
 #top-navbar {
   width: 100%;
+  position: absolute;
 }
 #top-container {
   padding-left:10px;

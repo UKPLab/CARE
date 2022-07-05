@@ -1,12 +1,14 @@
 <template>
-  <b-container fluid id="annotator">
-    <b-row flex-nowrap align-v="stretch">
+  <TopBar id="topbar"></TopBar>
+
+  <b-container fluid id="annotator" class="overflow-hidden">
+    <b-row align-v="stretch">
       <b-col id="docview">
-        <PDFViewer :document_id="pdf_path" ref="pdfViewer" ></PDFViewer>
-        <Adder :document_id="pdf_path"></Adder>
+        <PDFViewer :document_id="document_id" ref="pdfViewer" ></PDFViewer>
+        <Adder :document_id="document_id"></Adder>
       </b-col>
       <b-col id="sidebar" cols="sm-auto">
-        <Sidebar :document_id="pdf_path" :scrollTo="scrollTo" />
+        <Sidebar :document_id="document_id" :scrollTo="scrollTo" />
       </b-col>
     </b-row>
   </b-container>
@@ -22,8 +24,9 @@ currently consists of the PDF viewer.
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import PDFViewer from "./PDFViewer.vue";
-import Adder from "./Adder.vue";
+import PDFViewer from "./pdfViewer/PDFViewer.vue";
+import Adder from "./pdfViewer/Adder.vue";
+import TopBar from "./topbar/TopBar.vue"
 import Sidebar from "./sidebar/Sidebar.vue";
 import {offsetRelativeTo, scrollElement} from "../../../assets/anchoring/scroll";
 import {isInPlaceholder} from "../../../assets/anchoring/placeholder";
@@ -31,9 +34,9 @@ import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
 
 
 export default {
-  name: "Annotater",
-  components: {Adder, PDFViewer, Sidebar},
-  props: ['pdf_path'],
+  name: "Annotater2",
+  components: {Adder, PDFViewer, Sidebar, TopBar},
+  props: ['document_id'],
   data() {
     return {
     }
@@ -123,14 +126,20 @@ export default {
 
 <style scoped>
 #annotator {
-  height:100vh;
+  padding:0;
+  padding-top: 52.5px;
+  overflow:hidden;
 }
 #docview {
-  height:100vh;
+  position: relative;
+  overflow-y: scroll;
 }
 #sidebar {
-  height:100vh;
+  position: relative;
+  overflow-y: scroll;
   padding: 0;
   max-width: 300px;
+  min-width: 300px;
 }
+
 </style>

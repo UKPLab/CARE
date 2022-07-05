@@ -13,7 +13,6 @@ import store from "./store";
 
 // Set Vue Routing
 import Annotater from "./components/dashboard/annotater/Annotater.vue";
-import Annotator2 from "./components/dashboard/annotater/Annotater2.vue";
 import Dashboard from "./components/Dashboard.vue";
 import NotFoundPage from "./components/NotFoundPage.vue";
 import Login from "./components/auth/Login.vue";
@@ -33,8 +32,7 @@ const routes = [
     { path: "/index.html", component: Dashboard, meta: { requiresAuth: true }},
     { path: "/login", component: Login, meta: { requiresAuth: false }},
     { path: "/register", component: Register, meta: { requiresAuth: false }},
-    { path: "/annotate/:pdf_path", component: Annotater, props: true, meta: { requiresAuth: true } },
-    { path: "/annotate2/:document_id", component: Annotator2, props: true, meta: { requiresAuth: true } },
+    { path: "/annotate/:document_id", component: Annotater, props: true, meta: { requiresAuth: true } },
     { path: "/:catchAll(.*)", name: "NotFound", component: NotFoundPage, meta: { requiresAuth: false }}
 ]
 

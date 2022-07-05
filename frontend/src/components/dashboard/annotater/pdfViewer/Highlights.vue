@@ -2,9 +2,9 @@
 </template>
 
 <script>
-import {isNodeInRange} from "../../../assets/anchoring/range-util";
-import {isInPlaceholder} from "../../../assets/anchoring/placeholder";
-import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
+import {isNodeInRange} from "../../../../assets/anchoring/range-util";
+import {isInPlaceholder} from "../../../../assets/anchoring/placeholder";
+import {resolveAnchor} from "../../../../assets/anchoring/resolveAnchor";
 
 export default {
   name: "Highlights",

@@ -18,6 +18,10 @@ export class PDF {
         this.pageCount = state.pdf.numPages;
     }
 
+    getPage(pageNumber) {
+        return state.pdf.getPage(pageNumber);
+    }
+
     fetchPages(currentPage = 0) {
         if (!state.pdf) return;
         if (this.pageCount > 0 && this.pages.length === this.pageCount) return;
