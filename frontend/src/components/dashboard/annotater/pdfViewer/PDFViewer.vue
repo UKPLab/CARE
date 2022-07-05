@@ -4,9 +4,11 @@
     >
     <PDFPage
       v-for="page in pdf.pages"
-      v-bind="{scale, page, scrollTop, clientHeight}"
+      v-bind="{scale, scrollTop, clientHeight}"
       :key="page.pageNumber"
+      :pageNumber="page.pageNumber"
       class="scrolling-page"
+      :pdf="pdf"
       @page-rendered="onPageRendered"
       @page-errored="onPageErrored"
     />
@@ -232,4 +234,21 @@ export default {
 </script>
 
 <style scoped>
+.pdf-document {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: #525f69;
+}
+.scrolling-page:first-child {
+  margin-top: 1em;
+}
+.scrolling-page {
+  margin-bottom: 1em;
+}
+@media print {
+  .pdf-document {
+    position: static;
+  }
+}
 </style>

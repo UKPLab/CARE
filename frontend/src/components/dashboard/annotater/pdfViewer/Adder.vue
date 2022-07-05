@@ -8,10 +8,10 @@
 
 <script>
 import { BIconPlusSquare } from 'bootstrap-icons-vue';
-import { TextRange } from "../../../assets/anchoring/text-range";
-import { describe } from "../../../assets/anchoring/anchoring"
+import { TextRange } from "../../../../assets/anchoring/text-range";
+import { describe } from "../../../../assets/anchoring/anchoring"
 import {mapMutations} from "vuex";
-import {Annotation} from "../../../data/annotation.js";
+import {Annotation} from "../../../../data/annotation.js";
 
 export default {
   name: "Adder",
