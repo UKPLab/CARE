@@ -1,9 +1,9 @@
 <template>
-  <div :id="'page-container-' + pageNumber">
+  <div class="pageContainer" :id="'page-container-' + pageNumber">
     <div class="canvasWrapper" :id="'canvas-wrapper-' + pageNumber">
       <canvas class="pdf-page" :id="'pdf-canvas-' + pageNumber"></canvas>
     </div>
-    <div class="text-layer" :id="'text-layer-' + pageNumber">
+    <div class="textLayer" :id="'text-layer-' + pageNumber">
 
     </div>
   </div>
@@ -180,6 +180,9 @@ export default {
 };
 </script>
 <style>
+.pageContainer {
+  position:relative;
+}
 .canvasWrapper > canvas {
   width: 100%;
   margin: 0 auto;
