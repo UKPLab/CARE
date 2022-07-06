@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="pdf-document scrolling-document"
-    >
+  <div>
     <PDFPage
       v-for="page in pdf.pages"
       v-bind="{scale, scrollTop, clientHeight}"
@@ -35,7 +33,7 @@ import { PDF } from './pdfStore.js';
 import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-
+//pdfjsLib.disableWorker = true;
 export default {
   name: "PDFViewer",
   components: {PDFPage},
@@ -234,18 +232,6 @@ export default {
 </script>
 
 <style scoped>
-.pdf-document {
-  top: 0;
-  bottom: 0;
-  left: 0;
-  background: #525f69;
-}
-.scrolling-page:first-child {
-  margin-top: 1em;
-}
-.scrolling-page {
-  margin-bottom: 1em;
-}
 @media print {
   .pdf-document {
     position: static;
