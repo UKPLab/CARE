@@ -53,6 +53,7 @@ export default {
       const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
       const context = canvas.getContext('2d');
 
+      /*
       const viewport = page.getViewport({scale: this.scale});
       const {width: actualSizeWidth, height: actualSizeHeight} = viewport;
       const [pixelWidth, pixelHeight] = [actualSizeWidth, actualSizeHeight]
@@ -61,9 +62,9 @@ export default {
       canvas.style.height = `${pixelHeight}px`;
       console.log(pixelWidth);
       console.log("PIXEL RATIO" + PIXEL_RATIO);
+      */
+
       /*
-
-
           const new_scale = wrapper.getBoundingClientRect().width /
           page.getViewport({scale: VIEWPORT_RATIO}).width;
 
@@ -73,27 +74,25 @@ export default {
       canvas.style.width = `${pixelWidth}px`;
       canvas.style.height = `${pixelHeight}px`;
       */
-      /*
+
       const scales = { 1: 3.2, 2: 4};
       const defaultScale = 4;
       const scale = scales[window.devicePixelRatio] || defaultScale;
       const new_scale = wrapper.getBoundingClientRect().width /
           page.getViewport({scale: scale}).width;
 
-      const viewport = page.getViewport({scale: new_scale});
-      console.log("new scale" + new_scale)
+      const viewport = page.getViewport({scale: scale});
       canvas.height = viewport.height;
       canvas.width = viewport.width;
-      console.log(viewport.width);
 
 
       const pageWidthScale = container.clientWidth / page.view[2];
       const pageHeightScale = container.clientHeight / page.view[3];
       const displayWidth = Math.min(pageWidthScale, pageHeightScale);
-      console.log("DisplayWidth" + displayWidth);
+
       canvas.style.width = `${(viewport.width * displayWidth) / scale}px`;
       canvas.style.height = `${(viewport.height * displayWidth) / scale}px`;
-*/
+
       /*
 
 
@@ -114,7 +113,21 @@ export default {
         this.renderTask.promise.then(() => {
           return page.getTextContent();
         }).then((textContent) => {
-          console.log(textContent);
+          const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber).getBoundingClientRect();
+          const text_layer = document.getElementById('text-layer-'+ page.pageNumber);
+          text_layer.style.left = canvas_offset.left + 'px';
+          text_layer.style.top = canvas_offset.top + 'px';
+          text_layer.style.height = canvas_offset.height + 'px';
+          text_layer.style.width = canvas_offset.width + 'px';
+
+
+          pdfjsLib.renderTextLayer({
+            textContent: textContent,
+            container: document.getElementById('text-layer-'+ page.pageNumber),
+            viewport: viewport,
+            textDivs: []
+          })
+
         }).catch(response => {
           this.destroyRenderTask();
           console.log(`Failed to render page ${this.pageNumber}: ` + response);
@@ -139,17 +152,6 @@ export default {
       delete this.renderTask;
     },
   },
-  watch: {
-    scale: 'updateElementBounds',
-    scrollTop: 'updateElementBounds',
-    clientHeight: 'updateElementBounds',
-    page(_newPage, oldPage) {
-      this.destroyPage(oldPage);
-    },
-    isElementVisible(isElementVisible) {
-      if (isElementVisible) this.drawPage();
-    },
-  },
   created() {
     // PDFPageProxy#getViewport
     // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
@@ -161,20 +163,7 @@ export default {
     });
 
 
-          /*const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber).getBoundingClientRect();
-          const text_layer = document.getElementById('text-layer-'+ page.pageNumber);
-          text_layer.style.left = canvas_offset.left + 'px';
-          text_layer.style.top = canvas_offset.top + 'px';
-          text_layer.style.height = canvas_offset.height + 'px';
-          text_layer.style.width = canvas_offset.width + 'px';
-
-
-          pdfjsLib.renderTextLayer({
-            textContent: textContent,
-            container: document.getElementById('text-layer-'+ page.pageNumber),
-            viewport: viewport,
-            textDivs: []
-          })
+          /*
 */
 
 
@@ -195,12 +184,6 @@ export default {
   width: 100%;
   margin: 0 auto;
 }
-/*
-.pdf-page {
-  display: block;
-  margin: 0 auto;
-  width:100%;
-}
 .text-layer {
    position: absolute;
     left: 0;
@@ -220,5 +203,5 @@ export default {
     transform-origin: 0% 0%;
 }
 
- */
+
 </style>
