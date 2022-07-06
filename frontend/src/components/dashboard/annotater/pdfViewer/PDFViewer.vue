@@ -7,8 +7,6 @@
       :pageNumber="page.pageNumber"
       class="scrolling-page"
       :pdf="pdf"
-      @page-rendered="onPageRendered"
-      @page-errored="onPageErrored"
     />
   </div>
 </template>
