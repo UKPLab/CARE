@@ -8,6 +8,7 @@ default: help
 .PHONY: help
 help:
 	@echo "make help              Show this help message"
+	@echo "make init              Initializes command"
 	@echo "make dev               Run the app in the development server"
 	@echo "make build             Create a production build of the client"
 	@echo "make docker            Start docker images"
@@ -41,11 +42,17 @@ clean:
 	rm -r nlp/grobid_client_python
 
 .PHONY: init
-init: node_modules/.uptodate backend/node_modules/.uptodate
+init: backend/node_modules/.uptodate
+	cd backend/db && npx sequelize-cli db:create || echo "done"
+	cd backend/db && npx sequelize-cli db:migrate
+
+.PHONY: init_old
+init_old: node_modules/.uptodate backend/node_modules/.uptodate
 	cd backend && npm run init-db -- \
 				   --admin_name ${H_SERVER_ADMIN_USER} \
 				   --admin_email ${H_SERVER_ADMIN_MAIL} \
 				   --admin_pwd ${H_SERVER_ADMIN_PASSWORD}
+
 
 .PHONY: nlp_dev
 nlp_dev:

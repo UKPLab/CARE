@@ -19,7 +19,8 @@ module.exports = (sequelize, DataTypes) => {
     creator: DataTypes.INTEGER,
     updatedAt: DataTypes.DATE,
     deleted: DataTypes.BOOLEAN,
-    deletedAt: DataTypes.DATE
+    deletedAt: DataTypes.DATE,
+    createdAt: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'document',
