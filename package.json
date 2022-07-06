@@ -18,7 +18,7 @@
     "bootstrap5-tags": "^1.4.35",
     "lodash": "^4.17.21",
     "lodash.debounce": "^4.0.3",
-    "pdfjs-dist": "=2.13.216",
+    "pdfjs-dist": "^2.14.305",
     "scroll-into-view": "^1.16.1",
     "socket.io-client": "^4.5.1",
     "uuid": "^8.3.2",

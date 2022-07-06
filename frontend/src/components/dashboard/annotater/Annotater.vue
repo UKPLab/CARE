@@ -1,17 +1,36 @@
 <template>
-  <TopBar id="topbar"></TopBar>
+  <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
+    <div class="row flex-shrink-0">
+      <div class="col">
+        <TopBar id="topbar"></TopBar>
+      </div>
+    </div>
+    <div class="row flex-grow-1 top-padding overflow-hidden" >
+      <div class="col border mh-100" style="overflow-y: scroll;">
+        <PDFViewer  :document_id="document_id" ref="pdfViewer" ></PDFViewer>
+        <!--<Adder :document_id="document_id"></Adder>-->
+      </div>
+    <div class="col border mh-100 col-sm-2 g-0" style="overflow-y: scroll;">
+      <Sidebar :document_id="document_id" :scrollTo="scrollTo" />
+     </div>
+    </div>
 
+
+  </div>
+
+  <!--
   <b-container fluid id="annotator" class="overflow-hidden">
     <b-row align-v="stretch">
-      <b-col id="docview">
-        <PDFViewer :document_id="document_id" ref="pdfViewer" ></PDFViewer>
-        <Adder :document_id="document_id"></Adder>
+      <b-col id="docview" class="overflow-scroll">
+        <PDFViewer  :document_id="document_id" ref="pdfViewer" ></PDFViewer>
+        <Adder :document_id="document_id"></Adder> Test
       </b-col>
-      <b-col id="sidebar" cols="sm-auto">
-        <Sidebar :document_id="document_id" :scrollTo="scrollTo" />
+      <b-col id="sidebar" cols="sm-auto" class="overflow-scroll">
+        <Sidebar :document_id="document_id" :scrollTo="scrollTo" /> Test2
       </b-col>
     </b-row>
   </b-container>
+  -->
 
 </template>
 
@@ -125,14 +144,8 @@ export default {
 </script>
 
 <style scoped>
-#annotator {
-  padding:0;
+.top-padding {
   padding-top: 52.5px;
-  overflow:hidden;
-}
-#docview {
-  position: relative;
-  overflow-y: scroll;
 }
 #sidebar {
   position: relative;

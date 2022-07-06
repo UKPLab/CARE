@@ -1,25 +1,27 @@
 <template>
-  <div class="canvasWrapper">
-    <canvas class="pdf-page" :id="'pdf-canvas-' + pageNumber"></canvas>
-  </div>
-  <div class="text-layer" :id="'text-layer-' + pageNumber">
+  <div :id="'page-container-' + pageNumber">
+    <div class="canvasWrapper" :id="'canvas-wrapper-' + pageNumber">
+      <canvas class="pdf-page" :id="'pdf-canvas-' + pageNumber"></canvas>
+    </div>
+    <div class="text-layer" :id="'text-layer-' + pageNumber">
 
+    </div>
   </div>
 </template>
 
 <script>
-import debug from 'debug';
-const log = debug('app:components/PDFPage');
 export const PIXEL_RATIO = window.devicePixelRatio || 1;
 export const VIEWPORT_RATIO = 0.98;
 import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
+
 
 export default {
   name: 'PDFPage',
   props: {
     scale: {
       type: Number,
-      required: true,
+      required: false,
+      default: 1.0
     },
     scrollTop: {
       type: Number,
@@ -39,80 +41,94 @@ export default {
   },
   data() {
     return {
-      elementTop: 0,
-      elementHeight: 0,
+      renderTask: undefined,
     };
   },
-  computed: {
-    /*actualSizeViewport() {
-      return this.viewport.clone({scale: this.scale});
-    },
-    canvasStyle() {
-      const {width: actualSizeWidth, height: actualSizeHeight} = this.actualSizeViewport;
+  methods: {
+    renderPage(page) {
+      if (this.renderTask) return;
+
+      const container = document.getElementById('page-container-' + page.pageNumber);
+      const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber);
+      const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
+      const context = canvas.getContext('2d');
+
+      const viewport = page.getViewport({scale: this.scale});
+      const {width: actualSizeWidth, height: actualSizeHeight} = viewport;
       const [pixelWidth, pixelHeight] = [actualSizeWidth, actualSizeHeight]
         .map(dim => Math.ceil(dim / PIXEL_RATIO));
-      return `width: ${pixelWidth}px; height: ${pixelHeight}px;`;
-    },
-    canvasAttrs() {
-      let {width, height} = this.viewport;
-      [width, height] = [width, height].map(dim => Math.ceil(dim));
-      const style = this.canvasStyle;
-      return {
-        width,
-        height,
-        style,
-        class: 'pdf-page box-shadow',
-      };
-    },
-    pageNumber() {
-      return this.page.pageNumber;
-    },
-    isElementVisible() {
-      const {elementTop, elementBottom, scrollTop, scrollBottom} = this;
-      if (!elementBottom) return;
-      return elementTop < scrollBottom && elementBottom > scrollTop;
-    },
-    elementBottom() {
-      return this.elementTop + this.elementHeight;
-    },
-    scrollBottom() {
-      return this.scrollTop + this.clientHeight;
-    },*/
-  },
-  methods: {
-    updateElementBounds() {
-      const {offsetTop, offsetHeight} = this.$el;
-      this.elementTop = offsetTop;
-      this.elementHeight = offsetHeight;
-    },
-    drawPage() {
-      if (this.renderTask) return;
-      const {viewport} = this;
-      const canvasContext = this.$el.getContext('2d');
-      const renderContext = {canvasContext, viewport};
-      // PDFPageProxy#render
-      // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
-      this.renderTask = this.page.render(renderContext);
-      this.renderTask
-        .then(() => {
-          this.$emit('page-rendered', {
-            page: this.page,
-            text: `Rendered page ${this.pageNumber}`,
-          });
-         })
-        .catch(response => {
+      canvas.style.width = `${pixelWidth}px`;
+      canvas.style.height = `${pixelHeight}px`;
+      console.log(pixelWidth);
+      console.log("PIXEL RATIO" + PIXEL_RATIO);
+      /*
+
+
+          const new_scale = wrapper.getBoundingClientRect().width /
+          page.getViewport({scale: VIEWPORT_RATIO}).width;
+
+
+      const [pixelWidth, pixelHeight] = [actualSizeWidth, actualSizeHeight]
+        .map(dim => Math.ceil(dim / PIXEL_RATIO));
+      canvas.style.width = `${pixelWidth}px`;
+      canvas.style.height = `${pixelHeight}px`;
+      */
+      /*
+      const scales = { 1: 3.2, 2: 4};
+      const defaultScale = 4;
+      const scale = scales[window.devicePixelRatio] || defaultScale;
+      const new_scale = wrapper.getBoundingClientRect().width /
+          page.getViewport({scale: scale}).width;
+
+      const viewport = page.getViewport({scale: new_scale});
+      console.log("new scale" + new_scale)
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      console.log(viewport.width);
+
+
+      const pageWidthScale = container.clientWidth / page.view[2];
+      const pageHeightScale = container.clientHeight / page.view[3];
+      const displayWidth = Math.min(pageWidthScale, pageHeightScale);
+      console.log("DisplayWidth" + displayWidth);
+      canvas.style.width = `${(viewport.width * displayWidth) / scale}px`;
+      canvas.style.height = `${(viewport.height * displayWidth) / scale}px`;
+*/
+      /*
+
+
+      //const viewport = page.getViewport({scale: new_ratio, rotation: 0, dontFlip: false});
+      console.log(page);
+      const viewport = page.getViewport({scale:0.5})
+        canvas.style.height = viewport.height;
+        console.log(viewport);
+
+       */
+        let renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        }
+
+        this.renderTask = page.render(renderContext);
+
+        this.renderTask.promise.then(() => {
+          return page.getTextContent();
+        }).then((textContent) => {
+          console.log(textContent);
+        }).catch(response => {
           this.destroyRenderTask();
-          this.$emit('page-errored', {
-            response,
-            page: this.page,
-            text: `Failed to render page ${this.pageNumber}`,
-          });
+          console.log(`Failed to render page ${this.pageNumber}: ` + response);
+
         });
+
+
+
     },
-    destroyPage(page) {
+    destroyPage(pageNumber) {
       // PDFPageProxy#_destroy
       // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
-      if (page) page._destroy();
+
+      //if (pageNumber) page._destroy();
       this.destroyRenderTask();
     },
     destroyRenderTask() {
@@ -141,23 +157,11 @@ export default {
   },
   mounted() {
     this.pdf.getPage(this.pageNumber).then((page) => {
-        const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
-        const canvas_ctx = canvas.getContext('2d');
+      this.renderPage(page);
+    });
 
-        const viewport = page.getViewport(canvas.width / page.getViewport({scale: VIEWPORT_RATIO, rotation: 0, dontFlip:true}).width);
-        canvas.style.height = viewport.height;
 
-        let renderContext = {
-          canvasContext: canvas_ctx,
-          viewport: viewport
-        }
-
-        page.render(renderContext).promise.then(() => {
-          return page.getTextContent();
-        }).then((textContent) => {
-          console.log(textContent);
-
-          const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber).getBoundingClientRect();
+          /*const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber).getBoundingClientRect();
           const text_layer = document.getElementById('text-layer-'+ page.pageNumber);
           text_layer.style.left = canvas_offset.left + 'px';
           text_layer.style.top = canvas_offset.top + 'px';
@@ -171,10 +175,9 @@ export default {
             viewport: viewport,
             textDivs: []
           })
+*/
 
 
-    })
-    });
 
 
 
@@ -183,11 +186,16 @@ export default {
     //this.updateElementBounds();
   },
   beforeDestroy() {
-    this.destroyPage(this.page);
+    this.destroyPage(this.pageNumber);
   },
 };
 </script>
 <style>
+.canvasWrapper > canvas {
+  width: 100%;
+  margin: 0 auto;
+}
+/*
 .pdf-page {
   display: block;
   margin: 0 auto;
@@ -211,4 +219,6 @@ export default {
     cursor: text;
     transform-origin: 0% 0%;
 }
+
+ */
 </style>
