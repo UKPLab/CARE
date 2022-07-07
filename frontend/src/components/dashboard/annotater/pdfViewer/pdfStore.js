@@ -5,7 +5,7 @@ const state = { pdf: undefined };
 
 export class PDF {
 
-    constructor(BUFFER_PAGES = 1) {
+    constructor(BUFFER_PAGES = 10) {
         this.pageCount = 0;
         this.pages = [];
         this.cursor = 0;
