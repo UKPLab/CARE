@@ -7,6 +7,7 @@
       :pageNumber="page.pageNumber"
       class="scrolling-page"
       :pdf="pdf"
+
     />
   </div>
 </template>
@@ -19,7 +20,7 @@ as rendered by PDF.js.
 
 Author: Dennis Zyska (zyska@ukp...)
 Source: https://rossta.net/blog/building-a-pdf-viewer-with-vue-part-1.html
-https://github.com/rossta/vue-pdfjs-demo/blob/master/src/components/PDFDocument.vue
+
 */
 
 import PDFPage from "./PDFPage.vue";
@@ -32,9 +33,11 @@ import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 //pdfjsLib.disableWorker = true;
+
 export default {
   name: "PDFViewer",
   components: {PDFPage},
+
   props: {
     document_id: {
       type: String,
@@ -54,6 +57,7 @@ export default {
       scrollTop: 0,
       clientHeight: 0,
       focusedPage: undefined,
+      didReachBottom: false,
     }
   },
   watch: {
@@ -65,6 +69,9 @@ export default {
       this.$nextTick(() => {
         this.focusedPage = this.currentPage;
       });
+    },
+    didReachBottom(didReachBottom) {
+      if (didReachBottom) this.fetchPages();
     },
     currentPage(currentPage) {
       if (currentPage > this.pages.length) {
@@ -94,19 +101,30 @@ export default {
   },
   mounted() {
     this.$socket.emit("pdf_get", {document_id: this.document_id});
+    this.updateScrollBounds();
   },
   methods: {
+    visibilityChanged (isVisible, entry) {
+  //this.isVisible = isVisible
+  console.log(entry)
+},
     onPageJump(scrollTop) {
       console.log(scrollTop);
       this.$emit('page-jump', scrollTop);
+    },
+    isBottomVisible() {
+      const {scrollTop, clientHeight, scrollHeight} = this.$el;
+      return scrollTop + clientHeight >= scrollHeight;
     },
     fetchPages(currentPage) {
       this.pdf.fetchPages(currentPage);
     },
     updateScrollBounds() {
+      console.log(this.$el);
       const {scrollTop, clientHeight} = this.$el;
       this.scrollTop = scrollTop;
       this.clientHeight = clientHeight;
+      this.didReachBottom = this.isBottomVisible();
       console.log("scrollTop:" + scrollTop);
       console.log("clientheight: " + clientHeight);
     }
