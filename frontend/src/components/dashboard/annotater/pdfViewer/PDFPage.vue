@@ -22,6 +22,8 @@ export const PIXEL_RATIO = window.devicePixelRatio || 1;
 export const VIEWPORT_RATIO = 0.98;
 import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
 import { ObserveVisibility } from 'vue3-observe-visibility'
+import throttle from 'lodash/throttle';
+import debounce from 'lodash.debounce';
 
 export default {
   name: 'PDFPage',
@@ -48,17 +50,31 @@ export default {
   data() {
     return {
       renderTask: undefined,
+      isVisible: false,
+      resizeOb: undefined,
+      isRendered: true
     };
   },
   methods: {
     visibilityChanged(isVisible, entry) {
+      this.isVisible = isVisible;
       if (isVisible) {
         if (this.renderTask) return;
-        this.pdf.getPage(this.pageNumber).then((page) => {
-          this.renderPage(page);
-        });
+        this.render();
       }
       this.$parent.$emit('update-visibility', isVisible);
+    },
+    resizeHandler(event) {
+      // TODO its not the best solution to rerender everything, but it works
+      // Optimization are for the future!
+      if (this.renderTask && this.isRendered) {
+        this.destroyRenderTask(true);
+      }
+    },
+    render() {
+      this.pdf.getPage(this.pageNumber).then((page) => {
+          this.renderPage(page);
+        });
     },
     renderPage(page) {
       if (this.renderTask) return;
@@ -83,6 +99,7 @@ export default {
       this.renderTask = page.render(renderContext);
 
       this.renderTask.promise.then(() => {
+        this.isRendered = true;
         return page.getTextContent();
       }).then((textContent) => {
 
@@ -112,15 +129,29 @@ export default {
       //if (pageNumber) page._destroy();
       this.destroyRenderTask();
     },
-    destroyRenderTask() {
+    destroyRenderTask(reinit = false) {
       if (!this.renderTask) return;
       // RenderTask#cancel
       // https://mozilla.github.io/pdf.js/api/draft/RenderTask.html
       this.renderTask.cancel();
-      delete this.renderTask;
+      this.renderTask = undefined;
+      const textContainer = document.getElementById('text-layer-'+ this.pageNumber);
+      while(textContainer.firstChild) {
+        textContainer.removeChild(textContainer.firstChild);
+      }
+      if (reinit) {
+        this.render();
+      }
     },
   },
-  beforeDestroy() {
+  mounted() {
+    this.resizeOb = new ResizeObserver(debounce(this.resizeHandler, 1000));
+    this.resizeOb.observe(document.getElementById('canvas-wrapper-' + this.pageNumber));
+  },
+  beforeUnmount() {
+    if (this.resizeOb) {
+      this.resizeOb.disconnect();
+    }
     this.destroyPage(this.pageNumber);
   },
 };
