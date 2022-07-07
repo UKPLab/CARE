@@ -9,6 +9,7 @@ export class PDF {
         this.pageCount = 0;
         this.pages = [];
         this.cursor = 0;
+        this.pageTextCache = new Map();
         this.BUFFER_PAGES = BUFFER_PAGES;
 
     }

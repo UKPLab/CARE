@@ -28,14 +28,6 @@ import debounce from 'lodash.debounce';
 export default {
   name: 'PDFPage',
   props: {
-    scrollTop: {
-      type: Number,
-      default: 0
-    },
-    clientHeight: {
-      type: Number,
-      default: 0
-    },
     pdf: {
       type: Object
     },
