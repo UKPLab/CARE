@@ -13,23 +13,7 @@
       <Sidebar :document_id="document_id" :scrollTo="scrollTo" />
      </div>
     </div>
-
-
   </div>
-
-  <!--
-  <b-container fluid id="annotator" class="overflow-hidden">
-    <b-row align-v="stretch">
-      <b-col id="docview" class="overflow-scroll">
-        <PDFViewer  :document_id="document_id" ref="pdfViewer" ></PDFViewer>
-        <Adder :document_id="document_id"></Adder> Test
-      </b-col>
-      <b-col id="sidebar" cols="sm-auto" class="overflow-scroll">
-        <Sidebar :document_id="document_id" :scrollTo="scrollTo" /> Test2
-      </b-col>
-    </b-row>
-  </b-container>
-  -->
 
 </template>
 

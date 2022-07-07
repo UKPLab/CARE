@@ -91,7 +91,7 @@ export default {
       this.renderTask = page.render(renderContext);
 
       this.renderTask.promise.then(() => {
-        this.isRendered = true;
+
         return page.getTextContent();
       }).then((textContent) => {
 
@@ -107,6 +107,9 @@ export default {
           viewport: viewport,
           textDivs: []
         })
+
+        this.isRendered = true;
+        this.pdf.renderingDone.set(page.pageNumber, true);
 
       }).catch(response => {
         this.destroyRenderTask();
@@ -126,6 +129,7 @@ export default {
       // RenderTask#cancel
       // https://mozilla.github.io/pdf.js/api/draft/RenderTask.html
       this.renderTask.cancel();
+      this.pdf.renderingDone.set(this.pageNumber, false);
       this.renderTask = undefined;
       const textContainer = document.getElementById('text-layer-'+ this.pageNumber);
       while(textContainer.firstChild) {
