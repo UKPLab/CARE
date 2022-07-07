@@ -5,8 +5,8 @@
         <TopBar id="topbar"></TopBar>
       </div>
     </div>
-    <div class="row flex-grow-1 top-padding overflow-hidden" >
-      <div class="col border mh-100" style="overflow-y: scroll;">
+    <div class="row flex-grow-1 overflow-hidden" >
+      <div class="col border mh-100 top-padding" style="overflow-y: scroll;" id="viewerContainer" >
         <PDFViewer  :document_id="document_id" ref="pdfViewer" ></PDFViewer>
       </div>
     <div class="col border mh-100 col-sm-2 g-0" style="overflow-y: scroll;">
@@ -53,43 +53,37 @@ export default {
           return;
         }
 
-        // Emit a custom event that the host page can respond to. This is useful,
-        // for example, if the highlighted content is contained in a collapsible
-        // section of the page that needs to be un-collapsed.
-        const event = new CustomEvent('scrolltorange', {
-          bubbles: true,
-          cancelable: true,
-          detail: range,
-        });
-        const defaultNotPrevented = this.$refs.pdfViewer.pdfContainer.dispatchEvent(event);
+        const inPlaceholder = this.anchorIsInPlaceholder(anchor);
+        let offset = this._anchorOffset(anchor);
+        if (offset === null) {
+          return;
+        }
 
-        if (defaultNotPrevented) {
-          const inPlaceholder = this.anchorIsInPlaceholder(anchor);
+        const scrollContainer = document.getElementById('viewerContainer');
+        // Correct offset since we have a fixed top
+        offset -= parseFloat(window.getComputedStyle(scrollContainer, null).getPropertyValue('padding-top'), 10);
+
+
+        // nb. We only compute the scroll offset once at the start of scrolling.
+        // This is important as the highlight may be removed from the document during
+        // the scroll due to a page transitioning from rendered <-> un-rendered.
+        await scrollElement(scrollContainer, offset);
+
+        if (inPlaceholder) {
+          const anchor = await this._waitForAnnotationToBeAnchored(
+              annotation,
+              3000
+          );
+          if (!anchor) {
+            return;
+          }
           const offset = this._anchorOffset(anchor);
           if (offset === null) {
             return;
           }
-
-          // nb. We only compute the scroll offset once at the start of scrolling.
-          // This is important as the highlight may be removed from the document during
-          // the scroll due to a page transitioning from rendered <-> un-rendered.
-          await scrollElement(document.querySelector('#viewerContainer'), offset);
-
-          if (inPlaceholder) {
-            const anchor = await this._waitForAnnotationToBeAnchored(
-                annotation,
-                3000
-            );
-            if (!anchor) {
-              return;
-            }
-            const offset = this._anchorOffset(anchor);
-            if (offset === null) {
-              return;
-            }
-            await scrollElement(document.querySelector('#viewerContainer'), offset);
-          }
+          await scrollElement(scrollContainer, offset);
         }
+
       }
     },
     anchorIsInPlaceholder(anchor) {
