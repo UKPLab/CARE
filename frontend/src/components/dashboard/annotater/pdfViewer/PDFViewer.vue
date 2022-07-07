@@ -32,7 +32,6 @@ import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 import Adder from "./Adder.vue";
 import Highlights from "./Highlights.vue";
-import { RenderingStates} from "../../../../assets/anchoring/anchoring";
 import { createPlaceholder, removePlaceholder } from "../../../../assets/anchoring/placeholder";
 import { TextPosition } from "../../../../assets/anchoring/text-range";
 import {TextRange} from "../../../../assets/anchoring/text-range";

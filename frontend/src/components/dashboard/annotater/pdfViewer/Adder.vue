@@ -242,30 +242,15 @@ export default {
     async getPageTextContent(pageIndex) {
       // If we already have or are fetching the text for this page, return the
       // existing result.
-      console.log(pageIndex);
       const cachedText = this.pdf.pageTextCache.get(pageIndex);
       if (cachedText) {
         return cachedText;
       } else {
         // we have to load the page first!
-
         const textContent = await this.pdf.getPage(pageIndex + 1).then((page) => {
           return page.getTextContent({normalizeWhitespace: true})
         });
-
-        let items = textContent.items;
-
-        // Versions of PDF.js < v2.9.359 did not create elements in the text layer for
-        // text items that contained all-whitespace strings. Newer versions (after
-        // https://github.com/mozilla/pdf.js/pull/13257) do. The same commit also
-        // introduced the `hasEOL` property to text items, so we use the absence
-        // of this property to determine if we need to filter out whitespace-only strings.
-        const excludeEmpty = items.length > 0 && !('hasEOL' in items[0]);
-        if (excludeEmpty) {
-          items = items.filter(it => /\S/.test(it.str));
-        }
-
-        const text = items.map(it => it.str).join('');
+        const text = textContent.items.map(it => it.str).join('');
 
         this.pdf.pageTextCache.set(pageIndex, text);
 
