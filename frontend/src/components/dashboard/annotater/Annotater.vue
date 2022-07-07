@@ -8,7 +8,6 @@
     <div class="row flex-grow-1 top-padding overflow-hidden" >
       <div class="col border mh-100" style="overflow-y: scroll;">
         <PDFViewer  :document_id="document_id" ref="pdfViewer" ></PDFViewer>
-        <!--<Adder :document_id="document_id"></Adder>-->
       </div>
     <div class="col border mh-100 col-sm-2 g-0" style="overflow-y: scroll;">
       <Sidebar :document_id="document_id" :scrollTo="scrollTo" />
@@ -44,7 +43,6 @@ Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
-import Adder from "./pdfViewer/Adder.vue";
 import TopBar from "./topbar/TopBar.vue"
 import Sidebar from "./sidebar/Sidebar.vue";
 import {offsetRelativeTo, scrollElement} from "../../../assets/anchoring/scroll";
@@ -54,7 +52,7 @@ import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
 
 export default {
   name: "Annotater2",
-  components: {Adder, PDFViewer, Sidebar, TopBar},
+  components: {PDFViewer, Sidebar, TopBar},
   props: ['document_id'],
   data() {
     return {

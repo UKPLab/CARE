@@ -2,13 +2,13 @@
   <div>
     <PDFPage
       v-for="page in pdf.pages"
-      v-bind="{scale, scrollTop, clientHeight}"
       :key="page.pageNumber"
       :pageNumber="page.pageNumber"
       class="scrolling-page"
       :pdf="pdf"
       @updateVisibility="updateVisibility"
     />
+    <Adder :pdf="pdf" :document_id="document_id"></Adder>
   </div>
 </template>
 
@@ -29,10 +29,11 @@ import { PDF } from './pdfStore.js';
 import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+import Adder from "./Adder.vue";
 
 export default {
   name: "PDFViewer",
-  components: {PDFPage},
+  components: {PDFPage, Adder},
 
   props: {
     document_id: {
@@ -47,11 +48,6 @@ export default {
   data() {
     return {
       pdf: new PDF(),
-      scrollTop: 0,
-      clientHeight: 0,
-      focusedPage: undefined,
-      didReachBottom: false,
-      busy: false,
     }
   },
   watch: {
@@ -59,21 +55,6 @@ export default {
       this.pdf.fetchPages();
       console.log(this.pdf.pageCount);
     },
-    pagesLength(count, oldCount) {
-      this.$nextTick(() => {
-        this.focusedPage = this.currentPage;
-      });
-    },
-    didReachBottom(didReachBottom) {
-      if (didReachBottom) this.fetchPages();
-    },
-    currentPage(currentPage) {
-      if (currentPage > this.pages.length) {
-        this.fetchPages(currentPage);
-      } else {
-        this.focusedPage = currentPage;
-      }
-    }
   },
   computed: {
     pagesLength() {
@@ -95,7 +76,6 @@ export default {
   },
   mounted() {
     this.$socket.emit("pdf_get", {document_id: this.document_id});
-    this.updateScrollBounds();
   },
   methods: {
     updateVisibility(data) {
@@ -104,26 +84,9 @@ export default {
         this.pdf.fetchPages(data.pageNumber);
       }
     },
-    onPageJump(scrollTop) {
-      console.log(scrollTop);
-      this.$emit('page-jump', scrollTop);
-    },
-    isBottomVisible() {
-      const {scrollTop, clientHeight, scrollHeight} = this.$el;
-      return scrollTop + clientHeight >= scrollHeight;
-    },
     fetchPages(currentPage) {
       this.pdf.fetchPages(currentPage);
     },
-    updateScrollBounds() {
-      console.log(this.$el);
-      const {scrollTop, clientHeight} = this.$el;
-      this.scrollTop = scrollTop;
-      this.clientHeight = clientHeight;
-      this.didReachBottom = this.isBottomVisible();
-      console.log("scrollTop:" + scrollTop);
-      console.log("clientheight: " + clientHeight);
-    }
   },
    /*  this.pdf = pdf;
 

@@ -99,6 +99,7 @@ function getNodeTextLayer(node) {
  */
 function getPdfViewer() {
   // @ts-ignore - TS doesn't know about PDFViewerApplication global.
+
   return PDFViewerApplication.pdfViewer;
 }
 
@@ -195,7 +196,7 @@ function getPageTextContent(pageIndex) {
     // https://github.com/mozilla/pdf.js/pull/13257) do. The same commit also
     // introduced the `hasEOL` property to text items, so we use the absence
     // of this property to determine if we need to filter out whitespace-only strings.
-    const excludeEmpty = items.length > 0 && !('hasEOL' in items[0]);
+    const excludeEmpty = items.pageTextCachelength > 0 && !('hasEOL' in items[0]);
     if (excludeEmpty) {
       items = items.filter(it => /\S/.test(it.str));
     }

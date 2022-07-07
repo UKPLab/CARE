@@ -8,15 +8,14 @@
 
 <script>
 import { BIconPlusSquare } from 'bootstrap-icons-vue';
-import { TextRange } from "../../../../assets/anchoring/text-range";
-import { describe } from "../../../../assets/anchoring/anchoring"
+import { TextPosition, TextRange } from "../../../../assets/anchoring/text-range";
+import { TextQuoteAnchor } from '../../../../assets/anchoring/types';
 import {mapMutations} from "vuex";
-import {Annotation} from "../../../../data/annotation.js";
 
 export default {
   name: "Adder",
   components: { BIconPlusSquare },
-  props: ['document_id'],
+  props: ['document_id', 'pdf'],
   data() {
     return {
       _fadeOutBox: [],
@@ -55,7 +54,7 @@ export default {
       this.selectedRanges = [];
 
       const rangeSelectors = await Promise.all(
-          ranges.map(range => describe(document.body, range))
+          ranges.map(range => this.describe(document.body, range))
       );
       const target = rangeSelectors.map(selectors => ({
         // In the Hypothesis API the field containing the selectors is called
@@ -181,6 +180,100 @@ export default {
 
       return [range, startTextLayer];
     },
+    /**
+     * Convert a DOM Range object into a set of selectors.
+     *
+     * Converts a DOM `Range` object into a `[position, quote]` tuple of selectors
+     * which can be saved with an annotation and later passed to `anchor` to
+     * convert the selectors back to a `Range`.
+     *
+     * @param {HTMLElement} root - The root element
+     * @param {Range} range
+     * @return {Promise<Selector[]>}
+     */ async describe(root, range) {
+      const [textRange, textLayer] = this.getTextLayerForRange(range);
+
+      const startPos = TextPosition.fromPoint(
+          textRange.startContainer,
+          textRange.startOffset
+      ).relativeTo(textLayer);
+
+      const endPos = TextPosition.fromPoint(
+          textRange.endContainer,
+          textRange.endOffset
+      ).relativeTo(textLayer);
+
+      const startPageIndex = this.getSiblingIndex(
+          /** @type {Node} */ (textLayer.parentNode)
+      );
+      const pageOffset = await this.getPageOffset(startPageIndex);
+
+      /** @type {TextPositionSelector} */
+      const position = {
+        type: 'TextPositionSelector',
+        start: pageOffset + startPos.offset,
+        end: pageOffset + endPos.offset,
+      };
+
+      const quote = TextQuoteAnchor.fromRange(root, textRange).toSelector();
+
+      return [position, quote];
+    },
+    getSiblingIndex(node) {
+      let index = 0;
+      while (node.previousSibling) {
+        ++index;
+        node = node.previousSibling;
+      }
+      return index;
+    },
+    async getPageOffset(pageIndex) {
+      if (pageIndex >= this.pdf.pageCount) {
+        /* istanbul ignore next - This should never be triggered */
+        throw new Error('Invalid page index');
+      }
+      let offset = 0;
+      for (let i = 0; i < pageIndex; i++) {
+        const text = await this.getPageTextContent(i);
+        offset += text.length;
+      }
+      return offset;
+    },
+    async getPageTextContent(pageIndex) {
+      // If we already have or are fetching the text for this page, return the
+      // existing result.
+      console.log(pageIndex);
+      const cachedText = this.pdf.pageTextCache.get(pageIndex);
+      if (cachedText) {
+        return cachedText;
+      } else {
+        // we have to load the page first!
+
+        const textContent = await this.pdf.getPage(pageIndex + 1).then((page) => {
+          return page.getTextContent({normalizeWhitespace: true})
+        });
+
+        let items = textContent.items;
+
+        // Versions of PDF.js < v2.9.359 did not create elements in the text layer for
+        // text items that contained all-whitespace strings. Newer versions (after
+        // https://github.com/mozilla/pdf.js/pull/13257) do. The same commit also
+        // introduced the `hasEOL` property to text items, so we use the absence
+        // of this property to determine if we need to filter out whitespace-only strings.
+        const excludeEmpty = items.length > 0 && !('hasEOL' in items[0]);
+        if (excludeEmpty) {
+          items = items.filter(it => /\S/.test(it.str));
+        }
+
+        const text = items.map(it => it.str).join('');
+
+        this.pdf.pageTextCache.set(pageIndex, text);
+
+        return text
+      }
+
+    },
+
   }
 }
 </script>
