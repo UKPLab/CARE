@@ -21,6 +21,7 @@
     "pdfjs-dist": "^2.14.305",
     "scroll-into-view": "^1.16.1",
     "socket.io-client": "^4.5.1",
+    "vue3-observe-visibility": "^0.1.2",
     "uuid": "^8.3.2",
     "vite": "^2.9.5",
     "vue": "^3.2.33",

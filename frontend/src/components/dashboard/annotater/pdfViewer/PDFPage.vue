@@ -1,5 +1,12 @@
 <template>
-  <div class="pageContainer" :id="'page-container-' + pageNumber">
+  <div v-observe-visibility="{
+      callback: visibilityChanged,
+      throttle: 300,
+      throttleOptions: {
+        leading: 'visible',
+      },
+    }"
+       class="pageContainer" :id="'page-container-' + pageNumber">
     <div class="canvasWrapper" :id="'canvas-wrapper-' + pageNumber">
       <canvas class="pdf-page" :id="'pdf-canvas-' + pageNumber"></canvas>
     </div>
@@ -14,7 +21,7 @@
 export const PIXEL_RATIO = window.devicePixelRatio || 1;
 export const VIEWPORT_RATIO = 0.98;
 import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
-
+import { ObserveVisibility } from 'vue3-observe-visibility'
 
 export default {
   name: 'PDFPage',
@@ -35,12 +42,24 @@ export default {
       default: 0,
     }
   },
+  directives: {
+    ObserveVisibility,
+  },
   data() {
     return {
       renderTask: undefined,
     };
   },
   methods: {
+    visibilityChanged(isVisible, entry) {
+      if (isVisible) {
+        if (this.renderTask) return;
+        this.pdf.getPage(this.pageNumber).then((page) => {
+          this.renderPage(page);
+        });
+      }
+      this.$parent.$emit('update-visibility', isVisible);
+    },
     renderPage(page) {
       if (this.renderTask) return;
 
@@ -72,8 +91,6 @@ export default {
         text_layer.style.height = canvas_offset.height + 'px';
         text_layer.style.width = canvas_offset.width + 'px';
 
-
-
         pdfjsLib.renderTextLayer({
           textContent: textContent,
           enhanceTextSelection: true,
@@ -91,7 +108,7 @@ export default {
     destroyPage(pageNumber) {
       // PDFPageProxy#_destroy
       // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
-
+      this.$parent.$emit('destroy-page'); //TODO
       //if (pageNumber) page._destroy();
       this.destroyRenderTask();
     },
@@ -102,16 +119,6 @@ export default {
       this.renderTask.cancel();
       delete this.renderTask;
     },
-  },
-  created() {
-    // PDFPageProxy#getViewport
-    // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
-    //this.viewport = this.page.getViewport(this.scale);
-  },
-  mounted() {
-    this.pdf.getPage(this.pageNumber).then((page) => {
-      this.renderPage(page);
-    });
   },
   beforeDestroy() {
     this.destroyPage(this.pageNumber);
