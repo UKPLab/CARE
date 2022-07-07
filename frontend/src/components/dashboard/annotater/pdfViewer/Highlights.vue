@@ -121,7 +121,7 @@ export default {
 
       // Get the <canvas> for the PDF page containing the highlight. We assume all
       // the highlights are on the same page.
-      const pageEl = highlightEls[0].closest('.page');
+      const pageEl = highlightEls[0].closest('.pageContainer');
       if (!pageEl) {
         return null;
       }

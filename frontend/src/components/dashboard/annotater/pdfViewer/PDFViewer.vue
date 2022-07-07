@@ -25,19 +25,21 @@ Source: https://rossta.net/blog/building-a-pdf-viewer-with-vue-part-1.html
 */
 
 import PDFPage from "./PDFPage.vue";
-
 import { PDF } from './pdfStore.js';
 import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
 import Adder from "./Adder.vue";
 import Highlights from "./Highlights.vue";
+
 import { createPlaceholder, removePlaceholder } from "../../../../assets/anchoring/placeholder";
-import { TextPosition } from "../../../../assets/anchoring/text-range";
-import {TextRange} from "../../../../assets/anchoring/text-range";
+import { TextPosition, TextRange } from "../../../../assets/anchoring/text-range";
+import { matchQuote } from '../../../../assets/anchoring/match-quote';
+
 import debounce from "lodash.debounce";
 import {mapMutations} from "vuex";
-import { matchQuote } from '../../../../assets/anchoring/match-quote';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export default {
   name: "PDFViewer",
@@ -59,7 +61,6 @@ export default {
   watch: {
     "pdf.pageCount" () {
       this.pdf.fetchPages();
-      console.log(this.pdf.pageCount);
     },
     annotations (newVal, oldVal) {
       // handle only newly added anchors
@@ -93,7 +94,7 @@ export default {
             this.pdf.setPDF(pdf);
           })
           .catch(response => {
-            console.log(response);
+            console.log("Error loading PDF: " + response);
             this.$router.push("/index.html");
           });
     }
@@ -139,8 +140,7 @@ export default {
 
 
       }
-        console.log("Anchors:");
-        console.log(this.anchors);
+
 
       // Find all the anchors that have been invalidated by page state changes.
       for (let anchor of this.anchors) {
@@ -167,8 +167,6 @@ export default {
         }
       }
 
-      console.log(refreshAnnotations);
-
       refreshAnnotations.map(annotation => this.handle_anchor(annotation));
     },
     _updateAnnotationLayerVisibility () {
@@ -183,7 +181,6 @@ export default {
     },
     async handle_anchor(annotation) {
 
-      console.log(annotation);
       const locate = async target => {
         // Only annotations with an associated quote can currently be anchored.
         // This is because the quote is used to verify anchoring with other selector
@@ -468,8 +465,7 @@ export default {
             document.body,
             target.selector
           );
-          console.log("Range")
-          console.log(range);
+
           // Convert the `Range` to a `TextRange` which can be converted back to
           // a `Range` later. The `TextRange` representation allows for highlights
           // to be inserted during anchoring other annotations without "breaking"
@@ -478,15 +474,13 @@ export default {
           anchor = { annotation, target, range: textRange };
         } catch (err) {
           anchor = { annotation, target };
-          console.log(err);
+          console.log("Error getting anchors: " + err);
         }
         return anchor;
       };
 
       const anchors = await Promise.all(annotation.annotationData.target.map(locate));
 
-      console.log("Anchors: ");
-      console.log(anchors);
       annotation.anchors = anchors;
 
       // Set flag indicating whether anchoring succeeded. For each target,
