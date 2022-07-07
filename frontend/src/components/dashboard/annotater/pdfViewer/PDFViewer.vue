@@ -59,6 +59,7 @@ export default {
   watch: {
     "pdf.pageCount" () {
       this.pdf.fetchPages();
+      console.log(this.pdf.pageCount);
     },
     pagesLength(count, oldCount) {
       this.$nextTick(() => {
