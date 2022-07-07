@@ -39,24 +39,18 @@ export class PDF {
         const endPage = Math.min(Math.max(currentPage, startIndex + this.BUFFER_PAGES), this.pageCount);
         this.cursor = endPage;
 
-        console.log("Start fetching pages...");
         this.getPages(startPage, endPage)
           .then((pages) => {
-              console.log(pages);
             const deleteCount = 0;
             this.pages.splice(startIndex, deleteCount, ...pages);
             return this.pages;
           }).catch((response) => {
-              console.log("Error");
-           console.log(response);
+              console.log("Error fetching Pages: " + response);
           })
     }
 
     getPages(first, last) {
-        console.log("Start getPages " + first + " " + last);
-        console.log(state.pdf);
       const allPages = _.range(first, last + 1).map(number => state.pdf.getPage(number));
-      console.log(allPages);
       return Promise.all(allPages);
     }
 
