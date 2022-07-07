@@ -7,7 +7,7 @@
       :pageNumber="page.pageNumber"
       class="scrolling-page"
       :pdf="pdf"
-
+      @updateVisibility="updateVisibility"
     />
   </div>
 </template>
@@ -25,14 +25,10 @@ Source: https://rossta.net/blog/building-a-pdf-viewer-with-vue-part-1.html
 
 import PDFPage from "./PDFPage.vue";
 
-import scroll from "../../../../assets/pdf/scroll";
-import visible from "../../../../assets/pdf/visible";
-
 import { PDF } from './pdfStore.js';
 import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-//pdfjsLib.disableWorker = true;
 
 export default {
   name: "PDFViewer",
@@ -48,9 +44,6 @@ export default {
       default: 1.0,
     },
   },
-  directives: {
-    visible, scroll
-  },
   data() {
     return {
       pdf: new PDF(),
@@ -58,6 +51,7 @@ export default {
       clientHeight: 0,
       focusedPage: undefined,
       didReachBottom: false,
+      busy: false,
     }
   },
   watch: {
@@ -104,10 +98,12 @@ export default {
     this.updateScrollBounds();
   },
   methods: {
-    visibilityChanged (isVisible, entry) {
-  //this.isVisible = isVisible
-  console.log(entry)
-},
+    updateVisibility(data) {
+      if (data.isVisible) {
+        //TODO: also working to fetch further page on the fly, but can be optimized!
+        this.pdf.fetchPages(data.pageNumber);
+      }
+    },
     onPageJump(scrollTop) {
       console.log(scrollTop);
       this.$emit('page-jump', scrollTop);

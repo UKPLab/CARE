@@ -62,7 +62,7 @@ export default {
         if (this.renderTask) return;
         this.render();
       }
-      this.$parent.$emit('update-visibility', isVisible);
+      this.$emit('updateVisibility', {pageNumber: this.pageNumber, isVisible: isVisible});
     },
     resizeHandler(event) {
       // TODO its not the best solution to rerender everything, but it works

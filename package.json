@@ -16,21 +16,22 @@
     "bootstrap-icons-vue": "^1.8.1",
     "bootstrap-vue-3": "^0.1.10",
     "bootstrap5-tags": "^1.4.35",
+    "intersection-observer": "^0.12.2",
     "lodash": "^4.17.21",
     "lodash.debounce": "^4.0.3",
     "pdfjs-dist": "^2.14.305",
     "scroll-into-view": "^1.16.1",
     "socket.io-client": "^4.5.1",
-    "vue3-observe-visibility": "^0.1.2",
     "uuid": "^8.3.2",
+
     "vite": "^2.9.5",
     "vue": "^3.2.33",
     "vue-3-socket.io": "^1.0.5",
     "vue-router": "^4.0.14",
     "vue-style-loader": "^4.1.3",
-    "vuex": "^4.0.2",
-    "vuex-persistedstate": "^4.1.0",
+    "vue3-observe-visibility": "^0.1.2",
     "vue3-pdfjs": "^0.1.6",
-    "intersection-observer": "^0.12.2"
+    "vuex": "^4.0.2",
+    "vuex-persistedstate": "^4.1.0"
   }
 }

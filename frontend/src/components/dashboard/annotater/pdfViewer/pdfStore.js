@@ -13,6 +13,10 @@ export class PDF {
 
     }
 
+    setVisibility(pageNumber, isVisible) {
+
+    }
+
     setPDF(pdf) {
         state.pdf = pdf;
         this.pageCount = state.pdf.numPages;
