@@ -24,13 +24,13 @@
         <div id="text" v-else-if="annoData.text != null && annoData.text.length > 0" class="card-text">
           {{ annoData.text }}
         </div>
-        <div id="tags" v-bind:disabled="isSubmitted">
+        <div id="tags" v-bind:uid="'tags'+annoData.id" v-bind:disabled="isSubmitted">
             <select class="form-select"
                     v-bind:id="'annotationTags-'+annoData.id"
                     name="tags_new[]"
                     multiple data-allow-new="true"
                     allowClear="true"
-                    placeholder="No tags"
+                    placeholder="Add tag..."
                     v-bind:disabled="isSubmitted"
                     v-model="annoTags">
               <option selected disabled hidden value="">Choose a tag...</option>
@@ -81,7 +81,7 @@
 
 <script>
 import Tags from "bootstrap5-tags/tags.js";
-import {mapMutations} from "vuex";
+import { mapActions } from 'vuex';
 
 export default {
   name: "Annotation",
@@ -94,6 +94,15 @@ export default {
   mounted() {
     const formElement = `#annotationTags-${this.annoData.id}`;
     Tags.init(formElement);
+  },
+  watch: {
+    state(newS, oldS) {
+      console.log("Annotation " + this.annoData.id + " changing state:");
+      console.log("State change from " + oldS + " to " + newS);
+    }
+  },
+  unmounted() {
+    console.log("Unmounting " + this.annoData.id);
   },
   computed: {
     isSubmitted: function(){
@@ -133,16 +142,30 @@ export default {
     }
   },
   methods: {
-    ...mapMutations({
-      deleteAnnotation: "anno/DELETE_ANNOTATION",
-    }),
+     ...mapActions({
+       deleteAnnotation: "anno/deleteAnnotation"
+     }),
+     getTagInput() {
+      return document.querySelector(`div[uid=tags${this.annoData.id}] div input`);
+     },
     submit() {
       this.state = "SUBMITTED";
 
-      //TODO somehow deactivate the tags field correctly
+      const inElem = this.getTagInput();
+      inElem.disabled = true;
+      if(this.annoData.tags == null || this.annoData.tags.length === 0){
+        inElem.placeholder = "No Tags";
+      } else {
+        inElem.placeholder = "";
+      }
+      inElem.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
     },
     edit() {
       this.state = "EDIT";
+
+      const inElem = this.getTagInput();
+      inElem.disabled = false;
+      inElem.placeholder = "Add tag...";
     },
     remove() {
       this.state = "DELETED";
@@ -155,7 +178,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
 .card-header {
   text-align: right;
   font-size: smaller;
@@ -189,5 +212,7 @@ export default {
 #tags div {
   padding-left: 0;
   padding-right: 0;
+  border: none;
+  background-color: transparent;
 }
 </style>

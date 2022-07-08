@@ -5,7 +5,8 @@
           <p class="text-center"> No annotations </p>
         </div>
         <ul v-else id="anno-list" class="list-group">
-          <li v-for="anno in annotations" class="list-group-item"
+          <li v-for="anno in annotations" class="list-group-i"
+              :key="anno.id"
               v-bind:id="anno.id"
               v-on:mouseover='hover(anno.id)'
               v-on:mouseleave="unhover(anno.id)">
@@ -40,7 +41,7 @@ export default {
       toggleSidebar: "anno/TOGGLE_SIDEBAR",
       hover: "anno/HOVER",
       unhover: "anno/UNHOVER"
-    }),
+    })
   }
 }
 </script>
