@@ -113,5 +113,11 @@ export default {
             // todo
             commit('SET_ANNOTATIONS', []);
         },
+        addAnnotation({commit}, annotation) {
+            commit("ADD_ANNOTATION", annotation);
+        },
+        deleteAnnotation({commit}, annotation) {
+            commit("DELETE_ANNOTATION", annotation);
+        }
     }
 };
