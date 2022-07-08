@@ -60,6 +60,7 @@ export default {
                         return status === 200 || status === 401;},
                     withCredentials:true});
             if (response.status === 401) throw response.data.message;
+
             commit('SET_USER', response.data.user);
         },
         // registers a user with the given credentials and user information

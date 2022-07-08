@@ -24,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'annotation',
+    tableName: 'annotation'
   });
   return annotation;
 };

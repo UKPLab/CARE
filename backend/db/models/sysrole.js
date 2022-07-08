@@ -14,11 +14,15 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   sysrole.init({
-    name: DataTypes.STRING,
+    name: {
+      type: DataTypes.STRING,
+      primaryKey: true
+    },
     description: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'sysrole',
+    tableName: 'sysrole'
   });
   return sysrole;
 };

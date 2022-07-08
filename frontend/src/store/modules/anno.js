@@ -60,7 +60,7 @@ export default {
                     message.annotation.target[0].selector[1].exact,
                     message.annotation.target[0].selector[1].exact,
                     message.annotation,
-                    message.uid
+                    "username" //todo this.$store.getters["auth/getUser"]().user_name
                 )
             )
         },
