@@ -43,7 +43,7 @@ clean:
 
 .PHONY: init
 init: backend/node_modules/.uptodate
-	cd backend/db && npx sequelize-cli db:create || echo "done"
+	cd backend/db && npx sequelize-cli db:create || echo "IGNORING ERROR"
 	cd backend/db && npx sequelize-cli db:migrate
 
 .PHONY: init_old

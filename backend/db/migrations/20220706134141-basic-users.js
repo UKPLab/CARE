@@ -1,5 +1,5 @@
 'use strict';
-const { genSalt, genPwdHash } = require("../methods/user.js");
+const { genSalt, genPwdHash } = require("../methods/utils.js");
 
 module.exports = {
   async up (queryInterface, Sequelize) {
@@ -20,7 +20,8 @@ module.exports = {
     await queryInterface.bulkInsert("user",
         await Promise.all(users.map(async user => {
           const salt = genSalt();
-          const passwordHash = await genPwdHash(user.pwd, salt);
+          let passwordHash = await genPwdHash(user.pwd, salt);
+          //passwordHash = passwordHash.toString('hex');
 
           return {
             sysrole: user.role,

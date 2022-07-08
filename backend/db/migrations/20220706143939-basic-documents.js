@@ -2,7 +2,7 @@
 
 module.exports = {
   async up (queryInterface, Sequelize) {
-      const guestId = await queryInterface.rawSelect('user', {where: {user_name: 'guest'},}, ['uid']);
+      const guestId = await queryInterface.rawSelect('user', {where: {user_name: 'guest'},}, ['id']);
 
       await queryInterface.bulkInsert("document", [
            {

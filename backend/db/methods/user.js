@@ -1,25 +1,49 @@
-const crypto = require("crypto");
+const { DataTypes, Op } = require("sequelize")
+const db = require("../models/index.js")
+const User = require("../models/user.js")(db.sequelize, DataTypes);
 
-//create admin + guest user, if not existent
-async function createPwd(password, salt) {
-    return new Promise((res, rej) => {
-        crypto.pbkdf2(password, salt, 310000, 32, 'sha256', (err, derivedKey) => {
-            err ? rej(err) : res(derivedKey);
-        });
+const { genSalt, genPwdHash } = require("./utils.js");
+
+exports.add = async function add(user_name, first_name, last_name, user_email, password, role) {
+    //todo: doesn't fail when a user with this name/email already exsists: fix
+
+    const salt = genSalt();
+    let pwdHash = await genPwdHash(password, salt);
+
+    return User.create({
+        sysrole: role,
+        first_name: first_name,
+        last_name: last_name,
+        user_name: user_name,
+        email: user_email,
+        password_hash: pwdHash,
+        salt: salt
     });
 }
 
-exports.genSalt = function genSalt() {
-    return crypto.randomBytes(16).toString("hex");
+exports.relevantFields = function fields(user) {
+    const exclude = [
+        "password_hash",
+        "salt"
+    ]
+
+    const entries = Object.entries(user.dataValues);
+    const filtered =  entries.filter(([k, v]) => exclude.indexOf(k) === -1);
+
+    return Object.fromEntries(filtered);
 }
 
-exports.genPwdHash = async function genPwdHash(password, salt) {
-    let derivedKey = await createPwd(password, salt);
-
-    return derivedKey.toString('hex');
-}
-
-exports.add = async function add(user_name, first_name, last_name, user_email, password, role) {
-    const salt = this.genSalt();
-    const pwd = this.genPwdHash(password, salt);
+exports.find = async function find(username){
+    return User.findAll({
+        where: {
+            [Op.or] : [
+                {
+                    user_name: username
+                },
+                {
+                    email: username
+                }
+            ]
+        }
+    });
 }
