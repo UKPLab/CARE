@@ -31,6 +31,11 @@ make init
 ```
 make dev
 ```
+Note: This is the easiest way for development at the frontend with support by vite, where updates will pushed immediately to the website on any change. 
+If you want to build the frontend first, you have to `make dev-build`. 
+If you want to only restart the backend for development and use the already builded version of the frontend, you can use `make dev-backend`, 
+but then you have to make sure you build the frontend first with `make build-frontend`.
+
 6. Visit localhost:3001 in your browser. You should see a login page. Login via guest and access the default document 
    to start annotating.
 
