@@ -9,7 +9,7 @@
       <div class="col border mh-100 top-padding" style="overflow-y: scroll;" id="viewerContainer" >
         <PDFViewer  :document_id="document_id" ref="pdfViewer" ></PDFViewer>
       </div>
-    <div class="col border mh-100 col-sm-2 g-0" style="overflow-y: scroll;">
+    <div class="col border mh-100  top-padding col-sm-2 g-0" style="overflow-y: scroll;">
       <Sidebar :document_id="document_id" :scrollTo="scrollTo" />
      </div>
     </div>
