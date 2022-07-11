@@ -15,7 +15,6 @@ Source: -
 */
 import { createStore } from 'vuex';
 import AuthStore from './modules/auth.js';
-import WebsocketStore from './modules/websocket.js';
 import UserStore from './modules/user.js';
 import AnnotationStore from './modules/anno.js';
 import createPersistedState from 'vuex-persistedstate';
@@ -24,7 +23,6 @@ import createPersistedState from 'vuex-persistedstate';
 export default createStore({
     modules: {
         auth: AuthStore,
-        websocket: WebsocketStore,
         user: UserStore,
         anno: AnnotationStore,
     },
