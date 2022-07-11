@@ -1,6 +1,6 @@
 {
-  "name": "PEERContentServer",
-  "version": "0.0.1",
+  "name": "PeerFrontend",
+  "version": "0.1.0",
   "scripts": {
     "frontend-dev": "vite",
     "frontend-preview": "vite preview --port 5050",
@@ -29,7 +29,6 @@
     "vue-router": "^4.0.14",
     "vue-style-loader": "^4.1.3",
     "vue3-observe-visibility": "^0.1.2",
-    "vue3-pdfjs": "^0.1.6",
     "vuex": "^4.0.2",
     "vuex-persistedstate": "^4.1.0"
   }

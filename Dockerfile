@@ -2,7 +2,7 @@
 FROM node:16-alpine
 
 # Install requirements
-RUN npm install --global npm gulp-cli
+RUN npm install --global npm
 
 # copy code
 WORKDIR /
