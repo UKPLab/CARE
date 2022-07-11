@@ -35,6 +35,7 @@ export default {
     mutations: {
         // updates the user information to the given parameters
         SET_USER: (state, user) => {
+            //todo doesn't update the state (even if I pass any arbitrary object) remains empty object
             state.user = user;
         },
         // resets the user information to default
@@ -59,8 +60,9 @@ export default {
                     { validateStatus: function(status) {
                         return status === 200 || status === 401;},
                     withCredentials:true});
-            if (response.status === 401) throw response.data.message;
+            if (response.status === 401) throw response.data.message
 
+            console.log("Calling set user");
             commit('SET_USER', response.data.user);
         },
         // registers a user with the given credentials and user information

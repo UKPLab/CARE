@@ -13,16 +13,20 @@ export class Annotation{
     text;
     tags;
 
+    state;
+
     // todo: add necessary attributes and methods
 
-    constructor(document_id, comment, anchor, annotationData, user) {
-        this.document_id = document_id
-        this.id = v4();
+    constructor(id, document_id, text, anchor, annotationData, user) {
+        this.document_id = document_id;
+        this.id = id;
         this.anchors = null;
         this.hover = false;
-        this.comment = comment;
-        this.text = null;
+        this.comment = null;
+        this.text = text;
         this.tags = [];
+
+        this.state = "CREATED";
 
         this.annotationData = annotationData;
         this.orphaned = false;
@@ -30,7 +34,21 @@ export class Annotation{
         this.user = user;
     }
 
+    hasComment() {
+        return this.comment != null;
+    }
+
     toJson() {
         return JSON.stringify(comment);
     }
+}
+
+export function createAnnotation(document_id, text, anchor, annotationData, user) {
+    return new Annotation(
+        v4(),
+        document_id,
+        text,
+        anchor,
+        annotationData,
+        user);
 }

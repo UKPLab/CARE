@@ -65,6 +65,8 @@ export default {
     async login_user() {
       try {
         await this.login({username: this.username, password: this.password})
+        console.log("after login");
+        console.log(this.$store.getters["auth/getUser"]());
         {
           await this.$router.go(0);
           this.showError = false;
@@ -80,7 +82,7 @@ export default {
     },
     async login_guest() {
       try {
-        await this.login({username: "guest", password: "guestguest"})
+        await this.login({username: "guest", password: "guestguest"});
         {
           await this.$router.go(0);
           this.showError = false;

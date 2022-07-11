@@ -8,26 +8,38 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      hash: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+      },
       creator: {
-        type: Sequelize.STRING
+        type: Sequelize.INTEGER,
+        references:  {
+          model: "user",
+          key: "id"
+        },
+        allowNull: false
       },
       text: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING(1024)
       },
       tags: {
         type: Sequelize.STRING
       },
-      shared: {
-        type: Sequelize.BOOLEAN
-      },
       document: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
+        references:  {
+          model: "document",
+          key: "hash"
+        }
       },
       selectors: {
         type: Sequelize.JSONB
       },
-      references: {
-        type: Sequelize.INTEGER
+      deleted: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
       },
       createdAt: {
         allowNull: false,
@@ -35,6 +47,11 @@ module.exports = {
       },
       updatedAt: {
         allowNull: false,
+        type: Sequelize.DATE
+      },
+      deletedAt: {
+        allowNull: true,
+        defaultValue: null,
         type: Sequelize.DATE
       }
     });

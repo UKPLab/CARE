@@ -5,24 +5,24 @@
     </div>
     <div class="card-body">
       <div class="d-grid gap-2">
-        <blockquote v-if="annoData.comment.length > 0"
+        <blockquote v-if="annoData.text != null && annoData.text.length > 0"
                     class="blockquote card-text"
-                    id="comment"
+                    id="text"
                     v-on:click="scrollTo(annoData.id)">
-          {{ truncatedComment }}
+          {{ truncatedText }}
         </blockquote>
-        <div v-else class="blockquote card-text" id="comment">
+        <div v-else class="blockquote card-text" id="text">
           <span> - </span>
         </div>
-        <div id="text" v-if="!isSubmitted">
-          <textarea id="annoText"
+        <div id="comment" v-if="!isSubmitted">
+          <textarea id="annoComment"
                     class="form-control"
                     placeholder="Enter text..."
-                    v-model="annoText">
+                    v-model="annoComment">
           </textarea>
         </div>
-        <div id="text" v-else-if="annoData.text != null && annoData.text.length > 0" class="card-text">
-          {{ annoData.text }}
+        <div id="comment" v-else-if="annoData.comment != null && annoData.comment.text.length > 0" class="card-text">
+          {{ annoData.comment.text }}
         </div>
         <div id="tags" v-bind:uid="'tags'+annoData.id" v-bind:disabled="isSubmitted">
             <select class="form-select"
@@ -81,39 +81,37 @@
 
 <script>
 import Tags from "bootstrap5-tags/tags.js";
-import { mapActions } from 'vuex';
+import { mapActions, mapGetters } from 'vuex';
+import { Comment } from "../../../../data/comment.js";
 
 export default {
   name: "Annotation",
   props: ["annoData", "config", "scrollTo"],
   data: function() {
     return {
-      state:"CREATED"
     }
   },
   mounted() {
     const formElement = `#annotationTags-${this.annoData.id}`;
     Tags.init(formElement);
   },
-  watch: {
-    state(newS, oldS) {
-      console.log("Annotation " + this.annoData.id + " changing state:");
-      console.log("State change from " + oldS + " to " + newS);
-    }
-  },
   unmounted() {
     console.log("Unmounting " + this.annoData.id);
   },
   computed: {
     isSubmitted: function(){
-      return this.state === "SUBMITTED";
+      return this.annoData.state === "SUBMITTED";
     },
-    annoText: {
+    annoComment: {
       get() {
-        return this.annoData.text;
+        return this.annoData.hasComment() ? this.annoData.comment.text : "";
       },
       set(value) {
-        this.annoData.text = value;
+        if(!this.annoData.hasComment()){
+          this.annoData.comment = new Comment(null, value, this.annoData.id, null, this.$store.getters["auth/getUser"].id); //todo add user
+        } else {
+          this.annoData.comment.text = value;
+        }
       }
     },
     annoTags: {
@@ -124,9 +122,9 @@ export default {
         this.annoData.tags=value;
       }
     },
-    truncatedComment: function() {
+    truncatedText: function() {
       const thresh = 250;
-      const len = this.annoData.comment.length;
+      const len = this.annoData.text.length;
 
       if(len > thresh){
         const overflow = len - thresh - " ... ".length;
@@ -134,10 +132,9 @@ export default {
         const cutoff_l = center - Math.floor(overflow / 2);
         const cutoff_r = center + Math.floor(overflow / 2) + overflow % 2;
 
-        return this.annoData.comment.slice(0, cutoff_l) + " ... " + this.annoData.comment.slice(cutoff_r);
+        return this.annoData.text.slice(0, cutoff_l) + " ... " + this.annoData.text.slice(cutoff_r);
       } else {
-        console.log("No need to truncate");
-        return this.annoData.comment;
+        return this.annoData.text;
       }
     }
   },
@@ -145,11 +142,13 @@ export default {
      ...mapActions({
        deleteAnnotation: "anno/deleteAnnotation"
      }),
-     getTagInput() {
+    ...mapGetters({userData: 'auth/getUser'}),
+
+    getTagInput() {
       return document.querySelector(`div[uid=tags${this.annoData.id}] div input`);
      },
     submit() {
-      this.state = "SUBMITTED";
+      this.annoData.state = "SUBMITTED";
 
       const inElem = this.getTagInput();
       inElem.disabled = true;
@@ -159,17 +158,26 @@ export default {
         inElem.placeholder = "";
       }
       inElem.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
+
+      this.$socket.emit('updateAnnotation', {
+        "annotation_id": this.annoData.id,
+        "newComment": this.annoData.comment,
+        "newTags": this.annoData.tags
+      });
     },
     edit() {
-      this.state = "EDIT";
+      this.annoData.state = "EDIT";
 
       const inElem = this.getTagInput();
       inElem.disabled = false;
       inElem.placeholder = "Add tag...";
     },
     remove() {
-      this.state = "DELETED";
+      this.annoData.state = "DELETED";
       this.deleteAnnotation(this.annoData);
+      this.$socket.emit('deleteAnnotation', {
+        "id": this.annoData.id
+      });
     },
     respond() {
       console.log("A user tries to respond");
@@ -190,14 +198,14 @@ export default {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
 }
-#comment {
+#text {
   color: #4d4d4d;
   font-style: italic;
   font-size: small;
   cursor:pointer;
   display:block;
 }
-#comment:hover {
+#text:hover {
   color: #000000;
 }
 .card-footer {

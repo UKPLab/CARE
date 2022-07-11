@@ -10,8 +10,8 @@
 import { BIconPlusSquare } from 'bootstrap-icons-vue';
 import { TextRange } from "../../../assets/anchoring/text-range";
 import { describe } from "../../../assets/anchoring/anchoring"
-import {mapMutations} from "vuex";
-import {Annotation} from "../../../data/annotation.js";
+import {mapMutations, mapGetters} from "vuex";
+import { v4 } from 'uuid';
 
 export default {
   name: "Adder",
@@ -36,6 +36,7 @@ export default {
   },
   methods: {
     ...mapMutations({addAnnotation: "anno/ADD_ANNOTATION"}),
+    ...mapGetters({userData: 'auth/getUser'}),
 
     checkSelection(event) {
 
@@ -63,10 +64,14 @@ export default {
         selector: selectors,
       }));
 
+      const uid = this.userData().id;
       this.$socket.emit('addAnnotation',
           {
             "document_id": this.document_id,
-            "annotation": { target }
+            "annotation": { target },
+            "user": uid,
+            "comment": null,
+            "annotation_id": v4()
           });
 
       this.isVisible = false;
