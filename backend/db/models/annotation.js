@@ -14,13 +14,16 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   annotation.init({
+    hash: DataTypes.STRING,
     creator: DataTypes.STRING,
     text: DataTypes.STRING,
     tags: DataTypes.STRING,
-    shared: DataTypes.BOOLEAN,
     document: DataTypes.STRING,
     selectors: DataTypes.JSONB,
-    references: DataTypes.INTEGER
+    deleted: DataTypes.BOOLEAN,
+    deletedAt: DataTypes.DATE,
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'annotation',

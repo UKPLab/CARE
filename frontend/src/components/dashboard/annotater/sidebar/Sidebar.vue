@@ -38,12 +38,18 @@ export default {
       return this.sidebarShowing ? "show" : "collapsing"
     }
   },
+  mounted() {
+    this.load();
+  },
   methods: {
     ...mapMutations({
       toggleSidebar: "anno/TOGGLE_SIDEBAR",
       hover: "anno/HOVER",
       unhover: "anno/UNHOVER"
-    })
+    }),
+    load() {
+      this.$socket.emit("loadAnnotations", { id: this.document_id });
+    }
   }
 }
 </script>

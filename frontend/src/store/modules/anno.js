@@ -6,7 +6,7 @@ Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
 Source: -
 */
 
-import {Annotation} from '../../data/annotation.js';
+import {Annotation, createAnnotation} from '../../data/annotation.js';
 
 const getDefaultState = () => {
     return {
@@ -53,16 +53,60 @@ export default {
         SET_ANNOTATIONS: (state, annotations) => {
             state.annotations = annotations;
         },
+        SOCKET_loadAnnotations: (state, message) => {
+            const comments = message.comments;
+
+            const mapped = message.annotations.map(o => {
+                const anno =  new Annotation(
+                    o.annotation_id,
+                    o.document_id,
+                    o.text,
+                    null, //todo need to create anchor
+                    o.annotation,
+                    o.user
+                );
+                anno.state = "SUBMITTED";
+                anno.tags = o.tags;
+
+                console.log(comments);
+                console.log(anno);
+                console.log(o);
+
+                return anno;
+            });
+            state.annotations = mapped;
+        },
         SOCKET_newAnnotation: (state, message) => {
-            state.annotations.push(
-                new Annotation(
+            let anno = null;
+            if(message.annotation_id == null){
+                anno = createAnnotation(
                     message.document_id,
                     message.annotation.target[0].selector[1].exact,
                     message.annotation.target[0].selector[1].exact,
                     message.annotation,
-                    "username" //todo this.$store.getters["auth/getUser"]().user_name
-                )
-            )
+                    message.user);
+            } else {
+                anno = new Annotation(
+                    message.annotation_id,
+                    message.document_id,
+                    message.annotation.target[0].selector[1].exact,
+                    message.annotation.target[0].selector[1].exact,
+                    message.annotation,
+                    message.user
+                );
+            }
+
+            // TODO replace with comment logic later on
+            if(message.comment != null){
+                let comm;
+                if(message.comment.id ==  null){
+                    comm = createComment(message.comment.text, anno.id, null, anno.user);
+                } else {
+                    comm = new Comment(message.comment.id, message.comment.text, anno.id, null, anno.user);
+                }
+                anno.comment = comm;
+            }
+            state.annotations.push(anno);
         },
         // adds an annotation to the local storage
         ADD_ANNOTATION: (state, annotation) => {
@@ -110,7 +154,6 @@ export default {
     actions: {
         // loads the annotations for the given page
         async load({commit}) {
-            // todo
             commit('SET_ANNOTATIONS', []);
         },
         addAnnotation({commit}, annotation) {
