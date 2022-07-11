@@ -60,7 +60,7 @@ export default {
       // TODO its not the best solution to rerender everything, but it works
       // Optimization are for the future!
       if (this.renderTask && this.isRendered) {
-        this.destroyRenderTask(true);
+        this.destroyPage(true);
       }
     },
     render() {
@@ -117,12 +117,11 @@ export default {
 
       });
     },
-    destroyPage(pageNumber) {
+    destroyPage(reinit = false) {
       // PDFPageProxy#_destroy
       // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
-      this.$parent.$emit('destroy-page'); //TODO
-      //if (pageNumber) page._destroy();
-      this.destroyRenderTask();
+      this.$emit('destroyPage', {pageNumber: this.pageNumber, reinit: reinit});
+      this.destroyRenderTask(reinit);
     },
     destroyRenderTask(reinit = false) {
       if (!this.renderTask) return;
@@ -131,10 +130,13 @@ export default {
       this.renderTask.cancel();
       this.pdf.renderingDone.set(this.pageNumber, false);
       this.renderTask = undefined;
+
+      // Clean text-layer
       const textContainer = document.getElementById('text-layer-'+ this.pageNumber);
       while(textContainer.firstChild) {
         textContainer.removeChild(textContainer.firstChild);
       }
+
       if (reinit) {
         this.render();
       }

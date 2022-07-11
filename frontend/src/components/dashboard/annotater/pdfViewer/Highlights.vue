@@ -200,6 +200,10 @@ export default {
 
       svgHighlightLayer.append(...highlightRects);
     },
+    removeAllHighlights(root) {
+      const highlights = Array.from(root.querySelectorAll('highlight'));
+      this.removeHighlights(highlights);
+    },
     removeHighlights(highlights) {
       for (let h of highlights) {
         if (h.parentNode) {

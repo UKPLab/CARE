@@ -7,9 +7,10 @@
       class="scrolling-page"
       :pdf="pdf"
       @updateVisibility="updateVisibility"
+      @destroyPage="destroyPage"
     />
     <Adder :pdf="pdf" :document_id="document_id"></Adder>
-    <Highlights :document_id="document_id" />
+    <Highlights :document_id="document_id" ref="highlights" />
   </div>
 </template>
 
@@ -113,14 +114,17 @@ export default {
 
   },
   methods: {
-    updateVisibility(data) {
-      if (data.isVisible) {
+    updateVisibility(page) {
+      if (page.isVisible) {
         //TODO: also working to fetch further page on the fly, but can be optimized!
-        this.pdf.fetchPages(data.pageNumber);
+        this.pdf.fetchPages(page.pageNumber);
       }
     },
     fetchPages(currentPage) {
       this.pdf.fetchPages(currentPage);
+    },
+    destroyPage(page) {
+      this.$refs.highlights.removeAllHighlights(document.getElementById('text-layer-' + page.pageNumber));
     },
     ...mapMutations({
       toggleSidebar: "anno/TOGGLE_SIDEBAR"
@@ -133,9 +137,7 @@ export default {
         const rendered = this.pdf.renderingDone.get(pageIndex);
 
         if (rendered) {
-
             removePlaceholder(document.getElementById("page-container-" + (pageIndex + 1)));
-
         }
 
 
