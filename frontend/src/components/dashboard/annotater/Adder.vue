@@ -76,7 +76,6 @@ export default {
 
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
-
     },
     init() {
 

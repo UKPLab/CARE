@@ -5,6 +5,8 @@ const Annotation  = require("../models/annotation.js")(db.sequelize, DataTypes);
 const Comment  = require("../models/comment.js")(db.sequelize, DataTypes);
 
 exports.add = async function add(annotation, comment=null) {
+    console.log("adding anno");
+    console.log(annotation);
     const anno = await Annotation.create({
         hash: annotation.annotation_id,
         creator: annotation.user,
@@ -52,11 +54,6 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
     if(newTags != null){
         newValues.tags = newTags.toString()
     }
-
-    console.log("updated values");
-    console.log(newValues);
-    console.log(annoId);
-    console.log(updateAnno);
 
     if(updateAnno){
         await Annotation.update(newValues, {
@@ -112,11 +109,15 @@ exports.loadByDocument = async function load(docId) {
         }
     });
 
-    const comments = annotations.map(async a => {
-        return await Comment.findAll({
-            referenceAnnotation: a.hash
+    let comments = Object();
+
+    for(const a of annotations) {
+        comments[a.hash] = await Comment.findAll({
+            where: {
+                referenceAnnotation: a.hash
+            }
         });
-    });
+    }
 
     return [annotations, comments];
 }
@@ -133,11 +134,13 @@ exports.toFrontendRepresentationAnno = function toFrontend(annotation) {
 }
 
 exports.toFrontendRepresentationComm = function toFrontend(comment) {
-    return {
-        comment_id: comment.hash,
-        referenced_annotation: comment.referenceAnnotation,
-        text: comment.text,
-        tags: comment.tags != null ? annotation.tags.split(",") : null,
-        user: comment.creator
-    }
+    return comment.map(c => {
+        return {
+            comment_id: c.hash,
+            referenced_annotation: c.referenceAnnotation,
+            text: c.text,
+            tags: c.tags != null ? c.tags.split(",") : null,
+            user: c.creator
+        };
+    });
 }
