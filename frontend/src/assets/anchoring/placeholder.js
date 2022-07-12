@@ -26,7 +26,7 @@ export function createPlaceholder(container) {
   }
   placeholder = document.createElement('span');
   placeholder.classList.add('annotator-placeholder');
-  placeholder.textContent = 'Loading annotations...';
+  //placeholder.textContent = 'Loading annotations...';
   container.appendChild(placeholder);
   return placeholder;
 }
