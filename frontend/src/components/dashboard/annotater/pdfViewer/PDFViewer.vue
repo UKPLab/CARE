@@ -65,15 +65,16 @@ export default {
     },
     annotations (newVal, oldVal) {
       // handle only newly added anchors
-      newVal.filter(anchor => !oldVal.includes(anchor))
-          .map(this.handle_anchor)
+      if (this.pdf.pageCount > 0) {
+        newVal.filter(anchor => !oldVal.includes(anchor))
+            .map(this.handle_anchor)
+      }
     },
     scrollTo () {
       if (this.scrollTo !== null) {
-        console.log(this.scrollTo);
         this.scrollTo = null;
       }
-    }
+    },
   },
   computed: {
     pagesLength() {
@@ -105,12 +106,12 @@ export default {
     this.pdfContainer = document.getElementById('pdfContainer') ?? document.body;
 
     this.observer = new MutationObserver(debounce(() => this._update(), 100));
-          this.observer.observe(this.pdfContainer, {
-            attributes: true,
-            attributeFilter: ['data-loaded'],
-            childList: true,
-            subtree: true,
-          });
+    this.observer.observe(this.pdfContainer, {
+      attributes: true,
+      //attributeFilter: ['data-loaded'],
+      childList: true,
+      subtree: true,
+    });
 
   },
   methods: {
@@ -133,16 +134,12 @@ export default {
       const refreshAnnotations = /** @type {AnnotationData[]} */ ([]);
 
       for (let pageIndex = 0; pageIndex < this.pdf.pageCount; pageIndex++) {
-
         const rendered = this.pdf.renderingDone.get(pageIndex);
 
         if (rendered) {
             removePlaceholder(document.getElementById("page-container-" + (pageIndex + 1)));
         }
-
-
       }
-
 
       // Find all the anchors that have been invalidated by page state changes.
       for (let anchor of this.anchors) {
@@ -249,7 +246,7 @@ export default {
             let text = '';
 
             for (let i = 0; i < this.pdf.pageCount; i++) {
-              text = this.pdf.pageTextCache.get(i);
+              text = await this.pdf.getPageTextContent(i);
               if (text) {
                 pageStartOffset = pageEndOffset;
                 pageEndOffset += text.length;
@@ -299,9 +296,11 @@ export default {
 
             let bestMatch;
             for (let page of pageIndexes) {
-              const text = this.pdf.pageTextCache.get(page);
+              const text = await this.pdf.getPageTextContent(page);
+
               if (!text) continue;
               const [strippedText, offsets] = stripSpaces(text);
+
 
               // Determine expected offset of quote in current page based on position hint.
               let strippedHint;
@@ -460,8 +459,6 @@ export default {
 
             return anchorQuote(quote, position?.start);
           }
-
-
 
           const range = await PDFanchor(
             document.body,

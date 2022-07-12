@@ -240,29 +240,10 @@ export default {
       }
       let offset = 0;
       for (let i = 0; i < pageIndex; i++) {
-        const text = await this.getPageTextContent(i);
+        const text = await this.pdf.getPageTextContent(i);
         offset += text.length;
       }
       return offset;
-    },
-    async getPageTextContent(pageIndex) {
-      // If we already have or are fetching the text for this page, return the
-      // existing result.
-      const cachedText = this.pdf.pageTextCache.get(pageIndex);
-      if (cachedText) {
-        return cachedText;
-      } else {
-        // we have to load the page first!
-        const textContent = await this.pdf.getPage(pageIndex + 1).then((page) => {
-          return page.getTextContent({normalizeWhitespace: true})
-        });
-        const text = textContent.items.map(it => it.str).join('');
-
-        this.pdf.pageTextCache.set(pageIndex, text);
-
-        return text
-      }
-
     },
 
   }

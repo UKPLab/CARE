@@ -54,4 +54,22 @@ export class PDF {
       return Promise.all(allPages);
     }
 
+    async getPageTextContent(pageIndex) {
+      const cachedText = this.pageTextCache.get(pageIndex);
+      if (cachedText) {
+        return cachedText;
+      } else {
+        // we have to load the page first!
+        const textContent = await this.getPage(pageIndex + 1).then((page) => {
+          return page.getTextContent({normalizeWhitespace: true})
+        });
+        const text = textContent.items.map(it => it.str).join('');
+
+        this.pageTextCache.set(pageIndex, text);
+
+        return text
+      }
+
+    }
+
 }

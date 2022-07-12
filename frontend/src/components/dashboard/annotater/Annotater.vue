@@ -42,6 +42,9 @@ export default {
     return {
     }
   },
+  computed: {
+    anchors() { return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id)) },
+  },
   methods: {
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
@@ -104,16 +107,19 @@ export default {
       do {
         // nb. Re-anchoring might result in a different anchor object for the
         // same annotation.
-        anchor = this.annotator.anchors.find(a => a.annotation === annotation);
+        anchor = this.anchors.find(a => a.annotation === annotation);
         if (!anchor || this.anchorIsInPlaceholder(anchor)) {
           anchor = null;
 
           // If no anchor was found, wait a bit longer and check again to see if
           // re-anchoring completed.
-          await delay(20);
+          await this.delay(20);
         }
       } while (!anchor && Date.now() - start < maxWait);
       return anchor ?? null;
+    },
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
   }
 }

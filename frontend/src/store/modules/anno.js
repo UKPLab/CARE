@@ -69,8 +69,8 @@ export default {
                 anno.state = "SUBMITTED";
                 anno.tags = o.tags;
 
-                console.log(o.annotation_id in comments);
-                console.log(comments);
+                //console.log(o.annotation_id in comments);
+                //console.log(comments);
 
                 if(o.annotation_id in comments){
                     //for now always just 1 comment
