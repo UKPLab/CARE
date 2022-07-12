@@ -10,7 +10,7 @@ exports = module.exports = function(io) {
                     uid: socket.request.session.passport.user.uid,
                     annotation: data.annotation,
                     document_id: data.document_id,
-                    id: data.annotation_id
+                    annotation_id: data.annotation_id
                 }
             );
         });
@@ -30,8 +30,14 @@ exports = module.exports = function(io) {
 
         socket.on("loadAnnotations", async (data) => {
             const [annos, comments] = await loadByDocument(data.id);
+
             const mappedAnnos = annos.map(x => toFrontendRepresentationAnno(x));
-            const mappedComments = comments.map(x => toFrontendRepresentationComm(x))
+            let mappedComments = Object();
+            for(const c in comments){
+                if(comments[c].length > 0) {
+                    mappedComments[c] = toFrontendRepresentationComm(comments[c]);
+                }
+            }
 
             socket.emit("loadAnnotations", { "annotations": mappedAnnos, "comments": mappedComments });
         });

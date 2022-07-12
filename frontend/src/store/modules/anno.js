@@ -7,6 +7,7 @@ Source: -
 */
 
 import {Annotation, createAnnotation} from '../../data/annotation.js';
+import {Comment} from '../../data/comment.js';
 
 const getDefaultState = () => {
     return {
@@ -68,9 +69,21 @@ export default {
                 anno.state = "SUBMITTED";
                 anno.tags = o.tags;
 
+                console.log(o.annotation_id in comments);
                 console.log(comments);
-                console.log(anno);
-                console.log(o);
+
+                if(o.annotation_id in comments){
+                    //for now always just 1 comment
+                    const c = comments[o.annotation_id][0];
+                    const cMapped = new Comment(
+                        c.comment_id,
+                        c.text,
+                        c.reference_annotation,
+                        null,
+                        c.user
+                    );
+                    anno.comment = cMapped;
+                }
 
                 return anno;
             });
