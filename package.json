@@ -23,8 +23,6 @@
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
     "scroll-into-view": "^1.16.1",
-    "sequelize": "^6.21.3",
-    "sequelize-cli": "^6.4.1",
     "socket.io-client": "^4.5.1",
     "uuid": "^8.3.2",
     "vite": "^2.9.5",

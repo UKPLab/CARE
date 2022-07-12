@@ -94,6 +94,7 @@ export default {
       loadingTask.promise
           .then((pdf) => {
             this.pdf.setPDF(pdf);
+            this.anchors.forEach(anchor => this.handle_anchor(anchor));
           })
           .catch(response => {
             console.log("Error loading PDF: " + response);
@@ -142,9 +143,9 @@ export default {
       for (let pageIndex = 0; pageIndex < this.pdf.pageCount; pageIndex++) {
         const rendered = this.pdf.renderingDone.get(pageIndex);
 
-        if (rendered) {
+        /*if (rendered) {
             removePlaceholder(document.getElementById("page-container-" + (pageIndex + 1)));
-        }
+        }*/
       }
 
       // Find all the anchors that have been invalidated by page state changes.
@@ -205,9 +206,7 @@ export default {
 
           const anchorByPosition = async (pageIndex, start, end) => {
 
-            if  (
-                this.pdf.renderingDone.get(pageIndex + 1)
-            ) {
+            if  (this.pdf.renderingDone.get(pageIndex + 1)) {
               const root = document.getElementById('text-layer-' + (pageIndex + 1));
 
               const startPos = new TextPosition(root, start);
@@ -332,6 +331,8 @@ export default {
                 suffix: strippedSuffix,
                 hint: strippedHint,
               });
+
+              console.log(match);
 
               if (!match) {
                 continue;
@@ -467,7 +468,7 @@ export default {
           }
 
           const range = await PDFanchor(
-            document.body,
+            document.getElementById('pdfContainer'),
             target.selector
           );
 
