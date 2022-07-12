@@ -56,7 +56,7 @@ export default {
       this.selectedRanges = [];
 
       const rangeSelectors = await Promise.all(
-          ranges.map(range => this.describe(document.body, range))
+          ranges.map(range => this.describe(document.getElementById('pdfContainer'), range))
       );
       const target = rangeSelectors.map(selectors => ({
         // In the Hypothesis API the field containing the selectors is called
@@ -234,7 +234,7 @@ export default {
       return index;
     },
     async getPageOffset(pageIndex) {
-      if (pageIndex >= this.pdf.pageCount) {
+      if (pageIndex > this.pdf.pageCount) {
         /* istanbul ignore next - This should never be triggered */
         throw new Error('Invalid page index');
       }

@@ -58,7 +58,7 @@ export default {
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
-        if (this.isVisible) {
+        if (this.isVisible || !this.isVisible) {
           // stop rendering and wait for rerendering
           if (this.renderTask) {
             this.destroyRenderTask();
@@ -75,8 +75,8 @@ export default {
       this.$emit('updateVisibility', {pageNumber: this.pageNumber, isVisible: isVisible});
     },
     resizeHandler(event) {
-      if(this.isRendered) this.destroyPage();
-      this.init()
+      //if(this.isRendered) this.destroyPage();
+      //this.init()
     },
     renderPage(page) {
       if (this.renderTask) return;
@@ -136,6 +136,7 @@ export default {
     },
   },
   mounted() {
+    this.init()
     this.resizeOb = new ResizeObserver(debounce(this.resizeHandler, 1000));
     this.resizeOb.observe(document.getElementById('canvas-wrapper-' + this.pageNumber));
   },

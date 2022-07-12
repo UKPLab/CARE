@@ -36,6 +36,7 @@ export default {
 
       const highlight_it = anchor => {
         const range = resolveAnchor(anchor);
+
         if (!range) {
           return;
         }
@@ -43,6 +44,7 @@ export default {
         const highlights = /** @type {AnnotationHighlight[]} */ (
           this.highlightRange(range)
         );
+
         highlights.forEach(h => {
           h._annotation = anchor.annotation;
         });
