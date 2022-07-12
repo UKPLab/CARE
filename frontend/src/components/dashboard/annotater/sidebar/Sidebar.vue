@@ -1,6 +1,5 @@
 <template>
   <div id="sidebar-container" class="collapse collapse-horizontal border-end d-flex flex-column vh-100" v-bind:class="showing">
-    <TopBar id="topbar" @closeSidebar="toggleSidebar"></TopBar>
     <div id="sidepane">
         <div v-if="annotations.length === 0">
           <p class="text-center"> No annotations </p>
@@ -20,12 +19,11 @@
 
 <script>
 import {mapMutations} from "vuex";
-import TopBar from "./TopBar.vue"
 import Annotation from "./Annotation.vue";
 
 export default {
   name: "Sidebar",
-  components: {Annotation, TopBar},
+  components: {Annotation},
   props: ['document_id', 'scrollTo', 'config'],
   data: function() {
     return {
@@ -59,13 +57,9 @@ export default {
   max-width:300px;
   height:100%;
 }
-#topbar {
-  width:300px;
-}
 #sidepane {
   padding-top:5px;
   background-color: #bfbfbf;
-  overflow:scroll;
   width:100%;
   height:100%;
 }

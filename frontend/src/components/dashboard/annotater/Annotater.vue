@@ -1,15 +1,19 @@
 <template>
-  <b-container fluid id="annotator">
-    <b-row flex-nowrap align-v="stretch">
-      <b-col id="docview">
-        <PDFViewer :document_id="pdf_path" ref="pdfViewer" ></PDFViewer>
-        <Adder :document_id="pdf_path"></Adder>
-      </b-col>
-      <b-col id="sidebar" cols="sm-auto">
-        <Sidebar :document_id="pdf_path" :scrollTo="scrollTo" />
-      </b-col>
-    </b-row>
-  </b-container>
+  <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
+    <div class="row flex-shrink-0">
+      <div class="col">
+        <TopBar id="topbar"></TopBar>
+      </div>
+    </div>
+    <div class="row flex-grow-1 overflow-hidden" >
+      <div class="col border mh-100 top-padding" style="overflow-y: scroll;" id="viewerContainer" >
+        <PDFViewer  :document_id="document_id" ref="pdfViewer" ></PDFViewer>
+      </div>
+    <div class="col border mh-100  top-padding col-sm-2 g-0" style="overflow-y: scroll;">
+      <Sidebar :document_id="document_id" :scrollTo="scrollTo" />
+     </div>
+    </div>
+  </div>
 
 </template>
 
@@ -22,8 +26,8 @@ currently consists of the PDF viewer.
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import PDFViewer from "./PDFViewer.vue";
-import Adder from "./Adder.vue";
+import PDFViewer from "./pdfViewer/PDFViewer.vue";
+import TopBar from "./topbar/TopBar.vue"
 import Sidebar from "./sidebar/Sidebar.vue";
 import {offsetRelativeTo, scrollElement} from "../../../assets/anchoring/scroll";
 import {isInPlaceholder} from "../../../assets/anchoring/placeholder";
@@ -31,9 +35,9 @@ import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
 
 
 export default {
-  name: "Annotater",
-  components: {Adder, PDFViewer, Sidebar},
-  props: ['pdf_path'],
+  name: "Annotater2",
+  components: {PDFViewer, Sidebar, TopBar},
+  props: ['document_id'],
   data() {
     return {
     }
@@ -49,43 +53,37 @@ export default {
           return;
         }
 
-        // Emit a custom event that the host page can respond to. This is useful,
-        // for example, if the highlighted content is contained in a collapsible
-        // section of the page that needs to be un-collapsed.
-        const event = new CustomEvent('scrolltorange', {
-          bubbles: true,
-          cancelable: true,
-          detail: range,
-        });
-        const defaultNotPrevented = this.$refs.pdfViewer.pdfContainer.dispatchEvent(event);
+        const inPlaceholder = this.anchorIsInPlaceholder(anchor);
+        let offset = this._anchorOffset(anchor);
+        if (offset === null) {
+          return;
+        }
 
-        if (defaultNotPrevented) {
-          const inPlaceholder = this.anchorIsInPlaceholder(anchor);
+        const scrollContainer = document.getElementById('viewerContainer');
+        // Correct offset since we have a fixed top
+        offset -= parseFloat(window.getComputedStyle(scrollContainer, null).getPropertyValue('padding-top'), 10);
+
+
+        // nb. We only compute the scroll offset once at the start of scrolling.
+        // This is important as the highlight may be removed from the document during
+        // the scroll due to a page transitioning from rendered <-> un-rendered.
+        await scrollElement(scrollContainer, offset);
+
+        if (inPlaceholder) {
+          const anchor = await this._waitForAnnotationToBeAnchored(
+              annotation,
+              3000
+          );
+          if (!anchor) {
+            return;
+          }
           const offset = this._anchorOffset(anchor);
           if (offset === null) {
             return;
           }
-
-          // nb. We only compute the scroll offset once at the start of scrolling.
-          // This is important as the highlight may be removed from the document during
-          // the scroll due to a page transitioning from rendered <-> un-rendered.
-          await scrollElement(document.querySelector('#viewerContainer'), offset);
-
-          if (inPlaceholder) {
-            const anchor = await this._waitForAnnotationToBeAnchored(
-                annotation,
-                3000
-            );
-            if (!anchor) {
-              return;
-            }
-            const offset = this._anchorOffset(anchor);
-            if (offset === null) {
-              return;
-            }
-            await scrollElement(document.querySelector('#viewerContainer'), offset);
-          }
+          await scrollElement(scrollContainer, offset);
         }
+
       }
     },
     anchorIsInPlaceholder(anchor) {
@@ -122,15 +120,15 @@ export default {
 </script>
 
 <style scoped>
-#annotator {
-  height:100vh;
-}
-#docview {
-  height:100vh;
+.top-padding {
+  padding-top: 52.5px;
 }
 #sidebar {
-  height:100vh;
+  position: relative;
+  overflow-y: scroll;
   padding: 0;
   max-width: 300px;
+  min-width: 300px;
 }
+
 </style>

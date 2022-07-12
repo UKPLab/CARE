@@ -8,9 +8,12 @@ default: help
 .PHONY: help
 help:
 	@echo "make help              Show this help message"
+	@echo "make dev               Run the app in the development environment"
+	@echo "make dev-build         Run the app with a build version of the frontend"
+	@echo "make dev-backend       Run only the backend with already builded frontend"
 	@echo "make init              Initializes command"
-	@echo "make dev               Run the app in the development server"
 	@echo "make build             Create a production build of the client"
+	@echo "make build-frontend    Only build frontend for backend-dev development"
 	@echo "make docker            Start docker images"
 	@echo "make clean             Delete development files"
 	@echo "make nlp_dev           Run the flask app. Requires you to run make services in another terminal first"
@@ -18,11 +21,19 @@ help:
 
 .PHONY: dev
 dev: node_modules/.uptodate backend/node_modules/.uptodate
-	npm run frontend-dev-build
+	npm run frontend-dev & cd backend && npm run backend-dev
+
+.PHONY: dev-build
+dev-build: backend/node_modules/.uptodate build-frontend
 	cd backend && npm run backend-dev
 
-dev2: node_modules/.uptodate backend/node_modules/.uptodate
-	npm run frontend-dev
+.PHONY: dev-backend
+dev-backend: backend/node_modules/.uptodate
+	cd backend && npm run backend-dev
+
+.PHONY: build-frontend
+build-frontend: node_modules/.uptodate
+	npm run frontend-dev-build
 
 .PHONY: build
 build:
@@ -45,14 +56,6 @@ clean:
 init: backend/node_modules/.uptodate
 	cd backend/db && npx sequelize-cli db:create || echo "IGNORING ERROR"
 	cd backend/db && npx sequelize-cli db:migrate
-
-.PHONY: init_old
-init_old: node_modules/.uptodate backend/node_modules/.uptodate
-	cd backend && npm run init-db -- \
-				   --admin_name ${H_SERVER_ADMIN_USER} \
-				   --admin_email ${H_SERVER_ADMIN_MAIL} \
-				   --admin_pwd ${H_SERVER_ADMIN_PASSWORD}
-
 
 .PHONY: nlp_dev
 nlp_dev:
