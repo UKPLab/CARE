@@ -18,11 +18,8 @@
 </template>
 
 <script>
-export const PIXEL_RATIO = window.devicePixelRatio || 1;
-export const VIEWPORT_RATIO = 0.98;
 import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
 import { ObserveVisibility } from 'vue3-observe-visibility'
-import throttle from 'lodash/throttle';
 import debounce from 'lodash.debounce';
 
 export default {
@@ -44,44 +41,49 @@ export default {
       renderTask: undefined,
       isVisible: false,
       resizeOb: undefined,
-      isRendered: true
+      isRendered: false,
+      scale: null,
     };
   },
   methods: {
+    init() {
+      this.pdf.getPage(this.pageNumber).then((page) => {
+        const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber);
+        const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
+
+        this.scale = wrapper.getBoundingClientRect().width /
+            page.getViewport({scale: 1.0}).width;
+
+        const viewport = page.getViewport({scale: this.scale});
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        if (this.isVisible) {
+          // stop rendering and wait for rerendering
+          if (this.renderTask) {
+            this.destroyRenderTask();
+          }
+          this.renderPage(page);
+        }
+      });
+    },
     visibilityChanged(isVisible, entry) {
       this.isVisible = isVisible;
-      if (isVisible) {
-        if (this.renderTask) return;
-        this.render();
+      if (this.isVisible && !this.isRendered) {
+        this.init();
       }
       this.$emit('updateVisibility', {pageNumber: this.pageNumber, isVisible: isVisible});
     },
     resizeHandler(event) {
-      // TODO its not the best solution to rerender everything, but it works
-      // Optimization are for the future!
-      if (this.renderTask && this.isRendered) {
-        this.destroyPage(true);
-      }
-    },
-    render() {
-      this.pdf.getPage(this.pageNumber).then((page) => {
-          this.renderPage(page);
-        });
+      if(this.isRendered) this.destroyPage();
+      this.init()
     },
     renderPage(page) {
       if (this.renderTask) return;
 
-      const container = document.getElementById('page-container-' + page.pageNumber);
-      const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber);
       const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
       const context = canvas.getContext('2d');
-
-      const scale = wrapper.getBoundingClientRect().width /
-          page.getViewport({scale: 1.0}).width;
-
-      const viewport = page.getViewport({scale: scale});
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
+      const viewport = page.getViewport({scale: this.scale});
 
       let renderContext = {
         canvasContext: context,
@@ -91,12 +93,12 @@ export default {
       this.renderTask = page.render(renderContext);
 
       this.renderTask.promise.then(() => {
-
         return page.getTextContent();
       }).then((textContent) => {
 
         const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber).getBoundingClientRect();
         const text_layer = document.getElementById('text-layer-'+ page.pageNumber);
+
         text_layer.style.height = canvas_offset.height + 'px';
         text_layer.style.width = canvas_offset.width + 'px';
 
@@ -117,29 +119,20 @@ export default {
 
       });
     },
-    destroyPage(reinit = false) {
+    destroyPage() {
       // PDFPageProxy#_destroy
       // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
-      this.$emit('destroyPage', {pageNumber: this.pageNumber, reinit: reinit});
-      this.destroyRenderTask(reinit);
+      this.$emit('destroyPage', {pageNumber: this.pageNumber});
+      this.destroyRenderTask();
     },
-    destroyRenderTask(reinit = false) {
+    destroyRenderTask() {
       if (!this.renderTask) return;
       // RenderTask#cancel
       // https://mozilla.github.io/pdf.js/api/draft/RenderTask.html
       this.renderTask.cancel();
+      this.isRendered = false;
       this.pdf.renderingDone.set(this.pageNumber, false);
       this.renderTask = undefined;
-
-      // Clean text-layer
-      const textContainer = document.getElementById('text-layer-'+ this.pageNumber);
-      while(textContainer.firstChild) {
-        textContainer.removeChild(textContainer.firstChild);
-      }
-
-      if (reinit) {
-        this.render();
-      }
     },
   },
   mounted() {
@@ -157,5 +150,6 @@ export default {
 <style>
 .pageContainer {
   position:relative;
+  border-bottom-style:solid;
 }
 </style>

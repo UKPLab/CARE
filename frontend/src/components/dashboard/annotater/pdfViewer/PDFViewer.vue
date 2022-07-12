@@ -126,6 +126,12 @@ export default {
     },
     destroyPage(page) {
       this.$refs.highlights.removeAllHighlights(document.getElementById('text-layer-' + page.pageNumber));
+      const text_layer = document.getElementById('text-layer-'+ page.pageNumber);
+
+      // clean text layer
+      while(text_layer.firstChild) {
+        text_layer.removeChild(text_layer.firstChild);
+      }
     },
     ...mapMutations({
       toggleSidebar: "anno/TOGGLE_SIDEBAR"
