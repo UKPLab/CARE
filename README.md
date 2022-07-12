@@ -31,6 +31,11 @@ make init
 ```
 make dev
 ```
+Note: This is the easiest way for development at the frontend with support by vite, where updates will pushed immediately to the website on any change. 
+If you want to build the frontend first, you have to `make dev-build`. 
+If you want to only restart the backend for development and use the already builded version of the frontend, you can use `make dev-backend`, 
+but then you have to make sure you build the frontend first with `make build-frontend`.
+
 6. Visit localhost:3001 in your browser. You should see a login page. Login via guest and access the default document 
    to start annotating.
 
@@ -105,11 +110,6 @@ __Remark__: You can use either the [PyCharm Plugin](https://plugins.jetbrains.co
 
 __Note:__ If you change anything on the structure, also update the architecture files!
 
-### Architecture of the Content Server
-
-For an overview of the complete architecture, see ./docs/architecture.drawio\
-
-
 ![architecture_content_server](docs/architecture.png)
 
 ### Architecture of the NLP Server
@@ -142,10 +142,16 @@ See also the architecture overview for further information how the frameworks in
   - [Vue Router](https://router.vuejs.org/) - Official Router for Vue.js
   - [Vue 3 - socket.io](https://www.npmjs.com/package/vue-3-socket.io) - Socket.io Client for Vue3
   - [Vue 3 - bootstrap](https://www.npmjs.com/package/bootstrap-vue-3) - Bootstrap for Vue 3
+- [PDFjs](https://mozilla.github.io/pdf.js) - to display the PDFs
+- [Bootstrap 5](https://getbootstrap.com/) - Responsive frontend toolkit
   
 ### Backend
-__Content Server__:
-  - [PDFjs](https://mozilla.github.io/pdf.js) - to display the PDFs
+
+- [Sequelize](https://sequelize.org/) - Database Management System
+- [PostgreSQL](https://www.postgresql.org/) - Used Database
+- [Passport](https://www.passportjs.org/) - Login Management
+- [Express](https://expressjs.com/de/) - Webserver
+- [Socket.IO](https://socket.io/) - Bidirectional and low-latency websocket connection
 
 __NLP Server__:
 - [Grobid](https://github.com/kermitt2/grobid) for document parsing in the NLP server
