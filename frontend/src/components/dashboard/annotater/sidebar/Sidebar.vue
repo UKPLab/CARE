@@ -9,7 +9,7 @@
         <li v-for="anno in annotations" class="list-group-i"
             :key="anno.id"
             :ref="anno.id"
-            v-bind:id="anno.id"
+            v-bind:id="'anno-' + anno.id"
             v-on:mouseover='hover(anno.id)'
             v-on:mouseleave="unhover(anno.id)">
           <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :scrollTo="scrollTo" @focus="focusAnnotation"></Annotation>
@@ -22,6 +22,7 @@
 <script>
 import {mapMutations} from "vuex";
 import Annotation from "./Annotation.vue";
+import {scrollElement} from "../../../../assets/anchoring/scroll";
 
 export default {
   name: "Sidebar",
@@ -33,24 +34,15 @@ export default {
   },
   computed: {
     sidebarShowing () { return this.$store.getters['anno/isSidebarShowing'] },
-    annotations() { return this.$store.getters['anno/getAnnotations'](this.document_id).sort((a, b) => {
-        if(a.orphaned){
-            return -1;
-        }
-        if(b.orphaned){
-            return 1;
-        }
-        const startA = a.annotationData.target[0].selector[0].start;
-        const startB = b.annotationData.target[0].selector[0].start;
-
-        return startA-startB;
-     });
-    },
+    annotations() { return this.$store.getters['anno/getAnnotations'](this.document_id) },
     showing: function() {
       return this.sidebarShowing ? "show" : "collapsing"
     }
   },
   mounted() {
+    this.eventBus.on('sidebarScroll', (anno_id) => {
+      this.sidebarScrollTo(anno_id);
+    })
     this.load();
   },
   methods: {
@@ -62,8 +54,9 @@ export default {
     load() {
       this.$socket.emit("loadAnnotations", { id: this.document_id });
     },
-    focusAnnotation(annotation_id){
-      this.$refs[annotation_id][0].scrollIntoView();
+    async sidebarScrollTo(annotationId) {
+      const scrollContainer = document.getElementById('sidebarContainer');
+      await scrollElement(scrollContainer, document.getElementById('anno-' + annotationId).offsetTop - 52.5);
     }
   }
 }
