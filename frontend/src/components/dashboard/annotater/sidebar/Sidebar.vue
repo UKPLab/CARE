@@ -8,10 +8,11 @@
       <ul v-else id="anno-list" class="list-group">
         <li v-for="anno in annotations" class="list-group-i"
             :key="anno.id"
+            :ref="anno.id"
             v-bind:id="anno.id"
             v-on:mouseover='hover(anno.id)'
             v-on:mouseleave="unhover(anno.id)">
-          <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :scrollTo="scrollTo"></Annotation>
+          <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :scrollTo="scrollTo" @focus="focusAnnotation"></Annotation>
         </li>
       </ul>
     </div>
@@ -32,7 +33,19 @@ export default {
   },
   computed: {
     sidebarShowing () { return this.$store.getters['anno/isSidebarShowing'] },
-    annotations() { return this.$store.getters['anno/getAnnotations'](this.document_id) },
+    annotations() { return this.$store.getters['anno/getAnnotations'](this.document_id).sort((a, b) => {
+        if(a.orphaned){
+            return -1;
+        }
+        if(b.orphaned){
+            return 1;
+        }
+        const startA = a.annotationData.target[0].selector[0].start;
+        const startB = b.annotationData.target[0].selector[0].start;
+
+        return startA-startB;
+     });
+    },
     showing: function() {
       return this.sidebarShowing ? "show" : "collapsing"
     }
@@ -48,6 +61,9 @@ export default {
     }),
     load() {
       this.$socket.emit("loadAnnotations", { id: this.document_id });
+    },
+    focusAnnotation(annotation_id){
+      this.$refs[annotation_id][0].scrollIntoView();
     }
   }
 }
