@@ -177,8 +177,6 @@ export default {
       const inElem = this.getTagInput();
       inElem.disabled = false;
       inElem.placeholder = "Add tag...";
-
-
     },
     submit() {
       this.annoData.state = "SUBMITTED";
@@ -188,7 +186,7 @@ export default {
       this.$socket.emit('updateAnnotation', {
         "annotation_id": this.annoData.id,
         "newComment": this.annoData.comment,
-        "newTags": this.annoData.tags
+        "newTags": this.annoData.tags,
       });
     },
     edit() {
