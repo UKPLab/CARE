@@ -6,6 +6,7 @@ files/*.pdf
 # backend
 backend/sessions
 backend/node_modules
+backend/logs
 
 # ignore files of hypothesis submodules
 frameworks/hypothesis/

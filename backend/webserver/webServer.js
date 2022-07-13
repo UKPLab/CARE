@@ -15,7 +15,6 @@ Source: --
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-const mustacheExpress = require('mustache-express');
 
 const {Server} = require("socket.io");
 const {createServer, useSsl} = require('./createServer');
@@ -30,6 +29,12 @@ const bodyParser = require('body-parser');
 const BUILD_PATH = `${__dirname}/../../dist/`;
 const port = process.env.CONTENT_SERVER_PORT || 3001;
 
+// define logger
+// check logging dir exists
+if (!fs.existsSync(process.env.LOGGING_PATH)){
+  fs.mkdirSync(process.env.LOGGING_PATH, { recursive: true });
+}
+const logger = require("../utils/logger.js")( "webServer");
 
 // routes
 const routes = [
@@ -47,10 +52,12 @@ const sockets = [
  *
  */
 function webServer(config) {
+    logger.debug("Start Webserver...")
     const app = express()
 
     // enable CORS in Dev Mode
     if (process.env.BACKEND_ENABLE_CORS === 'true') {
+        logger.debug("Use CORS Restriction with origin: http://localhost:3000");
         app.use(cors({origin: 'http://localhost:3000', credentials: true}));
     }
 
@@ -108,6 +115,7 @@ function webServer(config) {
     io.on("connection", (socket) => {
         // Check if session exists, otherwise send logout and disconnect
         if (!socket.request.session.passport) {
+            logger.warn("Session in websocket not available! Send logout...");
             socket.emit("logout"); //force logout on client side
             socket.disconnect();
         }
@@ -117,9 +125,11 @@ function webServer(config) {
     // serve server on port
     httpServer.listen(config.port, () => {
         const scheme = useSsl ? 'https' : 'http';
-        console.log(`Web Server started at ${scheme}://localhost:${config.port}/`)
+        logger.info(`Web Server started at ${scheme}://localhost:${config.port}/`)
     });
 }
+
+
 
 
 webServer({port: port});
