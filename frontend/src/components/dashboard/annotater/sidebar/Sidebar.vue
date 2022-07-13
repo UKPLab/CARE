@@ -22,6 +22,7 @@
 <script>
 import {mapMutations} from "vuex";
 import Annotation from "./Annotation.vue";
+import {scrollElement} from "../../../../assets/anchoring/scroll";
 
 export default {
   name: "Sidebar",
@@ -39,6 +40,9 @@ export default {
     }
   },
   mounted() {
+    this.eventBus.on('sidebarScroll', (anno_id) => {
+      this.sidebarScrollTo(anno_id);
+    })
     this.load();
   },
   methods: {
@@ -49,6 +53,10 @@ export default {
     }),
     load() {
       this.$socket.emit("loadAnnotations", { id: this.document_id });
+    },
+    async sidebarScrollTo(annotationId) {
+      const scrollContainer = document.getElementById('sidebarContainer');
+      await scrollElement(scrollContainer, document.getElementById('anno-' + annotationId).offsetTop - 52.5);
     }
   }
 }
