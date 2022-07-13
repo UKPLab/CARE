@@ -18,6 +18,7 @@ import SocketIO from 'socket.io-client';
 import VueSocketIO from 'vue-3-socket.io';
 import store from "./store";
 import router from './routes.js';
+import mitt from 'mitt';
 
 const app = Vue.createApp({
     render: () => Vue.h(App)
@@ -49,6 +50,10 @@ app.use(new VueSocketIO({
         mutationPrefix: 'SOCKET_'
     }
 }));
+
+//EventBus
+const eventBus = mitt()
+app.config.globalProperties.eventBus = eventBus;
 
 app.use(store);
 app.use(router);
