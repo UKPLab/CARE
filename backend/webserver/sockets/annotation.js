@@ -2,17 +2,25 @@ const { add:addAnnotation, deleteAnno:deleteAnnotation, updateAnno:updateAnnotat
 
 exports = module.exports = function(io) {
     io.on("connection", (socket) => {
-        socket.on("addAnnotation", (data) => {
-            addAnnotation(data)
+        socket.on("addAnnotation", async (data) => {
+            try {
+                await addAnnotation(data);
 
-            socket.emit("newAnnotation",
+                socket.emit("newAnnotation",
                 {
                     uid: socket.request.session.passport.user.uid,
                     annotation: data.annotation,
                     document_id: data.document_id,
                     annotation_id: data.annotation_id
                 }
-            );
+                );
+            } catch (e){
+                socket.emit("newAnnotationError", {
+                    uid: socket.request.session.passport.user.uid,
+                    annotation_id: data.annotation_id,
+                    cause: "SELECTION_LENGTH"
+                });
+            }
         });
 
         socket.on("updateAnnotation", (data) => {
