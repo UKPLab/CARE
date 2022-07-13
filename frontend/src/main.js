@@ -19,6 +19,10 @@ import VueSocketIO from 'vue-3-socket.io';
 import store from "./store";
 import router from './routes.js';
 import mitt from 'mitt';
+//Bootstrap v5
+import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap"
 
 const app = Vue.createApp({
     render: () => Vue.h(App)
@@ -29,10 +33,6 @@ if (process.env.NODE_ENV !== 'production') {
     app.config.devtools = true;
 }
 
-//Bootstrap v5
-import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap"
 app.use(BootstrapVue3);
 
 // Socket IO
@@ -41,7 +41,7 @@ app.use(new VueSocketIO({
     debug: true,
     connection: SocketIO(import.meta.env.VITE_APP_WEBSOCKET_URL,
         {
-            path:'',
+            path: '',
             withCredentials: true,
         }),
     vuex: {

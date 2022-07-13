@@ -11,8 +11,6 @@ const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
 const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
 
 exports.add = async function add(annotation, comment = null) {
-    console.log("adding anno");
-    console.log(annotation);
     const anno = await Annotation.create({
         hash: annotation.annotation_id,
         creator: annotation.user,

@@ -1,7 +1,16 @@
+/* PDF Store
+
+All information about the PDF are stored in this class.
+The class holds the pdf.js object and it is the central entry point for all components that
+interact with the pdf.js object.
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import _ from 'lodash';
 
 // make sure, it's not been reactive!
-const state = { pdf: undefined };
+const state = {pdf: undefined};
 
 export class PDF {
 
@@ -40,35 +49,35 @@ export class PDF {
         this.cursor = endPage;
 
         this.getPages(startPage, endPage)
-          .then((pages) => {
-            const deleteCount = 0;
-            this.pages.splice(startIndex, deleteCount, ...pages);
-            return this.pages;
-          }).catch((response) => {
-              console.log("Error fetching Pages: " + response);
-          })
+            .then((pages) => {
+                const deleteCount = 0;
+                this.pages.splice(startIndex, deleteCount, ...pages);
+                return this.pages;
+            }).catch((response) => {
+            console.log("Error fetching Pages: " + response);
+        })
     }
 
     getPages(first, last) {
-      const allPages = _.range(first, last + 1).map(number => state.pdf.getPage(number));
-      return Promise.all(allPages);
+        const allPages = _.range(first, last + 1).map(number => state.pdf.getPage(number));
+        return Promise.all(allPages);
     }
 
     async getPageTextContent(pageIndex) {
-      const cachedText = this.pageTextCache.get(pageIndex);
-      if (cachedText) {
-        return cachedText;
-      } else {
-        // we have to load the page first!
-        const textContent = await this.getPage(pageIndex + 1).then((page) => {
-          return page.getTextContent({normalizeWhitespace: true})
-        });
-        const text = textContent.items.map(it => it.str).join('');
+        const cachedText = this.pageTextCache.get(pageIndex);
+        if (cachedText) {
+            return cachedText;
+        } else {
+            // we have to load the page first!
+            const textContent = await this.getPage(pageIndex + 1).then((page) => {
+                return page.getTextContent({normalizeWhitespace: true})
+            });
+            const text = textContent.items.map(it => it.str).join('');
 
-        this.pageTextCache.set(pageIndex, text);
+            this.pageTextCache.set(pageIndex, text);
 
-        return text
-      }
+            return text
+        }
 
     }
 

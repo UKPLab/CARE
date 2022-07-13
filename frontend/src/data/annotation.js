@@ -1,7 +1,14 @@
-import { v4 } from 'uuid';
+/* Data object for Annotations
+
+Defines the data object for annotations
+
+Author: Nils Dycke (dycke@ukp...)
+Source: -
+*/
+import {v4} from 'uuid';
 
 
-export class Annotation{
+export class Annotation {
     id; //annotation ids
     comment; // comment (or comments) on top of the annotation -> move the comment outside.
     anchors;

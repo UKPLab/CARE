@@ -1,16 +1,16 @@
 <template>
-  <div v-observe-visibility="{
+  <div :id="'page-container-' + pageNumber"
+       v-observe-visibility="{
       callback: visibilityChanged,
       throttle: 300,
       throttleOptions: {
         leading: 'visible',
       },
-    }"
-       class="pageContainer" :id="'page-container-' + pageNumber">
-    <div class="canvasWrapper" :id="'canvas-wrapper-' + pageNumber">
-      <canvas class="pdf-page" :id="'pdf-canvas-' + pageNumber"></canvas>
+    }" class="pageContainer">
+    <div :id="'canvas-wrapper-' + pageNumber" class="canvasWrapper">
+      <canvas :id="'pdf-canvas-' + pageNumber" class="pdf-page"></canvas>
     </div>
-    <div class="textLayer" :id="'text-layer-' + pageNumber">
+    <div :id="'text-layer-' + pageNumber" class="textLayer">
 
     </div>
   </div>
@@ -18,8 +18,15 @@
 </template>
 
 <script>
-import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
-import { ObserveVisibility } from 'vue3-observe-visibility'
+/* PDFPage.vue - pdf page
+
+This component holds a single pdf page and includes the rendering itself
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
+import * as pdfjsLib from "pdfjs-dist/build/pdf.js"
+import {ObserveVisibility} from 'vue3-observe-visibility'
 import debounce from 'lodash.debounce';
 
 export default {
@@ -97,7 +104,7 @@ export default {
       }).then((textContent) => {
 
         const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber).getBoundingClientRect();
-        const text_layer = document.getElementById('text-layer-'+ page.pageNumber);
+        const text_layer = document.getElementById('text-layer-' + page.pageNumber);
 
         text_layer.style.height = canvas_offset.height + 'px';
         text_layer.style.width = canvas_offset.width + 'px';
@@ -105,7 +112,7 @@ export default {
         pdfjsLib.renderTextLayer({
           textContent: textContent,
           enhanceTextSelection: true,
-          container: document.getElementById('text-layer-'+ page.pageNumber),
+          container: document.getElementById('text-layer-' + page.pageNumber),
           viewport: viewport,
           textDivs: []
         })
@@ -150,7 +157,7 @@ export default {
 </script>
 <style>
 .pageContainer {
-  position:relative;
-  border-bottom-style:solid;
+  position: relative;
+  border-bottom-style: solid;
 }
 </style>

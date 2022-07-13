@@ -2,6 +2,13 @@
 </template>
 
 <script>
+/* Highlights.vue - highlights of the annotation in pdf document
+
+This component creates the highlights of all the annotations inside the pdf document
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import {isNodeInRange} from "../../../../assets/anchoring/range-util";
 import {isInPlaceholder} from "../../../../assets/anchoring/placeholder";
 import {resolveAnchor} from "../../../../assets/anchoring/resolveAnchor";
@@ -9,22 +16,23 @@ import {resolveAnchor} from "../../../../assets/anchoring/resolveAnchor";
 export default {
   name: "Highlights",
   props: ['document_id'],
-  data: function() {
-    return {
-    }
+  data: function () {
+    return {}
   },
   mounted() {
     this.anchors.map(this.highlight);
   },
   computed: {
-    anchors() { return this.$store.getters['anno/getAnchors'](this.document_id) },
+    anchors() {
+      return this.$store.getters['anno/getAnchors'](this.document_id)
+    },
   },
   watch: {
-    anchors (newVal, oldVal) {
+    anchors(newVal, oldVal) {
       //Remove highlights of deleted anchors
       oldVal.filter(anchor => !newVal.includes(anchor))
-        .forEach(anchors => anchors.filter(anchor => "highlights" in anchor)
-            .forEach(anchor => this.removeHighlights(anchor.highlights)))
+          .forEach(anchors => anchors.filter(anchor => "highlights" in anchor)
+              .forEach(anchor => this.removeHighlights(anchor.highlights)))
 
       newVal.filter(anchor => !oldVal.includes(anchor))
           .map(this.highlight)
@@ -42,7 +50,7 @@ export default {
         }
 
         const highlights = /** @type {AnnotationHighlight[]} */ (
-          this.highlightRange(anchor, range)
+            this.highlightRange(anchor, range)
         );
 
         highlights.forEach(h => {
@@ -88,8 +96,8 @@ export default {
       // subset of nodes such as table rows and lists.
       const whitespace = /^\s*$/;
       textNodeSpans = textNodeSpans.filter(span =>
-        // Check for at least one text node with non-space content.
-        span.some(node => !whitespace.test(node.data))
+          // Check for at least one text node with non-space content.
+          span.some(node => !whitespace.test(node.data))
       );
 
       // Wrap each text node span with a `<hypothesis-highlight>` element.
@@ -139,7 +147,7 @@ export default {
 
       /** @type {SVGElement|null} */
       let svgHighlightLayer = canvasEl.parentElement.querySelector(
-        '.hypothesis-highlight-layer'
+          '.hypothesis-highlight-layer'
       );
 
       const isCssBlendSupported = CSS.supports('mix-blend-mode', 'multiply');
@@ -259,10 +267,10 @@ export default {
 
       const textNodes = [];
       const nodeIter = /** @type {Document} */ (
-        root.ownerDocument
+          root.ownerDocument
       ).createNodeIterator(
-        root,
-        NodeFilter.SHOW_TEXT // Only return `Text` nodes.
+          root,
+          NodeFilter.SHOW_TEXT // Only return `Text` nodes.
       );
       let node;
       while ((node = nodeIter.nextNode())) {
@@ -296,22 +304,28 @@ export default {
 .svg-highlight {
   fill: transparent;
 }
+
 .svg-highlight {
   fill: rgba(255, 255, 60, 0.4);
 }
+
 .svg-highlight.is-opaque {
   fill: yellow;
 }
+
 .svg-highlight.is-focused {
   fill: rgba(156, 230, 255, 0.5);
 }
+
 .highlight {
   background-color: rgba(255, 255, 60, 0.4);
   cursor: pointer;
 }
+
 .highlight.is-transparent {
   background-color: transparent;
 }
+
 .highlight::before {
   position: absolute;
   width: 1px;
@@ -321,6 +335,7 @@ export default {
   overflow: hidden;
   content: ' annotation start ';
 }
+
 .highlight::after {
   position: absolute;
   width: 1px;
@@ -330,18 +345,23 @@ export default {
   overflow: hidden;
   content: ' annotation end ';
 }
+
 .highlight.highlight {
   background-color: rgba(206, 206, 60, 0.4);
 }
+
 .highlight.highlight.is-transparent {
   background-color: transparent;
 }
+
 .highlight.highlight.highlight {
   background-color: transparent;
 }
+
 .highlight.highlight.highlight-focus {
   background-color: rgba(156, 230, 255, 0.5) !important;
 }
+
 .highlight.highlight.highlight-focus.highlight {
   background-color: transparent !important;
 }
