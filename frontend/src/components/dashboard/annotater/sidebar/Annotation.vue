@@ -41,7 +41,7 @@
             </select>
             <div class="invalid-feedback">Please select a valid tag.</div>
         </div>
-        <div class="btn-group btn-group-sm" role="group" v-if="!isSubmitted">
+        <div id="createButtons" class="btn-group btn-group-sm" role="group" v-if="!isSubmitted">
           <button class="btn btn-primary" type="button" v-on:click="submit()">Submit</button>
           <button class="btn btn-danger" type="button" v-on:click="remove()">Discard</button>
         </div>
@@ -95,13 +95,11 @@ export default {
     const formElement = `#annotationTags-${this.annoData.id}`;
     Tags.init(formElement);
 
-    console.log("Mouting anno");
-    console.log(this.annoData.state);
-
     if(this.annoData.state == "SUBMITTED"){
         this.toSubmitState();
     } else {
         this.toEditState();
+        this.$emit("focus", this.annoData.id);
     }
   },
   unmounted() {
@@ -114,7 +112,7 @@ export default {
         } else {
             this.toEditState();
         }
-    }
+    },
   },
   computed: {
     isSubmitted: function(){
@@ -179,6 +177,8 @@ export default {
       const inElem = this.getTagInput();
       inElem.disabled = false;
       inElem.placeholder = "Add tag...";
+
+
     },
     submit() {
       this.annoData.state = "SUBMITTED";
@@ -252,5 +252,8 @@ export default {
   padding-right: 0;
   border: none;
   background-color: transparent;
+}
+#createButtons {
+  padding-bottom: 6px;
 }
 </style>
