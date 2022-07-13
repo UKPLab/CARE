@@ -1,31 +1,32 @@
 <template>
-    <a href="#" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">Add</a>
+  <a class="btn btn-sm btn-primary" data-bs-target="#uploadModal" data-bs-toggle="modal" href="#">Add</a>
 
-      <!-- Modal -->
-    <!--<teleport to="body">-->
-    <div class="modal fade" id="uploadModal" tabindex="-1"  data-bs-backdrop="static" role="dialog" aria-labelledby="uploadModalLabel" aria-hidden="true">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="uploadModalLabel">Upload new document</h5>
-            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+  <!-- Modal -->
+  <!--<teleport to="body">-->
+  <div id="uploadModal" aria-hidden="true" aria-labelledby="uploadModalLabel" class="modal fade" data-bs-backdrop="static"
+       role="dialog" tabindex="-1">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="uploadModalLabel" class="modal-title">Upload new document</h5>
+          <button aria-label="Close" class="close" data-bs-dismiss="modal" type="button">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label" for="fileInput">Document Upload</label>
+            <input id="fileInput" class="form-control" name="file" type="file">
           </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="fileInput" class="form-label">Document Upload</label>
-              <input class="form-control"  name="file" type="file" id="fileInput">
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" @click="upload">Upload</button>
-          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
+          <button class="btn btn-primary" type="button" @click="upload">Upload</button>
         </div>
       </div>
     </div>
-    <!--</teleport>-->
+  </div>
+  <!--</teleport>-->
 </template>
 
 <script>
@@ -40,7 +41,7 @@ Co-Author:  Nils Dycke (dycke@ukp...)
 Source: -
 */
 import axios from "axios";
-import { Modal } from 'bootstrap';
+import {Modal} from 'bootstrap';
 
 export default {
   name: "Upload",
@@ -50,7 +51,7 @@ export default {
     }
   },
   mounted() {
-   this.modal = new Modal(document.getElementById('uploadModal'));
+    this.modal = new Modal(document.getElementById('uploadModal'));
   },
   methods: {
     upload() {

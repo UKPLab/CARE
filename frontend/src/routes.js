@@ -28,12 +28,12 @@ import Register from "./components/auth/Register.vue";
  * > requiresAuth: true/false <=> true, iff a login is required
  */
 const routes = [
-    { path: "/", component: Dashboard, meta: { requiresAuth: true }},
-    { path: "/index.html", component: Dashboard, meta: { requiresAuth: true }},
-    { path: "/login", component: Login, meta: { requiresAuth: false }},
-    { path: "/register", component: Register, meta: { requiresAuth: false }},
-    { path: "/annotate/:document_id", component: Annotater, props: true, meta: { requiresAuth: true } },
-    { path: "/:catchAll(.*)", name: "NotFound", component: NotFoundPage, meta: { requiresAuth: false }}
+    {path: "/", component: Dashboard, meta: {requiresAuth: true}},
+    {path: "/index.html", component: Dashboard, meta: {requiresAuth: true}},
+    {path: "/login", component: Login, meta: {requiresAuth: false}},
+    {path: "/register", component: Register, meta: {requiresAuth: false}},
+    {path: "/annotate/:document_id", component: Annotater, props: true, meta: {requiresAuth: true}},
+    {path: "/:catchAll(.*)", name: "NotFound", component: NotFoundPage, meta: {requiresAuth: false}}
 ]
 
 // create the vue router

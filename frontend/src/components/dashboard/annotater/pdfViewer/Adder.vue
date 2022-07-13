@@ -1,21 +1,28 @@
 <template>
-  <div :style="{visibility: isVisible ? 'visible':'hidden'}" id="adder">
-    <button type="button" @click="annotate" class="adder-btn">
-        <BIconPlusSquare  />
+  <div id="adder" :style="{visibility: isVisible ? 'visible':'hidden'}">
+    <button class="adder-btn" type="button" @click="annotate">
+      <BIconPlusSquare/>
     </button>
   </div>
 </template>
 
 <script>
-import { BIconPlusSquare } from 'bootstrap-icons-vue';
-import { TextPosition, TextRange } from "../../../../assets/anchoring/text-range";
-import { TextQuoteAnchor } from '../../../../assets/anchoring/types';
+/* Adder.vue - add new annotations
+
+This components handles the range selector and the button to add new annotations.
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
+import {BIconPlusSquare} from 'bootstrap-icons-vue';
+import {TextPosition, TextRange} from "../../../../assets/anchoring/text-range";
+import {TextQuoteAnchor} from '../../../../assets/anchoring/types';
 import {mapMutations, mapGetters} from "vuex";
-import { v4 } from 'uuid';
+import {v4} from 'uuid';
 
 export default {
   name: "Adder",
-  components: { BIconPlusSquare },
+  components: {BIconPlusSquare},
   props: ['document_id', 'pdf'],
   data() {
     return {
@@ -26,7 +33,7 @@ export default {
     }
   },
   created() {
-    document.body.addEventListener('mouseup',this.checkSelection);
+    document.body.addEventListener('mouseup', this.checkSelection);
   },
   beforeUnmount() {
     document.body.removeEventListener('mouseup', this.checkSelection);
@@ -68,7 +75,7 @@ export default {
       this.$socket.emit('addAnnotation',
           {
             "document_id": this.document_id,
-            "annotation": { target },
+            "annotation": {target},
             "user": uid,
             "comment": null,
             "draft": true,
@@ -127,10 +134,10 @@ export default {
 
       // get max z index
       const maxZIndex = Math.max(
-        ...Array.from(document.querySelectorAll('body *'), el =>
-          parseFloat(window.getComputedStyle(el).zIndex),
-        ).filter(zIndex => !Number.isNaN(zIndex)),
-        0,
+          ...Array.from(document.querySelectorAll('body *'), el =>
+              parseFloat(window.getComputedStyle(el).zIndex),
+          ).filter(zIndex => !Number.isNaN(zIndex)),
+          0,
       );
 
       // move to position
@@ -144,10 +151,10 @@ export default {
       // parameter: min_x, min_y, max_x, max_y
       const additional_size_of_box = 50;
       this._fadeOutBox = [
-          x - additional_size_of_box,
-          y - additional_size_of_box,
-          x + width + additional_size_of_box,
-          y + height + additional_size_of_box + 40
+        x - additional_size_of_box,
+        y - additional_size_of_box,
+        x + width + additional_size_of_box,
+        y + height + additional_size_of_box + 40
       ]
 
       document.body.addEventListener('mousemove', this.fadeOut);
@@ -156,7 +163,7 @@ export default {
     },
     fadeOut(event) {
       if (event.clientX < this._fadeOutBox[0] || event.clientX > this._fadeOutBox[2]
-      || event.clientY < this._fadeOutBox[1] || event.clientY > this._fadeOutBox[3]) {
+          || event.clientY < this._fadeOutBox[1] || event.clientY > this._fadeOutBox[3]) {
         document.body.removeEventListener('mousemove', this.fadeOut);
         this.isVisible = false;
       }
@@ -252,19 +259,20 @@ export default {
 </script>
 
 <style scoped>
-  #adder {
-      border: 1px solid #999999;
-      box-shadow: 1px 1px #CCCCCC;
-      position: absolute;
-      top: 0;
-      left: 0;
-      padding: 2px;
-      background-color: white;
-  }
-  .adder-btn {
-    border-width: 0px;
-    padding:2px;
-    width:28px;
-    height:28px;
-  }
+#adder {
+  border: 1px solid #999999;
+  box-shadow: 1px 1px #CCCCCC;
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 2px;
+  background-color: white;
+}
+
+.adder-btn {
+  border-width: 0px;
+  padding: 2px;
+  width: 28px;
+  height: 28px;
+}
 </style>

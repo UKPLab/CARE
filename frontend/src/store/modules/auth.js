@@ -50,16 +50,19 @@ export default {
         // checks if the current user is still logged in on the server
         async check({commit}) {
             const response = await axios.get(import.meta.env.VITE_APP_SERVER_URL + '/auth/check',
-                {withCredentials:true});
+                {withCredentials: true});
             commit('SET_USER', response.data.user);
         },
         // login on the server with the provided user information and credentials
         async login({commit}, login_data) {
             const response = await axios.post(import.meta.env.VITE_APP_SERVER_URL + '/auth/login',
-                    login_data,
-                    { validateStatus: function(status) {
-                        return status === 200 || status === 401;},
-                    withCredentials:true});
+                login_data,
+                {
+                    validateStatus: function (status) {
+                        return status === 200 || status === 401;
+                    },
+                    withCredentials: true
+                });
             if (response.status === 401) throw response.data.message
 
             console.log("Calling set user");

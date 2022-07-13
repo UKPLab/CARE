@@ -11,8 +11,7 @@ import {Comment} from '../../data/comment.js';
 
 const getDefaultState = () => {
     return {
-        annotations: [
-        ],
+        annotations: [],
         sidebar_showing: true
     };
 };
@@ -58,7 +57,7 @@ export default {
             const comments = message.comments;
 
             const mapped = message.annotations.map(o => {
-                const anno =  new Annotation(
+                const anno = new Annotation(
                     o.annotation_id,
                     o.document_id,
                     o.text,
@@ -69,10 +68,7 @@ export default {
                 anno.state = "SUBMITTED";
                 anno.tags = o.tags;
 
-                //console.log(o.annotation_id in comments);
-                //console.log(comments);
-
-                if(o.annotation_id in comments){
+                if (o.annotation_id in comments) {
                     //for now always just 1 comment
                     const c = comments[o.annotation_id][0];
                     const cMapped = new Comment(
@@ -95,7 +91,7 @@ export default {
         },
         SOCKET_newAnnotation: (state, message) => {
             let anno = null;
-            if(message.annotation_id == null){
+            if (message.annotation_id == null) {
                 anno = createAnnotation(
                     message.document_id,
                     message.annotation.target[0].selector[1].exact,
@@ -113,10 +109,10 @@ export default {
                 );
             }
 
-            // TODO replace with comment logic later on
-            if(message.comment != null){
+            // TODO: replace with comment logic later on
+            if (message.comment != null) {
                 let comm;
-                if(message.comment.id ==  null){
+                if (message.comment.id == null) {
                     comm = createComment(message.comment.text, anno.id, null, anno.user);
                 } else {
                     comm = new Comment(message.comment.id, message.comment.text, anno.id, null, anno.user);

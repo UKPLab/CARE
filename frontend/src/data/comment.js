@@ -1,7 +1,14 @@
-import { v4 } from 'uuid';
+/* Data object for Comments
+
+Defines the data object for commentaries
+
+Author: Nils Dycke (dycke@ukp...)
+Source: -
+*/
+import {v4} from 'uuid';
 
 
-export class Comment{
+export class Comment {
     id;
     text;
     referenceAnnotation;
@@ -10,7 +17,7 @@ export class Comment{
     user;
 
     constructor(id, text, referenceAnnotation, referenceComment, user) {
-        if(id == null){
+        if (id == null) {
             this.id = v4();
         } else {
             this.id = id;

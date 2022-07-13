@@ -13,7 +13,7 @@ Author: Dennis Zyska (zyska@ukp...)
 Co-Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import { createStore } from 'vuex';
+import {createStore} from 'vuex';
 import AuthStore from './modules/auth.js';
 import UserStore from './modules/user.js';
 import AnnotationStore from './modules/anno.js';
@@ -27,7 +27,7 @@ export default createStore({
         anno: AnnotationStore,
     },
     plugins: [
-        createPersistedState( {
+        createPersistedState({
             paths: ['auth']
         })
     ]

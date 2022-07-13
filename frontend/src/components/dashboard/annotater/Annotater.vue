@@ -21,7 +21,7 @@
 /* Annotator.vue - annotation view
 
 This parent component provides the annotation view, which
-currently consists of the PDF viewer.
+currently consists of all elements of the annotator.
 
 Author: Dennis Zyska (zyska@ukp...)
 Source: -

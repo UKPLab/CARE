@@ -1,38 +1,40 @@
 <template>
-    <div class="row">
+  <div class="row">
     <div class="col-md-8 mx-auto my-4">
-  <div class="col-md-8 mx-auto">
-     <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        Login
-        <a href="#" class="btn btn-sm btn-primary" @click="this.$router.push('/register')">Register</a>
-      </div>
+      <div class="col-md-8 mx-auto">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            Login
+            <a class="btn btn-sm btn-primary" href="#" @click="this.$router.push('/register')">Register</a>
+          </div>
 
-      <div class="card-body">
+          <div class="card-body">
 
-        <p v-if="showError" class="text-danger text-center">{{ this.errorMessage }}</p>
-        <div class="form-group row my-2">
-          <label for="username" class="col-md-4 col-form-label text-md-right">Username</label>
-          <div class="col-md-6">
-            <input v-model="username" type="text" id="username" placeholder="Username or email" class="form-control" autocomplete="username" required autofocus>
+            <p v-if="showError" class="text-danger text-center">{{ this.errorMessage }}</p>
+            <div class="form-group row my-2">
+              <label class="col-md-4 col-form-label text-md-right" for="username">Username</label>
+              <div class="col-md-6">
+                <input id="username" v-model="username" autocomplete="username" autofocus class="form-control"
+                       placeholder="Username or email" required type="text">
+              </div>
+            </div>
+
+            <div class="form-group row my-2">
+              <label class="col-md-4 col-form-label text-md-right" for="password">Password</label>
+              <div class="col-md-6">
+                <input id="password" v-model="password" autocomplete="current-password" class="form-control" name="password"
+                       placeholder="Password" required type="password"></div>
+            </div>
+
+            <div class="col-md-6 offset-md-4 my-4">
+              <button class="btn btn-primary btn-block" type="button" @click="login_user()">Login</button>
+              <a class="btn btn-link" href="#" @click="login_guest()">Login as Guest</a>
+            </div>
           </div>
         </div>
-
-        <div class="form-group row my-2">
-          <label for="password" class="col-md-4 col-form-label text-md-right">Password</label>
-          <div class="col-md-6">
-            <input v-model="password" name="password" id="password" class="form-control" type="password" placeholder="Password" autocomplete="current-password" required>          </div>
-        </div>
-
-        <div class="col-md-6 offset-md-4 my-4">
-            <button type="button" class="btn btn-primary btn-block" @click="login_user()">Login</button>
-            <a href="#" class="btn btn-link" @click="login_guest()">Login as Guest</a>
-        </div>
       </div>
-     </div>
+    </div>
   </div>
-    </div>
-    </div>
 </template>
 
 <script>
@@ -45,7 +47,7 @@ Author: Dennis Zyska (zyska@ukp...)
 Co-Author:  Nils Dycke (dycke@ukp...)
 Source: -
 */
-import { mapActions } from "vuex";
+import {mapActions} from "vuex";
 
 export default {
   name: "Login",
@@ -65,8 +67,6 @@ export default {
     async login_user() {
       try {
         await this.login({username: this.username, password: this.password})
-        console.log("after login");
-        console.log(this.$store.getters["auth/getUser"]());
         {
           await this.$router.go(0);
           this.showError = false;

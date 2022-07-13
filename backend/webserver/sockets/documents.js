@@ -37,7 +37,6 @@ exports = module.exports = function (io) {
 
         socket.on("doc_delete", (data) => {
             // TODO: Security Check - check if user can delete this document?
-            console.log(data);
             deleteDoc(data.docId)
                 .then(() => update_documents(socket.request.session.passport.user.id))
                 .catch((err) => socket.emit("error", {err}));

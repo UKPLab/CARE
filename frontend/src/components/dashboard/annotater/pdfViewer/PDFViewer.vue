@@ -1,41 +1,38 @@
 <template>
   <div id="pdfContainer" class="has-transparent-text-layer">
     <PDFPage
-      v-for="page in pdf.pages"
-      :key="page.pageNumber"
-      :pageNumber="page.pageNumber"
-      class="scrolling-page"
-      :pdf="pdf"
-      @updateVisibility="updateVisibility"
-      @destroyPage="destroyPage"
+        v-for="page in pdf.pages"
+        :key="page.pageNumber"
+        :pageNumber="page.pageNumber"
+        :pdf="pdf"
+        class="scrolling-page"
+        @destroyPage="destroyPage"
+        @updateVisibility="updateVisibility"
     />
-    <Adder :pdf="pdf" :document_id="document_id"></Adder>
-    <Highlights :document_id="document_id" ref="highlights" />
+    <Adder :document_id="document_id" :pdf="pdf"></Adder>
+    <Highlights ref="highlights" :document_id="document_id"/>
   </div>
 </template>
 
 <script>
-/* PDFJSViewer.vue - PDF Viewer are rendered by PDF.js
+/* PDFViewer.vue - PDF
 
-This component provides the PDF in a classical PDF viewer
-as rendered by PDF.js.
+This component holds the PDF Pages and the all interacting vue components.
+Central PDF View component.
 
 Author: Dennis Zyska (zyska@ukp...)
-Source: https://rossta.net/blog/building-a-pdf-viewer-with-vue-part-1.html
-
 */
-
 import PDFPage from "./PDFPage.vue";
-import { PDF } from './pdfStore.js';
-import * as pdfjsLib  from "pdfjs-dist/build/pdf.js"
+import {PDF} from './pdfStore.js';
+import * as pdfjsLib from "pdfjs-dist/build/pdf.js"
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 
 import Adder from "./Adder.vue";
 import Highlights from "./Highlights.vue";
 
-import { createPlaceholder, removePlaceholder } from "../../../../assets/anchoring/placeholder";
-import { TextPosition, TextRange } from "../../../../assets/anchoring/text-range";
-import { matchQuote } from '../../../../assets/anchoring/match-quote';
+import {createPlaceholder, removePlaceholder} from "../../../../assets/anchoring/placeholder";
+import {TextPosition, TextRange} from "../../../../assets/anchoring/text-range";
+import {matchQuote} from '../../../../assets/anchoring/match-quote';
 
 import debounce from "lodash.debounce";
 import {mapMutations} from "vuex";
@@ -60,17 +57,17 @@ export default {
     }
   },
   watch: {
-    "pdf.pageCount" () {
+    "pdf.pageCount"() {
       this.pdf.fetchPages();
     },
-    annotations (newVal, oldVal) {
+    annotations(newVal, oldVal) {
       // handle only newly added anchors
       if (this.pdf.pageCount > 0) {
         newVal.filter(anchor => !oldVal.includes(anchor))
             .map(this.handle_anchor)
       }
     },
-    scrollTo () {
+    scrollTo() {
       if (this.scrollTo !== null) {
         this.scrollTo = null;
       }
@@ -80,8 +77,12 @@ export default {
     pagesLength() {
       return this.pdf.pages.length;
     },
-    annotations() { return this.$store.getters['anno/getAnnotations'](this.document_id) },
-    anchors() { return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id)) },
+    annotations() {
+      return this.$store.getters['anno/getAnnotations'](this.document_id)
+    },
+    anchors() {
+      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id))
+    },
   },
   beforeUnmount() {
     if (this.observer) {
@@ -127,10 +128,10 @@ export default {
     },
     destroyPage(page) {
       this.$refs.highlights.removeAllHighlights(document.getElementById('text-layer-' + page.pageNumber));
-      const text_layer = document.getElementById('text-layer-'+ page.pageNumber);
+      const text_layer = document.getElementById('text-layer-' + page.pageNumber);
 
       // clean text layer
-      while(text_layer.firstChild) {
+      while (text_layer.firstChild) {
         text_layer.removeChild(text_layer.firstChild);
       }
     },
@@ -175,14 +176,14 @@ export default {
 
       refreshAnnotations.map(annotation => this.handle_anchor(annotation));
     },
-    _updateAnnotationLayerVisibility () {
+    _updateAnnotationLayerVisibility() {
       const selection = /** @type {Selection} */ (window.getSelection());
       // TODO CSS Style
       // Add CSS class to indicate whether there is a selection. Annotation
       // layers are then hidden by a CSS rule in `pdfjs-overrides.scss`.
       this.pdfViewer.viewer.classList.toggle(
-        'is-selecting',
-        !selection.isCollapsed
+          'is-selecting',
+          !selection.isCollapsed
       );
     },
     async handle_anchor(annotation) {
@@ -192,10 +193,10 @@ export default {
         // This is because the quote is used to verify anchoring with other selector
         // types.
         if (
-          !target.selector ||
-          !target.selector.some(s => s.type === 'TextQuoteSelector')
+            !target.selector ||
+            !target.selector.some(s => s.type === 'TextQuoteSelector')
         ) {
-          return { annotation, target };
+          return {annotation, target};
         }
 
         /** @type {Anchor} */
@@ -206,7 +207,7 @@ export default {
 
           const anchorByPosition = async (pageIndex, start, end) => {
 
-            if  (this.pdf.renderingDone.get(pageIndex + 1)) {
+            if (this.pdf.renderingDone.get(pageIndex + 1)) {
               const root = document.getElementById('text-layer-' + (pageIndex + 1));
 
               const startPos = new TextPosition(root, start);
@@ -272,14 +273,14 @@ export default {
             // hint we'll try to use that. Otherwise we'll just search all pages in order.
             const pageCount = this.pdf.pageCount;
             const pageIndexes = Array(pageCount)
-              .fill(0)
-              .map((_, i) => i);
+                .fill(0)
+                .map((_, i) => i);
 
             let expectedPageIndex;
             let expectedOffsetInPage;
 
             if (positionHint) {
-              const { index, offset } = await findPageByOffset(positionHint);
+              const {index, offset} = await findPageByOffset(positionHint);
               expectedPageIndex = index;
               expectedOffsetInPage = positionHint - offset;
 
@@ -294,9 +295,9 @@ export default {
 
             // Search pages for the best match, ignoring whitespace differences.
             const [strippedPrefix] =
-              quoteSelector.prefix !== undefined ? stripSpaces(quoteSelector.prefix) : [];
+                quoteSelector.prefix !== undefined ? stripSpaces(quoteSelector.prefix) : [];
             const [strippedSuffix] =
-              quoteSelector.suffix !== undefined ? stripSpaces(quoteSelector.suffix) : [];
+                quoteSelector.suffix !== undefined ? stripSpaces(quoteSelector.suffix) : [];
             const [strippedQuote] = stripSpaces(quoteSelector.exact);
 
             let bestMatch;
@@ -364,25 +365,25 @@ export default {
                 // helps to avoid incorrectly stopping the search early if the quote is
                 // a word or phrase that is common in the document.
                 const exactQuoteMatch =
-                  strippedText.slice(match.start, match.end) === strippedQuote;
+                    strippedText.slice(match.start, match.end) === strippedQuote;
 
                 const exactPrefixMatch =
-                  strippedPrefix !== undefined &&
-                  strippedText.slice(
-                    Math.max(0, match.start - strippedPrefix.length),
-                    match.start
-                  ) === strippedPrefix;
+                    strippedPrefix !== undefined &&
+                    strippedText.slice(
+                        Math.max(0, match.start - strippedPrefix.length),
+                        match.start
+                    ) === strippedPrefix;
 
                 const exactSuffixMatch =
-                  strippedSuffix !== undefined &&
-                  strippedText.slice(match.end, strippedSuffix.length) === strippedSuffix;
+                    strippedSuffix !== undefined &&
+                    strippedText.slice(match.end, strippedSuffix.length) === strippedSuffix;
 
                 const hasContext =
-                  strippedPrefix !== undefined || strippedSuffix !== undefined;
+                    strippedPrefix !== undefined || strippedSuffix !== undefined;
 
                 if (
-                  exactQuoteMatch &&
-                  (exactPrefixMatch || exactSuffixMatch || !hasContext)
+                    exactQuoteMatch &&
+                    (exactPrefixMatch || exactSuffixMatch || !hasContext)
                 ) {
                   break;
                 }
@@ -390,7 +391,7 @@ export default {
             }
 
             if (bestMatch) {
-              const { page, match } = bestMatch;
+              const {page, match} = bestMatch;
 
               // If we found a match, optimize future anchoring of this selector in the
               // same session by caching the match location.
@@ -466,8 +467,8 @@ export default {
           }
 
           const range = await PDFanchor(
-            document.getElementById('pdfContainer'),
-            target.selector
+              document.getElementById('pdfContainer'),
+              target.selector
           );
 
           // Convert the `Range` to a `TextRange` which can be converted back to
@@ -475,9 +476,9 @@ export default {
           // to be inserted during anchoring other annotations without "breaking"
           // this anchor.
           const textRange = TextRange.fromRange(range);
-          anchor = { annotation, target, range: textRange };
+          anchor = {annotation, target, range: textRange};
         } catch (err) {
-          anchor = { annotation, target };
+          anchor = {annotation, target};
           console.log("Error getting anchors: " + err);
         }
         return anchor;
@@ -491,8 +492,8 @@ export default {
       // anchoring is successful either if there are no selectors (ie. this is a
       // Page Note) or we successfully resolved the selectors to a range.
       annotation.orphaned =
-        anchors.length > 0 &&
-        anchors.every(anchor => anchor.target.selector && !anchor.range);
+          anchors.length > 0 &&
+          anchors.every(anchor => anchor.target.selector && !anchor.range);
 
     },
   },
@@ -507,6 +508,7 @@ export default {
     position: static;
   }
 }
+
 #pdfContainer {
   min-width: 800px;
   max-width: 1000px;
