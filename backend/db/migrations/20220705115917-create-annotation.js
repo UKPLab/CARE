@@ -37,6 +37,10 @@ module.exports = {
       selectors: {
         type: Sequelize.JSONB
       },
+      draft: {
+        type: Sequelize.BOOLEAN,
+        defaultVale: false
+      },
       deleted: {
         type: Sequelize.BOOLEAN,
         defaultValue: false

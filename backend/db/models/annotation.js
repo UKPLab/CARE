@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     tags: DataTypes.STRING,
     document: DataTypes.STRING,
     selectors: DataTypes.JSONB,
+    draft: DataTypes.BOOLEAN,
     deleted: DataTypes.BOOLEAN,
     deletedAt: DataTypes.DATE,
     createdAt: DataTypes.DATE,

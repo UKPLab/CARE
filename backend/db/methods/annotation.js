@@ -13,6 +13,7 @@ exports.add = async function add(annotation, comment=null) {
         text: annotation.annotation.target[0].selector[1].exact,
         document: annotation.document_id,
         selectors: annotation.annotation.target,
+        draft: annotation.draft,
         createdAt: new Date(),
         updatedAt: new Date()
     });
@@ -42,8 +43,7 @@ exports.deleteAnno = async function deleteAnno(annoId) {
 }
 
 exports.updateAnno = async function updateAnno(annoId, newSelector = null, newText = null, newComment = null, newTags = null) {
-    let newValues = {updatedAt: new Date()};
-    const updateAnno = newSelector != null || newText != null || newTags != null;
+    let newValues = {updatedAt: new Date(), draft: false};
 
     if(newSelector != null){
         newValues.selector = newSelector;
@@ -55,13 +55,11 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
         newValues.tags = newTags.toString()
     }
 
-    if(updateAnno){
-        await Annotation.update(newValues, {
+     await Annotation.update(newValues, {
             where: {
                 hash: annoId
             }
-        });
-    }
+     });
 
     if(newComment != null){
         const cid = newComment.id;
@@ -105,7 +103,8 @@ exports.loadByDocument = async function load(docId) {
     const annotations = await Annotation.findAll({
         where: {
             document: docId,
-            deleted: false
+            deleted: false,
+            draft: false
         }
     });
 

@@ -71,6 +71,7 @@ export default {
             "annotation": { target },
             "user": uid,
             "comment": null,
+            "draft": true,
             "annotation_id": v4()
           });
 
