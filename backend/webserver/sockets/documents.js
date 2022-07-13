@@ -10,10 +10,6 @@ exports = module.exports = function(io) {
     // emit with defined type
 
     io.on("connection", (socket) => {
-        if (!socket.request.session.passport) {
-            socket.emit("logout"); //force logout on client side
-            socket.disconnect();
-        }
 
         const update_documents = user_id => {
             loadDocs(user_id)
