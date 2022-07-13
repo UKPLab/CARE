@@ -8,10 +8,11 @@
       <ul v-else id="anno-list" class="list-group">
         <li v-for="anno in annotations" class="list-group-i"
             :key="anno.id"
+            :ref="anno.id"
             v-bind:id="'anno-' + anno.id"
             v-on:mouseover='hover(anno.id)'
             v-on:mouseleave="unhover(anno.id)">
-          <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :scrollTo="scrollTo"></Annotation>
+          <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :scrollTo="scrollTo" @focus="focusAnnotation"></Annotation>
         </li>
       </ul>
     </div>
