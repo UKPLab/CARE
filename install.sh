@@ -98,27 +98,8 @@ sudo bash nodesource_setup.sh
 sudo apt-get update
 sudo apt-get install -y nodejs
 
-# install yarn (by adding repo). Only do this when necessary
-curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-sudo apt update
-sudo apt install -y yarn
-sudo npm install --global yarn
-
 echo "> Installing Gulp-CLI global"
 sudo npm install --global gulp-cli  # needed for pdf.js
-
-# install pyenv
-echo "> Installing pyenv"
-if [ -n "$(command -v pyenv)" ]  #pyenv already installed
-then
-  echo "Pyenv is already installed! Skipping installation."
-else
-  sudo su -c 'curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash' $SUDO_USER
-  echo 'export PYENV_ROOT="$HOME/.pyenv"' >> $homedir/.bashrc
-  echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> $homedir/.bashrc
-  echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> $homedir/.bashrc
-fi
 
 echo "> Install Python3-Dev and pip "
 sudo apt-get update && sudo apt-get install python3-dev python3-pip -y
