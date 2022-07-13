@@ -17,8 +17,9 @@ const path = require('path');
 const express = require('express');
 const mustacheExpress = require('mustache-express');
 
-const { Server } = require("socket.io");
-const { createServer, useSsl } = require('./createServer');
+const {Server} = require("socket.io");
+const {createServer, useSsl} = require('./createServer');
+const cors = require('cors');
 
 const passport = require("passport");
 const session = require('express-session');
@@ -26,52 +27,47 @@ const FileStore = require('session-file-store')(session);
 const bodyParser = require('body-parser');
 
 // define PATHs
-const TEMPLATES_PATH = `${__dirname}/../templates/`;
 const BUILD_PATH = `${__dirname}/../../dist/`;
+const port = process.env.CONTENT_SERVER_PORT || 3001;
+
 
 // routes
 const routes = [
     require("./routes/auth"),
-    require("./routes/pdf"),
-    require("./routes/hypothesis"),
-    require("./routes/api"),
 ];
 
 // sockets
 const sockets = [
-    require("./sockets/basic")
+    require("./sockets/annotation"),
+    require("./sockets/documents")
 ];
 
 /**
  * The main HTTP server which serves all files to the client
  *
- * @param {{port: number, page: {subtitle: string, title: string}}} config - The port that the webserver should listen on.
  */
 function webServer(config) {
     const app = express()
 
-    //Set up engine framework
-    app.engine('mustache', mustacheExpress())
-    app.set('view engine', 'mustache');
-    app.set('views', TEMPLATES_PATH);
+    // enable CORS in Dev Mode
+    if (process.env.BACKEND_ENABLE_CORS === 'true') {
+        app.use(cors({origin: 'http://localhost:3000', credentials: true}));
+    }
 
     // Make all static files public available
     app.use(express.static(BUILD_PATH));
-    app.use(express.static(`${__dirname}/../assets`));
 
     // Session Initialization
-    app.use(session({
+    const sessionMiddleware = session({
         /*genid: (req) => {
             console.log('Inside session middleware genid function')
             console.log(`Request object sessionID from client: ${req.sessionID}`)
             return uuidv4(); // use UUIDs for session IDs
         },*/
-        store: new FileStore(),
-        secret: 'thatsecretthinggoeshere',
-        resave: false,
-        saveUninitialized: true
-    }));
-    app.use(bodyParser.urlencoded({ extended: false }));
+        store: new FileStore(), secret: 'thatsecretthinggoeshere', resave: false, saveUninitialized: true
+    });
+    app.use(sessionMiddleware);
+    app.use(bodyParser.urlencoded({extended: false}));
     app.use(bodyParser.json());
     app.use(passport.initialize());
     app.use(passport.session());
@@ -84,9 +80,38 @@ function webServer(config) {
 
     // add websocket server socket.io
     const httpServer = createServer(app);
-    const io = new Server(httpServer, {
-        //options
-    })
+    // enable CORS in Dev Mode
+    let socketIoOptions = {
+        maxHttpBufferSize: 1e8 // 100 MB for file upload
+    };
+    if (process.env.BACKEND_ENABLE_CORS === 'true') {
+        socketIoOptions = {
+            cors: {
+                origin: "http://localhost:3000", methods: ["GET", "POST"], credentials: true,
+            }, origins: ['http://localhost:3000'], handlePreflightRequest: (req, res) => {
+                const headers = {
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                    "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
+                    "Access-Control-Allow-Credentials": true
+                };
+                res.writeHead(200, headers);
+                res.end();
+            }, maxHttpBufferSize: 1e8 // 100 MB for file upload
+        };
+    }
+
+    const io = new Server(httpServer, socketIoOptions);
+    const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
+    io.use(wrap(sessionMiddleware));
+    io.use(wrap(passport.initialize()));
+    io.use(wrap(passport.session()));
+    io.on("connection", (socket) => {
+        // Check if session exists, otherwise send logout and disconnect
+        if (!socket.request.session.passport) {
+            socket.emit("logout"); //force logout on client side
+            socket.disconnect();
+        }
+    });
     sockets.forEach(socket => socket(io));
 
     // serve server on port
@@ -96,4 +121,5 @@ function webServer(config) {
     });
 }
 
-webServer({port:process.env.CONTENT_SERVER_PORT});
+
+webServer({port: port});

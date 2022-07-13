@@ -8,7 +8,7 @@ Source: hypothesis client
 
 'use strict';
 
-const { existsSync, readFileSync } = require('fs');
+const {existsSync, readFileSync} = require('fs');
 const https = require('https');
 const http = require('http');
 
@@ -31,20 +31,20 @@ const useSsl = existsSync(SSL_KEYFILE) && existsSync(SSL_CERTFILE);
  * @param {Function} requestListener
  */
 function createServer(requestListener) {
-  let server;
-  if (useSsl) {
-    const options = {
-      cert: readFileSync(SSL_CERTFILE),
-      key: readFileSync(SSL_KEYFILE),
-    };
-    server = https.createServer(options, requestListener);
-  } else {
-    server = http.createServer(requestListener);
-  }
-  return server;
+    let server;
+    if (useSsl) {
+        const options = {
+            cert: readFileSync(SSL_CERTFILE),
+            key: readFileSync(SSL_KEYFILE),
+        };
+        server = https.createServer(options, requestListener);
+    } else {
+        server = http.createServer(requestListener);
+    }
+    return server;
 }
 
 module.exports = {
-  createServer,
-  useSsl,
+    createServer,
+    useSsl,
 };

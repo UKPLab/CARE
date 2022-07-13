@@ -11,17 +11,16 @@ Before starting, check the system requirements and supported OS below.
 1. Fetch and install all prerequisites:
 ```
 sudo apt-get install git -y
-git clone --recursive https://git.ukp.informatik.tu-darmstadt.de/zyska/peer.git
+git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/peer.git
 cd peer
 sudo ./install.sh           # Install needed software packages
-source pyenv.sh
 ```
 
 2. Change the environment variables in the `.env` file.
 
-3. Start the h server in one terminal:
+3. Start the docker containers in one terminal:
 ```
-make h_server
+make docker
 ```
 
 4. Initialize the database:
@@ -32,6 +31,11 @@ make init
 ```
 make dev
 ```
+Note: This is the easiest way for development at the frontend with support by vite, where updates will pushed immediately to the website on any change. 
+If you want to build the frontend first, you have to `make dev-build`. 
+If you want to only restart the backend for development and use the already builded version of the frontend, you can use `make dev-backend`, 
+but then you have to make sure you build the frontend first with `make build-frontend`.
+
 6. Visit localhost:3001 in your browser. You should see a login page. Login via guest and access the default document 
    to start annotating.
 
@@ -43,9 +47,6 @@ There are two possible situation for an installation, which are explained below:
 ### Minimum Requirements
 Both environments are tested with a clean Ubuntu 20.04 LTS Installation (minimal installation).
 
-For development run you will need a disk space at least of ~16 GB in total.\
-Also the docker container of elastic search needs at least 2GB of RAM!
-
 For production building you should have at least 4GB of RAM to run all containers
 in parallel.
 
@@ -53,13 +54,11 @@ in parallel.
 For all installations, we need the current data from the git repository and have to install some dependencies
     
     sudo apt-get install git -y
-    git clone --recursive https://git.ukp.informatik.tu-darmstadt.de/zyska/peer.git
-    cd peer/content-server
+    git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/peer.git
+    cd peer
     sudo ./install.sh           # Install needed software packages
 
-Please restart the terminal after running the install script or use `source pyenv.sh`.\
 If something goes wrong, clean environment with ```make clean```.\
-Note: If the submodules were not downloaded, use `git submodule update --init --recursive`\
 
 ### Development Build
 
@@ -67,11 +66,9 @@ This will run the main development code locally (Note: The first run will take s
 Change to the root directory of this repo. We assume you didn't change any environment variables.
 
 #### Basic Development Build
-1. Start the h server in one terminal. This should start three docker containers (RabbitMQ, Postgres, Elasticsearch)
-   and the h server natively. After running this you should see the hypothesis front-end on
-   [localhost:5000](http://localhost:5000).
+1. Start the docker container (e.g., postgres database) in one terminal.
 ```
-make h_server
+make docker
 ```
 2. Initialize the database. This should run through without an error; if there is an error, it
    might be that the postgres docker container wasn't started properly.
@@ -84,19 +81,7 @@ make init
 make dev # Build everything and start content-server
 ```
 
-#### ALTERNATIVE: Individual Development Builds
-* Instead of step 3. above, you may not want to start the NLP server along with the content server
-  if you are developing for only one of them. In that case, use one of the following commands to
-  start them individually:
-```
-make frontend_dev   # build only the front-end / content server in dev mode
-make nlp_dev        # build only the nlp server in dev mode
-```
-
 ### Production Build
-
-Do make sure that your machine meets the minimal requirements listed above. Otherwise,
-individual containers (typically elasticsearch) will be stopped. 
 
 The software will be installed in a Docker environment and in production mode. Run the
 following command in the first terminal (takes quite a while until all containers
@@ -115,8 +100,6 @@ __Hint:__  Use [Portainer CE](https://hub.docker.com/r/portainer/portainer-ce) f
 For installation see [Install Instructions](https://docs.portainer.io/v/ce-2.9/start/install/server/docker/linux)
 
 
-
-
 ## Architecture
 
 This section gives an overview on the components and architecture of the complete PEER tool.
@@ -126,11 +109,6 @@ __Remark__: You can use either the [PyCharm Plugin](https://plugins.jetbrains.co
 (For Pycharm Dark Mode User set it to Light (Kennedy) under Settings -> Languages & Frameworks -> diagrams.net) to view the diagrams.
 
 __Note:__ If you change anything on the structure, also update the architecture files!
-
-### Architecture of the Content Server
-
-For an overview of the complete architecture, see ./docs/architecture.drawio\
-
 
 ![architecture_content_server](docs/architecture.png)
 
@@ -148,7 +126,6 @@ and the _NLP server_ acting as a service to the backend (third tier). The code i
 > backend         # backend of content server (express-based)
 > frontend        # frontend of content server (vue-based)
 > nlp             # nlp server
-> frameworks      
 > docs            # all documentation files (e.g. diagrams) go here
 > resources       # resource files used during building/configuring
 ```
@@ -165,12 +142,16 @@ See also the architecture overview for further information how the frameworks in
   - [Vue Router](https://router.vuejs.org/) - Official Router for Vue.js
   - [Vue 3 - socket.io](https://www.npmjs.com/package/vue-3-socket.io) - Socket.io Client for Vue3
   - [Vue 3 - bootstrap](https://www.npmjs.com/package/bootstrap-vue-3) - Bootstrap for Vue 3
+- [PDFjs](https://mozilla.github.io/pdf.js) - to display the PDFs
+- [Bootstrap 5](https://getbootstrap.com/) - Responsive frontend toolkit
   
 ### Backend
-__Content Server__:
-- [Git Submodules](http://git-scm.com/book/en/v2/Git-Tools-Submodules) are used to include the following frameworks:
-    - [PDFjs](https://mozilla.github.io/pdf.js) - to display the PDFs
-    - [Hypothesis](https://web.hypothes.is/) - to annotating text in the PDFs
+
+- [Sequelize](https://sequelize.org/) - Database Management System
+- [PostgreSQL](https://www.postgresql.org/) - Used Database
+- [Passport](https://www.passportjs.org/) - Login Management
+- [Express](https://expressjs.com/de/) - Webserver
+- [Socket.IO](https://socket.io/) - Bidirectional and low-latency websocket connection
 
 __NLP Server__:
 - [Grobid](https://github.com/kermitt2/grobid) for document parsing in the NLP server
