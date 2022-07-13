@@ -7,7 +7,7 @@
         <ul v-else id="anno-list" class="list-group">
           <li v-for="anno in annotations" class="list-group-i"
               :key="anno.id"
-              v-bind:id="anno.id"
+              v-bind:id="'anno-' + anno.id"
               v-on:mouseover='hover(anno.id)'
               v-on:mouseleave="unhover(anno.id)">
             <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :scrollTo="scrollTo"></Annotation>
@@ -20,6 +20,7 @@
 <script>
 import {mapMutations} from "vuex";
 import Annotation from "./Annotation.vue";
+import {offsetRelativeTo, scrollElement} from "../../../../assets/anchoring/scroll";
 
 export default {
   name: "Sidebar",
@@ -37,6 +38,9 @@ export default {
     }
   },
   mounted() {
+    this.eventBus.on('sidebarScroll', (anno_id) => {
+      this.sidebarScrollTo(anno_id);
+    })
     this.load();
   },
   methods: {
@@ -47,7 +51,13 @@ export default {
     }),
     load() {
       this.$socket.emit("loadAnnotations", { id: this.document_id });
-    }
+    },
+    async sidebarScrollTo(annotationId) {
+      console.log(annotationId);
+      const scrollContainer = document.getElementById('sidebarContainer');
+      await scrollElement(scrollContainer, document.getElementById('anno-' + annotationId).offsetTop - 52.5);
+
+    },
   }
 }
 </script>
