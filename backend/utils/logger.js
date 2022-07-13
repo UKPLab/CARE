@@ -1,0 +1,57 @@
+/* logger.js - Logging everything
+
+This module logs everything into different formats
+Use:
+const logger = require("../utils/logger.js")("service");
+logger.debug(), logger.info(), logger.error(), ...
+
+Author: Dennis Zyska (zyska@ukp.informatik....)
+Co-Author: --
+Source: --
+*/
+
+const winston = require('winston');
+const Transport = require('winston-transport');
+
+const {
+    add: addLog
+} = require("../db/methods/log.js");
+
+const logging_dir = process.env.LOGGING_PATH;
+
+class SQLTransport extends Transport {
+    constructor(opts) {
+        super(opts);
+    }
+
+    log(info, callback) {
+        addLog(info).then(() => {
+
+            setImmediate(() => {
+                this.emit('logged', info);
+            });
+            callback();
+        });
+
+    }
+};
+
+exports = module.exports = function (service = "log") {
+    return winston.createLogger({
+        level: 'info',
+        format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.json()
+        ),
+        defaultMeta: {service: service},
+        exitOnError: false,
+        transports: [
+            new winston.transports.File({filename: logging_dir + '/error.log', level: 'error'}),
+            new winston.transports.File({filename: logging_dir + '/complete.log'}),
+            new winston.transports.File({filename: logging_dir + '/activity.log', level: 'info'}),
+            new winston.transports.Console({format: winston.format.simple()}),
+            new SQLTransport({})
+        ]
+    });
+
+}
