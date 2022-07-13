@@ -509,4 +509,8 @@ export default {
     position: static;
   }
 }
+#pdfContainer {
+  min-width: 800px;
+  max-width: 1000px;
+}
 </style>
