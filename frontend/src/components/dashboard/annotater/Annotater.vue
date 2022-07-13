@@ -5,11 +5,11 @@
         <TopBar id="topbar"></TopBar>
       </div>
     </div>
-    <div class="row flex-grow-1 overflow-hidden" >
-      <div class="col border mh-100 top-padding" style="overflow-y: scroll;" id="viewerContainer" >
+    <div class="row flex-grow-1 overflow-hidden top-padding" >
+      <div class="col border mh-100 " style="overflow-y: scroll;" id="viewerContainer" >
         <PDFViewer  :document_id="document_id" ref="pdfViewer" ></PDFViewer>
       </div>
-    <div class="col border mh-100  top-padding col-sm-2 g-0" style="overflow-y: scroll;">
+    <div class="col border mh-100  col-sm-2 g-0" style="overflow-y: scroll;">
       <Sidebar :document_id="document_id" :scrollTo="scrollTo" />
      </div>
     </div>
@@ -64,7 +64,7 @@ export default {
 
         const scrollContainer = document.getElementById('viewerContainer');
         // Correct offset since we have a fixed top
-        offset -= parseFloat(window.getComputedStyle(scrollContainer, null).getPropertyValue('padding-top'), 10);
+        offset -= 52.5;
 
 
         // nb. We only compute the scroll offset once at the start of scrolling.

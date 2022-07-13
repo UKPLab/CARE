@@ -29,10 +29,13 @@ export default {
     },
 
   sockets: {
-      connect: function () {
-        console.log('socket connected')
-      }
+    connect: function () {
+      console.log('socket connected')
     },
+    logout: function (data) {
+      this.$router.push("/login");
+    }
+  },
   methods: {
       async logout() {
         await this.$store.dispatch('auth/logout');
