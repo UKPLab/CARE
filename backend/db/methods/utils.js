@@ -1,3 +1,9 @@
+/* Helper functions for user management
+
+Some helper functions
+
+Author: Nils Dycke (dycke@ukp.informatik...), Dennis Zyska (zyska@ukp.informatik...)
+*/
 //create admin + guest user, if not existent
 const crypto = require("crypto");
 

@@ -1,10 +1,16 @@
-const { DataTypes, Op } = require("sequelize")
+/* Handle Annotation in Database
+
+Functions to modify the annotations in the database
+
+Author: Nils Dycke (dycke@ukp.informatik...)
+*/
+const {DataTypes, Op} = require("sequelize")
 const db = require("../models/index.js")
 
-const Annotation  = require("../models/annotation.js")(db.sequelize, DataTypes);
-const Comment  = require("../models/comment.js")(db.sequelize, DataTypes);
+const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
+const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
 
-exports.add = async function add(annotation, comment=null) {
+exports.add = async function add(annotation, comment = null) {
     console.log("adding anno");
     console.log(annotation);
     const anno = await Annotation.create({
@@ -18,7 +24,7 @@ exports.add = async function add(annotation, comment=null) {
         updatedAt: new Date()
     });
 
-    if(comment != null){
+    if (comment != null) {
         await Comment.create({
             hash: comment.id,
             creator: comment.user,
@@ -45,23 +51,23 @@ exports.deleteAnno = async function deleteAnno(annoId) {
 exports.updateAnno = async function updateAnno(annoId, newSelector = null, newText = null, newComment = null, newTags = null) {
     let newValues = {updatedAt: new Date(), draft: false};
 
-    if(newSelector != null){
+    if (newSelector != null) {
         newValues.selector = newSelector;
     }
-    if(newText != null){
-        newValues.text= newText;
+    if (newText != null) {
+        newValues.text = newText;
     }
-    if(newTags != null){
+    if (newTags != null) {
         newValues.tags = newTags.toString()
     }
 
-     await Annotation.update(newValues, {
-            where: {
-                hash: annoId
-            }
-     });
+    await Annotation.update(newValues, {
+        where: {
+            hash: annoId
+        }
+    });
 
-    if(newComment != null){
+    if (newComment != null) {
         const cid = newComment.id;
 
         const comment = await Comment.findAll({
@@ -70,7 +76,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
             }
         });
 
-        if(comment.length > 0) {
+        if (comment.length > 0) {
             const newCValues = {
                 text: newComment.text,
                 referenceAnnotation: annoId,
@@ -81,7 +87,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
 
             await Comment.update(newCValues, {
                 where: {
-                     hash: cid
+                    hash: cid
                 }
             });
         } else {
@@ -102,15 +108,13 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
 exports.loadByDocument = async function load(docId) {
     const annotations = await Annotation.findAll({
         where: {
-            document: docId,
-            deleted: false,
-            draft: false
+            document: docId, deleted: false, draft: false
         }
     });
 
     let comments = Object();
 
-    for(const a of annotations) {
+    for (const a of annotations) {
         comments[a.hash] = await Comment.findAll({
             where: {
                 referenceAnnotation: a.hash

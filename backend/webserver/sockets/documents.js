@@ -1,13 +1,22 @@
-const { add:addDoc, deleteDoc:deleteDoc, rename:renameDoc, loadByUser:loadDocs } = require("../../db/methods/document.js");
+/* Handle all document through websocket
+
+Loading the document through websocket
+
+Author: Dennis Zyska (zyska@ukp.informatik....)
+Source: --
+*/
+const {
+    add: addDoc,
+    deleteDoc: deleteDoc,
+    rename: renameDoc,
+    loadByUser: loadDocs
+} = require("../../db/methods/document.js");
 const fs = require("fs");
 const path = require("path");
 
 const PDF_PATH = `${__dirname}/../../../files`;
 
-exports = module.exports = function(io) {
-
-    //TODO: throw messages which should be displayed on the frontend
-    // emit with defined type
+exports = module.exports = function (io) {
 
     io.on("connection", (socket) => {
 
@@ -27,7 +36,7 @@ exports = module.exports = function(io) {
         });
 
         socket.on("doc_delete", (data) => {
-            // TODO check if user can delete this document?
+            // TODO: Security Check - check if user can delete this document?
             console.log(data);
             deleteDoc(data.docId)
                 .then(() => update_documents(socket.request.session.passport.user.id))
@@ -36,9 +45,9 @@ exports = module.exports = function(io) {
 
         socket.on("doc_rename", (data) => {
             // TODO check if user can rename this document?
-           renameDoc(data.docId, data.newName)
-               .then(() => update_documents(socket.request.session.passport.user.id))
-               .catch((err) => socket.emit("error", {err}));
+            renameDoc(data.docId, data.newName)
+                .then(() => update_documents(socket.request.session.passport.user.id))
+                .catch((err) => socket.emit("error", {err}));
         });
 
         socket.on("doc_upload", (data) => {
@@ -69,7 +78,7 @@ exports = module.exports = function(io) {
             const pdf = fs.readFileSync(`${PDF_PATH}/${data.document_id}.pdf`);
             socket.emit("pdf", {file: pdf});
         });
-        
+
     });
 
 

@@ -26,6 +26,5 @@ tableName: '<name>'
 5. If necessary update the model file accordingly (if fields have been changed). If you kept the
    automatically generated fields (updatedAt), you should add them
    to the model file, too.
-6. 
 
 
