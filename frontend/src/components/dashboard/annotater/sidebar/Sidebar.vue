@@ -1,19 +1,20 @@
 <template>
   <div id="sidebar-container" class="collapse collapse-horizontal border-end d-flex flex-column vh-100" v-bind:class="showing">
     <div id="sidepane">
-        <div v-if="annotations.length === 0">
-          <p class="text-center"> No annotations </p>
-        </div>
-        <ul v-else id="anno-list" class="list-group">
-          <li v-for="anno in annotations" class="list-group-i"
-              :key="anno.id"
-              v-bind:id="anno.id"
-              v-on:mouseover='hover(anno.id)'
-              v-on:mouseleave="unhover(anno.id)">
-            <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :scrollTo="scrollTo"></Annotation>
-          </li>
-        </ul>
+      <div id="spacer"></div>
+      <div v-if="annotations.length === 0">
+        <p class="text-center"> No annotations </p>
       </div>
+      <ul v-else id="anno-list" class="list-group">
+        <li v-for="anno in annotations" class="list-group-i"
+            :key="anno.id"
+            v-bind:id="anno.id"
+            v-on:mouseover='hover(anno.id)'
+            v-on:mouseleave="unhover(anno.id)">
+          <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :scrollTo="scrollTo"></Annotation>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -57,14 +58,19 @@ export default {
   max-width:300px;
   height:100%;
 }
+#spacer {
+  width: 300px;
+  background-color: transparent;
+}
 #sidepane {
   padding-top:5px;
-  background-color: #bfbfbf;
+  background-color: #e6e6e6;
   width:100%;
   height:100%;
 }
-#anno-list .list-group-item {
+#anno-list .list-group-i {
   border: none;
   background-color:transparent;
+  margin-top: 4px;
 }
 </style>

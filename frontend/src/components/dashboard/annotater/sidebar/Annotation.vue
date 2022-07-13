@@ -4,7 +4,7 @@
       <a id="user_info">User: {{ annoData.user }}</a>
     </div>
     <div class="card-body">
-      <div class="d-grid gap-2">
+      <div class="d-grid gap-1">
         <blockquote v-if="annoData.text != null && annoData.text.length > 0"
                     class="blockquote card-text"
                     id="text"
@@ -94,9 +94,27 @@ export default {
   mounted() {
     const formElement = `#annotationTags-${this.annoData.id}`;
     Tags.init(formElement);
+
+    console.log("Mouting anno");
+    console.log(this.annoData.state);
+
+    if(this.annoData.state == "SUBMITTED"){
+        this.toSubmitState();
+    } else {
+        this.toEditState();
+    }
   },
   unmounted() {
     console.log("Unmounting " + this.annoData.id);
+  },
+  watch: {
+    isSubmitted(newVal, oldVal){
+        if(newVal){
+            this.toSubmitState();
+        } else {
+            this.toEditState();
+        }
+    }
   },
   computed: {
     isSubmitted: function(){
@@ -108,7 +126,7 @@ export default {
       },
       set(value) {
         if(!this.annoData.hasComment()){
-          this.annoData.comment = new Comment(null, value, this.annoData.id, null, this.$store.getters["auth/getUser"].id); //todo add user
+          this.annoData.comment = new Comment(null, value, this.annoData.id, null, this.$store.getters["auth/getUser"].id);
         } else {
           this.annoData.comment.text = value;
         }
@@ -123,7 +141,7 @@ export default {
       }
     },
     truncatedText: function() {
-      const thresh = 250;
+      const thresh = 150;
       const len = this.annoData.text.length;
 
       if(len > thresh){
@@ -147,17 +165,25 @@ export default {
     getTagInput() {
       return document.querySelector(`div[uid=tags${this.annoData.id}] div input`);
      },
+    toSubmitState() {
+          const inElem = this.getTagInput();
+          inElem.disabled = true;
+          if(this.annoData.tags == null || this.annoData.tags.length === 0){
+            inElem.placeholder = "No Tags";
+          } else {
+            inElem.placeholder = "";
+          }
+          inElem.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
+    },
+    toEditState() {
+      const inElem = this.getTagInput();
+      inElem.disabled = false;
+      inElem.placeholder = "Add tag...";
+    },
     submit() {
       this.annoData.state = "SUBMITTED";
 
-      const inElem = this.getTagInput();
-      inElem.disabled = true;
-      if(this.annoData.tags == null || this.annoData.tags.length === 0){
-        inElem.placeholder = "No Tags";
-      } else {
-        inElem.placeholder = "";
-      }
-      inElem.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
+      this.toSubmitState();
 
       this.$socket.emit('updateAnnotation', {
         "annotation_id": this.annoData.id,
@@ -168,9 +194,7 @@ export default {
     edit() {
       this.annoData.state = "EDIT";
 
-      const inElem = this.getTagInput();
-      inElem.disabled = false;
-      inElem.placeholder = "Add tag...";
+      this.toEditState();
     },
     remove() {
       this.annoData.state = "DELETED";
@@ -187,16 +211,21 @@ export default {
 </script>
 
 <style>
-.card-header {
+.card-body .card-header {
   text-align: right;
   font-size: smaller;
   color: #929292;
+
+  padding-left: 4px;
+  padding-right: 4px;
 }
-.card-body {
-  padding-left: 8px;
-  padding-right: 8px;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+.card .card-body {
+    padding: 0;
+}
+.card .card-body .card-body {
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 4px;
 }
 #text {
   color: #4d4d4d;
@@ -204,11 +233,12 @@ export default {
   font-size: small;
   cursor:pointer;
   display:block;
+  padding: 0;
 }
 #text:hover {
   color: #000000;
 }
-.card-footer {
+.card-body .card-footer {
   padding: 0;
 }
 #footer-controls {
