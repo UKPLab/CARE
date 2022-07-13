@@ -42,7 +42,7 @@ export default {
         }
 
         const highlights = /** @type {AnnotationHighlight[]} */ (
-          this.highlightRange(range)
+          this.highlightRange(anchor, range)
         );
 
         highlights.forEach(h => {
@@ -60,7 +60,7 @@ export default {
       }
 
     },
-    highlightRange(range) {
+    highlightRange(anchor, range) {
       const textNodes = this.wholeTextNodesInRange(range);
 
       // Check if this range refers to a placeholder for not-yet-rendered content in
@@ -101,6 +101,10 @@ export default {
         /** @type {HighlightElement} */
         const highlightEl = document.createElement('highlight');
         highlightEl.className = "highlight";
+
+        highlightEl.addEventListener('click', () => {
+          this.eventBus.emit('sidebarScroll', anchor.annotation.id);
+        });
 
         const parent = /** @type {Node} */ (nodes[0].parentNode);
         parent.replaceChild(highlightEl, nodes[0]);

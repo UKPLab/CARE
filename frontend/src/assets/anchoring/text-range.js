@@ -52,8 +52,6 @@ function resolveOffsets(element, ...offsets) {
   let textNode;
   let length = 0;
 
-  console.log(offsets);
-  console.log(currentNode);
 
   // Find the text node containing the `nextOffset`th character from the start
   // of `element`.
@@ -77,7 +75,6 @@ function resolveOffsets(element, ...offsets) {
 
 
   if (nextOffset !== undefined) {
-    console.log(nextOffset);
     throw new RangeError('Offset exceeds text length');
   }
 

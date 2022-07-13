@@ -332,8 +332,6 @@ export default {
                 hint: strippedHint,
               });
 
-              console.log(match);
-
               if (!match) {
                 continue;
               }

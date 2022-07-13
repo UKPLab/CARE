@@ -120,6 +120,7 @@ export default {
                 anno.comment = comm;
             }
             state.annotations.push(anno);
+            // scrolling
         },
         // adds an annotation to the local storage
         ADD_ANNOTATION: (state, annotation) => {
