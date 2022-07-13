@@ -17,8 +17,8 @@ const path = require('path');
 const express = require('express');
 const mustacheExpress = require('mustache-express');
 
-const { Server } = require("socket.io");
-const { createServer, useSsl } = require('./createServer');
+const {Server} = require("socket.io");
+const {createServer, useSsl} = require('./createServer');
 const cors = require('cors');
 
 const passport = require("passport");
@@ -34,7 +34,6 @@ const port = process.env.CONTENT_SERVER_PORT || 3001;
 // routes
 const routes = [
     require("./routes/auth"),
-    require("./routes/pdf"),
 ];
 
 // sockets
@@ -65,13 +64,10 @@ function webServer(config) {
             console.log(`Request object sessionID from client: ${req.sessionID}`)
             return uuidv4(); // use UUIDs for session IDs
         },*/
-        store: new FileStore(),
-        secret: 'thatsecretthinggoeshere',
-        resave: false,
-        saveUninitialized: true
+        store: new FileStore(), secret: 'thatsecretthinggoeshere', resave: false, saveUninitialized: true
     });
     app.use(sessionMiddleware);
-    app.use(bodyParser.urlencoded({ extended: false }));
+    app.use(bodyParser.urlencoded({extended: false}));
     app.use(bodyParser.json());
     app.use(passport.initialize());
     app.use(passport.session());
@@ -91,12 +87,8 @@ function webServer(config) {
     if (process.env.BACKEND_ENABLE_CORS === 'true') {
         socketIoOptions = {
             cors: {
-                origin: "http://localhost:3000",
-                methods: ["GET", "POST"],
-                credentials: true,
-            },
-            origins: ['http://localhost:3000'],
-            handlePreflightRequest: (req, res) => {
+                origin: "http://localhost:3000", methods: ["GET", "POST"], credentials: true,
+            }, origins: ['http://localhost:3000'], handlePreflightRequest: (req, res) => {
                 const headers = {
                     "Access-Control-Allow-Headers": "Content-Type, Authorization",
                     "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
@@ -104,8 +96,7 @@ function webServer(config) {
                 };
                 res.writeHead(200, headers);
                 res.end();
-            },
-            maxHttpBufferSize: 1e8 // 100 MB for file upload
+            }, maxHttpBufferSize: 1e8 // 100 MB for file upload
         };
     }
 

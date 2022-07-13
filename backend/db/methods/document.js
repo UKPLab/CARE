@@ -1,12 +1,18 @@
+/* Handle Documents in Database
+
+Functions to modify the documents in the database
+
+Author: Nils Dycke (dycke@ukp.informatik...)
+*/
 const {v4: uuidv4} = require("uuid");
 
-const { DataTypes, Op } = require("sequelize")
+const {DataTypes, Op} = require("sequelize")
 const db = require("../models/index.js")
 const Document = require("../models/document.js")(db.sequelize, DataTypes);
 
 exports.add = async function add(doc_name, creator_id) {
     var hash;
-    while(true){
+    while (true) {
         hash = uuidv4();
 
         const duplicates = await Document.count({
@@ -15,15 +21,13 @@ exports.add = async function add(doc_name, creator_id) {
             }
         });
 
-        if(duplicates === 0){
+        if (duplicates === 0) {
             break;
         }
     }
 
     return Document.create({
-        name: doc_name,
-        hash: hash,
-        creator: creator_id,
+        name: doc_name, hash: hash, creator: creator_id,
     });
 }
 
@@ -46,8 +50,7 @@ exports.rename = async function rename(doc_id, name) {
 exports.loadByUser = async function load(user_id) {
     return Document.findAll({
         where: {
-            creator: user_id,
-            deleted: false
+            creator: user_id, deleted: false
         }
     })
 }
