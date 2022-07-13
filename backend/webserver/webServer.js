@@ -114,15 +114,13 @@ function webServer(config) {
     io.use(wrap(sessionMiddleware));
     io.use(wrap(passport.initialize()));
     io.use(wrap(passport.session()));
-    // ignore users that aren't authorized yet!
-    /*io.use((socket, next) => {
-        if (socket.request.session.passport.user) {
-            next();
-        } else {
-            socket.emit("logout");
-            next(new Error('unauthorized!'));
+    io.on("connection", (socket) => {
+        // Check if session exists, otherwise send logout and disconnect
+        if (!socket.request.session.passport) {
+            socket.emit("logout"); //force logout on client side
+            socket.disconnect();
         }
-    });*/
+    });
     sockets.forEach(socket => socket(io));
 
     // serve server on port

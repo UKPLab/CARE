@@ -72,5 +72,7 @@ export default {
   border: none;
   background-color:transparent;
   margin-top: 4px;
+  margin-left: 2px;
+  margin-right: 2px;
 }
 </style>
