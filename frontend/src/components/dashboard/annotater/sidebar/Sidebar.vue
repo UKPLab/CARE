@@ -57,6 +57,9 @@ export default {
     async sidebarScrollTo(annotationId) {
       const scrollContainer = document.getElementById('sidebarContainer');
       await scrollElement(scrollContainer, document.getElementById('anno-' + annotationId).offsetTop - 52.5);
+    },
+    focusAnnotation(annotation_id) {
+        this.$refs[annotation_id][0].scrollIntoView();
     }
   }
 }
