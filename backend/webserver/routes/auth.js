@@ -3,8 +3,8 @@
 Here the routes for login into the content server are provided. This includes checking of tokens and
 register, login and logout.
 
-Author: Nils Dycke (dycke@ukp.informatik...)
-Co-Author: Dennis Zyska (zyska@ukp.informatik....)
+Author: Nils Dycke (dycke@ukp.informatik...), Dennis Zyska (zyska@ukp.informatik....)
+Co-Author: -
 Source: Inspired by https://heynode.com/tutorial/authenticate-users-node-expressjs-and-passportjs/
 */
 
@@ -12,6 +12,7 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const crypto = require('crypto');
 const {add: addUser, find: findUser, relevantFields: getUserFields} = require('../../db/methods/user.js')
+const logger = require("../../utils/logger.js")( "routes/auth");
 
 // internal login procedure using passport and postgres
 passport.use(new LocalStrategy(function verify(username, password, cb) {
@@ -108,8 +109,8 @@ module.exports = function (app) {
         } else {
             res.status(401);
         }
-        console.log(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
-        console.log(`req.user: ${JSON.stringify(req.user)}`);
+        logger.debug(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
+        logger.debug(`req.user: ${JSON.stringify(req.user)}`);
     });
 
     // register a user

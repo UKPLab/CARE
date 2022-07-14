@@ -21,13 +21,15 @@ exports = module.exports = function (io) {
 
     io.on("connection", (socket) => {
 
+        const new_logger = logger.child({user: socket.request.session.passport.user.id})
+
         const update_documents = user_id => {
             loadDocs(user_id)
                 .then((rows) => {
                     socket.emit("update_docs", {"docs": rows, "status": "OK"});
                 })
                 .catch((err) => {
-                    logger.error(err);
+                    new_logger.error(err);
                     socket.emit("update_docs", {"docs": [], "status": "FAIL"});
                 });
         }
@@ -41,7 +43,7 @@ exports = module.exports = function (io) {
             deleteDoc(data.docId)
                 .then(() => update_documents(socket.request.session.passport.user.id))
                 .catch((err) => {
-                    logger.error(err);
+                    new_logger.error(err);
                     socket.emit("error", {err})
                 });
         });
@@ -50,7 +52,10 @@ exports = module.exports = function (io) {
             // TODO check if user can rename this document?
             renameDoc(data.docId, data.newName)
                 .then(() => update_documents(socket.request.session.passport.user.id))
-                .catch((err) => socket.emit("error", {err}));
+                .catch((err) => {
+                    new_logger.error(err);
+                    socket.emit("error", {err})
+                });
         });
 
         socket.on("doc_upload", (data) => {
@@ -72,7 +77,7 @@ exports = module.exports = function (io) {
                     update_documents(socket.request.session.passport.user.id)
                 })
                 .catch((err) => {
-                    console.log("Upload error");
+                    new_logger.error("Upload error: " + err);
                     socket.emit("error", {err});
                 });
         });

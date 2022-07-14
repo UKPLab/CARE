@@ -13,9 +13,13 @@ const {
     toFrontendRepresentationAnno: toFrontendRepresentationAnno,
     toFrontendRepresentationComm: toFrontendRepresentationComm
 } = require('../../db/methods/annotation.js')
+const logger = require("../../utils/logger.js")( "sockets/annotation");
 
 exports = module.exports = function (io) {
     io.on("connection", (socket) => {
+
+        const new_logger = logger.child({user: socket.request.session.passport.user.id})
+
         socket.on("addAnnotation", async (data) => {
             try {
                 await addAnnotation(data);
