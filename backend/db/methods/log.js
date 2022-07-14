@@ -12,12 +12,18 @@ const Log = require("../models/log.js")(db.sequelize, DataTypes);
 exports.add = async function add(info) {
     const {level, message, ...meta} = info;
 
-    await Log.create({
-        level: level,
-        message: message,
-        service: meta.service,
-        user: meta.user !== undefined ? meta.user : null,
-        timestamp: new Date(),
-    });
+    try {
+        await Log.create({
+            level: level,
+            message: message,
+            service: meta.service,
+            user: meta.user !== undefined ? meta.user : null,
+            timestamp: new Date(),
+        });
+    } catch(e) {
+        console.log("Can't put log into the database: " + e);
+        console.log("Log: ");
+        console.log(info);
+    }
 
 }
