@@ -20,6 +20,13 @@ module.exports = {
                 service: {
                     type: Sequelize.STRING
                 },
+                user: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                    references: {
+                        model: "user", key: "id"
+                    }
+                },
                 timestamp: {
                     type: Sequelize.DATE, allowNull: false
                 },

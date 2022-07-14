@@ -6,6 +6,10 @@ const logger = require("../utils/logger.js")("service");
 logger.debug(), logger.info(), logger.error(), ...
 More information: https://github.com/winstonjs/winston
 
+You can also put user information into the log:
+const new_logger = logger.child({user: <uid_from_table_user>});
+or logger.info(..., {user: <uid_from_table_user>});
+
 Author: Dennis Zyska (zyska@ukp.informatik....)
 Co-Author: --
 Source: --
