@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         level: DataTypes.STRING,
         message: DataTypes.STRING,
         service: DataTypes.STRING,
+        user: DataTypes.INTEGER,
         timestamp: DataTypes.DATE,
     }, {
         sequelize,

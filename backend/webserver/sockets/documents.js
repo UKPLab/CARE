@@ -13,6 +13,7 @@ const {
 } = require("../../db/methods/document.js");
 const fs = require("fs");
 const path = require("path");
+const logger = require("../../utils/logger.js")( "sockets/documents");
 
 const PDF_PATH = `${__dirname}/../../../files`;
 
@@ -26,7 +27,7 @@ exports = module.exports = function (io) {
                     socket.emit("update_docs", {"docs": rows, "status": "OK"});
                 })
                 .catch((err) => {
-                    console.log(err);
+                    logger.error(err);
                     socket.emit("update_docs", {"docs": [], "status": "FAIL"});
                 });
         }
@@ -39,7 +40,10 @@ exports = module.exports = function (io) {
             // TODO: Security Check - check if user can delete this document?
             deleteDoc(data.docId)
                 .then(() => update_documents(socket.request.session.passport.user.id))
-                .catch((err) => socket.emit("error", {err}));
+                .catch((err) => {
+                    logger.error(err);
+                    socket.emit("error", {err})
+                });
         });
 
         socket.on("doc_rename", (data) => {
