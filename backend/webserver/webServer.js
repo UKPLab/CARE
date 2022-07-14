@@ -79,7 +79,7 @@ function webServer(config) {
     app.use(passport.initialize());
     app.use(passport.session());
 
-    // additional routes from routes directory
+    logger.debug("Initialize Routes...");
     routes.forEach(route => route(app));
 
     // all further urls reference to frontend
@@ -107,6 +107,7 @@ function webServer(config) {
         };
     }
 
+    logger.debug("Initialize Websocket...");
     const io = new Server(httpServer, socketIoOptions);
     const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
     io.use(wrap(sessionMiddleware));
@@ -120,6 +121,7 @@ function webServer(config) {
             socket.disconnect();
         }
     });
+    logger.debug("Initialize Sockets...");
     sockets.forEach(socket => socket(io));
 
     // serve server on port
