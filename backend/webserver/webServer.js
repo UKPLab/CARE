@@ -44,7 +44,8 @@ const routes = [
 // sockets
 const sockets = [
     require("./sockets/annotation"),
-    require("./sockets/documents")
+    require("./sockets/documents"),
+    require("./sockets/log"),
 ];
 
 /**
