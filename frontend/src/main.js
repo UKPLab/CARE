@@ -14,15 +14,18 @@ Source: -
 import * as Vue from 'vue'
 import App from './App.vue'
 import BootstrapVue3 from "bootstrap-vue-3";
+import {BToastPlugin} from 'bootstrap-vue-3'
 import SocketIO from 'socket.io-client';
 import VueSocketIO from 'vue-3-socket.io';
 import store from "./store";
 import router from './routes.js';
 import mitt from 'mitt';
 //Bootstrap v5
-import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap"
+import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
+//import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
+//import "bootstrap/dist/css/bootstrap.min.css";
+//import "bootstrap"
 
 const app = Vue.createApp({
     render: () => Vue.h(App)
@@ -34,6 +37,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 app.use(BootstrapVue3);
+app.use(BToastPlugin)
 
 // Socket IO
 // https://www.npmjs.com/package/vue-3-socket.io
