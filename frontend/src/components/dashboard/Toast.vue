@@ -53,12 +53,13 @@ export default {
     makeToast(data) {
       this.toaster.show(
           {
-            title: (data.title) ? data.title : "",
+            title: (data.title !== undefined) ? data.title : "",
             body: data.message,
+
           },
           {
-            variant: (data.variant) ? data.variant : "info",
-            delay: (data.delay) ? data.delay : 5000,
+            variant: (data.variant !== undefined) ? data.variant : "info",
+            delay: (data.delay !== undefined) ? data.delay : 5000,
           }
       );
     }

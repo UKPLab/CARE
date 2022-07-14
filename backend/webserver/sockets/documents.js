@@ -68,7 +68,7 @@ exports = module.exports = function (io) {
                     const target = path.join(PDF_PATH, `${pdf_id}.pdf`);
 
                     fs.writeFile(target, data.file, (err) => {
-                        socket.emit("result", {message: err ? "failure on upload" : "success on upload", id: pdf_id})
+                        socket.emit("upload_result", {success: err ? false : true, id: pdf_id})
                     });
 
                     //Update Document list
@@ -76,7 +76,7 @@ exports = module.exports = function (io) {
                 })
                 .catch((err) => {
                     logger.error("Upload error: " + err, {user: socket.request.session.passport.user.id});
-                    socket.emit("error", {err});
+                    socket.emit("upload_result", {success: false});
                 });
         });
 
