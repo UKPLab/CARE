@@ -85,10 +85,6 @@ export default {
             });
             state.annotations = mapped;
         },
-        SOCKET_newAnnotationError: (state, message) => {
-            //currently we have just one error, too long
-            window.alert("Current selected text is too long. Please choose a range below 1000 characters");
-        },
         SOCKET_newAnnotation: (state, message) => {
             let anno = null;
             if (message.annotation_id == null) {
