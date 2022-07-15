@@ -64,10 +64,18 @@ async function register(user_credentials, res) {
     } else {
         addUser(user_name, first_name, last_name, email, pwd, "regular")
             .then((success) => {
-                res.status(201).send("User was created");
+                res.status(201).send("User was successfully created");
             })
             .catch((err) => {
-                res.status(400).send("Cannot create a user with the given user name or email. Error: " + err);
+                logger.info("Cannot create user: " + err);
+
+                if(err.name === "DuplicateUserException"){
+                    res.status(400).send("User already exists");
+                } else if(err.name === "InvalidPasswordException") {
+                    res.status(400).send("Password does not match criteria");
+                } else {
+                    res.status(400).send("Unknown error occurred. Consult admins");
+                }
             });
     }
 }
@@ -77,7 +85,8 @@ module.exports = function (app) {
     app.post('/auth/login', function (req, res, next) {
         passport.authenticate('local', function (err, user, info) {
             if (err) {
-                return res.status(500).send(err);
+                logger.info("Login failed: " + err);
+                return res.status(500).send("Failed to login");
             }
             if (!user) {
                 return res.status(401).send(info);
