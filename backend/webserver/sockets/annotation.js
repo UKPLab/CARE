@@ -31,6 +31,8 @@ exports = module.exports = function (io) {
                     }
                 );
             } catch (e) {
+                logger.error("Could not add annotation to database. Error: " + e);
+
                 socket.emit("newAnnotationError", {
                     uid: socket.request.session.passport.user.uid,
                     annotation_id: data.annotation_id,

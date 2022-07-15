@@ -91,16 +91,31 @@ export default {
   methods: {
     ...mapActions({register: "auth/register"}),
     async register_user() {
-      let response = await this.register({
-        first_name: this.first_name,
-        last_name: this.last_name,
-        user_name: this.user_name,
-        email: this.email,
-        password: this.password,
-        terms: this.terms,
-      });
-      if (response.statusText === "Created") {
-        await this.$router.push("/login");
+      try {
+          let response = await this.register({
+            first_name: this.first_name,
+            last_name: this.last_name,
+            user_name: this.user_name,
+            email: this.email,
+            password: this.password,
+            terms: this.terms,
+          });
+
+          if (response.statusText === "Created") {
+            this.eventBus.emit('toast', {
+              message: "The user registration was successful",
+              title: "User Registration Complete",
+              variant: 'success'
+            });
+
+            await this.$router.push("/login");
+          }
+      } catch(err) {
+         this.eventBus.emit('toast', {
+              message: err.response.data,
+              title: "Invalid User Credentials",
+              variant: 'danger'
+         });
       }
     }
   }
