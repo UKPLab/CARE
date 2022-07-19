@@ -33,6 +33,7 @@ const routes = [
     {path: "/login", component: Login, meta: {requiresAuth: false}},
     {path: "/register", component: Register, meta: {requiresAuth: false}},
     {path: "/annotate/:document_id", component: Annotater, props: true, meta: {requiresAuth: true}},
+    {path: "/view/:document_id", component: Annotater, props: route => ({document_id: route.params.document_id, readonly:true}), meta: {requireAuth: true}},
     {path: "/:catchAll(.*)", name: "NotFound", component: NotFoundPage, meta: {requiresAuth: false}}
 ]
 

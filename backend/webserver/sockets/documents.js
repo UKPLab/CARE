@@ -81,8 +81,17 @@ exports = module.exports = function (io) {
         });
 
         socket.on("pdf_get", (data) => {
-            const pdf = fs.readFileSync(`${PDF_PATH}/${data.document_id}.pdf`);
-            socket.emit("pdf", {file: pdf});
+            try {
+                const pdf = fs.readFileSync(`${PDF_PATH}/${data.document_id}.pdf`);
+                socket.emit("pdf", {file: pdf});
+            } catch(e) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
+                socket.emit("toast", {
+                        message: "Error while loading pdf file!",
+                        title: "PDF Error",
+                        variant: 'danger'
+                    });
+            }
         });
 
     });
