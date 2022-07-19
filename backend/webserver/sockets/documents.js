@@ -85,7 +85,7 @@ exports = module.exports = function (io) {
                 const pdf = fs.readFileSync(`${PDF_PATH}/${data.document_id}.pdf`);
                 socket.emit("pdf", {file: pdf});
             } catch(e) {
-                logger.error(err, {user: socket.request.session.passport.user.id});
+                logger.error(e, {user: socket.request.session.passport.user.id});
                 socket.emit("toast", {
                         message: "Error while loading pdf file!",
                         title: "PDF Error",
