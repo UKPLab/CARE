@@ -17,9 +17,9 @@ help:
 	@echo "make docker          				Start docker images"
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id> DUMP=<name in db_dumps folder>	Recover database into container"
-	@echo "make clean             Delete development files"
-	@echo "make nlp_dev           Run the flask app. Requires you to run make services in another terminal first"
-	@echo "make nlp_services      Run required services"
+	@echo "make clean             				Delete development files"
+	@echo "make nlp_dev          				Run the flask app. Requires you to run make services in another terminal first"
+	@echo "make nlp_services      				Run required services"
 
 .PHONY: dev
 dev: node_modules/.uptodate backend/node_modules/.uptodate
@@ -54,6 +54,8 @@ backup_db:
 .PHONY: recover_db
 recover_db:
 	@echo "Recovering database from dump. WARNING: This will override your current DB state."
+	@echo "Recovering from $${DUMP}"
+	@echo "Recovering int container $${CONTAINER}"
 	cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
 
 .PHONY: check_clean clean

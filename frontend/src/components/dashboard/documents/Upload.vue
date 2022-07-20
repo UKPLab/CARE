@@ -66,7 +66,7 @@ export default {
       if (data.success) {
         this.eventBus.emit('toast', {message: "File successfully uploaded!", variant: "success", delay: 3000});
       } else {
-        this.eventBus.emit('toast', {message: "Error during uploading file!", variant: "error", delay: 3000});
+        this.eventBus.emit('toast', {message: "Error during upload of file!", variant: "danger", delay: 3000});
       }
     }
   },
