@@ -120,6 +120,8 @@ function webServer(config) {
             logger.warn("Session in websocket not available! Send logout...");
             socket.emit("logout"); //force logout on client side
             socket.disconnect();
+        } else {
+            socket.request.session.touch();
         }
     });
     logger.debug("Initialize Sockets...");
