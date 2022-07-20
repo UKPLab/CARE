@@ -9,7 +9,7 @@
         @destroyPage="destroyPage"
         @updateVisibility="updateVisibility"
     />
-    <Adder :document_id="document_id" :pdf="pdf"></Adder>
+    <Adder v-if="!readonly" :document_id="document_id" :pdf="pdf"></Adder>
     <Highlights ref="highlights" :document_id="document_id"/>
   </div>
 </template>
@@ -48,6 +48,11 @@ export default {
       type: String,
       required: true
     },
+    readonly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    }
   },
   data() {
     return {

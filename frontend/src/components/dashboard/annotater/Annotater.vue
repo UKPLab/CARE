@@ -7,10 +7,10 @@
     </div>
     <div class="row d-flex flex-grow-1 overflow-hidden top-padding" >
       <div class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer" >
-        <PDFViewer  :document_id="document_id" ref="pdfViewer" style="margin:auto" class="rounded border border-1 shadow-sm" ></PDFViewer>
+        <PDFViewer  :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto" class="rounded border border-1 shadow-sm" ></PDFViewer>
       </div>
     <div class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;" id="sidebarContainer">
-      <Sidebar :document_id="document_id" :scrollTo="scrollTo" />
+      <Sidebar :document_id="document_id" :readonly="readonly" />
      </div>
     </div>
   </div>
@@ -37,13 +37,28 @@ import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
 export default {
   name: "Annotater2",
   components: {PDFViewer, Sidebar, TopBar},
-  props: ['document_id'],
+  props: {
+   'document_id': {
+     type: String,
+     required: true,
+   },
+    'readonly': {
+     type: Boolean,
+      required: false,
+      default: false,
+    }
+  },
   data() {
     return {
     }
   },
   computed: {
     anchors() { return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id)) },
+  },
+  mounted() {
+    this.eventBus.on('pdfScroll', (anno_id) => {
+      this.scrollTo(anno_id);
+    })
   },
   methods: {
     async scrollTo(annotationId) {
