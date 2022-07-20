@@ -34,6 +34,8 @@ const routes = [
     {path: "/register", component: Register, meta: {requiresAuth: false}},
     {path: "/annotate/:document_id", component: Annotater, props: true, meta: {requiresAuth: true}},
     {path: "/report/:document_id", component: Annotater, props: route => ({document_id: route.params.document_id, readonly:true}), meta: {requireAuth: true}},
+    {path: "/review/:document_id", component: Annotater, props: route => ({document_id: route.params.document_id, readonly:false, review: true}), meta: {requireAuth: true}},
+    {path: "/approve/:document_id", component: Annotater, props: route => ({document_id: route.params.document_id, readonly:true, approve: true}), meta: {requireAuth: true}},
     {path: "/:catchAll(.*)", name: "NotFound", component: NotFoundPage, meta: {requiresAuth: false}}
 ]
 

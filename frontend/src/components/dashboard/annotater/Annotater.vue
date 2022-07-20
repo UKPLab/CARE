@@ -2,7 +2,7 @@
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-shrink-0">
       <div class="col">
-        <TopBar id="topbar"></TopBar>
+        <TopBar id="topbar" :document_id="document_id" :readonly="readonly" :approve="approve" :review="review"></TopBar>
       </div>
     </div>
     <div class="row d-flex flex-grow-1 overflow-hidden top-padding" >
@@ -46,7 +46,17 @@ export default {
      type: Boolean,
       required: false,
       default: false,
-    }
+    },
+    approve: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    review: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   data() {
     return {
