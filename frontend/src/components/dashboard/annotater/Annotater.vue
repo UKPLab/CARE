@@ -35,7 +35,7 @@ import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
 
 
 export default {
-  name: "Annotater2",
+  name: "Annotater",
   components: {PDFViewer, Sidebar, TopBar},
   props: {
    'document_id': {
