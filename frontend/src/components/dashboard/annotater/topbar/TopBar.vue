@@ -20,11 +20,15 @@
   </nav>
 
   <Modal ref="submit">
-    <template v-slot:title>Test</template>
-    <template v-slot:body>Thank you!</template>
+    <template v-slot:title>Submit your Review</template>
+    <template v-slot:body>
+
+      Are you sure about your final submission of the review?
+
+    </template>
     <template v-slot:footer>
-      <button class="btn btn-secondary" data-bs-dismiss="modal" type="button" @click="submit">Back to Overview</button>
-      <button class="btn btn-primary" type="button" @click="cancel">Cancel</button>
+      <button class="btn btn-secondary" type="button" @click="cancel">No, not really...</button>
+      <button class="btn btn-primary" type="button" @click="submit">Yes, Submit!</button>
     </template>
   </Modal>
 </template>
@@ -63,10 +67,21 @@ export default {
       this.$refs.submit.closeModal();
     },
     submit() {
-      this.$refs.submit.closeModal();
-      this.$router.push("/");
-      //TODO flag database, bot triggern, overlay
-
+      this.$refs.submit.waiting = true;
+      this.sockets.subscribe("reviewSubmitted", (data) => {
+        this.$refs.submit.closeModal();
+        this.sockets.unsubscribe('reviewSubmitted');
+        if (data.success) {
+          this.eventBus.emit('toast', {title:"Review Submit", message:"Successful submitted the review!", variant: "success"});
+          this.$router.push("/");
+        } else {
+          this.eventBus.emit('toast', {title:"Review Submit", message:"Error during submitting the review! Please try it again!", variant: "danger"});
+        }
+      });
+      this.$socket.emit('reviewSubmit',
+          {
+            "document_id": this.document_id,
+          });
     }
 
   }

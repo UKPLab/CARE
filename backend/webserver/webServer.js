@@ -46,6 +46,7 @@ const sockets = [
     require("./sockets/annotation"),
     require("./sockets/documents"),
     require("./sockets/log"),
+    require("./sockets/review"),
 ];
 
 /**
