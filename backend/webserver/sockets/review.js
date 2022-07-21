@@ -6,8 +6,6 @@ exports = module.exports = function (io) {
         socket.on("reviewSubmit", async (data) => {
             logger.info("Review submitted", {user: socket.request.session.passport.user.id})
             socket.emit("reviewSubmitted", {success: false});
-
-
         });
     });
 }

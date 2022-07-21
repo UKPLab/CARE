@@ -46,6 +46,7 @@ export default {
   },
   methods: {
     openModal() {
+      this.waiting = false;
       this.modal.show();
     },
     closeModal() {
