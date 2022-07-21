@@ -17,6 +17,7 @@ import Dashboard from "./components/Dashboard.vue";
 import NotFoundPage from "./components/NotFoundPage.vue";
 import Login from "./components/auth/Login.vue";
 import Register from "./components/auth/Register.vue";
+import Review from "./components/dashboard/Review.vue";
 
 /*
  * Defines the routes for Vue. Each route links to a specific route and by passing
@@ -34,8 +35,8 @@ const routes = [
     {path: "/register", component: Register, meta: {requiresAuth: false}},
     {path: "/annotate/:document_id", component: Annotater, props: true, meta: {requiresAuth: true}},
     {path: "/report/:document_id", component: Annotater, props: route => ({document_id: route.params.document_id, readonly:true}), meta: {requireAuth: true}},
-    {path: "/review/:document_id", component: Annotater, props: route => ({document_id: route.params.document_id, readonly:false, review: true}), meta: {requireAuth: true}},
-    {path: "/approve/:document_id", component: Annotater, props: route => ({document_id: route.params.document_id, readonly:true, approve: true}), meta: {requireAuth: true}},
+    {path: "/review/:review_id", component: Review, props: true, meta: {requireAuth: true}},
+    {path: "/approve/:review_id", component: Annotater, props: route => ({review_id: route.params.review_id, readonly:true, decision: true}), meta: {requireAuth: true}},
     {path: "/:catchAll(.*)", name: "NotFound", component: NotFoundPage, meta: {requiresAuth: false}}
 ]
 
