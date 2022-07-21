@@ -1,21 +1,28 @@
 <template>
-  <div id="Modal" ref="Modal" aria-hidden="true" aria-labelledby="ModalLabel" class="modal fade"
+  <div ref="Modal" aria-hidden="true" aria-labelledby="ModalLabel" class="modal fade"
        data-bs-backdrop="static"
        role="dialog" tabindex="-1">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 id="ModalLabel" class="modal-title">
+          <h5 class="modal-title">
             <slot name="title"></slot>
           </h5>
           <button aria-label="Close" class="close" data-bs-dismiss="modal" type="button">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
-        <div class="modal-body justify-content-center flex-grow-1 d-flex">
-           <slot name="body"></slot>
+        <div class="modal-body">
+          <div v-if="waiting" class="justify-content-center flex-grow-1 d-flex" role="status">
+            <div class="spinner-border m-5">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div v-else>
+            <slot name="body"></slot>
+          </div>
         </div>
-        <div class="modal-footer">
+        <div v-if="!waiting" class="modal-footer">
           <slot name="footer"></slot>
         </div>
       </div>
@@ -31,6 +38,7 @@ export default {
   data() {
     return {
       modal: null,
+      waiting: false,
     }
   },
   mounted() {
