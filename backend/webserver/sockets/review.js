@@ -7,5 +7,13 @@ exports = module.exports = function (io) {
             logger.info("Review submitted", {user: socket.request.session.passport.user.id})
             socket.emit("reviewSubmitted", {success: false});
         });
+
+        socket.on("decisionSubmit", async (data) => {
+            logger.info("Decision submitted", {user: socket.request.session.passport.user.id})
+            console.log(data);
+            socket.emit("decisionSubmitted", {success: false});
+        });
+
+
     });
 }
