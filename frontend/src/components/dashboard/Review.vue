@@ -49,6 +49,7 @@ export default {
       this.$socket.emit('getReview',
           {
             "review_id": this.review_id,
+            "decision": this.decision,
           });
     }
 }
