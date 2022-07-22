@@ -27,7 +27,6 @@ DEFAULT = {
     "session_backend": "redis://redis:6379",
     "result_backend": "redis://redis:6379",
     "broker": "amqp://guest:guest@rabbitmq:5672",
-    "resources_dir": "/upload",
 
     "app": {
         "host": "0.0.0.0",
@@ -52,10 +51,9 @@ DEFAULT_DEV = {
     "session_backend": "redis://localhost:6379",
     "result_backend": "redis://localhost:6379",
     "broker": "amqp://guest:guest@localhost:5672",
-    "resources_dir": "./upload",
 
     "app": {
-        "host": "0.0.0.0",
+        "host": "127.0.0.1",
         "port": "6001",
     },
 
@@ -153,7 +151,6 @@ class WebConfiguration:
             "SECRET_KEY": self.conf["secret_key"],
             "CELERY_RESULT_BACKEND": self.conf["result_backend"],
             "CELERY_BROKER_URL": self.conf["broker"],
-            "UPLOAD_FOLDER": os.path.abspath(self.conf["resources_dir"]),
             "CELERY_RESULT_SERIALIZER": 'pickle',
             "CELERY_TASK_SERIALIZER":'pickle',
             "CELERY_ACCEPT_CONTENT": ['pickle']

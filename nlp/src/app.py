@@ -8,7 +8,7 @@ celery + socketio can work together.
 
 Author: Nils Dycke (dycke@ukp...)
 """
-
+import flask
 from eventlet import monkey_patch  # mandatory! leave at the very top
 
 monkey_patch()
@@ -44,7 +44,6 @@ app.config.update(config.session)
 
 # socketio
 socketio = SocketIO(app, **config.socketio)
-# socketio.init_app(app, **config.socketio)
 
 # celery
 celery = Celery(app.name, **config.celery)
@@ -66,11 +65,6 @@ def init():
     except ServerUnavailableException as e:
         print("WARNING: GROBID server seems unavailable for the given config. Probably cannot process PDFs!")
         print(e)
-
-    # check file system
-    if not os.path.exists(app.config["UPLOAD_FOLDER"]) or not os.path.isdir(app.config["UPLOAD_FOLDER"]):
-        print("Creating temporary file storage directory at %s" % app.config["UPLOAD_FOLDER"])
-        os.mkdir(app.config["UPLOAD_FOLDER"])
 
 
 def parse_pdf(filepath):
@@ -252,4 +246,6 @@ def init_bot(bot_config):
 if __name__ == '__main__':
     # this method is called when starting the flask server, initializing it to listen to WS requests
     init()
+    print("App running", config.app)
     socketio.run(app, **config.app)
+    #app.run(**config.app)
