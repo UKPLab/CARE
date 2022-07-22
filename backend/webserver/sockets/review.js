@@ -1,6 +1,6 @@
 const logger = require("../../utils/logger.js")( "sockets/review");
 const {
-    add, get
+    add, get, update
 } = require("../../db/methods/review.js");
 const {loadByUser: loadDocs} = require("../../db/methods/document");
 
@@ -41,15 +41,21 @@ exports = module.exports = function (io) {
 
         socket.on("reviewSubmit", async (data) => {
             logger.info("Review submitted", {user: socket.request.session.passport.user.id})
-            socket.emit("reviewSubmitted", {success: false});
-            //TODO change database with updated data
+            let newData = {
+                submitted: true,
+                submitAt: new Date(),
+            }
+            socket.emit("reviewSubmitted", {success: await update(data.review_id, newData)});
         });
 
         socket.on("decisionSubmit", async (data) => {
             logger.info("Decision submitted", {user: socket.request.session.passport.user.id})
-            console.log(data);
-            socket.emit("decisionSubmitted", {success: false});
-            // TODO change database with updated data
+            let newData = {
+                decisionAt: new Date(),
+                decisionReason: data.reason,
+                accepted: data.accept,
+            }
+            socket.emit("decisionSubmitted", {success: await update(data.review_id, newData)});
         });
 
 
