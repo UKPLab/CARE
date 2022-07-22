@@ -11,7 +11,7 @@ const User = require("../models/user.js")(db.sequelize, DataTypes);
 const {genSalt, genPwdHash} = require("./utils.js");
 const {InternalDatabaseError, isInternalDatabaseError} = require("./utils");
 
-const logger = require("../../utils/logger.js")( "sockets/annotation");
+const logger = require("../../utils/logger.js")( "db/user");
 
 function DuplicateUserException() {
     return {

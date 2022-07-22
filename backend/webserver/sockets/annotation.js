@@ -32,7 +32,7 @@ exports = module.exports = function (io) {
                     }
                 );
             } catch (e) {
-                logger.error("Could not add annotation and/or comment to database. Error: " + e);
+                logger.error("Could not add annotation and/or comment to database. Error: " + e, {user: socket.request.session.passport.user.id});
 
                 if(e.name === "InvalidAnnotationParameters"){
                     socket.emit("toast", {
@@ -65,7 +65,7 @@ exports = module.exports = function (io) {
             try {
                 await updateAnnotation(data.annotation_id, newSelector, newText, newComment, newTags);
             } catch (e) {
-                 logger.error("Could not update annotation and/or comment in database. Error: " + e);
+                 logger.error("Could not update annotation and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
 
                  if(e.name === "InvalidAnnotationParameters" || e.name === "InvalidCommentParameters"){
                     socket.emit("toast", {
@@ -87,7 +87,7 @@ exports = module.exports = function (io) {
             try {
                 await deleteAnnotation(data.id);
             } catch (e) {
-                logger.info("Error during annotation deletion: " + e);
+                logger.info("Error during annotation deletion: " + e, {user: socket.request.session.passport.user.id});
 
                 if(e.name === "InvalidAnnotationParameters"){
                     socket.emit("toast", {
@@ -110,7 +110,7 @@ exports = module.exports = function (io) {
             try {
                  res = await loadByDocument(data.id);
             } catch (e) {
-                logger.info("Error during loading of annotations: " + e);
+                logger.info("Error during loading of annotations: " + e, {user: socket.request.session.passport.user.id});
 
                 socket.emit("toast", {
                     message: "Internal server error. Failed to load annotations.",
