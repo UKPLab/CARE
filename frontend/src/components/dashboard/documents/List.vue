@@ -81,7 +81,6 @@ export default {
   data() {
     return {
       fields: [
-        {name: "ID", col: "uid"},
         {name: "Title", col: "name"},
         {name: "Created At", col: "createdAt"}
       ]
@@ -125,5 +124,7 @@ export default {
 </script>
 
 <style scoped>
-
+.card .card-body {
+  padding: 1rem;
+}
 </style>
