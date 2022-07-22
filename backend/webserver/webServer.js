@@ -46,6 +46,7 @@ const sockets = [
     require("./sockets/annotation"),
     require("./sockets/documents"),
     require("./sockets/log"),
+    require("./sockets/review"),
 ];
 
 /**
@@ -121,6 +122,9 @@ function webServer(config) {
             socket.emit("logout"); //force logout on client side
             socket.disconnect();
         }
+        socket.onAny(() => {
+            socket.request.session.touch();
+        })
     });
     logger.debug("Initialize Sockets...");
     sockets.forEach(socket => socket(io));

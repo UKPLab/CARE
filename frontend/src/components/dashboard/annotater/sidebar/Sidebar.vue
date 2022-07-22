@@ -13,7 +13,7 @@
             class="list-group-i"
             v-on:mouseleave="unhover(anno.id)"
             v-on:mouseover='hover(anno.id)'>
-          <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :scrollTo="scrollTo"
+          <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :readonly="readonly"
                       @focus="focusAnnotation"></Annotation>
         </li>
       </ul>
@@ -36,9 +36,21 @@ import {scrollElement} from "../../../../assets/anchoring/scroll";
 export default {
   name: "Sidebar",
   components: {Annotation},
-  props: ['document_id', 'scrollTo', 'config'],
+  props: {
+    document_id: {
+      type: String,
+      required: true
+    },
+    readonly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+  },
   data: function () {
-    return {}
+    return {
+      config: null,
+    }
   },
   computed: {
     sidebarShowing() {

@@ -47,7 +47,7 @@
         </div>
       </div>
     </div>
-    <div v-if="isSubmitted" class="card-footer">
+    <div v-if="isSubmitted && !readonly" class="card-footer">
       <div id="footer-controls" class="container">
         <div class="row">
           <div id="edit-buttons" class="col text-start">
@@ -103,7 +103,7 @@ import {Comment} from "../../../../data/comment.js";
 
 export default {
   name: "Annotation",
-  props: ["annoData", "config", "scrollTo"],
+  props: ["annoData", "config", "readonly"],
   data: function () {
     return {}
   },
@@ -175,7 +175,9 @@ export default {
       deleteAnnotation: "anno/deleteAnnotation"
     }),
     ...mapGetters({userData: 'auth/getUser'}),
-
+    scrollTo(anno_id) {
+      this.eventBus.emit('pdfScroll', anno_id);
+    },
     getTagInput() {
       return document.querySelector(`div[uid=tags${this.annoData.id}] div input`);
     },
