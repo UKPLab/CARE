@@ -4,7 +4,7 @@
       <span class="visually-hidden">Loading...</span>
     </div>
   </div>
-  <Annotater v-else :document_id="document_id" :review="!decision" :approve="decision" />
+  <Annotater v-else :document_id="document_id" :review_id="review_id" :readonly="decision" :review="!decision" :approve="decision" />
 </template>
 
 <script>
@@ -39,7 +39,6 @@ export default {
       this.sockets.subscribe("reviewData", (data) => {
         this.sockets.unsubscribe('reviewData');
         if (data.success) {
-          //TODO Check if review process already finished!
           this.document_id = data.document_id;
           this.waiting = false;
         } else {
