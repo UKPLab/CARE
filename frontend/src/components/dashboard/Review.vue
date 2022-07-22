@@ -4,7 +4,7 @@
       <span class="visually-hidden">Loading...</span>
     </div>
   </div>
-  <Annotater v-else :document_id="document_id" :review="true" />
+  <Annotater v-else :document_id="document_id" :review="!decision" :approve="decision" />
 </template>
 
 <script>
