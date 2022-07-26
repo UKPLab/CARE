@@ -70,6 +70,15 @@ exports.relevantFields = function fields(user) {
     return Object.fromEntries(filtered);
 }
 
+exports.minimalFields = function minimalFields(user) {
+    const include = ["id", "user_name"]
+
+    const entries = Object.entries(user.dataValues);
+    const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
+
+    return Object.fromEntries(filtered);
+}
+
 exports.find = async function find(username) {
     try {
         return await User.findAll({
@@ -81,6 +90,26 @@ exports.find = async function find(username) {
                 }]
             }
         });
+    } catch (err) {
+         throw InternalDatabaseError(err);
+    }
+}
+
+exports.get = async function get(userid) {
+    try {
+        return await User.findOne({
+            where: {
+                id: userid
+            }
+        });
+    } catch (err) {
+         throw InternalDatabaseError(err);
+    }
+}
+
+exports.getAll = async function getAll() {
+    try {
+        return await User.findAll();
     } catch (err) {
          throw InternalDatabaseError(err);
     }

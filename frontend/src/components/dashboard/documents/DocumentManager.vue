@@ -86,6 +86,12 @@ export default {
       ]
     }
   },
+  props: {
+    'admin': {
+      required: false,
+      default: false
+    },
+  },
   mounted() {
     this.load();
   },
