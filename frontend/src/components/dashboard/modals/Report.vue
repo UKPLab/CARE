@@ -30,6 +30,10 @@ export default {
       type: String,
       required: true
     },
+     'review_id': {
+     type: String,
+      required: true,
+    },
   },
   methods: {
     open() {

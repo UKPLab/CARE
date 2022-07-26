@@ -23,6 +23,10 @@ export default {
       type: String,
       required: true
     },
+    'review_id': {
+      type: String,
+      required: true,
+    },
   },
   methods: {
     open() {
@@ -46,6 +50,7 @@ export default {
       this.$socket.emit('reviewSubmit',
           {
             "document_id": this.document_id,
+            "review_id": this.review_id
           });
     }
   }

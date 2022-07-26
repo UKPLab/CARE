@@ -109,7 +109,6 @@ export default {
       this.load();
     },
     startReview(document_id) {
-      this.$socket.emit("startReview", {document_id: document_id});
       this.sockets.subscribe("reviewProcessStarted", (data) => {
         this.sockets.unsubscribe('reviewProcessStarted');
         if (data.success) {
@@ -118,6 +117,7 @@ export default {
           this.eventBus.emit('toast', {title:"Review Process", message:"The process cannot be started! Please try it again!", variant: "danger"});
         }
       });
+      this.$socket.emit("startReview", {document_id: document_id});
     },
   }
 }
