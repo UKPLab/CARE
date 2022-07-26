@@ -11,7 +11,9 @@ import createPersistedState from 'vuex-persistedstate';
 
 const getDefaultState = () => {
     return {
-        docs: []
+        docs: [],
+        reviews: [],
+        users: []
     };
 };
 
@@ -22,22 +24,30 @@ export default {
     state: getDefaultState(),
     getters: {
         //returns documents from the store (local)
-        getReviewProcesses: state => {
-            return state["docs"]
+        getReviews: state => {
+            return state["reviews"]
+        },
+        getUsers: state => {
+            return state["users"]
         }
     },
     mutations: {
         // updates the local store to the given documents
-        SET_REVIEW_PROCESSES: (state, docs) => {
+        SET_REVIEWS: (state, docs) => {
             state.docs = docs;
         },
         // resets the local document store to the default state
         RESET: state => {
             Object.assign(state, getDefaultState());
         },
-        SOCKET_update_review_processes: (state, message) => {
-            if (message.status === "OK") {
+        SOCKET_reviewDataAll: (state, message) => {
+            if (message.success) {
                 state.reviews = message.reviews;
+            }
+        },
+        SOCKET_userDataAll: (state, message) => {
+            if (message.success) {
+                state.users = message.users;
             }
         },
     },

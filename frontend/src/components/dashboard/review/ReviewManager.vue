@@ -1,21 +1,26 @@
 <template>
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-      Review Processes
+      Reviews
     </div>
     <div class="card-body">
       <span v-if="items.length === 0">
-        No review processes available...
+        No reviews...
       </span>
       <table v-else class="table table-hover">
         <thead>
         <tr>
+          <th scope="col">Status</th>
           <th v-for="field in fields" scope="col">{{ field.name }}</th>
           <th scope="col">Actions</th>
         </tr>
         </thead>
         <tbody>
         <tr v-for="item in items" :key="item.hash">
+          <td>
+            <span v-if="getStatus(item) === 'SUBMITTED'" class="badge badge-success" style="background-color: green">Submitted</span>
+            <span v-else class="badge badge-warning" style="background-color: #e0a800">Pending</span>
+          </td>
           <td v-for="field in fields">{{ item[field.col] }}</td>
           <td>
             <div class="btn-group">
@@ -30,49 +35,83 @@
                 </svg>
                 <span class="visually-hidden">Access</span>
               </button>
-
-              <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip" title="Delete document..."
-                      type="button" @click="deleteDoc(item.id)">
-                <svg class="bi bi-trash3-fill" fill="currentColor" height="16" viewBox="0 0 16 16"
-                     width="16" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                      d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
+              <button v-if="admin===true" class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
+                      title="Assign editor..." type="button" @click="assignEditor(item)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-angle-contract" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M.172 15.828a.5.5 0 0 0 .707 0l4.096-4.096V14.5a.5.5 0 1 0 1 0v-3.975a.5.5 0 0 0-.5-.5H1.5a.5.5 0 0 0 0 1h2.768L.172 15.121a.5.5 0 0 0 0 .707zM15.828.172a.5.5 0 0 0-.707 0l-4.096 4.096V1.5a.5.5 0 1 0-1 0v3.975a.5.5 0 0 0 .5.5H14.5a.5.5 0 0 0 0-1h-2.768L15.828.879a.5.5 0 0 0 0-.707z"/>
                 </svg>
-                <span class="visually-hidden">Delete</span>
+                <span class="visually-hidden">Assign</span>
               </button>
-
-               <button class="btn btn-outline-primary" type="button" @click="startReview(item.hash)">Start Review Process</button>
             </div>
           </td>
         </tr>
         </tbody>
       </table>
     </div>
-  </div>
+</div>
+
+  <EditorSelect v-if="admin===true" ref="editorSelect"></EditorSelect>
 </template>
 
 <script>
-import {mapGetters} from "vuex";
 
+import EditorSelect from "../modals/EditorSelect.vue";
 export default {
   name: "ReviewManager",
+  components: {EditorSelect},
   data() {
     return {
-      fields: [
-        {name: "Document", col: "name"},
-        {name: "Created At", col: "createdAt"}
-      ]
     }
+  },
+  props: {
+    'admin': {
+      required: false,
+      default: false
+    },
   },
   mounted() {
     this.load();
   },
   computed: {
-    ...mapGetters({items: 'admin/getReviewProcesses'})
+    items() {
+      if(this.admin){
+        return this.$store.getters['admin/getReviews'];
+      } else {
+        return this.$store.getters['user/getMetaReviews'];
+      }
+    },
+    fields() {
+      let fields =  [
+        {name: "Document", col: "document"},
+        {name: "Started At", col: "createdAt"}
+      ];
+
+      if(this.admin){
+        fields.push({name: "Reviewer", col: "startBy"});
+        fields.push({name: "Editor", col: "decisionBy"});
+        fields.push({name: "Decision", col: "decision"});
+      }
+
+      return fields;
+    }
   },
   methods: {
     load() {
-      //TODO this.$socket.emit("revproc_get_all");
+      if(this.admin){
+        this.$socket.emit("getAllReviews");
+      } else {
+        this.$socket.emit("getMetaReviews");
+      }
+    },
+    assignEditor(review){
+      this.$refs.editorSelect.open(review);
+    },
+    getStatus(review) {
+      if(review["submitted"]){
+        return "SUBMITTED";
+      } else {
+        return "DUE";
+      }
     }
   }
 }

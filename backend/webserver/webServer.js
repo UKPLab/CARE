@@ -47,6 +47,7 @@ const sockets = [
     require("./sockets/documents"),
     require("./sockets/log"),
     require("./sockets/review"),
+    require("./sockets/user")
 ];
 
 /**
@@ -73,7 +74,11 @@ function webServer(config) {
             console.log(`Request object sessionID from client: ${req.sessionID}`)
             return uuidv4(); // use UUIDs for session IDs
         },*/
-        store: new FileStore(), secret: 'thatsecretthinggoeshere', resave: false, saveUninitialized: true
+        store: new FileStore(),
+        secret: 'thatsecretthinggoeshere',
+        resave: false,
+        saveUninitialized: true,
+        maxAge: 1000*60*90
     });
     app.use(sessionMiddleware);
     app.use(bodyParser.urlencoded({extended: false}));
