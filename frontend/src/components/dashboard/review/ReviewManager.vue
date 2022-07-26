@@ -1,12 +1,11 @@
 <template>
-  <div class="card">
+<div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-      Documents
-      <Upload @addedDoc="onAddedDoc"></Upload>
+      Review Processes
     </div>
     <div class="card-body">
       <span v-if="items.length === 0">
-        No Documents available...
+        No review processes available...
       </span>
       <table v-else class="table table-hover">
         <thead>
@@ -43,15 +42,6 @@
               </button>
 
                <button class="btn btn-outline-primary" type="button" @click="startReview(item.hash)">Start Review Process</button>
-
-
-              <!--<button type="button" class="btn btn-outline-secondary" @click="renameDoc(item.id, 'default_name')" data-toggle="tooltip" data-placement="top" title="Rename document...">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
-                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                    <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
-                  </svg>
-                  <span class="visually-hidden">Rename</span>
-              </button>-->
             </div>
           </td>
         </tr>
@@ -62,26 +52,14 @@
 </template>
 
 <script>
-/* List.vue - document list management
-
-This component loads the user-specific documents from the server
-and allows to interact with them. The user can delete existing
-documents or access the annotator view for the respective pdf.
-
-Author: Nils Dycke (dycke@ukp...)
-Co-Author:  Dennis Zyska (zyska@ukp...)
-Source: -
-*/
-import {mapGetters, mapActions} from "vuex";
-import Upload from "./Upload.vue";
+import {mapGetters} from "vuex";
 
 export default {
-  name: "List",
-  components: {Upload},
+  name: "ReviewManager",
   data() {
     return {
       fields: [
-        {name: "Title", col: "name"},
+        {name: "Document", col: "name"},
         {name: "Created At", col: "createdAt"}
       ]
     }
@@ -90,35 +68,12 @@ export default {
     this.load();
   },
   computed: {
-    ...mapGetters({items: 'user/getDocuments'})
+    ...mapGetters({items: 'admin/getReviewProcesses'})
   },
   methods: {
     load() {
-      this.$socket.emit("docs_get");
-    },
-    deleteDoc(docId) {
-      this.$socket.emit("doc_delete", {docId: docId});
-    },
-    renameDoc(docId, name) {
-      this.$socket.emit("doc_rename", {docId: docId, newName: name});
-    },
-    accessDoc(docHash) {
-      this.$router.push(`/annotate/${docHash}`);
-    },
-    onAddedDoc() {
-      this.load();
-    },
-    startReview(document_id) {
-      this.$socket.emit("startReview", {document_id: document_id});
-      this.sockets.subscribe("reviewProcessStarted", (data) => {
-        this.sockets.unsubscribe('reviewProcessStarted');
-        if (data.success) {
-          this.$router.push(`/review/${data.reviewHash}`);
-        } else {
-          this.eventBus.emit('toast', {title:"Review Process", message:"The process cannot be started! Please try it again!", variant: "danger"});
-        }
-      });
-    },
+      //TODO this.$socket.emit("revproc_get_all");
+    }
   }
 }
 </script>

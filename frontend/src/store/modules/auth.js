@@ -27,6 +27,10 @@ export default {
         isAuthenticated: state => {
             return state['user'] && Object.keys(state.user).length > 0;
         },
+        // if the user is logged in as an admin on the server, returns true
+        isAdmin: state => {
+            return state['user'] && state.user["sysrole"] === "admin";
+        },
         // returns the current user information
         getUser: state => {
             return state.user;
