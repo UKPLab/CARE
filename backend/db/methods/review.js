@@ -37,3 +37,18 @@ exports.get = async function get(review_id) {
     }
 
 }
+
+exports.update = async function update(review_id, data) {
+    try {
+        data.updatedAt = new Date();
+        await Review.update(data, {
+            where: {
+                hash: review_id
+            }
+        });
+        return true;
+    } catch (err) {
+        logger.error("Cant update review workflow " + review_id + " in database: " + err);
+    }
+    return false;
+}

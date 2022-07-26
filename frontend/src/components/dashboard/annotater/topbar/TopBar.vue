@@ -19,9 +19,9 @@
     </div>
   </nav>
 
-  <ReviewSubmit v-if="review" ref="reviewSubmit" :document_id="document_id" ></ReviewSubmit>
-  <Report v-if="approve" ref="report" :document_id="document_id"></Report>
-  <DecisionSubmit v-if="approve" ref="decisionSubmit" :document_id="document_id"></DecisionSubmit>
+  <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id" ></ReviewSubmit>
+  <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id"></Report>
+  <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id" :document_id="document_id"></DecisionSubmit>
 
 </template>
 
@@ -37,6 +37,11 @@ export default {
     document_id: {
       type: String,
       required: true
+    },
+    'review_id': {
+     type: String,
+      required: false,
+      default: null
     },
     readonly: {
       type: Boolean,

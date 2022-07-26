@@ -28,6 +28,10 @@ export default {
       type: String,
       required: true
     },
+    'review_id': {
+     type: String,
+      required: true,
+    },
   },
   data() {
     return {
@@ -58,7 +62,8 @@ export default {
           {
             "document_id": this.document_id,
             "reason": document.getElementById('reason').value,
-            "accept": this.accept
+            "accept": this.accept,
+            "review_id": this.review_id
           });
     }
   }
