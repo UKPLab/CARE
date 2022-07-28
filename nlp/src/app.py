@@ -8,10 +8,10 @@ celery + socketio can work together.
 
 Author: Nils Dycke (dycke@ukp...)
 """
-import flask
 from eventlet import monkey_patch  # mandatory! leave at the very top
-
 monkey_patch()
+
+import sys
 
 from ExampleNamespace import ExampleNamespace
 import hashlib
@@ -24,8 +24,6 @@ from grobid_client.grobid_client import GrobidClient, ServerUnavailableException
 from celery import Celery, chain
 from flask import Flask, session, request
 from flask_socketio import SocketIO, join_room, emit
-
-import sys
 
 import WebConfiguration
 
@@ -246,6 +244,5 @@ def init_bot(bot_config):
 if __name__ == '__main__':
     # this method is called when starting the flask server, initializing it to listen to WS requests
     init()
-    print("App running", config.app)
-    socketio.run(app, **config.app)
-    #app.run(**config.app)
+    print("App starting", config.app)
+    socketio.run(app, **config.app, log_output=True)
