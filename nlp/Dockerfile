@@ -1,17 +1,20 @@
 FROM python:3.10.2-alpine
 
+#ARG env=.env
+
 # INSTALL REQUIREMENTS
 RUN apk add git
 
 # INSTALL GROBID CLIENT FROM GIT
-# TODO: fix copy submodule from frameworks
-RUN git clone https://github.com/kermitt2/grobid_client_python
+ADD frameworks/grobid_client_python /grobid_client_python
 WORKDIR grobid_client_python
 RUN python3 setup.py install
 
 # COPY SERVER CODE
+# ASSUMING ENTRYPOINT: ../nlp
 WORKDIR /
-ADD . /nlp-server/
+ADD nlp /nlp-server
+#ADD ./$env /nlp-server/$env
 
 # INSTALL REQUIREMENTS
 WORKDIR nlp-server
