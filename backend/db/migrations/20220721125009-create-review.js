@@ -44,7 +44,7 @@ module.exports = {
                     allowNull: true, type: Sequelize.DATE
                 },
                 decisionReason: {
-                    type: Sequelize.STRING
+                    type: Sequelize.STRING(4096)
                 },
                 submitted: {
                     type: Sequelize.BOOLEAN,

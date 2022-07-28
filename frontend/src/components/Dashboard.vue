@@ -20,8 +20,8 @@
             </div>
             <div class="row">
               <div class="col gy-5">
-                <h3>Review Management</h3>
-                <ReviewManager :admin=false></ReviewManager>
+                <h3>Meta-Review Management</h3>
+                <MetaReviewManager></MetaReviewManager>
               </div>
             </div>
           </div>
@@ -53,8 +53,8 @@
         </div>
         <div class="row">
           <div class="col gy-5">
-            <h3>Review Management</h3>
-            <ReviewManager :admin=false></ReviewManager>
+            <h3>Meta-Review Management</h3>
+            <MetaReviewManager></MetaReviewManager>
           </div>
         </div>
       </div>
@@ -78,10 +78,11 @@ Source: -
 
 import DocumentManager from "./dashboard/documents/DocumentManager.vue";
 import ReviewManager from "./dashboard/review/ReviewManager.vue";
+import MetaReviewManager from "./dashboard/review/MetaReviewManager.vue";
 
 export default {
   name: "Dashboard",
-  components: {DocumentManager, ReviewManager},
+  components: {MetaReviewManager, DocumentManager, ReviewManager},
   created() {
     this.$socket.on('connect', (data) => {
       console.log('socket connected')
