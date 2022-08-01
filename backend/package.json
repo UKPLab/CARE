@@ -2,7 +2,7 @@
   "name": "PEERBackend",
   "version": "0.0.1",
   "scripts": {
-    "backend-dev": "node webserver/webServer.js"
+    "start": "node webserver/webServer.js"
   },
   "dependencies": {
     "argparse": "^2.0.1",
@@ -26,8 +26,8 @@
     "sequelize": "^6.21.3",
     "sequelize-cli": "^6.4.1",
     "session-file-store": "^1.5.0",
-    "socket.io": "^4.5.1",
-    "socket.io-client": "^4.5.1",
+    "socket.io": "=4.5.1",
+    "socket.io-client": "=4.5.1",
     "uuid": "^8.3.2",
     "winston": "^3.8.1",
     "winston-transport": "^4.5.0"

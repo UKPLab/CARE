@@ -12,10 +12,7 @@ WORKDIR /
 ADD . /content-server/
 WORKDIR content-server
 
-# install requirements etc.
-RUN npm install
-WORKDIR backend
-RUN npm install
+# Run initialization
+RUN make ENV=build dev-build-frontend
 
-CMD npm run backend-dev
-
+CMD make ENV=build init dev-backend
