@@ -5,8 +5,9 @@ stages:          # List of stages for jobs, and their order of execution
 
 deploy-dev:
   stage: deploy
+  before_script:
+    - sudo apt install make
   script:
-    - apt install make
     - make build-dev-clean
     - make build-dev
   only:
