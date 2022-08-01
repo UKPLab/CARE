@@ -19,11 +19,14 @@ services:
 before_script:
   - docker info
   - docker version
-  - docker-compose version
-  - apt install make
 
 deploy-dev:
+  image:
+    name: docker/compose:latest
+    entrypoint: [ "/bin/sh", "-c" ]
   stage: deploy
+  before_script:
+    - apt-get install make
   script:
     - make build-dev-clean
     - make build-dev
