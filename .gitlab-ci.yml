@@ -3,10 +3,23 @@ stages:          # List of stages for jobs, and their order of execution
   - test
   - deploy
 
+image:
+  name: docker/compose:latest
+
+variables:
+  DOCKER_TLS_CERTDIR: "/certs"
+
+services:
+  - docker:20.10.17-dind
+
+before_script:
+  - docker info
+  - docker version
+  - docker-compose version
+  - apt install make
+
 deploy-dev:
   stage: deploy
-  before_script:
-    - export PATH=$PATH:/usr/bin
   script:
     - make build-dev-clean
     - make build-dev
