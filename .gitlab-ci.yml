@@ -22,11 +22,12 @@ before_script:
 
 deploy-dev:
   image:
-    name: ubuntu:latest
+    name: docker/compose:latest
+    entrypoint: [ "/bin/sh", "-c" ]
   stage: deploy
   before_script:
-    - apt-get update -qq && apt-get install -y -qq docker-compose make
-    - ln -s /usr/local/bin/docker-compose /compose/docker-compose
+    - apt-get update -qq && apt-get install -y -qq make
+    - docker-compose version
   script:
     - make build-dev-clean
     - make build-dev
