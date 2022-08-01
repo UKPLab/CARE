@@ -20,10 +20,9 @@ help:
 	@echo "make build-clean                     Clean the environment of production build"
 	@echo "make build-dev                       Also build, but dev environment with other ports!"
 	@echo "make build-dev-clean                 Clean the dev build environment"
-	@echo "make app-run                         Run the app inside docker!"
 	@echo "make docker          				Start docker images"
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
-	@echo "make recover_db CONTAINER=<name/id> DUMP=<name in db_dumps folder>	Recover database into container"
+	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make clean             				Delete development files"
 	@echo "make nlp_dev          				Run the flask app. Requires you to run make nlp_services in another terminal first"
 	@echo "make nlp_services      				Run required services"
@@ -48,10 +47,9 @@ dev-build-frontend: node_modules/.uptodate
 build:
 	docker-compose -f docker-compose.yml -p "peer_main" up --build -d
 
-.PHONY: build_dev
-build_dev:
+.PHONY: build-dev
+build-dev:
 	docker-compose -f docker-compose.yml -p "peer_dev" up --build -d
-
 
 .PHONY: build-clean
 build-clean:

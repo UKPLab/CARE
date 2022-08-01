@@ -1,0 +1,13 @@
+stages:          # List of stages for jobs, and their order of execution
+  - build
+  - test
+  - deploy
+
+deploy-dev:
+  stage: deploy
+  script:
+    - make build-dev-clean
+    - make build-dev
+  only:
+  - dev
+  - feat-39-server
