@@ -7,7 +7,11 @@ image:
   name: docker/compose:latest
 
 variables:
-  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_HOST: tcp://docker:2375
+  #
+  # This instructs Docker not to start over TLS.
+  DOCKER_TLS_CERTDIR: ""
+  #DOCKER_TLS_CERTDIR: "/certs"
 
 services:
   - docker:20.10.17-dind
