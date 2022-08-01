@@ -6,7 +6,7 @@ stages:          # List of stages for jobs, and their order of execution
 deploy-dev:
   stage: deploy
   before_script:
-    - sudo apt install make
+    - export PATH=$PATH:/usr/bin
   script:
     - make build-dev-clean
     - make build-dev
