@@ -29,8 +29,8 @@ deploy-dev:
     - apt-get update -qq && apt-get install -y -qq make
     - docker-compose version
   script:
-    - make build-dev-clean
-    - make build-dev
+    - docker-compose -p "peer_dev"  rm -f -s -v
+    - docker-compose -f docker-compose.yml -p "peer_dev" up --build -d
   only:
   - dev
   - feat-39-server
