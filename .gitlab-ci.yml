@@ -12,6 +12,7 @@ variables:
   # This instructs Docker not to start over TLS.
   DOCKER_TLS_CERTDIR: ""
   #DOCKER_TLS_CERTDIR: "/certs"
+  GIT_SUBMODULE_STRATEGY: recursive
 
 services:
   - docker:20.10.17-dind
