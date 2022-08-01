@@ -25,6 +25,7 @@ deploy-dev:
     name: ubuntu:latest
   stage: deploy
   before_script:
+    - apt-get update
     - apt-get -y install docker-compose make
     - ln -s /usr/local/bin/docker-compose /compose/docker-compose
   script:
