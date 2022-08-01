@@ -2,6 +2,8 @@ version: "3"
 services:
   postgres:
     image: postgres:11.5-alpine
+    ports:
+      - ${POSTGRES_PORT}:5432
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 1s
@@ -12,22 +14,37 @@ services:
       - postgres
     ports:
       - ${PUBLISHED_PORT}:${CONTENT_SERVER_PORT}
+    env_file:
+      - .env.build
   nlp:
     build:
       context: .
       dockerfile: nlp/Dockerfile
+      args:
+        - env=.env.build
     depends_on:
       - rabbitmq
       - celery-worker
       - grobid
       - redis
     command: python3 app.py
+    ports:
+      - ${NLP_PORT}:${NLP_PORT}
+    env_file:
+      - .env.build
   grobid:
     image: lfoppiano/grobid:0.7.0
+    ports:
+      - ${GROBID_PORT}:8070
   rabbitmq:
     image: rabbitmq:3.9-management-alpine
+    ports:
+      - ${RABBITMQ_PORT}:5672
+      - 15673:15672
   redis:
     image: redis
+    ports:
+      - ${REDIS_PORT}:6379
   celery-worker:
     build:
       context: .
@@ -37,6 +54,8 @@ services:
     depends_on:
       - rabbitmq
       - redis
+    env_file:
+      - .env.build
     command: celery -A app.celery worker -l INFO -E
   flower:
     image: mher/flower
@@ -44,3 +63,5 @@ services:
       - rabbitmq
       - celery-worker
     command: celery flower --broker=amqp://${RABBITMQ_HOST}:${RABBITMQ_PORT} --port=8888
+    ports:
+    - ${FLOWER_PORT}:8888

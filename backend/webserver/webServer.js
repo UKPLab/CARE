@@ -25,9 +25,6 @@ const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const bodyParser = require('body-parser');
 
-// define which env-file to load
-require('dotenv').config({ path: `../../.env.${process.env.NODE_ENV}` })
-
 // define PATHs
 const BUILD_PATH = `${__dirname}/../../dist/`;
 const port = process.env.CONTENT_SERVER_PORT || 3001;
@@ -51,7 +48,7 @@ const sockets = [
     require("./sockets/log"),
     require("./sockets/review"),
     require("./sockets/user"),
-    require("./sockets/nlp")
+    //require("./sockets/nlp")
 ];
 
 /**
@@ -127,9 +124,14 @@ function webServer(config) {
     io.on("connection", (socket) => {
         // Check if session exists, otherwise send logout and disconnect
         if (!socket.request.session.passport) {
-            logger.warn("Session in websocket not available! Send logout...");
-            socket.emit("logout"); //force logout on client side
-            socket.disconnect();
+            try {
+                socket.request.session.destroy();
+                logger.warn("Session in websocket not available! Send logout...");
+                socket.emit("logout"); //force logout on client side
+                socket.disconnect();
+            } catch(e) {
+                console.log(e);
+            }
         }
         socket.onAny(() => {
             socket.request.session.touch();

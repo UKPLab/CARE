@@ -1,5 +1,8 @@
 #!make
 include .env  #default env
+ifdef ENV
+	include .env.${ENV}
+endif
 export
 
 .PHONY: default
@@ -11,9 +14,13 @@ help:
 	@echo "make dev             		  		Run the app in the development environment"
 	@echo "make dev-build       		  		Run the app with a build version of the frontend"
 	@echo "make dev-backend      		 		Run only the backend with already builded frontend"
+	@echo "make dev-build-frontend   		 	Only build frontend for backend-dev development"
 	@echo "make init             		 		Initializes command"
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
-	@echo "make build-frontend   		 		Only build frontend for backend-dev development"
+	@echo "make build-clean                     Clean the environment of production build"
+	@echo "make build-dev                       Also build, but dev environment with other ports!"
+	@echo "make build-dev-clean                 Clean the dev build environment"
+	@echo "make app-run                         Run the app inside docker!"
 	@echo "make docker          				Start docker images"
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id> DUMP=<name in db_dumps folder>	Recover database into container"
@@ -22,43 +29,45 @@ help:
 	@echo "make nlp_services      				Run required services"
 
 .PHONY: dev
-include .env
-export
-
 dev: node_modules/.uptodate backend/node_modules/.uptodate
-	npm run frontend-dev & cd backend && npm run backend-dev
+	npm run frontend-dev & cd backend && npm run start
 
 .PHONY: dev-build
-include .env
-export
-
 dev-build: backend/node_modules/.uptodate build-frontend
-	cd backend && npm run backend-dev
+	cd backend && npm run start
 
 .PHONY: dev-backend
-include .env
-export
-
 dev-backend: backend/node_modules/.uptodate
-	cd backend && npm run backend-dev
+	cd backend && npm run start
 
-.PHONY: build-frontend
-include .env
-export
-
-build-frontend: node_modules/.uptodate
+.PHONY: dev-build-frontend
+dev-build-frontend: node_modules/.uptodate
 	npm run frontend-dev-build
 
 .PHONY: build
-include .env.build
-export
-
 build:
-	docker-compose -f docker-compose.yml up --build
+	docker-compose -f docker-compose.yml -p "peer_main" up --build -d
+
+.PHONY: build_dev
+build_dev:
+	docker-compose -f docker-compose.yml -p "peer_dev" up --build -d
+
+
+.PHONY: build-clean
+build-clean:
+	@echo "Cleaning project code and database. WARNING: This will remove your current DB state."
+	docker-compose -p "peer_main" rm  -f -s -v
+	docker network rm peer_main_default
+
+.PHONY: build-dev-clean
+build-dev-clean:
+	@echo "Cleaning project code and database. WARNING: This will remove your current DB state."
+	docker-compose -p "peer_dev"  rm -f -s -v
+	docker network rm peer_dev_default
 
 .PHONY: docker
 docker:
-	docker-compose up postgres
+	docker-compose -f docker-dev.yml up postgres
 
 .PHONY: backup_db
 backup_db:
@@ -88,12 +97,11 @@ clean: check_clean
 
 .PHONY: init
 init: backend/node_modules/.uptodate
+	@echo ${POSTGRES_HOST}
 	cd backend/db && npx sequelize-cli db:create || echo "IGNORING ERROR"
 	cd backend/db && npx sequelize-cli db:migrate
 
 .PHONY: nlp_dev
-include .env
-export
 
 nlp_dev:
 	@echo "$(GROBID_HOST)"
