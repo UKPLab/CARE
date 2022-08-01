@@ -25,6 +25,9 @@ const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const bodyParser = require('body-parser');
 
+// define which env-file to load
+require('dotenv').config({ path: `../../.env.${process.env.NODE_ENV}` })
+
 // define PATHs
 const BUILD_PATH = `${__dirname}/../../dist/`;
 const port = process.env.CONTENT_SERVER_PORT || 3001;
@@ -47,7 +50,8 @@ const sockets = [
     require("./sockets/documents"),
     require("./sockets/log"),
     require("./sockets/review"),
-    require("./sockets/user")
+    require("./sockets/user"),
+    require("./sockets/nlp")
 ];
 
 /**

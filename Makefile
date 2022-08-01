@@ -1,5 +1,5 @@
 #!make
-include .env
+include .env  #default env
 export
 
 .PHONY: default
@@ -12,32 +12,47 @@ help:
 	@echo "make dev-build       		  		Run the app with a build version of the frontend"
 	@echo "make dev-backend      		 		Run only the backend with already builded frontend"
 	@echo "make init             		 		Initializes command"
-	@echo "make build           		  		Create a production build of the client"
+	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
 	@echo "make build-frontend   		 		Only build frontend for backend-dev development"
 	@echo "make docker          				Start docker images"
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id> DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make clean             				Delete development files"
-	@echo "make nlp_dev          				Run the flask app. Requires you to run make services in another terminal first"
+	@echo "make nlp_dev          				Run the flask app. Requires you to run make nlp_services in another terminal first"
 	@echo "make nlp_services      				Run required services"
 
 .PHONY: dev
+include .env
+export
+
 dev: node_modules/.uptodate backend/node_modules/.uptodate
 	npm run frontend-dev & cd backend && npm run backend-dev
 
 .PHONY: dev-build
+include .env
+export
+
 dev-build: backend/node_modules/.uptodate build-frontend
 	cd backend && npm run backend-dev
 
 .PHONY: dev-backend
+include .env
+export
+
 dev-backend: backend/node_modules/.uptodate
 	cd backend && npm run backend-dev
 
 .PHONY: build-frontend
+include .env
+export
+
 build-frontend: node_modules/.uptodate
 	npm run frontend-dev-build
 
 .PHONY: build
+include .env.build
+export
+
 build:
 	docker-compose -f docker-compose.yml up --build
 
@@ -77,13 +92,20 @@ init: backend/node_modules/.uptodate
 	cd backend/db && npx sequelize-cli db:migrate
 
 .PHONY: nlp_dev
+include .env
+export
+
 nlp_dev:
+	@echo "$(GROBID_HOST)"
 	export PYTHON_PATH="$(CURDIR)/nlp/src"
 	python3 ./nlp/src/app.py --dev
 
 .PHONY: nlp_celery
 nlp_celery:
 	export C_FORCE_ROOT=true
+	set -a
+	source .env
+
 	cd ./nlp/src && \
 	celery --app app.celery worker -l INFO -E
 
@@ -101,3 +123,4 @@ node_modules/.uptodate: package.json package-lock.json
 backend/node_modules/.uptodate: backend/package.json backend/package-lock.json
 	cd backend && npm install
 	@touch $@
+
