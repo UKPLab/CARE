@@ -59,11 +59,9 @@ function webServer(config) {
     logger.debug("Start Webserver...")
     const app = express()
 
-    // enable CORS in Dev Mode
-    if (process.env.BACKEND_ENABLE_CORS === 'true') {
-        logger.debug("Use CORS Restriction with origin: http://localhost:3000");
-        app.use(cors({origin: 'http://localhost:3000', credentials: true}));
-    }
+    logger.debug("Use CORS Restriction");
+    app.use(cors({origin: ['http://localhost:3000',"http://localhost:8080"], credentials: true}));
+
 
     // Make all static files public available
     app.use(express.static(BUILD_PATH));
@@ -95,25 +93,20 @@ function webServer(config) {
 
     // add websocket server socket.io
     const httpServer = createServer(app);
-    // enable CORS in Dev Mode
-    let socketIoOptions = {
-        maxHttpBufferSize: 1e8 // 100 MB for file upload
+    const socketIoOptions = {
+        cors: {
+            origin: ["http://localhost:3000", 'http://localhost:8080'], methods: ["GET", "POST"], credentials: true,
+        }, origins: ['http://localhost:3000', 'http://localhost:8080'], handlePreflightRequest: (req, res) => {
+            const headers = {
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
+                "Access-Control-Allow-Credentials": true
+            };
+            res.writeHead(200, headers);
+            res.end();
+        }, maxHttpBufferSize: 1e8 // 100 MB for file upload
     };
-    if (process.env.BACKEND_ENABLE_CORS === 'true') {
-        socketIoOptions = {
-            cors: {
-                origin: "http://localhost:3000", methods: ["GET", "POST"], credentials: true,
-            }, origins: ['http://localhost:3000'], handlePreflightRequest: (req, res) => {
-                const headers = {
-                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-                    "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
-                    "Access-Control-Allow-Credentials": true
-                };
-                res.writeHead(200, headers);
-                res.end();
-            }, maxHttpBufferSize: 1e8 // 100 MB for file upload
-        };
-    }
+
 
     logger.debug("Initialize Websocket...");
     const io = new Server(httpServer, socketIoOptions);
