@@ -60,7 +60,7 @@ function webServer(config) {
     const app = express()
 
     logger.debug("Use CORS Restriction");
-    app.use(cors({origin: ['http://localhost:3000',"http://localhost:8080"], credentials: true}));
+    app.use(cors({origin: ['http://localhost:3000',"http://localhost:8080", 'https://peer.ukp.informatik.tu-darmstadt.de'], credentials: true}));
 
 
     // Make all static files public available
@@ -95,8 +95,8 @@ function webServer(config) {
     const httpServer = createServer(app);
     const socketIoOptions = {
         cors: {
-            origin: ["http://localhost:3000", 'http://localhost:8080'], methods: ["GET", "POST"], credentials: true,
-        }, origins: ['http://localhost:3000', 'http://localhost:8080'], handlePreflightRequest: (req, res) => {
+            origin: ["http://localhost:3000", 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'], methods: ["GET", "POST"], credentials: true,
+        }, origins: ['http://localhost:3000', 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'], handlePreflightRequest: (req, res) => {
             const headers = {
                 "Access-Control-Allow-Headers": "Content-Type, Authorization",
                 "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
