@@ -58,11 +58,12 @@ async function register(user_credentials, res) {
     const last_name = user_credentials["last_name"];
     const pwd = user_credentials["password"];
     const agree = user_credentials["terms"];
+    const stats = user_credentials["stats"];
 
     if (!user_name || !email || !first_name || !last_name || !pwd || !agree) {
         res.status(400).send("All credential fields need to be provided");
     } else {
-        addUser(user_name, first_name, last_name, email, pwd, "regular")
+        addUser(user_name, first_name, last_name, email, pwd, "regular", agree, stats)
             .then((success) => {
                 res.status(201).send("User was successfully created");
             })

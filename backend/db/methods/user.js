@@ -34,7 +34,7 @@ function validatePassword(password) {
 }
 
 
-exports.add = async function add(user_name, first_name, last_name, user_email, password, role) {
+exports.add = async function add(user_name, first_name, last_name, user_email, password, role, terms, stats) {
     if(!validatePassword(password)){
         throw InvalidPasswordException();
     }
@@ -50,7 +50,9 @@ exports.add = async function add(user_name, first_name, last_name, user_email, p
             user_name: user_name,
             email: user_email,
             password_hash: pwdHash,
-            salt: salt
+            salt: salt,
+            accept_terms: terms,
+            accept_stats: stats,
         });
     } catch (err) {
         if(isInternalDatabaseError(err)){
