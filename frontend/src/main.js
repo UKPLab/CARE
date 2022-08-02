@@ -43,7 +43,7 @@ app.use(BToastPlugin)
 // Socket IO
 // https://www.npmjs.com/package/vue-3-socket.io
 app.use(new VueSocketIO({
-    debug: true,
+    debug: (process.env.NODE_ENV !== 'production'),
     connection: SocketIO(getServerURL(),
         {
             path: '',
