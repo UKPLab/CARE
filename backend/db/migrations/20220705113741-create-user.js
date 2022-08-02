@@ -38,6 +38,14 @@ module.exports = {
                 type: Sequelize.STRING,
                 allowNull: false
             },
+            accept_terms: {
+                    type: Sequelize.BOOLEAN,
+                    default: true
+                },
+            accept_stats: {
+                    type: Sequelize.BOOLEAN,
+                    default: true
+                },
             salt: {
                 type: Sequelize.STRING,
                 allowNull: false
