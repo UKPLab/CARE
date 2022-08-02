@@ -17,6 +17,7 @@ help:
 	@echo "make dev-build-frontend   		 	Only build frontend for backend-dev development"
 	@echo "make init             		 		Initializes command"
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
+	@echo "make build-frontend                  Build frontend in production mode"
 	@echo "make build-clean                     Clean the environment of production build"
 	@echo "make build-dev                       Also build, but dev environment with other ports!"
 	@echo "make build-dev-clean                 Clean the dev build environment"
@@ -46,6 +47,10 @@ dev-build-frontend: node_modules/.uptodate
 .PHONY: build
 build:
 	docker-compose -f docker-compose.yml -p "peer_main" up --build -d
+
+.PHONE: build-frontend
+build-frontend: node_modules/.uptodate
+	npm run frontend-build
 
 .PHONY: build-dev
 build-dev:
