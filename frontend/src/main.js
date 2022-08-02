@@ -26,6 +26,7 @@ import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
 //import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
 //import "bootstrap/dist/css/bootstrap.min.css";
 //import "bootstrap"
+import getServerURL from './assets/serverUrl.js';
 
 const app = Vue.createApp({
     render: () => Vue.h(App)
@@ -43,7 +44,7 @@ app.use(BToastPlugin)
 // https://www.npmjs.com/package/vue-3-socket.io
 app.use(new VueSocketIO({
     debug: true,
-    connection: SocketIO(import.meta.env.VITE_APP_WEBSOCKET_URL,
+    connection: SocketIO(getServerURL(),
         {
             path: '',
             withCredentials: true,

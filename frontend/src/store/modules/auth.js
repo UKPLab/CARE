@@ -11,6 +11,7 @@ Co-Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 import axios from 'axios';
+import getServerURL from '../../assets/serverUrl.js';
 
 const getDefaultState = () => {
     return {
@@ -53,13 +54,13 @@ export default {
     actions: {
         // checks if the current user is still logged in on the server
         async check({commit}) {
-            const response = await axios.get(import.meta.env.VITE_APP_SERVER_URL + '/auth/check',
+            const response = await axios.get(getServerURL() + '/auth/check',
                 {withCredentials: true});
             commit('SET_USER', response.data.user);
         },
         // login on the server with the provided user information and credentials
         async login({commit}, login_data) {
-            const response = await axios.post(import.meta.env.VITE_APP_SERVER_URL + '/auth/login',
+            const response = await axios.post(getServerURL() + '/auth/login',
                 login_data,
                 {
                     validateStatus: function (status) {
@@ -74,11 +75,11 @@ export default {
         },
         // registers a user with the given credentials and user information
         async register(commit, register_data) {
-            return await axios.post(import.meta.env.VITE_APP_SERVER_URL + '/auth/register', register_data);
+            return await axios.post(getServerURL() + '/auth/register', register_data);
         },
         // logout of the current user on the server
         async logout({commit}) {
-            await axios.get(import.meta.env.VITE_APP_SERVER_URL + '/auth/logout', {withCredentials: true})
+            await axios.get(getServerURL() + '/auth/logout', {withCredentials: true})
             commit('RESET', "");
         }
     }
