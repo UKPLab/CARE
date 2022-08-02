@@ -13,6 +13,6 @@ ADD . /content-server/
 WORKDIR content-server
 
 # Run initialization
-RUN make ENV=build dev-build-frontend
+RUN make ENV=build build-frontend
 
-CMD make ENV=build init dev-backend
+CMD make ENV=build NODE_ENV=production init dev-backend
