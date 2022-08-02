@@ -18,16 +18,14 @@ variables:
 services:
   - docker:20.10.17-dind
 
-before_script:
-  - docker info
-  - docker version
-
 build:
   image:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
   before_script:
+    - docker info
+    - docker version
     - apt-get update -qq && apt-get install -y -qq make
     - docker-compose version
   script:
@@ -42,9 +40,9 @@ deploy-dev:
     - apk update && apk add openssh-client
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git pull"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $TAG_COMMIT"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev-clean"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev"
-
   only:
   - dev
   - feat-39-server
