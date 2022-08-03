@@ -46,7 +46,7 @@ dev-build-frontend: node_modules/.uptodate
 
 .PHONY: build
 build:
-	docker-compose -f docker-compose.yml -p "peer_main" up --build -d
+	docker-compose -f docker-compose.yml -p "peer_main" --env-file ".env.main"  up --build -d
 
 .PHONE: build-frontend
 build-frontend: node_modules/.uptodate
@@ -54,7 +54,7 @@ build-frontend: node_modules/.uptodate
 
 .PHONY: build-dev
 build-dev:
-	docker-compose -f docker-compose.yml -p "peer_dev" up --build -d
+	docker-compose -f docker-compose.yml -p "peer_dev" --env-file ".env.dev"  up --build -d
 
 .PHONY: build-clean
 build-clean:
