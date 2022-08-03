@@ -26,9 +26,9 @@ build:
     - apt-get update -qq && apt-get install -y -qq make
     - docker-compose version
   script:
-    - make build-dev
-    - make build-dev-clean
-    - make build
+    - docker-compose -f docker-compose.yml -p "peer_dev" --env-file ".env.dev"  up --build -d
+    - docker-compose -p "peer_dev"  rm -f -s -v
+    - docker-compose -f docker-compose.yml -p "peer_main" --env-file ".env.main"  up --build -d
 
 deploy-dev:
   stage: deploy
