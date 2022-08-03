@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM node:16-alpine
+ARG ENV
+ENV ENV=$ENV
 
 # Install requirements
 RUN npm install --global npm
@@ -13,6 +15,7 @@ ADD . /content-server/
 WORKDIR content-server
 
 # Run initialization
-RUN make ENV=build build-frontend
+RUN echo $ENV
+RUN make ENV=$ENV build-frontend
 
-CMD make ENV=build NODE_ENV=production init dev-backend
+CMD ["sh", "-c", "make ENV=$ENV NODE_ENV=production init dev-backend"]

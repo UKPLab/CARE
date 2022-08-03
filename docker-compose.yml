@@ -8,6 +8,8 @@ services:
   content_server:
     build:
       context: .
+      args:
+        ENV: ${ENV}
     depends_on:
       - postgres
     ports:

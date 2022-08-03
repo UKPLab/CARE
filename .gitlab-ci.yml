@@ -2,9 +2,6 @@ stages:          # List of stages for jobs, and their order of execution
   - build
   - deploy
 
-image:
-  name: docker/compose:latest
-
 variables:
   DOCKER_HOST: tcp://docker:2375
   #
@@ -29,8 +26,9 @@ build:
     - apt-get update -qq && apt-get install -y -qq make
     - docker-compose version
   script:
-    - docker-compose -p "peer_dev"  rm -f -s -v
-    - docker-compose -f docker-compose.yml -p "peer_dev" up --build -d
+    - make build-dev
+    - make build-dev-clean
+    - make build
 
 deploy-dev:
   stage: deploy
@@ -39,10 +37,22 @@ deploy-dev:
     - chmod og= $PEER_RSAKEY
     - apk update && apk add openssh-client
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git pull"
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $TAG_COMMIT"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev-clean"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev"
   only:
   - dev
-  - feat-39-server
+
+deploy-main:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - chmod og= $PEER_RSAKEY
+    - apk update && apk add openssh-client
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git pull"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build"
+  only:
+    - main
