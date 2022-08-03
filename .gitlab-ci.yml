@@ -15,7 +15,7 @@ variables:
 services:
   - docker:20.10.17-dind
 
-build:
+build-dev:
   image:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
@@ -28,7 +28,20 @@ build:
   script:
     - docker-compose -f docker-compose.yml -p "peer_dev" --env-file ".env.dev"  up --build -d
     - docker-compose -p "peer_dev"  rm -f -s -v
+
+build-main:
+  image:
+    name: docker/compose:latest
+    entrypoint: [ "/bin/sh", "-c" ]
+  stage: build
+  before_script:
+    - docker info
+    - docker version
+    - apt-get update -qq && apt-get install -y -qq make
+    - docker-compose version
+  script:
     - docker-compose -f docker-compose.yml -p "peer_main" --env-file ".env.main"  up --build -d
+
 
 deploy-dev:
   stage: deploy
@@ -40,7 +53,7 @@ deploy-dev:
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev-clean"
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=dev build-dev"
   only:
   - dev
 
@@ -53,6 +66,6 @@ deploy-main:
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=main build"
   only:
     - main
