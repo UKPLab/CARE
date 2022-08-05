@@ -73,6 +73,8 @@ export default {
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {
       this.scrollTo(anno_id);
+      this.$socket.emit("stats", {action: "pdfScroll", data: {review_id: this.review_id, document_id: this.document_id, anno_id: anno_id}});
+
     })
   },
   methods: {

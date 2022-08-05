@@ -18,14 +18,17 @@ exports = module.exports = function (io) {
 
         socket.on("stats", async (data) => {
             try {
-                if (socket.request.session.passport.user.accept_stats) {
+
+                //TODO the field acccept_stats is always null, so we can't check it here
+                //console.log(socket.request.session.passport.user);
+
+                //if (socket.request.session.passport.user.accept_stats) {
                     await add(data.action, data.data, socket.request.session.passport.user.id);
-                }
+                //}
             } catch (e) {
                 logger.error("Can't add statistics: " + JSON.stringify(data), {user: socket.request.session.passport.user.id});
             }
 
-            console.log(socket.request.session.passport.user);
         });
     });
 

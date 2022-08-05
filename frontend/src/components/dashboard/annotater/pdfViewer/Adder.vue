@@ -116,6 +116,8 @@ export default {
       this.selectedRanges = [range];
 
       this.show(event.clientX, event.clientY);
+      this.$socket.emit("stats", {action: "onTextSelect", data: {document_id: this.document_id, eventClientX: event.clientX, eventClientY: event.clientY}});
+
     },
     _onClearSelection() {
       this.isVisible = false;

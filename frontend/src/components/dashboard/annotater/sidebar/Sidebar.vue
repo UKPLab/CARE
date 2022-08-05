@@ -66,6 +66,7 @@ export default {
   mounted() {
     this.eventBus.on('sidebarScroll', (anno_id) => {
       this.sidebarScrollTo(anno_id);
+      this.$socket.emit("stats", {action: "sidebarScroll", data: {document_id: this.document_id, anno_id: anno_id}});
     })
     this.load();
   },
