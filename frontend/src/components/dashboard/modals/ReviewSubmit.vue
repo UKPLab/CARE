@@ -31,9 +31,11 @@ export default {
   methods: {
     open() {
       this.$refs.reviewSubmit.openModal();
+      this.$socket.emit("stats", {action: "openModalReviewSubmit", data: {review_id: this.review_id, document_id: this.document_id}});
     },
     cancel() {
       this.$refs.reviewSubmit.closeModal();
+      this.$socket.emit("stats", {action: "cancelModalReviewSubmit", data: {review_id: this.review_id, document_id: this.document_id}});
     },
     submit() {
       this.$refs.reviewSubmit.waiting = true;

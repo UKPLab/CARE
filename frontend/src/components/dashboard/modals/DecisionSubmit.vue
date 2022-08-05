@@ -42,9 +42,11 @@ export default {
     open(accept) {
       this.accept = accept;
       this.$refs.decisionSubmit.openModal();
+      this.$socket.emit("stats", {action: "openModalDecisionSubmit", data: {review_id: this.review_id, document_id: this.document_id}});
     },
     cancel() {
       this.$refs.decisionSubmit.closeModal();
+      this.$socket.emit("stats", {action: "cancelModalDecisionSubmit", data: {review_id: this.review_id, document_id: this.document_id}});
     },
     submit() {
       this.$refs.decisionSubmit.waiting = true;
