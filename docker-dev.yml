@@ -15,13 +15,13 @@ services:
     ports:
       - ${PUBLISHED_PORT}:${CONTENT_SERVER_PORT}
     env_file:
-      - .env.main
+      - .env.dev
   nlp:
     build:
       context: .
       dockerfile: nlp/Dockerfile
       args:
-        - env=.env.main
+        - env=.env.dev
     depends_on:
       - rabbitmq
       - celery-worker
@@ -31,7 +31,7 @@ services:
     ports:
       - ${NLP_PORT}:${NLP_PORT}
     env_file:
-      - .env.main
+      - .env.dev
   grobid:
     image: lfoppiano/grobid:0.7.0
     ports:
@@ -55,7 +55,7 @@ services:
       - rabbitmq
       - redis
     env_file:
-      - .env.main
+      - .env.dev
     command: celery -A app.celery worker -l INFO -E
   flower:
     image: mher/flower
