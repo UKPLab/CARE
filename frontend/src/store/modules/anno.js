@@ -93,7 +93,8 @@ export default {
                     message.annotation.target[0].selector[1].exact,
                     message.annotation.target[0].selector[1].exact,
                     message.annotation,
-                    message.user);
+                    message.user,
+                    message.tags);
             } else {
                 anno = new Annotation(
                     message.annotation_id,
@@ -101,7 +102,8 @@ export default {
                     message.annotation.target[0].selector[1].exact,
                     message.annotation.target[0].selector[1].exact,
                     message.annotation,
-                    message.user
+                    message.user,
+                    message.tags
                 );
             }
 

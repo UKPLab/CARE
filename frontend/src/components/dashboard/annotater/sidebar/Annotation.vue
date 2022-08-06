@@ -34,11 +34,7 @@
                   placeholder="Add tag..."
                   v-bind:disabled="isSubmitted">
             <option disabled hidden selected value="">Choose a tag...</option>
-            <option v-for="t in assignableTags" :key="t.name" data-badge-style="t.colorCode" value="t.description">{{t.description}}</option>
-            <option data-badge-style="success" value="strength">Strength</option>
-            <option data-badge-style="danger" value="weakness">Weakness</option>
-            <option data-badge-style="warning" value="summary">Summary</option>
-            <option data-badge-style="info" value="question">Question</option>
+            <option v-for="t in assignableTags" :key="t.name" v-bind:data-badge-style="t.colorCode" v-bind:value="t.description">{{t.description}}</option>
           </select>
           <div class="invalid-feedback">Please select a valid tag.</div>
         </div>
@@ -99,7 +95,7 @@ Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 import Tags from "bootstrap5-tags/tags.js";
-import {mapActions, mapGetters} from 'vuex';
+import {mapActions} from 'vuex';
 import {Comment} from "../../../../data/comment.js";
 
 export default {
@@ -132,6 +128,9 @@ export default {
     },
   },
   computed: {
+    assignableTags() {
+      return this.$store.getters['tag/getTags'];
+    },
     isSubmitted: function () {
       return this.annoData.state === "SUBMITTED";
     },
@@ -175,7 +174,6 @@ export default {
     ...mapActions({
       deleteAnnotation: "anno/deleteAnnotation"
     }),
-    ...mapGetters({userData: 'auth/getUser', assignableTags: "tag/getTags"}),
     scrollTo(anno_id) {
       this.eventBus.emit('pdfScroll', anno_id);
     },

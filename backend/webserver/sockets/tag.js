@@ -16,19 +16,20 @@ exports = module.exports = function (io) {
     io.on("connection", (socket) => {
         socket.on("tags_get_all", async (data) => {
             // get all
+            let tags;
             try {
-                const tags = await getAll();
+                tags = await getAll();
             } catch (e) {
                 logger.error(e, {user: socket.request.session.passport.user.id});
-                socket.emit("tags_result", {"tags": [], "status": "FAIL"});
+                socket.emit("tags_result", {"tags": [], success: false});
                 return;
             }
 
             // to frontend representation of tags
-            const mappedTags = users.map(x => toFrontend(x));
+            const mappedTags = tags.map(x => toFrontend(x));
 
             // emit
-            socket.emit("tags_result", {"tags": mappedTags, "status": "SUCCESS"});
+            socket.emit("tagsResult", {"tags": mappedTags, success: true});
         });
     });
 }

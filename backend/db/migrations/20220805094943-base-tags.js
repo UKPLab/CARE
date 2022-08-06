@@ -1,20 +1,21 @@
 'use strict';
 
 const baseTags = [
-    "Strength",
-    "Weakness",
-    "Question",
-    "Todo",
-    "Highlight"
-] ;
+    ["Strength", "success"],
+    ["Weakness", "danger"],
+    ["Question", "info"],
+    ["Todo", "dark"],
+    ["Highlight", "warning"]
+];
 
 module.exports = {
   async up (queryInterface, Sequelize) {
      await queryInterface.bulkInsert("tag",
             baseTags.map(t => {
                 return {
-                    name: t,
-                    description: t,
+                    name: t[0],
+                    description: t[0],
+                    colorCode: t[1],
                     updatedAt: new Date(),
                     createdAt: new Date(),
                     deleted: false
@@ -25,7 +26,7 @@ module.exports = {
 
   async down (queryInterface, Sequelize) {
     await queryInterface.bulkDelete("tag", {
-            name: baseTags
+            name: baseTags.map(t => t[0])
         }, {});
   }
 };

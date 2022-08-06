@@ -25,10 +25,11 @@ exports = module.exports = function (io) {
                 //TODO fails to push the created comment to the frontend! Fix this or discard the comment from command.
                 socket.emit("newAnnotation",
                     {
-                        uid: socket.request.session.passport.user.uid,
+                        uid: socket.request.session.passport.user.id,
                         annotation: data.annotation,
                         document_id: data.document_id,
-                        annotation_id: data.annotation_id
+                        annotation_id: data.annotation_id,
+                        tags: data.tags
                     }
                 );
             } catch (e) {

@@ -31,7 +31,7 @@ export default {
         RESET: state => {
             Object.assign(state, getDefaultState());
         },
-        SOCKET_tags_result: (state, message) => {
+        SOCKET_tagsResult: (state, message) => {
             if (message.success) {
                 state.tags = message.tags;
             }
