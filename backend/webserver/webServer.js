@@ -48,6 +48,7 @@ const sockets = [
     require("./sockets/log"),
     require("./sockets/review"),
     require("./sockets/user"),
+    require("./sockets/tag"),
     //require("./sockets/nlp")
 ];
 
