@@ -34,6 +34,7 @@
                   placeholder="Add tag..."
                   v-bind:disabled="isSubmitted">
             <option disabled hidden selected value="">Choose a tag...</option>
+            <option v-for="t in assignableTags" :key="t.name" data-badge-style="t.colorCode" value="t.description">{{t.description}}</option>
             <option data-badge-style="success" value="strength">Strength</option>
             <option data-badge-style="danger" value="weakness">Weakness</option>
             <option data-badge-style="warning" value="summary">Summary</option>
@@ -174,7 +175,7 @@ export default {
     ...mapActions({
       deleteAnnotation: "anno/deleteAnnotation"
     }),
-    ...mapGetters({userData: 'auth/getUser'}),
+    ...mapGetters({userData: 'auth/getUser', assignableTags: "tag/getTags"}),
     scrollTo(anno_id) {
       this.eventBus.emit('pdfScroll', anno_id);
     },

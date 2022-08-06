@@ -33,7 +33,6 @@ import {offsetRelativeTo, scrollElement} from "../../../assets/anchoring/scroll"
 import {isInPlaceholder} from "../../../assets/anchoring/placeholder";
 import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
 
-
 export default {
   name: "Annotater",
   components: {PDFViewer, Sidebar, TopBar},
@@ -73,7 +72,8 @@ export default {
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {
       this.scrollTo(anno_id);
-    })
+    });
+    this.load()
   },
   methods: {
     async scrollTo(annotationId) {
@@ -150,7 +150,10 @@ export default {
     },
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    },
+    load() {
+      this.$socket.emit("tags_get_all");
+    },
   }
 }
 </script>
