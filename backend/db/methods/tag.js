@@ -59,7 +59,7 @@ exports.remove = async function remove(tag_id) {
 
 exports.getAll = async function getAll() {
     try {
-        return await Document.findAll({
+        return await Tag.findAll({
             where: {
                 deleted: false
             }
@@ -75,7 +75,7 @@ exports.getAll = async function getAll() {
 
 exports.get = async function get(tag_id) {
     try {
-        return await Document.findOne({
+        return await Tag.findOne({
             where: {
                 id: tag_id
             }
@@ -92,7 +92,7 @@ exports.get = async function get(tag_id) {
 exports.toFrontend = function toFrontend(tag) {
     const include = ["name", "description", "colorCode"]
 
-    const entries = Object.entries(user.dataValues);
+    const entries = Object.entries(tag.dataValues);
     const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
 
     return Object.fromEntries(filtered);

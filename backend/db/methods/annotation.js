@@ -30,6 +30,7 @@ function InvalidCommentParameters(details) {
 exports.add = async function add(annotation, comment = null) {
     let anno;
     try {
+        //TODO without checking we add the given user as creator to the DB, that is incorrect -- we need to use the one of the session
         anno = await Annotation.create({
             hash: annotation.annotation_id,
             creator: annotation.user,
@@ -37,13 +38,14 @@ exports.add = async function add(annotation, comment = null) {
             document: annotation.document_id,
             selectors: annotation.annotation.target,
             draft: annotation.draft,
+            tags: String.toString(annotation.tags),
             createdAt: new Date(),
             updatedAt: new Date()
         });
     } catch (err) {
         if(isInternalDatabaseError(err)){
             throw InternalDatabaseError(err);
-        } else if(err.parent.message.match("value too long for type character varying") != null) {
+        } else if(err.parent !== undefined && err.parent.message.match("value too long for type character varying") != null) {
             throw InvalidAnnotationParameters("Maximum selection length exceeded");
         } else {
             throw InvalidAnnotationParameters("Document or user ID incorrect");

@@ -24,14 +24,14 @@ export class Annotation {
 
     // todo: add necessary attributes and methods
 
-    constructor(id, document_id, text, anchor, annotationData, user) {
+    constructor(id, document_id, text, anchor, annotationData, user, tags) {
         this.document_id = document_id;
         this.id = id;
         this.anchors = null;
         this.hover = false;
         this.comment = null;
         this.text = text;
-        this.tags = [];
+        this.tags = tags !== null ? tags : [];
 
         this.state = "CREATED";
 
@@ -50,12 +50,13 @@ export class Annotation {
     }
 }
 
-export function createAnnotation(document_id, text, anchor, annotationData, user) {
+export function createAnnotation(document_id, text, anchor, annotationData, user, tags) {
     return new Annotation(
         v4(),
         document_id,
         text,
         anchor,
         annotationData,
-        user);
+        user,
+        tags);
 }

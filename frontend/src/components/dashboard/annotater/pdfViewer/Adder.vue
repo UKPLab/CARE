@@ -1,8 +1,17 @@
 <template>
   <div id="adder" :style="{visibility: isVisible ? 'visible':'hidden'}">
-    <button class="adder-btn" type="button" @click="annotate">
-      <BIconPlusSquare/>
-    </button>
+    <div class="btn-group">
+      <button v-for="t in assignableTags"
+              :key="t.name"
+              class="btn"
+              data-placement="top"
+              data-toggle="tooltip"
+              v-bind:title="t.description"
+              v-bind:class="`btn-${t.colorCode}`"
+              @click="annotate(t)">
+        {{t.name}}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -41,6 +50,11 @@ export default {
   mounted() {
     this.init();
   },
+  computed: {
+    assignableTags() {
+      return this.$store.getters['tag/getTags'];
+    },
+  },
   methods: {
     ...mapMutations({addAnnotation: "anno/ADD_ANNOTATION"}),
     ...mapGetters({userData: 'auth/getUser'}),
@@ -58,7 +72,7 @@ export default {
         this._onSelection(event);
       }, 10);
     },
-    async annotate() {
+    async annotate(tag) {
       const ranges = this.selectedRanges;
       this.selectedRanges = [];
 
@@ -79,7 +93,8 @@ export default {
             "user": uid,
             "comment": null,
             "draft": true,
-            "annotation_id": v4()
+            "annotation_id": v4(),
+            "tags": [tag.name]
           });
 
       this.isVisible = false;
