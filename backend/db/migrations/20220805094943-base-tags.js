@@ -1,11 +1,11 @@
 'use strict';
 
 const baseTags = [
+    ["Highlight", "warning"],
     ["Strength", "success"],
     ["Weakness", "danger"],
     ["Question", "info"],
-    ["Todo", "dark"],
-    ["Highlight", "warning"]
+    ["Todo", "primary"],
 ];
 
 module.exports = {
