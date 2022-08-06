@@ -21,9 +21,9 @@
 This components handles the range selector and the button to add new annotations.
 
 Author: Dennis Zyska (zyska@ukp...)
+Co-author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import {BIconPlusSquare} from 'bootstrap-icons-vue';
 import {TextPosition, TextRange} from "../../../../assets/anchoring/text-range";
 import {TextQuoteAnchor} from '../../../../assets/anchoring/types';
 import {mapMutations, mapGetters} from "vuex";
@@ -31,7 +31,7 @@ import {v4} from 'uuid';
 
 export default {
   name: "Adder",
-  components: {BIconPlusSquare},
+  components: {},
   props: ['document_id', 'pdf'],
   data() {
     return {
@@ -99,7 +99,6 @@ export default {
 
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
-
     },
     init() {
 
@@ -275,19 +274,12 @@ export default {
 
 <style scoped>
 #adder {
-  border: 1px solid #999999;
-  box-shadow: 1px 1px #CCCCCC;
+  border-radius: 5px;
+  box-shadow: 2px 3px #CCCCCC;
   position: absolute;
   top: 0;
   left: 0;
   padding: 2px;
   background-color: white;
-}
-
-.adder-btn {
-  border-width: 0px;
-  padding: 2px;
-  width: 28px;
-  height: 28px;
 }
 </style>
