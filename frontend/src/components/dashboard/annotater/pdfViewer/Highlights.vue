@@ -35,7 +35,7 @@ export default {
 
         switch(t.colorCode){
           case "success":
-            return "5fe07c";
+            return "009933";
           case "danger":
             return "e05f5f";
           case "info":
@@ -141,8 +141,6 @@ export default {
         parent.replaceChild(highlightEl, nodes[0]);
         nodes.forEach(node => highlightEl.appendChild(node));
 
-        this.setHighlightColor(anchor, highlightEl);
-
         highlights.push(highlightEl);
       });
 
@@ -152,17 +150,6 @@ export default {
 
       return highlights;
 
-    },
-    setHighlightColor(anchor, highlightEl){
-      if(!anchor.annotation || !anchor.annotation.tags || anchor.annotation.tags.length === 0) {
-        return;
-      }
-
-      // load tags
-      const tags = anchor.annotation.tags;
-
-      // set style depending on first tag
-      highlightEl.style.backgroundColor = "#" + this.tagToColorMap(tags[0]);
     },
     setSVGHighlightColor(anchor, highlightEl){
       if(!anchor.annotation || !anchor.annotation.tags || anchor.annotation.tags.length === 0) {
@@ -174,6 +161,7 @@ export default {
 
       // set style depending on first tag
       highlightEl.style.fill = "#" + this.tagToColorMap(tags[0]);
+      highlightEl.style.opacity = 0.6;
     },
     drawHighlightsAbovePdfCanvas(highlightEls, anchor) {
       if (highlightEls.length === 0) {
@@ -363,7 +351,7 @@ export default {
 }
 
 .svg-highlight.is-focused {
-  fill: rgba(156, 230, 255, 0.5);
+  opacity: 1 !important;
 }
 
 .highlight {
