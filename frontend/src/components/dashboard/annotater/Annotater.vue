@@ -72,6 +72,7 @@ export default {
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {
       this.scrollTo(anno_id);
+      this.$socket.emit("stats", {action: "pdfScroll", data: {review_id: this.review_id, document_id: this.document_id, anno_id: anno_id}});
     });
     this.load()
   },
@@ -150,10 +151,7 @@ export default {
     },
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
-    },
-    load() {
-      this.$socket.emit("tags_get_all");
-    },
+    }
   }
 }
 </script>

@@ -73,6 +73,8 @@ export default {
   methods: {
     openModal() {
       this.modal.show();
+      this.$socket.emit("stats", {action: "openUploadModal", data: {}});
+
     },
     upload() {
       let fileElement = document.getElementById('fileInput')

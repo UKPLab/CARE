@@ -31,6 +31,8 @@ module.exports = {
                     email: user.email,
                     password_hash: passwordHash,
                     salt: salt,
+                    accept_stats: true,
+                    accept_terms: true,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }
