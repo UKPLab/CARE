@@ -10,6 +10,12 @@ services:
       context: .
       args:
         ENV: ${ENV}
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 10
+        window: 120s
     depends_on:
       - postgres
     ports:
