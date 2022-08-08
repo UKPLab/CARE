@@ -129,6 +129,7 @@ function webServer(config) {
         }
         socket.onAny(() => {
             socket.request.session.touch();
+            socket.request.session.save();
         })
     });
     logger.debug("Initialize Sockets...");
