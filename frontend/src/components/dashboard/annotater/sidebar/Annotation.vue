@@ -1,5 +1,5 @@
 <template>
-  <b-card>
+  <b-card :class="{ shake: input_required }">
     <div class="card-header">
       <a id="user_info">User: {{ annoData.user }}</a>
     </div>
@@ -102,18 +102,31 @@ export default {
   name: "Annotation",
   props: ["annoData", "config", "readonly"],
   data: function () {
-    return {}
+    return {
+      input_required: false
+    }
   },
   mounted() {
     const formElement = `#annotationTags-${this.annoData.id}`;
     Tags.init(formElement);
 
-    if (this.annoData.state == "SUBMITTED") {
+    const autoSubmit = (this.annoData.tags.length === 1 && this.annoData.tags[0] === "Highlight");
+
+    if (this.annoData.state === "SUBMITTED") {
       this.toSubmitState();
     } else {
       this.toEditState();
       this.$emit("focus", this.annoData.id);
     }
+
+    if(autoSubmit){
+      this.submit();
+    }
+
+    if(!this.isSubmitted){
+        this.input_required = true;
+        setTimeout(() => this.input_required = false, 800);
+      }
   },
   unmounted() {
     console.log("Unmounting " + this.annoData.id);
@@ -226,6 +239,34 @@ export default {
 </script>
 
 <style>
+.shake {
+  animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  transform: translate3d(0, 0, 0);
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
 .card-body .card-header {
   text-align: right;
   font-size: smaller;
