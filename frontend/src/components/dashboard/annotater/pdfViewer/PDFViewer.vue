@@ -73,9 +73,6 @@ export default {
       }
     },
     annotationTags(newVal, oldVal) {
-      console.log("Annotation tags changed");
-      console.log(newVal, oldVal);
-
       //handle only updated values
       if (this.pdf.pageCount > 0) {
         newVal.filter(vnew => oldVal.map(vold => vold.anno).includes(vnew.anno))
@@ -523,8 +520,6 @@ export default {
 
     },
     handle_tagchange(annotation) {
-      console.log("Handling tagchange on", annotation);
-
       // skip un-anchored annotations
       if(annotation.anchors === null || annotation.anchors === undefined || annotation.anchors.length === 0){
         return;
