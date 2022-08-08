@@ -33,6 +33,10 @@ export default {
       return tname => {
         const t = tags.find(t => t.name === tname);
 
+        if(t === undefined){
+          return "efea7b";
+        }
+
         switch(t.colorCode){
           case "success":
             return "009933";
@@ -47,7 +51,7 @@ export default {
           case "secondary":
             return "4290ee";
           default:
-            return "e7a2f3";
+            return "4c86f7";
         }
       }
     },
@@ -90,6 +94,11 @@ export default {
         highlight_it(anchor);
       }
 
+    },
+    update_highlights(anchors){
+      anchors.filter(a => a.highlights !== null && a.highlights !== undefined)
+             .forEach(a => this.removeHighlights(a.highlights));
+      this.highlight(anchors);
     },
     highlightRange(anchor, range) {
       const textNodes = this.wholeTextNodesInRange(range);
@@ -152,15 +161,20 @@ export default {
 
     },
     setSVGHighlightColor(anchor, highlightEl){
-      if(!anchor.annotation || !anchor.annotation.tags || anchor.annotation.tags.length === 0) {
+      if(!anchor.annotation || !anchor.annotation.tags) {
         return;
       }
 
       // load tags
       const tags = anchor.annotation.tags;
 
-      // set style depending on first tag
-      highlightEl.style.fill = "#" + this.tagToColorMap(tags[0]);
+      if(tags.length === 0){
+        highlightEl.style.fill = "#" + this.tagToColorMap(null);
+      } else {
+        // set style depending on first tag
+        highlightEl.style.fill = "#" + this.tagToColorMap(tags[0]);
+      }
+
       highlightEl.style.opacity = 0.6;
     },
     drawHighlightsAbovePdfCanvas(highlightEls, anchor) {

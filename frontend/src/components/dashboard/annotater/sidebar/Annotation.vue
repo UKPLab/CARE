@@ -148,10 +148,10 @@ export default {
     },
     annoTags: {
       get() {
-        return this.annoData.tags;
+        return this.annoData.tags.sort();
       },
       set(value) {
-        this.annoData.tags = value;
+        this.annoData.tags = value.sort();
       }
     },
     truncatedText: function () {

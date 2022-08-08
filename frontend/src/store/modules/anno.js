@@ -44,6 +44,12 @@ export default {
                 .flatMap(annotation => annotation.anchors)
                 .filter(anchors => anchors !== undefined)
         },
+        getAnnotationTags: (state) => (document_id) => {
+            return state.annotations.filter(annotation => annotation.document_id === document_id)
+                                 .map(a => {
+                                        return {anno: a, tags: a.tags}
+                                      });
+        },
         isSidebarShowing: state => {
             return state["sidebar_showing"]
         }
