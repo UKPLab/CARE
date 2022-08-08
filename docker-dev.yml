@@ -21,7 +21,7 @@ services:
       context: .
       dockerfile: nlp/Dockerfile
       args:
-        - env=.env.build
+        - env=.env.dev
     depends_on:
       - rabbitmq
       - celery-worker

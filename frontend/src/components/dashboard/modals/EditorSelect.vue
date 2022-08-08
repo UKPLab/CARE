@@ -42,9 +42,12 @@ export default {
         this.editor = this.review.decisionBy;
       }
       this.$refs.editorAssign.openModal();
+      this.$socket.emit("stats", {action: "openModalEditorSelect", data: {}});
+
     },
     cancel() {
       this.$refs.editorAssign.closeModal();
+      this.$socket.emit("stats", {action: "cancelModalEditorSelect", data: {}});
     },
     set_editor(editor) {
       this.editor = editor;
