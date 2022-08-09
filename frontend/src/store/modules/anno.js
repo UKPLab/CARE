@@ -92,12 +92,19 @@ export default {
             state.annotations = mapped;
         },
         SOCKET_newAnnotation: (state, message) => {
+            let anchor;
+            if(message.annotation.target === undefined){
+                anchor = null;
+            } else {
+                anchor = message.annotation.target[0].selector[1].exact;
+            }
+
             let anno = null;
             if (message.annotation_id == null) {
                 anno = createAnnotation(
                     message.document_id,
-                    message.annotation.target[0].selector[1].exact,
-                    message.annotation.target[0].selector[1].exact,
+                    anchor,
+                    anchor,
                     message.annotation,
                     message.user,
                     message.tags);
@@ -105,8 +112,8 @@ export default {
                 anno = new Annotation(
                     message.annotation_id,
                     message.document_id,
-                    message.annotation.target[0].selector[1].exact,
-                    message.annotation.target[0].selector[1].exact,
+                    anchor,
+                    anchor,
                     message.annotation,
                     message.user,
                     message.tags
@@ -145,7 +152,7 @@ export default {
         HOVER: (state, id) => {
             let annotation = state.annotations.find(x => x.id === id);
             annotation.hover = true;
-            if ("anchors" in annotation) {
+            if ("anchors" in annotation && annotation.anchors != null) {
                 annotation.anchors
                     .filter(anchor => "highlights" in anchor)
                     .forEach(anchor => anchor.highlights.map((highlight) => {
@@ -158,7 +165,7 @@ export default {
         UNHOVER: (state, id) => {
             let annotation = state.annotations.find(x => x.id === id);
             annotation.hover = false;
-            if ("anchors" in annotation) {
+            if ("anchors" in annotation && annotation.anchors != null) {
                 annotation.anchors
                     .filter(anchor => "highlights" in anchor)
                     .forEach(anchor => anchor.highlights.map((highlight) => {

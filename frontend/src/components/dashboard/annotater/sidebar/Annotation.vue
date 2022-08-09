@@ -1,18 +1,26 @@
 <template>
   <b-card :class="{ shake: input_required }">
     <div class="card-header">
-      <a id="user_info">User: {{ annoData.user }}</a>
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col" id="pageNoteFlag" v-if="isPageNote">
+            <a>Document Note</a>
+          </div>
+          <div class="col">
+            <a id="user_info">User: {{ annoData.user }}</a>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="card-body">
+    <div class="card-body" :class="{pageNoteBody: isPageNote}">
       <div class="d-grid gap-1">
-        <blockquote v-if="annoData.text != null && annoData.text.length > 0"
+        <blockquote v-if="!isPageNote"
                     id="text"
                     class="blockquote card-text"
                     v-on:click="scrollTo(annoData.id)">
           {{ truncatedText }}
         </blockquote>
         <div v-else id="text" class="blockquote card-text">
-          <span> - </span>
         </div>
         <div v-if="!isSubmitted" id="comment">
           <textarea id="annoComment"
@@ -141,6 +149,9 @@ export default {
     },
   },
   computed: {
+    isPageNote() {
+      return this.annoData.text === null || this.annoData.text.length === 0;
+    },
     assignableTags() {
       return this.$store.getters['tag/getTags'];
     },
@@ -320,5 +331,13 @@ export default {
 
 #createButtons {
   padding-bottom: 6px;
+}
+
+#pageNoteFlag {
+  text-align: left
+}
+
+.pageNoteBody {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 </style>

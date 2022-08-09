@@ -34,9 +34,9 @@ exports.add = async function add(annotation, comment = null) {
         anno = await Annotation.create({
             hash: annotation.annotation_id,
             creator: annotation.user,
-            text: annotation.annotation.target[0].selector[1].exact,
+            text: annotation.annotation.target === undefined ? null : annotation.annotation.target[0].selector[1].exact,
             document: annotation.document_id,
-            selectors: annotation.annotation.target,
+            selectors: annotation.annotation.target === undefined ? null : annotation.annotation.target,
             draft: annotation.draft,
             tags: String.toString(annotation.tags),
             createdAt: new Date(),
