@@ -2,17 +2,112 @@
   <Modal ref="terms" lg>
     <template v-slot:title>Terms</template>
     <template v-slot:body >
-      <div >
-       Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam purus enim, tempor a pulvinar sit amet, mattis ut ex. Maecenas vehicula a justo non auctor. Maecenas porta eu libero commodo cursus. Aliquam augue elit, commodo vitae turpis non, cursus pharetra leo. Vestibulum ut nisl lacinia, iaculis urna at, elementum mi. Nam dapibus elit nec ultrices semper. Proin finibus nisl neque, id maximus velit fringilla in. Aliquam volutpat dui eget elit ultrices venenatis. Mauris ullamcorper ipsum ligula, auctor pharetra ex iaculis et. Donec ac neque eu nibh consectetur bibendum eget eu mi. Integer a ipsum sit amet orci ultricies blandit. Pellentesque tincidunt finibus blandit. Ut et erat lobortis, ultricies erat vitae, porttitor sem. Donec sagittis scelerisque purus, nec viverra felis dictum ut. Praesent sodales maximus pulvinar. Mauris id mollis ante.
-
-Suspendisse viverra augue tortor, elementum rutrum magna pretium vel. Nulla iaculis facilisis tellus. Cras commodo ex diam, eget malesuada turpis ultrices ac. Nulla vulputate orci eget volutpat maximus. Fusce elementum mollis ipsum a interdum. Donec sit amet rutrum arcu. Sed feugiat nec velit non imperdiet. Integer at sapien sed justo consectetur egestas vel vitae sapien. Praesent ullamcorper nisi sit amet metus rutrum, nec tincidunt felis sollicitudin. Etiam eget mauris consequat, porttitor augue nec, egestas urna. Suspendisse ut nisi eget enim egestas dictum nec rhoncus sem. Nam vulputate ullamcorper facilisis. Nulla facilisi.
-
-Mauris lacus nibh, suscipit non laoreet nec, sodales nec orci. Etiam hendrerit sit amet leo id tincidunt. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Sed varius felis sodales egestas condimentum. Quisque posuere purus a nulla fringilla, eget pellentesque nisl accumsan. Suspendisse vehicula vulputate lectus, ac pellentesque neque maximus a. Nam quis lacus maximus quam pulvinar egestas in ut lorem. Ut ullamcorper magna sit amet ultrices iaculis. Donec sit amet lorem posuere, scelerisque lectus vitae, auctor nibh. Nam pellentesque vehicula justo at semper. Fusce imperdiet viverra quam, at tempor sapien commodo eget. Vivamus sagittis urna non vulputate sagittis. Aliquam fermentum ex urna. Vestibulum nec iaculis tellus, quis sollicitudin nibh. Maecenas eget nisi scelerisque, scelerisque ex sodales, facilisis turpis.
-
-Nunc facilisis, nulla malesuada interdum placerat, tortor lacus tempus massa, posuere varius erat odio sit amet libero. Morbi ex justo, ultricies non tincidunt eget, cursus ac nulla. Etiam consectetur mi nec felis pulvinar dictum. Aliquam at viverra lacus. Duis lacinia, augue ac venenatis accumsan, enim nibh feugiat nisi, non luctus lectus purus in justo. Nam sagittis, mauris ac ultrices porta, ligula lacus cursus metus, eget mattis dolor metus vel tellus. Quisque consectetur metus non fringilla eleifend. Maecenas elementum fringilla maximus. Nunc ut feugiat metus. Nullam posuere laoreet mauris nec dignissim. Maecenas pulvinar justo a risus pharetra laoreet.
-
-Nullam rhoncus, dolor ut sagittis semper, nisl metus tempus ante, vulputate ultrices risus leo aliquam nisl. Phasellus urna justo, elementum at cursus mattis, lobortis quis ligula. Suspendisse ullamcorper magna ac faucibus sagittis. Duis nec odio a lacus gravida mollis. Curabitur interdum justo quis interdum lacinia. Donec aliquam dui at ante efficitur tincidunt. Duis at sem scelerisque, egestas libero ac, posuere velit. Curabitur urna est, semper eu sodales ac, placerat in nisl. Integer dignissim venenatis nulla, suscipit vehicula tortor ultrices id. Praesent accumsan felis in metus hendrerit fermentum. Morbi non aliquam ex. In aliquet, sem sit amet vulputate sollicitudin, dui ante scelerisque magna, id maximus eros orci sed ex. Praesent felis diam, facilisis nec dignissim consequat, sodales nec mi. Ut hendrerit purus vel nibh iaculis pellentesque. Donec tempor tincidunt felis, et maximus felis.
-      </div>
+      <h1>
+        Information and Privacy Statement: PEER User Study Workshop
+      </h1>
+      <p>Conducted by the Ubiquitous Knowledge Processing Lab (UKP) at TU Darmstadt.</p>
+      <p>The guidelines of the German Research Foundation (DFG) stipulate that the participants in empirical studies
+        explicitly and comprehensibly declare that they are participating on a voluntary basis.
+        For this reason, we would like to ask you to read the following explanations of the study. After you have read them,
+        please tick the box during registration. Hereby you confirm that you read, understood and agree with the terms.
+      </p>
+      <h2>
+        Information Sheet
+      </h2>
+      <h3>
+        Subject of the Study
+      </h3>
+      <p>
+        The aim of the present study is to collect usage data and feedback on our software for annotation based reviewing PEER. The study participants are asked to test the software, write an annotation based review and evaluate a paper based on its review. After this practical part, the participants are asked to fill out a questionnaire on their experience with the software. The participants are also asked to provide several demographic parameters.
+      </p>
+      <h3>
+        Duration of the Study and Reimbursement
+      </h3>
+      <p>
+        The workshop is expected to take 90 minutes to complete. There is no reimbursement.
+      </p>
+      <h3>
+        Possible Benefits of the Study
+      </h3>
+      <p>
+        The Ubiquitous Knowledge Processing Lab (UKP) is developing AI-powered software tools to support reading and peer review of digital scientific literature. Insights from this study will guide the development of these tools. In particular, the knowledge and data gained will allow the tailoring of the tool to the needs of researchers in the humanities and social sciences.
+      </p>
+      <h3>
+        Risks
+      </h3>
+      <p>
+        This study poses no risks that exceed the risks of everyday life.
+      </p>
+      <h2>
+        Privacy Statement
+      </h2>
+      <p>
+        All data in this study is processed according to the laws of the European General Data Protection Regulation (GDPR) and the Data Protection and Freedom of Information laws of the German state of Hesse (HDSIG). The data will only be used according to the descriptions in the information sheet.
+      </p>
+      <h3>
+        Collected Data
+      </h3>
+      <p>
+        In the context of this study, the following data will be collected:
+      </p>
+      <ul>
+        <li>
+          User Study: Usage data of the PEER tool: Highlights and comments on scientific papers and acceptance decisions; Metadata such as the time of a comment
+        </li>
+        <li>
+          Questionnaire: Free text and multiple choice answers to questions regarding the use of the PEER software
+        </li>
+        <li>
+          One or two pseudonyms that allow participants to request that their data is deleted. When giving only one pseudonym, the data from the questionnaire (including demographics) and the usage data can be matched.
+        </li>
+      </ul>
+      <p>
+        The following personal data will be collected:
+        Demographics (Age group, gender, academic position, country of work and field of research)
+      </p>
+      <h3>
+        Confidentiality
+      </h3>
+      <p>
+        All data collected in this study will be handled confidentially and anonymously. The demographic information collected cannot be used to trace back to individuals. We will never ask you for your name or other clear personal information.
+      </p>
+      <h2>
+        Storage
+      </h2>
+      <p>
+        All data collected in this study is stored in Germany and will be deleted 10 years after collection. Participants can request their data to be deleted at any time by providing their pseudonym. The data can be used for research and can be published after anonymization. To guarantee anonymity, the data from the questionnaire will only be published in aggregate, and not with individual answers. In case of data publication, the data can no longer be deleted in the aggregated form. This consent form will be stored separated from the rest of the data and deleted after 10 years.
+      </p>
+      <h2>
+        Rights of the Participants
+      </h2>
+      <p>
+        Participation in this study is voluntary. At any time during the study, participants are free to terminate their participation and revoke their consent. All of the data related to these participants will be deleted.
+        All participants have the right to get information on the personal data that is stored about them, and to request its deletion. In cases of dispute, participants have the right to file a complaint with the data protection officer of the state of Hesse (contact details below).
+      </p>
+      <h2> Contact</h2>
+      <b>Study Coordinators</b>
+      <p>
+      Nils Dycke
+      dycke@ukp.informatk.tu-darmstadt.de
+      </p>
+      <p>
+      Dennis Zyska
+      zyska@ukp.informatk.tu-darmstadt.de
+      </p>
+      <p>
+      Jan Buchmann
+      buchmann@ukp.informatik.tu-darmstadt.de
+      </p>
+      <p>
+      Principal Investigator
+      Prof. Dr. Iryna Gurevych
+      Ubiquitous Knowledge Processing Lab (UKP)
+      FB 20
+      Technische Universität Darmstadt
+      S2|02 B110
+      Hochschulstraße 10
+      64289 Darmstadt
+      </p>
     </template>
     <template v-slot:footer>
       <button class="btn btn-secondary" type="button" @click="cancel">Close</button>
