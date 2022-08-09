@@ -1,7 +1,7 @@
 <template>
   <nav id="top-navbar" class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
     <div id="top-container" class="container-fluid">
-      <a class="navbar-brand" href="/">PEER</a>
+      <a class="navbar-brand" href @click="this.$router.push('/')">PEER</a>
       <div id="navbarSupportedContent" class="collapse navbar-collapse">
         <form class="container-fluid justify-content-center">
              <button v-if="review" class="btn btn-outline-success me-2" type="button" v-on:click="this.$refs.reviewSubmit.open()">Submit Review</button>

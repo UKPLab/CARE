@@ -52,8 +52,10 @@ const router = VueRouter.createRouter({
 // add basic access management (requiring login)
 router.beforeEach(async (to, from, next) => {
     await store.restored;
-    if (to.meta.requiresAuth && store.getters['auth/isAuthenticated'] === false) next("/login");
-    else {
+
+    if (to.meta.requiresAuth && store.getters['auth/isAuthenticated'] === false) {
+        next("/login");
+    } else {
         if (store.getters['auth/isAuthenticated'] && (to.path === '/register' || to.path === '/login')) next('/');
         else next();
     }
