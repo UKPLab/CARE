@@ -137,7 +137,6 @@ export default {
       childList: true,
       subtree: true,
     });
-
   },
   methods: {
     updateVisibility(page) {
