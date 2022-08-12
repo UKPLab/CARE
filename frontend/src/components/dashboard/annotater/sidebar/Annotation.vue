@@ -1,18 +1,26 @@
 <template>
-  <b-card>
+  <b-card :class="{ shake: input_required }">
     <div class="card-header">
-      <a id="user_info">User: {{ annoData.user }}</a>
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col" id="pageNoteFlag" v-if="isPageNote">
+            <a>Document Note</a>
+          </div>
+          <div class="col">
+            <a id="user_info">User: {{ annoData.user }}</a>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="card-body">
+    <div class="card-body" :class="{pageNoteBody: isPageNote}">
       <div class="d-grid gap-1">
-        <blockquote v-if="annoData.text != null && annoData.text.length > 0"
+        <blockquote v-if="!isPageNote"
                     id="text"
                     class="blockquote card-text"
                     v-on:click="scrollTo(annoData.id)">
           {{ truncatedText }}
         </blockquote>
         <div v-else id="text" class="blockquote card-text">
-          <span> - </span>
         </div>
         <div v-if="!isSubmitted" id="comment">
           <textarea id="annoComment"
@@ -34,10 +42,7 @@
                   placeholder="Add tag..."
                   v-bind:disabled="isSubmitted">
             <option disabled hidden selected value="">Choose a tag...</option>
-            <option data-badge-style="success" value="strength">Strength</option>
-            <option data-badge-style="danger" value="weakness">Weakness</option>
-            <option data-badge-style="warning" value="summary">Summary</option>
-            <option data-badge-style="info" value="question">Question</option>
+            <option v-for="t in assignableTags" :key="t.name" v-bind:data-badge-style="t.colorCode" v-bind:value="t.description">{{t.description}}</option>
           </select>
           <div class="invalid-feedback">Please select a valid tag.</div>
         </div>
@@ -47,7 +52,7 @@
         </div>
       </div>
     </div>
-    <div v-if="isSubmitted" class="card-footer">
+    <div v-if="isSubmitted && !readonly" class="card-footer">
       <div id="footer-controls" class="container">
         <div class="row">
           <div id="edit-buttons" class="col text-start">
@@ -98,25 +103,38 @@ Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 import Tags from "bootstrap5-tags/tags.js";
-import {mapActions, mapGetters} from 'vuex';
+import {mapActions} from 'vuex';
 import {Comment} from "../../../../data/comment.js";
 
 export default {
   name: "Annotation",
-  props: ["annoData", "config", "scrollTo"],
+  props: ["annoData", "config", "readonly"],
   data: function () {
-    return {}
+    return {
+      input_required: false
+    }
   },
   mounted() {
     const formElement = `#annotationTags-${this.annoData.id}`;
     Tags.init(formElement);
 
-    if (this.annoData.state == "SUBMITTED") {
+    const autoSubmit = (this.annoData.tags.length === 1 && this.annoData.tags[0] === "Highlight");
+
+    if (this.annoData.state === "SUBMITTED") {
       this.toSubmitState();
     } else {
       this.toEditState();
       this.$emit("focus", this.annoData.id);
     }
+
+    if(autoSubmit){
+      this.submit();
+    }
+
+    if(!this.isSubmitted){
+        this.input_required = true;
+        setTimeout(() => this.input_required = false, 800);
+      }
   },
   unmounted() {
     console.log("Unmounting " + this.annoData.id);
@@ -131,6 +149,12 @@ export default {
     },
   },
   computed: {
+    isPageNote() {
+      return this.annoData.text === null || this.annoData.text.length === 0;
+    },
+    assignableTags() {
+      return this.$store.getters['tag/getTags'];
+    },
     isSubmitted: function () {
       return this.annoData.state === "SUBMITTED";
     },
@@ -148,10 +172,10 @@ export default {
     },
     annoTags: {
       get() {
-        return this.annoData.tags;
+        return this.annoData.tags.sort();
       },
       set(value) {
-        this.annoData.tags = value;
+        this.annoData.tags = value.sort();
       }
     },
     truncatedText: function () {
@@ -174,8 +198,9 @@ export default {
     ...mapActions({
       deleteAnnotation: "anno/deleteAnnotation"
     }),
-    ...mapGetters({userData: 'auth/getUser'}),
-
+    scrollTo(anno_id) {
+      this.eventBus.emit('pdfScroll', anno_id);
+    },
     getTagInput() {
       return document.querySelector(`div[uid=tags${this.annoData.id}] div input`);
     },
@@ -225,6 +250,34 @@ export default {
 </script>
 
 <style>
+.shake {
+  animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  transform: translate3d(0, 0, 0);
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
 .card-body .card-header {
   text-align: right;
   font-size: smaller;
@@ -278,5 +331,13 @@ export default {
 
 #createButtons {
   padding-bottom: 6px;
+}
+
+#pageNoteFlag {
+  text-align: left
+}
+
+.pageNoteBody {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 </style>

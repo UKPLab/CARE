@@ -2,43 +2,46 @@ version: "3"
 services:
   postgres:
     image: postgres:11.5-alpine
-    ports:
-      - '127.0.0.1:5432:5432'
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 1s
   content_server:
     build:
       context: .
+      args:
+        ENV: ${ENV}
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 10
+        window: 120s
+    depends_on:
+      - postgres
     ports:
-      - "3001:3001"
+      - ${PUBLISHED_PORT}:${CONTENT_SERVER_PORT}
   nlp:
-    build: .
+    build:
+      context: .
+      dockerfile: nlp/Dockerfile
     depends_on:
       - rabbitmq
       - celery-worker
       - grobid
       - redis
     command: python3 app.py
-    ports:
-      - ${NLP_PORT}:6001
   grobid:
     image: lfoppiano/grobid:0.7.0
-    ports:
-      - ${GROBID_PORT}:8070
   rabbitmq:
     image: rabbitmq:3.9-management-alpine
-    ports:
-      - ${RABBITMQ_PORT}:5672
-      - 15673:15672
   redis:
     image: redis
-    ports:
-      - ${REDIS_PORT}:6379
   celery-worker:
+    build:
+      context: .
+      dockerfile: nlp/Dockerfile
     environment:
       - C_FORCE_ROOT=true
-    build: nlp
     depends_on:
       - rabbitmq
       - redis
@@ -48,6 +51,4 @@ services:
     depends_on:
       - rabbitmq
       - celery-worker
-    command: celery flower --broker=amqp://rabbitmq:${RABBITMQ_PORT} --port=8888
-    ports:
-    - ${FLOWER_PORT}:8888
+    command: celery flower --broker=amqp://${RABBITMQ_HOST}:${RABBITMQ_PORT} --port=8888

@@ -1,0 +1,71 @@
+stages:          # List of stages for jobs, and their order of execution
+  - build
+  - deploy
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  #
+  # This instructs Docker not to start over TLS.
+  DOCKER_TLS_CERTDIR: ""
+  #DOCKER_TLS_CERTDIR: "/certs"
+  GIT_SUBMODULE_STRATEGY: recursive
+  TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
+  TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:$CI_COMMIT_SHORT_SHA
+
+services:
+  - docker:20.10.17-dind
+
+build-dev:
+  image:
+    name: docker/compose:latest
+    entrypoint: [ "/bin/sh", "-c" ]
+  stage: build
+  before_script:
+    - docker info
+    - docker version
+    - apt-get update -qq && apt-get install -y -qq make
+    - docker-compose version
+  script:
+    - docker-compose -f docker-compose.yml -p "peer_dev" --env-file ".env.dev"  up --build -d
+    - docker-compose -p "peer_dev"  rm -f -s -v
+
+build-main:
+  image:
+    name: docker/compose:latest
+    entrypoint: [ "/bin/sh", "-c" ]
+  stage: build
+  before_script:
+    - docker info
+    - docker version
+    - apt-get update -qq && apt-get install -y -qq make
+    - docker-compose version
+  script:
+    - docker-compose -f docker-compose.yml -p "peer_main" --env-file ".env.main"  up --build -d
+
+
+deploy-dev:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - chmod og= $PEER_RSAKEY
+    - apk update && apk add openssh-client
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev-clean"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=dev build-dev"
+  only:
+  - dev
+
+deploy-main:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - chmod og= $PEER_RSAKEY
+    - apk update && apk add openssh-client
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=main build"
+  only:
+    - main

@@ -44,6 +44,12 @@ export default {
                 .flatMap(annotation => annotation.anchors)
                 .filter(anchors => anchors !== undefined)
         },
+        getAnnotationTags: (state) => (document_id) => {
+            return state.annotations.filter(annotation => annotation.document_id === document_id)
+                                 .map(a => {
+                                        return {anno: a, tags: a.tags}
+                                      });
+        },
         isSidebarShowing: state => {
             return state["sidebar_showing"]
         }
@@ -85,27 +91,32 @@ export default {
             });
             state.annotations = mapped;
         },
-        SOCKET_newAnnotationError: (state, message) => {
-            //currently we have just one error, too long
-            window.alert("Current selected text is too long. Please choose a range below 1000 characters");
-        },
         SOCKET_newAnnotation: (state, message) => {
+            let anchor;
+            if(message.annotation.target === undefined){
+                anchor = null;
+            } else {
+                anchor = message.annotation.target[0].selector[1].exact;
+            }
+
             let anno = null;
             if (message.annotation_id == null) {
                 anno = createAnnotation(
                     message.document_id,
-                    message.annotation.target[0].selector[1].exact,
-                    message.annotation.target[0].selector[1].exact,
+                    anchor,
+                    anchor,
                     message.annotation,
-                    message.user);
+                    message.user,
+                    message.tags);
             } else {
                 anno = new Annotation(
                     message.annotation_id,
                     message.document_id,
-                    message.annotation.target[0].selector[1].exact,
-                    message.annotation.target[0].selector[1].exact,
+                    anchor,
+                    anchor,
                     message.annotation,
-                    message.user
+                    message.user,
+                    message.tags
                 );
             }
 
@@ -141,7 +152,7 @@ export default {
         HOVER: (state, id) => {
             let annotation = state.annotations.find(x => x.id === id);
             annotation.hover = true;
-            if ("anchors" in annotation) {
+            if ("anchors" in annotation && annotation.anchors != null) {
                 annotation.anchors
                     .filter(anchor => "highlights" in anchor)
                     .forEach(anchor => anchor.highlights.map((highlight) => {
@@ -154,7 +165,7 @@ export default {
         UNHOVER: (state, id) => {
             let annotation = state.annotations.find(x => x.id === id);
             annotation.hover = false;
-            if ("anchors" in annotation) {
+            if ("anchors" in annotation && annotation.anchors != null) {
                 annotation.anchors
                     .filter(anchor => "highlights" in anchor)
                     .forEach(anchor => anchor.highlights.map((highlight) => {

@@ -8,7 +8,7 @@
             <a class="btn btn-sm btn-primary" href="#" @click="this.$router.push('/register')">Register</a>
           </div>
 
-          <div class="card-body">
+          <div class="card-body mx-4 my-4">
 
             <p v-if="showError" class="text-danger text-center">{{ this.errorMessage }}</p>
             <div class="form-group row my-2">
