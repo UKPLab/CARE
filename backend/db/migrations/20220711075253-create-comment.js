@@ -22,7 +22,7 @@ module.exports = {
                 allowNull: false
             },
             text: {
-                type: Sequelize.STRING
+                type: Sequelize.STRING(4096)
             },
             referenceAnnotation: {
                 type: Sequelize.STRING,

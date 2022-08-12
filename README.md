@@ -9,26 +9,27 @@ For everyone: checkout this README for details on the code and an easy installat
 Before starting, check the system requirements and supported OS below.
 
 1. Fetch and install all prerequisites:
-```
+```shell
 sudo apt-get install git -y
 git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/peer.git
 cd peer
-sudo ./install.sh           # Install needed software packages
+sudo ./install.sh            # Install needed software packages
+git submodule update --init  # get submodules after git clone
 ```
 
 2. Change the environment variables in the `.env` file.
 
 3. Start the docker containers in one terminal:
-```
+```shell
 make docker
 ```
 
 4. Initialize the database:
-```
+```shell
 make init
 ```
 5. Start our app in another terminal in development mode:
-```
+```shell
 make dev
 ```
 Note: This is the easiest way for development at the frontend with support by vite, where updates will pushed immediately to the website on any change. 

@@ -19,6 +19,7 @@
     "intersection-observer": "^0.12.2",
     "lodash": "^4.17.21",
     "lodash.debounce": "^4.0.3",
+    "mitt": "^3.0.0",
     "pdfjs-dist": "^2.14.305",
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
@@ -27,11 +28,12 @@
     "uuid": "^8.3.2",
     "vite": "^2.9.5",
     "vue": "^3.2.33",
-    "mitt": "^3.0.0",
     "vue-3-socket.io": "^1.0.5",
     "vue-router": "^4.0.14",
     "vue-style-loader": "^4.1.3",
+    "vue-tab": "^0.0.0",
     "vue3-observe-visibility": "^0.1.2",
+    "vue3-tabs-component": "^1.1.0",
     "vuex": "^4.0.2",
     "vuex-persistedstate": "^4.1.0"
   }

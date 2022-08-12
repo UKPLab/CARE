@@ -80,6 +80,10 @@ export default {
         this.init();
       }
       this.$emit('updateVisibility', {pageNumber: this.pageNumber, isVisible: isVisible});
+
+      if(this.isVisible) {
+        this.$socket.emit("stats", {action: "pageView", data: {pageNumber: this.pageNumber}});
+      }
     },
     resizeHandler(event) {
       //if(this.isRendered) this.destroyPage();

@@ -8,10 +8,10 @@ celery + socketio can work together.
 
 Author: Nils Dycke (dycke@ukp...)
 """
-
 from eventlet import monkey_patch  # mandatory! leave at the very top
-
 monkey_patch()
+
+import sys
 
 from ExampleNamespace import ExampleNamespace
 import hashlib
@@ -24,8 +24,6 @@ from grobid_client.grobid_client import GrobidClient, ServerUnavailableException
 from celery import Celery, chain
 from flask import Flask, session, request
 from flask_socketio import SocketIO, join_room, emit
-
-import sys
 
 import WebConfiguration
 
@@ -44,7 +42,6 @@ app.config.update(config.session)
 
 # socketio
 socketio = SocketIO(app, **config.socketio)
-# socketio.init_app(app, **config.socketio)
 
 # celery
 celery = Celery(app.name, **config.celery)
@@ -66,11 +63,6 @@ def init():
     except ServerUnavailableException as e:
         print("WARNING: GROBID server seems unavailable for the given config. Probably cannot process PDFs!")
         print(e)
-
-    # check file system
-    if not os.path.exists(app.config["UPLOAD_FOLDER"]) or not os.path.isdir(app.config["UPLOAD_FOLDER"]):
-        print("Creating temporary file storage directory at %s" % app.config["UPLOAD_FOLDER"])
-        os.mkdir(app.config["UPLOAD_FOLDER"])
 
 
 def parse_pdf(filepath):
@@ -252,4 +244,5 @@ def init_bot(bot_config):
 if __name__ == '__main__':
     # this method is called when starting the flask server, initializing it to listen to WS requests
     init()
-    socketio.run(app, **config.app)
+    print("App starting", config.app)
+    socketio.run(app, **config.app, log_output=True)

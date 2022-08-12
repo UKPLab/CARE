@@ -1,0 +1,14 @@
+# exclude generated folders
+dist
+node_modules
+
+# exclude files (except showcase doc)
+files
+!files/8852a746-360e-4c31-add2-4d1c75bfb96d.pdf
+
+# exclude documentation
+docs
+
+# exclude aux files
+.git
+.idea

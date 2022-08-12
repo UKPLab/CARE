@@ -6,7 +6,7 @@ import socketio
 class TestSocketIO(unittest.TestCase):
     def test_connect(self):
         sio = socketio.Client()
-        sio.connect("http://localhost:6000")
+        sio.connect("http://localhost:6001")
         connected = sio.sid is not None
         sio.disconnect()
 
@@ -22,7 +22,7 @@ class TestSocketIO(unittest.TestCase):
         sio = socketio.Client()
         sio.on("celery-result", set_result)
 
-        sio.connect("http://localhost:6000")
+        sio.connect("http://localhost:6001")
         connected = sio.sid is not None
         sio.emit("hello", "testdata")
         time.sleep(20)

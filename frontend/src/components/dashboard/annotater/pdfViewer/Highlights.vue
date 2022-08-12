@@ -26,6 +26,35 @@ export default {
     anchors() {
       return this.$store.getters['anno/getAnchors'](this.document_id)
     },
+    tagToColorMap() {
+      const tags = this.$store.getters['tag/getTags'];
+
+      //TODO when actual color codes are stored, use these. For now convert badge types to colors
+      return tname => {
+        const t = tags.find(t => t.name === tname);
+
+        if(t === undefined){
+          return "efea7b";
+        }
+
+        switch(t.colorCode){
+          case "success":
+            return "009933";
+          case "danger":
+            return "e05f5f";
+          case "info":
+            return "5fe0df";
+          case "dark":
+            return "c8c8c8";
+          case "warning":
+            return "eed042";
+          case "secondary":
+            return "4290ee";
+          default:
+            return "4c86f7";
+        }
+      }
+    },
   },
   watch: {
     anchors(newVal, oldVal) {
@@ -36,12 +65,10 @@ export default {
 
       newVal.filter(anchor => !oldVal.includes(anchor))
           .map(this.highlight)
-
     }
   },
   methods: {
     highlight(anchors) {
-
       const highlight_it = anchor => {
         const range = resolveAnchor(anchor);
 
@@ -67,6 +94,11 @@ export default {
         highlight_it(anchor);
       }
 
+    },
+    update_highlights(anchors){
+      anchors.filter(a => a.highlights !== null && a.highlights !== undefined)
+             .forEach(a => this.removeHighlights(a.highlights));
+      this.highlight(anchors);
     },
     highlightRange(anchor, range) {
       const textNodes = this.wholeTextNodesInRange(range);
@@ -122,13 +154,30 @@ export default {
       });
 
       if (!inPlaceholder) {
-        this.drawHighlightsAbovePdfCanvas(highlights);
+        this.drawHighlightsAbovePdfCanvas(highlights, anchor);
       }
 
       return highlights;
 
     },
-    drawHighlightsAbovePdfCanvas(highlightEls) {
+    setSVGHighlightColor(anchor, highlightEl){
+      if(!anchor.annotation || !anchor.annotation.tags) {
+        return;
+      }
+
+      // load tags
+      const tags = anchor.annotation.tags;
+
+      if(tags.length === 0){
+        highlightEl.style.fill = "#" + this.tagToColorMap(null);
+      } else {
+        // set style depending on first tag
+        highlightEl.style.fill = "#" + this.tagToColorMap(tags[0]);
+      }
+
+      highlightEl.style.opacity = 0.6;
+    },
+    drawHighlightsAbovePdfCanvas(highlightEls, anchor) {
       if (highlightEls.length === 0) {
         return;
       }
@@ -208,6 +257,8 @@ export default {
 
         // Associate SVG element with highlight for use by `setHighlightsFocusedhlights`.
         highlightEl.svgHighlight = rect;
+
+        this.setSVGHighlightColor(anchor, highlightEl.svgHighlight);
 
         return rect;
       });
@@ -314,11 +365,10 @@ export default {
 }
 
 .svg-highlight.is-focused {
-  fill: rgba(156, 230, 255, 0.5);
+  opacity: 1 !important;
 }
 
 .highlight {
-  background-color: rgba(255, 255, 60, 0.4);
   cursor: pointer;
 }
 
@@ -347,7 +397,7 @@ export default {
 }
 
 .highlight.highlight {
-  background-color: rgba(206, 206, 60, 0.4);
+  background-color: rgba(51, 54, 75, 0.4);
 }
 
 .highlight.highlight.is-transparent {

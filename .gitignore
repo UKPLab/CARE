@@ -3,9 +3,13 @@
 files/*.pdf
 !files/8852a746-360e-4c31-add2-4d1c75bfb96d.pdf
 
+# database dumps
+db_dumps/
+
 # backend
 backend/sessions
 backend/node_modules
+backend/logs
 
 # ignore files of hypothesis submodules
 frameworks/hypothesis/

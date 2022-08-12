@@ -83,3 +83,29 @@ moduler responsible for managing inputs and one for results. There is a module m
 
 ### Websocket
 Test: `curl "http://localhost:6000/socket.io/?EIO=4&transport=polling"`
+
+## Interface
+
+The nlp server is based on socket.io offering a message interface. The following list of message types is kept up-to-date
+and should be exhaustive. For each message type the response type (if existent) and the dataformat are outlined.
+
+Generally, the pattern of the provided message channels are:
+  * `req_`<message-type>   = requesting something from the server
+  * `res_`<message-type>   = if there is a response, the response for a previous request
+
+The parameters are always passed as jsons. They may point to objects in the database which the NLP server needs
+to load from.
+
+### tag_annotation(annotation)
+|     | name               | data            | description                                             | 
+|-----|--------------------|-----------------|---------------------------------------------------------|
+| req | req_tag_annotation | annotation.json | Sends and annotation incl. text and anchors to process. | 
+| res | res_tag_annotation | tags.json       | Responds with the model generated tags                  | 
+
+
+### generate_report(document_id, user_id)
+|     | name                | data            | description                                             | 
+|-----|---------------------|-----------------|---------------------------------------------------------|
+| req | req_generate_report | annotation.json | Sends and annotation incl. text and anchors to process. | 
+| res | res_generate_report | tags.json       | Responds with the model generated tags                  | 
+

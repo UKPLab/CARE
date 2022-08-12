@@ -9,7 +9,7 @@
         @destroyPage="destroyPage"
         @updateVisibility="updateVisibility"
     />
-    <Adder :document_id="document_id" :pdf="pdf"></Adder>
+    <Adder v-if="!readonly" :document_id="document_id" :pdf="pdf"></Adder>
     <Highlights ref="highlights" :document_id="document_id"/>
   </div>
 </template>
@@ -48,6 +48,11 @@ export default {
       type: String,
       required: true
     },
+    readonly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    }
   },
   data() {
     return {
@@ -67,6 +72,21 @@ export default {
             .map(this.handle_anchor)
       }
     },
+    annotationTags(newVal, oldVal) {
+      //handle only updated values
+      if (this.pdf.pageCount > 0) {
+        newVal.filter(vnew => oldVal.map(vold => vold.anno).includes(vnew.anno))
+              .filter(vnew => {
+                const prevTags = oldVal.find(vold => vold.anno === vnew.anno).tags;
+                const newTags = vnew.tags;
+
+                return (prevTags === null) !== (newTags === null) ||
+                       (prevTags.sort().toString() !== newTags.sort().toString())
+              })
+              .map(vnew => vnew.anno)
+              .map(this.handle_tagchange)
+      }
+    },
     scrollTo() {
       if (this.scrollTo !== null) {
         this.scrollTo = null;
@@ -79,6 +99,9 @@ export default {
     },
     annotations() {
       return this.$store.getters['anno/getAnnotations'](this.document_id)
+    },
+    annotationTags() {
+      return this.$store.getters['anno/getAnnotationTags'](this.document_id);
     },
     anchors() {
       return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id))
@@ -114,7 +137,6 @@ export default {
       childList: true,
       subtree: true,
     });
-
   },
   methods: {
     updateVisibility(page) {
@@ -187,7 +209,6 @@ export default {
       );
     },
     async handle_anchor(annotation) {
-
       const locate = async target => {
         // Only annotations with an associated quote can currently be anchored.
         // This is because the quote is used to verify anchoring with other selector
@@ -484,9 +505,15 @@ export default {
         return anchor;
       };
 
-      const anchors = await Promise.all(annotation.annotationData.target.map(locate));
-
-      annotation.anchors = anchors;
+      let anchors;
+      if("annotationData" in annotation &&
+          annotation.annotationData.target !== null &&
+          annotation.annotationData.target !== undefined){
+        anchors = await Promise.all(annotation.annotationData.target.map(locate));
+        annotation.anchors = anchors;
+      } else {
+        anchors = [];
+      }
 
       // Set flag indicating whether anchoring succeeded. For each target,
       // anchoring is successful either if there are no selectors (ie. this is a
@@ -496,6 +523,15 @@ export default {
           anchors.every(anchor => anchor.target.selector && !anchor.range);
 
     },
+    handle_tagchange(annotation) {
+      // skip un-anchored annotations
+      if(annotation.anchors === null || annotation.anchors === undefined || annotation.anchors.length === 0){
+        return;
+      }
+
+      // redraw highlights
+      this.$refs["highlights"].update_highlights(annotation.anchors);
+    }
   },
 
 

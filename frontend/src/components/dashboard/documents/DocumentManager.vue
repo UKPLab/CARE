@@ -6,13 +6,14 @@
     </div>
     <div class="card-body">
       <span v-if="items.length === 0">
-        No Documents available...
+        No documents available...
       </span>
       <table v-else class="table table-hover">
         <thead>
         <tr>
           <th v-for="field in fields" scope="col">{{ field.name }}</th>
-          <th scope="col">Actions</th>
+          <th scope="col">Manage</th>
+          <th scope="col">Review</th>
         </tr>
         </thead>
         <tbody>
@@ -31,6 +32,7 @@
                 </svg>
                 <span class="visually-hidden">Access</span>
               </button>
+
               <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip" title="Delete document..."
                       type="button" @click="deleteDoc(item.id)">
                 <svg class="bi bi-trash3-fill" fill="currentColor" height="16" viewBox="0 0 16 16"
@@ -48,6 +50,9 @@
                   <span class="visually-hidden">Rename</span>
               </button>-->
             </div>
+          </td>
+          <td>
+            <button class="btn btn-outline-primary" type="button" @click="startReview(item.hash)">Start Review</button>
           </td>
         </tr>
         </tbody>
@@ -71,16 +76,21 @@ import {mapGetters, mapActions} from "vuex";
 import Upload from "./Upload.vue";
 
 export default {
-  name: "List",
+  name: "DocumentManager",
   components: {Upload},
   data() {
     return {
       fields: [
-        {name: "ID", col: "uid"},
         {name: "Title", col: "name"},
         {name: "Created At", col: "createdAt"}
       ]
     }
+  },
+  props: {
+    'admin': {
+      required: false,
+      default: false
+    },
   },
   mounted() {
     this.load();
@@ -104,10 +114,23 @@ export default {
     onAddedDoc() {
       this.load();
     },
+    startReview(document_id) {
+      this.sockets.subscribe("reviewProcessStarted", (data) => {
+        this.sockets.unsubscribe('reviewProcessStarted');
+        if (data.success) {
+          this.$router.push(`/review/${data.reviewHash}`);
+        } else {
+          this.eventBus.emit('toast', {title:"Review Process", message:"The process cannot be started! Please try it again!", variant: "danger"});
+        }
+      });
+      this.$socket.emit("startReview", {document_id: document_id});
+    },
   }
 }
 </script>
 
 <style scoped>
-
+.card .card-body {
+  padding: 1rem;
+}
 </style>

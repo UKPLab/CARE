@@ -13,6 +13,7 @@ const {
 } = require("../../db/methods/document.js");
 const fs = require("fs");
 const path = require("path");
+const logger = require("../../utils/logger.js")( "sockets/documents");
 
 const PDF_PATH = `${__dirname}/../../../files`;
 
@@ -20,65 +21,85 @@ exports = module.exports = function (io) {
 
     io.on("connection", (socket) => {
 
-        const update_documents = user_id => {
-            loadDocs(user_id)
-                .then((rows) => {
-                    socket.emit("update_docs", {"docs": rows, "status": "OK"});
-                })
-                .catch((err) => {
-                    console.log(err);
-                    socket.emit("update_docs", {"docs": [], "status": "FAIL"});
-                });
+        const update_documents = async user_id => {
+            let rows;
+            try {
+                rows = await loadDocs(user_id);
+            } catch (err) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
+                socket.emit("update_docs", {"docs": [], "status": "FAIL"});
+                return;
+            }
+
+            socket.emit("update_docs", {"docs": rows, "status": "OK"});
         }
 
-        socket.on("docs_get", (data) => {
-            update_documents(socket.request.session.passport.user.id);
+        socket.on("docs_get", async (data) => {
+            await update_documents(socket.request.session.passport.user.id);
         });
 
-        socket.on("doc_delete", (data) => {
+        socket.on("doc_delete", async (data) => {
             // TODO: Security Check - check if user can delete this document?
-            deleteDoc(data.docId)
-                .then(() => update_documents(socket.request.session.passport.user.id))
-                .catch((err) => socket.emit("error", {err}));
+            try {
+                await deleteDoc(data.docId)
+            } catch (err) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
+                return;
+            }
+
+            await update_documents(socket.request.session.passport.user.id);
         });
 
-        socket.on("doc_rename", (data) => {
+        socket.on("doc_rename", async (data) => {
             // TODO check if user can rename this document?
-            renameDoc(data.docId, data.newName)
-                .then(() => update_documents(socket.request.session.passport.user.id))
-                .catch((err) => socket.emit("error", {err}));
+            try {
+                await renameDoc(data.docId, data.newName);
+            } catch (err) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
+                return;
+            }
+
+            await update_documents(socket.request.session.passport.user.id);
         });
 
-        socket.on("doc_upload", (data) => {
+        socket.on("doc_upload", async (data) => {
             //Make sure upload directory exists
             fs.mkdirSync(PDF_PATH, {recursive: true});
 
             // Add document to database
             const name = data.name.replace(/.pdf$/, '');
-            addDoc(name, socket.request.session.passport.user.id)
-                .then((doc) => {
-                    const pdf_id = doc.hash;
-                    const target = path.join(PDF_PATH, `${pdf_id}.pdf`);
+            let doc;
+            try {
+                doc = await addDoc(name, socket.request.session.passport.user.id);
+            } catch (err) {
+                logger.error("Upload error: " + err, {user: socket.request.session.passport.user.id});
+                socket.emit("upload_result", {success: false});
+                return;
+            }
 
-                    fs.writeFile(target, data.file, (err) => {
-                        socket.emit("result", {message: err ? "failure on upload" : "success on upload", id: pdf_id})
-                    });
+            const pdf_id = doc.hash;
+            const target = path.join(PDF_PATH, `${pdf_id}.pdf`);
 
-                    //Update Document list
-                    update_documents(socket.request.session.passport.user.id)
-                })
-                .catch((err) => {
-                    console.log("Upload error");
-                    socket.emit("error", {err});
-                });
+            fs.writeFile(target, data.file, (err) => {
+                socket.emit("upload_result", {success: err ? false : true, id: pdf_id})
+            });
+
+            //Update Document list
+            update_documents(socket.request.session.passport.user.id)
         });
 
         socket.on("pdf_get", (data) => {
-            const pdf = fs.readFileSync(`${PDF_PATH}/${data.document_id}.pdf`);
-            socket.emit("pdf", {file: pdf});
+            try {
+                const pdf = fs.readFileSync(`${PDF_PATH}/${data.document_id}.pdf`);
+                socket.emit("pdf", {file: pdf});
+            } catch(e) {
+                logger.error(e, {user: socket.request.session.passport.user.id});
+                socket.emit("toast", {
+                        message: "Error while loading pdf file!",
+                        title: "PDF Error",
+                        variant: 'danger'
+                    });
+            }
         });
-
     });
-
-
 }

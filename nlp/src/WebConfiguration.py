@@ -9,34 +9,44 @@ A default configuration is loaded, if not specified otherwise.
 Author: Nils Dycke (dycke@ukp...)
 """
 
-import os
-
 import redis
+import os
 
 # holds the configuration object
 _singleton = None
+
+# env variables
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST")
+RABBITMQ_PORT = os.getenv("RABBITMQ_PORT")
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
+GROBID_HOST = os.getenv("GROBID_HOST")
+GROBID_PORT = os.getenv("GROBID_PORT")
+NLP_PORT = os.getenv("NLP_PORT")
+
 
 # default config of all environmental parameters.
 # the parameters in "app" are passed to the flask app specifically
 # the parameters in "grobid" are passed to grobid specifically
 DEFAULT = {
-    "log": True,
-    "debug": True,
+    "name": "peer_nlp",
 
-    "secret_key": "DEBUGGING-SECRET-KEY",
-    "session_backend": "redis://redis:6379",
-    "result_backend": "redis://redis:6379",
-    "broker": "amqp://guest:guest@rabbitmq:5672",
-    "resources_dir": "/upload",
+    "log": True,
+    "debug": False,
+
+    "secret_key": "DEFAULT-SECRET-KEY",
+    "session_backend": f"redis://{REDIS_HOST}:{REDIS_PORT}",
+    "result_backend": f"redis://{REDIS_HOST}:{REDIS_PORT}",
+    "broker": f"amqp://guest:guest@{RABBITMQ_HOST}:{RABBITMQ_PORT}",
 
     "app": {
         "host": "0.0.0.0",
-        "port": "6001",
+        "port": NLP_PORT,
     },
 
     "grobid": {
-        "grobid_server": "grobid",
-        "grobid_port": "8070",
+        "grobid_server": GROBID_HOST,
+        "grobid_port": GROBID_PORT,
         "batch_size": 1000,
         "coordinates": ["persName", "figure", "ref", "biblStruct", "formula", "s" ],
         "sleep_time": 5,
@@ -45,25 +55,26 @@ DEFAULT = {
 }
 
 DEFAULT_DEV = {
+    "name": "peer_nlp",
+
     "log": True,
-    "debug": True,
+    "debug": False,  # currently: discouraged; you need a proper debugger setup for that to work
 
     "secret_key": "DEBUGGING-SECRET-KEY",
-    "session_backend": "redis://localhost:6379",
-    "result_backend": "redis://localhost:6379",
-    "broker": "amqp://guest:guest@localhost:5672",
-    "resources_dir": "./upload",
+    "session_backend": f"redis://{REDIS_HOST}:{REDIS_PORT}",
+    "result_backend": f"redis://{REDIS_HOST}:{REDIS_PORT}",
+    "broker": f"amqp://guest:guest@{RABBITMQ_HOST}:{RABBITMQ_PORT}",
 
     "app": {
-        "host": "0.0.0.0",
-        "port": "6001",
+        "host": "127.0.0.1",
+        "port": NLP_PORT
     },
 
     "grobid": {
-        "grobid_server": "localhost",
-        "grobid_port": "8070",
+        "grobid_server": GROBID_HOST,
+        "grobid_port": GROBID_PORT,
         "batch_size": 1000,
-        "coordinates": ["persName", "figure", "ref", "biblStruct", "formula", "s" ],
+        "coordinates": ["persName", "figure", "ref", "biblStruct", "formula", "s"],
         "sleep_time": 5,
         "timeout": 60
     }
@@ -107,6 +118,8 @@ class WebConfiguration:
             self.conf = DEFAULT_DEV.copy()
         else:
             self.conf = DEFAULT.copy()
+
+        print(self.conf)
 
         self.flask = None
         self.session = None
@@ -153,7 +166,6 @@ class WebConfiguration:
             "SECRET_KEY": self.conf["secret_key"],
             "CELERY_RESULT_BACKEND": self.conf["result_backend"],
             "CELERY_BROKER_URL": self.conf["broker"],
-            "UPLOAD_FOLDER": os.path.abspath(self.conf["resources_dir"]),
             "CELERY_RESULT_SERIALIZER": 'pickle',
             "CELERY_TASK_SERIALIZER":'pickle',
             "CELERY_ACCEPT_CONTENT": ['pickle']

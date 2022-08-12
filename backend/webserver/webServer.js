@@ -15,7 +15,6 @@ Source: --
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-const mustacheExpress = require('mustache-express');
 
 const {Server} = require("socket.io");
 const {createServer, useSsl} = require('./createServer');
@@ -30,6 +29,12 @@ const bodyParser = require('body-parser');
 const BUILD_PATH = `${__dirname}/../../dist/`;
 const port = process.env.CONTENT_SERVER_PORT || 3001;
 
+// define logger
+// check logging dir exists
+if (!fs.existsSync(process.env.LOGGING_PATH)){
+  fs.mkdirSync(process.env.LOGGING_PATH, { recursive: true });
+}
+const logger = require("../utils/logger.js")( "webServer");
 
 // routes
 const routes = [
@@ -39,7 +44,13 @@ const routes = [
 // sockets
 const sockets = [
     require("./sockets/annotation"),
-    require("./sockets/documents")
+    require("./sockets/documents"),
+    require("./sockets/log"),
+    require("./sockets/review"),
+    require("./sockets/user"),
+    require("./sockets/tag"),
+    require("./sockets/statistic")
+    //require("./sockets/nlp")
 ];
 
 /**
@@ -47,12 +58,12 @@ const sockets = [
  *
  */
 function webServer(config) {
+    logger.debug("Start Webserver...")
     const app = express()
 
-    // enable CORS in Dev Mode
-    if (process.env.BACKEND_ENABLE_CORS === 'true') {
-        app.use(cors({origin: 'http://localhost:3000', credentials: true}));
-    }
+    logger.debug("Use CORS Restriction");
+    app.use(cors({origin: ['http://localhost:3000',"http://localhost:8080", 'https://peer.ukp.informatik.tu-darmstadt.de'], credentials: true}));
+
 
     // Make all static files public available
     app.use(express.static(BUILD_PATH));
@@ -64,7 +75,11 @@ function webServer(config) {
             console.log(`Request object sessionID from client: ${req.sessionID}`)
             return uuidv4(); // use UUIDs for session IDs
         },*/
-        store: new FileStore(), secret: 'thatsecretthinggoeshere', resave: false, saveUninitialized: true
+        store: new FileStore(),
+        secret: 'thatsecretthinggoeshere',
+        resave: false,
+        saveUninitialized: true,
+        maxAge: 1000*60*90
     });
     app.use(sessionMiddleware);
     app.use(bodyParser.urlencoded({extended: false}));
@@ -72,7 +87,7 @@ function webServer(config) {
     app.use(passport.initialize());
     app.use(passport.session());
 
-    // additional routes from routes directory
+    logger.debug("Initialize Routes...");
     routes.forEach(route => route(app));
 
     // all further urls reference to frontend
@@ -80,26 +95,22 @@ function webServer(config) {
 
     // add websocket server socket.io
     const httpServer = createServer(app);
-    // enable CORS in Dev Mode
-    let socketIoOptions = {
-        maxHttpBufferSize: 1e8 // 100 MB for file upload
+    const socketIoOptions = {
+        cors: {
+            origin: ["http://localhost:3000", 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'], methods: ["GET", "POST"], credentials: true,
+        }, origins: ['http://localhost:3000', 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'], handlePreflightRequest: (req, res) => {
+            const headers = {
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
+                "Access-Control-Allow-Credentials": true
+            };
+            res.writeHead(200, headers);
+            res.end();
+        }, maxHttpBufferSize: 1e8 // 100 MB for file upload
     };
-    if (process.env.BACKEND_ENABLE_CORS === 'true') {
-        socketIoOptions = {
-            cors: {
-                origin: "http://localhost:3000", methods: ["GET", "POST"], credentials: true,
-            }, origins: ['http://localhost:3000'], handlePreflightRequest: (req, res) => {
-                const headers = {
-                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-                    "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
-                    "Access-Control-Allow-Credentials": true
-                };
-                res.writeHead(200, headers);
-                res.end();
-            }, maxHttpBufferSize: 1e8 // 100 MB for file upload
-        };
-    }
 
+
+    logger.debug("Initialize Websocket...");
     const io = new Server(httpServer, socketIoOptions);
     const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
     io.use(wrap(sessionMiddleware));
@@ -108,18 +119,30 @@ function webServer(config) {
     io.on("connection", (socket) => {
         // Check if session exists, otherwise send logout and disconnect
         if (!socket.request.session.passport) {
-            socket.emit("logout"); //force logout on client side
-            socket.disconnect();
+            try {
+                socket.request.session.destroy();
+                logger.warn("Session in websocket not available! Send logout...");
+                socket.emit("logout"); //force logout on client side
+                socket.disconnect();
+            } catch(e) {
+                console.log(e);
+            }
         }
+        socket.onAny(() => {
+            socket.request.session.touch();
+        })
     });
+    logger.debug("Initialize Sockets...");
     sockets.forEach(socket => socket(io));
 
     // serve server on port
     httpServer.listen(config.port, () => {
         const scheme = useSsl ? 'https' : 'http';
-        console.log(`Web Server started at ${scheme}://localhost:${config.port}/`)
+        logger.info(`Web Server started at ${scheme}://localhost:${config.port}/`)
     });
 }
+
+
 
 
 webServer({port: port});
