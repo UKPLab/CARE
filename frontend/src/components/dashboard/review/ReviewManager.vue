@@ -100,9 +100,9 @@ export default {
   computed: {
     items() {
       if(this.admin){
-        return this.$store.getters['admin/getReviews'];
+        return this.$store.getters['admin/getReviews'].sort((x1, x2) => x1.id > x2.id);
       } else {
-        return this.$store.getters['user/getMetaReviews'];
+        return this.$store.getters['user/getMetaReviews'].sort((x1, x2) => x1.id > x2.id);
       }
     },
     fields() {
