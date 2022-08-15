@@ -114,18 +114,15 @@ nlp_dev:
 .PHONY: nlp_celery
 nlp_celery:
 	export C_FORCE_ROOT=true
-	set -a
-	source .env
 
 	cd ./nlp/src && \
 	celery --app app.celery worker -l INFO -E
 
 .PHONY: nlp_services
 nlp_services:
-	docker-compose up grobid \
- 					  rabbitmq \
- 					  redis \
- 					  celery-worker
+	docker-compose -f docker-local.yml --env-file ".env.dev" up --build   grobid \
+ 					  				 						  	  		  rabbitmq \
+ 					  										  	  		  redis
 
 node_modules/.uptodate: package.json package-lock.json
 	npm install

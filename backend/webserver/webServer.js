@@ -49,8 +49,8 @@ const sockets = [
     require("./sockets/review"),
     require("./sockets/user"),
     require("./sockets/tag"),
-    require("./sockets/statistic")
-    //require("./sockets/nlp")
+    require("./sockets/statistic"),
+    require("./sockets/nlp")
 ];
 
 /**

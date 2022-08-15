@@ -120,7 +120,7 @@ def process_pdf(raw_pdf_path, sid):
     :param sid: the session id to respond to via socketio
     :return:the parsed result
     """
-    statussocket = SocketIO(message_queue=app.config["CELERY_BROKER_URL"])
+    statussocket = SocketIO(message_queue=app.config["broker"])
 
     # call grobid
     status, parsed = parse_pdf(raw_pdf_path)
