@@ -24,6 +24,9 @@ GROBID_HOST = os.getenv("GROBID_HOST")
 GROBID_PORT = os.getenv("GROBID_PORT")
 NLP_PORT = os.getenv("NLP_PORT")
 
+print("RABBITMQ", RABBITMQ_HOST)
+print("REDIS", REDIS_HOST)
+
 
 # default config of all environmental parameters.
 # the parameters in "app" are passed to the flask app specifically
@@ -164,11 +167,11 @@ class WebConfiguration:
     def setup(self):
         self.flask = {
             "SECRET_KEY": self.conf["secret_key"],
-            "CELERY_RESULT_BACKEND": self.conf["result_backend"],
+            "result_backend": self.conf["result_backend"],
             "CELERY_BROKER_URL": self.conf["broker"],
-            "CELERY_RESULT_SERIALIZER": 'pickle',
-            "CELERY_TASK_SERIALIZER":'pickle',
-            "CELERY_ACCEPT_CONTENT": ['pickle']
+            "result_serializer": 'pickle',
+            "task_serializer":'pickle',
+            "accept_content": ['pickle']
         }
 
         self.session = {
