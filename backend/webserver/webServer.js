@@ -79,7 +79,9 @@ function webServer(config) {
         secret: 'thatsecretthinggoeshere',
         resave: false,
         saveUninitialized: true,
-        maxAge: 1000*60*90
+        cookie:{
+            maxAge: 1000*60*90
+        }
     });
     app.use(sessionMiddleware);
     app.use(bodyParser.urlencoded({extended: false}));
