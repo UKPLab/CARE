@@ -163,9 +163,9 @@ export default {
     async _update() {
       const refreshAnnotations = /** @type {AnnotationData[]} */ ([]);
 
-      for (let pageIndex = 0; pageIndex < this.pdf.pageCount; pageIndex++) {
+      //FIXME useless for loop
+      for (let pageIndex = 1; pageIndex <= this.pdf.pageCount; pageIndex++) {
         const rendered = this.pdf.renderingDone.get(pageIndex);
-
         /*if (rendered) {
             removePlaceholder(document.getElementById("page-container-" + (pageIndex + 1)));
         }*/
@@ -173,9 +173,7 @@ export default {
 
       // Find all the anchors that have been invalidated by page state changes.
       for (let anchor of this.anchors) {
-
-
-        // Skip any we already know about.
+        // If the anchor already has a highlight, check if we cannot find the highlight element, else refresh anyways
         if (anchor.highlights) {
           if (refreshAnnotations.includes(anchor.annotation)) {
             continue;
@@ -193,6 +191,9 @@ export default {
               break;
             }
           }
+        }
+        else {
+          refreshAnnotations.push(anchor.annotation);
         }
       }
 
