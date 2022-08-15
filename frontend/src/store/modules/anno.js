@@ -67,7 +67,7 @@ export default {
                     o.annotation_id,
                     o.document_id,
                     o.text,
-                    null, //todo need to create anchor
+                    null, //set anchor to null to be anchored later on
                     o.annotation,
                     o.user
                 );
@@ -80,7 +80,7 @@ export default {
                     const cMapped = new Comment(
                         c.comment_id,
                         c.text,
-                        c.reference_annotation,
+                        o.annotation_id,
                         null,
                         c.user
                     );
@@ -122,13 +122,7 @@ export default {
 
             // TODO: replace with comment logic later on
             if (message.comment != null) {
-                let comm;
-                if (message.comment.id == null) {
-                    comm = createComment(message.comment.text, anno.id, null, anno.user);
-                } else {
-                    comm = new Comment(message.comment.id, message.comment.text, anno.id, null, anno.user);
-                }
-                anno.comment = comm;
+                anno.comment  = new Comment(message.comment.id, message.comment.text, anno.id, null, anno.user);
             }
             state.annotations.push(anno);
             // scrolling

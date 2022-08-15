@@ -102,7 +102,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
         newValues.text = newText;
     }
     if (newTags != null) {
-        newValues.tags = newTags.toString()
+        newValues.tags = newTags.length > 0 ? newTags.join() : ""
     }
 
     try {
@@ -139,7 +139,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
                 text: newComment.text,
                 referenceAnnotation: annoId,
                 referenceComment: null,
-                tags: newComment.tags.toString(),
+                tags: newComment.tags !== undefined && newComment.tags.length > 0 ? newComment.tags.join() : "",
                 updatedAt: new Date()
             }
 
@@ -165,7 +165,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
                     text: newComment.text,
                     referenceAnnotation: annoId,
                     referenceComment: null,
-                    tags: newComment.tags.toString(),
+                    tags: newComment.tags !== undefined && newComment.tags !== null && newComment.tags.length > 0 ? newComment.tags.join() : "",
                     createdAt: new Date(),
                     updatedAt: new Date()
                 });
