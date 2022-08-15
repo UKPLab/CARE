@@ -36,13 +36,15 @@
           <select v-bind:id="'annotationTags-'+annoData.id"
                   v-model="annoTags"
                   allowClear="true"
-                  class="form-select" data-allow-new="true"
+                  class="form-select"
+                  data-allow-new="true"
                   multiple
                   name="tags_new[]"
                   placeholder="Add tag..."
                   v-bind:disabled="isSubmitted">
             <option disabled hidden selected value="">Choose a tag...</option>
             <option v-for="t in assignableTags" :key="t.name" v-bind:data-badge-style="t.colorCode" v-bind:value="t.description">{{t.description}}</option>
+            <option v-for="t in nonStandardTags" :key="t" selected="true" data-badge-style="primary" :value="t">{{t}}</option>
           </select>
           <div class="invalid-feedback">Please select a valid tag.</div>
         </div>
@@ -154,6 +156,10 @@ export default {
     },
     assignableTags() {
       return this.$store.getters['tag/getTags'];
+    },
+    nonStandardTags() {
+      //console.log("nonstandard tags", this.annoTags, this.annoTags.filter(t => this.assignableTags.includes()))
+      return this.annoTags.filter(t => !this.assignableTags.map(x => x.name).includes(t));
     },
     isSubmitted: function () {
       return this.annoData.state === "SUBMITTED";
