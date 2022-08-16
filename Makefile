@@ -115,7 +115,7 @@ nlp_celery:
 	export C_FORCE_ROOT=true && \
 	export PYTHON_PATH="$(CURDIR)/nlp/src" && \
 	cd ./nlp/src && \
-	celery --app app.celery worker --loglevel=INFO -P eventlet -E
+	celery --app celery_app.celery worker --loglevel=INFO -P eventlet -E
 
 .PHONY: nlp_services
 nlp_services:

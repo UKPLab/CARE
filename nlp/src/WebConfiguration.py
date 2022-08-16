@@ -96,8 +96,9 @@ def instance(**kwargs):
 
     if _singleton is None:
         _singleton = WebConfiguration(**kwargs)
-    else:
-        _singleton.update(**kwargs)
+
+    if len(kwargs) > 0:
+        print("WARNING: Reinstantiating singleton with new parameters. Not permitted and ignoring it")
 
     return _singleton
 
