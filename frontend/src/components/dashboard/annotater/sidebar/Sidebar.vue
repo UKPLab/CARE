@@ -1,7 +1,7 @@
 <template>
-  <div id="sidebar-container" class="collapse collapse-horizontal border-end d-flex flex-column vh-100"
+  <div id="sidebar-container" class="collapse collapse-horizontal border-end d-flex flex-column"
        v-bind:class="showing">
-    <div id="sidepane">
+    <div id="sidepane" ref="sidepane">
       <div id="spacer"></div>
       <ul id="anno-list" class="list-group">
         <li v-if="annotations.length === 0">
@@ -99,16 +99,16 @@ export default {
       this.$socket.emit("loadAnnotations", {id: this.document_id});
     },
     async sidebarScrollTo(annotationId) {
-      const scrollContainer = document.getElementById('sidebarContainer');
+      const scrollContainer = this.$refs.sidepane;
       await scrollElement(scrollContainer, document.getElementById('anno-' + annotationId).offsetTop - 52.5);
     },
-    focusAnnotation(annotation_id) {
-      this.$refs[annotation_id][0].scrollIntoView();
+    async focusAnnotation(annotation_id) {
+      //for now, just scroll to it
+      await this.sidebarScrollTo(annotation_id);
     },
     createDocumentComment(){
       const uid = this.userData().id;
-      this.$socket.emit('addAnnotation',
-          {
+      const anno = {
             "document_id": this.document_id,
             "annotation": {},
             "user": uid,
@@ -116,7 +116,9 @@ export default {
             "draft": true,
             "annotation_id": v4(),
             "tags": []
-          });
+      };
+      this.$socket.emit('addAnnotation', anno);
+      this.eventBus.emit("createdAnnotation", anno.annotation_id);
     }
   }
 }
@@ -138,6 +140,7 @@ export default {
   background-color: #e6e6e6;
   width: 100%;
   height: 100%;
+  overflow-y: scroll;
 }
 
 #anno-list .list-group-i {
@@ -156,6 +159,7 @@ export default {
   padding-top: 1rem;
   text-align: center;
 }
+
 #addPageNote .btn {
   border: none;
   color: #575757;

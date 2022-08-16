@@ -26,7 +26,8 @@
           <textarea id="annoComment"
                     v-model="annoComment"
                     class="form-control"
-                    placeholder="Enter text...">
+                    placeholder="Enter text..."
+                    @keydown.ctrl.enter="submit()">
           </textarea>
         </div>
         <div v-else-if="annoData.comment != null && annoData.comment.text.length > 0" id="comment" class="card-text">
@@ -79,6 +80,7 @@
               <span class="visually-hidden">Delete</span>
             </button>
           </div>
+          <!-- Add later
           <div class="col text-end">
             <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip" title="Respond to annotation"
                     type="button">
@@ -90,6 +92,7 @@
               <span class="visually-hidden">Respond</span>
             </button>
           </div>
+          -->
         </div>
       </div>
     </div>
@@ -126,7 +129,9 @@ export default {
       this.toSubmitState();
     } else {
       this.toEditState();
-      this.$emit("focus", this.annoData.id);
+
+      //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
+      setTimeout(() => this.$emit("focus", this.annoData.id), 100);
     }
 
     if(autoSubmit){
@@ -136,10 +141,15 @@ export default {
     if(!this.isSubmitted){
         this.input_required = true;
         setTimeout(() => this.input_required = false, 800);
+    }
+
+    this.eventBus.on("createdAnnotation", m => {
+      if(!this.isSubmitted){
+        this.submit();
       }
+    });
   },
   unmounted() {
-    console.log("Unmounting " + this.annoData.id);
   },
   watch: {
     isSubmitted(newVal, oldVal) {
@@ -212,13 +222,16 @@ export default {
     },
     toSubmitState() {
       const inElem = this.getTagInput();
-      inElem.disabled = true;
-      if (this.annoData.tags == null || this.annoData.tags.length === 0) {
-        inElem.placeholder = "No Tags";
-      } else {
-        inElem.placeholder = "";
+      if(inElem){
+        inElem.disabled = true;
+
+         if (this.annoData.tags == null || this.annoData.tags.length === 0) {
+          inElem.placeholder = "No Tags";
+        } else {
+          inElem.placeholder = "";
+        }
+        inElem.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
       }
-      inElem.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
     },
     toEditState() {
       const inElem = this.getTagInput();

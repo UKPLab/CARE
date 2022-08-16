@@ -86,8 +86,7 @@ export default {
       }));
 
       const uid = this.userData().id;
-      this.$socket.emit('addAnnotation',
-          {
+      const anno = {
             "document_id": this.document_id,
             "annotation": {target},
             "user": uid,
@@ -95,7 +94,10 @@ export default {
             "draft": true,
             "annotation_id": v4(),
             "tags": [tag.name]
-          });
+      };
+
+      this.$socket.emit('addAnnotation', anno);
+      this.eventBus.emit("createdAnnotation", anno.annotation_id);
 
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
