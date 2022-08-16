@@ -56,7 +56,7 @@ services:
       - redis
     env_file:
       - .env.dev
-    command: celery -A app.celery worker -l INFO -E
+    command: celery -A app.celery worker -l INFO -P eventlet -E
   flower:
     image: mher/flower
     depends_on:
