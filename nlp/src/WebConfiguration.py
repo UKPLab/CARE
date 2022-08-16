@@ -122,13 +122,14 @@ class WebConfiguration:
         else:
             self.conf = DEFAULT.copy()
 
-        print(self.conf)
+        self.name = self.conf["name"]
 
         self.flask = None
         self.session = None
         self.celery = None
         self.socketio = None
         self.app = None
+        self.grobid = None
 
         self.update(**kwargs)
 

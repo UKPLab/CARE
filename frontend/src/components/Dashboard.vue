@@ -113,7 +113,8 @@ export default {
       await this.$router.push("/login");
     },
     testWebsocket() {
-      this.$socket.emit("nlp_test");
+      console.log("Testing websocket on NLP test");
+      this.$socket.emit("nlp_simple_test", "simpleStringToTest");
     }
   },
 }

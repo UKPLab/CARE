@@ -107,16 +107,15 @@ init: backend/node_modules/.uptodate
 .PHONY: nlp_dev
 
 nlp_dev:
-	@echo "$(GROBID_HOST)"
-	export PYTHON_PATH="$(CURDIR)/nlp/src"
+	export PYTHON_PATH="$(CURDIR)/nlp/src" && \
 	python3 ./nlp/src/app.py --dev
 
 .PHONY: nlp_celery
 nlp_celery:
-	export C_FORCE_ROOT=true
-
+	export C_FORCE_ROOT=true && \
+	export PYTHON_PATH="$(CURDIR)/nlp/src" && \
 	cd ./nlp/src && \
-	celery --app app.celery worker -l INFO -E
+	celery --app app.celery worker --loglevel=INFO -P eventlet -E
 
 .PHONY: nlp_services
 nlp_services:
