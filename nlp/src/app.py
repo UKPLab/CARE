@@ -39,6 +39,7 @@ config = WebConfiguration.instance(dev=DEV_MODE)
 app = Flask(__name__)
 app.config.update(config.flask)
 app.config.update(config.session)
+app.config.update(config.celery)  # necessary as we access the broker information later on
 
 # socketio
 socketio = SocketIO(app, **config.socketio)
@@ -89,6 +90,15 @@ def parse_pdf(filepath):
 
 
 ### CELERY #####################################
+@celery.task
+def simple_task(input, sid):
+    statussocket = SocketIO(message_queue=app.config["broker"])
+
+    print("Simple task -- inner workings")
+
+    statussocket.emit("result_simple_task", "this is a celery result", room=sid)
+
+
 @celery.task
 def store_pdf(raw_pdf, title, sid):
     """
@@ -178,7 +188,7 @@ def disconnect():
 
 
 @socketio.on("push_pdf")
-def push_pdf(blob, metadata):
+def push_pdf(input):
     """
     Upon a message "push_pdf", the given pdf as a blob with metadata is processed by
     GROBID.
@@ -187,6 +197,9 @@ def push_pdf(blob, metadata):
     :param metadata:
     :return:
     """
+    blob = input["blob"]
+    metadata = input["metadata"]
+
     # store in session
     session["raw_pdf"] = blob
     session["meta_pdf"] = metadata
@@ -196,10 +209,18 @@ def push_pdf(blob, metadata):
     task = chain(store_pdf.s(blob, metadata["title"], sid) | process_pdf.s(sid))()
 
     # without chaining the syntax would be, e.g. for just storing the pdf
-    # store_pdf.delay(blob, metadata["title"], sid)
+    #task = store_pdf.delay(blob, metadata["title"], sid)
 
     # store celery task id to retrieve the result later on
     session["pdf_processing"] = task.id
+
+
+@socketio.on("simple_test")
+def simple_test(input):
+    sid = session["sid"]
+    task = simple_task.delay(input, sid)
+
+    session["simple_test_task"] = task
 
 
 @socketio.on("req_pdf")
@@ -230,7 +251,7 @@ def init_bot(bot_config):
     :param bot_config:
     :return:
     """
-    pass
+    emit("init_bot_res", "resulty mcresult face")
 
 
 ### FLASK ######################################
