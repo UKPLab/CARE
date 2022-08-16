@@ -164,9 +164,8 @@ export default {
   padding-top: 52.5px;
   /* if this is changed - also change offset */
 }
-#sidebar {
+#sidebarContainer {
   position: relative;
-  overflow-y: scroll;
   padding: 0;
   max-width: 300px;
   min-width: 300px;

@@ -24,6 +24,7 @@
           <td v-for="field in fields">{{ item[field.col] }}</td>
           <td>
             <div class="btn-group">
+              <!-- Remove for now
               <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
                       title="Access document..." type="button" @click="this.$router.push(`/annotate/${item.document}`)">
                 <svg class="bi bi-box-arrow-right" fill="currentColor" height="16" viewBox="0 0 16 16"
@@ -35,6 +36,7 @@
                 </svg>
                 <span class="visually-hidden">Access</span>
               </button>
+              -->
               <button class="btn btn-outline-secondary" v-bind:class="getStatus(item) === 'SUBMITTED' ? 'disabled' : ''"  data-placement="top" data-toggle="tooltip"
                       title="Make acceptance decision..." type="button" @click="this.$router.push(`/approve/${item.hash}`)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-award" viewBox="0 0 16 16">

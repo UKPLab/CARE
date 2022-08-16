@@ -125,7 +125,6 @@ export default {
                 anno.comment  = new Comment(message.comment.id, message.comment.text, anno.id, null, anno.user);
             }
             state.annotations.push(anno);
-            // scrolling
         },
         // adds an annotation to the local storage
         ADD_ANNOTATION: (state, annotation) => {

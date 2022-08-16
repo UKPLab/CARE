@@ -20,8 +20,11 @@
           No comments.
         </p>
       </div>
+      <p id="footnote">*Tip: Hover over a reference to see the referenced text or click to view the annotation in the PDF.</p>
     </template>
     <template v-slot:footer>
+      <button class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">Accept</button>
+      <button class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">Reject</button>
       <button class="btn btn-secondary" type="button" @click="cancel">Close</button>
     </template>
   </Modal>
@@ -104,6 +107,11 @@ export default {
     },
     showAnnotation(annoID){
       this.eventBus.emit("sidebarScroll", annoID);
+      this.eventBus.emit('pdfScroll', annoID);
+      this.cancel();
+    },
+    decisionSubmit(decision){
+      this.$emit('decisionSubmit', decision);
       this.cancel();
     }
   }
@@ -111,5 +119,9 @@ export default {
 </script>
 
 <style scoped>
-
+#footnote {
+  color: #4d4d4d;
+  font-style: italic;
+  font-size: small;
+}
 </style>
