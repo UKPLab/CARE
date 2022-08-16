@@ -45,7 +45,7 @@ services:
     depends_on:
       - rabbitmq
       - redis
-    command: celery -A app.celery worker -l INFO -E
+    command: celery -A app.celery worker -l INFO -P eventlet -E
   flower:
     image: mher/flower
     depends_on:

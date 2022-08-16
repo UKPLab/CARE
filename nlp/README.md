@@ -1,5 +1,9 @@
 # NLP Server
 
+## References
+Read up on celery workers (and their concurrency model) here:
+https://www.distributedpython.com/2018/10/26/celery-execution-pool/
+
 ## DISCLAIMER
 This component is under continuous development and refactoring. Specifically, the following features are not implemented
 yet, although they might be referenced in the following documentation:
