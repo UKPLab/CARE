@@ -1,5 +1,8 @@
 import hashlib
+import json
 import os
+
+from models.emotionality import classify as classify_emtion
 
 from eventlet import monkey_patch  # mandatory! leave at the very top
 monkey_patch()
@@ -106,3 +109,24 @@ def example_binded_method(self, input):
 
         # binded tasks allow to push updates on the state to the celery server (and hereby AsyncResult calls)
         self.update_state(state='PROGRESS', meta={'current': 10, 'total': 100})
+
+
+@celery.task
+def generate_report(data, sid, out_msg):
+    socket = SocketIO(message_queue=config.celery["broker"])
+
+    emotionality = {}
+    for anno in data:
+        comment = anno["comment"]["text"] if "comment" in anno else None
+        if comment is None:
+            continue
+
+        emo_score = classify_emtion(comment)
+        emotionality[anno["id"]] = emo_score
+
+    result = {
+        "success": True,
+        "report": json.dumps(emotionality)
+    }
+
+    socket.emit(out_msg, result, room=sid)
