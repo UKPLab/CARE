@@ -20,6 +20,14 @@
           No comments.
         </p>
       </div>
+      <div v-if="nlpReport !== null && nlpReport.length > 0">
+        <h2>
+          I the wise NLP Bot think the following:
+        </h2>
+        <p>
+          {{nlpReport}}
+        </p>
+      </div>
     </template>
     <template v-slot:footer>
       <button class="btn btn-secondary" type="button" @click="cancel">Close</button>
@@ -30,6 +38,7 @@
 <script>
 import Modal from "./Modal.vue";
 import ReportItem from "../ReportItem.vue";
+import {mapGetters} from "vuex";
 
 export default {
   name: "Report",
@@ -55,12 +64,18 @@ export default {
   watch: {
     annotations(newVal, oldVal){
       this.gen_report();
+
+      //todo for now call report here live
+      if(newVal.length > 0) {
+        this.$socket.emit("nlp_report_req", this.annotations);
+      }
     },
     tagSet(newVal, oldVal){
       this.gen_report();
     }
   },
   computed: {
+    ...mapGetters({nlpReport: 'nlp/getReport'}),
     annotations() {
       return this.$store.getters['anno/getAnnotations'](this.document_id);
     },

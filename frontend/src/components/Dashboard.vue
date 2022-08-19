@@ -1,8 +1,4 @@
 <template>
-  <button class="btn-danger" @click="testWebsocket()">
-    Test Websocket
-  </button>
-
   <div class="row">
     <div class="col-md-8 mx-auto my-4">
       <ul v-if="isAdmin" class="nav nav-tabs" id="dashtabs" role="tablist">
@@ -111,10 +107,6 @@ export default {
     async logout() {
       await this.$store.dispatch('auth/logout');
       await this.$router.push("/login");
-    },
-    testWebsocket() {
-      console.log("Testing websocket on NLP test");
-      this.$socket.emit("nlp_simple_test", "simpleStringToTest");
     }
   },
 }

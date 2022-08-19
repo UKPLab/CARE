@@ -11,6 +11,10 @@ backend/sessions
 backend/node_modules
 backend/logs
 
+# nlp
+nlp/src/__pycache__
+nlp/src/**/__pycache__
+
 # ignore files of hypothesis submodules
 frameworks/hypothesis/
 

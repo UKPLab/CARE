@@ -11,8 +11,8 @@ exports = module.exports = function (io) {
 
         // forwarding NLP server messages to frontend
         ws2NLP.onAny((msg, data) => {
-           socket.emit(msg, data); //TODO not working yet
-           logger.info(`Message NLP SERVER -> FRONTEND: ${msg}`);
+           socket.emit("nlp_" + msg.replace("/", "_"), data);
+           logger.info(`Message NLP SERVER -> FRONTEND: nlp_${msg} ${data}`);
         });
 
         // establishing a connection
@@ -32,7 +32,7 @@ exports = module.exports = function (io) {
         // forwarding frontend messages to NLP server
         socket.onAny((msg, data) => {
             if(msg.startsWith("nlp_") && ws2NLP.connected){
-                ws2NLP.emit(msg.slice("nlp_".length), data);
+                ws2NLP.emit(msg.slice("nlp_".length).replace("_", "/"), data);
                 logger.info(`Message FRONTEND -> NLP SERVER: ${msg}`);
             } else if(msg.startsWith("nlp_") && !ws2NLP.connected){
                 socket.emit("nlp_error", "Connection to NLP server disrupted.");
