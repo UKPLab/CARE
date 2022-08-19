@@ -115,14 +115,16 @@ def example_binded_method(self, input):
 def generate_report(data, sid, out_msg):
     socket = SocketIO(message_queue=config.celery["broker"])
 
-    emotionality = {}
-    for anno in data:
-        comment = anno["comment"]["text"] if "comment" in anno else None
-        if comment is None:
-            continue
+    if data is not None:
+        emotionality = {}
+        for anno in data:
+            if "comment" not in anno or anno["comment"] is None or "text" not in anno["comment"] or anno["comment"]["text"] is None:
+                continue
 
-        emo_score = classify_emtion(comment)
-        emotionality[anno["id"]] = emo_score
+            comment = anno["comment"]["text"]
+
+            emo_score = classify_emtion(comment)
+            emotionality[anno["id"]] = emo_score
 
     result = {
         "success": True,
