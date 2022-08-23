@@ -15,6 +15,9 @@
           <li v-for="r in reportItems[s]" :key="r.id">
              <ReportItem :content="r" @showReportAnnotation="showAnnotation"></ReportItem>
           </li>
+          <li v-if="reportItems[s].length === 0 ">
+            No comments.
+          </li>
         </ul>
         <p v-else>
           No comments.
