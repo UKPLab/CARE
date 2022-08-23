@@ -4,8 +4,7 @@ const baseTags = [
     ["Highlight", "warning"],
     ["Strength", "success"],
     ["Weakness", "danger"],
-    ["Question", "info"],
-    ["Todo", "primary"],
+    ["Other", "info"],
 ];
 
 module.exports = {
