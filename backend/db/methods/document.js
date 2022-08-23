@@ -57,6 +57,18 @@ exports.add = async function add(doc_name, creator_id) {
     }
 }
 
+exports.getDoc = async function getDoc(hash) {
+    try {
+        return await Document.findOne({ where: { 'hash': hash}});
+    } catch (err) {
+        if(isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw InvalidDocumentParameters("Provided document hash does not exist");
+        }
+    }
+}
+
 exports.deleteDoc = async function deleteDoc(doc_id) {
     try {
         return await Document.update({deleted: true, deletedAt: new Date()}, {
