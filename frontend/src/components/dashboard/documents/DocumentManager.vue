@@ -21,6 +21,7 @@
           <td v-for="field in fields">{{ item[field.col] }}</td>
           <td>
             <div class="btn-group">
+              <!-- remove for now
               <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
                       title="Access document..." type="button" @click="accessDoc(item.hash)">
                 <svg class="bi bi-box-arrow-right" fill="currentColor" height="16" viewBox="0 0 16 16"
@@ -32,6 +33,7 @@
                 </svg>
                 <span class="visually-hidden">Access</span>
               </button>
+              -->
 
               <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip" title="Delete document..."
                       type="button" @click="deleteDoc(item.id)">
@@ -52,7 +54,11 @@
             </div>
           </td>
           <td>
-            <button class="btn btn-outline-primary" type="button" @click="startReview(item.hash)">Start Review</button>
+            <button class="btn"
+                    :class="reviewState(item.hash) === 'SUBMITTED' ? 'disabled btn-outline-secondary' : reviewState(item.hash) === 'PENDING' ? 'btn-outline-primary' : 'btn-outline-success'"
+                    type="button"
+                    @click="startReview(item.hash)">{{ reviewState(item.hash) === "PENDING" ? "Continue"
+                                                        : (reviewState(item.hash) === "SUBMITTED" ? "Submitted" : "Start") }}</button>
           </td>
         </tr>
         </tbody>
@@ -96,11 +102,12 @@ export default {
     this.load();
   },
   computed: {
-    ...mapGetters({items: 'user/getDocuments'})
+    ...mapGetters({items: 'user/getDocuments', reviews: 'user/getReviews'})
   },
   methods: {
     load() {
       this.$socket.emit("docs_get");
+      this.$socket.emit("getReviews");
     },
     deleteDoc(docId) {
       this.$socket.emit("doc_delete", {docId: docId});
@@ -115,16 +122,35 @@ export default {
       this.load();
     },
     startReview(document_id) {
-      this.sockets.subscribe("reviewProcessStarted", (data) => {
-        this.sockets.unsubscribe('reviewProcessStarted');
-        if (data.success) {
-          this.$router.push(`/review/${data.reviewHash}`);
-        } else {
-          this.eventBus.emit('toast', {title:"Review Process", message:"The process cannot be started! Please try it again!", variant: "danger"});
-        }
-      });
-      this.$socket.emit("startReview", {document_id: document_id});
+      //if a review was already started on this document, don't start a new one
+      if(this.reviews.map(r => r.document).includes(document_id)){
+        const review_i = this.reviews.map(r => r.document).indexOf(document_id);
+
+        this.$router.push(`/review/${this.reviews[review_i].hash}`);
+      } else {
+        this.sockets.subscribe("reviewProcessStarted", (data) => {
+          this.sockets.unsubscribe('reviewProcessStarted');
+          if (data.success) {
+            this.$router.push(`/review/${data.reviewHash}`);
+          } else {
+            this.eventBus.emit('toast', {
+              title: "Review Process",
+              message: "The process cannot be started! Please try it again!",
+              variant: "danger"
+            });
+          }
+        });
+        this.$socket.emit("startReview", {document_id: document_id});
+      }
     },
+    reviewState(document_id) {
+      const review_i = this.reviews.map(r => r.document).indexOf(document_id); //gets first review matching the document
+      if(review_i === -1){
+        return "NOT_STARTED";
+      }
+
+      return this.reviews[review_i].submitted ? "SUBMITTED" : "PENDING";
+    }
   }
 }
 </script>

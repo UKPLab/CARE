@@ -53,6 +53,7 @@
               </div>
             </div>
 
+            <!-- Remove for now, as it is redundant
             <div class="form-group row my-2">
               <div class="col-md-6 offset-md-4">
                 <label>
@@ -60,6 +61,7 @@
                 </label>
               </div>
             </div>
+            -->
 
             <div class="col-md-6 offset-md-4">
               <button class="btn btn-primary" type="button" @click="register_user()">Register</button>
