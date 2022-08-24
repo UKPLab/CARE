@@ -27,6 +27,43 @@ function InvalidCommentParameters(details) {
     };
 }
 
+exports.addRawComment = async function addRawComment(comment) {
+    try {
+        return await Comment.create(comment);
+    } catch (err) {
+         throw err;
+    }
+}
+
+exports.addRaw = async function addRaw(annotation) {
+    try {
+        let anno = await Annotation.create(annotation);
+        return anno;
+    }catch (err) {
+             throw err;
+
+        }
+
+
+}
+
+exports.getAnnoFromDocRaw = async function getAnnoFromDocRaw(document) {
+    try {
+        let annotations =  await Annotation.findAll({ where: { 'document': document}});
+        for (let anno of annotations) {
+            anno['comments'] = await Comment.findAll({
+                where: {
+                    referenceAnnotation: anno.hash
+                }
+            });
+        }
+
+        return annotations
+    } catch (err) {
+        throw err;
+    }
+}
+
 exports.add = async function add(annotation, comment = null) {
     let anno;
     try {
@@ -102,7 +139,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
         newValues.text = newText;
     }
     if (newTags != null) {
-        newValues.tags = newTags.toString()
+        newValues.tags = newTags.length > 0 ? newTags.join() : ""
     }
 
     try {
@@ -139,7 +176,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
                 text: newComment.text,
                 referenceAnnotation: annoId,
                 referenceComment: null,
-                tags: newComment.tags.toString(),
+                tags: newComment.tags !== undefined && newComment.tags.length > 0 ? newComment.tags.join() : "",
                 updatedAt: new Date()
             }
 
@@ -165,7 +202,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
                     text: newComment.text,
                     referenceAnnotation: annoId,
                     referenceComment: null,
-                    tags: newComment.tags.toString(),
+                    tags: newComment.tags !== undefined && newComment.tags !== null && newComment.tags.length > 0 ? newComment.tags.join() : "",
                     createdAt: new Date(),
                     updatedAt: new Date()
                 });

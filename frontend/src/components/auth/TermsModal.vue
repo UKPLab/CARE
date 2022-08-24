@@ -52,7 +52,7 @@
       </p>
       <ul>
         <li>
-          User Study: Usage data of the PEER tool: Highlights and comments on scientific papers and acceptance decisions; Metadata such as the time of a comment
+          User Study: Usage data of the PEER tool including all tool interactions like button clicks and navigation. Additionally, the highlights and comments on scientific papers and acceptance decisions; Metadata such as the time of a comment
         </li>
         <li>
           Questionnaire: Free text and multiple choice answers to questions regarding the use of the PEER software

@@ -12,6 +12,7 @@ const Review = require("../models/review.js")(db.sequelize, DataTypes);
 const logger = require("../../utils/logger.js")( "db/review");
 
 const { get: getUser } = require("../../db/methods/user.js");
+const path = require("path");
 
 exports.add = async function add(document_id, user_id) {
     let hash = uuidv4();
