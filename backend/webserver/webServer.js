@@ -64,6 +64,8 @@ function webServer(config) {
     logger.debug("Use CORS Restriction");
     app.use(cors({origin: ['http://localhost:3000',"http://localhost:8080", 'https://peer.ukp.informatik.tu-darmstadt.de'], credentials: true}));
 
+    // No Caching
+    app.disable('etag');
 
     // Make all static files public available
     app.use(express.static(BUILD_PATH));
@@ -79,9 +81,9 @@ function webServer(config) {
         secret: 'thatsecretthinggoeshere',
         resave: false,
         saveUninitialized: true,
-        cookie:{
+        /*cookie:{
             maxAge: 1000*60*90
-        }
+        }*/
     });
     app.use(sessionMiddleware);
     app.use(bodyParser.urlencoded({extended: false}));

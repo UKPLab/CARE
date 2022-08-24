@@ -108,6 +108,7 @@ module.exports = function (app) {
                 return next(err);
             }
             req.session.destroy();
+            res.clearCookie('connect.sid');
             return res.status(200).send("Session destroyed!");
         });
     })
