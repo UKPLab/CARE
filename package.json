@@ -5,7 +5,8 @@
     "frontend-dev": "vite",
     "frontend-preview": "vite preview --port 5050",
     "frontend-dev-build": "vite build --mode development",
-    "frontend-build": "vite build"
+    "frontend-build": "vite build",
+    "test": "vitest"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.5",
@@ -36,5 +37,10 @@
     "vue3-tabs-component": "^1.1.0",
     "vuex": "^4.0.2",
     "vuex-persistedstate": "^4.1.0"
+  },
+  "devDependencies": {
+    "@testing-library/vue": "^6.6.1",
+    "happy-dom": "^6.0.4",
+    "vitest": "^0.22.1"
   }
 }
