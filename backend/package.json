@@ -2,7 +2,11 @@
   "name": "PEERBackend",
   "version": "0.0.1",
   "scripts": {
-    "start": "node webserver/webServer.js"
+    "start": "node index.js",
+    "migrate": "cd db && npx sequelize-cli db:migrate",
+    "migrate:reset": "cd db && npx sequelize-cli db:migrate:undo:all && npm run migrate",
+    "test": "cros-env NODE_ENV=test jest --testTimeout=10000",
+    "pretest": "cross-env NODE_ENV=test npm run migrate:reset"
   },
   "dependencies": {
     "argparse": "^2.0.1",
@@ -31,5 +35,9 @@
     "uuid": "^8.3.2",
     "winston": "^3.8.1",
     "winston-transport": "^4.5.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "jest": "^29.0.1"
   }
 }

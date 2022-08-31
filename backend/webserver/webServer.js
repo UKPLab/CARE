@@ -27,12 +27,11 @@ const bodyParser = require('body-parser');
 
 // define PATHs
 const BUILD_PATH = `${__dirname}/../../dist/`;
-const port = process.env.CONTENT_SERVER_PORT || 3001;
 
 // define logger
 // check logging dir exists
-if (!fs.existsSync(process.env.LOGGING_PATH)){
-  fs.mkdirSync(process.env.LOGGING_PATH, { recursive: true });
+if (!fs.existsSync(process.env.LOGGING_PATH || "./logs")){
+  fs.mkdirSync(process.env.LOGGING_PATH || "./logs", { recursive: true });
 }
 const logger = require("../utils/logger.js")( "webServer");
 
@@ -57,7 +56,7 @@ const sockets = [
  * The main HTTP server which serves all files to the client
  *
  */
-function webServer(config) {
+exports = module.exports = function webServer(config) {
     logger.debug("Start Webserver...")
     const app = express()
 
@@ -147,7 +146,3 @@ function webServer(config) {
     });
 }
 
-
-
-
-webServer({port: port});
