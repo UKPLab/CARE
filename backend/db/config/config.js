@@ -19,7 +19,7 @@ module.exports = {
   test: {
     username: 'postgres',
     password: null,
-    database: process.env.POSTGRES_PEERDB,
+    database: process.env.POSTGRES_TESTDB,
     host: process.env.POSTGRES_HOST,
     port: process.env.POSTGRES_PORT,
     dialect: 'postgres',
