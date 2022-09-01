@@ -144,5 +144,7 @@ exports = module.exports = function webServer(config) {
         const scheme = useSsl ? 'https' : 'http';
         logger.info(`Web Server started at ${scheme}://localhost:${config.port}/`)
     });
+
+    return app;
 }
 
