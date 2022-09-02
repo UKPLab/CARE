@@ -7,7 +7,7 @@ Author: Nils Dycke (dycke@ukp.informatik...)
 const {v4: uuidv4} = require("uuid");
 
 const {DataTypes, Op} = require("sequelize")
-const db = require("../models/index.js")
+const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
 const Document = require("../models/document.js")(db.sequelize, DataTypes);
 

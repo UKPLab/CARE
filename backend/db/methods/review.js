@@ -5,7 +5,7 @@ Functions to handle review in the database
 Author: Dennis Zyska (zyska@ukp...)
 */
 const {DataTypes, Op} = require("sequelize")
-const db = require("../models/index.js")
+const db = require("../index.js")
 const {v4: uuidv4} = require("uuid");
 
 const Review = require("../models/review.js")(db.sequelize, DataTypes);

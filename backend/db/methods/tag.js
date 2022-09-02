@@ -6,7 +6,7 @@ table of tags that are mostly constant.
 Author: Nils Dycke (dycke@ukp...)
 */
 const {DataTypes, Op} = require("sequelize")
-const db = require("../models/index.js")
+const db = require("../index.js")
 
 const Tag = require("../models/tag.js")(db.sequelize, DataTypes);
 const logger = require("../../utils/logger.js")( "db/tag");
