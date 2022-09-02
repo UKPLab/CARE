@@ -5,11 +5,11 @@ describe('Post Endpoints', () => {
         const res = await request(app)
             .post('/auth/login')
             .send({
-                userId: 1,
-                title: 'test is cool',
+                username: "admin",
+                password: "admin",
             })
-        console.log(res);
-        expect(res.statusCode).toEqual(201)
-        expect(res.body).toHaveProperty('post')
+        //console.log(res);
+        expect(res.statusCode).toEqual(200)
+        //expect(res.body).toHaveProperty('post')
     })
 })

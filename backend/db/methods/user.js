@@ -5,7 +5,7 @@ Functions to modify the users in the database
 Author: Nils Dycke (dycke@ukp.informatik...)
 */
 const {DataTypes, Op} = require("sequelize")
-const db = require("../models/index.js")
+const db = require("../index.js")
 const User = require("../models/user.js")(db.sequelize, DataTypes);
 
 const {genSalt, genPwdHash} = require("./utils.js");

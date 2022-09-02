@@ -5,7 +5,7 @@ Functions to modify the annotations in the database
 Author: Nils Dycke (dycke@ukp.informatik...)
 */
 const {DataTypes, Op} = require("sequelize")
-const db = require("../models/index.js")
+const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
 
 const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);

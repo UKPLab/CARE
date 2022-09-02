@@ -5,7 +5,7 @@ Functions to add logging into database
 Author: Dennis Zyska (zyska@ukp...)
 */
 const {DataTypes, Op} = require("sequelize")
-const db = require("../models/index.js")
+const db = require("../index.js")
 
 const Statistic = require("../models/statistic.js")(db.sequelize, DataTypes);
 
