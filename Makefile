@@ -62,9 +62,6 @@ test-frontend: node_modules/.uptodate
 test-backend: backend/node_modules/.uptodate
 	docker-compose -f docker-dev.yml up -d postgres
 	cd backend && npm test
-	docker-compose -f docker-dev.yml down postgres
-
-
 
 .PHONY: build-dev
 build-dev:
