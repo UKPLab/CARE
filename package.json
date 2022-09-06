@@ -6,7 +6,8 @@
     "frontend-preview": "vite preview --port 5050",
     "frontend-dev-build": "vite build --mode development",
     "frontend-build": "vite build",
-    "test": "vitest"
+    "test": "vitest",
+    "test-run": "vitest --run"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.5",
