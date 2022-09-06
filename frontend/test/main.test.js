@@ -1,17 +1,21 @@
 // MyComponent.test.js
-import { render } from '@testing-library/vue'
+import {render} from '@testing-library/vue'
 import MyComponent from '../src/components/NotFoundPage.vue'
 
-test('ErrorPage', () => {
-  const { getByText } = render(MyComponent, {
-    props: {
-      /* ... */
-    }
-  })
+describe('Main Tests', () => {
+    it('ErrorPage', async () => {
+        const {findByText} = render(MyComponent, {
+            props: {
+                /* ... */
+            }
+        })
 
-  // assert output
-  console.log(getByText('...'))
+        const component = await findByText("You are wrong, this page doesn't exists!")
+        expect(component).not.toBeNull();
+
+    })
 })
+
 
 /*
 import { withSetup } from './test-utils'

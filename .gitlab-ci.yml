@@ -1,4 +1,5 @@
 stages:          # List of stages for jobs, and their order of execution
+  - test
   - build
   - deploy
 
@@ -14,6 +15,22 @@ variables:
 
 services:
   - docker:20.10.17-dind
+
+test-backend:
+  image:
+    name: docker/node:latest
+    entrypoint: [ "/bin/sh", "-c" ]
+  stage: test
+  script:
+    - cd backend && npm run test
+
+test-frontend:
+  image:
+    name: docker/node:latest
+    entrypoint: [ "/bin/sh", "-c" ]
+  stage: test
+  script:
+    - npm run test-run
 
 build-dev:
   image:
