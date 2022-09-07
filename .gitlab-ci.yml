@@ -18,23 +18,29 @@ variables:
 services:
   - docker:20.10.17-dind
 
-test:
+test-backend:
   image:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
   stage: test
+  needs: []
   before_script:
     - docker info
     - docker version
-    - apk add postgresql-client curl
-    - curl -sL https://deb.nodesource.com/setup_14.x | sh -
-    - apk add make nodejs npm
+    - apk add make postgresql-client
     - docker-compose version
   script:
-    - make $COMPONENT
-  parallel:
-    matrix:
-      - COMPONENT: [test-backend, test-frontend]
+    - make test-backend
+
+test-frontend:
+  image:
+    name: docker/node:latest
+  stage: test
+  needs: []
+  before_script:
+    - apk add make
+  script:
+    - make test-frontend
 
 build-dev:
   image:
