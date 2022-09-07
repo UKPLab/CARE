@@ -1,3 +1,5 @@
+# https://docs.gitlab.com/ee/ci/yaml/
+
 stages:          # List of stages for jobs, and their order of execution
   - test
   - build
@@ -16,7 +18,6 @@ variables:
 services:
   - docker:20.10.17-dind
 
-
 .run-test:
   image:
     name: docker/compose:latest
@@ -29,20 +30,16 @@ services:
       - docker-compose version
     script:
       - make $COMPONENT
-
-test:
-  stage: test
-  script: run-test $COMPONENT
-  parallel:
-    matrix:
-      - COMPONENT: [test-backend, test-frontend]
-
+    parallel:
+      matrix:
+        - COMPONENT: [test-backend, test-frontend]
 
 build-dev:
   image:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
+  needs: ['test']
   before_script:
     - docker info
     - docker version
@@ -57,6 +54,7 @@ build-main:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
+  needs: ['test']
   before_script:
     - docker info
     - docker version
@@ -69,6 +67,7 @@ build-main:
 deploy-dev:
   stage: deploy
   image: alpine:latest
+  needs: ["build-dev"]
   script:
     - chmod og= $PEER_RSAKEY
     - apk update && apk add openssh-client
@@ -83,6 +82,7 @@ deploy-dev:
 deploy-main:
   stage: deploy
   image: alpine:latest
+  needs: ["build-main"]
   script:
     - chmod og= $PEER_RSAKEY
     - apk update && apk add openssh-client
