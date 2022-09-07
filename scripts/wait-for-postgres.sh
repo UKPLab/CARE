@@ -4,8 +4,9 @@
 
 set -e
 
+&2 echo "Waiting for postgres..."
+
 until PGPASSWORD="postgres" psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username="postgres" -c '\q'; do
-  >&2 echo "Postgres is unavailable - sleeping"
   sleep 1
 done
 
