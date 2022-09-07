@@ -16,31 +16,25 @@ variables:
 services:
   - docker:20.10.17-dind
 
-test-backend:
-  image:
-    name: docker/compose:latest
-    entrypoint: [ "/bin/sh", "-c" ]
+test:
   stage: test
-  before_script:
-    - docker info
-    - docker version
-    - apt-get update -qq && apt-get install -y -qq make
-    - docker-compose version
-  script:
-    - make test-backend
+  script: run-test $COMPONENT
+  parallel:
+    matrix:
+      - COMPONENT: [test-backend, test-frontend]
 
-test-frontend:
+.run-test:
   image:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
-  stage: test
-  before_script:
-    - docker info
-    - docker version
-    - apt-get update -qq && apt-get install -y -qq make
-    - docker-compose version
-  script:
-    - make test-frontend
+    stage: test
+    before_script:
+      - docker info
+      - docker version
+      - apt-get update -qq && apt-get install -y -qq make
+      - docker-compose version
+    script:
+      - make $COMPONENT
 
 build-dev:
   image:
