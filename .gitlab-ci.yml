@@ -47,7 +47,7 @@ build-dev:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
-  needs: ['test']
+  needs: ['test-backend', 'test-frontend']
   before_script:
     - docker info
     - docker version
@@ -62,7 +62,7 @@ build-main:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
-  needs: ['test']
+  needs: ['test-backend', 'test-frontend']
   before_script:
     - docker info
     - docker version
