@@ -28,6 +28,7 @@ sudo apt-get install curl git make python3-pip python3-venv libedit-dev  -y
 sudo apt-get install make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev -y
 sudo apt-get install wget curl llvm libncurses5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev -y
 sudo apt-get install libpq-dev tox -y
+sudo apt install postgresql-client -y
 sudo pip install tox
 
 # install docker (by adding repo). Only do this when necessary
