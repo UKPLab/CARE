@@ -16,12 +16,6 @@ variables:
 services:
   - docker:20.10.17-dind
 
-test:
-  stage: test
-  script: run-test $COMPONENT
-  parallel:
-    matrix:
-      - COMPONENT: [test-backend, test-frontend]
 
 .run-test:
   image:
@@ -35,6 +29,14 @@ test:
       - docker-compose version
     script:
       - make $COMPONENT
+
+test:
+  stage: test
+  script: run-test $COMPONENT
+  parallel:
+    matrix:
+      - COMPONENT: [test-backend, test-frontend]
+
 
 build-dev:
   image:
