@@ -18,19 +18,29 @@ services:
 
 test-backend:
   image:
-    name: docker/node:latest
+    name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
   stage: test
+  before_script:
+    - docker info
+    - docker version
+    - apt-get update -qq && apt-get install -y -qq make
+    - docker-compose version
   script:
-    - cd backend && npm run test
+    - make test-backend
 
 test-frontend:
   image:
-    name: docker/node:latest
+    name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
   stage: test
+  before_script:
+    - docker info
+    - docker version
+    - apt-get update -qq && apt-get install -y -qq make
+    - docker-compose version
   script:
-    - npm run test-run
+    - make test-frontend
 
 build-dev:
   image:
