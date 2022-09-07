@@ -26,8 +26,9 @@ test:
   before_script:
     - docker info
     - docker version
+    - apk add postgresql-client curl
     - curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-    - apk add make npm postgresql-client
+    - apk add make nodejs npm
     - docker-compose version
   script:
     - make $COMPONENT
