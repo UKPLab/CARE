@@ -22,17 +22,17 @@ test:
   image:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
-    stage: test
-    before_script:
-      - docker info
-      - docker version
-      - apt-get update -qq && apt-get install -y -qq make
-      - docker-compose version
-    script:
-      - make $COMPONENT
-    parallel:
-      matrix:
-        - COMPONENT: [test-backend, test-frontend]
+  stage: test
+  before_script:
+    - docker info
+    - docker version
+    - apt-get update -qq && apt-get install -y -qq make
+    - docker-compose version
+  script:
+    - make $COMPONENT
+  parallel:
+    matrix:
+      - COMPONENT: [test-backend, test-frontend]
 
 build-dev:
   image:
