@@ -18,7 +18,7 @@ variables:
 services:
   - docker:20.10.17-dind
 
-.run-test:
+test:
   image:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
