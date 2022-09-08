@@ -30,11 +30,11 @@ test-backend:
     - docker info
     - docker version
     - apk add make postgresql-client npm curl bash
-    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-    - source "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION} && nvm use v${NODE_VERSION} && nvm alias default v${NODE_VERSION}
-    - PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
-    - source "$NVM_DIR/nvm.sh" && node --version
-    - source "$NVM_DIR/nvm.sh" && npm --version
+    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+    - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use # load nvm
+    - eval "[ -f .nvmrc ] && nvm install || nvm install 14"
+    - node --version
+    - npm --version
     - docker-compose version
     - docker-compose -f docker-dev.yml --env-file ".env.test" up -d postgres
     - docker-compose ps
@@ -50,7 +50,7 @@ test-frontend:
   needs: []
   before_script:
     - apk add make npm curl bash
-    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
     - source "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION} && nvm use v${NODE_VERSION} && nvm alias default v${NODE_VERSION}
     - PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
     - node --version
