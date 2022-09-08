@@ -23,13 +23,13 @@ services:
   - apk add bash curl
   - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
   - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use # load nvm
+  - nvm --version
   - eval "[ -f .nvmrc ] && nvm install || nvm install ${NODE_VERSION}"
   - ln -s "$(which node)" /usr/bin/node
   - ln -s "$(which npm)" /usr/bin/npm
-  - ". ~/.nvm/nvm.sh --no-use"
-  - nvm --version
-  - node --version
   - npm --version
+  - node --version
+
 
 test-backend:
   image:
