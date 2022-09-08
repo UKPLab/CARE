@@ -14,6 +14,8 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
   TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:$CI_COMMIT_SHORT_SHA
+  NODE_VERSION: 16.13.0
+  NVM_DIR: "/root/.nvm"
 
 services:
   - docker:20.10.17-dind
@@ -27,7 +29,12 @@ test-backend:
   before_script:
     - docker info
     - docker version
-    - apk add make postgresql-client npm
+    - apk add make postgresql-client npm curl bash
+    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+    - source "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION} && nvm use v${NODE_VERSION} && nvm alias default v${NODE_VERSION}
+    - PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
+    - source "$NVM_DIR/nvm.sh" && node --version
+    - source "$NVM_DIR/nvm.sh" && npm --version
     - docker-compose version
     - docker-compose -f docker-dev.yml --env-file ".env.test" up -d postgres
     - docker-compose ps
@@ -42,8 +49,6 @@ test-frontend:
   stage: test
   needs: []
   before_script:
-    - NODE_VERSION=16.13.0
-    - NVM_DIR=/root/.nvm
     - apk add make npm curl bash
     - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
     - source "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION} && nvm use v${NODE_VERSION} && nvm alias default v${NODE_VERSION}
