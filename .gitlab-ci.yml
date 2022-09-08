@@ -34,7 +34,6 @@ services:
 test-backend:
   image:
     name: docker/compose:debian-1.29.2
-    entrypoint: [ "/bin/sh", "-c" ]
   stage: test
   needs: []
   before_script:
