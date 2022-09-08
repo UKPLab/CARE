@@ -17,7 +17,7 @@ variables:
   NODE_VERSION: 16.17.0
 
 services:
-  - docker:20.10.17-dind
+  - docker:dind
 
 .setup-nvm-template: &setup-nvm
   - apk update && apk add -U curl bash ca-certificates openssl ncurses coreutils python2 make gcc g++ libgcc linux-headers grep util-linux binutils findutils
