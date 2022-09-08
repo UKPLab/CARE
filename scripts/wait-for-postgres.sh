@@ -8,6 +8,7 @@ set -e
 
 until PGPASSWORD="postgres" psql --host="$POSTGRES_HOST" --port="$POSTGRES_PORT" --username="postgres" -c '\q'; do
   sleep 1
+  docker-compose ps
 done
 
 >&2 echo "Postgres is up - executing command"
