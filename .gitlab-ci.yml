@@ -15,10 +15,17 @@ variables:
   TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
   TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:$CI_COMMIT_SHORT_SHA
   NODE_VERSION: 16.13.0
-  NVM_DIR: "/root/.nvm"
 
 services:
   - docker:20.10.17-dind
+
+.setup-nvm-template: &setup-nvm
+  - apt add bash curl
+  - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+  - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use # load nvm
+  - eval "[ -f .nvmrc ] && nvm install || nvm install ${NODE_VERSION}"
+  - node --version
+  - npm --version
 
 test-backend:
   image:
@@ -29,16 +36,12 @@ test-backend:
   before_script:
     - docker info
     - docker version
-    - apk add make postgresql-client npm curl bash
-    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-    - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use # load nvm
-    - eval "[ -f .nvmrc ] && nvm install || nvm install 14"
-    - node --version
-    - npm --version
     - docker-compose version
+    - *setup-nvm
+    - apk add make postgresql-client
+  script:
     - docker-compose -f docker-dev.yml --env-file ".env.test" up -d postgres
     - docker-compose ps
-  script:
     - make ENV=test test-backend
 
 # https://stackoverflow.com/questions/36399848/install-node-in-dockerfile
