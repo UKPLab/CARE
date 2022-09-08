@@ -30,6 +30,7 @@ test-backend:
     - apk add make postgresql-client npm
     - docker-compose version
   script:
+    - docker-compose -f docker-dev.yml up -d postgres
     - make test-backend
 
 test-frontend:
