@@ -40,7 +40,6 @@ test-backend:
     - docker version
     - docker-compose version
     - *setup-nvm
-    - apk add make postgresql-client
   script:
     - docker-compose -f docker-dev.yml --env-file ".env.test" up -d postgres
     - docker-compose ps
@@ -50,16 +49,14 @@ test-backend:
 
 test-frontend:
   image:
-    name: docker/compose:latest
+    name: docker/compose:debian-1.29.2
   stage: test
   needs: []
   before_script:
-    - apk add make npm curl bash
-    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-    - source "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION} && nvm use v${NODE_VERSION} && nvm alias default v${NODE_VERSION}
-    - PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
-    - node --version
-    - npm --version
+    - docker info
+    - docker version
+    - docker-compose version
+    - *setup-nvm
   script:
     - make ENV=test test-frontend
 
