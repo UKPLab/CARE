@@ -39,7 +39,7 @@ test-frontend:
   needs: []
   before_script:
     - NODE_VERSION=16.13.0
-    - apk add make npm curl
+    - apk add make npm curl bash
     - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
     - NVM_DIR=/root/.nvm
     - . "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION}
