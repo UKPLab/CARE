@@ -25,6 +25,7 @@ services:
   - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use # load nvm
   - nvm --version
   - eval "[ -f .nvmrc ] && nvm install || nvm install ${NODE_VERSION}"
+  - which node
   - ln -s "$(which node)" /usr/bin/node
   - ln -s "$(which npm)" /usr/bin/npm
   - npm --version
