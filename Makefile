@@ -60,6 +60,7 @@ test-frontend: node_modules/.uptodate
 
 .PHONY: test-backend
 test-backend: backend/node_modules/.uptodate
+	docker-compose -f docker-dev.yml --env-file ".env" up -d postgres
 	cd scripts && ./wait-for-postgres.sh
 	cd backend && npm test
 
