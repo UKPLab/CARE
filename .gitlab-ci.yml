@@ -24,7 +24,8 @@ services:
   - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
   - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use # load nvm
   - eval "[ -f .nvmrc ] && nvm install || nvm install ${NODE_VERSION}"
-  - ln -s /usr/bin/nodejs /usr/bin/node
+  - ln -s "$(which node)" /usr/bin/node
+  - ln -s "$(which npm)" /usr/bin/npm
   - node --version
   - npm --version
 
