@@ -29,6 +29,8 @@ test-backend:
     - docker version
     - apk add make postgresql-client npm
     - docker-compose version
+    - docker-compose -f docker-dev.yml --env-file ".env" up -d postgres
+    - docker-compose ps
   script:
     - make test-backend
 
