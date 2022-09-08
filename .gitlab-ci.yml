@@ -27,18 +27,18 @@ test-backend:
   before_script:
     - docker info
     - docker version
-    - apk add make postgresql-client
+    - apk add make postgresql-client npm
     - docker-compose version
   script:
     - make test-backend
 
 test-frontend:
   image:
-    name: docker/node:latest
+    name: docker/compose:latest
   stage: test
   needs: []
   before_script:
-    - apk add make
+    - apk add make npm
   script:
     - make test-frontend
 
