@@ -46,10 +46,7 @@ test-frontend:
     - NVM_DIR=/root/.nvm
     - apk add make npm curl bash
     - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-    - source "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION}
-    - source "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION}
-    - source "$NVM_DIR/nvm.sh" && nvm use v${NODE_VERSION}
-    - source "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
+    - source "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION} && nvm use v${NODE_VERSION} && nvm alias default v${NODE_VERSION}
     - PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
     - node --version
     - npm --version
