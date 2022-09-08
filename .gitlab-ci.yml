@@ -20,7 +20,7 @@ services:
   - docker:dind
 
 .setup-nvm-template: &setup-nvm
-  - apt update && apt install curl bash
+  - apt update && apt install curl bash -y
   - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
   - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use # load nvm
   - nvm --version
