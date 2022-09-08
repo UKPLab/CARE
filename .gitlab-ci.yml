@@ -29,10 +29,10 @@ test-backend:
     - docker version
     - apk add make postgresql-client npm
     - docker-compose version
-    - docker-compose -f docker-dev.yml --env-file ".env" up -d postgres
+    - docker-compose -f docker-dev.yml --env-file ".env.test" up -d postgres
     - docker-compose ps
   script:
-    - make test-backend
+    - make ENV=test test-backend
 
 # https://stackoverflow.com/questions/36399848/install-node-in-dockerfile
 
@@ -51,7 +51,7 @@ test-frontend:
     - node --version
     - npm --version
   script:
-    - make test-frontend
+    - make ENV=test test-frontend
 
 build-dev:
   image:
