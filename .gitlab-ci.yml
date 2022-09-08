@@ -27,8 +27,6 @@ services:
   - eval "[ -f .nvmrc ] && nvm install || nvm install ${NODE_VERSION}"
   - which node
   - echo ${PATH}
-  - ln -s "$(which node)" /usr/bin/node
-  - ln -s "$(which npm)" /usr/bin/npm
   - npm --version
   - node --version
 
