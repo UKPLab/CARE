@@ -20,11 +20,11 @@ services:
   - docker:20.10.17-dind
 
 .setup-nvm-template: &setup-nvm
-  - apk update && apk add bash curl
+  - apk update && apk add -U curl bash ca-certificates openssl ncurses coreutils python2 make gcc g++ libgcc linux-headers grep util-linux binutils findutils
   - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
   - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use # load nvm
   - nvm --version
-  - eval "[ -f .nvmrc ] && nvm install || nvm install ${NODE_VERSION}"
+  - eval "[ -f .nvmrc ] && nvm install -s || nvm install -s ${NODE_VERSION}"
   - which node
   - echo ${PATH}
   - npm --version
