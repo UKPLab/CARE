@@ -7,6 +7,7 @@
     "db_migrate": "cd db && npx sequelize-cli db:migrate",
     "db_migrate:reset": "cd db && npm run db_create || echo \"IGNORING ERROR\" && npx sequelize-cli db:migrate:undo:all && npm run db_migrate",
     "test": "cross-env NODE_ENV=test jest --testTimeout=10000",
+    "test_doh": "cross-env NODE_ENV=test jest  --detectOpenHandles --testTimeout=10000",
     "pretest": "cross-env NODE_ENV=test npm run db_migrate:reset"
   },
   "dependencies": {

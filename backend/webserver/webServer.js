@@ -56,7 +56,8 @@ const sockets = [
  * The main HTTP server which serves all files to the client
  *
  */
-exports = module.exports = function webServer(config) {
+
+exports = module.exports = function webserver() {
     logger.debug("Start Webserver...")
     const app = express()
 
@@ -138,12 +139,6 @@ exports = module.exports = function webServer(config) {
     });
     logger.debug("Initialize Sockets...");
     sockets.forEach(socket => socket(io));
-
-    // serve server on port
-    httpServer.listen(config.port, () => {
-        const scheme = useSsl ? 'https' : 'http';
-        logger.info(`Web Server started at ${scheme}://localhost:${config.port}/`)
-    });
 
     return app;
 }
