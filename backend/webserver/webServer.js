@@ -140,6 +140,6 @@ exports = module.exports = function webserver() {
     logger.debug("Initialize Sockets...");
     sockets.forEach(socket => socket(io));
 
-    return app;
+    return [app, httpServer];
 }
 

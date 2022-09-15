@@ -2,7 +2,7 @@ const request = require('supertest')
 const webserver = require('../webserver/webServer.js')
 const db = require("../db/index.js")
 
-const app = webserver();
+const [app, httpServer] = webserver();
 
 describe('Post Endpoints', () => {
 
