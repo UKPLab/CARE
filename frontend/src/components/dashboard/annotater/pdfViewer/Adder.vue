@@ -47,9 +47,6 @@ export default {
   beforeUnmount() {
     document.body.removeEventListener('mouseup', this.checkSelection);
   },
-  mounted() {
-    this.init();
-  },
   computed: {
     assignableTags() {
       return this.$store.getters['tag/getTags'];
@@ -101,9 +98,6 @@ export default {
 
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
-    },
-    init() {
-
     },
     _onSelection(event) {
       // get selection
@@ -191,6 +185,10 @@ export default {
       return el?.closest('.textLayer') ?? null;
     },
     getTextLayerForRange(range) {
+      console.log(range);
+      if ("classList" in range.endContainer && range.endContainer.classList.contains("canvasWrapper")){
+        throw new Error('I\'m afraid we are not on the same page');
+      }
       // "Shrink" the range so that the start and endpoints are at offsets within
       // text nodes rather than any containing nodes.
       try {
@@ -209,8 +207,11 @@ export default {
       if (startTextLayer !== endTextLayer) {
         throw new Error('Selecting across page breaks is not supported');
       }
+      const pageStart = parseInt(startTextLayer.id.match("[0-9]+")[0]);
 
-      return [range, startTextLayer];
+      return [range, startTextLayer, pageStart];
+
+
     },
     /**
      * Convert a DOM Range object into a set of selectors.
@@ -223,7 +224,8 @@ export default {
      * @param {Range} range
      * @return {Promise<Selector[]>}
      */ async describe(root, range) {
-      const [textRange, textLayer] = this.getTextLayerForRange(range);
+
+      const [textRange, textLayer, page] = this.getTextLayerForRange(range);
 
       const startPos = TextPosition.fromPoint(
           textRange.startContainer,
@@ -248,8 +250,12 @@ export default {
       };
 
       const quote = TextQuoteAnchor.fromRange(root, textRange).toSelector();
+      const pageSelector = {
+        type: 'PagePositionSelector',
+        number: page,
+      }
 
-      return [position, quote];
+      return [position, quote, pageSelector];
     },
     getSiblingIndex(node) {
       let index = 0;
