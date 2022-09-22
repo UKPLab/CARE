@@ -13,6 +13,7 @@
              <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">Report</button>
              <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">Accept</button>
              <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">Reject</button>
+             <button class="btn btn-outline-secondary" type="button" @click="downloadAnnotations()">Download Annotations</button>
         </form>
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
           <li class="nav-item">
@@ -34,6 +35,9 @@
 import ReviewSubmit from "../../modals/ReviewSubmit.vue";
 import Report from "../../modals/Report.vue";
 import DecisionSubmit from "../../modals/DecisionSubmit.vue";
+import {toCSV} from "../../../../data/annotation";
+import {FileSaver} from "file-saver"; //required for window.saveAs to work
+
 export default {
   name: "TopBar",
   components: {DecisionSubmit, Report, ReviewSubmit},
@@ -66,6 +70,17 @@ export default {
   methods: {
     decisionSubmit(decision){
       this.$refs.decisionSubmit.open(decision);
+    },
+    async downloadAnnotations(){
+      // for now: fetch the annotations from store -- later we could move this to the sidebar for what you see is what
+      // you get behavior
+      const annos = this.$store.getters["anno/getAnnotations"](this.document_id);
+      const csv = toCSV(annos, ["id", "document_id", "user", "anchors", "text", "tags"],
+                            ["id", "text"])
+
+      const csvStr = await csv.toString(true, true);
+
+      window.saveAs(new Blob([csvStr], {type: "text/csv;charset=utf-8"}), "annotations.csv");
     }
   }
 }
