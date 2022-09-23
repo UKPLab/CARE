@@ -1,7 +1,8 @@
 'use strict';
+
 module.exports = {
-  async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('tag', {
+  async up (queryInterface, Sequelize) {
+    await queryInterface.createTable('tag_group', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -14,10 +15,6 @@ module.exports = {
       },
       description: {
         type: Sequelize.STRING(512)
-      },
-      colorCode: {
-        type: Sequelize.STRING,
-        allowNull: true
       },
       deleted: {
           type: Sequelize.BOOLEAN,
@@ -39,6 +36,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('tag');
+    await queryInterface.dropTable('tag_group');
   }
 };
