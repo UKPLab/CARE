@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class tags extends Model {
+  class tag_groups extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -13,19 +13,17 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
     }
   }
-  tags.init({
+  tag_groups.init({
     name: DataTypes.STRING,
     description: DataTypes.STRING,
-    colorCode: DataTypes.STRING,
     updatedAt: DataTypes.DATE,
-    groupId: DataTypes.INTEGER,
     deleted: DataTypes.BOOLEAN,
     deletedAt: DataTypes.DATE,
     createdAt: DataTypes.DATE
   }, {
     sequelize,
-    modelName: 'tag',
-    tableName: 'tag'
+    modelName: 'tag_group',
+    tableName: 'tag_group'
   });
-  return tags;
+  return tag_groups;
 };
