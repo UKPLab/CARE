@@ -1,35 +1,80 @@
 /* Handle tags through websocket
 
-Loading tags through websocket
+Loading tags and tagSets through websocket
 
-Author: Nils Dycke (dycke@ukp.informatik....)
+Author: Dennis Zyska (zyska@...)
 Source: --
 */
 const {
-    getAll, toFrontend
+    getAllByUser: getAllTagsByUser, getAll: getAllTags
 } = require("../../db/methods/tag.js");
+const {
+    getAllByUser: getAllTagSetsByUser, getAll: getAllTagSets
+} = require("../../db/methods/tag_set.js");
 
-const logger = require("../../utils/logger.js")( "sockets/tag");
+const logger = require("../../utils/logger.js")("sockets/tags");
 
 
 exports = module.exports = function (io) {
     io.on("connection", (socket) => {
-        socket.on("tags_get_all", async (data) => {
-            // get all
-            let tags;
+
+        const sendTags = async () => {
             try {
-                tags = await getAll();
-            } catch (e) {
-                logger.error(e, {user: socket.request.session.passport.user.id});
-                socket.emit("tags_result", {"tags": [], success: false});
-                return;
+                socket.emit("tags", await getAllTags());
+            } catch (err) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
             }
+        };
 
-            // to frontend representation of tags
-            const mappedTags = tags.map(x => toFrontend(x));
+        const sendTagsByUser = async (user_id) => {
+            try {
+                socket.emit("tags", await getAllTagsByUser(user_id));
+            } catch (err) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
+            }
+        };
 
-            // emit
-            socket.emit("tagsResult", {"tags": mappedTags, success: true});
+        const sendTagSet = async () => {
+            try {
+                socket.emit("tagSets", await getAllTagSets());
+            } catch (err) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
+            }
+        };
+
+        const sendTagSetByUser = async (user_id) => {
+            try {
+                socket.emit("tagSets", await getAllTagSetsByUser(user_id));
+            } catch (err) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
+            }
+        };
+
+        socket.on("getTagSets", async () => {
+            try {
+                const user = socket.request.session.passport.user;
+                if (user.sysrole === "admin") {
+                    sendTagSet();
+                } else {
+                    sendTagSetByUser(user.id);
+                }
+            } catch (err) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
+            }
         });
+
+        socket.on("getTags", async () => {
+            try {
+                const user = socket.request.session.passport.user;
+                if (user.sysrole === "admin") {
+                    sendTags();
+                } else {
+                    sendTagsByUser(user.id);
+                }
+            } catch (err) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
+            }
+        });
+
     });
 }

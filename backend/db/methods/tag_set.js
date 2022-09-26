@@ -9,8 +9,8 @@ Co-Author: Dennis Zyska (zyska@ukp...)
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
 
-const Tag = require("../models/tag.js")(db.sequelize, DataTypes);
-const logger = require("../../utils/logger.js")("db/tag");
+const TagSet = require("../models/tag_set.js")(db.sequelize, DataTypes);
+const logger = require("../../utils/logger.js")("db/tag_set");
 
 const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
 
@@ -26,7 +26,7 @@ function InvalidTagParameters(details) {
 
 exports.add = async function add(tag_name, description) {
     try {
-        const t = await Tag.create({
+        const t = await TagSet.create({
             name: tag_name, description: description
         });
         return t.id;
@@ -43,7 +43,7 @@ exports.add = async function add(tag_name, description) {
 
 exports.remove = async function remove(tag_id) {
     try {
-        return await Tag.update({deleted: true, deletedAt: new Date()}, {
+        return await TagSet.update({deleted: true, deletedAt: new Date()}, {
             where: {
                 id: tag_id
             }
@@ -59,7 +59,7 @@ exports.remove = async function remove(tag_id) {
 
 exports.getAll = async function getAll() {
     try {
-        return await Tag.findAll({
+        return await TagSet.findAll({
             where: {
                 deleted: false
             }
@@ -84,7 +84,7 @@ exports.getAllByUser = async function getAllByUser(user_id, include_system = tru
     }
 
     try {
-        return await Tag.findAll({
+        return await TagSet.findAll({
             where: {
                 deleted: false,
                 [Op.or]: selector,
@@ -101,7 +101,7 @@ exports.getAllByUser = async function getAllByUser(user_id, include_system = tru
 
 exports.get = async function get(tag_id) {
     try {
-        return await Tag.findOne({
+        return await TagSet.findOne({
             where: {
                 id: tag_id
             }

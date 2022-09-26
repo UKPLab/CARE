@@ -58,6 +58,16 @@
           </div>
         </div>
       </div>
+
+      <div class="container">
+        <div class="row">
+          <div class="col gy-5">
+            <h3>Tag Management</h3>
+            <TagManager></TagManager>
+          </div>
+        </div>
+      </div>
+
       <p></p>
       <a href="#" @click="logout()">Logout</a>
     </div>
@@ -79,10 +89,11 @@ Source: -
 import DocumentManager from "./dashboard/documents/DocumentManager.vue";
 import ReviewManager from "./dashboard/review/ReviewManager.vue";
 import MetaReviewManager from "./dashboard/review/MetaReviewManager.vue";
+import TagManager from "./dashboard/settings/TagManager.vue";
 
 export default {
   name: "Dashboard",
-  components: {MetaReviewManager, DocumentManager, ReviewManager},
+  components: {MetaReviewManager, DocumentManager, ReviewManager, TagManager},
   created() {
     this.$socket.on('connect', (data) => {
       console.log('socket connected')

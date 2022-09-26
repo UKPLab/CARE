@@ -2,13 +2,26 @@
 
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.createTable('tag_group', {
+    await queryInterface.createTable('tag_set', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+        userId: {
+            type: Sequelize.INTEGER,
+            allowNull: true, // if null, then it's a global tag (system-wide)
+            references: {
+                model: 'user',
+                key: 'id'
+            }
+        },
+        public: {
+            type: Sequelize.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        },
       name: {
         type: Sequelize.STRING,
         unique: true
@@ -36,6 +49,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('tag_group');
+    await queryInterface.dropTable('tag_set');
   }
 };

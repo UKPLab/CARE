@@ -9,7 +9,8 @@ Source: -
 
 const getDefaultState = () => {
     return {
-        tags: []
+        tags: null,
+        tagSets: null,
     };
 };
 
@@ -20,21 +21,26 @@ export default {
     getters: {
         getTags: state => {
             return state["tags"]
-        }
+        },
+        getTagSets: state => {
+            return state["tagSets"]
+        },
     },
     mutations: {
         // updates the local store to the given documents
         SET_TAGS: (state, tags) => {
             state.tags = tags;
         },
-        // resets the local document store to the default state
         RESET: state => {
             Object.assign(state, getDefaultState());
         },
-        SOCKET_tagsResult: (state, message) => {
-            if (message.success) {
-                state.tags = message.tags;
-            }
+        SOCKET_tagSets: (state, data) => {
+            state.tagSets = data;
+
+        },
+        SOCKET_tags: (state, data) => {
+            state.tags = data;
+
         },
     },
     actions: {}
