@@ -17,8 +17,10 @@ module.exports = (sequelize, DataTypes) => {
     name: DataTypes.STRING,
     description: DataTypes.STRING,
     colorCode: DataTypes.STRING,
+    userId: DataTypes.INTEGER,
+    public: DataTypes.BOOLEAN,
     updatedAt: DataTypes.DATE,
-    groupId: DataTypes.INTEGER,
+    setId: DataTypes.INTEGER,
     deleted: DataTypes.BOOLEAN,
     deletedAt: DataTypes.DATE,
     createdAt: DataTypes.DATE

@@ -12,10 +12,23 @@ module.exports = {
                 type: Sequelize.STRING,
                 unique: true
             },
-            groupId: {
+            userId: {
+                type: Sequelize.INTEGER,
+                allowNull: true, // if null, then it's a global tag
+                references: {
+                    model: 'user',
+                    key: 'id'
+                }
+            },
+            public: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: false
+            },
+            setId: {
                 type: Sequelize.INTEGER,
                 references: {
-                    model: "tag_group",
+                    model: "tag_set",
                     key: "id"
                 },
                 allowNull: false

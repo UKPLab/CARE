@@ -13,7 +13,7 @@ const basicTags = [
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        const groups = await queryInterface.bulkInsert('tag_group',
+        const groups = await queryInterface.bulkInsert('tag_set',
             basicTagGroups.map(t => {
                 return {
                     name: t[0],
@@ -29,7 +29,7 @@ module.exports = {
                     name: t[1],
                     description: t[1],
                     colorCode: t[2],
-                    groupId: groups.find(g => g.name === t[0]).id,
+                    setId: groups.find(g => g.name === t[0]).id,
                     updatedAt: new Date(),
                     createdAt: new Date(),
                     deleted: false
@@ -45,7 +45,7 @@ module.exports = {
         }, {});
 
         // and then delete groups
-        await queryInterface.bulkDelete('tag_group', {
+        await queryInterface.bulkDelete('tag_set', {
             name: basicTagGroups.map(t => t[0])
         }, {});
 
