@@ -8,7 +8,6 @@ Source: -
 import {v4} from 'uuid';
 import Papa from 'papaparse';
 
-
 export class Annotation {
     id; //annotation ids
     comment; // comment (or comments) on top of the annotation -> move the comment outside.
@@ -62,17 +61,49 @@ export function createAnnotation(document_id, text, anchor, annotationData, user
         tags);
 }
 
-function subSelectFields(dataObj, fields=null){
+function subSelectFields(annoObj, annoFields=null, commentFields=null){
     let data;
-    if(fields !== null){
-        data = Object.fromEntries(Object.entries(dataObj).filter((a) => {
-            return fields.indexOf(a[0]) !== -1;
-        }));
+    if(annoFields !== null){
+        data = Object.fromEntries(
+            Object.entries(annoObj).filter((a) => {
+                return annoFields.indexOf(a[0]) !== -1;
+            })
+        );
     } else {
-        data = Object.assign({}, dataObj);
+        data = Object.assign({}, annoObj);
     }
 
-    data = Object.fromEntries(Object.entries(data).map(e => [e[0], e[1]]));
+    // anchors are excluded by default
+    if(data.anchors !== undefined){
+        delete data.anchors;
+    }
+
+    // dealing with the annotationData object
+    if(data.annotationData !== undefined){
+        if(data.annotationData.target !== undefined && data.annotationData.target[0].selector !== undefined){
+            data.annotationData = data.annotationData.target[0].selector[1].exact;
+        } else {
+            data.annotationData = "UNK";
+        }
+    }
+
+    // dealing with comment object
+    if(data.comment !== undefined){
+        let cdata;
+        if(commentFields !== null && data.comment !== null){
+            cdata = Object.fromEntries(Object.entries(data.comment).filter((a) => {
+                return commentFields.indexOf(a[0]) !== -1;
+            }));
+        } else {
+            cdata = Object.assign({}, annoObj);
+        }
+
+        // remove comment field from data and unroll its contents instead
+        delete data.comment
+
+        cdata = Object.fromEntries(Object.entries(cdata).map(e => ["comment_"+e[0], e[1]]));
+        data = Object.assign(data, cdata);
+    }
 
     return data;
 }
@@ -87,25 +118,14 @@ function subSelectFields(dataObj, fields=null){
  *
  * @param annotations list of annotation objects
  * @param comments object mapping annotation ids to comment objects
- * @param anno_fields opt., whitelist of fields to include from annotations
- * @param comment_fields opt., whitelist of fields to include from comments
+ * @param annoFields opt., whitelist of fields to include from annotations
+ * @param commentFields opt., whitelist of fields to include from comments
  * @returns {ObjectsToCsv} call await toString(allColumns=True) to produce a CSV string from this object
  */
-export function toCSV(annotations, anno_fields=null, comment_fields=null) {
+export function toCSV(annotations, annoFields=null, commentFields=null) {
     const data = annotations.map((anno) => {
-       let filtered_anno = subSelectFields(anno, anno_fields);
-       const comm = anno.comment;
-
-       if(comm !== undefined){
-           let filtered_comm = subSelectFields(comm, comment_fields);
-           filtered_comm = Object.fromEntries(Object.entries(filtered_comm).map(e => ["comment_"+e[0], e[1]]));
-           filtered_anno = Object.assign(filtered_anno, filtered_comm);
-       }
-
-       return filtered_anno;
+       return subSelectFields(anno, annoFields, commentFields);
     });
-
-    console.log(data);
 
     return Papa.unparse(data);
 }

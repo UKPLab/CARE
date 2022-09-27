@@ -75,10 +75,10 @@ export default {
       // for now: fetch the annotations from store -- later we could move this to the sidebar for what you see is what
       // you get behavior
       const annos = this.$store.getters["anno/getAnnotations"](this.document_id);
-      const csv = toCSV(annos, ["id", "document_id", "user", "anchors", "text", "tags"],
+      const csv = toCSV(annos, ["id", "document_id", "user", "anchors", "text", "tags", "comment"],
                             ["id", "text"])
 
-      const csvStr = await csv.toString(true, true);
+      const csvStr = csv.toString(true, true);
 
       window.saveAs(new Blob([csvStr], {type: "text/csv;charset=utf-8"}), "annotations.csv");
     }
