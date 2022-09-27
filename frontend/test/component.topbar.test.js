@@ -1,18 +1,33 @@
-// MyComponent.test.js
-import {render} from '@testing-library/vue'
-import MyComponent from '../src/components/NotFoundPage.vue'
+// TopBar.vue
+// Details on testing-library: https://testing-library.com/docs/vue-testing-library/api/
+import {render, fireEvent} from '@testing-library/vue'
 
-describe('Main Tests', () => {
-    it('ErrorPage', async () => {
-        const {findByText} = render(MyComponent, {
-            props: {
-                /* ... */
+import TopBar from '../src/components/dashboard/annotater/topbar/TopBar.vue'
+import store from '../src/store/index.js'
+
+describe('dashboard.annotator.topbar.TopBar Test Download Annotations', () => {
+    it('TopBar Download Button', async () => {
+        const props = {
+            document_id: "test",
+            review_id: "test",
+            readonly: false,
+            approve: false,
+            review: true
+        };
+
+        //check download button exists
+        let {findByText, getByText, container} = render(TopBar, {
+            props: props,
+            global: {
+                plugins: [store]
             }
-        })
+        });
 
-        const component = await findByText("You are wrong, this page doesn't exists!")
-        expect(component).not.toBeNull();
+        const downloadButton = await findByText("Download Annotations");
+        expect(downloadButton).not.toBeNull();
 
+        //TODO fails due to "open is not afunction", which is caused by the "window.saveAs()" call
+        //const res = await fireEvent.click(downloadButton);
     })
 })
 
