@@ -1,12 +1,18 @@
 <template>
   <Toast ></Toast>
-  <router-view></router-view>
+  <Topbar></Topbar>
+  <div class="website-wrapper">
+    <Navigation></Navigation>
+    <router-view></router-view>
+  </div>
 </template>
 
 <script>
 import Toast from "./components/dashboard/Toast.vue";
+import Navigation from "./components/navigation/Navigation.vue";
+import Topbar from "./components/navigation/Topbar.vue";
 export default {
-  components: {Toast},
+  components: {Toast, Navigation, Topbar},
   watch: {
     '$route' (to, from) {
       if(to.fullPath !== from.fullPath){
@@ -18,4 +24,7 @@ export default {
 </script>
 
 <style>
+.website-wrapper {
+  display:flex;
+  }
 </style>
