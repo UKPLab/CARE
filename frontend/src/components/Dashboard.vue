@@ -1,5 +1,5 @@
 <template>
-  <div class="row">
+  <div id="page-content-wrapper" class="row">
     <div class="col-md-8 mx-auto my-4">
       <ul v-if="isAdmin" class="nav nav-tabs" id="dashtabs" role="tablist">
         <li class="nav-item" role="presentation">
@@ -75,7 +75,6 @@ Author: Dennis Zyska (zyska@ukp...)
 Co-Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-
 import DocumentManager from "./dashboard/documents/DocumentManager.vue";
 import ReviewManager from "./dashboard/review/ReviewManager.vue";
 import MetaReviewManager from "./dashboard/review/MetaReviewManager.vue";
