@@ -1,19 +1,30 @@
 <template>
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
-    <div class="row flex-shrink-0">
-      <div class="col">
-        <TopBar id="topbar" :review_id="review_id" :document_id="document_id" :readonly="readonly" :approve="approve" :review="review"></TopBar>
+    <div class="row d-flex flex-grow-1 overflow-hidden">
+      <div class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
+        <PDFViewer :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto"
+                   class="rounded border border-1 shadow-sm"></PDFViewer>
       </div>
-    </div>
-    <div class="row d-flex flex-grow-1 overflow-hidden top-padding" >
-      <div class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer" >
-        <PDFViewer  :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto" class="rounded border border-1 shadow-sm" ></PDFViewer>
+      <div class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;" id="sidebarContainer">
+        <Sidebar :document_id="document_id" :readonly="readonly"/>
       </div>
-    <div class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;" id="sidebarContainer">
-      <Sidebar :document_id="document_id" :readonly="readonly" />
-     </div>
     </div>
   </div>
+
+    <Teleport to="#topbarCustomPlaceholder">
+
+    <form class="container-fluid justify-content-center">
+             <button v-if="review" class="btn btn-outline-success me-2" type="button" v-on:click="this.$refs.reviewSubmit.open()">Submit Review</button>
+             <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">Report</button>
+             <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">Accept</button>
+             <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">Reject</button>
+        </form>
+
+        <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id" ></ReviewSubmit>
+      <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id" @decisionSubmit="decisionSubmit"></Report>
+      <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id" :document_id="document_id"></DecisionSubmit>
+
+  </Teleport>
 
 </template>
 
@@ -37,17 +48,17 @@ export default {
   name: "Annotater",
   components: {PDFViewer, Sidebar, TopBar},
   props: {
-   'document_id': {
-     type: String,
-     required: true,
-   },
+    'document_id': {
+      type: String,
+      required: true,
+    },
     'review_id': {
-     type: String,
+      type: String,
       required: false,
       default: null
     },
     'readonly': {
-     type: Boolean,
+      type: Boolean,
       required: false,
       default: false,
     },
@@ -63,20 +74,27 @@ export default {
     },
   },
   data() {
-    return {
-    }
+    return {}
   },
   computed: {
-    anchors() { return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id)) },
+    anchors() {
+      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id))
+    },
   },
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {
       this.scrollTo(anno_id);
-      this.$socket.emit("stats", {action: "pdfScroll", data: {review_id: this.review_id, document_id: this.document_id, anno_id: anno_id}});
+      this.$socket.emit("stats", {
+        action: "pdfScroll",
+        data: {review_id: this.review_id, document_id: this.document_id, anno_id: anno_id}
+      });
     });
     this.load()
   },
   methods: {
+      decisionSubmit(decision){
+      this.$refs.decisionSubmit.open(decision);
+    },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
 
@@ -160,10 +178,7 @@ export default {
 </script>
 
 <style scoped>
-.top-padding {
-  padding-top: 52.5px;
-  /* if this is changed - also change offset */
-}
+
 #sidebarContainer {
   position: relative;
   padding: 0;
