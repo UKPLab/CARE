@@ -1,5 +1,5 @@
 <template>
-  <nav id="top-navbar" class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
+  <!-- <nav id="top-navbar" class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
     <div id="top-container" class="container-fluid">
       <button class="btn" href @click="this.$router.push('/')" title="Go back...">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
@@ -19,13 +19,25 @@
           </li>
         </ul>
       </div>
-      <!-- check for additional fields: https://getbootstrap.com/docs/5.0/components/navbar/ -->
     </div>
-  </nav>
+  </nav>-->
 
-  <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id" ></ReviewSubmit>
+  <Teleport to="#topbarCustomPlaceholder">
+
+    <form class="container-fluid justify-content-center">
+             <button v-if="review" class="btn btn-outline-success me-2" type="button" v-on:click="this.$refs.reviewSubmit.open()">Submit Review</button>
+             <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">Report</button>
+             <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">Accept</button>
+             <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">Reject</button>
+        </form>
+
+    <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id" ></ReviewSubmit>
   <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id" @decisionSubmit="decisionSubmit"></Report>
   <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id" :document_id="document_id"></DecisionSubmit>
+
+  </Teleport>
+
+
 
 </template>
 
