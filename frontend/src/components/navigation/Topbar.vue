@@ -1,7 +1,6 @@
 <template>
   <div class="nav-container" id="wrapper">
-    <!-- Top navigation-->
-    <nav class="navbar  fixed-top  navbar-expand-lg navbar-light bg-light border-bottom">
+    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
       <div class="container-fluid">
         <div class="left-toggle-logo">
           <a href="#" role="button" title="Toggle sidebar" type="button" id="sidebarToggle" @click="toggleSidebar()">
@@ -12,14 +11,19 @@
         <div id="topbarCustomPlaceholder">
 
         </div>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
-            <li class="nav-item active"><a class="nav-link" href="#!">Home </a></li>
-            <li class="nav-item"><a class="nav-link" href="#!">Link</a></li>
-            <li class="nav-item"><a class="nav-link" id="navbarDropdown" href="#" role="button">Profile</a></li>
-            <li class="nav-item"><a href="#" @click="logout()">Logout</a></li>
+            <li class="nav-item dropdown">
+              <div class="dropdown" @click="toggleProfileDropdown()" @focusout="toggleProfileDropdown()">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                {{ username }}
+                </button>
+                <div id="dropdown-show" class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
+                  <a class="dropdown-item" href="#">Profile route here!</a>
+                  <a class="dropdown-item" href="#" @click="logout()">Logout</a>
+                </div>
+              </div>
+            </li>
           </ul>
-        </div>
       </div>
     </nav>
   </div>
@@ -37,20 +41,43 @@ Source:
 
 export default {
   name: "Topbar",
+  
+  data() {
+    return {
+      username: this.getFirstLetterUsername()
+    }
+  },
   methods: {
+    getFirstLetterUsername() {
+      const user = this.$store.getters['auth/getUser'];
+      return user.user_name.charAt(0).toUpperCase();
+    },
     toggleSidebar() {
       document.body.classList.toggle('sb-sidenav-toggled');
     },
     async logout() {
       await this.$store.dispatch('auth/logout');
       await this.$router.push("/login");
-    }
+    },
+    toggleProfileDropdown() {
+      const dropdown = document.getElementById('dropdown-show');
+      var close = false;
+      if (event.type == 'focusout' ) {
+        if(event.relatedTarget != null && event.relatedTarget.classList.contains("dropdown-item")) {
+          return;
+        }
+        close = true;
+      }
+      this.actuallyToggle(dropdown, close);
+    },
+    actuallyToggle(dropdownElement, close) {
+      if(close || dropdownElement.classList.contains("show")) {
+        dropdownElement.classList.remove("show");
+      } else {
+        dropdownElement.classList.add("show");
+      }
+    },
   },
-  mounted() {
-console.log("Test2:")
-    console.log(this.$route.meta.toggleSidebar);
-  }
-
 }
 
 </script>
@@ -79,6 +106,30 @@ body.sb-sidenav-toggled .arrow-toggle {
 .left-toggle-logo {
   display: flex;
   align-items: center;
+}
+
+#dropdownMenuButton::after {
+  display: none;
+}
+
+#dropdownMenuButton {
+  width: 40px;
+  height: 40px;
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+  border-radius: 50%;
+  font-size: 1em;
+  color: #fff;
+  background: darkblue;
+  position: relative;
+  border: none;
+}
+
+#dropdown-show {
+  margin-top: 8px;
+  right:0;
+  position:absolute;
 }
 
 
