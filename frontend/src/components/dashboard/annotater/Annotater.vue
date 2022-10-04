@@ -1,6 +1,6 @@
 <template>
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
-    <div class="row d-flex flex-grow-1 overflow-hidden">
+    <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
       <div class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
         <PDFViewer :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto"
                    class="rounded border border-1 shadow-sm"></PDFViewer>
@@ -11,18 +11,18 @@
     </div>
   </div>
 
-    <Teleport to="#topbarCustomPlaceholder">
+  <Teleport to="#topbarCustomPlaceholder">
 
     <form class="container-fluid justify-content-center">
-             <button v-if="review" class="btn btn-outline-success me-2" type="button" v-on:click="this.$refs.reviewSubmit.open()">Submit Review</button>
-             <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">Report</button>
-             <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">Accept</button>
-             <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">Reject</button>
-        </form>
+      <button v-if="review" class="btn btn-outline-success me-2" type="button" v-on:click="this.$refs.reviewSubmit.open()">Submit Review</button>
+      <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">Report</button>
+      <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">Accept</button>
+      <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">Reject</button>
+    </form>
 
-        <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id" ></ReviewSubmit>
-      <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id" @decisionSubmit="decisionSubmit"></Report>
-      <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id" :document_id="document_id"></DecisionSubmit>
+    <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id" ></ReviewSubmit>
+    <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id" @decisionSubmit="decisionSubmit"></Report>
+    <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id" :document_id="document_id"></DecisionSubmit>
 
   </Teleport>
 
