@@ -15,10 +15,15 @@
             <li class="nav-item dropdown">
               <div class="dropdown" @click="toggleProfileDropdown()" @focusout="toggleProfileDropdown()">
                 <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                {{ username }}
+                {{ firstLetterUsername }}
                 </button>
                 <div id="dropdown-show" class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
-                  <a class="dropdown-item" href="#">Profile route here!</a>
+                  <a class="dropdown-item display-username">Signed in as  {{ username }} </a>
+                  <a class="dropdown-item" href="#">Profile</a>
+                  <a class="dropdown-item" href="#">Settings</a>
+                  <li><hr class="dropdown-divider"></li>
+                  <a class="dropdown-item" href="#">Privacy Policy</a>
+                  <li><hr class="dropdown-divider"></li>
                   <a class="dropdown-item" href="#" @click="logout()">Logout</a>
                 </div>
               </div>
@@ -44,13 +49,16 @@ export default {
   
   data() {
     return {
-      username: this.getFirstLetterUsername()
+      firstLetterUsername: this.getFirstLetterUsername(),
+      username: this.getUsername()
     }
   },
   methods: {
+    getUsername() {
+      return this.$store.getters['auth/getUser'].user_name;
+    },
     getFirstLetterUsername() {
-      const user = this.$store.getters['auth/getUser'];
-      return user.user_name.charAt(0).toUpperCase();
+      return this.getUsername().charAt(0).toUpperCase();
     },
     toggleSidebar() {
       document.body.classList.toggle('sb-sidenav-toggled');
@@ -113,8 +121,8 @@ body.sb-sidenav-toggled .arrow-toggle {
 }
 
 #dropdownMenuButton {
-  width: 40px;
-  height: 40px;
+  width: 35px;
+  height: 35px;
   display: table-cell;
   text-align: center;
   vertical-align: middle;
@@ -130,6 +138,11 @@ body.sb-sidenav-toggled .arrow-toggle {
   margin-top: 8px;
   right:0;
   position:absolute;
+}
+
+.display-username {
+  font-style: italic;
+  pointer-events: none;
 }
 
 
