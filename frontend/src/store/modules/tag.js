@@ -7,6 +7,21 @@ Co-Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 
+const emptyTagSet = () => {
+    return {
+        id: 323,
+        name: null,
+        description: null,
+        color: null,
+        project: null,
+        type: null,
+        attributes: [],
+        features: [],
+        namespace: null,
+        language: null,
+    };
+};
+
 const getDefaultState = () => {
     return {
         tags: null,
@@ -19,11 +34,27 @@ export default {
     strict: true,
     state: getDefaultState(),
     getters: {
-        getTags: state => {
-            return state["tags"]
+        getTags: (state) => (id) => {
+            if (state["tags"] != null && id > 0) {
+                return state["tags"].filter(tag => tag.setId === id);
+            } else
+                {
+                    return {}
+                }
+
+        },
+        getAllTags: (state) => {
+            return state["tags"];
         },
         getTagSets: state => {
             return state["tagSets"]
+        },
+        getTagSet: (state) => (id) => {
+            if (state["tagSets"] != null && state["tagSets"].length > 0 && id !== 0) {
+                return state["tagSets"].find(tagSet => tagSet.id === id);
+            } else {
+                return emptyTagSet();
+            }
         },
     },
     mutations: {
