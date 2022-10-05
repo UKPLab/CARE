@@ -15,6 +15,7 @@ const {
 } = require('../../db/methods/annotation.js')
 const logger = require("../../utils/logger.js")( "sockets/annotation");
 const ObjectsToCsv = require('objects-to-csv');
+const {mergeAnnosAndComments} = require("../../db/methods/annotation");
 
 exports = module.exports = function (io) {
     io.on("connection", (socket) => {
@@ -140,7 +141,13 @@ exports = module.exports = function (io) {
             if(Array.isArray(data)){
                 const annosWithComments = await Promise.all(data.map(async docid => {
                     try{
-                        return await loadByDocument(docid)
+                        const doc = await loadByDocument(docid);
+                        // check for permission
+                        if(!doc.owner === socket.request.session.passport.user.id){
+                            return null;
+                        } else {
+                            return doc;
+                        }
                     } catch (e) {
                         logger.info("Error during loading of annotations: " + e, {docid: docid, user: socket.request.session.passport.user.id});
 
@@ -152,21 +159,7 @@ exports = module.exports = function (io) {
                     }
                 }));
 
-                const mappedAnnos = annosWithComments.map(x => {
-                   const annos = Object.fromEntries(x[0].map(a => [a.hash, toFrontendRepresentationAnno(a)]));
-                   const comments = Object.fromEntries(Object.entries(x[1]).map(c => [c[0], toFrontendRepresentationComm(c[1])[0]]));
-
-                   return Object.entries(annos).map(x => {
-                      if(x[0] in comments){
-                          const c = comments[x[0]];
-                          const addFields = Object.fromEntries(Object.entries(c).map(e => ["comment_"+e[0], e[1]]));
-
-                          return Object.assign(x[1], addFields);
-                      } else {
-                          return x[1];
-                      }
-                   });
-                });
+                const mappedAnnos = mergeAnnosAndComments(annosWithComments.filter(x => x !== null))
 
                 const csvStr = await Promise.all(mappedAnnos.map(async annosPerDoc => {
                     const csv = new ObjectsToCsv(annosPerDoc);

@@ -25,10 +25,7 @@ describe('dashboard.annotator.topbar.TopBar Test Download Annotations', () => {
 
         const downloadButton = await findByText("Download Annotations");
         expect(downloadButton).not.toBeNull();
-
-        //TODO fails due to "open is not afunction", which is caused by the "window.saveAs()" call
-        //const res = await fireEvent.click(downloadButton);
-    })
+    });
 })
 
 

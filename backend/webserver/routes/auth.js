@@ -83,7 +83,7 @@ async function register(user_credentials, res) {
 
 module.exports = function (app) {
     // user login
-    app.post('/auth/login', function (req, res, next) {
+    app.post('/auth/login', function (req, res, next) {pg_catalog
         passport.authenticate('local', function (err, user, info) {
             if (err) {
                 logger.info("Login failed: " + err);

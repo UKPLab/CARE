@@ -71,16 +71,19 @@ export default {
     decisionSubmit(decision){
       this.$refs.decisionSubmit.open(decision);
     },
-    async downloadAnnotations(){
+    annotationsToCsv(annotations){
+      const csv = toCSV(annos, ["id", "document_id", "user", "anchors", "text", "tags", "comment"],
+                            ["id", "text"]);
+
+      return csv.toString(true, true);
+    },
+    downloadAnnotations(){
       // for now: fetch the annotations from store -- later we could move this to the sidebar for what you see is what
       // you get behavior
       // Note: This export feature is realized in the frontend, because it is intended to allow users to filter and
       // sort annotations in the sidebar for export. This is only viable for single documents, hence in the annotator.
       const annos = this.$store.getters["anno/getAnnotations"](this.document_id);
-      const csv = toCSV(annos, ["id", "document_id", "user", "anchors", "text", "tags", "comment"],
-                            ["id", "text"])
-
-      const csvStr = csv.toString(true, true);
+      const csvStr = this.annotationsToCsv(annos);
 
       window.saveAs(new Blob([csvStr], {type: "text/csv;charset=utf-8"}), "annotations.csv");
     }
