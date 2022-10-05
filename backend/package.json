@@ -30,6 +30,7 @@
     "passport": "^0.6.0",
     "passport-local": "^1.0.0",
     "pg-promise": "^10.11.1",
+    "request": "^2.88.2",
     "sequelize": "^6.21.3",
     "sequelize-cli": "^6.4.1",
     "sequelize-mock": "^0.10.2",

@@ -269,3 +269,22 @@ exports.toFrontendRepresentationComm = function toFrontend(comment) {
         };
     });
 }
+
+exports.mergeAnnosAndComments = function mergeAnnosAndCommentsFrontendRepresentation(annotationsWithComments){
+    //expects array [annotations, comments]
+    return annotationsWithComments.map(x => {
+       const annos = Object.fromEntries(x[0].map(a => [a.hash, toFrontendRepresentationAnno(a)]));
+       const comments = Object.fromEntries(Object.entries(x[1]).map(c => [c[0], toFrontendRepresentationComm(c[1])[0]]));
+
+       return Object.entries(annos).map(x => {
+          if(x[0] in comments){
+              const c = comments[x[0]];
+              const addFields = Object.fromEntries(Object.entries(c).map(e => ["comment_"+e[0], e[1]]));
+
+              return Object.assign(x[1], addFields);
+          } else {
+              return x[1];
+          }
+       });
+    });
+}
