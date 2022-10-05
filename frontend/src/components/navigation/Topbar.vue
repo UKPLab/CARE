@@ -1,13 +1,13 @@
 <template>
   <div class="nav-container" id="wrapper">
-    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
+    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom" >
       <div class="container-fluid">
-        <div class="left-toggle-logo">
-          <a href="#" role="button" title="Toggle sidebar" type="button" id="sidebarToggle" @click="toggleSidebar()">
-            <span class="arrow-toggle"></span>
-          </a>
-          <a class="navbar-brand" href="#">PEER</a>
-        </div>
+        <button class="btn" id='backButton' href @click="this.$router.push('/')" title="Go back...">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+          </svg>
+        </button>
+        <a class="navbar-brand" href @click="this.$router.push('/')">PEER</a>
         <div id="topbarCustomPlaceholder">
 
         </div>
@@ -46,7 +46,6 @@ Source:
 
 export default {
   name: "Topbar",
-  
   data() {
     return {
       firstLetterUsername: this.getFirstLetterUsername(),
@@ -54,14 +53,14 @@ export default {
     }
   },
   methods: {
+    removeSidebarFlag() {
+      document.body.classList.remove('sidebar-exists');
+    },
     getUsername() {
       return this.$store.getters['auth/getUser'].user_name;
     },
     getFirstLetterUsername() {
       return this.getUsername().charAt(0).toUpperCase();
-    },
-    toggleSidebar() {
-      document.body.classList.toggle('sb-sidenav-toggled');
     },
     async logout() {
       await this.$store.dispatch('auth/logout');
@@ -92,30 +91,6 @@ export default {
 
 <style>
 
-.navbar-brand {
-  margin-left: 20px;
-}
-
-.arrow-toggle {
-  border: solid grey;
-  border-width: 0 3px 3px 0;
-  border-radius: 2px;
-  display: inline-block;
-  padding: 7px;
-  transform: rotate(135deg);
-  transition: 0.3s linear;
-}
-
-body.sb-sidenav-toggled .arrow-toggle {
-  transform: rotate(-45deg);
-  transition: 0.3s linear;
-}
-
-.left-toggle-logo {
-  display: flex;
-  align-items: center;
-}
-
 #dropdownMenuButton::after {
   display: none;
 }
@@ -143,6 +118,10 @@ body.sb-sidenav-toggled .arrow-toggle {
 .display-username {
   font-style: italic;
   pointer-events: none;
+}
+
+body.sidebar-exists #backButton {
+  display: none;
 }
 
 
