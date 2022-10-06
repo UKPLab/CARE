@@ -143,7 +143,7 @@ exports = module.exports = function (io) {
                     try{
                         const doc = await loadByDocument(docid);
                         // check for permission
-                        if(!doc.owner === socket.request.session.passport.user.id){
+                        if(socket.request.session.passport.user.sysrole !== "admin" && !doc.owner === socket.request.session.passport.user.id){
                             return null;
                         } else {
                             return doc;
