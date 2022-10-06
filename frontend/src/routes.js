@@ -30,9 +30,11 @@ import Home from "./components/dashboard/Home.vue";
  * > requiresAuth: true/false <=> true, iff a login is required
  */
 const routes = [
-    {path: "/dashboard", component: Dashboard, meta: {requiresAuth: true, toggleSidebar:true}, children: [
-            {path: "", component: Home, alias: ['/', "/index.html"], meta: {toggleSidebar: true} },
-        ]
+    {path: "/dashboard/:catchAll(.*)", name:"Dashboard" , alias: ["/dashboard"], props:true, component: Dashboard, meta: {requiresAuth: true, toggleSidebar:true},
+
+        /*children: [
+            {name: "Test", path: "", component: Home, alias: ['/', "/index.html"]},
+        ]*/
     },
     {path: "/login", component: Login, meta: {requiresAuth: false, hideTopbar:true}},
     {path: "/register", component: Register, meta: {requiresAuth: false, hideTopbar:true}},
