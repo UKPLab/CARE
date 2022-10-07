@@ -109,7 +109,7 @@ Source: -
 */
 import Tags from "bootstrap5-tags/tags.js";
 import {mapActions} from 'vuex';
-import {Comment} from "../../../../data/comment.js";
+import {Comment} from "../../../data/comment.js";
 
 export default {
   name: "Annotation",

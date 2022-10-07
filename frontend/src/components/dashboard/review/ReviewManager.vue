@@ -91,8 +91,8 @@
 
 <script>
 
-import EditorSelect from "../modals/EditorSelect.vue";
-import DecisionView from "../modals/DecisionView.vue";
+import EditorSelect from "./EditorSelect.vue";
+import DecisionView from "./DecisionView.vue";
 export default {
   name: "ReviewManager",
   components: {EditorSelect, DecisionView},

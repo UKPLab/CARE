@@ -40,9 +40,9 @@ Source: -
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import TopBar from "./topbar/TopBar.vue"
 import Sidebar from "./sidebar/Sidebar.vue";
-import {offsetRelativeTo, scrollElement} from "../../../assets/anchoring/scroll";
-import {isInPlaceholder} from "../../../assets/anchoring/placeholder";
-import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
+import {offsetRelativeTo, scrollElement} from "../../assets/anchoring/scroll";
+import {isInPlaceholder} from "../../assets/anchoring/placeholder";
+import {resolveAnchor} from "../../assets/anchoring/resolveAnchor";
 
 export default {
   name: "Annotater",

@@ -30,9 +30,9 @@ import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 import Adder from "./Adder.vue";
 import Highlights from "./Highlights.vue";
 
-import {createPlaceholder, removePlaceholder} from "../../../../assets/anchoring/placeholder";
-import {TextPosition, TextRange} from "../../../../assets/anchoring/text-range";
-import {matchQuote} from '../../../../assets/anchoring/match-quote';
+import {createPlaceholder, removePlaceholder} from "../../../assets/anchoring/placeholder";
+import {TextPosition, TextRange} from "../../../assets/anchoring/text-range";
+import {matchQuote} from '../../../assets/anchoring/match-quote';
 
 import debounce from "lodash.debounce";
 import {mapMutations} from "vuex";

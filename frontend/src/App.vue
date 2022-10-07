@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import Toast from "./components/dashboard/Toast.vue";
+import Toast from "./components/basic/Toast.vue";
 import Topbar from "./components/navigation/Topbar.vue";
 export default {
   components: {Topbar, Toast},

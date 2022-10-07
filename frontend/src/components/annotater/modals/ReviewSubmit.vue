@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import Modal from "./Modal.vue";
+import Modal from "../../basic/Modal.vue";
 export default {
   name: "ReviewSubmit",
   components: {Modal},

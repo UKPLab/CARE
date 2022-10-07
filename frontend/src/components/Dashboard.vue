@@ -1,12 +1,12 @@
 <template>
-  <Loading v-if="navElements === null" ></Loading>
+  <Loading v-if="navElements === null"></Loading>
   <div v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column sidebar-wrapper">
       <div class="row d-flex flex-grow-1 overflow-hidden">
-        <div class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;" id="sidebarContainer">
+        <div id="sidebarContainer" class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;">
           <Sidebar></Sidebar>
         </div>
-        <div class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
+        <div id="viewerContainer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;">
           <router-view></router-view>
         </div>
       </div>
@@ -17,9 +17,8 @@
 <script>
 
 import Sidebar from "./navigation/Sidebar.vue";
-import Home from "./dashboard/Home.vue";
-import { defineAsyncComponent} from "vue";
-import Loading from "./Loading.vue";
+import {defineAsyncComponent} from "vue";
+import Loading from "./basic/Loading.vue";
 
 
 export default {
@@ -39,7 +38,6 @@ export default {
   },
   mounted() {
     this.createNavigation();
-    console.log(this.catchAll)
   },
   methods: {
     async createNavigation() {
@@ -48,13 +46,13 @@ export default {
         alias: (e.alias !== undefined) ? e.alias : [],
         path: e.path,
         component: defineAsyncComponent(
-            {loader: () => import("./" + e.component + ".vue"), loadingComponent: Loading})
+            {loader: () => import("./dashboard/" + e.component + ".vue"), loadingComponent: Loading})
       })));
-      console.log(children);
 
       const routes = {
         path: "/dashboard",
         name: "Dashboard",
+        alias: ["/dashboard", "/", "/index.html"],
         component: defineAsyncComponent(() => import('./Dashboard.vue')),
         meta: {requiresAuth: true, toggleSidebar: true},
 
@@ -68,9 +66,10 @@ export default {
       if (this.catchAll !== undefined) {
         await this.$router.push("/dashboard/" + this.catchAll);
       }
+      if (this.$route.meta.default) {
+        await this.$router.push("/dashboard/" + this.navElements.find(e => e.default).path);
+      }
 
-      console.log(this.navElements);
-      console.log(this.$router);
     }
   }
 }

@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import Modal from "./Modal.vue";
+import Modal from "../../basic/Modal.vue";
 import {mapGetters} from "vuex";
 export default {
   name: "EditorSelect",
