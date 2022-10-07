@@ -12,7 +12,7 @@ const getDefaultState = () => {
             {'id': 2, 'name': "Admin", "access": ['admin']}
         ],
         elements: [
-            {'name': "Dashboard", 'icon': 'IconFan', default:true, "order": 0, "path": "home", 'component': 'Home', "alias": ['/', "/index.html"]},
+            {'name': "Dashboard", group: 1, 'icon': 'IconFan', default:true, "order": 0, "path": "home", 'component': 'Home', "alias": ['/', "/index.html"]},
             {'name': "Documents", 'group': 1, 'icon': 'IconFan', "order": 10, "path": "documents", 'component': 'Home'},
             {'name': "Reviews", 'group': 1, "path": "reviews", 'component': 'Home'},
             {'name': "Meta Reviews", 'group': 2, "access": ["admin"], "path": "meta_reviews", 'component': 'Home'},
