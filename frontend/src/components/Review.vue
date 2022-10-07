@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import Annotater from "./annotater/Annotater.vue";
+import Annotater from "./Annotater.vue";
 export default {
   name: "Review",
   components: {Annotater},
