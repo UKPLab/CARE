@@ -43,9 +43,9 @@
 
 <script>
 
-import ReviewSubmit from "../../modals/ReviewSubmit.vue";
-import Report from "../../modals/Report.vue";
-import DecisionSubmit from "../../modals/DecisionSubmit.vue";
+import ReviewSubmit from "../modals/ReviewSubmit.vue";
+import Report from "../modals/Report.vue";
+import DecisionSubmit from "../modals/DecisionSubmit.vue";
 export default {
   name: "TopBar",
   components: {DecisionSubmit, Report, ReviewSubmit},

@@ -39,7 +39,7 @@ Source: -
 */
 import {mapGetters, mapMutations} from "vuex";
 import Annotation from "./Annotation.vue";
-import {scrollElement} from "../../../../assets/anchoring/scroll";
+import {scrollElement} from "../../../assets/anchoring/scroll";
 import {v4} from "uuid";
 
 export default {
