@@ -7,7 +7,8 @@
           <Sidebar></Sidebar>
         </div>
         <div id="viewerContainer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;">
-          <router-view :key="$route.path"></router-view>
+
+          <component :is="currentComponent" :key="$route.path"></component>
         </div>
       </div>
     </div>
@@ -20,6 +21,7 @@ import Sidebar from "./navigation/Sidebar.vue";
 import {defineAsyncComponent} from "vue";
 import Loading from "./basic/Loading.vue";
 import Dashboard from "./Dashboard.vue";
+import NotFoundPage from "./NotFoundPage.vue";
 
 export default {
 
@@ -33,6 +35,20 @@ export default {
     settings() {
       return this.$store.getters['settings/getSettings'];
     },
+    currentComponent() {
+      if (this.navElements === null || this.settings === null) {
+        return Loading;
+      } else {
+
+        let component = this.navElements.find(element => element.name === this.$route.name).component;
+        return defineAsyncComponent(
+            {
+              loader: () => import("./dashboard/" + component + ".vue"),
+              loadingComponent: Loading,
+              errorComponent: NotFoundPage
+            });
+      }
+    },
   },
   watch: {
     navElements(newValue, oldValue) {
@@ -44,24 +60,27 @@ export default {
     this.createNavigation();
   },
   methods: {
+
+
     async createNavigation() {
+
       if (this.navElements === null) return;
-      const children = await Promise.all(this.navElements.map(async e =>
-      {
+
+      const children = await Promise.all(this.navElements.map(async e => {
         const component = () => import("./dashboard/" + e.component + ".vue");
-          return {
-            name: e.name,
-            alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
-            path: "/dashboard/" + e.path,
-            component: component,
-            // defineAsyncComponent(
-            //   {loader: () => import("./dashboard/" + e.component + ".vue"), loadingComponent: Loading})
-          }
+        return {
+          name: e.name,
+          alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
+          path: "/dashboard/" + e.path,
+          component: () => import("./dashboard/" + e.component + ".vue"),
+          // defineAsyncComponent(
+          //   {loader: () => import("./dashboard/" + e.component + ".vue"), loadingComponent: Loading})
+        }
 
       }));
 
-
-      console.log(children);
+      //TODO clean up code (remove unnecessary code) since vue route loader is not used anymore
+            console.log(children);
 
       const routes = {
         path: "/dashboard",
