@@ -116,7 +116,7 @@
 </template>
 
 <script>
-import Modal from "../dashboard/modals/Modal.vue";
+import Modal from "../basic/Modal.vue";
 export default {
   name: "TermsModal",
   components: {Modal},

@@ -35,7 +35,7 @@
 <script>
 import {mapGetters, mapActions} from "vuex";
 import Tags from "bootstrap5-tags/tags.js";
-import Modal from "../modals/Modal.vue";
+import Modal from "../../basic/Modal.vue";
 import TagsTable from "./TagsTable.vue";
 
 export default {

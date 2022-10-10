@@ -91,12 +91,12 @@
 
 <script>
 import {mapGetters, mapActions} from "vuex";
-import Loader from "../../general/Loader.vue";
+import Loader from "../general/Loader.vue";
 import {Tooltip} from "bootstrap";
-import TagSetModal from "./TagSetModal.vue";
+import TagSetModal from "./tags/TagSetModal.vue";
 
 export default {
-  name: "TagManager",
+  name: "Tags",
   components: {TagSetModal, Loader},
   data() {
     return {
