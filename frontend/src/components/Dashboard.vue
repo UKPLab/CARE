@@ -1,5 +1,5 @@
 <template>
-  <Loading v-if="navElements === null"></Loading>
+  <Loading v-if="navElements === null || settings === null"></Loading>
   <div v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column sidebar-wrapper">
       <div class="row d-flex flex-grow-1 overflow-hidden">
@@ -29,7 +29,10 @@ export default {
   computed: {
     navElements() {
       return this.$store.getters['navigation/getNavElements'];
-    }
+    },
+    settings() {
+      return this.$store.getters['settings/getSettings'];
+    },
   },
   watch: {
     navElements(newValue, oldValue) {
@@ -37,13 +40,15 @@ export default {
     }
   },
   mounted() {
+    this.$socket.emit("getSettings");
     this.createNavigation();
   },
   methods: {
     async createNavigation() {
+      if (this.navElements === null) return;
       const children = await Promise.all(this.navElements.map(async e => ({
         name: e.name,
-        alias: (e.alias !== undefined) ? e.alias : [],
+        alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
         path: e.path,
         component: defineAsyncComponent(
             {loader: () => import("./dashboard/" + e.component + ".vue"), loadingComponent: Loading})
