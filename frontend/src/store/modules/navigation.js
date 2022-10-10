@@ -12,13 +12,22 @@ const getDefaultState = () => {
             {'id': 2, 'name': "Admin", "access": ['admin']}
         ],
         elements: [
-            {'name': "Dashboard", group: 1, 'icon': 'IconFan', default:true, "order": 0, "path": "home", 'component': 'Home', "alias": ['/', "/index.html"]},
+            {
+                'name': "Dashboard",
+                group: 1,
+                'icon': 'IconFan',
+                default: true,
+                "order": 23,
+                "path": "home",
+                'component': 'Home',
+                "alias": ['/', "/index.html"]
+            },
             {'name': "Documents", 'group': 1, 'icon': 'IconFan', "order": 10, "path": "documents", 'component': 'Home'},
-            {'name': "Reviews", 'group': 1, "path": "reviews", 'component': 'Home'},
+            {'name': "Reviews", 'group': 1, "path": "reviews", order: -3, 'component': 'Home'},
             {'name': "Meta Reviews", 'group': 2, "access": ["admin"], "path": "meta_reviews", 'component': 'Home'},
-            {'name': "Tags", 'group': 1, 'icon': 'IconFan',"path": "tags", 'component': 'Home'},
-            {'name': "Settings", 'group': 1, "path": "settings", 'component': 'Home'}
-    ]
+            {'name': "Tags", 'group': 1, 'icon': 'IconFan', "path": "tags", 'component': 'Home'},
+            {'name': "Settings", 'group': 0, "path": "settings", 'component': 'Home'}
+        ]
     };
 };
 
@@ -32,27 +41,34 @@ export default {
         },
         getSidebarElements: state => {
             //Group by group value
-            return state["elements"].reduce((acc, cur) => {
-                if (cur["group"] !== undefined) {
-                    acc[cur["group"]] = acc[cur["group"]] || [];
-                    acc[cur['group']].push(cur)
+            const groups = state["elements"].reduce((acc, cur) => {
+                if (cur.group === 0 || cur.group === undefined) {
+                    console.error("For navigation element " + cur.name + " the group id " + cur.group + " doesn't exists!");
+
                 } else {
-                    acc[0] = acc[0] || [];
-                    acc[0].push(cur)
+                    if (cur["group"] !== undefined) {
+                        acc[cur["group"]] = acc[cur["group"]] || [];
+                        acc[cur['group']].push(cur)
+                    }
                 }
+                /*else {
+                    //acc[0] = acc[0] || [];
+                    //acc[0].push(cur)
+                }*/
                 return acc
             }, [])
-            //TODO sorting by order inside groups
+            return groups.map(e => e.sort(function (a, b) {
+                return a["order"] - b["order"];
+            }))
         },
         getSidebarGroups: state => {
             // Order by order value
-            return state["groups"].sort(function(a, b) {
+            return state["groups"].sort(function (a, b) {
                 return a["order"] - b["order"];
             });
         },
 
     },
-    mutations: {
-    },
+    mutations: {},
     actions: {}
 };
