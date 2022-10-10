@@ -2,50 +2,26 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('nav_element', {
-            id: {
+        await queryInterface.createTable('user_setting', {
+            key: {
                 allowNull: false,
-                autoIncrement: true,
+                type: Sequelize.STRING,
                 primaryKey: true,
-                type: Sequelize.INTEGER
             },
-            name: {
+            value: {
                 type: Sequelize.STRING,
                 unique: true
             },
-            icon: {
-                type: Sequelize.STRING,
-            },
-            description: {
-                type: Sequelize.STRING(512)
-            },
-            admin: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false
-
-            },
-            order: {
-                type: Sequelize.INTEGER,
-            },
-            groupId: {
+            userId: {
                 type: Sequelize.INTEGER,
                 allowNull: false,
                 references: {
-                    model: 'nav_group',
+                    model: 'user',
                     key: 'id'
-                }
-            },
-            path: {
-                type: Sequelize.STRING,
-            },
-            component: {
-                type: Sequelize.STRING,
-            },
-            alias: {
-                type: Sequelize.JSONB
-            },
+                },
+                primaryKey: true,
 
-
+            },
             deleted: {
                 type: Sequelize.BOOLEAN,
                 defaultValue: false
@@ -66,6 +42,6 @@ module.exports = {
         });
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('nav_element');
+        await queryInterface.dropTable('user_setting');
     }
 };

@@ -2,14 +2,14 @@ const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
 
-const Settings = require("../models/setting.js")(db.sequelize, DataTypes);
+const Setting = require("../models/setting.js")(db.sequelize, DataTypes);
+const UserSetting = require("../models/user_setting.js")(db.sequelize, DataTypes);
 
 exports.getSettings = async function getSettings() {
    try {
-        return await Settings.findAll({
+        return await Setting.findAll({
             where: {
                 deleted: false,
-                userId: null,
             }
         });
     } catch (err) {
@@ -22,10 +22,10 @@ exports.getSettings = async function getSettings() {
 
 exports.getUserSettings = async function getUserSettings(user_id) {
    try {
-        return await Settings.findAll({
+        return await UserSetting.findAll({
             where: {
                 deleted: false,
-                [Op.or]: [{userId: null}, {userId: user_id}]
+                userId: user_id
             }
         });
     } catch (err) {
