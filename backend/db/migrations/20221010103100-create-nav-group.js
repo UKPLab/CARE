@@ -21,11 +21,10 @@ module.exports = {
             },
             admin: {
                 type: Sequelize.BOOLEAN,
-                default: false,
-
+                defaultValue: false
             },
             order: {
-              type: Sequelize.INTEGER,
+                type: Sequelize.INTEGER,
             },
             deleted: {
                 type: Sequelize.BOOLEAN,

@@ -7,7 +7,7 @@
           <Sidebar></Sidebar>
         </div>
         <div id="viewerContainer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;">
-          <router-view></router-view>
+          <router-view :key="$route.path"></router-view>
         </div>
       </div>
     </div>
@@ -19,7 +19,7 @@
 import Sidebar from "./navigation/Sidebar.vue";
 import {defineAsyncComponent} from "vue";
 import Loading from "./basic/Loading.vue";
-
+import Dashboard from "./Dashboard.vue";
 
 export default {
 
@@ -49,18 +49,19 @@ export default {
       const children = await Promise.all(this.navElements.map(async e => ({
         name: e.name,
         alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
-        path: e.path,
+        path: "/dashboard/" + e.path,
         component: defineAsyncComponent(
             {loader: () => import("./dashboard/" + e.component + ".vue"), loadingComponent: Loading})
       })));
 
+
+      console.log(children);
+
       const routes = {
         path: "/dashboard",
         name: "Dashboard",
-        alias: ["/dashboard", "/", "/index.html"],
-        component: defineAsyncComponent(() => import('./Dashboard.vue')),
+        component: Dashboard,
         meta: {requiresAuth: true, toggleSidebar: true},
-
       };
 
       // Add new Routes
@@ -72,8 +73,11 @@ export default {
         await this.$router.push("/dashboard/" + this.catchAll);
       }
       if (this.$route.meta.default) {
-        await this.$router.push("/dashboard/" + this.navElements.find(e => e.default).path);
+        await this.$router.push("/dashboard/" + this.navElements.find(e => e.name === this.settings["navigation.dashboard.component.default"]).path);
       }
+
+      console.log("kk");
+      console.log(this.$route);
 
     }
   }

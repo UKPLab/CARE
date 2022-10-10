@@ -28,13 +28,18 @@ import Review from "./components/Review.vue";
  * Pass metadata via the meta attribute. Current supported fields:
  * > requiresAuth: true/false <=> true, iff a login is required
  */
+
+
+
 const routes = [
+    { path: "/", redirect: "/dashboard" },
+    { path: "/index.html", redirect: "/dashboard" },
     {
         path: "/dashboard/:catchAll(.*)",
         name: "Dashboard",
-        alias: ["/dashboard", "/", "/index.html"],
         props: true,
         component: Dashboard,
+        alias: "/dashboard",
         meta: {requiresAuth: true, toggleSidebar: true, default: true},
     },
     {path: "/login", component: Login, meta: {requiresAuth: false, hideTopbar: true}},

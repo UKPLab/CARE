@@ -79,10 +79,10 @@ Co-Author:  Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import {mapGetters, mapActions} from "vuex";
-import Upload from "./Upload.vue";
+import Upload from "./document/Upload.vue";
 
 export default {
-  name: "DocumentManager",
+  name: "Document",
   components: {Upload},
   data() {
     return {

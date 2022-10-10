@@ -5,19 +5,12 @@ module.exports = {
         await queryInterface.createTable('setting', {
             key: {
                 allowNull: false,
-                type: Sequelize.STRING
+                type: Sequelize.STRING,
+                primaryKey: true,
             },
             value: {
                 type: Sequelize.STRING,
                 unique: true
-            },
-            userId: {
-                type: Sequelize.INTEGER,
-                allowNull: true,
-                references: {
-                    model: 'user',
-                    key: 'id'
-                },
             },
             description: {
                 type: Sequelize.STRING(512)
