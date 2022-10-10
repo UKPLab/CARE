@@ -19,6 +19,8 @@ import UserStore from './modules/user.js';
 import AnnotationStore from './modules/anno.js';
 import AdminStore from './modules/admin.js';
 import TagStore from './modules/tag.js';
+import NavigationStore from "./modules/navigation.js";
+import SettingsStore from "./modules/settings.js";
 import createPersistedState from 'vuex-persistedstate';
 
 
@@ -28,7 +30,9 @@ export default createStore({
         user: UserStore,
         anno: AnnotationStore,
         admin: AdminStore,
-        tag: TagStore
+        tag: TagStore,
+        navigation: NavigationStore,
+        settings: SettingsStore,
     },
     plugins: [
         createPersistedState({
