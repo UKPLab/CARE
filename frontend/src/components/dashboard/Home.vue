@@ -74,7 +74,7 @@ Author: Dennis Zyska (zyska@ukp...)
 Co-Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import DocumentManager from "./Document.vue";
+import DocumentManager from "./Documents.vue";
 import ReviewManager from "./Reviews.vue";
 import MetaReviewManager from "./MetaReviews.vue";
 

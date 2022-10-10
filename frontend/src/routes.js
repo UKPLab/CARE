@@ -12,12 +12,12 @@ import * as VueRouter from 'vue-router'
 import store from "./store";
 
 // Set Vue Routing
-import Annotater from "./components/Annotater.vue";
-import Dashboard from "./components/Dashboard.vue";
-import NotFoundPage from "./components/NotFoundPage.vue";
-import Login from "./components/auth/Login.vue";
-import Register from "./components/auth/Register.vue";
-import Review from "./components/Review.vue";
+const Annotater = () => import('./components/Annotater.vue')
+const Dashboard = () => import('./components/Dashboard.vue')
+const NotFoundPage = () => import("./components/NotFoundPage.vue")
+const Login = () => import("./components/auth/Login.vue")
+const Register = () => import("./components/auth/Register.vue")
+const Review = () => import("./components/Review.vue")
 
 /*
  * Defines the routes for Vue. Each route links to a specific route and by passing

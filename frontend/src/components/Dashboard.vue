@@ -46,13 +46,19 @@ export default {
   methods: {
     async createNavigation() {
       if (this.navElements === null) return;
-      const children = await Promise.all(this.navElements.map(async e => ({
-        name: e.name,
-        alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
-        path: "/dashboard/" + e.path,
-        component: defineAsyncComponent(
-            {loader: () => import("./dashboard/" + e.component + ".vue"), loadingComponent: Loading})
-      })));
+      const children = await Promise.all(this.navElements.map(async e =>
+      {
+        const component = () => import("./dashboard/" + e.component + ".vue");
+          return {
+            name: e.name,
+            alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
+            path: "/dashboard/" + e.path,
+            component: component,
+            // defineAsyncComponent(
+            //   {loader: () => import("./dashboard/" + e.component + ".vue"), loadingComponent: Loading})
+          }
+
+      }));
 
 
       console.log(children);
