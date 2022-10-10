@@ -23,12 +23,13 @@ export default {
   },
   computed: {
     icon() {
-      if (this.iconName === undefined) {
-        this.iconName = "IconQuestionCircle";
+      let iconComponent = this.iconName;
+      if (this.iconName === undefined || this.iconName === null) {
+        iconComponent = "IconQuestionCircle";
       }
       return defineAsyncComponent(
           {
-            loader: () => import("./" + this.iconName + ".vue"),
+            loader: () => import("./" + iconComponent + ".vue"),
             loadingComponent: IconLoading,
             errorComponent: IconQuestionCircle
           });

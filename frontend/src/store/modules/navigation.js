@@ -7,27 +7,8 @@ Source: -
 
 const getDefaultState = () => {
     return {
-        groups: [
-            {'id': 1, 'name': "Default", 'icon': 'IconFan',},
-            {'id': 2, 'name': "Admin", "access": ['admin']}
-        ],
-        elements: [
-            {
-                'name': "Dashboard",
-                group: 1,
-                'icon': 'IconFan',
-                default: true,
-                "order": 23,
-                "path": "home",
-                'component': 'Home',
-                "alias": ['/', "/index.html"]
-            },
-            {'name': "Documents", 'group': 1, 'icon': 'IconFan', "order": 10, "path": "documents", 'component': 'Home'},
-            {'name': "Reviews", 'group': 1, "path": "reviews", order: -3, 'component': 'Home'},
-            {'name': "Meta Reviews", 'group': 2, "access": ["admin"], "path": "meta_reviews", 'component': 'Home'},
-            {'name': "Tags", 'group': 1, 'icon': 'IconFan', "path": "tags", 'component': 'Home'},
-            {'name': "Settings", 'group': 0, "path": "settings", 'component': 'Home'}
-        ]
+        groups: null,
+        elements: null
     };
 };
 
@@ -42,19 +23,15 @@ export default {
         getSidebarElements: state => {
             //Group by group value
             const groups = state["elements"].reduce((acc, cur) => {
-                if (cur.group === 0 || cur.group === undefined) {
+                if (cur.groupId === 0 || cur.groupId === undefined) {
                     console.error("For navigation element " + cur.name + " the group id " + cur.group + " doesn't exists!");
 
                 } else {
-                    if (cur["group"] !== undefined) {
-                        acc[cur["group"]] = acc[cur["group"]] || [];
-                        acc[cur['group']].push(cur)
+                    if (cur["groupId"] !== undefined) {
+                        acc[cur["groupId"]] = acc[cur["groupId"]] || [];
+                        acc[cur['groupId']].push(cur)
                     }
                 }
-                /*else {
-                    //acc[0] = acc[0] || [];
-                    //acc[0].push(cur)
-                }*/
                 return acc
             }, [])
             return groups.map(e => e.sort(function (a, b) {
@@ -69,6 +46,12 @@ export default {
         },
 
     },
-    mutations: {},
+    mutations: {
+         SOCKET_navigation: (state, message) => {
+                state['groups'] = message.groups;
+                state['elements'] = message.elements;
+
+        },
+    },
     actions: {}
 };
