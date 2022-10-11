@@ -7,7 +7,6 @@
           <Sidebar></Sidebar>
         </div>
         <div id="viewerContainer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;">
-
           <component :is="currentComponent" :key="$route.path"></component>
         </div>
       </div>
@@ -40,10 +39,13 @@ export default {
         return Loading;
       } else {
 
-        let component = this.navElements.find(element => element.name === this.$route.name).component;
+        let component = this.navElements.find(element => element.name === this.$route.name);
+        if (component === undefined) {
+          component = this.navElements.find(e => e.name === this.settings["navigation.dashboard.component.default"]);
+        }
         return defineAsyncComponent(
             {
-              loader: () => import("./dashboard/" + component + ".vue"),
+              loader: () => import("./dashboard/" + component.component + ".vue"),
               loadingComponent: Loading,
               errorComponent: NotFoundPage
             });
@@ -66,21 +68,14 @@ export default {
 
       if (this.navElements === null) return;
 
-      const children = await Promise.all(this.navElements.map(async e => {
-        const component = () => import("./dashboard/" + e.component + ".vue");
+      const children = this.navElements.map(e => {
         return {
           name: e.name,
           alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
           path: "/dashboard/" + e.path,
-          component: () => import("./dashboard/" + e.component + ".vue"),
-          // defineAsyncComponent(
-          //   {loader: () => import("./dashboard/" + e.component + ".vue"), loadingComponent: Loading})
+          component: Loading,
         }
-
-      }));
-
-      //TODO clean up code (remove unnecessary code) since vue route loader is not used anymore
-            console.log(children);
+      });
 
       const routes = {
         path: "/dashboard",
@@ -97,12 +92,6 @@ export default {
       if (this.catchAll !== undefined) {
         await this.$router.push("/dashboard/" + this.catchAll);
       }
-      if (this.$route.meta.default) {
-        await this.$router.push("/dashboard/" + this.navElements.find(e => e.name === this.settings["navigation.dashboard.component.default"]).path);
-      }
-
-      console.log("kk");
-      console.log(this.$route);
 
     }
   }
