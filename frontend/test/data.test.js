@@ -88,7 +88,7 @@ function validateCsv(csvString, annos, annoSubfields=null, comms=null, commSubfi
   // this does not check if any weird fields were added to the CSV, but that's not as critical for now
 }
 
-test('data/annotation.toCSV', async () => {
+test.skip('data/annotation.toCSV', async () => {
   it("Base Case", async () => {
     const [testAnnos, testComms, fieldsA, fieldsC] = createTestdata();
 
