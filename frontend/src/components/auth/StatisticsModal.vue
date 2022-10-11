@@ -21,7 +21,7 @@ Nullam rhoncus, dolor ut sagittis semper, nisl metus tempus ante, vulputate ultr
 </template>
 
 <script>
-import Modal from "../dashboard/modals/Modal.vue";
+import Modal from "../basic/Modal.vue";
 export default {
   name: "StatisticsModal",
   components: {Modal},
