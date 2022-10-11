@@ -11,7 +11,6 @@ const basicElements = [
     {
         name: "Dashboard",
         groupId: basicGroups[0].name,
-        default: true,
         order: 1,
         path: "home",
         component: 'Home',
