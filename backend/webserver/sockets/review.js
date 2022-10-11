@@ -15,8 +15,6 @@ const {
     deleteAnno: deleteAnnotation,
     updateAnno: updateAnnotation,
     loadByDocument: loadByDocument,
-    toFrontendRepresentationAnno: toFrontendRepresentationAnno,
-    toFrontendRepresentationComm: toFrontendRepresentationComm
 } = require('../../db/methods/annotation.js');
 const fs = require("fs");
 const path = require("path");

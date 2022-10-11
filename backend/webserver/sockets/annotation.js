@@ -125,11 +125,11 @@ exports = module.exports = function (io) {
             const annos = res[0];
             const comments = res[1];
 
-            const mappedAnnos = annos.map(x => toFrontendRepresentationAnno(x));
+            const mappedAnnos = await Promise.all(annos.map(async x => await toFrontendRepresentationAnno(x)));
             let mappedComments = Object();
             for (const c in comments) {
                 if (comments[c].length > 0) {
-                    mappedComments[c] = toFrontendRepresentationComm(comments[c]);
+                    mappedComments[c] = await toFrontendRepresentationComm(comments[c]);
                 }
             }
 
@@ -158,7 +158,7 @@ exports = module.exports = function (io) {
                     }
                 }));
 
-                const mappedAnnos = mergeAnnosAndComments(annosWithComments.filter(x => x !== null))
+                const mappedAnnos = await mergeAnnosAndComments(annosWithComments.filter(x => x !== null))
 
                 const csvStr = await Promise.all(mappedAnnos.map(async annosPerDoc => {
                     const csv = new ObjectsToCsv(annosPerDoc);
