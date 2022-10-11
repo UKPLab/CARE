@@ -14,7 +14,7 @@ const basicElements = [
         order: 1,
         path: "home",
         component: 'Home',
-        alias: "[\"/\", \"/index.html\"]"
+        alias: "[\"/\", \"/index.html\", \"/dashboard\"]"
     },
     {
         name: "Documents",
