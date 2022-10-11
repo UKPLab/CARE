@@ -20,6 +20,7 @@ describe('Annotation Exporting Test', () => {
         const showcaseId = "8852a746-360e-4c31-add2-4d1c75bfb96d";
         const annoId = '271c5bf8-e6db-4ea0-b315-9f0a9482dd07';
         const targetText = "ters. The two approaches share thesame objective function during pre-training, wherethey use unidirec"
+        const userName = "admin";
         const anno = {
           document_id: showcaseId,
           annotation: {
@@ -56,6 +57,7 @@ describe('Annotation Exporting Test', () => {
                 const csv = blobs[0];
                 expect(csv).toContain(annoId);
                 expect(csv).toContain(targetText)
+                expect(csv).toContain(userName);
 
                 done();
         });
