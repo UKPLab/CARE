@@ -69,13 +69,21 @@ export default {
       if (this.navElements === null) return;
 
       const children = this.navElements.map(e => {
-        return {
+        const child = {
           name: e.name,
           alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
           path: "/dashboard/" + e.path,
           component: Loading,
+        };
+        if("navigation.dashboard.component.default" in this.settings &&
+            child.name  === this.settings["navigation.dashboard.component.default"]){
+          child.alias.push("/dashboard");
         }
+
+        return child;
       });
+
+      console.log("children.....", children);
 
       const routes = {
         path: "/dashboard",
