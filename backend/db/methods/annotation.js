@@ -247,7 +247,7 @@ exports.loadByDocument = async function load(docId) {
     return [annotations, comments];
 }
 
-exports.toFrontendRepresentationAnno = function toFrontend(annotation) {
+function toFrontendRepresentationAnno(annotation) {
     return {
         annotation_id: annotation.hash,
         document_id: annotation.document,
@@ -257,8 +257,9 @@ exports.toFrontendRepresentationAnno = function toFrontend(annotation) {
         user: annotation.creator
     }
 }
+exports.toFrontendRepresentationAnno = toFrontendRepresentationAnno
 
-exports.toFrontendRepresentationComm = function toFrontend(comment) {
+function toFrontendRepresentationComm(comment) {
     return comment.map(c => {
         return {
             comment_id: c.hash,
@@ -269,6 +270,7 @@ exports.toFrontendRepresentationComm = function toFrontend(comment) {
         };
     });
 }
+exports.toFrontendRepresentationComm = toFrontendRepresentationComm
 
 exports.mergeAnnosAndComments = function mergeAnnosAndCommentsFrontendRepresentation(annotationsWithComments){
     //expects array [annotations, comments]
@@ -276,8 +278,10 @@ exports.mergeAnnosAndComments = function mergeAnnosAndCommentsFrontendRepresenta
        const annos = Object.fromEntries(x[0].map(a => [a.hash, toFrontendRepresentationAnno(a)]));
        const comments = Object.fromEntries(Object.entries(x[1]).map(c => [c[0], toFrontendRepresentationComm(c[1])[0]]));
 
+       console.log("comments", comments);
+
        return Object.entries(annos).map(x => {
-          if(x[0] in comments){
+          if(x[0] in comments && comments[x[0]] !== undefined){
               const c = comments[x[0]];
               const addFields = Object.fromEntries(Object.entries(c).map(e => ["comment_"+e[0], e[1]]));
 

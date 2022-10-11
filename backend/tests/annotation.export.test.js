@@ -1,68 +1,73 @@
-const webserver = require('../webserver/webServer.js')
-const {io:io_client} = require("socket.io-client");
-const request = require('request');
-const requestt = require('supertest')
+const {setupTestSocket, tearDownTestSocket} = require("../db/tests/utils");
 
 describe('Annotation Exporting Test', () => {
-    let ioClient, app, httpServer;
+    /* START PREAMBLE */
+    let app, httpServer, ioClient;
 
     beforeAll((done) => {
-        [app, httpServer] = webserver();
-        httpServer.listen(3001, () => console.log("Started test server"));
-
-        //login as admin
-        request.post(
-            'http://localhost:3001/auth/login',
-            { json: {
-                username: "admin",
-                password: "admin",
-              }
-            },
-            function (error, response, body) {
-                if (!error && response.statusCode === 200) {
-                    const sid = response.headers["set-cookie"][0];
-
-                    var opts = {
-                        transportOptions: {
-                            polling: {
-                                extraHeaders: {
-                                    'Cookie': sid
-                                }
-                            }
-                        },
-                        withCredentials: true
-                    };
-
-                    // setup ioClient
-                    ioClient = io_client(`http://localhost:3001`, opts);
-                    ioClient.on("toast", (data) => {
-                        expect(false, `server returned an error code: ${data}`);
-                    });
-                    ioClient.on("connect", done);
-
-                    //connect
-                    ioClient.connect();
-                } else {
-                    throw Error(`Cannot start test due to failed login. Error msg: ${body}`);
-                }
-            }
-        );
-    });
-
-    it('expects the exported annotations', (done) => {
-        ioClient.on("exportedAnnotations", (data) => {
-            expect("success" in data && data["success"]);
-            expect("csvs" in data && "docids" in data);
-
-            const blobs = data["csvs"];
-            const docids = data["docids"];
-
+        [app, httpServer] = setupTestSocket((socket) => {
+            ioClient = socket;
             done();
         });
-        ioClient.emit("exportAnnotations", ["8852a746-360e-4c31-add2-4d1c75bfb96d"]);
+    });
+
+    afterEach(() => {
+        //clear stuff if necessary
+    });
+    /* END PREAMBLE */
+
+    test('expects the exported annotations', (done) => {
+        const showcaseId = "8852a746-360e-4c31-add2-4d1c75bfb96d";
+        const annoId = '271c5bf8-e6db-4ea0-b315-9f0a9482dd07';
+        const targetText = "ters. The two approaches share thesame objective function during pre-training, wherethey use unidirec"
+        const anno = {
+          document_id: showcaseId,
+          annotation: {
+              target: [
+                  {
+                      selector: [
+                        {"end":6468,"type":"TextPositionSelector","start":6367},
+                        {"type":"TextQuoteSelector","exact":"ters. The two approaches share thesame objective function during pre-training, wherethey use unidirec","prefix":"ne-tuning all pre-trained parame","suffix":"tional language models to learng"}
+                      ]
+                  }
+              ]
+          },
+          user: 1,
+          comment: null,
+          draft: false,
+          annotation_id: annoId,
+          tags: JSON.parse('["Highlight"]')
+        };
+
+        ioClient.on("exportedAnnotations", (data) => {
+                expect("success" in data && data["success"]);
+                expect("csvs" in data && "docids" in data);
+
+                const blobs = data["csvs"];
+                const docids = data["docids"];
+
+                // document present
+                expect(docids).toContain(showcaseId);
+
+                // csv present
+                expect(blobs.length).toBe(1);
+
+                // check text
+                const csv = blobs[0];
+                expect(csv).toContain(annoId);
+                expect(csv).toContain(targetText)
+
+                done();
+        });
+
+        ioClient.emit("addAnnotation", anno);
+        ioClient.on("newAnnotation", () => {
+            console.log("Test annotation added");
+            ioClient.emit("exportAnnotations", [showcaseId]);
+        });
     });
 
     afterAll(() => {
-        ioClient.close()
+        tearDownTestSocket(httpServer, ioClient);
     });
 })
