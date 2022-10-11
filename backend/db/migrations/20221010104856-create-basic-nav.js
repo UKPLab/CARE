@@ -9,12 +9,11 @@ const basicGroups = [
 
 const basicElements = [
     {
-        name: "Dashboard",
+        name: "Home",
         groupId: basicGroups[0].name,
         order: 1,
         path: "home",
-        component: 'Home',
-        alias: "[\"/\", \"/index.html\", \"/dashboard\"]"
+        component: 'Home'
     },
     {
         name: "Documents",
