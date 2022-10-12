@@ -44,7 +44,9 @@ module.exports = {
             alias: {
                 type: Sequelize.JSONB
             },
-
+            default: {
+                type: Sequelize.BOOLEAN
+            },
 
             deleted: {
                 type: Sequelize.BOOLEAN,

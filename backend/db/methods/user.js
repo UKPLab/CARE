@@ -116,3 +116,15 @@ exports.getAll = async function getAll() {
          throw InternalDatabaseError(err);
     }
 }
+
+exports.resolveUserIdToName = async function resolveUserIdToName(userId) {
+    try {
+        return (await User.findOne({
+            where: {
+                id: userId
+            }
+        })).user_name;
+    } catch (err) {
+         throw InternalDatabaseError(err);
+    }
+}

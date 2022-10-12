@@ -7,6 +7,7 @@ Author: Nils Dycke (dycke@ukp.informatik...)
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
+const {resolveUserIdToName} = require("./user");
 
 const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
 const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
@@ -247,25 +248,49 @@ exports.loadByDocument = async function load(docId) {
     return [annotations, comments];
 }
 
-exports.toFrontendRepresentationAnno = function toFrontend(annotation) {
+async function toFrontendRepresentationAnno(annotation) {
     return {
         annotation_id: annotation.hash,
         document_id: annotation.document,
         text: annotation.text,
         tags: annotation.tags != null ? annotation.tags.split(",") : null,
         annotation: {target: annotation.selectors},
-        user: annotation.creator
+        user: await resolveUserIdToName(annotation.creator)
     }
 }
+exports.toFrontendRepresentationAnno = toFrontendRepresentationAnno
 
-exports.toFrontendRepresentationComm = function toFrontend(comment) {
-    return comment.map(c => {
+async function toFrontendRepresentationComm(comment) {
+    return await Promise.all(comment.map(async c => {
         return {
             comment_id: c.hash,
             referenced_annotation: c.referenceAnnotation,
             text: c.text,
             tags: c.tags != null ? c.tags.split(",") : null,
-            user: c.creator
+            user: await resolveUserIdToName(c.creator)
         };
-    });
+    }));
+}
+exports.toFrontendRepresentationComm = toFrontendRepresentationComm
+
+exports.mergeAnnosAndComments = async function mergeAnnosAndCommentsFrontendRepresentation(annotationsWithComments) {
+    //expects array [annotations, comments]
+    return await Promise.all(annotationsWithComments.map(async x => {
+            const annos = Object.fromEntries(await Promise.all(x[0].map(async a => [a.hash, await toFrontendRepresentationAnno(a)])));
+            const comments = Object.fromEntries(await Promise.all(Object.entries(x[1]).map(async c => [c[0], await toFrontendRepresentationComm(c[1])[0]])));
+
+            console.log("comments", comments);
+
+            return Object.entries(annos).map(x => {
+                if (x[0] in comments && comments[x[0]] !== undefined) {
+                    const c = comments[x[0]];
+                    const addFields = Object.fromEntries(Object.entries(c).map(e => ["comment_" + e[0], e[1]]));
+
+                    return Object.assign(x[1], addFields);
+                } else {
+                    return x[1];
+                }
+            });
+        })
+    );
 }
