@@ -3,7 +3,6 @@ const {
     getAll, minimalFields
 } = require("../../db/methods/user.js");
 const {loadByUser: loadDocs} = require("../../db/methods/document");
-const {toFrontendRepresentationAnno} = require("../../db/methods/annotation");
 
 exports = module.exports = function (io) {
     io.on("connection", (socket) => {

@@ -25,19 +25,18 @@ exports = module.exports = function (io) {
             try {
                 const elements = await getElements();
                 const groups = await getGroups();
+
                 socket.emit("navigation", {groups: groups, elements: elements})
             } catch (err) {
                 logger.error(err, {user: socket.request.session.passport.user.id});
+                console.log("error during nav retrieve");
             }
 
         }
 
         socket.on("getSettings", async (data) => {
-
             await send_settings();
             await send_navigation();
-
-
         });
     });
 
