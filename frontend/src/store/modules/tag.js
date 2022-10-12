@@ -2,23 +2,37 @@
 
 Defines the store module responsible for tags assignable to annotations.
 
-Author: Nils Dycke (dycke@ukp...)
-Co-Author: Dennis Zyska (zyska@ukp...)
+Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
 Source: -
 */
 
 const emptyTagSet = () => {
     return {
-        id: 323,
-        name: null,
-        description: null,
-        color: null,
-        project: null,
-        type: null,
-        attributes: [],
-        features: [],
-        namespace: null,
-        language: null,
+        "id": 0,
+        "name": "",
+        "description": "",
+        "userId": null,
+        "public": false,
+        "updatedAt": null,
+        "deleted": false,
+        "deletedAt": null,
+        "createdAt": null
+    };
+};
+
+const emptyTag = (setId) => {
+    return {
+        "id": 0,
+        "name": "",
+        "description": "",
+        "colorCode": "info",
+        "userId": null,
+        "public": false,
+        "updatedAt": null,
+        "setId": setId,
+        "deleted": false,
+        "deletedAt": null,
+        "createdAt": null
     };
 };
 
@@ -35,32 +49,45 @@ export default {
     state: getDefaultState(),
     getters: {
         getTags: (state) => (id) => {
-            if (state["tags"] != null && id > 0) {
-                return state["tags"].filter(tag => tag.setId === id);
-            } else
-                {
-                    return {}
-                }
+            if (state["tags"] != null) {
+                return state["tags"].filter(tag => tag.setId === id && !tag.deleted);
+            } else {
+                return {}
+            }
 
         },
         getAllTags: (state) => {
             return state["tags"];
         },
         getTagSets: state => {
-            return state["tagSets"]
+            if (state["tagSets"] != null) {
+                return state["tagSets"].filter(tagSet => !tagSet.deleted && tagSet.id !== 0);
+            } else {
+                return {}
+            }
         },
         getTagSet: (state) => (id) => {
-            if (state["tagSets"] != null && state["tagSets"].length > 0 && id !== 0) {
-                return state["tagSets"].find(tagSet => tagSet.id === id);
-            } else {
+            if (state["tagSets"] == null) {
                 return emptyTagSet();
             }
+            const tagSet = state["tagSets"].find(tagSet => tagSet.id === id);
+            if (tagSet !== undefined) {
+                return tagSet;
+            } else {
+                const tagSet = emptyTagSet();
+                state["tagSets"].push(tagSet);
+                return tagSet;
+            }
+
         },
     },
     mutations: {
         // updates the local store to the given documents
         SET_TAGS: (state, tags) => {
             state.tags = tags;
+        },
+        ADD_EMPTY_TAG: (state, parent_id) => {
+            state.tags.push(emptyTag(parent_id));
         },
         RESET: state => {
             Object.assign(state, getDefaultState());
@@ -71,7 +98,6 @@ export default {
         },
         SOCKET_tags: (state, data) => {
             state.tags = data;
-
         },
     },
     actions: {}

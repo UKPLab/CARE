@@ -90,7 +90,7 @@
 </template>
 
 <script>
-import {mapGetters, mapActions} from "vuex";
+import {mapGetters} from "vuex";
 import Loader from "../general/Loader.vue";
 import {Tooltip} from "bootstrap";
 import TagSetModal from "./tags/TagSetModal.vue";
@@ -112,7 +112,6 @@ export default {
       default: false
     },
   },
-
   mounted() {
     this.$socket.emit("getTagSets");
     this.$socket.emit("getTags");
@@ -134,7 +133,6 @@ export default {
   },
   methods: {
     addTagSet() {
-      console.log(this.tags);
       this.$socket.emit("addTagSet", {name: "New Tag Set"});
     },
   }
