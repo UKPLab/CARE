@@ -57,7 +57,7 @@
 <script>
 
 export default {
-  name: "MetaReviewManager",
+  name: "MetaReviews",
   components: {},
   data() {
     return {

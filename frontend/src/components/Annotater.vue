@@ -12,18 +12,17 @@
   </div>
 
   <Teleport to="#topbarCustomPlaceholder">
-
     <form class="container-fluid justify-content-center">
       <button v-if="review" class="btn btn-outline-success me-2" type="button" v-on:click="this.$refs.reviewSubmit.open()">Submit Review</button>
       <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">Report</button>
       <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">Accept</button>
       <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">Reject</button>
+      <button :class="annotations.length > 0 ? '' : 'disabled'" class="btn btn-outline-secondary" type="button" @click="downloadAnnotations()">Download Annotations</button>
     </form>
 
     <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id" ></ReviewSubmit>
     <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id" @decisionSubmit="decisionSubmit"></Report>
     <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id" :document_id="document_id"></DecisionSubmit>
-
   </Teleport>
 
 </template>
@@ -38,15 +37,16 @@ Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import PDFViewer from "./annotater/pdfViewer/PDFViewer.vue";
-import TopBar from "./annotater/topbar/TopBar.vue"
 import Sidebar from "./annotater/sidebar/Sidebar.vue";
 import {offsetRelativeTo, scrollElement} from "../assets/anchoring/scroll";
 import {isInPlaceholder} from "../assets/anchoring/placeholder";
 import {resolveAnchor} from "../assets/anchoring/resolveAnchor";
+import {toCSV} from "../data/annotation";
+import {FileSaver} from "file-saver"; //required for window.saveAs to work
 
 export default {
   name: "Annotater",
-  components: {PDFViewer, Sidebar, TopBar},
+  components: {PDFViewer, Sidebar},
   props: {
     'document_id': {
       type: String,
@@ -80,6 +80,9 @@ export default {
     anchors() {
       return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id))
     },
+    annotations() {
+      return this.$store.getters["anno/getAnnotations"](this.document_id);
+    }
   },
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {
@@ -172,6 +175,21 @@ export default {
     },
     load() {
       this.$socket.emit("tags_get_all");
+    },
+    annotationsToCsv(annotations){
+      const csv = toCSV(annotations, ["id", "document_id", "user", "anchors", "text", "tags", "comment"],
+                            ["id", "text"]);
+
+      return csv.toString(true, true);
+    },
+    downloadAnnotations(){
+      // for now: fetch the annotations from store -- later we could move this to the sidebar for what you see is what
+      // you get behavior
+      // Note: This export feature is realized in the frontend, because it is intended to allow users to filter and
+      // sort annotations in the sidebar for export. This is only viable for single documents, hence in the annotator.
+      const csvStr = this.annotationsToCsv(this.annotations);
+
+      window.saveAs(new Blob([csvStr], {type: "text/csv;charset=utf-8"}), "annotations.csv");
     }
   }
 }

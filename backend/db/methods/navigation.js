@@ -26,6 +26,7 @@ exports.getGroups = async function getGroups(action, data, user) {
 }
 
 exports.getElements = async function getElements() {
+
    try {
         return await NavElement.findAll({
             where: {

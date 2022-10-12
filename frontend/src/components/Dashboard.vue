@@ -7,7 +7,7 @@
           <Sidebar></Sidebar>
         </div>
         <div id="viewerContainer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;">
-          <router-view></router-view>
+          <component :is="currentComponent" :key="$route.path"></component>
         </div>
       </div>
     </div>
@@ -19,7 +19,8 @@
 import Sidebar from "./navigation/Sidebar.vue";
 import {defineAsyncComponent} from "vue";
 import Loading from "./basic/Loading.vue";
-
+import Dashboard from "./Dashboard.vue";
+import NotFoundPage from "./NotFoundPage.vue";
 
 export default {
 
@@ -33,6 +34,23 @@ export default {
     settings() {
       return this.$store.getters['settings/getSettings'];
     },
+    currentComponent() {
+      if (this.navElements === null || this.settings === null) {
+        return Loading;
+      } else {
+
+        let component = this.navElements.find(element => element.name === this.$route.name);
+        if (component === undefined) {
+          component = this.navElements.find(e => e.name === this.settings["navigation.dashboard.component.default"]);
+        }
+        return defineAsyncComponent(
+            {
+              loader: () => import("./dashboard/" + component.component + ".vue"),
+              loadingComponent: Loading,
+              errorComponent: NotFoundPage
+            });
+      }
+    },
   },
   watch: {
     navElements(newValue, oldValue) {
@@ -44,23 +62,34 @@ export default {
     this.createNavigation();
   },
   methods: {
+
+
     async createNavigation() {
+
       if (this.navElements === null) return;
-      const children = await Promise.all(this.navElements.map(async e => ({
-        name: e.name,
-        alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
-        path: e.path,
-        component: defineAsyncComponent(
-            {loader: () => import("./dashboard/" + e.component + ".vue"), loadingComponent: Loading})
-      })));
+
+      const children = this.navElements.map(e => {
+        const child = {
+          name: e.name,
+          alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
+          path: "/dashboard/" + e.path,
+          component: Loading,
+        };
+        if("navigation.dashboard.component.default" in this.settings &&
+            child.name  === this.settings["navigation.dashboard.component.default"]){
+          child.alias.push("/dashboard");
+        }
+
+        return child;
+      });
+
+      console.log("children.....", children);
 
       const routes = {
         path: "/dashboard",
         name: "Dashboard",
-        alias: ["/dashboard", "/", "/index.html"],
-        component: defineAsyncComponent(() => import('./Dashboard.vue')),
+        component: Dashboard,
         meta: {requiresAuth: true, toggleSidebar: true},
-
       };
 
       // Add new Routes
@@ -70,9 +99,6 @@ export default {
       // Push current browser url to route
       if (this.catchAll !== undefined) {
         await this.$router.push("/dashboard/" + this.catchAll);
-      }
-      if (this.$route.meta.default) {
-        await this.$router.push("/dashboard/" + this.navElements.find(e => e.default).path);
       }
 
     }

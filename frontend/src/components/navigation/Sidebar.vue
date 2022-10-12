@@ -4,13 +4,13 @@
       <div class="list-group list-group-flush">
         <span v-for="group in sidebarGroups">
           <h5 class="mb-1">{{ group.name }}</h5>
-          <a v-for="element in sidebarElements[group.id]"
-             class="list-group-item list-group-item-action list-group-item-light p-3" href="#!">
+          <router-link :to="'/dashboard/' + element.path" v-for="element in sidebarElements[group.id]"
+             class="list-group-item list-group-item-action list-group-item-light p-3">
             <span class="sidebar-icon">
               <LoadIcon :iconName="element.icon" :size="24" />
             </span>
           <div class="list-group-item-text">{{ element.name }}</div>
-        </a>
+          </router-link>
 
         </span>
         <!--

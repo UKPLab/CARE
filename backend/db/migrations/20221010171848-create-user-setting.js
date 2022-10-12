@@ -2,29 +2,25 @@
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('nav_group', {
-            id: {
+        await queryInterface.createTable('user_setting', {
+            key: {
                 allowNull: false,
-                autoIncrement: true,
+                type: Sequelize.STRING,
                 primaryKey: true,
-                type: Sequelize.INTEGER
             },
-            name: {
+            value: {
                 type: Sequelize.STRING,
                 unique: true
             },
-            icon: {
-                type: Sequelize.STRING,
-            },
-            description: {
-                type: Sequelize.STRING(512)
-            },
-            admin: {
-                type: Sequelize.BOOLEAN,
-                defaultValue: false
-            },
-            order: {
+            userId: {
                 type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'user',
+                    key: 'id'
+                },
+                primaryKey: true,
+
             },
             deleted: {
                 type: Sequelize.BOOLEAN,
@@ -46,7 +42,6 @@ module.exports = {
         });
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('nav_group');
+        await queryInterface.dropTable('user_setting');
     }
-
 };
