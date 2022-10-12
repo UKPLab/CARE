@@ -13,10 +13,6 @@ module.exports = {
                 type: Sequelize.STRING,
                 unique: true
             },
-            default: {
-                type: Sequelize.BOOLEAN,
-                default: false,
-            },
             icon: {
                 type: Sequelize.STRING,
             },
@@ -25,7 +21,7 @@ module.exports = {
             },
             admin: {
                 type: Sequelize.BOOLEAN,
-                default: false,
+                defaultValue: false
 
             },
             order: {
@@ -48,7 +44,9 @@ module.exports = {
             alias: {
                 type: Sequelize.JSONB
             },
-
+            default: {
+                type: Sequelize.BOOLEAN
+            },
 
             deleted: {
                 type: Sequelize.BOOLEAN,

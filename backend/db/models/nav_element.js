@@ -18,13 +18,16 @@ module.exports = (sequelize, DataTypes) => {
         name: DataTypes.STRING,
         icon: DataTypes.STRING,
         description: DataTypes.STRING,
-       admin: DataTypes.BOOLEAN,
+        admin: DataTypes.BOOLEAN,
         order: DataTypes.INTEGER,
         groupId: DataTypes.INTEGER,
         path: DataTypes.STRING,
         default: DataTypes.BOOLEAN,
         component: DataTypes.STRING,
-        alias: DataTypes.JSONB
+        alias: DataTypes.JSONB,
+        deleted: DataTypes.BOOLEAN,
+        deletedAt: DataTypes.DATE,
+        createdAt: DataTypes.DATE
     }, {
         sequelize,
         modelName: 'nav_element',

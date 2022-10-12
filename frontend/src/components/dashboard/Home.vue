@@ -74,9 +74,9 @@ Author: Dennis Zyska (zyska@ukp...)
 Co-Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import DocumentManager from "./documents/DocumentManager.vue";
-import ReviewManager from "./review/ReviewManager.vue";
-import MetaReviewManager from "./review/MetaReviewManager.vue";
+import DocumentManager from "./Documents.vue";
+import ReviewManager from "./Reviews.vue";
+import MetaReviewManager from "./MetaReviews.vue";
 
 export default {
   name: "Home",

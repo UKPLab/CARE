@@ -91,10 +91,10 @@
 
 <script>
 
-import EditorSelect from "./EditorSelect.vue";
-import DecisionView from "./DecisionView.vue";
+import EditorSelect from "./reviews/EditorSelect.vue";
+import DecisionView from "./reviews/DecisionView.vue";
 export default {
-  name: "ReviewManager",
+  name: "Reviews",
   components: {EditorSelect, DecisionView},
   data() {
     return {

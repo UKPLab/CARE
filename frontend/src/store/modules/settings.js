@@ -17,11 +17,15 @@ export default {
         getSettings: state => {
             return state
         },
+        getValue: state => (key) => {
+            return state.settings[key]
+        },
     },
     mutations: {
         SOCKET_settings: (state, message) => {
-                state = message;
-
+            message.settings.forEach(setting => {
+                state[setting.key] = setting.value
+            })
         },
     },
     actions: {}

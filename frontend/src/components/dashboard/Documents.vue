@@ -2,7 +2,10 @@
   <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
       Documents
-      <Upload @addedDoc="onAddedDoc"></Upload>
+      <div>
+        <button class="btn btn-sm btn-secondary me-1" type="button"  @click="exportAllAnnotations()">Export Annotations</button>
+        <Upload @addedDoc="onAddedDoc"></Upload>
+      </div>
     </div>
     <div class="card-body">
       <span v-if="items.length === 0">
@@ -79,10 +82,10 @@ Co-Author:  Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import {mapGetters, mapActions} from "vuex";
-import Upload from "./Upload.vue";
+import Upload from "./documents/Upload.vue";
 
 export default {
-  name: "DocumentManager",
+  name: "Document",
   components: {Upload},
   data() {
     return {
@@ -150,6 +153,31 @@ export default {
       }
 
       return this.reviews[review_i].submitted ? "SUBMITTED" : "PENDING";
+    },
+    exportAllAnnotations(){
+      const doc_ids = this.items.map(i => i.hash);
+      this.exportAnnotations(doc_ids);
+    },
+    exportAnnotations(doc_ids){
+      this.sockets.subscribe("exportedAnnotations", (r) => {
+        this.sockets.unsubscribe('exportedAnnotations');
+
+        if(r.success){
+          let exported = 0;
+          r.csvs.forEach((val, index) => {
+            if(val !== null && val.length > 0) {
+              const docId = r.docids[index];
+              exported++;
+              window.saveAs(new Blob([val], {type: "text/csv;charset=utf-8"}), `${docId}_annotations.csv`);
+            }
+          });
+          this.eventBus.emit('toast', {title:"Export Success", message:`Exported annotations for ${exported} documents`, variant: "success"});
+        } else {
+          this.eventBus.emit('toast', {title:"Export Failed", message:"Export failed for some reason.", variant: "danger"});
+        }
+      });
+
+      this.$socket.emit("exportAnnotations", doc_ids);
     }
   }
 }
