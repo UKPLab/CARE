@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="tagSetModal">
+  <Modal ref="tagSetModal" lg>
     <template v-slot:title>
       <span v-if="id === 0">New</span>
       <span v-else>Edit</span>
@@ -18,8 +18,9 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="tagset_tags">Tags</label>
-        <TagsTable :id="id"></TagsTable>
+        <label class="form-label" for="tagset_tags">Tags
+        </label>
+        <TagsTable :setId="id"></TagsTable>
 
       </div>
 
@@ -33,7 +34,6 @@
 </template>
 
 <script>
-import {mapGetters, mapActions} from "vuex";
 import Tags from "bootstrap5-tags/tags.js";
 import Modal from "../../basic/Modal.vue";
 import TagsTable from "./TagsTable.vue";
