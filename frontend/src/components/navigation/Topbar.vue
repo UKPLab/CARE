@@ -46,21 +46,17 @@ Source:
 
 export default {
   name: "Topbar",
-  data() {
-    return {
-      firstLetterUsername: this.getFirstLetterUsername(),
-      username: this.getUsername()
-    }
+  computed: {
+    username() {
+      return this.$store.getters['auth/getUsername'];
+    },
+    firstLetterUsername() {
+      return this.$store.getters['auth/getUsername'].charAt(0).toUpperCase();
+    },
   },
   methods: {
     removeSidebarFlag() {
       document.body.classList.remove('sidebar-exists');
-    },
-    getUsername() {
-      return this.$store.getters['auth/getUser'].user_name;
-    },
-    getFirstLetterUsername() {
-      return this.getUsername().charAt(0).toUpperCase();
     },
     async logout() {
       await this.$store.dispatch('auth/logout');
