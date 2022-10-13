@@ -58,7 +58,11 @@ export default {
     }
   },
   mounted() {
+    // get settings
+    this.$socket.emit("getTagSets");
+    this.$socket.emit("getTags");
     this.$socket.emit("getSettings");
+
     this.createNavigation();
   },
   methods: {

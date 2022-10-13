@@ -38,6 +38,9 @@ Source: -
 */
 import PDFViewer from "./annotater/pdfViewer/PDFViewer.vue";
 import Sidebar from "./annotater/sidebar/Sidebar.vue";
+import ReviewSubmit from "./annotater/modals/ReviewSubmit.vue"
+import Report from "./annotater/modals/Report.vue"
+import DecisionSubmit from "./annotater/modals/DecisionSubmit.vue"
 import {offsetRelativeTo, scrollElement} from "../assets/anchoring/scroll";
 import {isInPlaceholder} from "../assets/anchoring/placeholder";
 import {resolveAnchor} from "../assets/anchoring/resolveAnchor";
@@ -46,7 +49,7 @@ import {FileSaver} from "file-saver"; //required for window.saveAs to work
 
 export default {
   name: "Annotater",
-  components: {PDFViewer, Sidebar},
+  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit},
   props: {
     'document_id': {
       type: String,
@@ -92,7 +95,7 @@ export default {
         data: {review_id: this.review_id, document_id: this.document_id, anno_id: anno_id}
       });
     });
-    this.load()
+    this.load();
   },
   methods: {
       decisionSubmit(decision){
@@ -174,7 +177,9 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      this.$socket.emit("tags_get_all");
+      this.$socket.emit("getTagSets");
+      this.$socket.emit("getTags");
+      this.$socket.emit("getSettings");
     },
     annotationsToCsv(annotations){
       const csv = toCSV(annotations, ["id", "document_id", "user", "anchors", "text", "tags", "comment"],

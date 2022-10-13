@@ -78,7 +78,6 @@ export default {
                 state["tagSets"].push(tagSet);
                 return tagSet;
             }
-
         },
     },
     mutations: {
