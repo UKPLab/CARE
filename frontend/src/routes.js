@@ -30,39 +30,39 @@ const routes = [
         path: "/dashboard/:catchAll(.*)",
         name: "Dashboard",
         props: true,
-        component: import('./components/Dashboard.vue'),
+        component: () => import('./components/Dashboard.vue'),
         alias: "/dashboard",
         meta: {requiresAuth: true, toggleSidebar: true, default: true},
     },
-    {path: "/login", component: import("./components/auth/Login.vue"), meta: {requiresAuth: false, hideTopbar: true}},
+    {path: "/login", component: () => import("./components/auth/Login.vue"), meta: {requiresAuth: false, hideTopbar: true}},
     {
         path: "/register",
-        component: import("./components/auth/Register.vue"),
+        component: () => import("./components/auth/Register.vue"),
         meta: {requiresAuth: false, hideTopbar: true}
     },
     {
         path: "/annotate/:document_id",
-        component: import('./components/Annotater.vue'),
+        component: () => import('./components/Annotater.vue'),
         props: true,
         meta: {requiresAuth: true}
     },
     {
         path: "/report/:document_id",
-        component: import('./components/Annotater.vue'),
+        component: () => import('./components/Annotater.vue'),
         props: route => ({document_id: route.params.document_id, readonly: true}),
         meta: {requireAuth: true}
     },
-    {path: "/review/:review_id", component: import("./components/Review.vue"), props: true, meta: {requireAuth: true}},
+    {path: "/review/:review_id", component: () => import("./components/Review.vue"), props: true, meta: {requireAuth: true}},
     {
         path: "/approve/:review_id",
-        component: import("./components/Review.vue"),
+        component: () => import("./components/Review.vue"),
         props: route => ({review_id: route.params.review_id, readonly: true, decision: true}),
         meta: {requireAuth: true}
     },
     {
         path: "/:catchAll(.*)",
         name: "NotFound",
-        component: import("./components/NotFoundPage.vue"),
+        component: () => import("./components/NotFoundPage.vue"),
         meta: {requiresAuth: false, hideTopbar: true}
     }
 ]
