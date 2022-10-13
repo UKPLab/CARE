@@ -37,6 +37,7 @@
 import Tags from "bootstrap5-tags/tags.js";
 import Modal from "../../basic/Modal.vue";
 import TagsTable from "./TagsTable.vue";
+import {mapMutations} from "vuex";
 
 export default {
   name: "TagSetModal",
@@ -56,6 +57,18 @@ export default {
     },
   },
   methods: {
+    ...mapMutations({cleanEmptyTagSet: "tag/CLEAN_EMPTY_TAG_SET", copyTagSet: "tag/COPY_TAG_SET"}),
+    new() {
+      this.cleanEmptyTagSet();
+      this.open(0);
+    },
+    edit(id) {
+      this.open(id);
+    },
+    copy(id) {
+      this.copyTagSet(id);
+      this.open(0);
+    },
     open(id) {
       this.id = id;
       this.$refs.tagSetModal.openModal();
