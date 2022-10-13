@@ -73,7 +73,7 @@ export default {
           name: e.name,
           alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
           path: "/dashboard/" + e.path,
-          component: Loading,
+          component: () => import('./basic/Loading.vue'),
         };
         if("navigation.dashboard.component.default" in this.settings &&
             child.name  === this.settings["navigation.dashboard.component.default"]){
