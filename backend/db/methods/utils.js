@@ -38,3 +38,7 @@ exports.isInternalDatabaseError = function isInternalDatabaseError(seqErr) {
 
     return errors.indexOf(seqErr.name) !== -1;
 }
+
+exports.subselectFieldsForDB = function subselectFieldsForDB(obj, relevantFields) {
+    return Object.fromEntries(Object.entries(obj).filter(([k, v]) => relevantFields.includes(k)));
+}

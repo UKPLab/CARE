@@ -27,7 +27,7 @@
     </template>
     <template v-slot:footer>
       <button class="btn btn-secondary" type="button" @click="cancel">Back</button>
-      <button class="btn btn-primary me-2" type="button" @click="submit">Save</button>
+      <button class="btn btn-primary me-2" type="button" @click="save">Save</button>
 
     </template>
   </Modal>
@@ -75,6 +75,12 @@ export default {
       this.$socket.emit("stats", {
         action: "openModalTagSet",
         data: {id: this.id}
+      });
+    },
+    save() {
+      this.$socket.emit("saveTagset", {
+        "tagset": this.$store.getters["tag/getTagSet"](this.id),
+        "tags": this.$store.getters["tag/getTags"](this.id, false)
       });
     },
     cancel() {

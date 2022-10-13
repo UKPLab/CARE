@@ -72,9 +72,9 @@ export default {
     strict: true,
     state: getDefaultState(),
     getters: {
-        getTags: (state) => (id) => {
+        getTags: (state) => (id, hideDeleted = true) => {
             if (state["tags"] != null) {
-                return state["tags"].filter(tag => tag.setId === id && !tag.deleted);
+                return state["tags"].filter(tag => tag.setId === id && (!hideDeleted || !tag.deleted));
             } else {
                 return {}
             }
