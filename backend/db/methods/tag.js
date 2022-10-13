@@ -12,7 +12,7 @@ const db = require("../index.js")
 const Tag = require("../models/tag.js")(db.sequelize, DataTypes);
 const logger = require("../../utils/logger.js")("db/tag");
 
-const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./utils");
 
 
 function InvalidTagParameters(details) {
@@ -24,12 +24,45 @@ function InvalidTagParameters(details) {
 }
 
 
-exports.add = async function add(tag_name, description) {
+exports.add = async function add(tag) {
     try {
-        const t = await Tag.create({
-            name: tag_name, description: description
+        return await Tag.create(subselectFieldsForDB(tag, ["name", "description", "colorCode", "userId"]));
+    } catch (err) {
+        logger.error("Cant add tag to database" + err);
+
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw err;
+        }
+    }
+}
+
+exports.update = async function update(tag) {
+    try {
+        return await Tag.update(subselectFieldsForDB(tag, ["name", "description", "colorCode", "setId"]), {
+            where: {
+                id: tag["id"]
+            }
         });
-        return t.id;
+    } catch (err) {
+        logger.error("Cant add tag to database" + err);
+
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw err;
+        }
+    }
+}
+
+exports.publish = async function publish(tagId) {
+    try {
+        return await Tag.update({public: true}, {
+            where: {
+                id: tagId
+            }
+        });
     } catch (err) {
         logger.error("Cant add tag to database" + err);
 
@@ -104,6 +137,23 @@ exports.get = async function get(tag_id) {
         return await Tag.findOne({
             where: {
                 id: tag_id
+            }
+        });
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw err;
+        }
+    }
+}
+
+exports.getAllBySetId = async function getAllBySetId(tagsetId) {
+    try {
+        return await Tag.findAll({
+            where: {
+                deleted: false,
+                setId: tagsetId
             }
         });
     } catch (err) {

@@ -12,7 +12,7 @@ const db = require("../index.js")
 const TagSet = require("../models/tag_set.js")(db.sequelize, DataTypes);
 const logger = require("../../utils/logger.js")("db/tag_set");
 
-const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./utils");
 
 
 function InvalidTagParameters(details) {
@@ -24,12 +24,9 @@ function InvalidTagParameters(details) {
 }
 
 
-exports.add = async function add(tag_name, description) {
+exports.add = async function add(tagset) {
     try {
-        const t = await TagSet.create({
-            name: tag_name, description: description
-        });
-        return t.id;
+        return await TagSet.create(subselectFieldsForDB(tagset, ["name", "description", "userId"]));
     } catch (err) {
         logger.error("Cant add tag to database" + err);
 
@@ -41,11 +38,47 @@ exports.add = async function add(tag_name, description) {
     }
 }
 
-exports.remove = async function remove(tag_id) {
+exports.update = async function update(tagset) {
+    try {
+        return await TagSet.update(subselectFieldsForDB(tagset, ["name", "description"]), {
+            where: {
+                id: tagset["id"]
+            }
+        });
+    } catch (err) {
+        logger.error("Cant add tag to database" + err);
+
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw err;
+        }
+    }
+}
+
+exports.publish = async function publish(tagsetId) {
+    try {
+        return await TagSet.update({public: true}, {
+            where: {
+                id: tagsetId
+            }
+        });
+    } catch (err) {
+        logger.error("Cant add tag to database" + err);
+
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw err;
+        }
+    }
+}
+
+exports.remove = async function remove(tagset_id) {
     try {
         return await TagSet.update({deleted: true, deletedAt: new Date()}, {
             where: {
-                id: tag_id
+                id: tagset_id
             }
         });
     } catch (err) {
@@ -99,11 +132,11 @@ exports.getAllByUser = async function getAllByUser(user_id, include_system = tru
     }
 }
 
-exports.get = async function get(tag_id) {
+exports.get = async function get(tagset_id) {
     try {
         return await TagSet.findOne({
             where: {
-                id: tag_id
+                id: tagset_id
             }
         });
     } catch (err) {
