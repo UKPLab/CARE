@@ -3,7 +3,7 @@
     <TagSetModal ref="tagSetModal" id="0" ></TagSetModal>
 
 
-  <div class="card">
+  <div class="card" >
     <div class="card-header d-flex justify-content-between align-items-center">
       Tag Sets
       <button class="btn btn-primary btn-sm" v-on:click="this.$refs.tagSetModal.open(0)">Add new tag set</button>
@@ -15,7 +15,7 @@
       <span v-else-if="tagSets.length === 0">
           No tag sets are available...
         </span>
-      <table v-else class="table table-hover">
+      <table v-else class="table table-hover" ref="tagsTable">
         <thead>
         <tr>
           <th scope="col">Name</th>
@@ -41,7 +41,7 @@
             <div v-else class="badge bg-black">{{ tagSet['userId'] }}</div>
           </td>
           <td>
-            <div :title="tags.filter(tag => tag.setId === tagSet.id).map(e => e.name).join('<br>')" class="badge bg-primary" data-bs-html="true"  data-bs-placement="top" data-bs-toggle="tooltip"
+            <div v-tooltip :title="tags.filter(tag => tag.setId === tagSet.id).map(e => e.name).join('<br>')" class="badge bg-primary" data-bs-html="true"  data-bs-placement="top" data-bs-toggle="tooltip"
                  role="button">
               {{ tags.filter(tag => tag.setId === tagSet.id).length }}
             </div>
@@ -70,7 +70,7 @@
   <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
 </svg>
               </button>
-              <button class="btn btn-outline-dark btn-sm" @click="shareTagSet(tagSet.id)">
+              <button v-tooltip title="test" class="btn btn-outline-dark btn-sm" @click="shareTagSet(tagSet.id)">
                 <svg class="bi bi-share" fill="currentColor" height="12" viewBox="0 0 16 16" width="12"
                      xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -92,12 +92,15 @@
 <script>
 import {mapGetters} from "vuex";
 import Loader from "../general/Loader.vue";
-import {Tooltip} from "bootstrap";
 import TagSetModal from "./tags/TagSetModal.vue";
+import { tooltip } from "../../assets/tooltip.js";
 
 export default {
   name: "Tags",
   components: {TagSetModal, Loader},
+  directives: {
+    tooltip
+  },
   data() {
     return {
       fields: [
@@ -112,22 +115,8 @@ export default {
       default: false
     },
   },
-  mounted() {
-  },
   computed: {
     ...mapGetters({tagSets: 'tag/getTagSets', tags: 'tag/getAllTags', userId: 'auth/getUserId'}),
-  },
-  watch: {
-    tagSets: function (newVal, oldVal) {
-      new Tooltip(document.body, {
-        selector: "[data-bs-toggle='tooltip']",
-      })
-    },
-    tags: function (newVal, oldVal) {
-      new Tooltip(document.body, {
-        selector: "[data-bs-toggle='tooltip']",
-      })
-    }
   },
   methods: {
     addTagSet() {

@@ -57,7 +57,7 @@ export default {
 
         },
         getAllTags: (state) => {
-            return state["tags"];
+            return state["tags"].filter(tag => !tag.deleted);
         },
         getTagSets: state => {
             if (state["tagSets"] != null) {
