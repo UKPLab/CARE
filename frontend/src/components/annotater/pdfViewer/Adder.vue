@@ -49,8 +49,20 @@ export default {
   },
   computed: {
     assignableTags() {
-      return this.$store.getters['tag/getTags'];
+      if(this.currentTagset === null){
+        return [];
+      }
+
+      return this.$store.getters['tag/getTags'](this.currentTagset);
     },
+    currentTagset() {
+      return this.$store.getters['settings/getValue']("dashboard.tags.TagsTable.selectedId");
+    }
+  },
+  watch: {
+    currentTagset(newVal, oldVal){
+      console.log("Tagset changed!");
+    }
   },
   methods: {
     ...mapMutations({addAnnotation: "anno/ADD_ANNOTATION"}),
@@ -100,6 +112,16 @@ export default {
       document.getSelection()?.removeAllRanges();
     },
     _onSelection(event) {
+      // validate tagset
+      if(this.currentTagset === null || this.currentTagset === undefined || this.assignableTags.length === 0){
+        this.eventBus.emit('toast', {title:"Empty Tagset",
+          message:"No tagset or an empty tagset have been selected. Cannot make annotations.",
+          variant: "danger"});
+
+        this._onClearSelection();
+        return;
+      }
+
       // get selection
       const selection = /** @type {Selection} */ (document.getSelection());
       if (!selection || selection.isCollapsed || selection.rangeCount === 0) {

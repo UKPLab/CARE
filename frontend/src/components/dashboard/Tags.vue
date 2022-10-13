@@ -113,8 +113,6 @@ export default {
     },
   },
   mounted() {
-    this.$socket.emit("getTagSets");
-    this.$socket.emit("getTags");
   },
   computed: {
     ...mapGetters({tagSets: 'tag/getTagSets', tags: 'tag/getAllTags', userId: 'auth/getUserId'}),

@@ -165,10 +165,21 @@ export default {
       return this.annoData.text === null || this.annoData.text.length === 0;
     },
     assignableTags() {
-      return this.$store.getters['tag/getTags'];
+      if(this.currentTagset === null || this.currentTagset === undefined){
+        return [];
+      }
+
+      return this.$store.getters['tag/getTags'](this.currentTagset);
+    },
+    currentTagset() {
+      return this.$store.getters['settings/getValue']("dashboard.tags.TagsTable.selectedId");
     },
     nonStandardTags() {
-      //console.log("nonstandard tags", this.annoTags, this.annoTags.filter(t => this.assignableTags.includes()))
+      if(this.assignableTags === undefined || this.assignableTags === null){
+        return [];
+      }
+      console.log("Assignable tags for annotation", this.assignableTags);
+
       return this.annoTags.filter(t => !this.assignableTags.map(x => x.name).includes(t));
     },
     isSubmitted: function () {

@@ -18,14 +18,21 @@ export default {
             return state
         },
         getValue: state => (key) => {
-            return state.settings[key]
+            if(state === null) {
+                return null;
+            }
+
+            return state[key];
         },
     },
     mutations: {
         SOCKET_settings: (state, message) => {
             message.settings.forEach(setting => {
                 state[setting.key] = setting.value
-            })
+            });
+
+            //TODO just added for testing
+            state["dashboard.tags.TagsTable.selectedId"] = 1;
         },
     },
     actions: {}

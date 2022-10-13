@@ -27,7 +27,11 @@ export default {
       return this.$store.getters['anno/getAnchors'](this.document_id)
     },
     tagToColorMap() {
-      const tags = this.$store.getters['tag/getTags'];
+      let tags = this.$store.getters['tag/getAllTags'];
+
+      if(tags === null || tags === undefined){
+        tags = []; //will default to the undefined color for all
+      }
 
       //TODO when actual color codes are stored, use these. For now convert badge types to colors
       return tname => {
