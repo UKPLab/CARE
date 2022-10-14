@@ -176,6 +176,7 @@ exports = module.exports = function (io) {
             }
 
             const tagObjs = data.tags.map((t) => {
+                t.setId = tagsetObj.id;
                 if (t.id === 0) {
                     t.userId = socket.request.session.passport.user.id;
                     return addTag(t);
