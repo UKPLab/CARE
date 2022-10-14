@@ -82,6 +82,8 @@ export default {
         "tagset": this.$store.getters["tag/getTagSet"](this.id),
         "tags": this.$store.getters["tag/getTags"](this.id, false)
       });
+      this.$refs.tagSetModal.waiting = true;
+      //TODO check feedback and close modal / maybe some waiting window during saving
     },
     cancel() {
       this.$refs.tagSetModal.closeModal();

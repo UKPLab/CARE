@@ -55,7 +55,6 @@ export default {
   },
   methods: {
     ...mapMutations({addTag: "tag/ADD_EMPTY_TAG"}),
-
   },
   computed: {
     tags() {

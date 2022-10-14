@@ -26,7 +26,7 @@ function InvalidTagParameters(details) {
 
 exports.add = async function add(tag) {
     try {
-        return await Tag.create(subselectFieldsForDB(tag, ["name", "description", "colorCode", "userId"]));
+        return await Tag.create(subselectFieldsForDB(tag, ["name", "description", "colorCode", "userId", "setId"]));
     } catch (err) {
         logger.error("Cant add tag to database" + err);
 
