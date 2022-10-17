@@ -33,6 +33,18 @@ function validatePassword(password) {
     return password != null && password.length > 0;
 }
 
+exports.getUsername = async function getUsername(userId) {
+    if (userId === null || userId === 0) {
+        return "System";
+    }
+    try {
+        const user = await User.findOne({where: {id: userId}});
+        return user["user_name"];
+    } catch (err) {
+        logger.error("Error while getting username with userid " + userId + ": " + err);
+        throw new InternalDatabaseError();
+    }
+}
 
 exports.add = async function add(user_name, first_name, last_name, user_email, password, role, terms, stats) {
     if(!validatePassword(password)){

@@ -37,8 +37,7 @@
             <div v-else class="badge bg-danger">No</div>
           </td>
           <td>
-            <div v-if="tagSet['userId'] === null" class="badge bg-black">System</div>
-            <div v-else class="badge bg-black">{{ tagSet['userId'] }}</div>
+            <div class="badge bg-black">{{ tagSet['username'] }}</div>
           </td>
           <td>
             <div v-tooltip :title="tags.filter(tag => tag.setId === tagSet.id).map(e => e.name).join('<br>')"
