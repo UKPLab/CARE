@@ -4,9 +4,11 @@
       Publish Tagset
     </template>
     <template v-slot:body>
+        Do you really want to publish the tagset? <br>
+    Note: Once you published it, you can't unpublish the tagset! If you want to unpublish it, you have to delete it and create a new one.
+      If published the tagset will be available for all users.
     </template>
-      Do you really want to publish the tagset? <br>
-    Note: Once you published it, you can't unpublish the tagset!
+
     <template v-slot:footer>
       <button class="btn btn-secondary" type="button" @click="cancel">Abort</button>
       <button class="btn btn-danger me-2" type="button" @click="publish">Yes, publish it!</button>
@@ -35,23 +37,17 @@ export default {
       });
     },
     publish() {
-
-      // TODO add this also to the other modals
-      /*
-      this.sockets.subscribe("decisionSubmitted", (data) => {
-        this.$refs.decisionSubmit.closeModal();
-        this.sockets.unsubscribe('decisionSubmitted');
+      this.sockets.subscribe("tagSetPublished", (data) => {
+        this.$refs.tagSetPublishModal.closeModal();
+        this.sockets.unsubscribe('tagSetPublished');
         if (data.success) {
-          this.eventBus.emit('toast', {title:"Review Submit", message:"Successful submitted the review!", variant: "success"});
-          this.$router.push("/");
+          this.eventBus.emit('toast', {title:"Tagset published", message:"Successful published tagset!", variant: "success"});
         } else {
-          this.eventBus.emit('toast', {title:"Review Submit", message:"Error during submitting the review! Please try it again!", variant: "danger"});
+          this.eventBus.emit('toast', {title:"Tagset not published", message: data.message, variant: "danger"});
         }
       });
-      */
-
-
-      //todo send publish socket emit and wait for closing
+      this.$socket.emit("publishTagset", { id: this.id });
+      this.$refs.tagSetPublishModal.waiting = true;
     },
     cancel() {
       this.$refs.tagSetPublishModal.closeModal();
