@@ -78,12 +78,20 @@ export default {
       });
     },
     save() {
+      this.sockets.subscribe("tagSetSaved", (data) => {
+        this.$refs.tagSetModal.closeModal();
+        this.sockets.unsubscribe('tagSetSaved');
+        if (data.success) {
+          this.eventBus.emit('toast', {title:"Tagset saved", message:"Successful saved tagset!", variant: "success"});
+        } else {
+          this.eventBus.emit('toast', {title:"Tagset not saved", message:"Error during saving the tagset!", variant: "danger"});
+        }
+      });
       this.$socket.emit("saveTagset", {
         "tagset": this.$store.getters["tag/getTagSet"](this.id),
         "tags": this.$store.getters["tag/getTags"](this.id, false)
       });
       this.$refs.tagSetModal.waiting = true;
-      //TODO check feedback and close modal / maybe some waiting window during saving
     },
     cancel() {
       this.$refs.tagSetModal.closeModal();

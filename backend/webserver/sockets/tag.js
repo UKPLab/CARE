@@ -175,11 +175,11 @@ exports = module.exports = function (io) {
                 tagsetObj = await updateTagset(data.tagset);
             }
 
-            const tagObjs = data.tags.map((t) => {
+            const tagObjs = data.tags.map(async (t) => {
                 t.setId = tagsetObj.id;
                 if (t.id === 0) {
                     t.userId = socket.request.session.passport.user.id;
-                    return addTag(t);
+                    return await addTag(t);
                 } else {
                     // security check
                     if (socket.request.session.passport.user.sysrole !== "admin") {
@@ -193,12 +193,13 @@ exports = module.exports = function (io) {
                             return null;
                         }
                     }
-                    return updateTag(t);
+                    return await updateTag(t);
                 }
             });
 
             sendTagsetUpdate(tagsetObj);
-            sendTagsUpdate(tagObjs);
+            sendTagsUpdate(await Promise.all(tagObjs));
+            socket.emit("tagSetSaved", {success: true});
         });
 
         socket.on("publishTagset", async (tagsetId) => {
@@ -221,6 +222,8 @@ exports = module.exports = function (io) {
 
             sendTagsetUpdate(newTagset);
             sendTagsUpdate(newTags);
+            socket.emit("tagSetPublished", {success: true});
+
         });
     });
 }

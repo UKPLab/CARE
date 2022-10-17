@@ -144,7 +144,7 @@ export default {
                 if (oldTag !== undefined) {
                     state["tags"].splice(state["tags"].indexOf(oldTag), 1);
                 }
-                state["tags"].push(data);
+                state["tags"].push(tag);
             });
         }
     },
