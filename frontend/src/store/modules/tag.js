@@ -123,29 +123,35 @@ export default {
         RESET: state => {
             Object.assign(state, getDefaultState());
         },
-        SOCKET_tagSets: (state, data) => {
+        SOCKET_tagSetsUpdate: (state, data) => {
             state.tagSets = data;
-        },
-        SOCKET_tags: (state, data) => {
-            state.tags = data;
         },
         SOCKET_tagSetUpdate: (state, data) => {
             // remove old tagset instance first if available
-            const oldTagSet = state["tagSets"].find(s => s.id === data.id);
-            if (oldTagSet !== undefined) {
-                state["tagSets"].splice(state["tagSets"].indexOf(oldTagSet), 1);
+            if (state["tagSets"] !== null) {
+                const oldTagSet = state["tagSets"].find(s => s.id === data.id);
+                if (oldTagSet !== undefined) {
+                    state["tagSets"].splice(state["tagSets"].indexOf(oldTagSet), 1);
+                }
+                state["tagSets"].push(data);
+            } else {
+                state["tagSets"] = data;
             }
-            state["tagSets"].push(data);
         },
         SOCKET_tagsUpdate: (state, data) => {
-            data.forEach(tag => {
-                // remove old tags instances first if available
-                const oldTag = state["tags"].find(s => s.id === tag.id);
-                if (oldTag !== undefined) {
-                    state["tags"].splice(state["tags"].indexOf(oldTag), 1);
-                }
-                state["tags"].push(tag);
-            });
+            if (state["tags"] === null) {
+                state["tags"] = data;
+            } else {
+
+                data.forEach(tag => {
+                    // remove old tags instances first if available
+                    const oldTag = state["tags"].find(s => s.id === tag.id);
+                    if (oldTag !== undefined) {
+                        state["tags"].splice(state["tags"].indexOf(oldTag), 1);
+                    }
+                    state["tags"].push(tag);
+                });
+            }
         }
     },
     actions: {}
