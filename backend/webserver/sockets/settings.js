@@ -1,5 +1,5 @@
 const {getGroups, getElements} = require("../../db/methods/navigation");
-const {getUserSettings, getSettings} = require("../../db/methods/settings");
+const {getUserSettings, getSettings, setUserSettings} = require("../../db/methods/settings");
 const logger = require("../../utils/logger.js")("sockets/settings");
 
 
@@ -38,6 +38,16 @@ exports = module.exports = function (io) {
             await send_settings();
             await send_navigation();
         });
+
+        socket.on("setSettings", async (data) => {
+            try {
+                await setUserSettings(socket.request.session.passport.user.id, data);
+                await send_settings();
+            } catch (err) {
+                logger.error(err, {user: socket.request.session.passport.user.id});
+            }
+        });
+
     });
 
 }
