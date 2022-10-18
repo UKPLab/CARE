@@ -26,7 +26,8 @@
 
     </template>
     <template v-slot:footer>
-      <button class="btn btn-secondary" type="button" @click="cancel">Back</button>
+      <button v-if="id === 0" class="btn btn-secondary" type="button" @click="back">Back</button>
+      <button v-else class="btn btn-secondary" type="button" @click="cancel">Cancel</button>
       <button class="btn btn-primary me-2" type="button" @click="save">Save</button>
 
     </template>
@@ -94,6 +95,10 @@ export default {
       this.$refs.tagSetModal.waiting = true;
     },
     cancel() {
+      this.$socket.emit("getTagSetById", this.id);
+      this.back();
+    },
+    back() {
       this.$refs.tagSetModal.closeModal();
       this.$socket.emit("stats", {
         action: "cancelModalTagSet",

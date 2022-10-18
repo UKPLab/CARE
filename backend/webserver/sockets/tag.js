@@ -135,7 +135,7 @@ exports = module.exports = function (io) {
 
         });
 
-        socket.on("getTagsSetById", async (id) => {
+        socket.on("getTagSetById", async (id) => {
             const user = socket.request.session.passport.user;
             await sendTagSetById(user, id);
             await sendTagsBySetId(user, id);
