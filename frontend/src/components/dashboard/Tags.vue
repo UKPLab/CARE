@@ -140,7 +140,7 @@ export default {
   },
   methods: {
     selectAsDefault(tagSetId) {
-      //TODO set user settings for "dashboard.tags.TagsTable.selectedId"
+      this.$socket.emit("setSettings", {"tags.tagSet.default": tagSetId});
     },
   },
   computed: {
@@ -151,7 +151,7 @@ export default {
       isAdmin: 'auth/isAdmin',
     }),
     selectedTagset() {
-      return this.$store.getters['settings/getValue']("dashboard.tags.TagsTable.selectedId");
+      return this.$store.getters['settings/getValueAsInt']("tags.tagSet.default");
     },
   },
 }
