@@ -1,9 +1,9 @@
 <template>
   <Loading v-if="navElements === null || settings === null"></Loading>
   <div v-else>
-    <div class="container-fluid d-flex min-vh-100 vh-100 flex-column sidebar-wrapper">
-      <div class="row d-flex flex-grow-1 overflow-hidden">
-        <div id="sidebarContainer" class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;">
+    <div class="container-fluid d-flex min-vh-100 vh-100 flex-column dashboard-wrapper">
+      <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
+        <div id="sidebarContainer" class="col border mh-100  col-sm-auto g-0">
           <Sidebar></Sidebar>
         </div>
         <div id="viewerContainer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;">
@@ -111,8 +111,8 @@ export default {
 </script>
 
 <style scoped>
-.sidebar-wrapper {
-  display: flex;
+.dashboard-wrapper {
+  margin-top: -52.5px;
 }
 
 </style>
