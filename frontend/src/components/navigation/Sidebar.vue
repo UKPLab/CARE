@@ -1,12 +1,12 @@
 <template>
   <div id="wrapper" class="nav-container">
-    <div id="sidebar-wrapper" class="bg-white">
-      <div class="list-group list-group-flush">
+    <div id="sidebar-wrapper">
+      <div class="list-group-test">
         <span v-for="group in sidebarGroups">
-          <h5 class="mb-1">{{ group.name }}</h5>
+          <h5 class="mb-1 sidebar-heading">{{ group.name }}</h5>
           <router-link :to="'/dashboard/' + element.path" v-for="element in sidebarElements[group.id]"
-             class="list-group-item list-group-item-action list-group-item-light p-3">
-            <span class="sidebar-icon">
+             class="list-group-item list-group-item-action p-3">
+            <span class="sidebar-icon" :title="element.name">
               <LoadIcon :iconName="element.icon" :size="24" />
             </span>
           <div class="list-group-item-text">{{ element.name }}</div>
@@ -15,8 +15,8 @@
         </span>
       </div>
 
-      <div class="collapse-sidebar-container list-group-item-action list-group-item-light list-group-item"
-           @click="toggleSidebar()">
+      <div class="collapse-sidebar-container list-group-item-action list-group-item"
+           @click="toggleSidebar()" title="Toggle sidebar">
         <span class="arrow-toggle sidebar-icon">
 <svg fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path class="cls-1"
                                                                                       d="M16.88,15.53,7,5.66A1,1,0,0,0,5.59,7.07l9.06,9.06-8.8,8.8a1,1,0,0,0,0,1.41h0a1,1,0,0,0,1.42,0l9.61-9.61A.85.85,0,0,0,16.88,15.53Z"/><path
@@ -82,9 +82,6 @@ export default {
 
   },
   mounted() {
-    console.log("Sidebar mounted");
-    console.log(this.sidebarElements);
-    console.log(this.sidebarGroups);
     document.body.classList.add('sidebar-exists');
   },
   beforeUnmount() {
@@ -98,6 +95,7 @@ export default {
 
 #wrapper {
   height: 100%;
+  background-color: #e7eeff;
 }
 
 #sidebar-wrapper {
@@ -106,7 +104,7 @@ export default {
   -o-transition: width .25s ease-out;
   transition: width .25s ease-out;
   transition-delay: 0.1s;
-  overflow-y: hidden;
+  overflow-y: scroll;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -127,6 +125,10 @@ body.sb-sidenav-toggled .list-group-item-text {
   body.sb-sidenav-toggled #wrapper #sidebar-wrapper {
     width: 50px;
   }
+
+  body.sb-sidenav-toggled .sidebar-heading {
+    display:none;
+  }
 }
 
 .list-group-item {
@@ -135,9 +137,14 @@ body.sb-sidenav-toggled .list-group-item-text {
   align-items: center;
   flex-shrink: 0;
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
+  overflow:hidden;
   border:none;
+  background-color:#e7eeff;
+}
+
+.list-group-item:hover {
+  background-color: white !important;
 }
 
 .sidebar-icon {
@@ -146,6 +153,13 @@ body.sb-sidenav-toggled .list-group-item-text {
   flex-shrink: 0;
   margin-right: 12px;
   margin-left: -2px;
+}
+
+.sidebar-heading {
+  padding-left: 12px;
+  margin-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid rgba(0, 0, 0, 0.125);
 }
 
 .arrow-toggle {
