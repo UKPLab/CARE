@@ -17,7 +17,7 @@ const basicElements = [
     {
         name: "Documents",
         groupId: basicGroups[0].name,
-        'icon': 'IconFan',
+        'icon': 'IconEarmarkText',
         "order": 10,
         "path": "documents",
         'component': 'Documents'
