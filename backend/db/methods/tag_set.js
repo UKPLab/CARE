@@ -43,7 +43,9 @@ exports.update = async function update(tagset) {
         return await TagSet.update(subselectFieldsForDB(tagset, ["name", "description"]), {
             where: {
                 id: tagset["id"]
-            }
+            },
+            returning: true,
+            plain: true
         });
     } catch (err) {
         logger.error("Cant add tag to database" + err);
@@ -61,7 +63,9 @@ exports.publish = async function publish(tagsetId) {
         return await TagSet.update({public: true}, {
             where: {
                 id: tagsetId
-            }
+            },
+            returning: true,
+            plain: true
         });
     } catch (err) {
         logger.error("Cant add tag to database" + err);
@@ -79,7 +83,7 @@ exports.remove = async function remove(tagset_id) {
         return await TagSet.update({deleted: true, deletedAt: new Date()}, {
             where: {
                 id: tagset_id
-            }
+            }, returning: true, plain: true
         });
     } catch (err) {
         if (isInternalDatabaseError(err)) {

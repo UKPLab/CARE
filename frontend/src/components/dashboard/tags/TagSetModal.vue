@@ -85,7 +85,7 @@ export default {
         if (data.success) {
           this.eventBus.emit('toast', {title:"Tagset saved", message:"Successful saved tagset!", variant: "success"});
         } else {
-          this.eventBus.emit('toast', {title:"Tagset not saved", message:"Error during saving the tagset!", variant: "danger"});
+          this.eventBus.emit('toast', {title:"Tagset not saved", message:data.message, variant: "danger"});
         }
       });
       this.$socket.emit("saveTagset", {

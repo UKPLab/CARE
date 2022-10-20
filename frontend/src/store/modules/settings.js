@@ -33,9 +33,9 @@ export default {
         },
     },
     mutations: {
-        SOCKET_settings: (state, message) => {
-            message.settings.forEach(setting => {
-                state[setting.key] = setting.value
+        SOCKET_settings: (state, settings) => {
+            Object.entries(settings).forEach(([key, value]) => {
+                state[key] = value
             });
         },
     },

@@ -88,7 +88,7 @@
                       d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
                 </svg>
               </button>
-              <button v-if="!tagSet.publish && (tagSet.userId === userId || isAdmin)" v-tooltip class="btn btn-outline-dark btn-sm"
+              <button v-if="!tagSet.public && (tagSet.userId === userId || isAdmin)" v-tooltip class="btn btn-outline-dark btn-sm"
                       title="Share"
                       v-on:click="this.$refs.tagSetPublishModal.open(tagSet.id)">
                 <svg class="bi bi-share" fill="currentColor" height="12" viewBox="0 0 16 16" width="12"
@@ -140,7 +140,7 @@ export default {
   },
   methods: {
     selectAsDefault(tagSetId) {
-      this.$socket.emit("setSettings", {"tags.tagSet.default": tagSetId});
+      this.$socket.emit("setSetting", {key: "tags.tagSet.default", value: tagSetId});
     },
   },
   computed: {
