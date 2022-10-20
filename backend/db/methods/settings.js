@@ -35,7 +35,29 @@ exports.getUserSettings = async function getUserSettings(user_id) {
     }
 }
 
+exports.setUserSetting = async function setUserSetting(user_id, key, value) {
+    const dbObj = {
+                    userId: user_id,
+                    key: key,
+                    value: value
+        };
+
+    try {
+        return await UserSetting.create(dbObj).then((msg) => {
+            return msg;
+        }).catch(async (err) =>{
+            return await UserSetting.update({value:value}, {where: {[Op.and]: [{userId:user_id}, {key:key}] }});
+        });
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        }
+    }
+}
+
 exports.setUserSettings = async function setUserSettings(user_id, settings) {
+    // info: it's not working because of syntax error in sql generation - please don't use it!
+    throw InternalDatabaseError("not implemented!");
     try {
         return UserSetting.bulkCreate(
             Object.keys(settings).map(key => {
