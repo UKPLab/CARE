@@ -26,7 +26,7 @@ function InvalidTagParameters(details) {
 
 exports.add = async function add(tag) {
     try {
-        return await Tag.create(subselectFieldsForDB(tag, ["name", "description", "colorCode", "userId", "setId"]));
+        return await Tag.create(subselectFieldsForDB(tag, ["name", "description", "colorCode", "userId", "setId", "deleted"]));
     } catch (err) {
         logger.error("Cant add tag to database" + err);
 
@@ -40,7 +40,7 @@ exports.add = async function add(tag) {
 
 exports.update = async function update(tag) {
     try {
-        return await Tag.update(subselectFieldsForDB(tag, ["name", "description", "colorCode", "setId"]), {
+        return await Tag.update(subselectFieldsForDB(tag, ["name", "description", "colorCode", "setId", "deleted"]), {
             where: {
                 id: tag["id"]
             }
@@ -61,7 +61,9 @@ exports.publish = async function publish(tagId) {
         return await Tag.update({public: true}, {
             where: {
                 id: tagId
-            }
+            },
+            returning:true,
+            plain: true
         });
     } catch (err) {
         logger.error("Cant add tag to database" + err);
@@ -79,7 +81,7 @@ exports.remove = async function remove(tag_id) {
         return await Tag.update({deleted: true, deletedAt: new Date()}, {
             where: {
                 id: tag_id
-            }
+            }, returning: true, plain: true
         });
     } catch (err) {
         if (isInternalDatabaseError(err)) {
@@ -147,6 +149,23 @@ exports.get = async function get(tag_id) {
         }
     }
 }
+
+exports.getByIds = async function getByIds(tag_ids) {
+    try {
+        return await Tag.findAll({
+            where: {
+                id: tag_ids
+            }
+        });
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw err;
+        }
+    }
+}
+
 
 exports.getAllBySetId = async function getAllBySetId(tagsetId) {
     try {

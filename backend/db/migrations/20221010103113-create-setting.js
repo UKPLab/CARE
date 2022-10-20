@@ -10,7 +10,6 @@ module.exports = {
             },
             value: {
                 type: Sequelize.STRING,
-                unique: true
             },
             description: {
                 type: Sequelize.STRING(512)

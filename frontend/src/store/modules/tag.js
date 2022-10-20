@@ -73,15 +73,24 @@ export default {
     state: getDefaultState(),
     getters: {
         getTags: (state) => (id, hideDeleted = true) => {
+            if (id === undefined || id === null || isNaN(id)) {
+                return []
+            }
+
             if (state["tags"] != null) {
                 return state["tags"].filter(tag => tag.setId === id && (!hideDeleted || !tag.deleted));
             } else {
-                return {}
+                return []
             }
 
         },
-        getAllTags: (state) => {
-            return state["tags"].filter(tag => !tag.deleted);
+        getAllTags: (state) => (hideDeleted = true) => {
+
+            if (state["tags"] == null) {
+                return []
+            }
+            return state["tags"].filter(tag => (!hideDeleted || !tag.deleted));
+
         },
         getTagSets: state => {
             if (state["tagSets"] != null) {

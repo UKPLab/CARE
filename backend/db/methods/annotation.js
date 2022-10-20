@@ -76,7 +76,7 @@ exports.add = async function add(annotation, comment = null) {
             document: annotation.document_id,
             selectors: annotation.annotation.target === undefined ? null : annotation.annotation.target,
             draft: annotation.draft,
-            tags: String.toString(annotation.tags),
+            tags: JSON.stringify(annotation.tags),
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -140,7 +140,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
         newValues.text = newText;
     }
     if (newTags != null) {
-        newValues.tags = newTags.length > 0 ? newTags.join() : ""
+        newValues.tags = newTags.length > 0 ? JSON.stringify(newTags) : "[]";
     }
 
     try {

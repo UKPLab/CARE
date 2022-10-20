@@ -72,7 +72,7 @@ export default {
                     o.user
                 );
                 anno.state = "SUBMITTED";
-                anno.tags = o.tags;
+                anno.tags = JSON.parse(o.tags);
 
                 if (o.annotation_id in comments) {
                     //for now always just 1 comment
@@ -107,7 +107,7 @@ export default {
                     anchor,
                     message.annotation,
                     message.user,
-                    message.tags);
+                    JSON.parse(message.tags));
             } else {
                 anno = new Annotation(
                     message.annotation_id,
@@ -116,7 +116,7 @@ export default {
                     anchor,
                     message.annotation,
                     message.user,
-                    message.tags
+                    JSON.parse(message.tags)
                 );
             }
 

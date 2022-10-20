@@ -19,6 +19,9 @@ const {
     getAllByUser: getAllTagSetsByUser, getAll: getAllTagSets,
     add: addTagset, update: updateTagset, get: getTagset, publish: publishTagset, remove: deleteTagset
 } = require("../../db/methods/tag_set.js");
+const {
+    sendTagsetUpdate, sendTagsUpdate, sendTagsetsUpdate
+} = require("./utils/tag.js")
 const {getUsername} = require("../../db/methods/user");
 
 const logger = require("../../utils/logger.js")("sockets/tags");
@@ -27,28 +30,9 @@ const logger = require("../../utils/logger.js")("sockets/tags");
 exports = module.exports = function (io) {
     io.on("connection", (socket) => {
 
-        const sendTagsetUpdate = async (tagset) => {
-            tagset.dataValues['username'] = await getUsername(tagset['userId'])
-            socket.emit("tagSetUpdate", tagset);
-        }
-
-        const sendTagsUpdate = async (tags) => {
-            for (let tag of tags) {
-                tag.dataValues['username'] = await getUsername(tag['userId'])
-            }
-            socket.emit("tagsUpdate", tags);
-        }
-
-        const sendTagsetsUpdate = async (tagsets) => {
-            for (let tagset of tagsets) {
-                tagset.dataValues['username'] = await getUsername(tagset['userId'])
-            }
-            socket.emit("tagSetsUpdate", tagsets);
-        }
-
         const sendTags = async () => {
             try {
-                sendTagsUpdate(await getAllTags());
+                sendTagsUpdate(socket, await getAllTags());
             } catch (err) {
                 logger.error(err, {user: socket.request.session.passport.user.id});
             }
@@ -56,7 +40,7 @@ exports = module.exports = function (io) {
 
         const sendTagsByUser = async (user_id) => {
             try {
-                sendTagsUpdate(await getAllTagsByUser(user_id));
+                sendTagsUpdate(socket, await getAllTagsByUser(user_id));
             } catch (err) {
                 logger.error(err, {user: socket.request.session.passport.user.id});
             }
@@ -64,7 +48,7 @@ exports = module.exports = function (io) {
 
         const sendTagSet = async () => {
             try {
-                sendTagsetsUpdate(await getAllTagSets());
+                sendTagsetsUpdate(socket, await getAllTagSets());
             } catch (err) {
                 logger.error(err, {user: socket.request.session.passport.user.id});
             }
@@ -72,7 +56,7 @@ exports = module.exports = function (io) {
 
         const sendTagSetByUser = async (user_id) => {
             try {
-                sendTagsetsUpdate(await getAllTagSetsByUser(user_id));
+                sendTagsetsUpdate(socket, await getAllTagSetsByUser(user_id));
             } catch (err) {
                 logger.error(err, {user: socket.request.session.passport.user.id});
             }
@@ -83,9 +67,9 @@ exports = module.exports = function (io) {
                 const tags = await getAllTagsBySetId(id);
 
                 if (user.sysrole === "admin") {
-                    sendTagsUpdate(tags);
+                    sendTagsUpdate(socket, tags);
                 } else {
-                    sendTagsUpdate(tags.filter(t => t.public || t.userId === user.id))
+                    sendTagsUpdate(socket, tags.filter(t => t.public || t.userId === user.id))
                 }
             } catch (err) {
                 logger.error(err, {user: socket.request.session.passport.user.id});
@@ -96,7 +80,7 @@ exports = module.exports = function (io) {
             try {
                 const tagset = await getTagset(id);
                 if (user.sysrole === "admin" || user.id === tagset.userId || tagset.public) {
-                    sendTagsetUpdate(tagset);
+                    sendTagsetUpdate(socket, tagset);
                 } else {
                     socket.emit("toast", {
                         message: "You have no permission to see this tagset",
@@ -115,7 +99,7 @@ exports = module.exports = function (io) {
                 const tag = await getTag(id);
                 const user = socket.request.session.passport.user;
                 if (user.sysrole === "admin" || user.id === tag.userId || tag.public) {
-                    sendTagsUpdate([tag]);
+                    sendTagsUpdate(socket, [tag]);
                 } else {
                     socket.emit("toast", {
                         message: "You have no permission to see this tag",
@@ -135,7 +119,7 @@ exports = module.exports = function (io) {
 
         });
 
-        socket.on("getTagsSetById", async (id) => {
+        socket.on("getTagSetById", async (id) => {
             const user = socket.request.session.passport.user;
             await sendTagSetById(user, id);
             await sendTagsBySetId(user, id);
@@ -175,7 +159,7 @@ exports = module.exports = function (io) {
             } else {
                 // security check
                 if (socket.request.session.passport.user.sysrole !== "admin") {
-                    const prevTagset = getTagset(data.tagset.id);
+                    const prevTagset = await getTagset(data.tagset.id);
                     if (prevTagset.userId !== socket.request.session.passport.user.id) {
                         socket.emit("toast", {
                             message: "You have no permission to change this tagset",
@@ -187,9 +171,10 @@ exports = module.exports = function (io) {
                 }
 
                 tagsetObj = await updateTagset(data.tagset);
+                tagsetObj = tagsetObj[1];
             }
 
-            const tagObjs = data.tags.map(async (t) => {
+            const tagObjs = await Promise.all(data.tags.map(async (t) => {
                 t.setId = tagsetObj.id;
                 if (t.id === 0) {
                     t.userId = socket.request.session.passport.user.id;
@@ -197,29 +182,31 @@ exports = module.exports = function (io) {
                 } else {
                     // security check
                     if (socket.request.session.passport.user.sysrole !== "admin") {
-                        const prevTag = getTag(t.id);
+                        const prevTag =  await getTag(t.id);
                         if (prevTag.userId !== socket.request.session.passport.user.id) {
-                            socket.emit("toast", {
-                                message: "You have no permission to change this tag",
-                                title: "Tag Not Saved",
-                                variant: 'danger'
-                            });
                             return null;
                         }
                     }
                     return await updateTag(t);
                 }
-            });
+            }));
 
-            sendTagsetUpdate(tagsetObj);
-            sendTagsUpdate(await Promise.all(tagObjs));
+
+            if (tagObjs.includes(null)) {
+                socket.emit("tagSetSaved", {success: false, message: "You have no permission to change this tag"});
+                return;
+            }
+
+
+            sendTagsetUpdate(socket, tagsetObj);
+            sendTagsUpdate(socket, await Promise.all(tagObjs));
             socket.emit("tagSetSaved", {success: true});
         });
 
         socket.on("publishTagset", async (tagsetId) => {
             // security check
             if (socket.request.session.passport.user.sysrole !== "admin") {
-                const prevTagset = getTagset(tagsetId);
+                const prevTagset = await getTagset(tagsetId.id);
                 if (prevTagset.userId !== socket.request.session.passport.user.id) {
                     logger.error("No permission to publish tagset: " + tagsetId, {user: socket.request.session.passport.user.id});
                     socket.emit("tagSetPublished", {success: false, message: "No permission to publish tagset"});
@@ -227,12 +214,12 @@ exports = module.exports = function (io) {
                 }
             }
 
-            const newTagset = await publishTagset(tagsetId);
-            const tags = await getAllTagsBySetId(newTagset.setId);
-            const newTags = await Promise.all(tags.map(async t => await publishTag(t)));
+            const newTagset = await publishTagset(tagsetId.id);
+            const tags = await getAllTagsBySetId(tagsetId.id);
+            const newTags = await Promise.all(tags.map(async t => await publishTag(t.id)));
 
-            sendTagsetUpdate(newTagset);
-            sendTagsUpdate(newTags);
+            await sendTagsetUpdate(socket, newTagset[1]);
+            await sendTagsUpdate(socket, newTags.map(t => t[1]));
             socket.emit("tagSetPublished", {success: true});
 
         });
@@ -241,7 +228,7 @@ exports = module.exports = function (io) {
         socket.on("deleteTagset", async (tagsetId) => {
             // security check
             if (socket.request.session.passport.user.sysrole !== "admin") {
-                const prevTagset = getTagset(tagsetId);
+                const prevTagset = await getTagset(tagsetId.id);
                 if (prevTagset.userId !== socket.request.session.passport.user.id) {
                     logger.error("No permission to delete tagset: " + tagsetId, {user: socket.request.session.passport.user.id});
                     socket.emit("tagSetDeleted", {success: false, message: "No permission to delete tagset"});
@@ -249,12 +236,12 @@ exports = module.exports = function (io) {
                 }
             }
 
-            const newTagset = await deleteTagset(tagsetId);
-            const tags = await getAllTagsBySetId(newTagset.setId);
-            const newTags = await Promise.all(tags.map(async t => await deleteTag(t)));
+            const newTagset = await deleteTagset(tagsetId.id);
+            const tags = await getAllTagsBySetId(newTagset[1].id);
+            const newTags = await Promise.all(tags.map(async t => await deleteTag(t.id)));
 
-            sendTagsetUpdate(newTagset);
-            sendTagsUpdate(newTags);
+            sendTagsetUpdate(socket, newTagset[1]);
+            sendTagsUpdate(socket, newTags.map(t => t[1]));
             socket.emit("tagSetDeleted", {success: true});
 
         });
