@@ -41,7 +41,7 @@ module.exports = {
     async down(queryInterface, Sequelize) {
         //delete tags first
         await queryInterface.bulkDelete("tag", {
-            name: basicTags.map(t => t[0])
+            name: basicTags.map(t => t[1])
         }, {});
 
         // and then delete groups

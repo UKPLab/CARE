@@ -45,7 +45,7 @@
                   v-bind:disabled="isSubmitted">
             <option disabled hidden selected value="">Choose a tag...</option>
             <option v-for="t in assignableTags" :key="t.name" v-bind:data-badge-style="t.colorCode" v-bind:value="t.description">{{t.description}}</option>
-            <option v-for="t in nonStandardTags" :key="t" selected="true" data-badge-style="primary" :value="t">{{t}}</option>
+            <option v-for="t in nonActiveTags" :key="t.name" selected="true" :data-badge-style="t.colorCode" :value="t.description">{{t.description}}</option>
           </select>
           <div class="invalid-feedback">Please select a valid tag.</div>
         </div>
@@ -108,7 +108,7 @@ Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 import Tags from "bootstrap5-tags/tags.js";
-import {mapActions} from 'vuex';
+import {mapActions, mapGetters} from 'vuex';
 import {Comment} from "../../../data/comment.js";
 
 export default {
@@ -165,22 +165,36 @@ export default {
       return this.annoData.text === null || this.annoData.text.length === 0;
     },
     assignableTags() {
-      if(this.currentTagset === null || this.currentTagset === undefined){
-        return [];
+      let activeTagset = this.$store.getters["settings/getValue"]("tagsSet.selected");
+      if(activeTagset === null || activeTagset === undefined){
+        activeTagset = this.$store.getters["settings/getValue"]("tagsSet.default");
       }
 
-      return this.$store.getters['tag/getTags'](this.currentTagset);
+      if(activeTagset === null || activeTagset === undefined){
+        return [];
+      } else {
+        return this.$store.getters["tag/getTags"](parseInt(activeTagset)); //todo for some reason getValueInt errors
+      }
     },
-    currentTagset() {
-      return this.$store.getters['settings/getValue']("dashboard.tags.TagsTable.selectedId");
-    },
-    nonStandardTags() {
+    nonActiveTags() {
       if(this.assignableTags === undefined || this.assignableTags === null){
         return [];
       }
-      console.log("Assignable tags for annotation", this.assignableTags);
 
-      return this.annoTags.filter(t => !this.assignableTags.map(x => x.name).includes(t));
+      const nonActiveTags = this.annoTags.filter(t => !this.assignableTags.map(x => x.name).includes(t));
+      const allTags = this.$store.getters["tag/getAllTags"];
+
+      console.log("alltags", allTags);
+      console.log("nonActiveTags", nonActiveTags);
+
+      return nonActiveTags.map(t => {
+        const matched = allTags.find(a => a.description === t);
+        if(!matched){
+          return {name: t, colorCode: "primary", description: t}
+        } else {
+          return matched;
+        }
+      });
     },
     isSubmitted: function () {
       return this.annoData.state === "SUBMITTED";

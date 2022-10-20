@@ -39,4 +39,6 @@ export default {
             });
         },
     },
+    actions: {
+    }
 };
