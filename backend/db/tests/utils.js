@@ -10,7 +10,7 @@ exports.setupTestSocket = function(done_cb) {
     // setup http server
     const [app, httpServer] = webserver();
 
-    httpServer.listen(3001, () => {
+    httpServer.listen(PORT, () => {
         console.log("Started test server")
 
         //login as admin

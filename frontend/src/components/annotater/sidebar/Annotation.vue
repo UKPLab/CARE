@@ -38,14 +38,14 @@
                   v-model="annoTags"
                   allowClear="true"
                   class="form-select"
-                  data-allow-new="true"
+                  data-allow-new="false"
                   multiple
                   name="tags_new[]"
                   placeholder="Add tag..."
                   v-bind:disabled="isSubmitted">
             <option disabled hidden selected value="">Choose a tag...</option>
-            <option v-for="t in assignableTags" :key="t.name" v-bind:data-badge-style="t.colorCode" v-bind:value="t.description">{{t.description}}</option>
-            <option v-for="t in nonStandardTags" :key="t" selected="true" data-badge-style="primary" :value="t">{{t}}</option>
+            <option v-for="t in assignableTags" :key="t.id" v-bind:data-badge-style="t.colorCode" selected="true" :value="t.id">{{t.name}}</option>
+            <option v-for="t in tags.filter(tag => tagsIdsUsed.includes(tag.id)).filter(tag => !assignableTags.map(at => at.id).includes(tag.id))" :key="t.id" selected="true" :data-badge-style="t.colorCode" :value="t.id">{{t.name}}</option>
           </select>
           <div class="invalid-feedback">Please select a valid tag.</div>
         </div>
@@ -108,7 +108,7 @@ Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 import Tags from "bootstrap5-tags/tags.js";
-import {mapActions} from 'vuex';
+import {mapActions, mapGetters} from 'vuex';
 import {Comment} from "../../../data/comment.js";
 
 export default {
@@ -164,24 +164,40 @@ export default {
     isPageNote() {
       return this.annoData.text === null || this.annoData.text.length === 0;
     },
+    defaultTagSet() {
+      return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
+    },
     assignableTags() {
-      if(this.currentTagset === null || this.currentTagset === undefined){
-        return [];
-      }
-
-      return this.$store.getters['tag/getTags'](this.currentTagset);
+      return this.$store.getters["tag/getTags"](this.defaultTagSet);
     },
-    currentTagset() {
-      return this.$store.getters['settings/getValue']("dashboard.tags.TagsTable.selectedId");
+    tags() {
+      return this.$store.getters["tag/getAllTags"](false);
     },
-    nonStandardTags() {
+    tagsIdsUsed() {
+      console.log("Tag id used");
+      console.log([...new Set(this.annoData.tags)]);
+      return [...new Set(this.annoData.tags)]
+    },
+    /*nonActiveTags() {
       if(this.assignableTags === undefined || this.assignableTags === null){
         return [];
       }
-      console.log("Assignable tags for annotation", this.assignableTags);
 
-      return this.annoTags.filter(t => !this.assignableTags.map(x => x.name).includes(t));
-    },
+      const nonActiveTags = this.annoTags.filter(t => !this.assignableTags.map(x => x.name).includes(t));
+      const allTags = this.$store.getters["tag/getAllTags"];
+
+      console.log("alltags", allTags);
+      console.log("nonActiveTags", nonActiveTags);
+
+      return nonActiveTags.map(t => {
+        const matched = allTags.find(a => a.description === t);
+        if(!matched){
+          return {name: t, colorCode: "primary", description: t}
+        } else {
+          return matched;
+        }
+      });
+    },*/
     isSubmitted: function () {
       return this.annoData.state === "SUBMITTED";
     },
@@ -253,6 +269,9 @@ export default {
       this.annoData.state = "SUBMITTED";
 
       this.toSubmitState();
+
+      console.log("SUBMIT");
+      console.log(this.annoData.tags);
 
       this.$socket.emit('updateAnnotation', {
         "annotation_id": this.annoData.id,

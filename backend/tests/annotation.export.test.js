@@ -1,4 +1,8 @@
 const {setupTestSocket, tearDownTestSocket} = require("../db/tests/utils");
+const db = require("../db/index");
+const {DataTypes} = require("sequelize");
+
+const Annotation = require("../db/models/annotation.js")(db.sequelize, DataTypes);
 
 describe('Annotation Exporting Test', () => {
     /* START PREAMBLE */
@@ -69,7 +73,8 @@ describe('Annotation Exporting Test', () => {
         });
     });
 
-    afterAll(() => {
+    afterAll(async () => {
         tearDownTestSocket(httpServer, ioClient);
+        await Annotation.destroy({where: {hash: "8852a746-360e-4c31-add2-4d1c75bfb96d"}});
     });
 })

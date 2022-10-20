@@ -24,16 +24,21 @@ export default {
 
             return state[key];
         },
-    },
-    mutations: {
-        SOCKET_settings: (state, message) => {
-            message.settings.forEach(setting => {
-                state[setting.key] = setting.value
-            });
+        getValueAsInt: state => (key) => {
+            if(state === null) {
+                return null;
+            }
 
-            //TODO just added for testing
-            state["dashboard.tags.TagsTable.selectedId"] = 1;
+            return parseInt(state[key]);
         },
     },
-    actions: {}
+    mutations: {
+        SOCKET_settings: (state, settings) => {
+            Object.entries(settings).forEach(([key, value]) => {
+                state[key] = value
+            });
+        },
+    },
+    actions: {
+    }
 };
