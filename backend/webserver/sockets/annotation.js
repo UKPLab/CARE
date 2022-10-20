@@ -13,9 +13,11 @@ const {
     toFrontendRepresentationAnno: toFrontendRepresentationAnno,
     toFrontendRepresentationComm: toFrontendRepresentationComm
 } = require('../../db/methods/annotation.js')
-const logger = require("../../utils/logger.js")( "sockets/annotation");
+const logger = require("../../utils/logger.js")("sockets/annotation");
 const ObjectsToCsv = require('objects-to-csv');
 const {mergeAnnosAndComments} = require("../../db/methods/annotation");
+const {getByIds} = require("../../db/methods/tag");
+const {sendTagsUpdate} = require("./utils/tag");
 
 exports = module.exports = function (io) {
     io.on("connection", (socket) => {
@@ -23,6 +25,7 @@ exports = module.exports = function (io) {
             try {
                 await addAnnotation(data);
 
+                //TODO send back the created db object instead!!!
                 //TODO fails to push the created comment to the frontend! Fix this or discard the comment from command.
                 socket.emit("newAnnotation",
                     {
@@ -30,19 +33,19 @@ exports = module.exports = function (io) {
                         annotation: data.annotation,
                         document_id: data.document_id,
                         annotation_id: data.annotation_id,
-                        tags: data.tags
+                        tags: JSON.stringify(data.tags)
                     }
                 );
             } catch (e) {
                 logger.error("Could not add annotation and/or comment to database. Error: " + e, {user: socket.request.session.passport.user.id});
 
-                if(e.name === "InvalidAnnotationParameters"){
+                if (e.name === "InvalidAnnotationParameters") {
                     socket.emit("toast", {
                         message: "Annotation was not created",
                         title: e.message,
                         variant: 'danger'
                     });
-                } else if(e.name === "InvalidCommentParameters") {
+                } else if (e.name === "InvalidCommentParameters") {
                     socket.emit("toast", {
                         message: "Comment on annotation was not created",
                         title: e.message,
@@ -67,9 +70,9 @@ exports = module.exports = function (io) {
             try {
                 await updateAnnotation(data.annotation_id, newSelector, newText, newComment, newTags);
             } catch (e) {
-                 logger.error("Could not update annotation and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
+                logger.error("Could not update annotation and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
 
-                 if(e.name === "InvalidAnnotationParameters" || e.name === "InvalidCommentParameters"){
+                if (e.name === "InvalidAnnotationParameters" || e.name === "InvalidCommentParameters") {
                     socket.emit("toast", {
                         message: "Failed to update annotation",
                         title: e.message,
@@ -91,7 +94,7 @@ exports = module.exports = function (io) {
             } catch (e) {
                 logger.info("Error during annotation deletion: " + e, {user: socket.request.session.passport.user.id});
 
-                if(e.name === "InvalidAnnotationParameters"){
+                if (e.name === "InvalidAnnotationParameters") {
                     socket.emit("toast", {
                         message: "Failed to delete annotation",
                         title: e.message,
@@ -110,7 +113,7 @@ exports = module.exports = function (io) {
         socket.on("loadAnnotations", async (data) => {
             let res;
             try {
-                 res = await loadByDocument(data.id);
+                res = await loadByDocument(data.id);
             } catch (e) {
                 logger.info("Error during loading of annotations: " + e, {user: socket.request.session.passport.user.id});
 
@@ -125,6 +128,10 @@ exports = module.exports = function (io) {
             const annos = res[0];
             const comments = res[1];
 
+            const tags = [...new Set([].concat(...annos.map(a => JSON.parse(a.tags))))];
+            await sendTagsUpdate(socket, await getByIds(tags))
+
+
             const mappedAnnos = await Promise.all(annos.map(async x => await toFrontendRepresentationAnno(x)));
             let mappedComments = Object();
             for (const c in comments) {
@@ -137,18 +144,21 @@ exports = module.exports = function (io) {
         });
 
         socket.on("exportAnnotations", async (data) => {
-            if(Array.isArray(data)){
+            if (Array.isArray(data)) {
                 const annosWithComments = await Promise.all(data.map(async docid => {
-                    try{
+                    try {
                         const doc = await loadByDocument(docid);
                         // check for permission
-                        if(socket.request.session.passport.user.sysrole !== "admin" && !doc.owner === socket.request.session.passport.user.id){
+                        if (socket.request.session.passport.user.sysrole !== "admin" && !doc.owner === socket.request.session.passport.user.id) {
                             return null;
                         } else {
                             return doc;
                         }
                     } catch (e) {
-                        logger.info("Error during loading of annotations: " + e, {docid: docid, user: socket.request.session.passport.user.id});
+                        logger.info("Error during loading of annotations: " + e, {
+                            docid: docid,
+                            user: socket.request.session.passport.user.id
+                        });
 
                         socket.emit("toast", {
                             message: "Internal server error. Failed to export annotations.",
