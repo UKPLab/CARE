@@ -49,16 +49,12 @@ export default {
   },
   computed: {
     assignableTags() {
-      let activeTagset = this.$store.getters["settings/getValue"]("tagsSet.selected");
-      if(activeTagset === null || activeTagset === undefined){
-        activeTagset = this.$store.getters["settings/getValue"]("tagsSet.default");
-      }
-
+      let activeTagset = this.$store.getters["settings/getValue"]("tags.tagSet.default");
       if(activeTagset === null || activeTagset === undefined){
         return [];
-      } else {
-        return this.$store.getters["tag/getTags"](parseInt(activeTagset)); //todo for some reason getValueInt errors
       }
+
+      return this.$store.getters["tag/getTags"](parseInt(activeTagset)); //todo for some reason getValueInt errors
     }
   },
   methods: {
