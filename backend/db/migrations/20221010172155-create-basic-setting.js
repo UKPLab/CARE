@@ -3,6 +3,7 @@
 const settings = [
     {key: "navigation.dashboard.component.default", value: "Home", description: "The default component to display in the dashboard"},
     {key: "tags.tagSet.default", value: "1", description: "The default tagset to use for new tags"},
+    {key: "tagsSet.default", value: "1", description: "The default tagset loaded in the annotator, if none has been set by the user"},
 ]
 
 module.exports = {
@@ -19,7 +20,7 @@ module.exports = {
     async down(queryInterface, Sequelize) {
         //delete nav elements first
         await queryInterface.bulkDelete("setting", {
-            name: settings.map(t => t.key)
+            key: settings.map(t => t.key)
         }, {});
     }
 };

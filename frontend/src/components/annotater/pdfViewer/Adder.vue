@@ -26,7 +26,7 @@ Source: -
 */
 import {TextPosition, TextRange} from "../../../assets/anchoring/text-range";
 import {TextQuoteAnchor} from '../../../assets/anchoring/types';
-import {mapMutations, mapGetters} from "vuex";
+import {mapMutations, mapGetters, mapActions} from "vuex";
 import {v4} from 'uuid';
 
 export default {
@@ -49,19 +49,16 @@ export default {
   },
   computed: {
     assignableTags() {
-      if(this.currentTagset === null){
-        return [];
+      let activeTagset = this.$store.getters["settings/getValue"]("tagsSet.selected");
+      if(activeTagset === null || activeTagset === undefined){
+        activeTagset = this.$store.getters["settings/getValue"]("tagsSet.default");
       }
 
-      return this.$store.getters['tag/getTags'](this.currentTagset);
-    },
-    currentTagset() {
-      return this.$store.getters['settings/getValue']("dashboard.tags.TagsTable.selectedId");
-    }
-  },
-  watch: {
-    currentTagset(newVal, oldVal){
-      console.log("Tagset changed!");
+      if(activeTagset === null || activeTagset === undefined){
+        return [];
+      } else {
+        return this.$store.getters["tag/getTags"](parseInt(activeTagset)); //todo for some reason getValueInt errors
+      }
     }
   },
   methods: {
@@ -69,7 +66,6 @@ export default {
     ...mapGetters({userData: 'auth/getUser'}),
 
     checkSelection(event) {
-
       // cancel pending callbacks
       if (this._pendingCallback) {
         clearTimeout(this._pendingCallback);
@@ -111,12 +107,13 @@ export default {
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
     },
-    _onSelection(event) {
-      // validate tagset
-      if(this.currentTagset === null || this.currentTagset === undefined || this.assignableTags.length === 0){
-        this.eventBus.emit('toast', {title:"Empty Tagset",
-          message:"No tagset or an empty tagset have been selected. Cannot make annotations.",
-          variant: "danger"});
+    async _onSelection(event) {
+      if (this.assignableTags.length === 0) {
+        this.eventBus.emit('toast', {
+          title: "Empty Tagset",
+          message: "No tagset or an empty tagset have been selected. Cannot make annotations.",
+          variant: "danger"
+        });
 
         this._onClearSelection();
         return;
@@ -148,7 +145,10 @@ export default {
       this.selectedRanges = [range];
 
       this.show(event.clientX, event.clientY);
-      this.$socket.emit("stats", {action: "onTextSelect", data: {document_id: this.document_id, eventClientX: event.clientX, eventClientY: event.clientY}});
+      this.$socket.emit("stats", {
+        action: "onTextSelect",
+        data: {document_id: this.document_id, eventClientX: event.clientX, eventClientY: event.clientY}
+      });
 
     },
     _onClearSelection() {
