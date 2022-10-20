@@ -150,6 +150,23 @@ exports.get = async function get(tag_id) {
     }
 }
 
+exports.getByIds = async function getByIds(tag_ids) {
+    try {
+        return await Tag.findAll({
+            where: {
+                id: tag_ids
+            }
+        });
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw err;
+        }
+    }
+}
+
+
 exports.getAllBySetId = async function getAllBySetId(tagsetId) {
     try {
         return await Tag.findAll({

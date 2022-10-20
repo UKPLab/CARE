@@ -146,10 +146,12 @@ export default {
   computed: {
     ...mapGetters({
       tagSets: 'tag/getTagSets',
-      tags: 'tag/getAllTags',
       userId: 'auth/getUserId',
       isAdmin: 'auth/isAdmin',
     }),
+    tags() {
+      return this.$store.getters["tag/getAllTags"]();
+    },
     selectedTagset() {
       return this.$store.getters['settings/getValueAsInt']("tags.tagSet.default");
     },

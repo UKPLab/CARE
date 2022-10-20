@@ -48,13 +48,11 @@ export default {
     document.body.removeEventListener('mouseup', this.checkSelection);
   },
   computed: {
+    defaultTagSet() {
+      return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
+    },
     assignableTags() {
-      let activeTagset = this.$store.getters["settings/getValue"]("tags.tagSet.default");
-      if(activeTagset === null || activeTagset === undefined){
-        return [];
-      }
-
-      return this.$store.getters["tag/getTags"](parseInt(activeTagset)); //todo for some reason getValueInt errors
+      return this.$store.getters["tag/getTags"](this.defaultTagSet);
     }
   },
   methods: {
@@ -94,7 +92,7 @@ export default {
             "comment": null,
             "draft": true,
             "annotation_id": v4(),
-            "tags": [tag.name]
+            "tags": [tag.id]
       };
 
       this.$socket.emit('addAnnotation', anno);

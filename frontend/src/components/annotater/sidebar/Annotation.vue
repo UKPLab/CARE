@@ -38,14 +38,14 @@
                   v-model="annoTags"
                   allowClear="true"
                   class="form-select"
-                  data-allow-new="true"
+                  data-allow-new="false"
                   multiple
                   name="tags_new[]"
                   placeholder="Add tag..."
                   v-bind:disabled="isSubmitted">
             <option disabled hidden selected value="">Choose a tag...</option>
-            <option v-for="t in assignableTags" :key="t.name" v-bind:data-badge-style="t.colorCode" v-bind:value="t.description">{{t.description}}</option>
-            <option v-for="t in nonActiveTags" :key="t.name" selected="true" :data-badge-style="t.colorCode" :value="t.description">{{t.description}}</option>
+            <option v-for="t in assignableTags" :key="t.id" v-bind:data-badge-style="t.colorCode" selected="true" :value="t.id">{{t.name}}</option>
+            <option v-for="t in tags.filter(tag => tagsIdsUsed.includes(tag.id)).filter(tag => !assignableTags.map(at => at.id).includes(tag.id))" :key="t.id" selected="true" :data-badge-style="t.colorCode" :value="t.id">{{t.name}}</option>
           </select>
           <div class="invalid-feedback">Please select a valid tag.</div>
         </div>
@@ -164,15 +164,21 @@ export default {
     isPageNote() {
       return this.annoData.text === null || this.annoData.text.length === 0;
     },
-    assignableTags() {
-      let activeTagset = this.$store.getters["settings/getValue"]("tags.tagSet.default");
-      if(activeTagset === null || activeTagset === undefined){
-        return [];
-      }
-
-      return this.$store.getters["tag/getTags"](parseInt(activeTagset)); //todo for some reason getValueInt errors
+    defaultTagSet() {
+      return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
     },
-    nonActiveTags() {
+    assignableTags() {
+      return this.$store.getters["tag/getTags"](this.defaultTagSet);
+    },
+    tags() {
+      return this.$store.getters["tag/getAllTags"](false);
+    },
+    tagsIdsUsed() {
+      console.log("Tag id used");
+      console.log([...new Set(this.annoData.tags)]);
+      return [...new Set(this.annoData.tags)]
+    },
+    /*nonActiveTags() {
       if(this.assignableTags === undefined || this.assignableTags === null){
         return [];
       }
@@ -191,7 +197,7 @@ export default {
           return matched;
         }
       });
-    },
+    },*/
     isSubmitted: function () {
       return this.annoData.state === "SUBMITTED";
     },
@@ -263,6 +269,9 @@ export default {
       this.annoData.state = "SUBMITTED";
 
       this.toSubmitState();
+
+      console.log("SUBMIT");
+      console.log(this.annoData.tags);
 
       this.$socket.emit('updateAnnotation', {
         "annotation_id": this.annoData.id,
