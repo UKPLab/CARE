@@ -1,8 +1,8 @@
 'use strict';
 
 module.exports = {
-  async up (queryInterface, Sequelize) {
-    await queryInterface.createTable('statistic',
+    async up(queryInterface, Sequelize) {
+        await queryInterface.createTable('statistic',
             {
                 id: {
                     allowNull: false,
@@ -34,9 +34,9 @@ module.exports = {
                     allowNull: false, type: Sequelize.DATE
                 }
             });
-  },
+    },
 
-  async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable('statistic');
-  }
+    async down(queryInterface, Sequelize) {
+        await queryInterface.dropTable('statistic');
+    }
 };

@@ -5,7 +5,9 @@
     "frontend-dev": "vite",
     "frontend-preview": "vite preview --port 5050",
     "frontend-dev-build": "vite build --mode development",
-    "frontend-build": "vite build"
+    "frontend-build": "vite build",
+    "test": "vitest",
+    "test-run": "vitest --run"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.5",
@@ -16,10 +18,12 @@
     "bootstrap-icons-vue": "^1.8.1",
     "bootstrap-vue-3": "^0.1.10",
     "bootstrap5-tags": "^1.4.35",
+    "file-saver": "^2.0.5",
     "intersection-observer": "^0.12.2",
     "lodash": "^4.17.21",
     "lodash.debounce": "^4.0.3",
     "mitt": "^3.0.0",
+    "papaparse": "^5.3.2",
     "pdfjs-dist": "^2.14.305",
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
@@ -36,5 +40,10 @@
     "vue3-tabs-component": "^1.1.0",
     "vuex": "^4.0.2",
     "vuex-persistedstate": "^4.1.0"
+  },
+  "devDependencies": {
+    "@testing-library/vue": "^6.6.1",
+    "happy-dom": "^6.0.4",
+    "vitest": "^0.22.1"
   }
 }

@@ -7,7 +7,7 @@ Author: Nils Dycke (dycke@ukp.informatik...)
 const {v4: uuidv4} = require("uuid");
 
 const {DataTypes, Op} = require("sequelize")
-const db = require("../models/index.js")
+const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
 const Document = require("../models/document.js")(db.sequelize, DataTypes);
 
@@ -15,7 +15,9 @@ function InvalidDocumentParameters(details) {
     return {
         name: "InvalidDocumentParameters",
         message: details,
-        toString: function() {return this.name + ": " + this.message;}
+        toString: function () {
+            return this.name + ": " + this.message;
+        }
     };
 }
 
@@ -32,7 +34,7 @@ exports.add = async function add(doc_name, creator_id) {
                 }
             });
         } catch (err) {
-            if(isInternalDatabaseError(err)) {
+            if (isInternalDatabaseError(err)) {
                 throw InternalDatabaseError(err);
             } else {
                 throw err;
@@ -49,8 +51,8 @@ exports.add = async function add(doc_name, creator_id) {
             name: doc_name, hash: hash, creator: creator_id,
         });
     } catch (err) {
-        if(isInternalDatabaseError(err)) {
-                throw InternalDatabaseError(err);
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
         } else {
             throw InvalidDocumentParameters("Provided document name or creator ID are invalid.");
         }
@@ -59,9 +61,9 @@ exports.add = async function add(doc_name, creator_id) {
 
 exports.getDoc = async function getDoc(hash) {
     try {
-        return await Document.findOne({ where: { 'hash': hash}});
+        return await Document.findOne({where: {'hash': hash}});
     } catch (err) {
-        if(isInternalDatabaseError(err)) {
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
             throw InvalidDocumentParameters("Provided document hash does not exist");
@@ -77,7 +79,7 @@ exports.deleteDoc = async function deleteDoc(doc_id) {
             }
         });
     } catch (err) {
-         if(isInternalDatabaseError(err)) {
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
             throw InvalidDocumentParameters("Provided document ID does not exist");
@@ -93,7 +95,7 @@ exports.rename = async function rename(doc_id, name) {
             }
         });
     } catch (err) {
-        if(isInternalDatabaseError(err)) {
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
             throw InvalidDocumentParameters("Provided document ID does not exist or new name is invalid.");
@@ -109,7 +111,7 @@ exports.loadByUser = async function load(user_id) {
             }
         });
     } catch (err) {
-        if(isInternalDatabaseError(err)) {
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
             throw InvalidDocumentParameters("Provided creator ID is invalid. Cannot find associated documents.");

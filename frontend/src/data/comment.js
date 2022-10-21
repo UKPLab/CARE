@@ -2,6 +2,8 @@
 
 Defines the data object for commentaries
 
+//TODO: change structure to db
+
 Author: Nils Dycke (dycke@ukp...)
 Source: -
 */

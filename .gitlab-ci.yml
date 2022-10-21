@@ -1,4 +1,7 @@
+# https://docs.gitlab.com/ee/ci/yaml/
+
 stages:          # List of stages for jobs, and their order of execution
+  - test
   - build
   - deploy
 
@@ -11,15 +14,60 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
   TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:$CI_COMMIT_SHORT_SHA
+  NODE_VERSION: 16.17.0
 
 services:
-  - docker:20.10.17-dind
+  - docker:dind
+
+.setup-nvm-template: &setup-nvm
+  - apt update && apt install curl bash -y
+  - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+  - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use # load nvm
+  - nvm --version
+  - eval "[ -f .nvmrc ] && nvm install || nvm install ${NODE_VERSION}"
+  - which node
+  - echo ${PATH}
+  - npm --version
+  - node --version
+
+test-backend:
+  image:
+    name: docker/compose:debian-1.29.2
+  stage: test
+  needs: []
+  before_script:
+    - docker info
+    - docker version
+    - docker-compose version
+    - *setup-nvm
+    - apt update && apt install make -y
+  script:
+    - docker-compose -f docker-dev.yml --env-file ".env.test" up -d postgres
+    - docker-compose ps
+    - make ENV=test test-backend
+
+# https://stackoverflow.com/questions/36399848/install-node-in-dockerfile
+
+test-frontend:
+  image:
+    name: docker/compose:debian-1.29.2
+  stage: test
+  needs: []
+  before_script:
+    - docker info
+    - docker version
+    - docker-compose version
+    - *setup-nvm
+    - apt update && apt install make -y
+  script:
+    - make ENV=test test-frontend
 
 build-dev:
   image:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
+  needs: ['test-backend', 'test-frontend']
   before_script:
     - docker info
     - docker version
@@ -34,6 +82,7 @@ build-main:
     name: docker/compose:latest
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
+  needs: ['test-backend', 'test-frontend']
   before_script:
     - docker info
     - docker version
@@ -46,6 +95,7 @@ build-main:
 deploy-dev:
   stage: deploy
   image: alpine:latest
+  needs: ["build-dev"]
   script:
     - chmod og= $PEER_RSAKEY
     - apk update && apk add openssh-client
@@ -60,6 +110,7 @@ deploy-dev:
 deploy-main:
   stage: deploy
   image: alpine:latest
+  needs: ["build-main"]
   script:
     - chmod og= $PEER_RSAKEY
     - apk update && apk add openssh-client

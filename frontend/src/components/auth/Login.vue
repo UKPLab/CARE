@@ -5,7 +5,7 @@
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             Login
-            <a class="btn btn-sm btn-primary" href="#" @click="this.$router.push('/register')">Register</a>
+            <a class="btn btn-sm btn-primary" @click="this.$router.push('/register')">Register</a>
           </div>
 
           <div class="card-body mx-4 my-4">
@@ -22,7 +22,8 @@
             <div class="form-group row my-2">
               <label class="col-md-4 col-form-label text-md-right" for="password">Password</label>
               <div class="col-md-6">
-                <input id="password" v-model="password" autocomplete="current-password" class="form-control" name="password"
+                <input id="password" v-model="password" autocomplete="current-password" class="form-control"
+                       name="password"
                        placeholder="Password" required type="password"></div>
             </div>
 

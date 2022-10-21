@@ -3,7 +3,7 @@ FROM python:3.10.2-alpine
 #ARG env=.env
 
 # INSTALL REQUIREMENTS
-RUN apk add git
+RUN apk add git gcc build-base
 
 # INSTALL GROBID CLIENT FROM GIT
 ADD frameworks/grobid_client_python /grobid_client_python

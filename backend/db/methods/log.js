@@ -5,7 +5,7 @@ Functions to add logging into database
 Author: Dennis Zyska (zyska@ukp...)
 */
 const {DataTypes, Op} = require("sequelize")
-const db = require("../models/index.js")
+const db = require("../index.js")
 
 const Log = require("../models/log.js")(db.sequelize, DataTypes);
 
@@ -20,7 +20,7 @@ exports.add = async function add(info) {
             user: meta.user !== undefined ? meta.user : null,
             timestamp: new Date(),
         });
-    } catch(e) {
+    } catch (e) {
         console.log("Can't put log into the database: " + e);
         console.log("Log: ");
         console.log(info);
