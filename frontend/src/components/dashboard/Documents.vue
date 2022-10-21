@@ -88,6 +88,8 @@ Source: -
 */
 import {mapGetters, mapActions} from "vuex";
 import Upload from "./documents/Upload.vue";
+import {FileSaver} from "file-saver"; //required for window.saveAs to work
+
 
 export default {
   name: "Document",
