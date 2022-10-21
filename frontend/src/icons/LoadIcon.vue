@@ -3,8 +3,12 @@
 </template>
 
 <script>
+/* Dynamic Load Icons from bootstrap folder
+
+Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
+ */
 import {defineAsyncComponent} from "vue";
-import IconLoading from "./bootstrap/IconLoading.vue";
+import IconLoading from "./IconLoading.vue";
 import IconQuestionCircle from "./bootstrap/IconQuestionCircle.vue";
 
 export default {

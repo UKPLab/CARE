@@ -44,7 +44,6 @@ export default {
   },
   mounted() {
     this.toaster = useToast();
-    console.log(this.toaster);
     this.eventBus.on('toast', (data) => {
       this.makeToast(data);
     })

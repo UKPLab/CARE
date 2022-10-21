@@ -3,10 +3,14 @@
     <div class="col-md-8 mx-auto my-4">
       <ul v-if="isAdmin" class="nav nav-tabs" id="dashtabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="user-tab" data-bs-toggle="tab" data-bs-target="#user" type="button" role="tab" aria-controls="user" aria-selected="true">User View</button>
+          <button class="nav-link active" id="user-tab" data-bs-toggle="tab" data-bs-target="#user" type="button"
+                  role="tab" aria-controls="user" aria-selected="true">User View
+          </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin" type="button" role="tab" aria-controls="profile" aria-selected="false">Admin View</button>
+          <button class="nav-link" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin" type="button" role="tab"
+                  aria-controls="profile" aria-selected="false">Admin View
+          </button>
         </li>
       </ul>
       <div v-if="isAdmin" class="tab-content" id="dashtabContents">
@@ -82,7 +86,7 @@ export default {
   name: "Home",
   components: {MetaReviewManager, DocumentManager, ReviewManager},
   computed: {
-    isAdmin: function() {
+    isAdmin: function () {
       return this.$store.getters['auth/isAdmin']
     }
   },

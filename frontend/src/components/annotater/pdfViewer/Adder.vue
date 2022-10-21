@@ -9,7 +9,7 @@
               v-bind:title="t.description"
               v-bind:class="`btn-${t.colorCode}`"
               @click="annotate(t)">
-        {{t.name}}
+        {{ t.name }}
       </button>
     </div>
   </div>
@@ -86,13 +86,13 @@ export default {
 
       const uid = this.userData().id;
       const anno = {
-            "document_id": this.document_id,
-            "annotation": {target},
-            "user": uid,
-            "comment": null,
-            "draft": true,
-            "annotation_id": v4(),
-            "tags": [tag.id]
+        "document_id": this.document_id,
+        "annotation": {target},
+        "user": uid,
+        "comment": null,
+        "draft": true,
+        "annotation_id": v4(),
+        "tags": [tag.id]
       };
 
       this.$socket.emit('addAnnotation', anno);
@@ -201,8 +201,7 @@ export default {
       return el?.closest('.textLayer') ?? null;
     },
     getTextLayerForRange(range) {
-      console.log(range);
-      if ("classList" in range.endContainer && range.endContainer.classList.contains("canvasWrapper")){
+      if ("classList" in range.endContainer && range.endContainer.classList.contains("canvasWrapper")) {
         throw new Error('I\'m afraid we are not on the same page');
       }
       // "Shrink" the range so that the start and endpoints are at offsets within

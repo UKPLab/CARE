@@ -41,6 +41,11 @@
 </template>
 
 <script>
+/* TagsTable.vue - table structure for handling tags in tagset
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import {mapMutations} from "vuex";
 
 

@@ -22,10 +22,33 @@ const basicElements = [
         "path": "documents",
         'component': 'Documents'
     },
-    {name: "Reviews", groupId: basicGroups[0].name, icon: 'ReviewIcon', order: 10, "path": "reviews", 'component': 'Reviews'},
-    {name: "Meta Reviews", groupId: basicGroups[0].name, icon: 'MultipleDocumentIcon', order:10, admin: true, path: "meta_reviews", 'component': 'MetaReviews'},
-    {name: "Tags", groupId: basicGroups[0].name, icon: 'TagIcon', path:  "tags",order: 10, 'component': 'Tags'},
-    {name: "Settings", groupId: basicGroups[1].name, icon: 'SettingsIcon', order:10, admin: true, path: "settings", 'component': 'Settings'}
+    {
+        name: "Reviews",
+        groupId: basicGroups[0].name,
+        icon: 'ReviewIcon',
+        order: 10,
+        "path": "reviews",
+        'component': 'Reviews'
+    },
+    {
+        name: "Meta Reviews",
+        groupId: basicGroups[0].name,
+        icon: 'MultipleDocumentIcon',
+        order: 10,
+        admin: true,
+        path: "meta_reviews",
+        'component': 'MetaReviews'
+    },
+    {name: "Tags", groupId: basicGroups[0].name, icon: 'TagIcon', path: "tags", order: 10, 'component': 'Tags'},
+    {
+        name: "Settings",
+        groupId: basicGroups[1].name,
+        icon: 'SettingsIcon',
+        order: 10,
+        admin: true,
+        path: "settings",
+        'component': 'Settings'
+    }
 ];
 
 //TODO add icons in objects

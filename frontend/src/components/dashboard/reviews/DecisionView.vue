@@ -2,8 +2,8 @@
   <Modal ref="decisionView" lg decision:decision decisionReason:decisionReason>
     <template v-slot:title>View Acceptance Decision</template>
     <template v-slot:body>
-      <h1>{{decision ? "Accepted" : "Rejected"}}</h1>
-      <p>{{decisionReason}}</p>
+      <h1>{{ decision ? "Accepted" : "Rejected" }}</h1>
+      <p>{{ decisionReason }}</p>
     </template>
     <template v-slot:footer>
     </template>
@@ -11,13 +11,20 @@
 </template>
 
 <script>
+/* DecisionView.vue - modal for acceptance decision
+
+Modal to accept or reject the paper review
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import Modal from "../../basic/Modal.vue";
 import {mapGetters} from "vuex";
+
 export default {
   name: "DecisionView",
   components: {Modal},
-  props: {
-  },
+  props: {},
   data() {
     return {
       decision: null,
@@ -28,11 +35,11 @@ export default {
     this.$socket.emit("getAllUserData");
   },
   methods: {
-     ...mapGetters({items: 'admin/getUsers'}),
+    ...mapGetters({items: 'admin/getUsers'}),
 
     open(review) {
       this.review = review;
-      if(this.review.accepted !== null){
+      if (this.review.accepted !== null) {
         this.decision = this.review.accepted;
         this.decisionReason = this.review.decisionReason;
       }

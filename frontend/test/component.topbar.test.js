@@ -4,7 +4,8 @@ import {render, fireEvent} from '@testing-library/vue'
 
 
 describe('dashboard.annotator.topbar.TopBar Test Download Annotations', () => {
-    it('Topbar Download Button', () => {});
+    it('Topbar Download Button', () => {
+    });
 
     /*
     TODO does not work any more with the teleport feature -- look into that (add fake parent)

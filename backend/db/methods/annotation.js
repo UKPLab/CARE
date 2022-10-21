@@ -16,7 +16,9 @@ function InvalidAnnotationParameters(details) {
     return {
         name: "InvalidAnnotationParameters",
         message: details,
-        toString: function() {return this.name + ": " + this.message;}
+        toString: function () {
+            return this.name + ": " + this.message;
+        }
     };
 }
 
@@ -24,7 +26,9 @@ function InvalidCommentParameters(details) {
     return {
         name: "InvalidCommentParameters",
         message: details,
-        toString: function() {return this.name + ": " + this.message;}
+        toString: function () {
+            return this.name + ": " + this.message;
+        }
     };
 }
 
@@ -32,7 +36,7 @@ exports.addRawComment = async function addRawComment(comment) {
     try {
         return await Comment.create(comment);
     } catch (err) {
-         throw err;
+        throw err;
     }
 }
 
@@ -40,17 +44,17 @@ exports.addRaw = async function addRaw(annotation) {
     try {
         let anno = await Annotation.create(annotation);
         return anno;
-    }catch (err) {
-             throw err;
+    } catch (err) {
+        throw err;
 
-        }
+    }
 
 
 }
 
 exports.getAnnoFromDocRaw = async function getAnnoFromDocRaw(document) {
     try {
-        let annotations =  await Annotation.findAll({ where: { 'document': document}});
+        let annotations = await Annotation.findAll({where: {'document': document}});
         for (let anno of annotations) {
             anno['comments'] = await Comment.findAll({
                 where: {
@@ -81,9 +85,9 @@ exports.add = async function add(annotation, comment = null) {
             updatedAt: new Date()
         });
     } catch (err) {
-        if(isInternalDatabaseError(err)){
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
-        } else if(err.parent !== undefined && err.parent.message.match("value too long for type character varying") != null) {
+        } else if (err.parent !== undefined && err.parent.message.match("value too long for type character varying") != null) {
             throw InvalidAnnotationParameters("Maximum selection length exceeded");
         } else {
             throw InvalidAnnotationParameters("Document or user ID incorrect");
@@ -103,7 +107,7 @@ exports.add = async function add(annotation, comment = null) {
                 updatedAt: new Date()
             });
         } catch (err) {
-             if(isInternalDatabaseError(err)){
+            if (isInternalDatabaseError(err)) {
                 throw err;
             } else {
                 throw InvalidCommentParameters("Provided comment invalid");
@@ -122,7 +126,7 @@ exports.deleteAnno = async function deleteAnno(annoId) {
             }
         });
     } catch (err) {
-        if(isInternalDatabaseError(err)){
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
             throw InvalidAnnotationParameters("Annotation-to-delete non-existent");
@@ -150,7 +154,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
             }
         });
     } catch (e) {
-        if(isInternalDatabaseError(err)){
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
             //todo catch difference: annotation not existent vs. values invalid
@@ -188,7 +192,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
                     }
                 });
             } catch (err) {
-                if(isInternalDatabaseError(err)){
+                if (isInternalDatabaseError(err)) {
                     throw InternalDatabaseError(err);
                 } else {
                     //todo catch difference: comment not existent vs. values invalid
@@ -208,7 +212,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
                     updatedAt: new Date()
                 });
             } catch (err) {
-                if(isInternalDatabaseError(err)){
+                if (isInternalDatabaseError(err)) {
                     throw InternalDatabaseError(err);
                 } else {
                     //todo catch difference: comment not existent vs. values invalid
@@ -220,7 +224,6 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
 }
 
 exports.loadByDocument = async function load(docId) {
-    console.log("loading annos");
     let annotations;
     try {
         annotations = await Annotation.findAll({
@@ -258,6 +261,7 @@ async function toFrontendRepresentationAnno(annotation) {
         user: await resolveUserIdToName(annotation.creator)
     }
 }
+
 exports.toFrontendRepresentationAnno = toFrontendRepresentationAnno
 
 async function toFrontendRepresentationComm(comment) {
@@ -271,6 +275,7 @@ async function toFrontendRepresentationComm(comment) {
         };
     }));
 }
+
 exports.toFrontendRepresentationComm = toFrontendRepresentationComm
 
 exports.mergeAnnosAndComments = async function mergeAnnosAndCommentsFrontendRepresentation(annotationsWithComments) {
@@ -278,8 +283,6 @@ exports.mergeAnnosAndComments = async function mergeAnnosAndCommentsFrontendRepr
     return await Promise.all(annotationsWithComments.map(async x => {
             const annos = Object.fromEntries(await Promise.all(x[0].map(async a => [a.hash, await toFrontendRepresentationAnno(a)])));
             const comments = Object.fromEntries(await Promise.all(Object.entries(x[1]).map(async c => [c[0], await toFrontendRepresentationComm(c[1])[0]])));
-
-            console.log("comments", comments);
 
             return Object.entries(annos).map(x => {
                 if (x[0] in comments && comments[x[0]] !== undefined) {

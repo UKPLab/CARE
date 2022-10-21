@@ -11,13 +11,15 @@ const User = require("../models/user.js")(db.sequelize, DataTypes);
 const {genSalt, genPwdHash} = require("./utils.js");
 const {InternalDatabaseError, isInternalDatabaseError} = require("./utils");
 
-const logger = require("../../utils/logger.js")( "db/user");
+const logger = require("../../utils/logger.js")("db/user");
 
 function DuplicateUserException() {
     return {
         name: "DuplicateUserException",
         message: "Provided user name or email already exist.",
-        toString: function() {return this.name + ": " + this.message;}
+        toString: function () {
+            return this.name + ": " + this.message;
+        }
     };
 }
 
@@ -25,7 +27,9 @@ function InvalidPasswordException() {
     return {
         name: "InvalidCredentialsException",
         message: "The provided password is invalid.",
-        toString: function() {return this.name + ": " + this.message;}
+        toString: function () {
+            return this.name + ": " + this.message;
+        }
     };
 }
 
@@ -47,7 +51,7 @@ exports.getUsername = async function getUsername(userId) {
 }
 
 exports.add = async function add(user_name, first_name, last_name, user_email, password, role, terms, stats) {
-    if(!validatePassword(password)){
+    if (!validatePassword(password)) {
         throw InvalidPasswordException();
     }
 
@@ -67,7 +71,7 @@ exports.add = async function add(user_name, first_name, last_name, user_email, p
             accept_stats: stats,
         });
     } catch (err) {
-        if(isInternalDatabaseError(err)){
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
             throw DuplicateUserException()
@@ -105,7 +109,7 @@ exports.find = async function find(username) {
             }
         });
     } catch (err) {
-         throw InternalDatabaseError(err);
+        throw InternalDatabaseError(err);
     }
 }
 
@@ -117,7 +121,7 @@ exports.get = async function get(userid) {
             }
         });
     } catch (err) {
-         throw InternalDatabaseError(err);
+        throw InternalDatabaseError(err);
     }
 }
 
@@ -125,7 +129,7 @@ exports.getAll = async function getAll() {
     try {
         return await User.findAll();
     } catch (err) {
-         throw InternalDatabaseError(err);
+        throw InternalDatabaseError(err);
     }
 }
 
@@ -137,6 +141,6 @@ exports.resolveUserIdToName = async function resolveUserIdToName(userId) {
             }
         })).user_name;
     } catch (err) {
-         throw InternalDatabaseError(err);
+        throw InternalDatabaseError(err);
     }
 }

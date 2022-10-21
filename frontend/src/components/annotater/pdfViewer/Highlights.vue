@@ -28,10 +28,8 @@ export default {
     },
     tagToColorMap() {
       let tags = this.$store.getters['tag/getAllTags'](false);
-      console.log("blabla")
-      console.log(tags);
 
-      if(tags === null || tags === undefined){
+      if (tags === null || tags === undefined) {
         tags = []; //will default to the undefined color for all
       }
 
@@ -39,11 +37,11 @@ export default {
       return tid => {
         const t = tags.find(t => t.id === tid);
 
-        if(t === undefined){
+        if (t === undefined) {
           return "efea7b";
         }
 
-        switch(t.colorCode){
+        switch (t.colorCode) {
           case "success":
             return "009933";
           case "danger":
@@ -101,9 +99,9 @@ export default {
       }
 
     },
-    update_highlights(anchors){
+    update_highlights(anchors) {
       anchors.filter(a => a.highlights !== null && a.highlights !== undefined)
-             .forEach(a => this.removeHighlights(a.highlights));
+          .forEach(a => this.removeHighlights(a.highlights));
       this.highlight(anchors);
     },
     highlightRange(anchor, range) {
@@ -166,15 +164,15 @@ export default {
       return highlights;
 
     },
-    setSVGHighlightColor(anchor, highlightEl){
-      if(!anchor.annotation || !anchor.annotation.tags) {
+    setSVGHighlightColor(anchor, highlightEl) {
+      if (!anchor.annotation || !anchor.annotation.tags) {
         return;
       }
 
       // load tags
       const tags = anchor.annotation.tags;
 
-      if(tags.length === 0){
+      if (tags.length === 0) {
         highlightEl.style.fill = "#" + this.tagToColorMap(null);
       } else {
         // set style depending on first tag

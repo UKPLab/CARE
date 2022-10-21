@@ -14,7 +14,13 @@
 </template>
 
 <script>
+/* ReviewSubmit.vue - modal to submit the review decision
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import Modal from "../../basic/Modal.vue";
+
 export default {
   name: "ReviewSubmit",
   components: {Modal},
@@ -31,11 +37,17 @@ export default {
   methods: {
     open() {
       this.$refs.reviewSubmit.openModal();
-      this.$socket.emit("stats", {action: "openModalReviewSubmit", data: {review_id: this.review_id, document_id: this.document_id}});
+      this.$socket.emit("stats", {
+        action: "openModalReviewSubmit",
+        data: {review_id: this.review_id, document_id: this.document_id}
+      });
     },
     cancel() {
       this.$refs.reviewSubmit.closeModal();
-      this.$socket.emit("stats", {action: "cancelModalReviewSubmit", data: {review_id: this.review_id, document_id: this.document_id}});
+      this.$socket.emit("stats", {
+        action: "cancelModalReviewSubmit",
+        data: {review_id: this.review_id, document_id: this.document_id}
+      });
     },
     submit() {
       this.$refs.reviewSubmit.waiting = true;
@@ -43,10 +55,18 @@ export default {
         this.$refs.reviewSubmit.closeModal();
         this.sockets.unsubscribe('reviewSubmitted');
         if (data.success) {
-          this.eventBus.emit('toast', {title:"Review Submit", message:"Successful submitted the review!", variant: "success"});
+          this.eventBus.emit('toast', {
+            title: "Review Submit",
+            message: "Successful submitted the review!",
+            variant: "success"
+          });
           this.$router.push("/");
         } else {
-          this.eventBus.emit('toast', {title:"Review Submit", message:"Error during submitting the review! Please try it again!", variant: "danger"});
+          this.eventBus.emit('toast', {
+            title: "Review Submit",
+            message: "Error during submitting the review! Please try it again!",
+            variant: "danger"
+          });
         }
       });
       this.$socket.emit('reviewSubmit',

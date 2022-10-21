@@ -33,9 +33,11 @@
         <tr v-for="tagSet in tagSets" :key="tagSet.id">
           <td>
 
-            <LoadIcon v-if="tagSet.id === selectedTagset" :size="16" iconName="IconStarFill" style = "color:yellowgreen;"  />
+            <LoadIcon v-if="tagSet.id === selectedTagset" :size="16" iconName="IconStarFill"
+                      style="color:yellowgreen;"/>
 
-            <LoadIcon  v-else   :size="16" iconName="IconStar" role="button" v-tooltip title="Select tagset as default" v-on:click="selectAsDefault(tagSet.id)" />
+            <LoadIcon v-else :size="16" iconName="IconStar" role="button" v-tooltip title="Select tagset as default"
+                      v-on:click="selectAsDefault(tagSet.id)"/>
 
           </td>
           <td>{{ tagSet['name'] }}</td>
@@ -68,7 +70,7 @@
               </button>
               <button v-if="tagSet.userId === userId || isAdmin" v-tooltip class="btn btn-outline-dark btn-sm"
                       title="Delete"
-                       v-on:click="this.$refs.tagSetDeleteModal.open(tagSet.id)">
+                      v-on:click="this.$refs.tagSetDeleteModal.open(tagSet.id)">
                 <svg class="bi bi-trash" fill="currentColor" height="12" viewBox="0 0 16 16" width="12"
                      xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -88,7 +90,8 @@
                       d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
                 </svg>
               </button>
-              <button v-if="!tagSet.public && (tagSet.userId === userId || isAdmin)" v-tooltip class="btn btn-outline-dark btn-sm"
+              <button v-if="!tagSet.public && (tagSet.userId === userId || isAdmin)" v-tooltip
+                      class="btn btn-outline-dark btn-sm"
                       title="Share"
                       v-on:click="this.$refs.tagSetPublishModal.open(tagSet.id)">
                 <svg class="bi bi-share" fill="currentColor" height="12" viewBox="0 0 16 16" width="12"
@@ -110,8 +113,15 @@
 </template>
 
 <script>
+/* Tags.vue - dashboard component for handling tags
+
+This dashboard component provides a view to update/edit and add tags
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import {mapGetters} from "vuex";
-import Loader from "../general/Loader.vue";
+import Loader from "../basic/Loader.vue";
 import TagSetModal from "./tags/TagSetModal.vue";
 import TagSetPublishModal from "./tags/TagSetPublishModal.vue";
 import TagSetDeleteModal from "./tags/TagSetDeleteModal.vue";

@@ -6,7 +6,8 @@ this.$socket.emit("stats", {action: "action", data: {}});
 
 The data object can hold additional information!
 
- */
+Author: Dennis Zyska (zyska@ukp.informatik....), Nils Dycke (dycke@ukp...)
+*/
 
 const logger = require("../../utils/logger.js")("sockets/statistic");
 const {add} = require("../../db/methods/statistic.js");
@@ -23,7 +24,7 @@ exports = module.exports = function (io) {
                 //console.log(socket.request.session.passport.user);
 
                 //if (socket.request.session.passport.user.accept_stats) {
-                    await add(data.action, data.data, socket.request.session.passport.user.id);
+                await add(data.action, data.data, socket.request.session.passport.user.id);
                 //}
             } catch (e) {
                 logger.error("Can't add statistics: " + JSON.stringify(data), {user: socket.request.session.passport.user.id});

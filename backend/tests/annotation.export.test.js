@@ -26,49 +26,53 @@ describe('Annotation Exporting Test', () => {
         const targetText = "ters. The two approaches share thesame objective function during pre-training, wherethey use unidirec"
         const userName = "admin";
         const anno = {
-          document_id: showcaseId,
-          annotation: {
-              target: [
-                  {
-                      selector: [
-                        {"end":6468,"type":"TextPositionSelector","start":6367},
-                        {"type":"TextQuoteSelector","exact":"ters. The two approaches share thesame objective function during pre-training, wherethey use unidirec","prefix":"ne-tuning all pre-trained parame","suffix":"tional language models to learng"}
-                      ]
-                  }
-              ]
-          },
-          user: 1,
-          comment: null,
-          draft: false,
-          annotation_id: annoId,
-          tags: JSON.parse('["Highlight"]')
+            document_id: showcaseId,
+            annotation: {
+                target: [
+                    {
+                        selector: [
+                            {"end": 6468, "type": "TextPositionSelector", "start": 6367},
+                            {
+                                "type": "TextQuoteSelector",
+                                "exact": "ters. The two approaches share thesame objective function during pre-training, wherethey use unidirec",
+                                "prefix": "ne-tuning all pre-trained parame",
+                                "suffix": "tional language models to learng"
+                            }
+                        ]
+                    }
+                ]
+            },
+            user: 1,
+            comment: null,
+            draft: false,
+            annotation_id: annoId,
+            tags: JSON.parse('["Highlight"]')
         };
 
         ioClient.on("exportedAnnotations", (data) => {
-                expect("success" in data && data["success"]);
-                expect("csvs" in data && "docids" in data);
+            expect("success" in data && data["success"]);
+            expect("csvs" in data && "docids" in data);
 
-                const blobs = data["csvs"];
-                const docids = data["docids"];
+            const blobs = data["csvs"];
+            const docids = data["docids"];
 
-                // document present
-                expect(docids).toContain(showcaseId);
+            // document present
+            expect(docids).toContain(showcaseId);
 
-                // csv present
-                expect(blobs.length).toBe(1);
+            // csv present
+            expect(blobs.length).toBe(1);
 
-                // check text
-                const csv = blobs[0];
-                expect(csv).toContain(annoId);
-                expect(csv).toContain(targetText)
-                expect(csv).toContain(userName);
+            // check text
+            const csv = blobs[0];
+            expect(csv).toContain(annoId);
+            expect(csv).toContain(targetText)
+            expect(csv).toContain(userName);
 
-                done();
+            done();
         });
 
         ioClient.emit("addAnnotation", anno);
         ioClient.on("newAnnotation", () => {
-            console.log("Test annotation added");
             ioClient.emit("exportAnnotations", [showcaseId]);
         });
     });

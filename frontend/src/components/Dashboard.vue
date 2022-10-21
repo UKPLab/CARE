@@ -15,7 +15,14 @@
 </template>
 
 <script>
+/* Dashboard.vue - Dashboard Handler
 
+This view shows the dashboard after login and loads the navigation components
+including the sidebar
+
+Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
+Source: -
+*/
 import Sidebar from "./navigation/Sidebar.vue";
 import {defineAsyncComponent} from "vue";
 import Loading from "./basic/Loading.vue";
@@ -59,6 +66,8 @@ export default {
   },
   mounted() {
     // get settings
+    //TODO implement one websocket emit for getting all necessary data for the system
+    // (basic vuex store data) and should loaded in App.vue not in Dashboard
     this.$socket.emit("getTagSets");
     this.$socket.emit("getTags");
     this.$socket.emit("getSettings");
@@ -79,15 +88,13 @@ export default {
           path: "/dashboard/" + e.path,
           component: () => import('./basic/Loading.vue'),
         };
-        if("navigation.dashboard.component.default" in this.settings &&
-            child.name  === this.settings["navigation.dashboard.component.default"]){
+        if ("navigation.dashboard.component.default" in this.settings &&
+            child.name === this.settings["navigation.dashboard.component.default"]) {
           child.alias.push("/dashboard");
         }
 
         return child;
       });
-
-      console.log("children.....", children);
 
       const routes = {
         path: "/dashboard",

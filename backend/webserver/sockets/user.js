@@ -1,4 +1,11 @@
-const logger = require("../../utils/logger.js")( "sockets/review");
+/* Handle user through websocket
+
+Loading tags and tagSets through websocket
+
+Author: Nils Dycke (dycke@ukp...)
+Source: --
+*/
+const logger = require("../../utils/logger.js")("sockets/review");
 const {
     getAll, minimalFields
 } = require("../../db/methods/user.js");
@@ -9,7 +16,7 @@ exports = module.exports = function (io) {
         socket.on("getAllUserData", async (data) => {
             console.log("GETTING ALL USER DATA");
 
-           if (socket.request.session.passport.user.sysrole === "admin"){
+            if (socket.request.session.passport.user.sysrole === "admin") {
                 try {
                     const users = await getAll();
                     const mappedUsers = users.map(x => minimalFields(x));

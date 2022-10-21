@@ -4,8 +4,9 @@
       Publish Tagset
     </template>
     <template v-slot:body>
-        Do you really want to publish the tagset? <br>
-    Note: Once you published it, you can't unpublish the tagset! If you want to unpublish it, you have to delete it and create a new one.
+      Do you really want to publish the tagset? <br>
+      Note: Once you published it, you can't unpublish the tagset! If you want to unpublish it, you have to delete it
+      and create a new one.
       If published the tagset will be available for all users.
     </template>
 
@@ -17,6 +18,13 @@
 </template>
 
 <script>
+/* TagSetPublishModal.vue - modal component for publish a tagset
+
+To get a confirmation before publish the tagset
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import Modal from "../../basic/Modal.vue";
 
 export default {
@@ -41,12 +49,16 @@ export default {
         this.$refs.tagSetPublishModal.closeModal();
         this.sockets.unsubscribe('tagSetPublished');
         if (data.success) {
-          this.eventBus.emit('toast', {title:"Tagset published", message:"Successful published tagset!", variant: "success"});
+          this.eventBus.emit('toast', {
+            title: "Tagset published",
+            message: "Successful published tagset!",
+            variant: "success"
+          });
         } else {
-          this.eventBus.emit('toast', {title:"Tagset not published", message: data.message, variant: "danger"});
+          this.eventBus.emit('toast', {title: "Tagset not published", message: data.message, variant: "danger"});
         }
       });
-      this.$socket.emit("publishTagset", { id: this.id });
+      this.$socket.emit("publishTagset", {id: this.id});
       this.$refs.tagSetPublishModal.waiting = true;
     },
     cancel() {

@@ -1,3 +1,8 @@
+/* Handle logs through websocket
+
+Author: Dennis Zyska (zyska@ukp.informatik....)
+Source: --
+*/
 const logger = require("../../utils/logger.js")("sockets/log");
 
 exports = module.exports = function (io) {

@@ -5,13 +5,13 @@
     </template>
     <template v-slot:body>
       <div class="modal-body justify-content-center flex-grow-1 d-flex">
-          <div v-if="uploading" class="spinner-border m-5 " role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-          <div v-else class="flex-grow-1">
-            <input id="fileInput" class="form-control" name="file" type="file">
-          </div>
+        <div v-if="uploading" class="spinner-border m-5 " role="status">
+          <span class="visually-hidden">Loading...</span>
         </div>
+        <div v-else class="flex-grow-1">
+          <input id="fileInput" class="form-control" name="file" type="file">
+        </div>
+      </div>
     </template>
     <template v-slot:footer>
       <div v-if="!uploading">
@@ -23,6 +23,11 @@
 </template>
 
 <script>
+/* Upload.vue - modal for document upload component
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import Modal from "../../basic/Modal.vue";
 import {mapMutations} from "vuex";
 
@@ -48,9 +53,7 @@ export default {
       }
     }
   },
-  computed: {
-
-  },
+  computed: {},
   methods: {
     openModal() {
       console.log("OPENINGMODAKL");

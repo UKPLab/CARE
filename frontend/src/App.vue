@@ -1,17 +1,18 @@
 <template>
   <Topbar v-if="!hideTopbar"></Topbar>
-  <Toast ></Toast>
+  <Toast></Toast>
   <router-view class="top-padding"></router-view>
 </template>
 
 <script>
 import Toast from "./components/basic/Toast.vue";
 import Topbar from "./components/navigation/Topbar.vue";
+
 export default {
   components: {Topbar, Toast},
   watch: {
-    '$route' (to, from) {
-      if(to.fullPath !== from.fullPath){
+    '$route'(to, from) {
+      if (to.fullPath !== from.fullPath) {
         this.$socket.emit("stats", {action: "routeStep", data: {from: from.fullPath, to: to.fullPath}});
       }
     }

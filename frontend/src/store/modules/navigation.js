@@ -47,9 +47,9 @@ export default {
 
     },
     mutations: {
-         SOCKET_navigation: (state, message) => {
-                state['groups'] = message.groups;
-                state['elements'] = message.elements;
+        SOCKET_navigation: (state, message) => {
+            state['groups'] = message.groups;
+            state['elements'] = message.elements;
 
         },
     },

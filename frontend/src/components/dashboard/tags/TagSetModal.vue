@@ -35,6 +35,11 @@
 </template>
 
 <script>
+/* TagSetModal.vue - modal component for adding and editing tagssets
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import Tags from "bootstrap5-tags/tags.js";
 import Modal from "../../basic/Modal.vue";
 import TagsTable from "./TagsTable.vue";
@@ -83,9 +88,9 @@ export default {
         this.$refs.tagSetModal.closeModal();
         this.sockets.unsubscribe('tagSetSaved');
         if (data.success) {
-          this.eventBus.emit('toast', {title:"Tagset saved", message:"Successful saved tagset!", variant: "success"});
+          this.eventBus.emit('toast', {title: "Tagset saved", message: "Successful saved tagset!", variant: "success"});
         } else {
-          this.eventBus.emit('toast', {title:"Tagset not saved", message:data.message, variant: "danger"});
+          this.eventBus.emit('toast', {title: "Tagset not saved", message: data.message, variant: "danger"});
         }
       });
       this.$socket.emit("saveTagset", {

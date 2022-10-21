@@ -2,7 +2,7 @@
   <div ref="Modal" aria-hidden="true" aria-labelledby="ModalLabel" class="modal fade"
        data-bs-backdrop="static"
        role="dialog" tabindex="-1">
-    <div class="modal-dialog" :class="xl && 'modal-xl' || lg && 'modal-lg'"  role="document">
+    <div class="modal-dialog" :class="xl && 'modal-xl' || lg && 'modal-lg'" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
@@ -31,6 +31,13 @@
 </template>
 
 <script>
+/* Modal.vue - default modal component
+
+Provide a default modal component to include modals into other components
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import {Modal} from 'bootstrap';
 
 export default {

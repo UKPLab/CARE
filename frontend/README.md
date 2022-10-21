@@ -16,6 +16,8 @@ components. To manage data, we use vuex.
 >>>>> Dashboard.vue                 # central component bundling user-related components
 >>>>> NotFoundPage.vue              # the default not found page
 
+>>> icons                           # Folder for Icons (Bootstrap 5 Icons)
+
 >>> store                           # the vuex store definitions
 >>>>> modules                       # sub-modules of the store
 >>>>>>> auth.js                     # providing authentication 

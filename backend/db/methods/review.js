@@ -9,9 +9,9 @@ const db = require("../index.js")
 const {v4: uuidv4} = require("uuid");
 
 const Review = require("../models/review.js")(db.sequelize, DataTypes);
-const logger = require("../../utils/logger.js")( "db/review");
+const logger = require("../../utils/logger.js")("db/review");
 
-const { get: getUser } = require("../../db/methods/user.js");
+const {get: getUser} = require("../../db/methods/user.js");
 const path = require("path");
 
 exports.add = async function add(document_id, user_id) {
@@ -41,7 +41,7 @@ exports.add = async function add(document_id, user_id) {
             hash: hash,
         });
         return hash;
-    } catch(e) {
+    } catch (e) {
         logger.error("Cant add review workflow into database" + e);
     }
     return null;
@@ -54,7 +54,7 @@ exports.toReadable = async function toReadableFields(review) {
         const reviewBy = await getUser(review.startBy);
         result.startBy = reviewBy.user_name;
 
-        if(review.decisionBy !== null){
+        if (review.decisionBy !== null) {
             const decisionBy = await getUser(review.decisionBy);
             result.decisionBy = decisionBy.user_name;
         }
@@ -67,7 +67,7 @@ exports.toReadable = async function toReadableFields(review) {
 
 exports.get = async function get(review_id) {
     try {
-        return await Review.findOne({ where: { 'hash': review_id}});
+        return await Review.findOne({where: {'hash': review_id}});
     } catch (err) {
         logger.error("Cant find review workflow " + review_id + " in database: " + err);
     }
@@ -76,7 +76,7 @@ exports.get = async function get(review_id) {
 
 exports.getByUser = async function get(user_id) {
     try {
-        return await Review.findAll({ where: { startBy: user_id}});
+        return await Review.findAll({where: {startBy: user_id}});
     } catch (err) {
         logger.error("Cant search for review workflows for user " + user_id + " in database: " + err);
     }
@@ -85,7 +85,7 @@ exports.getByUser = async function get(user_id) {
 
 exports.getMetaByUser = async function get(user_id) {
     try {
-        return await Review.findAll({ where: { decisionBy: user_id}});
+        return await Review.findAll({where: {decisionBy: user_id}});
     } catch (err) {
         logger.error("Cant search for review workflows for user " + user_id + " in database: " + err);
     }
