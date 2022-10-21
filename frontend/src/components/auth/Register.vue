@@ -48,7 +48,8 @@
             <div class="form-group row my-2">
               <div class="col-md-6 offset-md-4">
                 <label>
-                  <input v-model="terms" name="terms" type="checkbox"> I accept the <a href="#" v-on:click="this.$refs.terms.open()">terms</a>!
+                  <input v-model="terms" name="terms" type="checkbox"> I accept the <a href="#"
+                                                                                       v-on:click="this.$refs.terms.open()">terms</a>!
                 </label>
               </div>
             </div>
@@ -74,7 +75,6 @@
   </div>
 
   <TermsModal ref="terms"></TermsModal>
-  <StatisticsModal ref="stats"></StatisticsModal>
 </template>
 
 <script>
@@ -88,11 +88,10 @@ Source: -
 */
 import {mapActions} from "vuex";
 import TermsModal from "./TermsModal.vue";
-import StatisticsModal from "./StatisticsModal.vue";
 
 export default {
   name: "Register",
-  components: {StatisticsModal, TermsModal},
+  components: {TermsModal},
   data() {
     return {
       first_name: "",
@@ -108,31 +107,31 @@ export default {
     ...mapActions({register: "auth/register"}),
     async register_user() {
       try {
-          let response = await this.register({
-            first_name: this.first_name,
-            last_name: this.last_name,
-            user_name: this.user_name,
-            email: this.email,
-            password: this.password,
-            terms: this.terms,
-            stats: this.stats,
+        let response = await this.register({
+          first_name: this.first_name,
+          last_name: this.last_name,
+          user_name: this.user_name,
+          email: this.email,
+          password: this.password,
+          terms: this.terms,
+          stats: this.stats,
+        });
+
+        if (response.statusText === "Created") {
+          this.eventBus.emit('toast', {
+            message: "The user registration was successful",
+            title: "User Registration Complete",
+            variant: 'success'
           });
 
-          if (response.statusText === "Created") {
-            this.eventBus.emit('toast', {
-              message: "The user registration was successful",
-              title: "User Registration Complete",
-              variant: 'success'
-            });
-
-            await this.$router.push("/login");
-          }
-      } catch(err) {
-         this.eventBus.emit('toast', {
-              message: err.response.data,
-              title: "Invalid User Credentials",
-              variant: 'danger'
-         });
+          await this.$router.push("/login");
+        }
+      } catch (err) {
+        this.eventBus.emit('toast', {
+          message: err.response.data,
+          title: "Invalid User Credentials",
+          variant: 'danger'
+        });
       }
     }
   }

@@ -12,7 +12,7 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const crypto = require('crypto');
 const {add: addUser, find: findUser, relevantFields: getUserFields} = require('../../db/methods/user.js')
-const logger = require("../../utils/logger.js")( "routes/auth");
+const logger = require("../../utils/logger.js")("routes/auth");
 
 // internal login procedure using passport and postgres
 passport.use(new LocalStrategy(function verify(username, password, cb) {
@@ -70,9 +70,9 @@ async function register(user_credentials, res) {
             .catch((err) => {
                 logger.info("Cannot create user: " + err);
 
-                if(err.name === "DuplicateUserException"){
+                if (err.name === "DuplicateUserException") {
                     res.status(400).send("User already exists");
-                } else if(err.name === "InvalidPasswordException") {
+                } else if (err.name === "InvalidPasswordException") {
                     res.status(400).send("Password does not match criteria");
                 } else {
                     res.status(400).send("Unknown error occurred. Consult admins");

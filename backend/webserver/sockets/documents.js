@@ -13,7 +13,7 @@ const {
 } = require("../../db/methods/document.js");
 const fs = require("fs");
 const path = require("path");
-const logger = require("../../utils/logger.js")( "sockets/documents");
+const logger = require("../../utils/logger.js")("sockets/documents");
 
 const PDF_PATH = `${__dirname}/../../../files`;
 
@@ -92,13 +92,13 @@ exports = module.exports = function (io) {
             try {
                 const pdf = fs.readFileSync(`${PDF_PATH}/${data.document_id}.pdf`);
                 socket.emit("pdf", {file: pdf});
-            } catch(e) {
+            } catch (e) {
                 logger.error(e, {user: socket.request.session.passport.user.id});
                 socket.emit("toast", {
-                        message: "Error while loading pdf file!",
-                        title: "PDF Error",
-                        variant: 'danger'
-                    });
+                    message: "Error while loading pdf file!",
+                    title: "PDF Error",
+                    variant: 'danger'
+                });
             }
         });
     });

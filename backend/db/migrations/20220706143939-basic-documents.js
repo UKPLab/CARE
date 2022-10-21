@@ -19,6 +19,9 @@ module.exports = {
     async down(queryInterface, Sequelize) {
         await queryInterface.bulkDelete("document", {
             hash: ["8852a746-360e-4c31-add2-4d1c75bfb96d"]
-        }, {})
+        }, {
+            cascade: true,
+            truncate: true
+        })
     }
 };

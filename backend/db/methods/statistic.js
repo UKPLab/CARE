@@ -5,7 +5,7 @@ Functions to add logging into database
 Author: Dennis Zyska (zyska@ukp...)
 */
 const {DataTypes, Op} = require("sequelize")
-const db = require("../models/index.js")
+const db = require("../index.js")
 
 const Statistic = require("../models/statistic.js")(db.sequelize, DataTypes);
 
@@ -17,7 +17,8 @@ exports.add = async function add(action, data, user) {
             user: user,
             timestamp: new Date(),
         });
-    } catch(e) {
+    } catch (e) {
+        //TODO throw db error instead of console.log
         console.log("Can't put statistics into the database: " + e);
     }
 

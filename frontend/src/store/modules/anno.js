@@ -46,9 +46,9 @@ export default {
         },
         getAnnotationTags: (state) => (document_id) => {
             return state.annotations.filter(annotation => annotation.document_id === document_id)
-                                 .map(a => {
-                                        return {anno: a, tags: a.tags}
-                                      });
+                .map(a => {
+                    return {anno: a, tags: a.tags}
+                });
         },
         isSidebarShowing: state => {
             return state["sidebar_showing"]
@@ -72,7 +72,7 @@ export default {
                     o.user
                 );
                 anno.state = "SUBMITTED";
-                anno.tags = o.tags;
+                anno.tags = JSON.parse(o.tags);
 
                 if (o.annotation_id in comments) {
                     //for now always just 1 comment
@@ -93,7 +93,7 @@ export default {
         },
         SOCKET_newAnnotation: (state, message) => {
             let anchor;
-            if(message.annotation.target === undefined){
+            if (message.annotation.target === undefined) {
                 anchor = null;
             } else {
                 anchor = message.annotation.target[0].selector[1].exact;
@@ -107,7 +107,7 @@ export default {
                     anchor,
                     message.annotation,
                     message.user,
-                    message.tags);
+                    JSON.parse(message.tags));
             } else {
                 anno = new Annotation(
                     message.annotation_id,
@@ -116,13 +116,13 @@ export default {
                     anchor,
                     message.annotation,
                     message.user,
-                    message.tags
+                    JSON.parse(message.tags)
                 );
             }
 
             // TODO: replace with comment logic later on
             if (message.comment != null) {
-                anno.comment  = new Comment(message.comment.id, message.comment.text, anno.id, null, anno.user);
+                anno.comment = new Comment(message.comment.id, message.comment.text, anno.id, null, anno.user);
             }
             state.annotations.push(anno);
         },

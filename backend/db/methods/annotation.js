@@ -5,8 +5,9 @@ Functions to modify the annotations in the database
 Author: Nils Dycke (dycke@ukp.informatik...)
 */
 const {DataTypes, Op} = require("sequelize")
-const db = require("../models/index.js")
+const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
+const {resolveUserIdToName} = require("./user");
 
 const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
 const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
@@ -15,7 +16,9 @@ function InvalidAnnotationParameters(details) {
     return {
         name: "InvalidAnnotationParameters",
         message: details,
-        toString: function() {return this.name + ": " + this.message;}
+        toString: function () {
+            return this.name + ": " + this.message;
+        }
     };
 }
 
@@ -23,7 +26,9 @@ function InvalidCommentParameters(details) {
     return {
         name: "InvalidCommentParameters",
         message: details,
-        toString: function() {return this.name + ": " + this.message;}
+        toString: function () {
+            return this.name + ": " + this.message;
+        }
     };
 }
 
@@ -31,7 +36,7 @@ exports.addRawComment = async function addRawComment(comment) {
     try {
         return await Comment.create(comment);
     } catch (err) {
-         throw err;
+        throw err;
     }
 }
 
@@ -39,17 +44,17 @@ exports.addRaw = async function addRaw(annotation) {
     try {
         let anno = await Annotation.create(annotation);
         return anno;
-    }catch (err) {
-             throw err;
+    } catch (err) {
+        throw err;
 
-        }
+    }
 
 
 }
 
 exports.getAnnoFromDocRaw = async function getAnnoFromDocRaw(document) {
     try {
-        let annotations =  await Annotation.findAll({ where: { 'document': document}});
+        let annotations = await Annotation.findAll({where: {'document': document}});
         for (let anno of annotations) {
             anno['comments'] = await Comment.findAll({
                 where: {
@@ -75,14 +80,14 @@ exports.add = async function add(annotation, comment = null) {
             document: annotation.document_id,
             selectors: annotation.annotation.target === undefined ? null : annotation.annotation.target,
             draft: annotation.draft,
-            tags: String.toString(annotation.tags),
+            tags: JSON.stringify(annotation.tags),
             createdAt: new Date(),
             updatedAt: new Date()
         });
     } catch (err) {
-        if(isInternalDatabaseError(err)){
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
-        } else if(err.parent !== undefined && err.parent.message.match("value too long for type character varying") != null) {
+        } else if (err.parent !== undefined && err.parent.message.match("value too long for type character varying") != null) {
             throw InvalidAnnotationParameters("Maximum selection length exceeded");
         } else {
             throw InvalidAnnotationParameters("Document or user ID incorrect");
@@ -102,7 +107,7 @@ exports.add = async function add(annotation, comment = null) {
                 updatedAt: new Date()
             });
         } catch (err) {
-             if(isInternalDatabaseError(err)){
+            if (isInternalDatabaseError(err)) {
                 throw err;
             } else {
                 throw InvalidCommentParameters("Provided comment invalid");
@@ -121,7 +126,7 @@ exports.deleteAnno = async function deleteAnno(annoId) {
             }
         });
     } catch (err) {
-        if(isInternalDatabaseError(err)){
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
             throw InvalidAnnotationParameters("Annotation-to-delete non-existent");
@@ -139,7 +144,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
         newValues.text = newText;
     }
     if (newTags != null) {
-        newValues.tags = newTags.length > 0 ? newTags.join() : ""
+        newValues.tags = newTags.length > 0 ? JSON.stringify(newTags) : "[]";
     }
 
     try {
@@ -149,7 +154,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
             }
         });
     } catch (e) {
-        if(isInternalDatabaseError(err)){
+        if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
             //todo catch difference: annotation not existent vs. values invalid
@@ -187,7 +192,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
                     }
                 });
             } catch (err) {
-                if(isInternalDatabaseError(err)){
+                if (isInternalDatabaseError(err)) {
                     throw InternalDatabaseError(err);
                 } else {
                     //todo catch difference: comment not existent vs. values invalid
@@ -207,7 +212,7 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
                     updatedAt: new Date()
                 });
             } catch (err) {
-                if(isInternalDatabaseError(err)){
+                if (isInternalDatabaseError(err)) {
                     throw InternalDatabaseError(err);
                 } else {
                     //todo catch difference: comment not existent vs. values invalid
@@ -219,7 +224,6 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
 }
 
 exports.loadByDocument = async function load(docId) {
-    console.log("loading annos");
     let annotations;
     try {
         annotations = await Annotation.findAll({
@@ -247,25 +251,49 @@ exports.loadByDocument = async function load(docId) {
     return [annotations, comments];
 }
 
-exports.toFrontendRepresentationAnno = function toFrontend(annotation) {
+async function toFrontendRepresentationAnno(annotation) {
     return {
         annotation_id: annotation.hash,
         document_id: annotation.document,
         text: annotation.text,
         tags: annotation.tags != null ? annotation.tags.split(",") : null,
         annotation: {target: annotation.selectors},
-        user: annotation.creator
+        user: await resolveUserIdToName(annotation.creator)
     }
 }
 
-exports.toFrontendRepresentationComm = function toFrontend(comment) {
-    return comment.map(c => {
+exports.toFrontendRepresentationAnno = toFrontendRepresentationAnno
+
+async function toFrontendRepresentationComm(comment) {
+    return await Promise.all(comment.map(async c => {
         return {
             comment_id: c.hash,
             referenced_annotation: c.referenceAnnotation,
             text: c.text,
             tags: c.tags != null ? c.tags.split(",") : null,
-            user: c.creator
+            user: await resolveUserIdToName(c.creator)
         };
-    });
+    }));
+}
+
+exports.toFrontendRepresentationComm = toFrontendRepresentationComm
+
+exports.mergeAnnosAndComments = async function mergeAnnosAndCommentsFrontendRepresentation(annotationsWithComments) {
+    //expects array [annotations, comments]
+    return await Promise.all(annotationsWithComments.map(async x => {
+            const annos = Object.fromEntries(await Promise.all(x[0].map(async a => [a.hash, await toFrontendRepresentationAnno(a)])));
+            const comments = Object.fromEntries(await Promise.all(Object.entries(x[1]).map(async c => [c[0], await toFrontendRepresentationComm(c[1])[0]])));
+
+            return Object.entries(annos).map(x => {
+                if (x[0] in comments && comments[x[0]] !== undefined) {
+                    const c = comments[x[0]];
+                    const addFields = Object.fromEntries(Object.entries(c).map(e => ["comment_" + e[0], e[1]]));
+
+                    return Object.assign(x[1], addFields);
+                } else {
+                    return x[1];
+                }
+            });
+        })
+    );
 }

@@ -1,8 +1,8 @@
 'use strict';
 
 module.exports = {
-  async up (queryInterface, Sequelize) {
-    await queryInterface.createTable('review',
+    async up(queryInterface, Sequelize) {
+        await queryInterface.createTable('review',
             {
                 id: {
                     allowNull: false,
@@ -21,15 +21,15 @@ module.exports = {
                     }
                 },
                 document: {
-                type: Sequelize.STRING,
-                references: {
-                    model: "document",
-                    key: "hash"
-                }
+                    type: Sequelize.STRING,
+                    references: {
+                        model: "document",
+                        key: "hash"
+                    }
                 },
                 hash: {
-                type: Sequelize.STRING, allowNull: false, unique: true
-            },
+                    type: Sequelize.STRING, allowNull: false, unique: true
+                },
                 submitAt: {
                     allowNull: true, type: Sequelize.DATE
                 },
@@ -60,8 +60,8 @@ module.exports = {
                     allowNull: false, type: Sequelize.DATE
                 }
             });
-  },
-  async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable('review');
-  }
+    },
+    async down(queryInterface, Sequelize) {
+        await queryInterface.dropTable('review');
+    }
 };

@@ -15,7 +15,7 @@ import getServerURL from '../../assets/serverUrl.js';
 
 const getDefaultState = () => {
     return {
-        user: {}
+        user: null
     };
 };
 
@@ -35,6 +35,15 @@ export default {
         // returns the current user information
         getUser: state => {
             return state.user;
+        },
+        getUsername: state => {
+            console.log(state);
+            return (state.user !== null) ? state.user.user_name : "No user logged in";
+        },
+        getUserId: state => {
+            if (state.user) {
+                return state.user["id"];
+            }
         }
     },
     mutations: {
