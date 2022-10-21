@@ -16,6 +16,13 @@
 </template>
 
 <script>
+/* TagSetDeleteModal.vue - modal component for deleting a tagset
+
+To get a confirmation before deleting the tagset
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import Modal from "../../basic/Modal.vue";
 
 export default {

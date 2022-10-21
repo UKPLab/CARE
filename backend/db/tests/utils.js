@@ -6,7 +6,7 @@ const PORT = process.env.CONTENT_SERVER_PORT || 3001;
 const HOST = "localhost";
 const ADMIN_PWD = process.env.ADMIN_PWD || "admin";
 
-exports.setupTestSocket = function(done_cb) {
+exports.setupTestSocket = function (done_cb) {
     // setup http server
     const [app, httpServer] = webserver();
 
@@ -16,10 +16,11 @@ exports.setupTestSocket = function(done_cb) {
         //login as admin
         request.post(
             `http://${HOST}:${PORT}/auth/login`,
-            { json: {
-                username: "admin",
-                password: ADMIN_PWD,
-              }
+            {
+                json: {
+                    username: "admin",
+                    password: ADMIN_PWD,
+                }
             },
             function (error, response, body) {
                 if (!error && response.statusCode === 200) {
@@ -62,7 +63,7 @@ exports.setupTestSocket = function(done_cb) {
     return [app, httpServer]
 }
 
-exports.tearDownTestSocket = function(httpServer, socket){
+exports.tearDownTestSocket = function (httpServer, socket) {
     try {
         socket.disconnect();
         console.log("IOClient teared down");

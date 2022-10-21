@@ -12,8 +12,13 @@
 </template>
 
 <script>
-/* These component is to display a loader */
+/* Loading.vue - default loading component
 
+Loading component to show a loading spinner
+
+Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
+Source: -
+*/
 export default {
   name: "Loader",
   props: {

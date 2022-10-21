@@ -20,7 +20,7 @@ exports.add = async function add(info) {
             user: meta.user !== undefined ? meta.user : null,
             timestamp: new Date(),
         });
-    } catch(e) {
+    } catch (e) {
         console.log("Can't put log into the database: " + e);
         console.log("Log: ");
         console.log(info);

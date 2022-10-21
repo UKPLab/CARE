@@ -1,7 +1,11 @@
 'use strict';
 
 const settings = [
-    {key: "navigation.dashboard.component.default", value: "Home", description: "The default component to display in the dashboard"},
+    {
+        key: "navigation.dashboard.component.default",
+        value: "Home",
+        description: "The default component to display in the dashboard"
+    },
     {key: "tags.tagSet.default", value: "1", description: "The default tagset to use for new annotations"},
 ]
 

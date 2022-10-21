@@ -18,8 +18,10 @@
         </li>
         <li id="addPageNote" v-if="!readonly">
           <button type="button" class="btn btn-light" @click="createDocumentComment">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"></path>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg"
+                 viewBox="0 0 16 16">
+              <path fill-rule="evenodd"
+                    d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"></path>
             </svg>
             Document Note
           </button>
@@ -70,7 +72,7 @@ export default {
         const a_noanchor = a.anchors === null || a.anchors.length === 0;
         const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
-        if(a_noanchor || b_noanchor){
+        if (a_noanchor || b_noanchor) {
           return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
         }
 
@@ -106,16 +108,16 @@ export default {
       //for now, just scroll to it
       await this.sidebarScrollTo(annotation_id);
     },
-    createDocumentComment(){
+    createDocumentComment() {
       const uid = this.userData().id;
       const anno = {
-            "document_id": this.document_id,
-            "annotation": {},
-            "user": uid,
-            "comment": null,
-            "draft": true,
-            "annotation_id": v4(),
-            "tags": []
+        "document_id": this.document_id,
+        "annotation": {},
+        "user": uid,
+        "comment": null,
+        "draft": true,
+        "annotation_id": v4(),
+        "tags": []
       };
       this.$socket.emit('addAnnotation', anno);
       this.eventBus.emit("createdAnnotation", anno.annotation_id);
@@ -152,7 +154,7 @@ export default {
 }
 
 #anno-list {
-  list-style-type:none
+  list-style-type: none
 }
 
 #addPageNote {

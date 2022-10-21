@@ -6,15 +6,15 @@ const config = require('../config/config.js')[env];
 jest.mock("sequelize");
 
 describe("database wrapper", () => {
-  beforeEach(() => {
-    Sequelize.mockClear();
-  });
+    beforeEach(() => {
+        Sequelize.mockClear();
+    });
 
-  it("exports an instance of sequelize", () => {
-    expect(Sequelize).not.toHaveBeenCalled();
-    require("../index.js");
-    expect(Sequelize).toHaveBeenCalledWith(
-      config.database, config.username, config.password, config
-    );
-  });
+    it("exports an instance of sequelize", () => {
+        expect(Sequelize).not.toHaveBeenCalled();
+        require("../index.js");
+        expect(Sequelize).toHaveBeenCalledWith(
+            config.database, config.username, config.password, config
+        );
+    });
 });

@@ -5,9 +5,9 @@
         <span v-for="group in sidebarGroups">
           <h5 class="mb-1 sidebar-heading">{{ group.name }}</h5>
           <router-link :to="'/dashboard/' + element.path" v-for="element in sidebarElements[group.id]"
-             class="list-group-item list-group-item-action p-3">
+                       class="list-group-item list-group-item-action p-3">
             <span class="sidebar-icon" :title="element.name">
-              <LoadIcon :iconName="element.icon" :size="24" />
+              <LoadIcon :iconName="element.icon" :size="24"/>
             </span>
           <div class="list-group-item-text">{{ element.name }}</div>
           </router-link>
@@ -36,29 +36,7 @@ This component provides both a topbar and left toggleable side toolbar.
 
 Author: Carly Gettinger (cjgettinger@gmail.com)
 Co-Author: Dennis Zyska (zyska@ukp...)
-Source: left toggleable toolbar - simple sidebar found at https://github.com/StartBootstrap/startbootstrap-simple-sidebar
-License for Simple Sidebar:
-The MIT License (MIT)
-
-Copyright (c) 2013-2022 Start Bootstrap LLC
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+Source: left toggleable toolbar - adapted simple sidebar found at https://github.com/StartBootstrap/startbootstrap-simple-sidebar
 */
 
 import LoadIcon from "../../icons/LoadIcon.vue";
@@ -127,7 +105,7 @@ body.sb-sidenav-toggled .list-group-item-text {
   }
 
   body.sb-sidenav-toggled .sidebar-heading {
-    display:none;
+    display: none;
   }
 }
 
@@ -138,9 +116,9 @@ body.sb-sidenav-toggled .list-group-item-text {
   flex-shrink: 0;
   white-space: nowrap;
   text-overflow: ellipsis;
-  overflow:hidden;
-  border:none;
-  background-color:#e7eeff;
+  overflow: hidden;
+  border: none;
+  background-color: #e7eeff;
 }
 
 .list-group-item:hover {

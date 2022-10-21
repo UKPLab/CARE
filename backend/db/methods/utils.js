@@ -29,12 +29,14 @@ exports.InternalDatabaseError = function InternalDatabaseError(err) {
     return {
         name: "InternalDatabaseError",
         message: "Database not reachable or other internal database error. Details: " + err,
-        toString: function() {return this.name + ": " + this.message;}
+        toString: function () {
+            return this.name + ": " + this.message;
+        }
     };
 }
 
 exports.isInternalDatabaseError = function isInternalDatabaseError(seqErr) {
-    const errors = [ "SequelizeConnectionRefusedError" ];
+    const errors = ["SequelizeConnectionRefusedError"];
 
     return errors.indexOf(seqErr.name) !== -1;
 }

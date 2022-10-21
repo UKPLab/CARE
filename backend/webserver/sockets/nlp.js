@@ -1,3 +1,8 @@
+/* Handling NLP Environment through websockets
+
+Author: Nils Dycke (dycke@ukp.informatik....)
+Source: --
+*/
 const logger = require("../../utils/logger.js")("sockets/nlp");
 const {Socket} = require("socket.io");
 
@@ -8,7 +13,7 @@ exports = module.exports = function (io) {
 
         // forwarding frontend messages to NLP server
         socket.onAny((msg, data) => {
-            if(msg.startsWith("nlp_")){
+            if (msg.startsWith("nlp_")) {
                 ws2NLP.emit(msg, data)
             }
         });

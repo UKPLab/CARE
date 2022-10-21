@@ -19,6 +19,11 @@
 </template>
 
 <script>
+/* DecisionSubmit.vue - modal for submit the paper decision
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import Modal from "../../basic/Modal.vue";
 export default {
   name: "DecisionSubmit",

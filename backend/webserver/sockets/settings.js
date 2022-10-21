@@ -1,3 +1,8 @@
+/* Handle reviews through websocket
+
+Author: Dennis Zyska (zyska@ukp.informatik....), Nils Dycke (dycke@ukp...)
+Source: --
+*/
 const {getGroups, getElements} = require("../../db/methods/navigation");
 const {getUserSettings, getSettings, setUserSetting} = require("../../db/methods/settings");
 const logger = require("../../utils/logger.js")("sockets/settings");
@@ -31,7 +36,6 @@ exports = module.exports = function (io) {
                 socket.emit("navigation", {groups: groups, elements: elements})
             } catch (err) {
                 logger.error(err, {user: socket.request.session.passport.user.id});
-                console.log("error during nav retrieve");
             }
 
         }

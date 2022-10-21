@@ -20,13 +20,11 @@ export default {
   name: "Upload",
   components: {UploadModal},
   data() {
-    return {
-    }
+    return {}
   },
   mounted() {
   },
-  sockets: {
-  },
+  sockets: {},
   methods: {
     openModal() {
       this.$refs.uploadModal.openModal();

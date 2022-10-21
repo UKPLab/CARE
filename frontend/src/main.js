@@ -23,9 +23,6 @@ import mitt from 'mitt';
 //Bootstrap v5
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
-//import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
-//import "bootstrap/dist/css/bootstrap.min.css";
-//import "bootstrap"
 import getServerURL from './assets/serverUrl.js';
 
 const app = Vue.createApp({

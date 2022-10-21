@@ -3,8 +3,7 @@
 Functions to handle the available tags assignable to annotations. They are currently stored as a
 table of tags that are mostly constant.
 
-Author: Nils Dycke (dycke@ukp...)
-Co-Author: Dennis Zyska (zyska@ukp...)
+Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")

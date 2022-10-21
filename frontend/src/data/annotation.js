@@ -2,6 +2,8 @@
 
 Defines the data object for annotations
 
+// TODO: change structure to db
+
 Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
@@ -61,9 +63,9 @@ export function createAnnotation(document_id, text, anchor, annotationData, user
         tags);
 }
 
-function subSelectFields(annoObj, annoFields=null, commentFields=null){
+function subSelectFields(annoObj, annoFields = null, commentFields = null) {
     let data;
-    if(annoFields !== null){
+    if (annoFields !== null) {
         data = Object.fromEntries(
             Object.entries(annoObj).filter((a) => {
                 return annoFields.indexOf(a[0]) !== -1;
@@ -74,13 +76,13 @@ function subSelectFields(annoObj, annoFields=null, commentFields=null){
     }
 
     // anchors are excluded by default
-    if(data.anchors !== undefined){
+    if (data.anchors !== undefined) {
         delete data.anchors;
     }
 
     // dealing with the annotationData object
-    if(data.annotationData !== undefined){
-        if(data.annotationData.target !== undefined && data.annotationData.target[0].selector !== undefined){
+    if (data.annotationData !== undefined) {
+        if (data.annotationData.target !== undefined && data.annotationData.target[0].selector !== undefined) {
             data.annotationData = data.annotationData.target[0].selector[1].exact;
         } else {
             data.annotationData = "UNK";
@@ -88,9 +90,9 @@ function subSelectFields(annoObj, annoFields=null, commentFields=null){
     }
 
     // dealing with comment object
-    if(data.comment !== undefined){
+    if (data.comment !== undefined) {
         let cdata;
-        if(commentFields !== null && data.comment !== null){
+        if (commentFields !== null && data.comment !== null) {
             cdata = Object.fromEntries(Object.entries(data.comment).filter((a) => {
                 return commentFields.indexOf(a[0]) !== -1;
             }));
@@ -101,7 +103,7 @@ function subSelectFields(annoObj, annoFields=null, commentFields=null){
         // remove comment field from data and unroll its contents instead
         delete data.comment
 
-        cdata = Object.fromEntries(Object.entries(cdata).map(e => ["comment_"+e[0], e[1]]));
+        cdata = Object.fromEntries(Object.entries(cdata).map(e => ["comment_" + e[0], e[1]]));
         data = Object.assign(data, cdata);
     }
 
@@ -122,9 +124,9 @@ function subSelectFields(annoObj, annoFields=null, commentFields=null){
  * @param commentFields opt., whitelist of fields to include from comments
  * @returns {ObjectsToCsv} call await toString(allColumns=True) to produce a CSV string from this object
  */
-export function toCSV(annotations, annoFields=null, commentFields=null) {
+export function toCSV(annotations, annoFields = null, commentFields = null) {
     const data = annotations.map((anno) => {
-       return subSelectFields(anno, annoFields, commentFields);
+        return subSelectFields(anno, annoFields, commentFields);
     });
 
     return Papa.unparse(data);

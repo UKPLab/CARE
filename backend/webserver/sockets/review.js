@@ -1,4 +1,9 @@
-const logger = require("../../utils/logger.js")( "sockets/review");
+/* Handle reviews through websocket
+
+Author: Nils Dycke (dycke@ukp.informatik....)
+Source: --
+*/
+const logger = require("../../utils/logger.js")("sockets/review");
 const {
     add, get, update, getByUser, getAll, toReadable, getMetaByUser
 } = require("../../db/methods/review.js");
@@ -26,7 +31,7 @@ exports = module.exports = function (io) {
 
 
         const update_all_reviews = async user => {
-            if (user.sysrole === "admin"){
+            if (user.sysrole === "admin") {
                 try {
                     const reviews = await getAll();
                     const mappedReviews = await Promise.all(reviews.map(async x => await toReadable(x)));
@@ -58,19 +63,25 @@ exports = module.exports = function (io) {
                 review = await get(data.review_id);
                 if (data.decision) { // view for acceptance decision
                     if (review.decisionBy === socket.request.session.passport.user.id) {
-                        if(review.accepted === null) {
+                        if (review.accepted === null) {
                             socket.emit("reviewData", {success: true, document_id: review.document});
                         } else {
-                            socket.emit("reviewData", {success: false, message: "The decision process for this review is already over!"});
+                            socket.emit("reviewData", {
+                                success: false,
+                                message: "The decision process for this review is already over!"
+                            });
                             logger.error("Review already submitted error: " + JSON.stringify(data), {user: socket.request.session.passport.user.id});
                         }
                     } else {
-                        socket.emit("reviewData", {success: false, message: "You dont have access to this decision process!"});
+                        socket.emit("reviewData", {
+                            success: false,
+                            message: "You dont have access to this decision process!"
+                        });
                         logger.error("Access Denied on review: " + JSON.stringify(data), {user: socket.request.session.passport.user.id});
                     }
                 } else { // view for review process
                     if (review.startBy === socket.request.session.passport.user.id) {
-                        if(!review.submitted) {
+                        if (!review.submitted) {
                             socket.emit("reviewData", {success: true, document_id: review.document});
                         } else {
                             socket.emit("reviewData", {success: false, message: "This review is already submitted!"});
@@ -82,8 +93,11 @@ exports = module.exports = function (io) {
                     }
 
                 }
-            } catch(e) {
-                socket.emit("reviewData", {success: false, message: "Problems with loading review data from database!"});
+            } catch (e) {
+                socket.emit("reviewData", {
+                    success: false,
+                    message: "Problems with loading review data from database!"
+                });
             }
         });
 
@@ -98,8 +112,11 @@ exports = module.exports = function (io) {
 
                 socket.emit("reviewDataUser", {success: true, reviews: mappedReviews});
             } catch (e) {
-                socket.emit("reviewDataUser", {success: false, message: "Failed to retrieve review data for this user"});
-                logger.error("DB error while loading reviews by user from database" + JSON.stringify(data), {user: socket.request.session.passport.user.id })
+                socket.emit("reviewDataUser", {
+                    success: false,
+                    message: "Failed to retrieve review data for this user"
+                });
+                logger.error("DB error while loading reviews by user from database" + JSON.stringify(data), {user: socket.request.session.passport.user.id})
             }
         });
 
@@ -110,8 +127,11 @@ exports = module.exports = function (io) {
 
                 socket.emit("metaReviewDataUser", {success: true, reviews: mappedReviews});
             } catch (e) {
-                socket.emit("metaReviewDataUser", {success: false, message: "Failed to retrieve review data for this user"});
-                logger.error("DB error while loading meta reviews by user from database" + JSON.stringify(data), {user: socket.request.session.passport.user.id })
+                socket.emit("metaReviewDataUser", {
+                    success: false,
+                    message: "Failed to retrieve review data for this user"
+                });
+                logger.error("DB error while loading meta reviews by user from database" + JSON.stringify(data), {user: socket.request.session.passport.user.id})
             }
         });
 
@@ -184,21 +204,22 @@ exports = module.exports = function (io) {
                     }
 
                     await addRawAnnotation(annotation);
-                   for(const comment of anno.comments) {
-                       let new_comment = {
+                    for (const comment of anno.comments) {
+                        let new_comment = {
                             hash: uuidv4(),
-                           creator: comment.creator,
-                           text: comment.text,
-                           referenceAnnotation: new_hash,
+                            creator: comment.creator,
+                            text: comment.text,
+                            referenceAnnotation: new_hash,
                             deleted: comment.deleted,
                             deletedAt: comment.deletedAt
-                       }
+                        }
                         await addRawComment(new_comment);
                     }
 
 
                 }
-            } catch(e) {
+            } catch (e) {
+                //TODO send error to database instead of console.log
                 console.log(e);
             }
 

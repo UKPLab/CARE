@@ -13,7 +13,6 @@ describe('Post Endpoints', () => {
                 username: "admin",
                 password: "admin",
             })
-        //console.log(res);
         expect(res.statusCode).toEqual(200)
         //expect(res.body).toHaveProperty('post')
     })

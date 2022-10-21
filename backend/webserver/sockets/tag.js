@@ -2,7 +2,7 @@
 
 Loading tags and tagSets through websocket
 
-Author: Dennis Zyska (zyska@...)
+Author: Dennis Zyska (zyska@...), Nils Dycke (dycke@ukp...)
 Source: --
 */
 const {
@@ -182,7 +182,7 @@ exports = module.exports = function (io) {
                 } else {
                     // security check
                     if (socket.request.session.passport.user.sysrole !== "admin") {
-                        const prevTag =  await getTag(t.id);
+                        const prevTag = await getTag(t.id);
                         if (prevTag.userId !== socket.request.session.passport.user.id) {
                             return null;
                         }

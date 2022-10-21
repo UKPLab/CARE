@@ -3,7 +3,8 @@
     <div class="card-header d-flex justify-content-between align-items-center">
       Documents
       <div>
-        <button class="btn btn-sm btn-secondary me-1" type="button"  @click="exportAllAnnotations()">Export Annotations</button>
+        <button class="btn btn-sm btn-secondary me-1" type="button" @click="exportAllAnnotations()">Export Annotations
+        </button>
         <Upload @addedDoc="onAddedDoc"></Upload>
       </div>
     </div>
@@ -38,7 +39,8 @@
               </button>
               -->
 
-              <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip" title="Delete document..."
+              <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
+                      title="Delete document..."
                       type="button" @click="deleteDoc(item.id)">
                 <svg class="bi bi-trash3-fill" fill="currentColor" height="16" viewBox="0 0 16 16"
                      width="16" xmlns="http://www.w3.org/2000/svg">
@@ -60,8 +62,11 @@
             <button class="btn"
                     :class="reviewState(item.hash) === 'SUBMITTED' ? 'disabled btn-outline-secondary' : reviewState(item.hash) === 'PENDING' ? 'btn-outline-primary' : 'btn-outline-success'"
                     type="button"
-                    @click="startReview(item.hash)">{{ reviewState(item.hash) === "PENDING" ? "Continue"
-                                                        : (reviewState(item.hash) === "SUBMITTED" ? "Submitted" : "Start") }}</button>
+                    @click="startReview(item.hash)">{{
+                reviewState(item.hash) === "PENDING" ? "Continue"
+                    : (reviewState(item.hash) === "SUBMITTED" ? "Submitted" : "Start")
+              }}
+            </button>
           </td>
         </tr>
         </tbody>
@@ -126,7 +131,7 @@ export default {
     },
     startReview(document_id) {
       //if a review was already started on this document, don't start a new one
-      if(this.reviews.map(r => r.document).includes(document_id)){
+      if (this.reviews.map(r => r.document).includes(document_id)) {
         const review_i = this.reviews.map(r => r.document).indexOf(document_id);
 
         this.$router.push(`/review/${this.reviews[review_i].hash}`);
@@ -148,32 +153,40 @@ export default {
     },
     reviewState(document_id) {
       const review_i = this.reviews.map(r => r.document).indexOf(document_id); //gets first review matching the document
-      if(review_i === -1){
+      if (review_i === -1) {
         return "NOT_STARTED";
       }
 
       return this.reviews[review_i].submitted ? "SUBMITTED" : "PENDING";
     },
-    exportAllAnnotations(){
+    exportAllAnnotations() {
       const doc_ids = this.items.map(i => i.hash);
       this.exportAnnotations(doc_ids);
     },
-    exportAnnotations(doc_ids){
+    exportAnnotations(doc_ids) {
       this.sockets.subscribe("exportedAnnotations", (r) => {
         this.sockets.unsubscribe('exportedAnnotations');
 
-        if(r.success){
+        if (r.success) {
           let exported = 0;
           r.csvs.forEach((val, index) => {
-            if(val !== null && val.length > 0) {
+            if (val !== null && val.length > 0) {
               const docId = r.docids[index];
               exported++;
               window.saveAs(new Blob([val], {type: "text/csv;charset=utf-8"}), `${docId}_annotations.csv`);
             }
           });
-          this.eventBus.emit('toast', {title:"Export Success", message:`Exported annotations for ${exported} documents`, variant: "success"});
+          this.eventBus.emit('toast', {
+            title: "Export Success",
+            message: `Exported annotations for ${exported} documents`,
+            variant: "success"
+          });
         } else {
-          this.eventBus.emit('toast', {title:"Export Failed", message:"Export failed for some reason.", variant: "danger"});
+          this.eventBus.emit('toast', {
+            title: "Export Failed",
+            message: "Export failed for some reason.",
+            variant: "danger"
+          });
         }
       });
 

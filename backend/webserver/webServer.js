@@ -30,10 +30,10 @@ const BUILD_PATH = `${__dirname}/../../dist/`;
 
 // define logger
 // check logging dir exists
-if (!fs.existsSync(process.env.LOGGING_PATH || "./logs")){
-  fs.mkdirSync(process.env.LOGGING_PATH || "./logs", { recursive: true });
+if (!fs.existsSync(process.env.LOGGING_PATH || "./logs")) {
+    fs.mkdirSync(process.env.LOGGING_PATH || "./logs", {recursive: true});
 }
-const logger = require("../utils/logger.js")( "webServer");
+const logger = require("../utils/logger.js")("webServer");
 
 // routes
 const routes = [
@@ -63,7 +63,10 @@ exports = module.exports = function webserver() {
     const app = express()
 
     logger.debug("Use CORS Restriction");
-    app.use(cors({origin: ['http://localhost:3000',"http://localhost:8080", 'https://peer.ukp.informatik.tu-darmstadt.de'], credentials: true}));
+    app.use(cors({
+        origin: ['http://localhost:3000', "http://localhost:8080", 'https://peer.ukp.informatik.tu-darmstadt.de'],
+        credentials: true
+    }));
 
     // No Caching
     app.disable('etag');
@@ -73,11 +76,6 @@ exports = module.exports = function webserver() {
 
     // Session Initialization
     const sessionMiddleware = session({
-        /*genid: (req) => {
-            console.log('Inside session middleware genid function')
-            console.log(`Request object sessionID from client: ${req.sessionID}`)
-            return uuidv4(); // use UUIDs for session IDs
-        },*/
         store: new FileStore(),
         secret: 'thatsecretthinggoeshere',
         resave: false,
@@ -102,8 +100,12 @@ exports = module.exports = function webserver() {
     const httpServer = createServer(app);
     const socketIoOptions = {
         cors: {
-            origin: ["http://localhost:3000", 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'], methods: ["GET", "POST"], credentials: true,
-        }, origins: ['http://localhost:3000', 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'], handlePreflightRequest: (req, res) => {
+            origin: ["http://localhost:3000", 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'],
+            methods: ["GET", "POST"],
+            credentials: true,
+        },
+        origins: ['http://localhost:3000', 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'],
+        handlePreflightRequest: (req, res) => {
             const headers = {
                 "Access-Control-Allow-Headers": "Content-Type, Authorization",
                 "Access-Control-Allow-Origin": req.headers.origin, //or the specific origin you want to give access to,
@@ -111,7 +113,8 @@ exports = module.exports = function webserver() {
             };
             res.writeHead(200, headers);
             res.end();
-        }, maxHttpBufferSize: 1e8 // 100 MB for file upload
+        },
+        maxHttpBufferSize: 1e8 // 100 MB for file upload
     };
 
 
@@ -129,8 +132,8 @@ exports = module.exports = function webserver() {
                 logger.warn("Session in websocket not available! Send logout...");
                 socket.emit("logout"); //force logout on client side
                 socket.disconnect();
-            } catch(e) {
-                console.log(e);
+            } catch (e) {
+                logger.debug("Websocket: Session not available + ", e);
             }
         }
         socket.onAny(() => {

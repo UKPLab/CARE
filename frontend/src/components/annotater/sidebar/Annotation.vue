@@ -44,8 +44,13 @@
                   placeholder="Add tag..."
                   v-bind:disabled="isSubmitted">
             <option disabled hidden selected value="">Choose a tag...</option>
-            <option v-for="t in assignableTags" :key="t.id" v-bind:data-badge-style="t.colorCode" selected="true" :value="t.id">{{t.name}}</option>
-            <option v-for="t in tags.filter(tag => tagsIdsUsed.includes(tag.id)).filter(tag => !assignableTags.map(at => at.id).includes(tag.id))" :key="t.id" selected="true" :data-badge-style="t.colorCode" :value="t.id">{{t.name}}</option>
+            <option v-for="t in assignableTags" :key="t.id" v-bind:data-badge-style="t.colorCode" selected="true"
+                    :value="t.id">{{ t.name }}
+            </option>
+            <option
+                v-for="t in tags.filter(tag => tagsIdsUsed.includes(tag.id)).filter(tag => !assignableTags.map(at => at.id).includes(tag.id))"
+                :key="t.id" selected="true" :data-badge-style="t.colorCode" :value="t.id">{{ t.name }}
+            </option>
           </select>
           <div class="invalid-feedback">Please select a valid tag.</div>
         </div>
@@ -65,12 +70,14 @@
                    width="16" xmlns="http://www.w3.org/2000/svg">
                 <path
                     d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                <path d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
-                      fill-rule="evenodd"/>
+                <path
+                    d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
+                    fill-rule="evenodd"/>
               </svg>
               <span class="visually-hidden">Edit</span>
             </button>
-            <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip" title="Delete annotation"
+            <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
+                    title="Delete annotation"
                     type="button" v-on:click="remove()">
               <svg class="bi bi-trash3" fill="currentColor" height="16" viewBox="0 0 16 16" width="16"
                    xmlns="http://www.w3.org/2000/svg">
@@ -134,17 +141,17 @@ export default {
       setTimeout(() => this.$emit("focus", this.annoData.id), 100);
     }
 
-    if(autoSubmit){
+    if (autoSubmit) {
       this.submit();
     }
 
-    if(!this.isSubmitted){
-        this.input_required = true;
-        setTimeout(() => this.input_required = false, 800);
+    if (!this.isSubmitted) {
+      this.input_required = true;
+      setTimeout(() => this.input_required = false, 800);
     }
 
     this.eventBus.on("createdAnnotation", m => {
-      if(!this.isSubmitted){
+      if (!this.isSubmitted) {
         this.submit();
       }
     });
@@ -174,30 +181,8 @@ export default {
       return this.$store.getters["tag/getAllTags"](false);
     },
     tagsIdsUsed() {
-      console.log("Tag id used");
-      console.log([...new Set(this.annoData.tags)]);
       return [...new Set(this.annoData.tags)]
     },
-    /*nonActiveTags() {
-      if(this.assignableTags === undefined || this.assignableTags === null){
-        return [];
-      }
-
-      const nonActiveTags = this.annoTags.filter(t => !this.assignableTags.map(x => x.name).includes(t));
-      const allTags = this.$store.getters["tag/getAllTags"];
-
-      console.log("alltags", allTags);
-      console.log("nonActiveTags", nonActiveTags);
-
-      return nonActiveTags.map(t => {
-        const matched = allTags.find(a => a.description === t);
-        if(!matched){
-          return {name: t, colorCode: "primary", description: t}
-        } else {
-          return matched;
-        }
-      });
-    },*/
     isSubmitted: function () {
       return this.annoData.state === "SUBMITTED";
     },
@@ -249,10 +234,10 @@ export default {
     },
     toSubmitState() {
       const inElem = this.getTagInput();
-      if(inElem){
+      if (inElem) {
         inElem.disabled = true;
 
-         if (this.annoData.tags == null || this.annoData.tags.length === 0) {
+        if (this.annoData.tags == null || this.annoData.tags.length === 0) {
           inElem.placeholder = "No Tags";
         } else {
           inElem.placeholder = "";
@@ -269,9 +254,6 @@ export default {
       this.annoData.state = "SUBMITTED";
 
       this.toSubmitState();
-
-      console.log("SUBMIT");
-      console.log(this.annoData.tags);
 
       this.$socket.emit('updateAnnotation', {
         "annotation_id": this.annoData.id,
@@ -292,6 +274,7 @@ export default {
       });
     },
     respond() {
+      // TODO implement respond function
       console.log("A user tries to respond");
     },
   }

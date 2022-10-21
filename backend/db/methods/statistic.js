@@ -17,7 +17,8 @@ exports.add = async function add(action, data, user) {
             user: user,
             timestamp: new Date(),
         });
-    } catch(e) {
+    } catch (e) {
+        //TODO throw db error instead of console.log
         console.log("Can't put statistics into the database: " + e);
     }
 

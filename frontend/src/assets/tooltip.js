@@ -11,4 +11,8 @@ export const tooltip = {
     const tt = new Tooltip(el, {delay: 500});
     el.addEventListener("click", () => tt.dispose());
   },
+
+  unmount(el) {
+    el.removeEventListener("click");
+  }
 }

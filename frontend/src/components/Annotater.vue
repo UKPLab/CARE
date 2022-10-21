@@ -13,17 +13,31 @@
 
   <Teleport to="#topbarCustomPlaceholder">
     <form class="container-fluid justify-content-center">
-      <button v-if="review" class="btn btn-outline-success me-2" type="button" v-on:click="this.$refs.reviewSubmit.open()">Submit Review</button>
-      <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">Report</button>
-      <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">Accept</button>
-      <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">Reject</button>
-      <button :class="annotations.length > 0 ? '' : 'disabled'" class="btn btn-outline-secondary" type="button" @click="downloadAnnotations()">Download Annotations</button>
+      <button v-if="review" class="btn btn-outline-success me-2" type="button"
+              v-on:click="this.$refs.reviewSubmit.open()">Submit Review
+      </button>
+      <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">
+        Report
+      </button>
+      <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">
+        Accept
+      </button>
+      <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">
+        Reject
+      </button>
+      <button :class="annotations.length > 0 ? '' : 'disabled'" class="btn btn-outline-secondary" type="button"
+              @click="downloadAnnotations()">Download Annotations
+      </button>
     </form>
 
-    <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id" ></ReviewSubmit>
-    <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id" @decisionSubmit="decisionSubmit"></Report>
-    <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id" :document_id="document_id"></DecisionSubmit>
+
   </Teleport>
+
+  <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id"></ReviewSubmit>
+    <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id"
+            @decisionSubmit="decisionSubmit"></Report>
+    <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id"
+                    :document_id="document_id"></DecisionSubmit>
 
 </template>
 
@@ -98,7 +112,7 @@ export default {
     this.load();
   },
   methods: {
-      decisionSubmit(decision){
+    decisionSubmit(decision) {
       this.$refs.decisionSubmit.open(decision);
     },
     async scrollTo(annotationId) {
@@ -177,17 +191,19 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
+
+      // TODO data should loaded in app for basic settings
       this.$socket.emit("getTagSets");
       this.$socket.emit("getTags");
       this.$socket.emit("getSettings");
     },
-    annotationsToCsv(annotations){
+    annotationsToCsv(annotations) {
       const csv = toCSV(annotations, ["id", "document_id", "user", "anchors", "text", "tags", "comment"],
-                            ["id", "text"]);
+          ["id", "text"]);
 
       return csv.toString(true, true);
     },
-    downloadAnnotations(){
+    downloadAnnotations() {
       // for now: fetch the annotations from store -- later we could move this to the sidebar for what you see is what
       // you get behavior
       // Note: This export feature is realized in the frontend, because it is intended to allow users to filter and

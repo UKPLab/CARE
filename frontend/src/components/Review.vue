@@ -4,11 +4,21 @@
       <span class="visually-hidden">Loading...</span>
     </div>
   </div>
-  <Annotater v-else :document_id="document_id" :review_id="review_id" :readonly="decision" :review="!decision" :approve="decision" />
+  <Annotater v-else :document_id="document_id" :review_id="review_id" :readonly="decision" :review="!decision"
+             :approve="decision"/>
 </template>
 
 <script>
+/* Review.vue - Showing Annotator through review id
+
+This parent component provides the annotation view, which
+currently consists of all elements of the annotator.
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 import Annotater from "./Annotater.vue";
+
 export default {
   name: "Review",
   components: {Annotater},
@@ -24,7 +34,7 @@ export default {
       required: true,
     },
     'readonly': {
-     type: Boolean,
+      type: Boolean,
       required: false,
       default: false,
     },
@@ -36,22 +46,22 @@ export default {
   },
   created() {
     this.waiting = true;
-      this.sockets.subscribe("reviewData", (data) => {
-        this.sockets.unsubscribe('reviewData');
-        if (data.success) {
-          this.document_id = data.document_id;
-          this.waiting = false;
-        } else {
-          this.$router.push("/");
-          this.eventBus.emit('toast', {title:"Review Process", message:data.message, variant: "danger"});
-        }
-      });
-      this.$socket.emit('getReview',
-          {
-            "review_id": this.review_id,
-            "decision": this.decision,
-          });
-    }
+    this.sockets.subscribe("reviewData", (data) => {
+      this.sockets.unsubscribe('reviewData');
+      if (data.success) {
+        this.document_id = data.document_id;
+        this.waiting = false;
+      } else {
+        this.$router.push("/");
+        this.eventBus.emit('toast', {title: "Review Process", message: data.message, variant: "danger"});
+      }
+    });
+    this.$socket.emit('getReview',
+        {
+          "review_id": this.review_id,
+          "decision": this.decision,
+        });
+  }
 }
 </script>
 

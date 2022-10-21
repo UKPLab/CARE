@@ -18,14 +18,14 @@ export default {
             return state
         },
         getValue: state => (key) => {
-            if(state === null) {
+            if (state === null) {
                 return null;
             }
 
             return state[key];
         },
         getValueAsInt: state => (key) => {
-            if(state === null) {
+            if (state === null) {
                 return null;
             }
 
@@ -39,6 +39,5 @@ export default {
             });
         },
     },
-    actions: {
-    }
+    actions: {}
 };

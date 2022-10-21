@@ -34,7 +34,11 @@ const routes = [
         alias: "/dashboard",
         meta: {requiresAuth: true, toggleSidebar: true, default: true},
     },
-    {path: "/login", component: () => import("./components/auth/Login.vue"), meta: {requiresAuth: false, hideTopbar: true}},
+    {
+        path: "/login",
+        component: () => import("./components/auth/Login.vue"),
+        meta: {requiresAuth: false, hideTopbar: true}
+    },
     {
         path: "/register",
         component: () => import("./components/auth/Register.vue"),
@@ -52,7 +56,12 @@ const routes = [
         props: route => ({document_id: route.params.document_id, readonly: true}),
         meta: {requireAuth: true}
     },
-    {path: "/review/:review_id", component: () => import("./components/Review.vue"), props: true, meta: {requireAuth: true}},
+    {
+        path: "/review/:review_id",
+        component: () => import("./components/Review.vue"),
+        props: true,
+        meta: {requireAuth: true}
+    },
     {
         path: "/approve/:review_id",
         component: () => import("./components/Review.vue"),

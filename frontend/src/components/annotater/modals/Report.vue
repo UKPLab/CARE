@@ -1,19 +1,19 @@
 <template>
   <Modal ref="report" xl>
     <template v-slot:title>Review Report</template>
-    <template v-slot:body >
+    <template v-slot:body>
       <p v-if="reportItems.length == 0">
         Report could not be generated.
       </p>
       <div v-for="s in Array(reportSections.length).keys()" :key="s">
         <h2>
           <span :class="`badge bg-${reportSections[s].colorCode}`">
-             {{reportSections[s].name}}
+             {{ reportSections[s].name }}
           </span>
         </h2>
         <ul v-if="reportItems.length > s">
           <li v-for="r in reportItems[s]" :key="r.id">
-             <ReportItem :content="r" @showReportAnnotation="showAnnotation"></ReportItem>
+            <ReportItem :content="r" @showReportAnnotation="showAnnotation"></ReportItem>
           </li>
           <li v-if="reportItems[s].length === 0 ">
             No comments.
@@ -23,7 +23,8 @@
           No comments.
         </p>
       </div>
-      <p id="footnote">*Tip: Hover over a reference to see the referenced text or click to view the annotation in the PDF.</p>
+      <p id="footnote">*Tip: Hover over a reference to see the referenced text or click to view the annotation in the
+        PDF.</p>
     </template>
     <template v-slot:footer>
       <button class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">Accept</button>
@@ -34,6 +35,11 @@
 </template>
 
 <script>
+/* Report.vue - modal to show a report over comments/annotations
+
+Author: Nils Dycke (dycke@ukp...)
+Source: -
+*/
 import Modal from "../../basic/Modal.vue";
 import ReportItem from "../ReportItem.vue";
 
@@ -52,17 +58,17 @@ export default {
       required: true
     },
     'review_id': {
-     type: String,
+      type: String,
       required: true,
     },
   },
   mounted() {
   },
   watch: {
-    annotations(newVal, oldVal){
+    annotations(newVal, oldVal) {
       this.gen_report();
     },
-    tagSet(newVal, oldVal){
+    tagSet(newVal, oldVal) {
       this.gen_report();
     }
   },
@@ -96,7 +102,7 @@ export default {
       });
 
       const untaggedAnnos = this.annotations.filter(a => a.tags.length === 0 || a.tags[0] === "");
-      if(untaggedAnnos.length > 0){
+      if (untaggedAnnos.length > 0) {
         this.reportSections.unshift({name: "General Remarks", colorCode: "secondary"})
         this.reportItems.unshift(untaggedAnnos);
       }
@@ -108,12 +114,12 @@ export default {
         this.reportItems.unshift(this.annotations.filter(a => a.tags.length > 0 && a.tags[0] === "Highlight"));
       }*/
     },
-    showAnnotation(annoID){
+    showAnnotation(annoID) {
       this.eventBus.emit("sidebarScroll", annoID);
       this.eventBus.emit('pdfScroll', annoID);
       this.cancel();
     },
-    decisionSubmit(decision){
+    decisionSubmit(decision) {
       this.$emit('decisionSubmit', decision);
       this.cancel();
     }

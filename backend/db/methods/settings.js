@@ -1,3 +1,9 @@
+/* Handle Settings in Database
+
+Functions to handle settings in the database
+
+Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
+*/
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
@@ -37,16 +43,16 @@ exports.getUserSettings = async function getUserSettings(user_id) {
 
 exports.setUserSetting = async function setUserSetting(user_id, key, value) {
     const dbObj = {
-                    userId: user_id,
-                    key: key,
-                    value: value
-        };
+        userId: user_id,
+        key: key,
+        value: value
+    };
 
     try {
         return await UserSetting.create(dbObj).then((msg) => {
             return msg;
-        }).catch(async (err) =>{
-            return await UserSetting.update({value:value}, {where: {[Op.and]: [{userId:user_id}, {key:key}] }});
+        }).catch(async (err) => {
+            return await UserSetting.update({value: value}, {where: {[Op.and]: [{userId: user_id}, {key: key}]}});
         });
     } catch (err) {
         if (isInternalDatabaseError(err)) {
