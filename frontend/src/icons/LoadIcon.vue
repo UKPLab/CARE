@@ -4,8 +4,8 @@
 
 <script>
 import {defineAsyncComponent} from "vue";
-import IconLoading from "./IconLoading.vue";
-import IconQuestionCircle from "./IconQuestionCircle.vue";
+import IconLoading from "./bootstrap/IconLoading.vue";
+import IconQuestionCircle from "./bootstrap/IconQuestionCircle.vue";
 
 export default {
   name: "LoadIcon",
@@ -29,7 +29,7 @@ export default {
       }
       return defineAsyncComponent(
           {
-            loader: () => import("./" + iconComponent + ".vue"),
+            loader: () => import("./bootstrap/" + iconComponent + ".vue"),
             loadingComponent: IconLoading,
             errorComponent: IconQuestionCircle
           });
