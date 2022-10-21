@@ -5,7 +5,7 @@
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             Login
-            <a class="btn btn-sm btn-primary" href="#" @click="this.$router.push('/register')">Register</a>
+            <a class="btn btn-sm btn-primary" @click="this.$router.push('/register')">Register</a>
           </div>
 
           <div class="card-body mx-4 my-4">
