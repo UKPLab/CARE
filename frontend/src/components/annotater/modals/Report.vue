@@ -27,9 +27,9 @@
         PDF.</p>
     </template>
     <template v-slot:footer>
+      <button class="btn btn-secondary" type="button" @click="cancel">Close</button>
       <button class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">Accept</button>
       <button class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">Reject</button>
-      <button class="btn btn-secondary" type="button" @click="cancel">Close</button>
     </template>
   </Modal>
 </template>
