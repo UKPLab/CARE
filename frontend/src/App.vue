@@ -22,10 +22,6 @@ export default {
       return this.$route.meta.hideTopbar !== undefined && this.$route.meta.hideTopbar;
     }
   },
-  mounted() {
-    console.log("Test:")
-    console.log(this.$route.meta);
-  },
   sockets: {
     logout: function (data) {
       this.$router.push("/login");

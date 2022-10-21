@@ -75,7 +75,6 @@
   </div>
 
   <TermsModal ref="terms"></TermsModal>
-  <StatisticsModal ref="stats"></StatisticsModal>
 </template>
 
 <script>
@@ -89,11 +88,10 @@ Source: -
 */
 import {mapActions} from "vuex";
 import TermsModal from "./TermsModal.vue";
-import StatisticsModal from "./StatisticsModal.vue";
 
 export default {
   name: "Register",
-  components: {StatisticsModal, TermsModal},
+  components: {TermsModal},
   data() {
     return {
       first_name: "",
