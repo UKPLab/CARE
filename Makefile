@@ -27,8 +27,6 @@ help:
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make clean             				Delete development files"
-	@echo "make nlp_dev          				Run the flask app. Requires you to run make nlp_services in another terminal first"
-	@echo "make nlp_services      				Run required services"
 
 .PHONY: dev
 dev: node_modules/.uptodate backend/node_modules/.uptodate
@@ -106,36 +104,12 @@ clean: check_clean
 	rm -rf dist
 	docker-compose rm -f -s -v
 	docker network rm peer_default
-	rm -r nlp/grobid_client_python
 
 .PHONY: init
 init: backend/node_modules/.uptodate
 	@echo ${POSTGRES_HOST}
 	cd backend/db && npx sequelize-cli db:create || echo "IGNORING ERROR"
 	cd backend/db && npx sequelize-cli db:migrate
-
-.PHONY: nlp_dev
-
-nlp_dev:
-	@echo "$(GROBID_HOST)"
-	export PYTHON_PATH="$(CURDIR)/nlp/src"
-	python3 ./nlp/src/app.py --dev
-
-.PHONY: nlp_celery
-nlp_celery:
-	export C_FORCE_ROOT=true
-	set -a
-	source .env
-
-	cd ./nlp/src && \
-	celery --app app.celery worker -l INFO -E
-
-.PHONY: nlp_services
-nlp_services:
-	docker-compose up grobid \
- 					  rabbitmq \
- 					  redis \
- 					  celery-worker
 
 node_modules/.uptodate: package.json package-lock.json
 	npm install
