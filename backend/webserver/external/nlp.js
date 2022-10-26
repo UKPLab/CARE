@@ -14,6 +14,9 @@ class NLP_Service {
     }
 
     init() {
+        if (process.env.NLP_USE === "false") {
+            return;
+        }
         this.socket = io_client(process.env.NLP_SERVICE,
             {
                 query: {token: process.env.NLP_ACCESS_TOKEN},
@@ -63,10 +66,16 @@ class NLP_Service {
     }
 
     disconnect() {
+        if (process.env.NLP_USE === "false") {
+            return;
+        }
         this.socket.disconnect();
     }
 
     connect() {
+        if (process.env.NLP_USE === "false") {
+            return;
+        }
         this.socket.connect();
     }
 
