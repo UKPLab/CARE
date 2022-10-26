@@ -24,6 +24,7 @@ const passport = require("passport");
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const bodyParser = require('body-parser');
+const NLP_Service = require('./external/nlp.js');
 
 // define PATHs
 const BUILD_PATH = `${__dirname}/../../dist/`;
@@ -50,8 +51,8 @@ const sockets = [
     require("./sockets/tag"),
     require("./sockets/statistic"),
     require("./sockets/settings")
-    //require("./sockets/nlp")
 ];
+const nlp_socket = require("./sockets/nlp");
 
 /**
  * The main HTTP server which serves all files to the client
@@ -117,7 +118,6 @@ exports = module.exports = function webserver() {
         maxHttpBufferSize: 1e8 // 100 MB for file upload
     };
 
-
     logger.debug("Initialize Websocket...");
     const io = new Server(httpServer, socketIoOptions);
     const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
@@ -143,6 +143,11 @@ exports = module.exports = function webserver() {
     });
     logger.debug("Initialize Sockets...");
     sockets.forEach(socket => socket(io));
+
+    logger.debug("Initialize NLP Service...");
+    const nlp = new NLP_Service();
+    nlp.init();
+    nlp_socket(io, nlp);
 
     return [app, httpServer];
 }
