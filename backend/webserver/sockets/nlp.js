@@ -19,6 +19,7 @@ exports = module.exports = function (io, nlp) {
             logger.info(`Message NLP SERVER -> FRONTEND: nlp_${msg} ${data}`);
         });
 
+
         // forwarding frontend messages to NLP server
         socket.onAny((msg, data) => {
             if (msg.startsWith("nlp_") && ws2NLP.connected) {
