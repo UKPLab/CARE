@@ -14,18 +14,19 @@ class NLP_Service {
     }
 
     init() {
-        if (process.env.NLP_USE === "false") {
-            return;
-        }
         this.socket = io_client(process.env.NLP_SERVICE,
             {
                 query: {token: process.env.NLP_ACCESS_TOKEN},
                 // Query is available under socket.handshake.query in server
                 reconnection: true,
-                autoConnect: true,
+                autoConnect: (process.env.NLP_USE !== "false"),
                 timeout: 10000, //timeout between connection attempts
             }
         );
+
+        if (process.env.NLP_USE === "false") {
+            return;
+        }
 
         // Handle connection errors
         this.socket.on("connect_error", () => {
