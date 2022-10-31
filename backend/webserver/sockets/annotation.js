@@ -19,6 +19,8 @@ const {mergeAnnosAndComments} = require("../../db/methods/annotation");
 const {getByIds} = require("../../db/methods/tag");
 const {sendTagsUpdate} = require("./utils/tag");
 
+//TODO adding rooms for document
+
 exports = module.exports = function (io) {
     io.on("connection", (socket) => {
         socket.on("addAnnotation", async (data) => {
