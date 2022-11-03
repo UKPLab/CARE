@@ -9,7 +9,7 @@ module.exports = {
                 type: Sequelize.INTEGER
             },
             hash: {
-                type: Sequelize.STRING,
+                type: Sequelize.UUIDV4,
                 allowNull: false,
                 unique: true
             },
@@ -39,7 +39,7 @@ module.exports = {
             },
             draft: {
                 type: Sequelize.BOOLEAN,
-                defaultVale: false
+                defaultVale: true
             },
             deleted: {
                 type: Sequelize.BOOLEAN,

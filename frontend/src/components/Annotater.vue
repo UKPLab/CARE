@@ -34,10 +34,10 @@
   </Teleport>
 
   <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id"></ReviewSubmit>
-    <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id"
-            @decisionSubmit="decisionSubmit"></Report>
-    <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id"
-                    :document_id="document_id"></DecisionSubmit>
+  <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id"
+          @decisionSubmit="decisionSubmit"></Report>
+  <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id"
+                  :document_id="document_id"></DecisionSubmit>
 
 </template>
 
@@ -110,6 +110,15 @@ export default {
       });
     });
     this.load();
+  },
+  unmounted() {
+    // Leave the room for document updates
+    this.$socket.emit("unsubscribe:document", {doc: this.document_id});
+  },
+  sockets: {
+    connect: function () {
+      this.load();
+    },
   },
   methods: {
     decisionSubmit(decision) {
@@ -191,11 +200,13 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-
       // TODO data should loaded in app for basic settings
       this.$socket.emit("getTagSets");
       this.$socket.emit("getTags");
       this.$socket.emit("getSettings");
+
+      // Join Room for document updates
+      this.$socket.emit("subscribe:document", {doc: this.document_id});
     },
     annotationsToCsv(annotations) {
       const csv = toCSV(annotations, ["id", "document_id", "user", "anchors", "text", "tags", "comment"],
