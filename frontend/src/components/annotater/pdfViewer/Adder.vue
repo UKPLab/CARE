@@ -26,8 +26,7 @@ Source: -
 */
 import {TextPosition, TextRange} from "../../../assets/anchoring/text-range";
 import {TextQuoteAnchor} from '../../../assets/anchoring/types';
-import {mapMutations, mapGetters, mapActions} from "vuex";
-import {v4} from 'uuid';
+import {mapMutations} from "vuex";
 
 export default {
   name: "Adder",
@@ -57,7 +56,6 @@ export default {
   },
   methods: {
     ...mapMutations({addAnnotation: "anno/ADD_ANNOTATION"}),
-    ...mapGetters({userData: 'auth/getUser'}),
 
     checkSelection(event) {
       // cancel pending callbacks
@@ -84,19 +82,11 @@ export default {
         selector: selectors,
       }));
 
-      const uid = this.userData().id;
-      const anno = {
-        "document_id": this.document_id,
-        "annotation": {target},
-        "user": uid,
-        "comment": null,
-        "draft": true,
-        "annotation_id": v4(),
-        "tags": [tag.id]
-      };
-
-      this.$socket.emit('addAnnotation', anno);
-      this.eventBus.emit("createdAnnotation", anno.annotation_id);
+      this.$socket.emit('addAnnotation', {
+        document: this.document_id,
+        selectors: {target},
+        tags: JSON.stringify([tag.id])
+      });
 
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();

@@ -53,6 +53,10 @@ const sockets = [
     //require("./sockets/nlp")
 ];
 
+const subscriptions = [
+    require("./sockets/subscription/documents")
+]
+
 /**
  * The main HTTP server which serves all files to the client
  *
@@ -143,6 +147,11 @@ exports = module.exports = function webserver() {
     });
     logger.debug("Initialize Sockets...");
     sockets.forEach(socket => socket(io));
+
+    logger.debug("Adding subscriptions...");
+    subscriptions.forEach(subscription => subscription(io))
+
+
 
     return [app, httpServer];
 }

@@ -8,6 +8,7 @@ const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
 const {resolveUserIdToName} = require("./user");
+const {v4: uuidv4} = require("uuid");
 
 const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
 const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
@@ -69,21 +70,18 @@ exports.getAnnoFromDocRaw = async function getAnnoFromDocRaw(document) {
     }
 }
 
-exports.add = async function add(annotation, comment = null) {
-    let anno;
+exports.add = async function add(annotation, user_id) {
+
+    let newAnnotation = {
+        hash: uuidv4(),
+        text: annotation.selectors.target === undefined ? null : annotation.selectors.target[0].selector[1].exact,
+        tags: [],
+        selectors: {},
+        draft: true,
+    }
+
     try {
-        //TODO without checking we add the given user as creator to the DB, that is incorrect -- we need to use the one of the session
-        anno = await Annotation.create({
-            hash: annotation.annotation_id,
-            creator: annotation.user,
-            text: annotation.annotation.target === undefined ? null : annotation.annotation.target[0].selector[1].exact,
-            document: annotation.document_id,
-            selectors: annotation.annotation.target === undefined ? null : annotation.annotation.target,
-            draft: annotation.draft,
-            tags: JSON.stringify(annotation.tags),
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+        return await Annotation.create(Object.assign(Object.assign(newAnnotation, annotation), {creator: user_id}))
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
@@ -94,6 +92,7 @@ exports.add = async function add(annotation, comment = null) {
         }
     }
 
+    /*
     if (comment != null) {
         try {
             await Comment.create({
@@ -113,9 +112,8 @@ exports.add = async function add(annotation, comment = null) {
                 throw InvalidCommentParameters("Provided comment invalid");
             }
         }
-    }
+    }*/
 
-    return anno;
 }
 
 exports.deleteAnno = async function deleteAnno(annoId) {

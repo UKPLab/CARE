@@ -13,7 +13,7 @@
             class="list-group-i"
             v-on:mouseleave="unhover(anno.id)"
             v-on:mouseover='hover(anno.id)'>
-          <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :readonly="readonly"
+          <Annotation v-bind:id="anno.id" :annotation_id="anno.id" :config="config" :readonly="readonly"
                       @focus="focusAnnotation"></Annotation>
         </li>
         <li id="addPageNote" v-if="!readonly">
@@ -39,10 +39,10 @@ Here the annotations are listed and can be modified, also includes scrolling fea
 Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import {mapGetters, mapMutations} from "vuex";
-import Annotation from "./Annotation.vue";
+import {mapMutations} from "vuex";
+import Annotation from "./AnnoCard.vue";
 import {scrollElement} from "../../../assets/anchoring/scroll";
-import {v4} from "uuid";
+
 
 export default {
   name: "Sidebar",
@@ -96,7 +96,6 @@ export default {
       hover: "anno/HOVER",
       unhover: "anno/UNHOVER"
     }),
-    ...mapGetters({userData: 'auth/getUser'}),
     load() {
       this.$socket.emit("loadAnnotations", {id: this.document_id});
     },
@@ -109,18 +108,9 @@ export default {
       await this.sidebarScrollTo(annotation_id);
     },
     createDocumentComment() {
-      const uid = this.userData().id;
-      const anno = {
-        "document_id": this.document_id,
-        "annotation": {},
-        "user": uid,
-        "comment": null,
-        "draft": true,
-        "annotation_id": v4(),
-        "tags": []
-      };
-      this.$socket.emit('addAnnotation', anno);
-      this.eventBus.emit("createdAnnotation", anno.annotation_id);
+      this.$socket.emit('addAnnotation', {
+        document: this.document_id,
+      });
     }
   }
 }

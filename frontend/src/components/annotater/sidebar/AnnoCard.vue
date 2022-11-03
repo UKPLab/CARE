@@ -7,7 +7,7 @@
             <a>Document Note</a>
           </div>
           <div class="col">
-            <a id="user_info">User: {{ annoData.user }}</a>
+            <a id="user_info">User: {{ annotation.user }}</a>
           </div>
         </div>
       </div>
@@ -17,7 +17,7 @@
         <blockquote v-if="!isPageNote"
                     id="text"
                     class="blockquote card-text"
-                    v-on:click="scrollTo(annoData.id)">
+                    v-on:click="scrollTo(annotation.id)">
           {{ truncatedText }}
         </blockquote>
         <div v-else id="text" class="blockquote card-text">
@@ -30,11 +30,11 @@
                     @keydown.ctrl.enter="submit()">
           </textarea>
         </div>
-        <div v-else-if="annoData.comment != null && annoData.comment.text.length > 0" id="comment" class="card-text">
-          {{ annoData.comment.text }}
+        <div v-else-if="annotation.comment != null && annotation.comment.text.length > 0" id="comment" class="card-text">
+          {{ annotation.comment.text }}
         </div>
-        <div id="tags" v-bind:disabled="isSubmitted" v-bind:uid="'tags'+annoData.id">
-          <select v-bind:id="'annotationTags-'+annoData.id"
+        <div id="tags" v-bind:disabled="isSubmitted" v-bind:uid="'tags'+annotation.id">
+          <select v-bind:id="'annotationTags-'+annotation.id"
                   v-model="annoTags"
                   allowClear="true"
                   class="form-select"
@@ -107,7 +107,7 @@
 </template>
 
 <script>
-/* Annotation.vue - annotation elements
+/* AnnoCard.vue - annotation elements
 
 This component holds the current data of each annotation and handles the annotation functionality itself
 
@@ -120,25 +120,25 @@ import {Comment} from "../../../data/comment.js";
 
 export default {
   name: "Annotation",
-  props: ["annoData", "config", "readonly"],
+  props: ["annotation_id", "config", "readonly"],
   data: function () {
     return {
       input_required: false
     }
   },
   mounted() {
-    const formElement = `#annotationTags-${this.annoData.id}`;
+    const formElement = `#annotationTags-${this.annotation.id}`;
     Tags.init(formElement);
 
-    const autoSubmit = (this.annoData.tags.length === 1 && this.annoData.tags[0] === "Highlight");
+    const autoSubmit = (this.annotation.tags.length === 1 && this.annotation.tags[0] === "Highlight");
 
-    if (this.annoData.state === "SUBMITTED") {
+    if (this.annotation.state === "SUBMITTED") {
       this.toSubmitState();
     } else {
       this.toEditState();
 
       //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
-      setTimeout(() => this.$emit("focus", this.annoData.id), 100);
+      setTimeout(() => this.$emit("focus", this.annotation.id), 100);
     }
 
     if (autoSubmit) {
@@ -149,12 +149,12 @@ export default {
       this.input_required = true;
       setTimeout(() => this.input_required = false, 800);
     }
-
+    /*
     this.eventBus.on("createdAnnotation", m => {
       if (!this.isSubmitted) {
         this.submit();
       }
-    });
+    });*/
   },
   unmounted() {
   },
@@ -169,7 +169,7 @@ export default {
   },
   computed: {
     isPageNote() {
-      return this.annoData.text === null || this.annoData.text.length === 0;
+      return this.annotation.text === null || this.annotation.text.length === 0;
     },
     defaultTagSet() {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
@@ -181,34 +181,41 @@ export default {
       return this.$store.getters["tag/getAllTags"](false);
     },
     tagsIdsUsed() {
-      return [...new Set(this.annoData.tags)]
+      return [...new Set(this.annotation.tags)]
     },
     isSubmitted: function () {
-      return this.annoData.state === "SUBMITTED";
+      return this.annotation.state === "SUBMITTED";
     },
+    annotation() {
+      return this.$store.getters["anno/getAnnotation"](this.annotation_id);
+    },
+    hasComment() {
+      return this.$store.getters["anno/hasComment"](this.annotation_id);
+    },
+    /*
     annoComment: {
       get() {
-        return this.annoData.hasComment() ? this.annoData.comment.text : "";
+        return this.hasComment ? this.annotation.comment.text : "";
       },
       set(value) {
-        if (!this.annoData.hasComment()) {
-          this.annoData.comment = new Comment(null, value, this.annoData.id, null, this.$store.getters["auth/getUser"].id);
+        if (!this.hasComment) {
+          this.annotation.comment = new Comment(null, value, this.annotation.id, null, this.$store.getters["auth/getUser"].id);
         } else {
-          this.annoData.comment.text = value;
+          this.annotation.comment.text = value;
         }
       }
-    },
+    },*/
     annoTags: {
       get() {
-        return this.annoData.tags.sort();
+        return this.annotation.tags.sort();
       },
       set(value) {
-        this.annoData.tags = value.sort();
+        this.annotation.tags = value.sort();
       }
     },
     truncatedText: function () {
       const thresh = 150;
-      const len = this.annoData.text.length;
+      const len = this.annotation.text.length;
 
       if (len > thresh) {
         const overflow = len - thresh - " ... ".length;
@@ -216,9 +223,9 @@ export default {
         const cutoff_l = center - Math.floor(overflow / 2);
         const cutoff_r = center + Math.floor(overflow / 2) + overflow % 2;
 
-        return this.annoData.text.slice(0, cutoff_l) + " ... " + this.annoData.text.slice(cutoff_r);
+        return this.annotation.text.slice(0, cutoff_l) + " ... " + this.annotation.text.slice(cutoff_r);
       } else {
-        return this.annoData.text;
+        return this.annotation.text;
       }
     }
   },
@@ -230,14 +237,14 @@ export default {
       this.eventBus.emit('pdfScroll', anno_id);
     },
     getTagInput() {
-      return document.querySelector(`div[uid=tags${this.annoData.id}] div input`);
+      return document.querySelector(`div[uid=tags${this.annotation.id}] div input`);
     },
     toSubmitState() {
       const inElem = this.getTagInput();
       if (inElem) {
         inElem.disabled = true;
 
-        if (this.annoData.tags == null || this.annoData.tags.length === 0) {
+        if (this.annotation.tags == null || this.annotation.tags.length === 0) {
           inElem.placeholder = "No Tags";
         } else {
           inElem.placeholder = "";
@@ -251,26 +258,24 @@ export default {
       inElem.placeholder = "Add tag...";
     },
     submit() {
-      this.annoData.state = "SUBMITTED";
-
       this.toSubmitState();
 
       this.$socket.emit('updateAnnotation', {
-        "annotation_id": this.annoData.id,
-        "newComment": this.annoData.comment,
-        "newTags": this.annoData.tags,
+        "annotation": this.annotation.id,
+        "tags": this.annotation.tags,
+        "draft": false
       });
     },
     edit() {
-      this.annoData.state = "EDIT";
+      this.annotation.state = "EDIT";
 
       this.toEditState();
     },
     remove() {
-      this.annoData.state = "DELETED";
-      this.deleteAnnotation(this.annoData);
+      this.annotation.state = "DELETED";
+      this.deleteAnnotation(this.annotation);
       this.$socket.emit('deleteAnnotation', {
-        "id": this.annoData.id
+        "id": this.annotation.id
       });
     },
     respond() {

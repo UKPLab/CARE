@@ -18,6 +18,7 @@ const ObjectsToCsv = require('objects-to-csv');
 const {mergeAnnosAndComments} = require("../../db/methods/annotation");
 const {getByIds} = require("../../db/methods/tag");
 const {sendTagsUpdate} = require("./utils/tag");
+const {get: getTagset} = require("../../db/methods/tag_set");
 
 //TODO adding rooms for document
 
@@ -25,31 +26,13 @@ exports = module.exports = function (io) {
     io.on("connection", (socket) => {
         socket.on("addAnnotation", async (data) => {
             try {
-                await addAnnotation(data);
-
-                //TODO send back the created db object instead!!!
-                //TODO fails to push the created comment to the frontend! Fix this or discard the comment from command.
-                socket.emit("newAnnotation",
-                    {
-                        uid: socket.request.session.passport.user.id,
-                        annotation: data.annotation,
-                        document_id: data.document_id,
-                        annotation_id: data.annotation_id,
-                        tags: JSON.stringify(data.tags)
-                    }
-                );
+                socket.emit("annotationUpdate", await addAnnotation(data, socket.request.session.passport.user.id))
             } catch (e) {
                 logger.error("Could not add annotation and/or comment to database. Error: " + e, {user: socket.request.session.passport.user.id});
 
                 if (e.name === "InvalidAnnotationParameters") {
                     socket.emit("toast", {
                         message: "Annotation was not created",
-                        title: e.message,
-                        variant: 'danger'
-                    });
-                } else if (e.name === "InvalidCommentParameters") {
-                    socket.emit("toast", {
-                        message: "Comment on annotation was not created",
                         title: e.message,
                         variant: 'danger'
                     });
@@ -64,13 +47,22 @@ exports = module.exports = function (io) {
         });
 
         socket.on("updateAnnotation", async (data) => {
-            const newSelector = null ? data.newSelector === undefined : data.newSelector;
-            const newText = null ? data.newText === undefined : data.newText;
-            const newTags = null ? data.newTags === undefined : data.newTags;
-            const newComment = null ? data.newComment === undefined : data.newComment;
-
             try {
-                await updateAnnotation(data.annotation_id, newSelector, newText, newComment, newTags);
+                if (socket.request.session.passport.user.sysrole !== "admin") {
+                    const origAnnotation = await getAnnotation(data.id);
+                    if (origAnnotation.userId !== socket.request.session.passport.user.id) {
+                        socket.emit("toast", {
+                            message: "You have no permission to change this annotation",
+                            title: "Annotation Not Saved",
+                            variant: 'danger'
+                        });
+                        return;
+                    }
+                }
+                const newAnno = await updateAnnotation(data);
+
+                socket.to("doc:" + newAnno.document).emit("annotationUpdate", newAnno);
+
             } catch (e) {
                 logger.error("Could not update annotation and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
 

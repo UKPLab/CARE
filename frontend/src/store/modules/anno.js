@@ -23,23 +23,33 @@ export default {
     getters: {
         // returns annotations from the store (local)
         getAnnotations: (state) => (document_id) => {
-            return state.annotations.filter(annotation => annotation.document_id === document_id);
+            return state.annotations.filter(annotation => annotation.document === document_id);
+        },
+        hasComment: (state) => (annotation_id) => {
+            //TODO additional check for comments
+            return state.annotations.find(x => x.id === annotation_id).draft
         },
         getAnnotation: (state) => (annotation_id) => {
             return state.annotations.find(x => x.id === annotation_id);
         },
-        getAnchors: (state) => (document_id) => {
+        getPageAnnotations: (state) => (document_id, page_id) => {
+            return state.annotations.filter(annotation => annotation.document === document_id)
+                .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id);
+        },
+
+        getAnchors: (state) => (document_id, page_id) => {
+
             return state.annotations
-                .filter(annotation => annotation.document_id === document_id)
-                .filter(annotation => annotation.orphaned === false)
+                .filter(annotation => annotation.document === document_id)
+                .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id)
                 .filter(annotation => annotation.anchors !== null)
                 .map(annotation => annotation.anchors)
                 .filter(anchors => anchors !== undefined)
         },
-        getAnchorsFlat: (state) => (document_id) => {
+        getAnchorsFlat: (state) => (document_id, page_id) => {
             return state.annotations
-                .filter(annotation => annotation.document_id === document_id)
-                .filter(annotation => annotation.orphaned === false)
+                .filter(annotation => annotation.document === document_id)
+                .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id)
                 .filter(annotation => annotation.anchors !== null)
                 .flatMap(annotation => annotation.anchors)
                 .filter(anchors => anchors !== undefined)
@@ -91,40 +101,19 @@ export default {
             });
             state.annotations = mapped;
         },
-        SOCKET_newAnnotation: (state, message) => {
-            let anchor;
-            if (message.annotation.target === undefined) {
-                anchor = null;
-            } else {
-                anchor = message.annotation.target[0].selector[1].exact;
+        SOCKET_annotationUpdate: (state, data) => {
+
+            const oldAnno = state["annotations"].find(s => s.id === data.id);
+            if (oldAnno !== undefined) {
+                state["annotations"].splice(state["annotations"].indexOf(oldAnno), 1);
             }
 
-            let anno = null;
-            if (message.annotation_id == null) {
-                anno = createAnnotation(
-                    message.document_id,
-                    anchor,
-                    anchor,
-                    message.annotation,
-                    message.user,
-                    JSON.parse(message.tags));
-            } else {
-                anno = new Annotation(
-                    message.annotation_id,
-                    message.document_id,
-                    anchor,
-                    anchor,
-                    message.annotation,
-                    message.user,
-                    JSON.parse(message.tags)
-                );
-            }
+            data.tags = JSON.parse(message.tags);
+            data.anchors = null;
 
-            // TODO: replace with comment logic later on
-            if (message.comment != null) {
-                anno.comment = new Comment(message.comment.id, message.comment.text, anno.id, null, anno.user);
-            }
-            state.annotations.push(anno);
+            state["annotations"].push(data);
+
+
         },
         // adds an annotation to the local storage
         ADD_ANNOTATION: (state, annotation) => {

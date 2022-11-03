@@ -15,7 +15,7 @@ import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
 
 export default {
   name: "Highlights",
-  props: ['document_id'],
+  props: ['document_id', 'page_id'],
   data: function () {
     return {}
   },
@@ -24,7 +24,7 @@ export default {
   },
   computed: {
     anchors() {
-      return this.$store.getters['anno/getAnchors'](this.document_id)
+      return this.$store.getters['anno/getAnchors'](this.document_id, this.page_id)
     },
     tagToColorMap() {
       let tags = this.$store.getters['tag/getAllTags'](false);
