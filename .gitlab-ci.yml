@@ -40,6 +40,7 @@ test-backend:
     - docker version
     - docker-compose version
     - *setup-nvm
+    - apt update && apt install make -y
   script:
     - docker-compose -f docker-dev.yml --env-file ".env.test" up -d postgres
     - docker-compose ps
@@ -57,6 +58,7 @@ test-frontend:
     - docker version
     - docker-compose version
     - *setup-nvm
+    - apt update && apt install make -y
   script:
     - make ENV=test test-frontend
 
