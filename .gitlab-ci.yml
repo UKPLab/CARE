@@ -37,7 +37,8 @@ test-backend:
   stage: test
   needs: []
   before_script:
-    - echo "linux.mathematik.tu-darmstadt.de deb.debian.org" >> /etc/hosts
+    - echo "130.83.2.34 deb.debian.org" >> /etc/hosts
+    - cat /etc/hosts
     - docker info
     - docker version
     - docker-compose version
