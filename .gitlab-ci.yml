@@ -59,6 +59,7 @@ test-frontend:
   before_script:
     - echo "deb ${DEBIAN_MIRROR} stretch-updates main" >> /etc/apt/sources.list
     - echo "deb ${DEBIAN_MIRROR} stretch main" >> /etc/apt/sources.list
+    - cat /etc/apt/sources.list
     - docker info
     - docker version
     - docker-compose version
