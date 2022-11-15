@@ -15,6 +15,7 @@ variables:
   TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
   TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:$CI_COMMIT_SHORT_SHA
   NODE_VERSION: 16.17.0
+  DEBIAN_MIRROR: https://linux.mathematik.tu-darmstadt.de/pub/linux/distributions/debian/debian/
 
 services:
   - docker:dind
@@ -36,6 +37,7 @@ test-backend:
   stage: test
   needs: []
   before_script:
+    - echo "linux.mathematik.tu-darmstadt.de deb.debian.org" >> /etc/hosts
     - docker info
     - docker version
     - docker-compose version
@@ -54,6 +56,7 @@ test-frontend:
   stage: test
   needs: []
   before_script:
+    - sed -i -e 's/http:\/\/deb\.debian\.org\/debian/https:\/\/linux\.mathematik\.tu-darmstadt\.de\/pub\/linux\/distributions\/debian\/debian/' /etc/apt/sources.list
     - docker info
     - docker version
     - docker-compose version
