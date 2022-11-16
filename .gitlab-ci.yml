@@ -74,7 +74,7 @@ test-frontend:
 
 build-dev:
   image:
-    name: docker/compose:latest
+    name: docker/compose:1.29.2
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
   needs: ['test-backend', 'test-frontend']
@@ -89,7 +89,7 @@ build-dev:
 
 build-main:
   image:
-    name: docker/compose:latest
+    name: docker/compose:1.29.2
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
   needs: ['test-backend', 'test-frontend']
@@ -102,31 +102,36 @@ build-main:
     - docker-compose -f docker-compose.yml -p "peer_main" --env-file ".env.main"  up --build -d
 
 
+.setup-deploy-ssh-template: &setup-ssh
+  - apk update && apk add openssh-client
+  - mkdir -p ~/.ssh
+  - echo "PubkeyAcceptedAlgorithms +ssh-rsa" > ~/.ssh/config
+  - echo "HostkeyAlgorithm +ssh-rsa" >> ~/.ssh/config
+  - echo "StrictHostKeyChecking no" >> ~/.ssh/config
+
 deploy-dev:
   stage: deploy
-  image: alpine:latest
+  image: alpine:3.16
   needs: ["build-dev"]
   script:
     - chmod og= $PEER_RSAKEY
-    - apk update && apk add openssh-client
-    - echo "PubkeyAcceptedAlgorithms +ssh-rsa" > ~/.ssh/config
-    - echo "HostkeyAlgorithm +ssh-rsa" >> ~/.ssh/config
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev-clean"
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=dev build-dev"
+    - *setup-ssh
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev-clean"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=dev build-dev"
   only:
   - dev
   - test_pipeline
 
 deploy-main:
   stage: deploy
-  image: alpine:latest
+  image: alpine:3.16
   needs: ["build-main"]
   script:
     - chmod og= $PEER_RSAKEY
-    - apk update && apk add openssh-client
+    - *setup-ssh
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
