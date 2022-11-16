@@ -110,9 +110,9 @@ build-main:
   - echo "StrictHostKeyChecking no" >> ~/.ssh/config
 
 deploy-dev:
-  stage: test
+  stage: deploy
   image: alpine:3.16
-  #needs: ["build-dev"]
+  needs: ["build-dev"]
   script:
     - chmod og= $PEER_RSAKEY
     - *setup-ssh
@@ -123,7 +123,6 @@ deploy-dev:
     - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=dev build-dev"
   only:
   - dev
-  - test_pipeline
 
 deploy-main:
   stage: deploy
@@ -132,9 +131,9 @@ deploy-main:
   script:
     - chmod og= $PEER_RSAKEY
     - *setup-ssh
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
-    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=main build"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=main build"
   only:
     - main
