@@ -31,14 +31,20 @@ services:
   - npm --version
   - node --version
 
+.debian-mirror-template: &add-debian-mirror
+  - echo "deb ${DEBIAN_MIRROR} stretch-updates main" >> /etc/apt/sources.list
+  - echo "deb-src ${DEBIAN_MIRROR} stretch-updates main" >> /etc/apt/sources.list
+  - echo "deb ${DEBIAN_MIRROR} stretch main" >> /etc/apt/sources.list
+  - echo "deb-src ${DEBIAN_MIRROR} stretch main" >> /etc/apt/sources.list
+  - cat /etc/apt/sources.list
+
 test-backend:
   image:
     name: docker/compose:debian-1.29.2
   stage: test
   needs: []
   before_script:
-    - echo "130.83.2.34 deb.debian.org" >> /etc/hosts
-    - cat /etc/hosts
+    - *add-debian-mirror
     - docker info
     - docker version
     - docker-compose version
@@ -57,11 +63,7 @@ test-frontend:
   stage: test
   needs: []
   before_script:
-    - echo "deb ${DEBIAN_MIRROR} stretch-updates main" >> /etc/apt/sources.list
-    - echo "deb-src ${DEBIAN_MIRROR} stretch-updates main" >> /etc/apt/sources.list
-    - echo "deb ${DEBIAN_MIRROR} stretch main" >> /etc/apt/sources.list
-    - echo "deb-src ${DEBIAN_MIRROR} stretch main" >> /etc/apt/sources.list
-    - cat /etc/apt/sources.list
+    - *add-debian-mirror
     - docker info
     - docker version
     - docker-compose version
