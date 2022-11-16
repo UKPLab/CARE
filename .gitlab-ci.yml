@@ -109,7 +109,9 @@ deploy-dev:
   script:
     - chmod og= $PEER_RSAKEY
     - apk update && apk add openssh-client
-    - ssh -i $PEER_RSAKEY -oHostKeyAlgorithms=+ssh-rsa -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
+    - echo "PubkeyAcceptedAlgorithms +ssh-rsa" > ~/.ssh/config
+    - echo "HostkeyAlgorithm +ssh-rsa" >> ~/.ssh/config
+    - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
     - ssh -i $PEER_RSAKEY -o StrictHostKeyChecking=no $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev-clean"
