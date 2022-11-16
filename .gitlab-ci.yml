@@ -112,7 +112,7 @@ build-main:
 deploy-dev:
   stage: deploy
   image: alpine:3.16
-  needs: ["build-dev"]
+  #needs: ["build-dev"]
   script:
     - chmod og= $PEER_RSAKEY
     - *setup-ssh
