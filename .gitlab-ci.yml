@@ -110,7 +110,7 @@ build-main:
   - echo "StrictHostKeyChecking no" >> ~/.ssh/config
 
 deploy-dev:
-  stage: deploy
+  stage: test
   image: alpine:3.16
   #needs: ["build-dev"]
   script:
