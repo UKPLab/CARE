@@ -120,7 +120,7 @@ import {Comment} from "../../../data/comment.js";
 
 export default {
   name: "Annotation",
-  props: ["annotation_id", "config", "readonly"],
+  props: ["annotation_id", "readonly"],
   data: function () {
     return {
       input_required: false
@@ -261,8 +261,8 @@ export default {
       this.toSubmitState();
 
       this.$socket.emit('updateAnnotation', {
-        "annotation": this.annotation.id,
-        "tags": this.annotation.tags,
+        "id": this.annotation.id,
+        "tags": JSON.stringify(this.annotation.tags),
         "draft": false
       });
     },

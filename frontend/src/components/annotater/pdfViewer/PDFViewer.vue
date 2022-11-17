@@ -5,6 +5,7 @@
         :key="page.pageNumber"
         :pageNumber="page.pageNumber"
         :pdf="pdf"
+        :document_id="document_id"
         class="scrolling-page"
         @destroyPage="destroyPage"
         @updateVisibility="updateVisibility"

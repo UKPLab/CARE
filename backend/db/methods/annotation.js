@@ -6,12 +6,13 @@ Author: Nils Dycke (dycke@ukp.informatik...)
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./utils");
 const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
 
 const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
 const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
+const logger = require("../../utils/logger.js")("db/annotation");
 
 function InvalidAnnotationParameters(details) {
     return {
@@ -70,6 +71,22 @@ exports.getAnnoFromDocRaw = async function getAnnoFromDocRaw(document) {
     }
 }
 
+exports.get = async function get(id) {
+    try {
+        return await Annotation.findOne({
+            where: {
+                id: id
+            }
+        });
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw err;
+        }
+    }
+}
+
 exports.add = async function add(annotation, user_id) {
 
     let newAnnotation = {
@@ -116,49 +133,27 @@ exports.add = async function add(annotation, user_id) {
 
 }
 
-exports.deleteAnno = async function deleteAnno(annoId) {
+exports.update = async function update(data) {
+
     try {
-        return await Annotation.update({deleted: true, deletedAt: new Date()}, {
+        return await Annotation.update(subselectFieldsForDB(data, ["deleted", "text", "tags", "draft"]), {
             where: {
-                hash: annoId
-            }
+                id: data["id"]
+            },
+            returning: true,
+            plain: true
         });
     } catch (err) {
+        logger.error("Cant add tag to database" + err);
+
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
-            throw InvalidAnnotationParameters("Annotation-to-delete non-existent");
+            throw err;
         }
     }
-}
 
-exports.updateAnno = async function updateAnno(annoId, newSelector = null, newText = null, newComment = null, newTags = null) {
-    let newValues = {updatedAt: new Date(), draft: false};
-
-    if (newSelector != null) {
-        newValues.selector = newSelector;
-    }
-    if (newText != null) {
-        newValues.text = newText;
-    }
-    if (newTags != null) {
-        newValues.tags = newTags.length > 0 ? JSON.stringify(newTags) : "[]";
-    }
-
-    try {
-        await Annotation.update(newValues, {
-            where: {
-                hash: annoId
-            }
-        });
-    } catch (e) {
-        if (isInternalDatabaseError(err)) {
-            throw InternalDatabaseError(err);
-        } else {
-            //todo catch difference: annotation not existent vs. values invalid
-            throw InvalidAnnotationParameters("Update values for annotation invalid");
-        }
-    }
+    /*
 
     if (newComment != null) {
         const cid = newComment.id;
@@ -218,13 +213,14 @@ exports.updateAnno = async function updateAnno(annoId, newSelector = null, newTe
                 }
             }
         }
-    }
+
+
+    }*/
 }
 
 exports.loadByDocument = async function load(docId) {
-    let annotations;
     try {
-        annotations = await Annotation.findAll({
+        return await Annotation.findAll({
             where: {
                 document: docId, deleted: false, draft: false
             }
@@ -232,7 +228,7 @@ exports.loadByDocument = async function load(docId) {
     } catch (err) {
         throw InternalDatabaseError(err);
     }
-
+    /*
     let comments = Object();
     for (const a of annotations) {
         try {
@@ -247,6 +243,8 @@ exports.loadByDocument = async function load(docId) {
     }
 
     return [annotations, comments];
+
+     */
 }
 
 async function toFrontendRepresentationAnno(annotation) {

@@ -7,8 +7,8 @@ Source: --
 */
 const {
     add: addAnnotation,
-    deleteAnno: deleteAnnotation,
-    updateAnno: updateAnnotation,
+    update: updateAnnotation,
+    get: getAnnotation,
     loadByDocument: loadByDocument,
     toFrontendRepresentationAnno: toFrontendRepresentationAnno,
     toFrontendRepresentationComm: toFrontendRepresentationComm
@@ -50,7 +50,7 @@ exports = module.exports = function (io) {
             try {
                 if (socket.request.session.passport.user.sysrole !== "admin") {
                     const origAnnotation = await getAnnotation(data.id);
-                    if (origAnnotation.userId !== socket.request.session.passport.user.id) {
+                    if (origAnnotation.creator !== socket.request.session.passport.user.id) {
                         socket.emit("toast", {
                             message: "You have no permission to change this annotation",
                             title: "Annotation Not Saved",
@@ -60,8 +60,7 @@ exports = module.exports = function (io) {
                     }
                 }
                 const newAnno = await updateAnnotation(data);
-
-                socket.to("doc:" + newAnno.document).emit("annotationUpdate", newAnno);
+                io.to("doc:" + newAnno[1].document).emit("annotationUpdate", newAnno[1]);
 
             } catch (e) {
                 logger.error("Could not update annotation and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
@@ -82,32 +81,9 @@ exports = module.exports = function (io) {
             }
         });
 
-        socket.on("deleteAnnotation", async (data) => {
-            try {
-                await deleteAnnotation(data.id);
-            } catch (e) {
-                logger.info("Error during annotation deletion: " + e, {user: socket.request.session.passport.user.id});
-
-                if (e.name === "InvalidAnnotationParameters") {
-                    socket.emit("toast", {
-                        message: "Failed to delete annotation",
-                        title: e.message,
-                        variant: 'danger'
-                    });
-                } else {
-                    socket.emit("toast", {
-                        message: "Internal server error. Failed to delete annotation.",
-                        title: "Internal server error",
-                        variant: 'danger'
-                    });
-                }
-            }
-        });
-
         socket.on("loadAnnotations", async (data) => {
-            let res;
             try {
-                res = await loadByDocument(data.id);
+                socket.emit("annotationUpdate", await loadByDocument(data.id));
             } catch (e) {
                 logger.info("Error during loading of annotations: " + e, {user: socket.request.session.passport.user.id});
 
@@ -116,25 +92,7 @@ exports = module.exports = function (io) {
                     title: "Internal server error",
                     variant: 'danger'
                 });
-                return;
             }
-
-            const annos = res[0];
-            const comments = res[1];
-
-            const tags = [...new Set([].concat(...annos.map(a => JSON.parse(a.tags))))];
-            await sendTagsUpdate(socket, await getByIds(tags))
-
-
-            const mappedAnnos = await Promise.all(annos.map(async x => await toFrontendRepresentationAnno(x)));
-            let mappedComments = Object();
-            for (const c in comments) {
-                if (comments[c].length > 0) {
-                    mappedComments[c] = await toFrontendRepresentationComm(comments[c]);
-                }
-            }
-
-            socket.emit("loadAnnotations", {"annotations": mappedAnnos, "comments": mappedComments});
         });
 
         socket.on("exportAnnotations", async (data) => {

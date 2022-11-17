@@ -102,18 +102,21 @@ export default {
             state.annotations = mapped;
         },
         SOCKET_annotationUpdate: (state, data) => {
-
-            const oldAnno = state["annotations"].find(s => s.id === data.id);
-            if (oldAnno !== undefined) {
-                state["annotations"].splice(state["annotations"].indexOf(oldAnno), 1);
+            if (!Array.isArray(data)) {
+                data = [data];
             }
 
-            data.tags = JSON.parse(message.tags);
-            data.anchors = null;
+            data.forEach((anno) => {
+                const oldAnno = state["annotations"].find(s => s.id === anno.id);
+                if (oldAnno !== undefined) {
+                    state["annotations"].splice(state["annotations"].indexOf(oldAnno), 1);
+                }
 
-            state["annotations"].push(data);
+                anno.tags = JSON.parse(anno.tags);
+                anno.anchors = null;
 
-
+                state["annotations"].push(anno);
+            });
         },
         // adds an annotation to the local storage
         ADD_ANNOTATION: (state, annotation) => {
