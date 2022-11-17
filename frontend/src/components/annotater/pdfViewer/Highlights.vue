@@ -20,91 +20,77 @@ export default {
     return {}
   },
   mounted() {
-    this.anchors.map(this.highlight);
+    this.annotations.map(this.highlight);
   },
   computed: {
-    anchors() {
-      return this.$store.getters['anno/getAnchors'](this.document_id, this.page_id)
+    annotations() {
+      return this.$store.getters['anno/getPageAnnotations'](this.document_id, this.page_id).filter(anno => anno.anchors !== null)
     },
-    tagToColorMap() {
-      let tags = this.$store.getters['tag/getAllTags'](false);
-
-      if (tags === null || tags === undefined) {
-        tags = []; //will default to the undefined color for all
-      }
-
-      //TODO when actual color codes are stored, use these. For now convert badge types to colors
-      return tid => {
-        const t = tags.find(t => t.id === tid);
-
-        if (t === undefined) {
-          return "efea7b";
-        }
-
-        switch (t.colorCode) {
-          case "success":
-            return "009933";
-          case "danger":
-            return "e05f5f";
-          case "info":
-            return "5fe0df";
-          case "dark":
-            return "c8c8c8";
-          case "warning":
-            return "eed042";
-          case "secondary":
-            return "4290ee";
-          default:
-            return "4c86f7";
-        }
-      }
+    tags() {
+      return this.$store.getters['tag/getAllTags'](false);
     },
   },
   watch: {
-    anchors(newVal, oldVal) {
+    annotations(newVal, oldVal) {
       //Remove highlights of deleted anchors
-      oldVal.filter(anchor => !newVal.includes(anchor))
-          .forEach(anchors => anchors.filter(anchor => "highlights" in anchor)
+      oldVal.filter(anno => !newVal.includes(anno))
+          .forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor)
               .forEach(anchor => this.removeHighlights(anchor.highlights)))
 
-      newVal.filter(anchor => !oldVal.includes(anchor))
+      newVal.filter(anno => !oldVal.includes(anno))
           .map(this.highlight)
+    },
+    tags(newVal, oldVal) {
+      this.annotations.forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor).forEach(
+          anchor => anchor.highlights.forEach(highlightsEl => this.setSVGHighlightColor(anno, highlightsEl.svgHighlight))
+          )
+      );
     }
   },
   methods: {
-    highlight(anchors) {
-      const highlight_it = anchor => {
-        const range = resolveAnchor(anchor);
+    getColor(tag_id) {
+      console.log("GetColor");
+      console.log(this.tags);
+      const t = this.tags.find(t => t.id === tag_id);
 
+      if (t === undefined) {
+        return "efea7b";
+      }
+
+      switch (t.colorCode) {
+        case "success":
+          return "009933";
+        case "danger":
+          return "e05f5f";
+        case "info":
+          return "5fe0df";
+        case "dark":
+          return "c8c8c8";
+        case "warning":
+          return "eed042";
+        case "secondary":
+          return "4290ee";
+        default:
+          return "4c86f7";
+      }
+    },
+    highlight(annotation) {
+      for (let anchor of annotation.anchors) {
+        const range = resolveAnchor(anchor);
         if (!range) {
           return;
         }
-
-        const highlights = /** @type {AnnotationHighlight[]} */ (
-            this.highlightRange(anchor, range)
+        anchor.highlights = /** @type {AnnotationHighlight[]} */ (
+            this.highlightRange(annotation, anchor, range)
         );
-
-        highlights.forEach(h => {
-          h._annotation = anchor.annotation;
-        });
-        anchor.highlights = highlights;
-
-        /*if (this._focusedAnnotations.has(anchor.annotation.$tag)) {
-          setHighlightsFocused(highlights, true);
-        }*/
-      };
-
-      for (let anchor of anchors) {
-        highlight_it(anchor);
       }
-
     },
     update_highlights(anchors) {
       anchors.filter(a => a.highlights !== null && a.highlights !== undefined)
           .forEach(a => this.removeHighlights(a.highlights));
       this.highlight(anchors);
     },
-    highlightRange(anchor, range) {
+    highlightRange(annotation, anchor, range) {
       const textNodes = this.wholeTextNodesInRange(range);
 
       // Check if this range refers to a placeholder for not-yet-rendered content in
@@ -147,7 +133,7 @@ export default {
         highlightEl.className = "highlight";
 
         highlightEl.addEventListener('click', () => {
-          this.eventBus.emit('sidebarScroll', anchor.annotation.id);
+          this.eventBus.emit('sidebarScroll', annotation.id);
         });
 
         const parent = /** @type {Node} */ (nodes[0].parentNode);
@@ -158,30 +144,13 @@ export default {
       });
 
       if (!inPlaceholder) {
-        this.drawHighlightsAbovePdfCanvas(highlights, anchor);
+        this.drawHighlightsAbovePdfCanvas(annotation, highlights);
       }
 
       return highlights;
 
     },
-    setSVGHighlightColor(anchor, highlightEl) {
-      if (!anchor.annotation || !anchor.annotation.tags) {
-        return;
-      }
-
-      // load tags
-      const tags = anchor.annotation.tags;
-
-      if (tags.length === 0) {
-        highlightEl.style.fill = "#" + this.tagToColorMap(null);
-      } else {
-        // set style depending on first tag
-        highlightEl.style.fill = "#" + this.tagToColorMap(tags[0]);
-      }
-
-      highlightEl.style.opacity = 0.6;
-    },
-    drawHighlightsAbovePdfCanvas(highlightEls, anchor) {
+    drawHighlightsAbovePdfCanvas(annotation, highlightEls) {
       if (highlightEls.length === 0) {
         return;
       }
@@ -262,12 +231,29 @@ export default {
         // Associate SVG element with highlight for use by `setHighlightsFocusedhlights`.
         highlightEl.svgHighlight = rect;
 
-        this.setSVGHighlightColor(anchor, highlightEl.svgHighlight);
+        this.setSVGHighlightColor(annotation, highlightEl.svgHighlight);
 
         return rect;
       });
 
       svgHighlightLayer.append(...highlightRects);
+    },
+    setSVGHighlightColor(annotation, svgHighlightEl) {
+      if (!annotation || !annotation.tags) {
+        return;
+      }
+
+      // load tags
+      const tags = annotation.tags;
+
+      if (tags.length === 0) {
+        svgHighlightEl.style.fill = "#" + this.getColor(null);
+      } else {
+        // set style depending on first tag
+        svgHighlightEl.style.fill = "#" + this.getColor(tags[0]);
+      }
+
+      svgHighlightEl.style.opacity = 0.6;
     },
     removeAllHighlights(root) {
       const highlights = Array.from(root.querySelectorAll('highlight'));

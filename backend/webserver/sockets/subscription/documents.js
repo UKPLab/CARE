@@ -10,12 +10,12 @@ exports = module.exports = function (io) {
 
         socket.on("subscribe:document", (data) => {
             socket.join("doc:" + data.doc);
-            logger.debug("Subscribe document " + data.doc, {user: socket.request.session.passport.user.id})
+            logger.info("Subscribe document " + data.doc, {user: socket.request.session.passport.user.id})
         });
 
         socket.on("unsubscribe:document", (data) => {
             socket.leave("doc:" + data.doc);
-            logger.debug("Unsubscribe document " + data.doc, {user: socket.request.session.passport.user.id})
+            logger.info("Unsubscribe document " + data.doc, {user: socket.request.session.passport.user.id})
         });
 
     });

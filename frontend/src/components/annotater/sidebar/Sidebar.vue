@@ -13,7 +13,7 @@
             class="list-group-i"
             v-on:mouseleave="unhover(anno.id)"
             v-on:mouseover='hover(anno.id)'>
-          <Annotation v-bind:id="anno.id" :annotation_id="anno.id" :config="config" :readonly="readonly"
+          <Annotation v-bind:id="anno.id" :annotation_id="anno.id" :readonly="readonly"
                       @focus="focusAnnotation"></Annotation>
         </li>
         <li id="addPageNote" v-if="!readonly">
@@ -57,11 +57,6 @@ export default {
       required: false,
       default: false,
     },
-  },
-  data: function () {
-    return {
-      config: null,
-    }
   },
   computed: {
     sidebarShowing() {
