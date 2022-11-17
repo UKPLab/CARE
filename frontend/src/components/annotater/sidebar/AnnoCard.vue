@@ -22,7 +22,7 @@
         </blockquote>
         <div v-else id="text" class="blockquote card-text">
         </div>
-        <div v-if="!isSubmitted" id="comment">
+        <div v-if="!isEdited" id="comment">
           <textarea id="annoComment"
                     v-model="annoComment"
                     class="form-control"
@@ -33,7 +33,7 @@
         <div v-else-if="annotation.comment != null && annotation.comment.text.length > 0" id="comment" class="card-text">
           {{ annotation.comment.text }}
         </div>
-        <div id="tags" v-bind:disabled="isSubmitted" v-bind:uid="'tags'+annotation.id">
+        <div id="tags" v-bind:disabled="!editedByMyself" v-bind:uid="'tags'+annotation.id">
           <select v-bind:id="'annotationTags-'+annotation.id"
                   v-model="annoTags"
                   allowClear="true"
@@ -42,7 +42,7 @@
                   multiple
                   name="tags_new[]"
                   placeholder="Add tag..."
-                  v-bind:disabled="isSubmitted">
+                  v-bind:disabled="!editedByMyself">
             <option disabled hidden selected value="">Choose a tag...</option>
             <option v-for="t in assignableTags" :key="t.id" v-bind:data-badge-style="t.colorCode" selected="true"
                     :value="t.id">{{ t.name }}
@@ -54,13 +54,13 @@
           </select>
           <div class="invalid-feedback">Please select a valid tag.</div>
         </div>
-        <div v-if="!isSubmitted" id="createButtons" class="btn-group btn-group-sm" role="group">
+        <div v-if="editedByMyself" id="createButtons" class="btn-group btn-group-sm" role="group">
           <button class="btn btn-primary" type="button" v-on:click="submit()">Submit</button>
           <button class="btn btn-danger" type="button" v-on:click="remove()">Discard</button>
         </div>
       </div>
     </div>
-    <div v-if="isSubmitted && !readonly" class="card-footer">
+    <div v-if="!editedByMyself && !readonly" class="card-footer">
       <div id="footer-controls" class="container">
         <div class="row">
           <div id="edit-buttons" class="col text-start">
@@ -192,6 +192,15 @@ export default {
     hasComment() {
       return this.$store.getters["anno/hasComment"](this.annotation_id);
     },
+    collaborations() {
+      return this.$store.getters["collab/annotations"](this.annotation_id);
+    },
+    isEdited() {
+      return this.collaborations.length > 0;
+    },
+    editedByMyself() {
+      return this.annotation.draft || this.collaborations.find(c => c.user_id === this.$store.getters["auth/getUserId"]) !== undefined;
+    },
     /*
     annoComment: {
       get() {
@@ -267,7 +276,8 @@ export default {
       });
     },
     edit() {
-      this.annotation.state = "EDIT";
+      //TODO doc id
+      this.$socket.emit("add_colab", {type: "annotation", doc_id: null, id: this.annotation_id});
 
       this.toEditState();
     },

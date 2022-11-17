@@ -21,6 +21,7 @@ import AdminStore from './modules/admin.js';
 import TagStore from './modules/tag.js';
 import NavigationStore from "./modules/navigation.js";
 import SettingsStore from "./modules/settings.js";
+import CollaborationStore from "./modules/collab.js";
 import createPersistedState from 'vuex-persistedstate';
 
 
@@ -33,6 +34,7 @@ export default createStore({
         tag: TagStore,
         navigation: NavigationStore,
         settings: SettingsStore,
+        collab: CollaborationStore
     },
     plugins: [
         createPersistedState({
