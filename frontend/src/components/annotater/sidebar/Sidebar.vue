@@ -13,9 +13,20 @@
             class="list-group-i"
             v-on:mouseleave="unhover(anno.id)"
             v-on:mouseover='hover(anno.id)'>
-          <Annotation v-bind:id="anno.id" :annotation_id="anno.id" :readonly="readonly"
-                      @focus="focusAnnotation"></Annotation>
+          <SideCard v-bind:id="anno.id" :annotation_id="anno.id" :readonly="readonly" :document_id="document_id"
+                      @focus="focusAnnotation"></SideCard>
         </li>
+        <li v-for="comment in documentComments" v-bind:id="'documentComment-' + comment.id"
+            :key="comment.id"
+            :ref="comment.id"
+            class="list-group-i"
+            v-on:mouseleave="unhover(comment.id)"
+            v-on:mouseover='hover(comment.id)'>
+          <DocumentCard v-bind:id="comment.id" :comment_id="comment.id" :readonly="readonly" :document_id="document_id"
+                      @focus="focusAnnotation"></DocumentCard>
+        </li>
+
+
         <li id="addPageNote" v-if="!readonly">
           <button type="button" class="btn btn-light" @click="createDocumentComment">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg"
@@ -40,13 +51,14 @@ Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import {mapMutations} from "vuex";
-import Annotation from "./AnnoCard.vue";
+import AnnoCard from "./AnnoCard.vue";
+import DocumentCard from "./DocumentCard.vue";
 import {scrollElement} from "../../../assets/anchoring/scroll";
 
 
 export default {
   name: "Sidebar",
-  components: {Annotation},
+  components: {AnnoCard, DocumentCard},
   props: {
     document_id: {
       type: String,
@@ -74,6 +86,9 @@ export default {
         return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
       });
     },
+    documentComments() {
+      return this.$store.getters['comment/getDocumentComments'](this.document_id);
+    },
     showing: function () {
       return this.sidebarShowing ? "show" : "collapsing"
     }
@@ -93,6 +108,7 @@ export default {
     }),
     load() {
       this.$socket.emit("loadAnnotations", {id: this.document_id});
+      this.$socket.emit("loadCommentsByDocument", {id: this.document_id});
     },
     async sidebarScrollTo(annotationId) {
       const scrollContainer = this.$refs.sidepane;

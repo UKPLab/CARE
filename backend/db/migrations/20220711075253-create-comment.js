@@ -9,7 +9,7 @@ module.exports = {
                 type: Sequelize.INTEGER
             },
             hash: {
-                type: Sequelize.STRING,
+                type: Sequelize.UUIDV4,
                 allowNull: false,
                 unique: true
             },
@@ -24,19 +24,31 @@ module.exports = {
             text: {
                 type: Sequelize.STRING(4096)
             },
-            referenceAnnotation: {
+            draft: {
+                type: Sequelize.BOOLEAN,
+                defaultVale: true
+            },
+            document: {
                 type: Sequelize.STRING,
+                references: {
+                    model: "document",
+                    key: "hash"
+                }
+            },
+            referenceAnnotation: {
+                type: Sequelize.INTEGER,
                 references: {
                     model: "annotation",
-                    key: "hash"
+                    key: "id"
                 },
-                allowNull: false
+                allowNull: true,
+                defaultValue: null
             },
             referenceComment: {
-                type: Sequelize.STRING,
+                type: Sequelize.INTEGER,
                 references: {
                     model: "comment",
-                    key: "hash"
+                    key: "id"
                 },
                 allowNull: true,
                 defaultValue: null
