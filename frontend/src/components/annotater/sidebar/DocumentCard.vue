@@ -1,20 +1,38 @@
 <template>
+  <!--
+
+  1. has reference for annotation
+  2. has no reference for annotation, but has a document comment
+  3. has reference for annotation and comment
+
+  -->
+
   <b-card :class="{ shake: shake }">
     <div class="card-header">
       <div class="container-fluid">
         <div class="row">
+          <div class="col" id="pageNoteFlag" v-if="isPageNote">
+            <a>Document Note</a>
+          </div>
           <div class="col">
             <a id="user_info">User: {{ annotation.user }}</a>
           </div>
         </div>
       </div>
     </div>
-    <div class="card-body">
+    <div class="card-body" :class="{pageNoteBody: isPageNote}">
       <div class="d-grid gap-1">
-        <div class="blockquote card-text">
+        <blockquote v-if="!isPageNote"
+                    id="text"
+                    class="blockquote card-text"
+                    v-on:click="scrollTo(annotation.id)">
+          {{ truncatedText }}
+        </blockquote>
+        <div v-else id="text" class="blockquote card-text">
         </div>
-        <div v-if="!isEdited">
-          <textarea v-model="annoComment"
+        <div v-if="!isEdited" id="comment">
+          <textarea id="annoComment"
+                    v-model="annoComment"
                     class="form-control"
                     placeholder="Enter text..."
                     @keydown.ctrl.enter="submit()">
@@ -93,9 +111,9 @@ import {Comment} from "../../../data/comment.js";
 import TagSelector from "./TagSelector.vue";
 
 export default {
-  name: "SideCard",
+  name: "DocumentCard",
   components: {TagSelector},
-  props: ["annotation_id", "readonly", "document_id"],
+  props: ["readonly", "document_id", "comment_id"],
   data: function () {
     return {
       shake: false,
