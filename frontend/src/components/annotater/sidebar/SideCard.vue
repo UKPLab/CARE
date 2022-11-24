@@ -1,0 +1,124 @@
+<template>
+  <b-card ref="card" :class="{ shake: shake }">
+    <div class="card-header">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col">
+            <slot name="header"></slot>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="d-grid gap-1">
+        <div class="blockquote card-text">
+        </div>
+        <slot name="body"></slot>
+      </div>
+    </div>
+    <div v-if="hasFooterSlot" class="card-footer">
+      <div id="footer-controls" class="container">
+        <slot name="footer"></slot>
+      </div>
+    </div>
+  </b-card>
+</template>
+
+<script>
+/* SideCard.vue - card template for sidebar
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
+
+export default {
+  name: "SideCard.vue",
+  props: {
+    shake: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+  },
+  watch: {
+    shake: function (val) {
+      if (val) {
+        //TODO: classList is no element in reference
+        this.$refs.card.classList.add("shake");
+        setTimeout(() => this.shake = false, 800);
+      } else {
+        this.$refs.card.classList.remove("shake");
+      }
+    },
+  },
+  computed: {
+    hasFooterSlot() {
+      return !!this.$slots.footer
+    }
+  }
+}
+</script>
+
+<style scoped>
+.shake {
+  animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  transform: translate3d(0, 0, 0);
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
+.card-body .card-header {
+  text-align: right;
+  font-size: smaller;
+  color: #929292;
+
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.card .card-body {
+  padding: 0;
+}
+
+.card .card-body .card-body {
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-top: 4px;
+}
+
+
+.card-body .card-footer {
+  padding: 0;
+}
+
+#footer-controls {
+  padding: 4px;
+}
+
+#footer-controls .btn {
+  border: none;
+}
+
+
+</style>

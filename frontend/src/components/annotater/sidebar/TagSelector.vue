@@ -2,7 +2,7 @@
   <select ref="tags" v-bind:id="'annotationTags-'+annotation.id"
           v-model="annoTags"
           allowClear="true"
-          class="form-select"
+          class="form-select tags"
           data-allow-new="false"
           multiple
           name="tags_new[]"
@@ -28,7 +28,7 @@ export default {
   props: ["disabled", "annotation"],
   mounted() {
     //todo maybe use css sel
-    Tags.init(this.$refs.tags);
+    Tags.init(this.$refs.tags.$el);
     this.$refs.tags.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
   },
   computed: {
@@ -66,5 +66,10 @@ export default {
 </script>
 
 <style scoped>
-
+.tags div {
+  padding-left: 0;
+  padding-right: 0;
+  border: none;
+  background-color: transparent;
+}
 </style>

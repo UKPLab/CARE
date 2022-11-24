@@ -11,8 +11,7 @@ import {Comment} from '../../data/comment.js';
 
 const getDefaultState = () => {
     return {
-        annotations: [],
-        sidebar_showing: true
+        annotations: []
     };
 };
 
@@ -60,9 +59,6 @@ export default {
                     return {anno: a, tags: a.tags}
                 });
         },
-        isSidebarShowing: state => {
-            return state["sidebar_showing"]
-        }
     },
     mutations: {
         // updates the local store to the given annotatations
@@ -130,9 +126,6 @@ export default {
         // resets the local annotation store to the default state
         RESET: state => {
             Object.assign(state, getDefaultState());
-        },
-        TOGGLE_SIDEBAR: state => {
-            state.sidebar_showing = !state.sidebar_showing;
         },
         HOVER: (state, id) => {
             let annotation = state.annotations.find(x => x.id === id);
