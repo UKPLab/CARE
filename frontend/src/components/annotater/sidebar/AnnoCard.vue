@@ -1,19 +1,12 @@
 <template>
-  <b-card :class="{ shake: shake }">
-    <div class="card-header">
-      <div class="container-fluid">
-        <div class="row">
-          <div class="col">
-            <a id="user_info">User: {{ annotation.user }}</a>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="card-body">
-      <div class="d-grid gap-1">
-        <div class="blockquote card-text">
-        </div>
-        <div v-if="!isEdited">
+  <SideCard :shake="shake" >
+
+    <template v-slot:header>
+      <a id="user_info">User: {{ annotation.user }}</a>
+    </template>
+
+    <template v-slot:body>
+      <div v-if="!isEdited">
           <textarea v-model="annoComment"
                     class="form-control"
                     placeholder="Enter text..."
@@ -31,11 +24,10 @@
           <button class="btn btn-primary" type="button" v-on:click="submit()">Submit</button>
           <button class="btn btn-danger" type="button" v-on:click="remove()">Discard</button>
         </div>
-      </div>
-    </div>
-    <div v-if="!editedByMyself && !readonly" class="card-footer">
-      <div id="footer-controls" class="container">
-        <div class="row">
+    </template>
+
+    <template v-if="!editedByMyself && !readonly" v-slot:footer>
+      <div class="row">
           <div id="edit-buttons" class="col text-start">
             <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip" title="Edit annotation"
                     type="button" v-on:click="edit()">
@@ -60,23 +52,9 @@
               <span class="visually-hidden">Delete</span>
             </button>
           </div>
-          <!-- Add later
-          <div class="col text-end">
-            <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip" title="Respond to annotation"
-                    type="button">
-              <svg class="bi bi-arrow-90deg-left" fill="currentColor" height="16" viewBox="0 0 16 16"
-                   width="16" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4z"
-                      fill-rule="evenodd"/>
-              </svg>
-              <span class="visually-hidden">Respond</span>
-            </button>
-          </div>
-          -->
-        </div>
       </div>
-    </div>
-  </b-card>
+    </template>
+  </SideCard>
 </template>
 
 <script>
@@ -89,13 +67,13 @@ Source: -
 */
 
 import {mapActions, mapGetters} from 'vuex';
-import {Comment} from "../../../data/comment.js";
 import TagSelector from "./TagSelector.vue";
+import SideCard from "./SideCard.vue";
 
 export default {
-  name: "SideCard",
-  components: {TagSelector},
-  props: ["annotation_id", "readonly", "document_id"],
+  name: "AnnoCard",
+  components: {TagSelector, SideCard},
+  props: ["annotation", "readonly", "document_id"],
   data: function () {
     return {
       shake: false,
@@ -116,7 +94,6 @@ export default {
       //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
       setTimeout(() => this.$emit("focus", this.annotation.id), 100);
       this.shake = true;
-      setTimeout(() => this.shake = false, 800);
     }
   },
   unmounted() {
@@ -125,9 +102,6 @@ export default {
     }
   },
   computed: {
-    annotation() {
-      return this.$store.getters["anno/getAnnotation"](this.annotation_id);
-    },
     collaborations() {
       return this.$store.getters["collab/annotations"](this.annotation_id);
     },
@@ -187,8 +161,6 @@ export default {
       this.eventBus.emit('pdfScroll', anno_id);
     },
     submit() {
-      this.toSubmitState();
-
       this.$socket.emit('updateAnnotation', {
         "id": this.annotation.id,
         "tags": JSON.stringify(this.annotation.tags),
@@ -228,52 +200,6 @@ export default {
 </script>
 
 <style>
-.shake {
-  animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-  transform: translate3d(0, 0, 0);
-}
-
-@keyframes shake {
-  10%,
-  90% {
-    transform: translate3d(-1px, 0, 0);
-  }
-
-  20%,
-  80% {
-    transform: translate3d(2px, 0, 0);
-  }
-
-  30%,
-  50%,
-  70% {
-    transform: translate3d(-4px, 0, 0);
-  }
-
-  40%,
-  60% {
-    transform: translate3d(4px, 0, 0);
-  }
-}
-
-.card-body .card-header {
-  text-align: right;
-  font-size: smaller;
-  color: #929292;
-
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
-.card .card-body {
-  padding: 0;
-}
-
-.card .card-body .card-body {
-  padding-left: 8px;
-  padding-right: 8px;
-  padding-top: 4px;
-}
 
 #text {
   color: #4d4d4d;
@@ -286,25 +212,6 @@ export default {
 
 #text:hover {
   color: #000000;
-}
-
-.card-body .card-footer {
-  padding: 0;
-}
-
-#footer-controls {
-  padding: 4px;
-}
-
-#footer-controls .btn {
-  border: none;
-}
-
-#tags div {
-  padding-left: 0;
-  padding-right: 0;
-  border: none;
-  background-color: transparent;
 }
 
 #createButtons {

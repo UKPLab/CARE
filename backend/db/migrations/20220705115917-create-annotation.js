@@ -9,7 +9,7 @@ module.exports = {
                 type: Sequelize.INTEGER
             },
             hash: {
-                type: Sequelize.UUIDV4,
+                type: Sequelize.STRING,
                 allowNull: false,
                 unique: true
             },
