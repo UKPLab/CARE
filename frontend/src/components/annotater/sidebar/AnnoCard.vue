@@ -13,11 +13,10 @@
     </template>
 
     <template v-slot:body>
-      <div class="blockquote card-text">
+      <div class="blockquote card-text" :style="'border-color:#' + color" data-placement="top"  data-toogle="tooltip" :title="tagName">
         {{ annotation.text }}
       </div>
       <CommentCard ref="main_comment" :annotation_id="annotation_id" :edit="editedByMyself"/>
-      <TagSelector :annotation_id="annotation_id" :disabled="!editedByMyself"></TagSelector>
     </template>
 
     <template v-slot:footer>
@@ -74,14 +73,13 @@ Source: -
 */
 
 import {mapActions, mapGetters} from 'vuex';
-import TagSelector from "./TagSelector.vue";
 import SideCard from "./SideCard.vue";
 import CommentCard from "./CommentCard.vue";
 import LoadIcon from "../../../icons/LoadIcon.vue";
 
 export default {
   name: "AnnoCard",
-  components: {TagSelector, SideCard, CommentCard, LoadIcon},
+  components: {SideCard, CommentCard, LoadIcon},
   props: ["annotation_id", "readonly", "document_id"],
   data: function () {
     return {
@@ -128,6 +126,12 @@ export default {
     },
     numberReplies() {
       return this.$store.getters["comment/getCommentsByAnnotation"](this.annotation_id).length;
+    },
+    color() {
+      return this.$store.getters['tag/getColor'](this.annotation.tags[0]);
+    },
+    tagName() {
+      return this.$store.getters['tag/getTag'](this.annotation.tags[0]).name;
     },
     /*
     annoComment: {
@@ -228,7 +232,6 @@ export default {
   border-color: rgba(209, 213, 219, var(--tw-border-opacity));
   border-sizing: border-box;
   border-style: solid;
-  border-color: #e2e8f0;
   border-left-width: 4px;
   font-size: small;
   border-right-width: 0;

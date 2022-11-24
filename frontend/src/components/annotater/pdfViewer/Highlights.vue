@@ -49,30 +49,7 @@ export default {
   },
   methods: {
     getColor(tag_id) {
-      console.log("GetColor");
-      console.log(this.tags);
-      const t = this.tags.find(t => t.id === tag_id);
-
-      if (t === undefined) {
-        return "efea7b";
-      }
-
-      switch (t.colorCode) {
-        case "success":
-          return "009933";
-        case "danger":
-          return "e05f5f";
-        case "info":
-          return "5fe0df";
-        case "dark":
-          return "c8c8c8";
-        case "warning":
-          return "eed042";
-        case "secondary":
-          return "4290ee";
-        default:
-          return "4c86f7";
-      }
+      return this.$store.getters['tag/getColor'](tag_id);
     },
     highlight(annotation) {
       for (let anchor of annotation.anchors) {
