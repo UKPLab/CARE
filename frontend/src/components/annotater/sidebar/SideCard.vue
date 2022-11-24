@@ -1,18 +1,13 @@
 <template>
-  <b-card ref="card" :class="{ shake: shake }">
+  <b-card ref="card" :class="{ shake: shake }" class="card">
     <div class="card-header">
       <div class="container-fluid">
-        <div class="row">
-          <div class="col">
-            <slot name="header"></slot>
-          </div>
-        </div>
+        <slot name="header"></slot>
+
       </div>
     </div>
-    <div class="card-body">
-      <div class="d-grid gap-1">
-        <div class="blockquote card-text">
-        </div>
+    <div class="card-body p-1">
+      <div class="d-grid gap-1 my-2">
         <slot name="body"></slot>
       </div>
     </div>
@@ -88,27 +83,21 @@ export default {
   }
 }
 
-.card-body .card-header {
-  text-align: right;
+.card {
+  padding: 0px;
+}
+
+.card-body {
   font-size: smaller;
   color: #929292;
-
-  padding-left: 4px;
-  padding-right: 4px;
 }
 
-.card .card-body {
-  padding: 0;
+.card-header {
+  font-size: smaller;
+  color: #929292;
 }
 
-.card .card-body .card-body {
-  padding-left: 8px;
-  padding-right: 8px;
-  padding-top: 4px;
-}
-
-
-.card-body .card-footer {
+.card-footer {
   padding: 0;
 }
 

@@ -19,14 +19,21 @@ const {mergeAnnosAndComments} = require("../../db/methods/annotation");
 const {getByIds} = require("../../db/methods/tag");
 const {sendTagsUpdate} = require("./utils/tag");
 const {get: getTagset} = require("../../db/methods/tag_set");
+const {
+    updateCreatorName
+} = require("./utils/annotation.js")
+const {loadCommentsByAnnotation} = require("./utils/comment");
+
 
 //TODO adding rooms for document
 
 exports = module.exports = function (io) {
+
+
     io.on("connection", (socket) => {
         socket.on("addAnnotation", async (data) => {
             try {
-                socket.emit("annotationUpdate", await addAnnotation(data, socket.request.session.passport.user.id))
+                socket.emit("annotationUpdate", await updateCreatorName(await addAnnotation(data, socket.request.session.passport.user.id)))
             } catch (e) {
                 logger.error("Could not add annotation and/or comment to database. Error: " + e, {user: socket.request.session.passport.user.id});
 
@@ -46,6 +53,37 @@ exports = module.exports = function (io) {
             }
         });
 
+        socket.on("getAnnotation", async (data) => {
+            try {
+                const anno = await getAnnotation(data.id);
+
+                if (socket.request.session.passport.user.sysrole !== "admin") {
+
+                    if (anno.creator !== socket.request.session.passport.user.id) {
+                        socket.emit("toast", {
+                            message: "You have no permission to change this annotation",
+                            title: "Annotation Not Saved",
+                            variant: 'danger'
+                        });
+                        return;
+                    }
+                }
+
+                socket.emit("annotationUpdate", await updateCreatorName(anno));
+                // also update current comments
+                await loadCommentsByAnnotation(socket, anno.id);
+
+            } catch (e) {
+                logger.error("Could not get annotation and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
+
+                socket.emit("toast", {
+                    message: "Internal server error. Failed to update annotation.",
+                    title: "Internal server error",
+                    variant: 'danger'
+                });
+            }
+        });
+
         socket.on("updateAnnotation", async (data) => {
             try {
                 if (socket.request.session.passport.user.sysrole !== "admin") {
@@ -60,7 +98,7 @@ exports = module.exports = function (io) {
                     }
                 }
                 const newAnno = await updateAnnotation(data);
-                io.to("doc:" + newAnno[1].document).emit("annotationUpdate", newAnno[1]);
+                io.to("doc:" + newAnno[1].document).emit("annotationUpdate", await updateCreatorName(newAnno[1].get({plain: true})));
 
             } catch (e) {
                 logger.error("Could not update annotation and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
@@ -83,7 +121,9 @@ exports = module.exports = function (io) {
 
         socket.on("loadAnnotations", async (data) => {
             try {
-                socket.emit("annotationUpdate", await loadByDocument(data.id));
+                console.log(await updateCreatorName(await loadByDocument(data.id)));
+
+                socket.emit("annotationUpdate", await updateCreatorName(await loadByDocument(data.id)));
             } catch (e) {
                 logger.info("Error during loading of annotations: " + e, {user: socket.request.session.passport.user.id});
 

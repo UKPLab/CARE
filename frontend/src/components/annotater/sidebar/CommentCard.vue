@@ -1,0 +1,58 @@
+<template>
+  <div class="comment">
+    <div v-if="edit">
+        <textarea v-model="annoComment"
+                  class="form-control"
+                  placeholder="Enter text..."
+                  @keydown.ctrl.enter="submit()">
+        </textarea>
+    </div>
+    <div v-else-if="comment != null && comment.length > 0">
+      {{ comment }}
+    </div>
+    <div v-else>
+      <i>No comment</i>
+    </div>
+  </div>
+</template>
+
+<script>
+
+export default {
+  name: "CommentCard",
+  props: {
+    comment_id: {
+      type: Number,
+      required: false,
+      default: null,
+    },
+    edit: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+  },
+  computed: {
+    comment() {
+      return this.$store.getters["comment/getComment"](this.comment_id);
+    },
+  },
+  methods: {
+    save() {
+      this.$socket.emit('updateComment', {
+        "id": this.comment_id,
+        "tags": JSON.stringify([]),
+        "draft": false
+      });
+      console.log("save");
+    }
+  }
+}
+</script>
+
+<style scoped>
+.comment {
+  color: #666666;
+  font-style: normal;
+}
+</style>
