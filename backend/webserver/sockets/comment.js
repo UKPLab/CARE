@@ -12,6 +12,7 @@ const {
     loadByDocument: loadByDocument,
     loadByAnnotation: loadByAnnotation
 } = require('../../db/methods/comment.js')
+const {loadCommentsByAnnotation} = require("./utils/comment");
 const logger = require("../../utils/logger.js")("sockets/comment");
 
 exports = module.exports = function (io) {
@@ -90,17 +91,7 @@ exports = module.exports = function (io) {
         });
 
         socket.on("loadCommentsByAnnotation", async (data) => {
-            try {
-                socket.emit("commentUpdate", await loadByAnnotation(data.id));
-            } catch (e) {
-                logger.info("Error during loading of comments: " + e, {user: socket.request.session.passport.user.id});
-
-                socket.emit("toast", {
-                    message: "Internal server error. Failed to load comments.",
-                    title: "Internal server error",
-                    variant: 'danger'
-                });
-            }
+            await loadCommentsByAnnotation(socket, data.id);
         });
     });
 }

@@ -15,11 +15,14 @@ export default {
     strict: true,
     state: getDefaultState(),
     getters: {
-        getComments: (state) => (document_id) => {
-            return state.filter(comm => comm.document === document_id);
+        getComment: (state) => (document_id) => {
+            return state.find(comm => comm.document === document_id);
         },
         getCommentsByAnnotation: (state) => (annotation_id) => {
             return state.filter(comm => comm.referenceAnnotation === annotation_id);
+        },
+        getCommentsByCommentId: (state) => (comment_id) => {
+            return state.filter(comm => comm.referenceComment === comment_id);
         },
         getDocumentComments: (state) => (document_id) => {
             return state.filter(comm => comm.document === document_id && comm.referenceAnnotation === null && comm.referenceComment === null);

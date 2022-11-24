@@ -17,9 +17,12 @@ exports = module.exports = function (io) {
             data["user_id"] = socket.request.session.passport.user.id;
             data["timestamp"] = Date.now();
             data["id"] = uuidv4();
+
+            console.log(data);
+
             collabs.push(data);
 
-            socket.emit("start_collab", {id: uuidv4()});
+            socket.emit("start_collab", {id: data["id"]});
 
             if (data.type === "annotation") {
                 io.to("doc:" + data.doc_id).emit("collab", data);
