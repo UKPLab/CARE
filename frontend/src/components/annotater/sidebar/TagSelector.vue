@@ -1,6 +1,6 @@
 <template>
   <div class="tags">
-    <select v-bind:id="'annotationTags-'+annotation_id" ref="tags"
+    <select v-bind:id="'tags-'+ comment_id" ref="tags"
             v-model="annoTags"
             :disabled="disabled"
             :placeholder="placeholder"
@@ -28,7 +28,7 @@ import Tags from "bootstrap5-tags/tags.js";
 export default {
   name: "TagSelector",
   props: {
-    annotation_id: {
+    comment_id: {
       type: Number,
       required: false,
       default: null,
@@ -48,29 +48,22 @@ export default {
     tags() {
       return this.$store.getters["tag/getAllTags"](false);
     },
-    id() {
-      if (this.annotation_id) {
-        return this.annotation_id;
-      } else if (this.comment_id) {
-        return this.comment_id;
-      }
-    },
-    annotation() {
-      return this.$store.getters["anno/getAnnotation"](this.annotation_id);
+    comment() {
+      return this.$store.getters["comment/getComment"](this.comment_id);
     },
     annoTags: {
       get() {
-        return this.annotation.tags.sort();
+        return this.comment.tags.sort();
       },
       set(value) {
-        this.annotation.tags = value.sort();
+        this.comment.tags = value.sort();
       }
     },
     placeholder() {
-      if (this.annotation.draft) {
+      if (this.comment.draft) {
         return "Add tag..."
       }
-      if (this.annotation.tags == null || this.annotation.tags.length === 0) {
+      if (this.comment.tags == null || this.comment.tags.length === 0) {
         return "No Tags";
       }
       return "";
@@ -79,7 +72,7 @@ export default {
       return this.$store.getters["tag/getTags"](this.defaultTagSet);
     },
     tagsIdsUsed() {
-      return [...new Set(this.annotation.tags)]
+      return [...new Set(this.comment.tags)]
     },
     defaultTagSet() {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));

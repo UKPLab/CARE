@@ -14,12 +14,15 @@
       <i>No comment</i>
     </div>
   </div>
+  <TagSelector v-if="comment" :comment_id="comment_id"></TagSelector>
 </template>
 
 <script>
+import TagSelector from "./TagSelector.vue";
 
 export default {
   name: "CommentCard",
+  components: {TagSelector},
   props: {
     comment_id: {
       type: Number,
