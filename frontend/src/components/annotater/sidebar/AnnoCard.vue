@@ -5,6 +5,10 @@
       <div class="row">
         <div class="col">
           {{ annotation.creator_name }}
+          <span v-if="showEditByCollab">
+            <LoadIcon :size="12 " class="fading" iconName="IconPencilFill"></LoadIcon>
+          </span>
+
         </div>
         <div class="col text-end">
           {{ new Date(annotation.updatedAt).toLocaleDateString() }}
@@ -13,10 +17,11 @@
     </template>
 
     <template v-slot:body>
-      <div class="blockquote card-text" :style="'border-color:#' + color" data-placement="top"  data-toogle="tooltip" :title="tagName">
-        <b>{{ tagName }}:</b> {{ annotation.text }}
+      <div class="blockquote card-text" :style="'border-color:#' + color" data-placement="top" data-toogle="tooltip"
+           :title="tagName" @click="scrollTo(annotation_id)">
+        <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
-      <CommentCard ref="main_comment" :comment_id="comment_id" :edit="editedByMyself"/>
+      <CommentCard ref="main_comment" @saveCard="save()" :comment_id="comment_id" :edit="editedByMyself"/>
     </template>
 
     <template v-slot:footer>
@@ -76,6 +81,8 @@ import {mapActions, mapGetters} from 'vuex';
 import SideCard from "./SideCard.vue";
 import CommentCard from "./CommentCard.vue";
 import LoadIcon from "../../../icons/LoadIcon.vue";
+import {v4 as uuidv4} from 'uuid';
+
 
 export default {
   name: "AnnoCard",
@@ -84,19 +91,24 @@ export default {
   data: function () {
     return {
       shake: false,
-      edit_mode: null,
+      edit_mode: false,
       collab_updater: null,
+      collab_id: null,
+      showEditByCollab: false,
+      showEditTimeout: null,
     }
   },
   sockets: {
     start_collab: function (data) {
-      this.edit_mode = data.id;
-      if (this.collab_updater !== null) {
-        clearInterval(this.collab_updater);
+      if (data.id === this.collab_id) {
+        this.edit_mode = true;
+        if (this.collab_updater !== null) {
+          clearInterval(this.collab_updater);
+        }
+        this.collab_updater = setInterval(() => {
+          this.update_collab();
+        }, 1000);
       }
-      this.collab_updater = setInterval(() => {
-        this.update_collab();
-      }, 1000);
     }
   },
   mounted() {
@@ -111,6 +123,20 @@ export default {
       this.remove_collab();
     }
   },
+  watch: {
+    collaborations(t) {
+      if (t.length > 0) {
+        this.showEditByCollab = true;
+        if (this.showEditTimeout !== null) {
+          clearTimeout(this.showEditTimeout);
+        }
+        this.showEditTimeout = setTimeout(() => {
+          this.showEditByCollab = false;
+          this.showEditTimeout = null;
+        }, 1000);
+      }
+    }
+  },
   computed: {
     annotation() {
       return this.$store.getters["anno/getAnnotation"](this.annotation_id);
@@ -121,14 +147,11 @@ export default {
     comment_id() {
       return this.$store.getters["comment/getCommentByAnnotation"](this.annotation_id)["id"];
     },
-    isEdited() {
-      return this.collaborations.length > 0;
-    },
     editedByMyself() {
-      return this.annotation.draft || this.edit_mode !== null;
+      return this.annotation.draft || this.edit_mode;
     },
     numberReplies() {
-      return this.$store.getters["comment/getCommentsByAnnotation"](this.annotation_id).length;
+      return this.$store.getters["comment/getNumberOfChildrenByComment"](this.comment_id);
     },
     color() {
       return this.$store.getters['tag/getColor'](this.annotation.tag);
@@ -136,25 +159,13 @@ export default {
     tagName() {
       return this.$store.getters['tag/getTag'](this.annotation.tag).name;
     },
-    /*
-    annoComment: {
-      get() {
-        return this.hasComment ? this.annotation.comment.text : "";
-      },
-      set(value) {
-        if (!this.hasComment) {
-          this.annotation.comment = new Comment(null, value, this.annotation.id, null, this.$store.getters["auth/getUser"].id);
-        } else {
-          this.annotation.comment.text = value;
-        }
-      }
-    },*/
-    isPageNote() {
-      return this.annotation.text === null || this.annotation.text.length === 0;
-    },
-    truncatedText: function () {
+
+  },
+
+  methods: {
+    truncatedText(text) {
       const thresh = 150;
-      const len = this.annotation.text.length;
+      const len = text.length;
 
       if (len > thresh) {
         const overflow = len - thresh - " ... ".length;
@@ -162,14 +173,11 @@ export default {
         const cutoff_l = center - Math.floor(overflow / 2);
         const cutoff_r = center + Math.floor(overflow / 2) + overflow % 2;
 
-        return this.annotation.text.slice(0, cutoff_l) + " ... " + this.annotation.text.slice(cutoff_r);
+        return text.slice(0, cutoff_l) + " ... " + text.slice(cutoff_r);
       } else {
-        return this.annotation.text;
+        return text;
       }
-    }
-  },
-
-  methods: {
+    },
     scrollTo(anno_id) {
       this.eventBus.emit('pdfScroll', anno_id);
     },
@@ -187,6 +195,7 @@ export default {
       } else {
         this.$socket.emit('getAnnotation', {
           "id": this.annotation.id,
+          "document_id": this.document_id
         });
       }
       this.remove_collab();
@@ -203,24 +212,28 @@ export default {
       this.start_collab();
     },
     start_collab() {
-      this.$socket.emit("add_collab", {type: "annotation", doc_id: this.document_id, id: this.annotation_id});
+      this.collab_id = uuidv4();
+      this.$socket.emit("add_collab",
+          {
+            type: "annotation",
+            doc_id: this.document_id,
+            annotation_id: this.annotation_id,
+            id: this.collab_id
+          });
     },
     update_collab() {
-      this.$socket.emit("update_collab", {id: this.edit_mode});
+      this.$socket.emit("update_collab", {id: this.collab_id});
     },
     remove_collab() {
-      this.$socket.emit("remove_collab", {id: this.edit_mode});
+      this.$socket.emit("remove_collab", {id: this.collab_id});
       if (this.collab_updater !== null) {
         clearInterval(this.collab_updater);
         this.collab_updater = null;
       }
-
+      this.edit_mode = false;
+      this.collab_id = null;
     },
 
-    respond() {
-      // TODO implement respond function
-      console.log("A user tries to respond");
-    },
   }
 }
 </script>
@@ -239,6 +252,7 @@ export default {
   border-right-width: 0;
   border-top-width: 0;
   border-bottom-width: 0;
+  cursor: pointer;
 }
 
 
@@ -270,5 +284,60 @@ export default {
 
 .pageNoteBody {
   background-color: rgba(0, 0, 0, 0.05);
+}
+
+@keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@-o-keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@-moz-keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.fading {
+  -webkit-animation: flickerAnimation 2s infinite;
+  -moz-animation: flickerAnimation 2s infinite;
+  -o-animation: flickerAnimation 2s infinite;
+  animation: flickerAnimation 2s infinite;
 }
 </style>

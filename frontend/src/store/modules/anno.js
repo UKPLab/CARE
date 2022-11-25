@@ -22,21 +22,16 @@ export default {
         getAnnotations: (state) => (document_id) => {
             return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.document === document_id);
         },
-        hasComment: (state) => (annotation_id) => {
-            //TODO additional check for comments
-            return state.annotations.find(x => x.id === annotation_id).draft
-        },
         getAnnotation: (state) => (annotation_id) => {
             return state.annotations.filter(anno => !anno.deleted).find(x => x.id === annotation_id);
         },
         getPageAnnotations: (state) => (document_id, page_id) => {
-            return state.annotations.filter(annotation => annotation.document === document_id)
+            return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.document === document_id)
                 .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id);
         },
-
         getAnchors: (state) => (document_id, page_id) => {
 
-            return state.annotations
+            return state.annotations.filter(anno => !anno.deleted)
                 .filter(annotation => annotation.document === document_id)
                 .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id)
                 .filter(annotation => annotation.anchors !== null)
@@ -44,7 +39,7 @@ export default {
                 .filter(anchors => anchors !== undefined)
         },
         getAnchorsFlat: (state) => (document_id, page_id) => {
-            return state.annotations
+            return state.annotations.filter(anno => !anno.deleted)
                 .filter(annotation => annotation.document === document_id)
                 .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id)
                 .filter(annotation => annotation.anchors !== null)
@@ -52,7 +47,7 @@ export default {
                 .filter(anchors => anchors !== undefined)
         },
         getAnnotationTags: (state) => (document_id) => {
-            return state.annotations.filter(annotation => annotation.document_id === document_id)
+            return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.document_id === document_id)
                 .map(a => {
                     return {anno: a, tags: a.tags}
                 });

@@ -41,10 +41,12 @@ export default {
           .map(this.highlight)
     },
     tags(newVal, oldVal) {
-      this.annotations.forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor).forEach(
-          anchor => anchor.highlights.forEach(highlightsEl => this.setSVGHighlightColor(anno, highlightsEl.svgHighlight))
-          )
-      );
+      if (newVal !== null) {
+        this.annotations.forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor).forEach(
+                anchor => anchor.highlights.forEach(highlightsEl => this.setSVGHighlightColor(anno, highlightsEl.svgHighlight))
+            )
+        );
+      }
     }
   },
   methods: {

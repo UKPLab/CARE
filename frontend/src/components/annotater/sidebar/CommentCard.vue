@@ -1,20 +1,20 @@
 <template>
   <div class="comment">
     <div v-if="edit">
-        <textarea v-model="annoComment"
+        <textarea v-model="comment.text"
                   class="form-control"
                   placeholder="Enter text..."
-                  @keydown.ctrl.enter="submit()">
+                  @keydown.ctrl.enter="saveCard()">
         </textarea>
     </div>
-    <div v-else-if="comment != null && comment.length > 0">
-      {{ comment }}
+    <div v-else-if="comment.text != null && comment.text.length > 0">
+      {{ comment.text }}
     </div>
     <div v-else>
       <i>No comment</i>
     </div>
   </div>
-  <TagSelector v-model="tags" v-if="comment"></TagSelector>
+  <TagSelector v-model="comment.tags" v-if="comment" :disabled="!edit"></TagSelector>
 </template>
 
 <script>
@@ -39,17 +39,17 @@ export default {
     comment() {
       return this.$store.getters["comment/getComment"](this.comment_id);
     },
-    tags() {
-      return this.comment.tags;
-    }
   },
   methods: {
     save() {
       this.$socket.emit('updateComment', {
         "id": this.comment_id,
-        "tags": JSON.stringify(this.tags.sort()),
+        "tags": JSON.stringify(this.comment.tags.sort()),
         "text": this.comment.text,
       });
+    },
+    saveCard() {
+      this.$emit("saveCard");
     }
   }
 }
