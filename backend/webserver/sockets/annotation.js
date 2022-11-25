@@ -10,12 +10,10 @@ const {
     update: updateAnnotation,
     get: getAnnotation,
     loadByDocument: loadByDocument,
-    toFrontendRepresentationAnno: toFrontendRepresentationAnno,
-    toFrontendRepresentationComm: toFrontendRepresentationComm
+    formatForExport: formatForExport
 } = require('../../db/methods/annotation.js')
 const logger = require("../../utils/logger.js")("sockets/annotation");
 const ObjectsToCsv = require('objects-to-csv');
-const {mergeAnnosAndComments} = require("../../db/methods/annotation");
 const {getByIds} = require("../../db/methods/tag");
 const {sendTagsUpdate} = require("./utils/tag");
 const {get: getTagset} = require("../../db/methods/tag_set");
@@ -140,50 +138,28 @@ exports = module.exports = function (io) {
             }
         });
 
-        socket.on("exportAnnotations", async (data) => {
-            if (Array.isArray(data)) {
-                const annosWithComments = await Promise.all(data.map(async docid => {
-                    try {
-                        const doc = await loadByDocument(docid);
-                        // check for permission
-                        if (socket.request.session.passport.user.sysrole !== "admin" && !doc.owner === socket.request.session.passport.user.id) {
-                            return null;
-                        } else {
-                            return doc;
-                        }
-                    } catch (e) {
-                        logger.info("Error during loading of annotations: " + e, {
-                            docid: docid,
-                            user: socket.request.session.passport.user.id
-                        });
-
-                        socket.emit("toast", {
-                            message: "Internal server error. Failed to export annotations.",
-                            title: "Internal server error",
-                            variant: 'danger'
-                        });
-                    }
-                }));
-
-                const mappedAnnos = await mergeAnnosAndComments(annosWithComments.filter(x => x !== null))
-
-                const csvStr = await Promise.all(mappedAnnos.map(async annosPerDoc => {
-                    const csv = new ObjectsToCsv(annosPerDoc);
-                    return await csv.toString(true, true);
-                }));
-
-                socket.emit("exportedAnnotations", {success: true, csvs: csvStr, docids: data});
-            } else {
-                logger.info("Invalid parameter for exportAnnotations. Has to be an array of doc-ids: " + e, {user: socket.request.session.passport.user.id});
+        socket.on("exportByDocument", async (data) => {
+            let annotations;
+            try {
+               annotations = await loadByDocument(data.document_id);
+            } catch (e) {
+                logger.info("Error during loading of annotations: " + e, {user: socket.request.session.passport.user.id});
 
                 socket.emit("toast", {
-                    message: "Internal server error. Failed to export annotations.",
+                    message: "Internal server error. Failed to load annotations.",
                     title: "Internal server error",
                     variant: 'danger'
                 });
+                socket.emit("exportedAnnotations", {"success": false, "document_id": data.document_id});
+
+                return;
             }
+
+            socket.emit("exportedAnnotations", {
+                "success": true,
+                "document_id": data.document_id,
+                "objs": await Promise.all(annotations.map(async (a) => await formatForExport(a)))
+            });
         });
     });
-
-
 }

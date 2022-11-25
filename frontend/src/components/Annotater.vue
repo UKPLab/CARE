@@ -25,12 +25,16 @@
       <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">
         Reject
       </button>
-      <button :class="annotations.length > 0 ? '' : 'disabled'" class="btn btn-outline-secondary" type="button"
-              @click="downloadAnnotations()">Download Annotations
+      <button :class="annotations.length  + comments.length > 0 && !downloading ? '' : 'disabled'"
+                    class="btn btn-outline-secondary"
+                    type="button"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    @click="downloadAnnotations('txt')"
+                    >
+              Download Annotations
       </button>
     </form>
-
-
   </Teleport>
 
   <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id"></ReviewSubmit>
@@ -38,7 +42,7 @@
           @decisionSubmit="decisionSubmit"></Report>
   <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id"
                   :document_id="document_id"></DecisionSubmit>
-
+  <Export ref="export"></Export>
 </template>
 
 <script>
@@ -54,16 +58,16 @@ import PDFViewer from "./annotater/pdfViewer/PDFViewer.vue";
 import Sidebar from "./annotater/sidebar/Sidebar.vue";
 import ReviewSubmit from "./annotater/modals/ReviewSubmit.vue"
 import Report from "./annotater/modals/Report.vue"
+import Loader from "./basic/Loader.vue";
 import DecisionSubmit from "./annotater/modals/DecisionSubmit.vue"
+import Export from "./basic/Export.vue"
 import {offsetRelativeTo, scrollElement} from "../assets/anchoring/scroll";
 import {isInPlaceholder} from "../assets/anchoring/placeholder";
 import {resolveAnchor} from "../assets/anchoring/resolveAnchor";
-import {toCSV} from "../data/annotation";
-import {FileSaver} from "file-saver"; //required for window.saveAs to work
 
 export default {
   name: "Annotater",
-  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit},
+  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, Export},
   props: {
     'document_id': {
       type: String,
@@ -91,7 +95,9 @@ export default {
     },
   },
   data() {
-    return {}
+    return {
+      downloading: false
+    }
   },
   computed: {
     anchors() {
@@ -99,6 +105,9 @@ export default {
     },
     annotations() {
       return this.$store.getters["anno/getAnnotations"](this.document_id);
+    },
+    comments() {
+      return this.$store.getters["comment/getDocumentComments"](this.document_id);
     }
   },
   mounted() {
@@ -208,20 +217,8 @@ export default {
       // Join Room for document updates
       this.$socket.emit("subscribe:document", {doc: this.document_id});
     },
-    annotationsToCsv(annotations) {
-      const csv = toCSV(annotations, ["id", "document_id", "user", "anchors", "text", "tags", "comment"],
-          ["id", "text"]);
-
-      return csv.toString(true, true);
-    },
-    downloadAnnotations() {
-      // for now: fetch the annotations from store -- later we could move this to the sidebar for what you see is what
-      // you get behavior
-      // Note: This export feature is realized in the frontend, because it is intended to allow users to filter and
-      // sort annotations in the sidebar for export. This is only viable for single documents, hence in the annotator.
-      const csvStr = this.annotationsToCsv(this.annotations);
-
-      window.saveAs(new Blob([csvStr], {type: "text/csv;charset=utf-8"}), "annotations.csv");
+    downloadAnnotations(outputType) {
+      this.$refs.export.requestExport([this.document_id], outputType);
     }
   }
 }
