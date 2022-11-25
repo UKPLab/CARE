@@ -24,7 +24,7 @@
           <td v-for="field in fields">{{ item[field.col] }}</td>
           <td>
             <div class="btn-group">
-              <!-- remove for now
+
               <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
                       title="Access document..." type="button" @click="accessDoc(item.hash)">
                 <svg class="bi bi-box-arrow-right" fill="currentColor" height="16" viewBox="0 0 16 16"
@@ -36,7 +36,7 @@
                 </svg>
                 <span class="visually-hidden">Access</span>
               </button>
-              -->
+
 
               <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
                       title="Delete document..."
