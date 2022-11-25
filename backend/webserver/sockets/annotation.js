@@ -70,7 +70,7 @@ exports = module.exports = function (io) {
                     }
                 }
 
-                await loadCommentsByAnnotation(socket, anno.id);
+                await loadCommentsByAnnotation(io, socket, anno.id);
                 socket.emit("annotationUpdate", await updateCreatorName(anno));
 
             } catch (e) {
@@ -103,6 +103,7 @@ exports = module.exports = function (io) {
                     await deleteChildCommentsByAnnotation(io, socket, newAnno[1].id);
                 }
 
+                await loadCommentsByAnnotation(io, socket, newAnno[1].id);
                 io.to("doc:" + newAnno[1].document).emit("annotationUpdate", await updateCreatorName(newAnno[1].get({plain: true})));
 
             } catch (e) {

@@ -12,9 +12,11 @@ const {
 const logger = require("../../../utils/logger.js")("utils/comment");
 
 
-exports.loadCommentsByAnnotation = async function loadCommentsByAnnotation(socket, annotation_id) {
+exports.loadCommentsByAnnotation = async function loadCommentsByAnnotation(io, socket, annotation_id) {
     try {
-        socket.emit("commentUpdate", await updateCreatorName(await loadByAnnotation(annotation_id)));
+        const comment = await updateCreatorName(await loadByAnnotation(annotation_id));
+
+        io.to("doc:" + comment.document).emit("commentUpdate", comment);
     } catch (e) {
         logger.info("Error during loading of comments: " + e, {user: socket.request.session.passport.user.id});
 

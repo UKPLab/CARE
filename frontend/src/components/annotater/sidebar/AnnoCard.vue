@@ -24,7 +24,7 @@
       <CommentCard ref="main_comment" @saveCard="save()" :comment_id="comment_id" :edit="editedByMyself"/>
     </template>
 
-    <template v-slot:footer>
+    <template v-slot:footer v-if="annotation.creator === user_id">
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
           <div class="col text-end">
@@ -138,6 +138,9 @@ export default {
     }
   },
   computed: {
+    user_id() {
+      return this.$store.getters["auth/getUserId"];
+    },
     annotation() {
       return this.$store.getters["anno/getAnnotation"](this.annotation_id);
     },

@@ -10,7 +10,7 @@ const {
     loadByDocument: loadByDocument,
     loadByAnnotation: loadByAnnotation
 } = require('../../db/methods/comment.js')
-const {loadCommentsByAnnotation, addComment, updateComment} = require("./utils/comment");
+const {addComment, updateComment} = require("./utils/comment");
 const {get: getAnnotation} = require("../../db/methods/annotation");
 const {checkDocumentAccess, updateCreatorName} = require("./utils/user");
 const logger = require("../../utils/logger.js")("sockets/comment");
@@ -73,8 +73,5 @@ exports = module.exports = function (io) {
             }
         });
 
-        socket.on("loadCommentsByAnnotation", async (data) => {
-            await loadCommentsByAnnotation(socket, data.id);
-        });
     });
 }
