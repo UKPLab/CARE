@@ -49,7 +49,9 @@ const sockets = [
     require("./sockets/user"),
     require("./sockets/tag"),
     require("./sockets/statistic"),
-    require("./sockets/settings")
+    require("./sockets/settings"),
+    require("./sockets/collab"),
+    require("./sockets/comment")
     //require("./sockets/nlp")
 ];
 

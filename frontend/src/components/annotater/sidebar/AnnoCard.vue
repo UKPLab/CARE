@@ -1,57 +1,63 @@
 <template>
-  <SideCard :shake="shake" >
+  <SideCard :shake="shake">
 
     <template v-slot:header>
-      <a id="user_info">User: {{ annotation.user }}</a>
+      <div class="row">
+        <div class="col">
+          {{ annotation.creator_name }}
+        </div>
+        <div class="col text-end">
+          {{ new Date(annotation.updatedAt).toLocaleDateString() }}
+        </div>
+      </div>
     </template>
 
     <template v-slot:body>
-      <div v-if="!isEdited">
-          <textarea v-model="annoComment"
-                    class="form-control"
-                    placeholder="Enter text..."
-                    @keydown.ctrl.enter="submit()">
-          </textarea>
-        </div>
-        <div v-else-if="annotation.comment != null && annotation.comment.text.length > 0" id="comment"
-             class="card-text">
-          {{ annotation.comment.text }}
-        </div>
-        <div>
-          <TagSelector :disabled="!editedByMyself" :annotation="annotation"></TagSelector>
-        </div>
-        <div v-if="editedByMyself" id="createButtons" class="btn-group btn-group-sm" role="group">
-          <button class="btn btn-primary" type="button" v-on:click="submit()">Submit</button>
-          <button class="btn btn-danger" type="button" v-on:click="remove()">Discard</button>
-        </div>
+      <div class="blockquote card-text" :style="'border-color:#' + color" data-placement="top"  data-toogle="tooltip" :title="tagName">
+        {{ annotation.text }}
+      </div>
+      <CommentCard ref="main_comment" :annotation_id="annotation_id" :edit="editedByMyself"/>
     </template>
 
-    <template v-if="!editedByMyself && !readonly" v-slot:footer>
-      <div class="row">
-          <div id="edit-buttons" class="col text-start">
-            <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip" title="Edit annotation"
-                    type="button" v-on:click="edit()">
-              <svg class="bi bi-pencil-square" fill="currentColor" height="16" viewBox="0 0 16 16"
-                   width="16" xmlns="http://www.w3.org/2000/svg">
-                <path
-                    d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                <path
-                    d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
-                    fill-rule="evenodd"/>
-              </svg>
+    <template v-slot:footer>
+      <div class="ms-auto">
+        <div v-if="editedByMyself" class="row">
+          <div class="col text-end">
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Save"
+                    type="button" v-on:click="save()">
+              <LoadIcon :size="16" class="danger" iconName="IconSaveFill"></LoadIcon>
               <span class="visually-hidden">Edit</span>
             </button>
-            <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
-                    title="Delete annotation"
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Cancel"
+                    type="button" v-on:click="cancel()">
+              <LoadIcon :size="16" iconName="IconXSquareFill"></LoadIcon>
+              <span class="visually-hidden">Edit</span>
+            </button>
+          </div>
+        </div>
+        <div v-else class="row">
+          <div class="col">
+            <span v-if="numberReplies > 0" class="replies">Show Replies ({{ numberReplies }})</span>
+          </div>
+          <div class="col text-end">
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
+                    type="button" v-on:click="reply()">
+              <LoadIcon :size="16" iconName="IconReplyFill"></LoadIcon>
+              <span class="visually-hidden">Edit</span>
+            </button>
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
+                    type="button" v-on:click="edit()">
+              <LoadIcon :size="16" iconName="IconPencilSquare"></LoadIcon>
+              <span class="visually-hidden">Edit</span>
+            </button>
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip"
+                    title="Delete"
                     type="button" v-on:click="remove()">
-              <svg class="bi bi-trash3" fill="currentColor" height="16" viewBox="0 0 16 16" width="16"
-                   xmlns="http://www.w3.org/2000/svg">
-                <path
-                    d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"/>
-              </svg>
+              <LoadIcon :size="16" iconName="IconTrash3"></LoadIcon>
               <span class="visually-hidden">Delete</span>
             </button>
           </div>
+        </div>
       </div>
     </template>
   </SideCard>
@@ -67,13 +73,14 @@ Source: -
 */
 
 import {mapActions, mapGetters} from 'vuex';
-import TagSelector from "./TagSelector.vue";
 import SideCard from "./SideCard.vue";
+import CommentCard from "./CommentCard.vue";
+import LoadIcon from "../../../icons/LoadIcon.vue";
 
 export default {
   name: "AnnoCard",
-  components: {TagSelector, SideCard},
-  props: ["annotation", "readonly", "document_id"],
+  components: {SideCard, CommentCard, LoadIcon},
+  props: ["annotation_id", "readonly", "document_id"],
   data: function () {
     return {
       shake: false,
@@ -84,6 +91,9 @@ export default {
   sockets: {
     start_collab: function (data) {
       this.edit_mode = data.id;
+      if (this.collab_updater !== null) {
+        clearInterval(this.collab_updater);
+      }
       this.collab_updater = setInterval(() => {
         this.update_collab();
       }, 1000);
@@ -102,6 +112,9 @@ export default {
     }
   },
   computed: {
+    annotation() {
+      return this.$store.getters["anno/getAnnotation"](this.annotation_id);
+    },
     collaborations() {
       return this.$store.getters["collab/annotations"](this.annotation_id);
     },
@@ -111,14 +124,14 @@ export default {
     editedByMyself() {
       return this.annotation.draft || this.edit_mode !== null;
     },
-
-
-
-
-
-
-    hasComment() {
-      return this.$store.getters["anno/hasComment"](this.annotation_id);
+    numberReplies() {
+      return this.$store.getters["comment/getCommentsByAnnotation"](this.annotation_id).length;
+    },
+    color() {
+      return this.$store.getters['tag/getColor'](this.annotation.tags[0]);
+    },
+    tagName() {
+      return this.$store.getters['tag/getTag'](this.annotation.tags[0]).name;
     },
     /*
     annoComment: {
@@ -154,17 +167,34 @@ export default {
   },
 
   methods: {
-    ...mapActions({
-      deleteAnnotation: "anno/deleteAnnotation"
-    }),
     scrollTo(anno_id) {
       this.eventBus.emit('pdfScroll', anno_id);
     },
-    submit() {
+    save() {
       this.$socket.emit('updateAnnotation', {
         "id": this.annotation.id,
         "tags": JSON.stringify(this.annotation.tags),
         "draft": false
+      });
+      this.$refs.main_comment.save();
+      this.remove_collab();
+    },
+    cancel() {
+      if (this.annotation.draft) {
+        this.remove();
+      } else {
+        this.$socket.emit('getAnnotation', {
+          "id": this.annotation.id,
+        });
+      }
+      this.remove_collab();
+      this.edit_mode = null;
+    },
+    remove() {
+      this.$socket.emit('updateAnnotation', {
+        "id": this.annotation.id,
+        "tags": JSON.stringify(this.annotation.tags),
+        "deleted": true
       });
     },
     edit() {
@@ -178,19 +208,13 @@ export default {
     },
     remove_collab() {
       this.$socket.emit("remove_collab", {id: this.edit_mode});
-      if (this.collab_updater) {
+      if (this.collab_updater !== null) {
         clearInterval(this.collab_updater);
         this.collab_updater = null;
       }
 
     },
-    remove() {
-      this.annotation.state = "DELETED";
-      this.deleteAnnotation(this.annotation);
-      this.$socket.emit('deleteAnnotation', {
-        "id": this.annotation.id
-      });
-    },
+
     respond() {
       // TODO implement respond function
       console.log("A user tries to respond");
@@ -200,6 +224,21 @@ export default {
 </script>
 
 <style>
+.blockquote {
+  padding-left: 1em;
+  padding-right: 1em;
+  font-style: italic;
+  --tw-border-opacity: 1;
+  border-color: rgba(209, 213, 219, var(--tw-border-opacity));
+  border-sizing: border-box;
+  border-style: solid;
+  border-left-width: 4px;
+  font-size: small;
+  border-right-width: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+}
+
 
 #text {
   color: #4d4d4d;
@@ -216,6 +255,11 @@ export default {
 
 #createButtons {
   padding-bottom: 6px;
+}
+
+.replies {
+  font-size: smaller;
+  color: #929292;
 }
 
 #pageNoteFlag {
