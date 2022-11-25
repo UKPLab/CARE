@@ -10,8 +10,7 @@
             multiple
             name="tags_new[]">
       <option disabled hidden selected value="">Choose a tag...</option>
-      <option v-for="t in tags" :value="t"
-            >
+      <option v-for="t in tags" :value="t">
         {{ t }}
       </option>
     </select>
@@ -51,13 +50,21 @@ export default {
     this.tags_element = new Tags(this.$refs.tags);
     this.tags_element.resetState();
     this.$refs.tags.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
+    console.log(this.tags_element);
   },
   watch: {
     disabled2(val, value) {
       this.$nextTick(() => {
         this.tags_element.resetState()
       })
-
+    },
+    tags(val) {
+      this.$nextTick(() => {
+      if (this.disabled) {
+        this.tags_element.removeAll();
+        val.forEach(v => this.tags_element.addItem(v, v));
+      }
+      });
     }
   },
   computed: {
