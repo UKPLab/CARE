@@ -6,9 +6,6 @@ Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
 Source: -
 */
 
-import {Annotation, createAnnotation} from '../../data/annotation.js';
-import {Comment} from '../../data/comment.js';
-
 const getDefaultState = () => {
     return {
         annotations: []

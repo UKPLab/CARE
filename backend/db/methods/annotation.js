@@ -6,9 +6,11 @@ Author: Nils Dycke (dycke@ukp.informatik...)
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB, pickObjectAttributeSubset} = require("./utils");
 const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
+
+const {getByIds: getTagsByIds} = require('../../db/methods/tag.js')
 
 const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
 const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
@@ -247,6 +249,40 @@ exports.loadByDocument = async function load(docId) {
      */
 }
 
+async function resolveAnnoIdToHash(annoId) {
+    try {
+        const anno = await Annotation.findOne({
+            where: {
+                id: annoId, deleted: false, draft: false
+            }
+        });
+        return anno != null ? anno.hash : null;
+    } catch (err) {
+        throw InternalDatabaseError(err);
+    }
+}
+exports.resolveAnnoIdToHash = resolveAnnoIdToHash;
+
+exports.formatForExport = async function format(annotation) {
+    const copyFields = [
+        "hash",
+        "text",
+        "document",
+        "draft",
+        "deleted",
+        "deletedAt",
+        "createdAt",
+        "updatedAt"
+    ]
+
+    let copied = pickObjectAttributeSubset(annotation, copyFields);
+    copied.creator = await resolveUserIdToName(annotation.creator);
+    copied.tags = await getTagsByIds(JSON.parse(annotation.tags).map(t => t.name));
+
+    return copied
+}
+
+/*
 async function toFrontendRepresentationAnno(annotation) {
     return {
         annotation_id: annotation.hash,
@@ -293,3 +329,4 @@ exports.mergeAnnosAndComments = async function mergeAnnosAndCommentsFrontendRepr
         })
     );
 }
+*/
