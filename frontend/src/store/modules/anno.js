@@ -69,8 +69,6 @@ export default {
                 if (oldAnno !== undefined) {
                     state["annotations"].splice(state["annotations"].indexOf(oldAnno), 1);
                 }
-
-                anno.tags = JSON.parse(anno.tags);
                 anno.anchors = null;
 
                 state["annotations"].push(anno);

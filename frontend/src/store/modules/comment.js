@@ -15,11 +15,15 @@ export default {
     strict: true,
     state: getDefaultState(),
     getters: {
-        getComment: (state) => (document_id) => {
-            return state.find(comm => comm.document === document_id);
+        getComment: (state) => (comment_id) => {
+            return state.find(comm => comm.id === comment_id);
         },
         getCommentsByAnnotation: (state) => (annotation_id) => {
             return state.filter(comm => comm.referenceAnnotation === annotation_id);
+        },
+        getCommentByAnnotation: (state) => (annotation_id) => {
+            return state.filter(comm => comm.referenceAnnotation === annotation_id)
+                .find(comm => comm.referenceComment === null);
         },
         getCommentsByCommentId: (state) => (comment_id) => {
             return state.filter(comm => comm.referenceComment === comment_id);
@@ -46,6 +50,5 @@ export default {
             });
         }
     },
-    actions: {
-    }
+    actions: {}
 };

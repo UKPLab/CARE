@@ -14,7 +14,7 @@
       <i>No comment</i>
     </div>
   </div>
-  <TagSelector v-if="comment" :comment_id="comment_id"></TagSelector>
+  <TagSelector v-model="tags" v-if="comment"></TagSelector>
 </template>
 
 <script>
@@ -39,15 +39,17 @@ export default {
     comment() {
       return this.$store.getters["comment/getComment"](this.comment_id);
     },
+    tags() {
+      return this.comment.tags;
+    }
   },
   methods: {
     save() {
       this.$socket.emit('updateComment', {
         "id": this.comment_id,
-        "tags": JSON.stringify([]),
-        "draft": false
+        "tags": JSON.stringify(this.tags.sort()),
+        "text": this.comment.text,
       });
-      console.log("save");
     }
   }
 }

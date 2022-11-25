@@ -85,7 +85,7 @@ export default {
       this.$socket.emit('addAnnotation', {
         document: this.document_id,
         selectors: {target},
-        tags: JSON.stringify([tag.id])
+        tag: tag.id
       });
 
       this.isVisible = false;

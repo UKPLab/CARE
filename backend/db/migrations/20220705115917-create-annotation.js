@@ -24,8 +24,13 @@ module.exports = {
             text: {
                 type: Sequelize.STRING(1024)
             },
-            tags: {
-                type: Sequelize.STRING
+            tag: {
+                type: Sequelize.INTEGER,
+                references: {
+                    model: "tag",
+                    key: "id"
+                },
+                allowNull: false
             },
             document: {
                 type: Sequelize.STRING,
