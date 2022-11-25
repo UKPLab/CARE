@@ -6,9 +6,11 @@ Author: Nils Dycke (dycke@ukp.informatik...)
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB, pickObjectAttributeSubset} = require("./utils");
 const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
+const {getByIds: getTagsByIds} = require("./tag");
+const {resolveAnnoIdToHash} = require("./annotation");
 
 const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
 const logger = require("../../utils/logger.js")("db/comment");
@@ -124,4 +126,54 @@ exports.loadByComment = async function loadByComment(comment_id) {
         throw InternalDatabaseError(err);
     }
 
+}
+
+
+exports.loadDocumentComments = async function load(doc_id) {
+    try {
+        return await Comment.findAll({
+            where: {
+                document: doc_id, deleted: false, draft: false, referenceAnnotation: null
+            }
+        });
+    } catch (err) {
+        throw InternalDatabaseError(err);
+    }
+
+}
+
+async function resolveCommentIdToHash(commentId) {
+    try {
+        const comm = await Comment.findOne({
+            where: {
+                id: commentId, deleted: false, draft: false
+            }
+        });
+        return comm != null ? comm.hash : null;
+    } catch (err) {
+        throw InternalDatabaseError(err);
+    }
+}
+exports.resolveCommentIdToHash = resolveCommentIdToHash;
+
+
+exports.formatForExport = async function format(comment) {
+    const copyFields = [
+        "hash",
+        "text",
+        "document",
+        "draft",
+        "deleted",
+        "deletedAt",
+        "createdAt",
+        "updatedAt"
+    ]
+
+    let copied = pickObjectAttributeSubset(comment, copyFields);
+    copied.creator = await resolveUserIdToName(comment.creator);
+    copied.tags = await getTagsByIds(JSON.parse(comment.tags).map(t => t.name));
+    copied.referenceAnnotation = await resolveAnnoIdToHash(comment.referenceAnnotation);
+    copied.referenceComment = await resolveCommentIdToHash(comment.id);
+
+    return copied
 }
