@@ -102,8 +102,6 @@ exports = module.exports = function (io) {
                 if (newAnno[1].deleted) {
                     await deleteChildCommentsByAnnotation(io, socket, newAnno[1].id);
                 }
-
-                await loadCommentsByAnnotation(io, socket, newAnno[1].id);
                 io.to("doc:" + newAnno[1].document).emit("annotationUpdate", await updateCreatorName(newAnno[1].get({plain: true})));
 
             } catch (e) {

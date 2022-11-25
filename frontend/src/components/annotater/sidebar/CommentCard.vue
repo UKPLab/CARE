@@ -14,7 +14,7 @@
       <i>No comment</i>
     </div>
   </div>
-  <TagSelector v-model="comment.tags" v-if="comment" :disabled="!edit"></TagSelector>
+  <TagSelector v-model="comment.tags" v-if="comment" :disabled="!edit" :isEditor="comment.creator === user_id"></TagSelector>
 </template>
 
 <script>
@@ -38,6 +38,9 @@ export default {
   computed: {
     comment() {
       return this.$store.getters["comment/getComment"](this.comment_id);
+    },
+    user_id() {
+      return this.$store.getters["auth/getUserId"];
     },
   },
   methods: {

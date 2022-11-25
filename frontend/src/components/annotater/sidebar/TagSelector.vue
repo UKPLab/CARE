@@ -10,9 +10,9 @@
             multiple
             name="tags_new[]">
       <option disabled hidden selected value="">Choose a tag...</option>
-      <option v-for="t in tags" :value="t">
+      <!--<option v-for="t in tags" :value="t">
         {{ t }}
-      </option>
+      </option>-->
     </select>
     <div class="invalid-feedback">Please select a valid tag.</div>
   </div>
@@ -34,6 +34,10 @@ export default {
     modelValue: {
       type: String,
       required: true,
+    },
+    isEditor: {
+      type: Boolean,
+      required: true
     }
   },
   /*setup(props) {
@@ -48,6 +52,7 @@ export default {
   },
   mounted() {
     this.tags_element = new Tags(this.$refs.tags);
+    this.tags.forEach(v => this.tags_element.addItem(v, v));
     this.tags_element.resetState();
     this.$refs.tags.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
     console.log(this.tags_element);
@@ -59,12 +64,11 @@ export default {
       })
     },
     tags(val) {
-      this.$nextTick(() => {
-      if (this.disabled) {
+      if (!this.isEditor) {
+        this.tags_element.placeholder = "";
         this.tags_element.removeAll();
         val.forEach(v => this.tags_element.addItem(v, v));
       }
-      });
     }
   },
   computed: {
@@ -76,7 +80,9 @@ export default {
         return this.modelValue
       },
       set(value) {
-        this.$emit('update:modelValue', value)
+        if (this.isEditor) {
+          this.$emit('update:modelValue', value)
+        }
       }
     },
     placeholder() {

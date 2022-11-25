@@ -14,7 +14,7 @@
             class="list-group-i"
             v-on:mouseleave="unhover(anno.id)"
             v-on:mouseover='hover(anno.id)'>
-          <AnnoCard v-bind:id="anno.id" :annotation_id="anno.id" :document_id="document_id" :readonly="readonly"
+          <AnnoCard v-bind:id="anno.id" v-if="hasComment(anno.id)" :annotation_id="anno.id" :document_id="document_id" :readonly="readonly"
                     @focus="focusAnnotation"></AnnoCard>
         </li>
         <li v-for="comment in documentComments" v-bind:id="'documentComment-' + comment.id"
@@ -86,6 +86,7 @@ export default {
         return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
       });
     },
+
     documentComments() {
       return this.$store.getters['comment/getDocumentComments'](this.document_id);
     },
@@ -109,6 +110,9 @@ export default {
       hover: "anno/HOVER",
       unhover: "anno/UNHOVER"
     }),
+    hasComment(anno_id) {
+      return this.$store.getters['comment/getCommentByAnnotation'](anno_id) !== undefined;
+    },
     load() {
       this.$socket.emit("loadAnnotations", {id: this.document_id});
       this.$socket.emit("loadCommentsByDocument", {id: this.document_id});
