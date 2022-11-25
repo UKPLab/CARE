@@ -40,8 +40,8 @@ exports.updateComment = async function updateComment(io, socket, data) {
                 return;
             }
         }
-        const newAnno = await dbUpdateComment(data);
-        io.to("doc:" + newAnno[1].document).emit("commentUpdate", newAnno[1]);
+        const newComment = await dbUpdateComment(data);
+        io.to("doc:" + newComment[1].document).emit("commentUpdate", await updateCreatorName(newComment[1].get({plain: true})));
 
     } catch (e) {
         logger.error("Could not update comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
@@ -89,8 +89,6 @@ exports.deleteChildCommentsByAnnotation = async function deleteChildCommentsByAn
 
 
 exports.addComment = async function addComment(socket, document_id, annotation_id, comment_id = null) {
-
-
     try {
         socket.emit("commentUpdate", await updateCreatorName(await dbAddComment(document_id, annotation_id, comment_id, socket.request.session.passport.user.id)))
     } catch (e) {

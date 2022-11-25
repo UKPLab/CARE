@@ -190,12 +190,7 @@ export default {
 
       });
     },
-    destroyPage() {
-      // PDFPageProxy#_destroy
-      // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
-      this.$emit('destroyPage', {pageNumber: this.pageNumber});
-      this.destroyRenderTask();
-    },
+
     destroyRenderTask() {
       if (!this.renderTask) return;
       // RenderTask#cancel
@@ -518,14 +513,11 @@ export default {
       // redraw highlights
       this.$refs["highlights"].update_highlights(annotation.anchors);
     },
-    destroyPage(page) {
-      this.$refs.highlights.removeAllHighlights(document.getElementById('text-layer-' + page.pageNumber));
-      const text_layer = document.getElementById('text-layer-' + page.pageNumber);
-
-      // clean text layer
-      while (text_layer.firstChild) {
-        text_layer.removeChild(text_layer.firstChild);
-      }
+    destroyPage() {
+      // PDFPageProxy#_destroy
+      // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
+      this.$emit('destroyPage', {pageNumber: this.pageNumber});
+      this.destroyRenderTask();
     },
   },
 

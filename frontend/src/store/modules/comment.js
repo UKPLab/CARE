@@ -16,7 +16,7 @@ export default {
     state: getDefaultState(),
     getters: {
         getComment: (state) => (comment_id) => {
-            return state.find(comm => comm.id === comment_id);
+            return state.filter(comment => !comment.deleted).find(comm => comm.id === comment_id);
         },
         getCommentsByAnnotation: (state) => (annotation_id) => {
             return state.filter(comm => comm.referenceAnnotation === annotation_id);
@@ -28,8 +28,12 @@ export default {
         getCommentsByCommentId: (state) => (comment_id) => {
             return state.filter(comm => comm.referenceComment === comment_id);
         },
+        getNumberOfChildrenByComment: (state, getters) => (comment_id) => {
+          const comments = getters.getCommentsByCommentId(comment_id);
+          return comments.length + comments.map(c => getters.getNumberOfChildrenByComment(c.id)).reduce((pv, cv) => pv + cv, 0);
+        },
         getDocumentComments: (state) => (document_id) => {
-            return state.filter(comm => comm.document === document_id && comm.referenceAnnotation === null && comm.referenceComment === null);
+            return state.filter(comment => !comment.deleted).filter(comm => comm.document === document_id && comm.referenceAnnotation === null && comm.referenceComment === null);
         }
     },
     mutations: {

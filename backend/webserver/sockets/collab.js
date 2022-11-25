@@ -16,15 +16,12 @@ exports = module.exports = function (io) {
 
             data["user_id"] = socket.request.session.passport.user.id;
             data["timestamp"] = Date.now();
-            data["id"] = uuidv4();
-
-            console.log(data);
 
             collabs.push(data);
 
             socket.emit("start_collab", {id: data["id"]});
 
-            if (data.type === "annotation") {
+            if (data.type === "annotation" || data.type === "comment") {
                 io.to("doc:" + data.doc_id).emit("collab", data);
             }
 
@@ -32,12 +29,13 @@ exports = module.exports = function (io) {
 
         socket.on("update_collab", (data) => {
 
+
             let collab = collabs.find(c => c.id === data.id && c.user_id === socket.request.session.passport.user.id);
             if (collab !== undefined) {
                 collab["timestamp"] = Date.now();
 
-                if (data.type === "annotation") {
-                    io.to("doc:" + data.doc_id).emit("collab", collab);
+                if (collab.type === "annotation" || collab.type === "comment") {
+                    io.to("doc:" + collab.doc_id).emit("collab", collab);
                 }
             }
 
@@ -49,7 +47,7 @@ exports = module.exports = function (io) {
             if (collab !== undefined) {
                 collab["timestamp"] = -1;
 
-                if (data.type === "annotation") {
+                if (data.type === "annotation" || data.type === "comment") {
                     io.to("doc:" + data.doc_id).emit("collab", collab);
                 }
 

@@ -20,9 +20,7 @@
         <li v-for="comment in documentComments" v-bind:id="'documentComment-' + comment.id"
             :key="comment.id"
             :ref="comment.id"
-            class="list-group-i"
-            v-on:mouseleave="unhover(comment.id)"
-            v-on:mouseover='hover(comment.id)'>
+            class="list-group-i">
           <DocumentCard v-bind:id="comment.id" :comment_id="comment.id" :document_id="document_id" :readonly="readonly"
                         @focus="focusAnnotation"></DocumentCard>
         </li>
@@ -125,9 +123,10 @@ export default {
     },
 
     createDocumentComment() {
-      //TODO create a new document comment without annotation
-      this.$socket.emit('addAnnotation', {
-        document: this.document_id,
+      this.$socket.emit('addComment', {
+        document_id: this.document_id,
+        annotation_id: null,
+        comment_id: null
       });
     }
   }

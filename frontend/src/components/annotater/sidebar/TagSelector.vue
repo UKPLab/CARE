@@ -1,8 +1,8 @@
 <template>
-  <div class="tags">
+  <div>
     <select ref="tags"
             v-model="tags"
-            :disabled="disabled"
+            v-bind:disabled="disabled"
             :placeholder="placeholder"
             allowClear="true"
             class="form-select selector"
@@ -21,36 +21,56 @@
 
 <script>
 import Tags from "bootstrap5-tags/tags.js";
+import {watch} from "vue";
 
 export default {
   name: "TagSelector",
-  emits: ['update:value'],
+  emits: ['update:modelValue'],
   props: {
     disabled: {
       type: Boolean,
       required: false,
       default: false,
     },
-    value: {
-      type: Array,
-      required: true
+    modelValue: {
+      type: String,
+      required: true,
+    }
+  },
+  /*setup(props) {
+    watch(() => props.disabled, (newValue) => {
+      this.tags_element.resetState();
+    })
+  },*/
+  data: function () {
+    return {
+      tags_element: null,
     }
   },
   mounted() {
-    Tags.init(this.$refs.tags.$el);
+    this.tags_element = new Tags(this.$refs.tags);
+    this.tags_element.resetState();
     this.$refs.tags.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
   },
+  watch: {
+    disabled2(val, value) {
+      this.$nextTick(() => {
+        this.tags_element.resetState()
+      })
+
+    }
+  },
   computed: {
+    disabled2() {
+      return this.disabled;
+    },
     tags: {
       get() {
-        return this.value
+        return this.modelValue
       },
       set(value) {
-        this.$emit('update:value', value)
+        this.$emit('update:modelValue', value)
       }
-    },
-    all_tags() {
-      return this.$store.getters["tag/getAllTags"](false);
     },
     placeholder() {
       if (!this.disabled) {
@@ -60,15 +80,6 @@ export default {
         return "No Tags";
       }
       return "";
-    },
-    assignableTags() {
-      return this.$store.getters["tag/getTags"](this.defaultTagSet);
-    },
-    tagsIdsUsed() {
-      return [...new Set(this.tags)]
-    },
-    defaultTagSet() {
-      return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
     },
   }
 }

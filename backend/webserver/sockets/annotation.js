@@ -21,6 +21,7 @@ const {
     updateCreatorName
 } = require("./utils/user.js")
 const {loadCommentsByAnnotation, addComment, deleteChildCommentsByAnnotation} = require("./utils/comment");
+const {checkDocumentAccess} = require("./utils/user");
 
 exports = module.exports = function (io) {
 
@@ -57,7 +58,9 @@ exports = module.exports = function (io) {
 
                 if (socket.request.session.passport.user.sysrole !== "admin") {
 
-                    if (anno.creator !== socket.request.session.passport.user.id) {
+                    if (anno.creator !== socket.request.session.passport.user.id
+                    && !checkDocumentAccess(data.document_id, socket.request.session.passport.user.id)
+                    ) {
                         socket.emit("toast", {
                             message: "You have no permission to change this annotation",
                             title: "Annotation Not Saved",
@@ -67,9 +70,8 @@ exports = module.exports = function (io) {
                     }
                 }
 
+                await loadCommentsByAnnotation(socket, anno.id);
                 socket.emit("annotationUpdate", await updateCreatorName(anno));
-                // also update current comments
-                await loadCommentsByAnnotation(io, socket, anno.id);
 
             } catch (e) {
                 logger.error("Could not get annotation and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
