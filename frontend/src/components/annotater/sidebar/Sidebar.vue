@@ -5,7 +5,7 @@
       <div id="spacer"></div>
       <ul id="anno-list" class="list-group">
         <li v-if="numberOfCards === 0">
-          <p class="text-center"> No annotations </p>
+          <p class="text-center"> No elements </p>
         </li>
 
         <li v-for="anno in annotations" v-bind:id="'anno-' + anno.id"

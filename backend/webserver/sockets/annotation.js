@@ -21,11 +21,8 @@ const {sendTagsUpdate} = require("./utils/tag");
 const {get: getTagset} = require("../../db/methods/tag_set");
 const {
     updateCreatorName
-} = require("./utils/annotation.js")
-const {loadCommentsByAnnotation} = require("./utils/comment");
-
-
-//TODO adding rooms for document
+} = require("./utils/user.js")
+const {loadCommentsByAnnotation, addComment, deleteChildCommentsByAnnotation} = require("./utils/comment");
 
 exports = module.exports = function (io) {
 
@@ -33,7 +30,10 @@ exports = module.exports = function (io) {
     io.on("connection", (socket) => {
         socket.on("addAnnotation", async (data) => {
             try {
-                socket.emit("annotationUpdate", await updateCreatorName(await addAnnotation(data, socket.request.session.passport.user.id)))
+                const annotation = await updateCreatorName(await addAnnotation(data, socket.request.session.passport.user.id))
+                await addComment(socket, annotation[0].document, annotation[0].id);
+
+                socket.emit("annotationUpdate", annotation)
             } catch (e) {
                 logger.error("Could not add annotation and/or comment to database. Error: " + e, {user: socket.request.session.passport.user.id});
 
@@ -71,7 +71,7 @@ exports = module.exports = function (io) {
 
                 socket.emit("annotationUpdate", await updateCreatorName(anno));
                 // also update current comments
-                await loadCommentsByAnnotation(socket, anno.id);
+                await loadCommentsByAnnotation(io, socket, anno.id);
 
             } catch (e) {
                 logger.error("Could not get annotation and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
@@ -98,6 +98,11 @@ exports = module.exports = function (io) {
                     }
                 }
                 const newAnno = await updateAnnotation(data);
+                console.log(newAnno);
+                if (newAnno[1].deleted) {
+                    await deleteChildCommentsByAnnotation(io, socket, newAnno[1].id);
+                }
+
                 io.to("doc:" + newAnno[1].document).emit("annotationUpdate", await updateCreatorName(newAnno[1].get({plain: true})));
 
             } catch (e) {

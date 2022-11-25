@@ -14,9 +14,9 @@
 
     <template v-slot:body>
       <div class="blockquote card-text" :style="'border-color:#' + color" data-placement="top"  data-toogle="tooltip" :title="tagName">
-        {{ annotation.text }}
+        <b>{{ tagName }}:</b> {{ annotation.text }}
       </div>
-      <CommentCard ref="main_comment" :annotation_id="annotation_id" :edit="editedByMyself"/>
+      <CommentCard ref="main_comment" :comment_id="comment_id" :edit="editedByMyself"/>
     </template>
 
     <template v-slot:footer>
@@ -40,11 +40,11 @@
             <span v-if="numberReplies > 0" class="replies">Show Replies ({{ numberReplies }})</span>
           </div>
           <div class="col text-end">
-            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
+            <!--<button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
                     type="button" v-on:click="reply()">
               <LoadIcon :size="16" iconName="IconReplyFill"></LoadIcon>
               <span class="visually-hidden">Edit</span>
-            </button>
+            </button>-->
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
                     type="button" v-on:click="edit()">
               <LoadIcon :size="16" iconName="IconPencilSquare"></LoadIcon>
@@ -118,6 +118,9 @@ export default {
     collaborations() {
       return this.$store.getters["collab/annotations"](this.annotation_id);
     },
+    comment_id() {
+      return this.$store.getters["comment/getCommentByAnnotation"](this.annotation_id)["id"];
+    },
     isEdited() {
       return this.collaborations.length > 0;
     },
@@ -128,10 +131,10 @@ export default {
       return this.$store.getters["comment/getCommentsByAnnotation"](this.annotation_id).length;
     },
     color() {
-      return this.$store.getters['tag/getColor'](this.annotation.tags[0]);
+      return this.$store.getters['tag/getColor'](this.annotation.tag);
     },
     tagName() {
-      return this.$store.getters['tag/getTag'](this.annotation.tags[0]).name;
+      return this.$store.getters['tag/getTag'](this.annotation.tag).name;
     },
     /*
     annoComment: {
@@ -174,7 +177,6 @@ export default {
       this.$socket.emit('updateAnnotation', {
         "id": this.annotation.id,
         "tags": JSON.stringify(this.annotation.tags),
-        "draft": false
       });
       this.$refs.main_comment.save();
       this.remove_collab();

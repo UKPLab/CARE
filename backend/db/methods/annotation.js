@@ -7,11 +7,9 @@ Author: Nils Dycke (dycke@ukp.informatik...)
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./utils");
-const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
 
 const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
-const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
 const logger = require("../../utils/logger.js")("db/annotation");
 
 function InvalidAnnotationParameters(details) {
@@ -24,16 +22,8 @@ function InvalidAnnotationParameters(details) {
     };
 }
 
-function InvalidCommentParameters(details) {
-    return {
-        name: "InvalidCommentParameters",
-        message: details,
-        toString: function () {
-            return this.name + ": " + this.message;
-        }
-    };
-}
 
+/*
 exports.addRawComment = async function addRawComment(comment) {
     try {
         return await Comment.create(comment);
@@ -52,8 +42,8 @@ exports.addRaw = async function addRaw(annotation) {
     }
 
 
-}
-
+}*/
+/*
 exports.getAnnoFromDocRaw = async function getAnnoFromDocRaw(document) {
     try {
         let annotations = await Annotation.findAll({where: {'document': document}});
@@ -69,7 +59,7 @@ exports.getAnnoFromDocRaw = async function getAnnoFromDocRaw(document) {
     } catch (err) {
         throw err;
     }
-}
+}*/
 
 exports.get = async function get(id) {
     try {
@@ -93,7 +83,6 @@ exports.add = async function add(annotation, user_id) {
     let newAnnotation = {
         hash: uuidv4(),
         text: annotation.selectors.target === undefined ? null : annotation.selectors.target[0].selector[1].exact,
-        tags: [],
         selectors: {},
         draft: true,
     }
@@ -110,34 +99,13 @@ exports.add = async function add(annotation, user_id) {
         }
     }
 
-    /*
-    if (comment != null) {
-        try {
-            await Comment.create({
-                hash: comment.id,
-                creator: comment.user,
-                text: comment.text,
-                referenceAnnotation: annotation.annotation_id,
-                referenceComment: null,
-                tags: comment.tags,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
-        } catch (err) {
-            if (isInternalDatabaseError(err)) {
-                throw err;
-            } else {
-                throw InvalidCommentParameters("Provided comment invalid");
-            }
-        }
-    }*/
 
 }
 
 exports.update = async function update(data) {
 
     try {
-        return await Annotation.update(subselectFieldsForDB(data, ["deleted", "text", "tags", "draft"]), {
+        return await Annotation.update(subselectFieldsForDB(Object.assign(data, {draft: false}), ["deleted", "text", "tag", "draft"]), {
             where: {
                 id: data["id"]
             },
@@ -154,69 +122,6 @@ exports.update = async function update(data) {
         }
     }
 
-    /*
-
-    if (newComment != null) {
-        const cid = newComment.id;
-
-        let comment;
-        try {
-            comment = await Comment.findAll({
-                where: {
-                    hash: cid
-                }
-            });
-        } catch (err) {
-            throw InternalDatabaseError(err);
-        }
-
-        if (comment.length > 0) {
-            const newCValues = {
-                text: newComment.text,
-                referenceAnnotation: annoId,
-                referenceComment: null,
-                tags: newComment.tags !== undefined && newComment.tags.length > 0 ? newComment.tags.join() : "",
-                updatedAt: new Date()
-            }
-
-            try {
-                await Comment.update(newCValues, {
-                    where: {
-                        hash: cid
-                    }
-                });
-            } catch (err) {
-                if (isInternalDatabaseError(err)) {
-                    throw InternalDatabaseError(err);
-                } else {
-                    //todo catch difference: comment not existent vs. values invalid
-                    throw InvalidCommentParameters("Update values for comment invalid");
-                }
-            }
-        } else {
-            try {
-                await Comment.create({
-                    hash: newComment.id,
-                    creator: newComment.user,
-                    text: newComment.text,
-                    referenceAnnotation: annoId,
-                    referenceComment: null,
-                    tags: newComment.tags !== undefined && newComment.tags !== null && newComment.tags.length > 0 ? newComment.tags.join() : "",
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                });
-            } catch (err) {
-                if (isInternalDatabaseError(err)) {
-                    throw InternalDatabaseError(err);
-                } else {
-                    //todo catch difference: comment not existent vs. values invalid
-                    throw InvalidCommentParameters("Comment invalid");
-                }
-            }
-        }
-
-
-    }*/
 }
 
 exports.loadByDocument = async function load(docId) {
@@ -231,52 +136,10 @@ exports.loadByDocument = async function load(docId) {
     } catch (err) {
         throw InternalDatabaseError(err);
     }
-    /*
-    let comments = Object();
-    for (const a of annotations) {
-        try {
-            comments[a.hash] = await Comment.findAll({
-                where: {
-                    referenceAnnotation: a.hash
-                }
-            });
-        } catch (err) {
-            throw InternalDatabaseError(err);
-        }
-    }
 
-    return [annotations, comments];
-
-     */
 }
 
-async function toFrontendRepresentationAnno(annotation) {
-    return {
-        annotation_id: annotation.hash,
-        document_id: annotation.document,
-        text: annotation.text,
-        tags: annotation.tags != null ? annotation.tags.split(",") : null,
-        annotation: {target: annotation.selectors},
-        user: await resolveUserIdToName(annotation.creator)
-    }
-}
-
-exports.toFrontendRepresentationAnno = toFrontendRepresentationAnno
-
-async function toFrontendRepresentationComm(comment) {
-    return await Promise.all(comment.map(async c => {
-        return {
-            comment_id: c.hash,
-            referenced_annotation: c.referenceAnnotation,
-            text: c.text,
-            tags: c.tags != null ? c.tags.split(",") : null,
-            user: await resolveUserIdToName(c.creator)
-        };
-    }));
-}
-
-exports.toFrontendRepresentationComm = toFrontendRepresentationComm
-
+/*
 exports.mergeAnnosAndComments = async function mergeAnnosAndCommentsFrontendRepresentation(annotationsWithComments) {
     //expects array [annotations, comments]
     return await Promise.all(annotationsWithComments.map(async x => {
@@ -296,3 +159,4 @@ exports.mergeAnnosAndComments = async function mergeAnnosAndCommentsFrontendRepr
         })
     );
 }
+*/
