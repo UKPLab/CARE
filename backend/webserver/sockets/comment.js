@@ -10,10 +10,9 @@ const {
     update: updateComment,
     get: getComment,
     loadByDocument: loadByDocument,
-    loadByAnnotation: loadByAnnotation,
-    formatForExport: formatForExport
+    loadByAnnotation: loadByAnnotation
 } = require('../../db/methods/comment.js')
-const {loadAnnotationsByDocument, formatAnnotationForExport} = require("../../db/methods/annotation");
+const {loadCommentsByAnnotation} = require("./utils/comment");
 const logger = require("../../utils/logger.js")("sockets/comment");
 
 exports = module.exports = function (io) {
@@ -92,41 +91,7 @@ exports = module.exports = function (io) {
         });
 
         socket.on("loadCommentsByAnnotation", async (data) => {
-            try {
-                socket.emit("commentUpdate", await loadByAnnotation(data.id));
-            } catch (e) {
-                logger.info("Error during loading of comments: " + e, {user: socket.request.session.passport.user.id});
-
-                socket.emit("toast", {
-                    message: "Internal server error. Failed to load comments.",
-                    title: "Internal server error",
-                    variant: 'danger'
-                });
-            }
-        });
-
-        socket.on("exportByDocument", async (data) => {
-            let comments;
-            try {
-               comments = await loadByDocument(data.document_id);
-            } catch (e) {
-                logger.info("Error during loading of comments: " + e, {user: socket.request.session.passport.user.id});
-
-                socket.emit("toast", {
-                    message: "Internal server error. Failed to load comments.",
-                    title: "Internal server error",
-                    variant: 'danger'
-                });
-                socket.emit("exportedComments", {"success": false, "document_id": data.document_id});
-
-                return;
-            }
-
-            socket.emit("exportedComments", {
-                "success": true,
-                "document_id": data.document_id,
-                "objs": await Promise.all(comments.map(async (a) => await formatForExport(a)))
-            });
+            await loadCommentsByAnnotation(socket, data.id);
         });
     });
 }

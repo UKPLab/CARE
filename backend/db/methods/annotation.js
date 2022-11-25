@@ -78,7 +78,8 @@ exports.get = async function get(id) {
         return await Annotation.findOne({
             where: {
                 id: id
-            }
+            },
+            raw: true
         });
     } catch (err) {
         if (isInternalDatabaseError(err)) {
@@ -100,7 +101,7 @@ exports.add = async function add(annotation, user_id) {
     }
 
     try {
-        return await Annotation.create(Object.assign(Object.assign(newAnnotation, annotation), {creator: user_id}))
+        return (await Annotation.create(Object.assign(Object.assign(newAnnotation, annotation), {creator: user_id}))).get({plain: true});
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
@@ -225,7 +226,9 @@ exports.loadByDocument = async function load(docId) {
         return await Annotation.findAll({
             where: {
                 document: docId, deleted: false, draft: false
-            }
+            },
+
+            raw: true
         });
     } catch (err) {
         throw InternalDatabaseError(err);

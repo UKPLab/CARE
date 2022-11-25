@@ -14,7 +14,7 @@
             class="list-group-i"
             v-on:mouseleave="unhover(anno.id)"
             v-on:mouseover='hover(anno.id)'>
-          <AnnoCard v-bind:id="anno.id" :annotation="anno" :document_id="document_id" :readonly="readonly"
+          <AnnoCard v-bind:id="anno.id" :annotation_id="anno.id" :document_id="document_id" :readonly="readonly"
                     @focus="focusAnnotation"></AnnoCard>
         </li>
         <li v-for="comment in documentComments" v-bind:id="'documentComment-' + comment.id"

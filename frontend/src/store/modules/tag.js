@@ -113,6 +113,33 @@ export default {
                 return tagSet;
             }
         },
+        getTag: (state) => (id) => {
+          return state["tags"].find(t => t.id === id);
+        },
+        getColor: (state) => (id) => {
+            const t = state["tags"].find(t => t.id === id);
+
+            if (t === undefined) {
+                return "efea7b";
+            }
+
+            switch (t.colorCode) {
+                case "success":
+                    return "009933";
+                case "danger":
+                    return "e05f5f";
+                case "info":
+                    return "5fe0df";
+                case "dark":
+                    return "c8c8c8";
+                case "warning":
+                    return "eed042";
+                case "secondary":
+                    return "4290ee";
+                default:
+                    return "4c86f7";
+            }
+        },
     },
     mutations: {
         // updates the local store to the given documents
