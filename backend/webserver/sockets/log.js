@@ -3,24 +3,25 @@
 Author: Dennis Zyska (zyska@ukp.informatik....)
 Source: --
 */
-const logger = require("../../utils/logger.js")("sockets/log");
 
-exports = module.exports = function (io) {
+const Socket = require("../Socket.js");
 
-    io.on("connection", (socket) => {
+module.exports = class LoggerSocket extends Socket {
+    init() {
 
-        socket.on("log", (data) => {
+        this.socket.on("log", (data) => {
             if (process.env.LOGGING_ALLOW_FRONTEND === 'true') {
                 try {
                     if (data.meta) {
-                        logger.log(data.level, data.message, data.meta);
+                        this.logger.log(data.level, data.message, data.meta);
                     } else {
-                        logger.log(data.level, data.message);
+                        this.logger.log(data.level, data.message);
                     }
                 } catch (e) {
-                    logger.error("Can't log message: " + JSON.stringify(data), {user: socket.request.session.passport.user.id});
+                    this.logger.error("Can't log message: " + JSON.stringify(data));
                 }
             }
         });
-    });
+
+    }
 }

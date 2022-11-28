@@ -9,28 +9,24 @@ The data object can hold additional information!
 Author: Dennis Zyska (zyska@ukp.informatik....), Nils Dycke (dycke@ukp...)
 */
 
-const logger = require("../../utils/logger.js")("sockets/statistic");
 const {add} = require("../../db/methods/statistic.js");
 
+const Socket = require("../Socket.js");
 
-exports = module.exports = function (io) {
-
-    io.on("connection", (socket) => {
-
-        socket.on("stats", async (data) => {
+module.exports = class StatisticSocket extends Socket {
+    init() {
+        this.socket.on("stats", async (data) => {
             try {
 
                 //TODO the field acccept_stats is always null, so we can't check it here
                 //console.log(socket.request.session.passport.user);
 
                 //if (socket.request.session.passport.user.accept_stats) {
-                await add(data.action, data.data, socket.request.session.passport.user.id);
+                await add(data.action, data.data, this.user_id);
                 //}
             } catch (e) {
-                logger.error("Can't add statistics: " + JSON.stringify(data), {user: socket.request.session.passport.user.id});
+                this.logger.error("Can't add statistics: " + JSON.stringify(data));
             }
-
         });
-    });
-
+    }
 }

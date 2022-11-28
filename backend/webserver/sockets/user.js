@@ -1,35 +1,34 @@
 /* Handle user through websocket
 
-Loading tags and tagSets through websocket
-
-Author: Nils Dycke (dycke@ukp...)
+Loading user data
+Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
 Source: --
 */
-const logger = require("../../utils/logger.js")("sockets/review");
 const {
-    getAll, minimalFields
+    getAll: dbGetAllUser, minimalFields
 } = require("../../db/methods/user.js");
-const {loadByUser: loadDocs} = require("../../db/methods/document");
+const Socket = require("../Socket.js");
 
-exports = module.exports = function (io) {
-    io.on("connection", (socket) => {
-        socket.on("getAllUserData", async (data) => {
+module.exports = class UserSocket extends Socket {
+
+    init() {
+        this.socket.on("getAllUserData", async (data) => {
             console.log("GETTING ALL USER DATA");
 
-            if (socket.request.session.passport.user.sysrole === "admin") {
+            if (this.isAdmin()) {
                 try {
-                    const users = await getAll();
+                    const users = await dbGetAllUser();
                     const mappedUsers = users.map(x => minimalFields(x));
 
-                    socket.emit("userDataAll", {success: true, users: mappedUsers});
+                    this.socket.emit("userDataAll", {success: true, users: mappedUsers});
                 } catch (e) {
-                    socket.emit("userDataAll", {success: false, message: "Failed to retrieve all users"});
-                    logger.error("DB error while loading all users from database" + JSON.stringify(data), {user: socket.request.session.passport.user.id})
+                    this.socket.emit("userDataAll", {success: false, message: "Failed to retrieve all users"});
+                    this.logger.error("DB error while loading all users from database" + JSON.stringify(data));
                 }
             } else {
-                socket.emit("userDataAll", {success: false, message: "User rights and argument mismatch"});
-                logger.error("User right and request parameter mismatch" + JSON.stringify(data), {user: socket.request.session.passport.user.id});
+                this.socket.emit("userDataAll", {success: false, message: "User rights and argument mismatch"});
+                this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
             }
         });
-    });
+    }
 }
