@@ -60,6 +60,27 @@ class NLP_Service {
             logger.info(`NLP Service: ${data.name} (${data.version})`);
             this.info = data;
         });
+
+        // forwarding NLP server messages to frontend
+        this.socket.onAny((msg, data) => {
+            this.socket.emit("nlp_" + msg.replace("/", "_"), data);
+            logger.info(`Message NLP SERVER -> FRONTEND: nlp_${msg} ${data}`);
+        });
+
+        // forwarding frontend messages to NLP server
+        this.socket.onAny((msg, data) => {
+            if (msg.startsWith("nlp_") && this.connected) {
+                this.socket.emit(msg.slice("nlp_".length).replace("_", "/"), data);
+                logger.info(`Message FRONTEND -> NLP SERVER: ${msg}`);
+            } else if (msg.startsWith("nlp_") && !this.connected) {
+                this.socket.emit("nlp_error", "Connection to NLP server disrupted.");
+                logger.info(`Connection to NLP server disrupted on msg ${msg}: ${!this.connected}`);
+                if (msg.startsWith("nlp_")) {
+                    this.socket.emit(msg, data)
+                }
+            }
+        });
+
     }
 
     get_info() {
