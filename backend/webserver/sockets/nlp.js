@@ -1,22 +1,27 @@
 /* Handling NLP Environment through websockets
 
-Author: Dennis Zyska (zyska@ukp.informatik...), Nils Dycke (dycke@ukp.informatik....)
+Author: Dennis Zyska (zyska@ukp.informatik...)
 Source: --
 */
-const logger = require("../../utils/logger.js")("sockets/nlp");
 
-exports = module.exports = function (io, nlp) {
-    io.on("connection", (socket) => {
+const Socket = require("../Socket.js");
 
-        socket.on("connect", function () {
-            if (!nlp.connected)
-                nlp.connect();
+module.exports = class NLPSocket extends Socket {
+    constructor(io, socket, nlp) {
+        super(io, socket);
+        this.nlp = nlp;
+    }
+
+    init() {
+        this.socket.on("connect", function () {
+            if (!this.nlp.connected)
+                this.nlp.connect();
         });
 
-        socket.on("disconnect", (reason) => {
-            if (nlp.connected) {
-                nlp.disconnect();
+        this.socket.on("disconnect", (reason) => {
+            if (this.nlp.connected) {
+                this.nlp.disconnect();
             }
         });
-    });
+    }
 }
