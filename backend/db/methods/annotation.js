@@ -6,11 +6,14 @@ Author: Nils Dycke (dycke@ukp.informatik...)
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB, pickObjectAttributeSubset} = require("./utils");
 const {resolveUserIdToName} = require("./user");
+const {v4: uuidv4} = require("uuid");
+
+const {getByIds: getTagsByIds} = require('../../db/methods/tag.js')
 
 const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
-const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
+const logger = require("../../utils/logger.js")("db/annotation");
 
 function InvalidAnnotationParameters(details) {
     return {
@@ -22,16 +25,8 @@ function InvalidAnnotationParameters(details) {
     };
 }
 
-function InvalidCommentParameters(details) {
-    return {
-        name: "InvalidCommentParameters",
-        message: details,
-        toString: function () {
-            return this.name + ": " + this.message;
-        }
-    };
-}
 
+/*
 exports.addRawComment = async function addRawComment(comment) {
     try {
         return await Comment.create(comment);
@@ -50,8 +45,8 @@ exports.addRaw = async function addRaw(annotation) {
     }
 
 
-}
-
+}*/
+/*
 exports.getAnnoFromDocRaw = async function getAnnoFromDocRaw(document) {
     try {
         let annotations = await Annotation.findAll({where: {'document': document}});
@@ -67,23 +62,36 @@ exports.getAnnoFromDocRaw = async function getAnnoFromDocRaw(document) {
     } catch (err) {
         throw err;
     }
+}*/
+
+exports.get = async function get(id) {
+    try {
+        return await Annotation.findOne({
+            where: {
+                id: id
+            },
+            raw: true
+        });
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw err;
+        }
+    }
 }
 
-exports.add = async function add(annotation, comment = null) {
-    let anno;
+exports.add = async function add(annotation, user_id) {
+
+    let newAnnotation = {
+        hash: uuidv4(),
+        text: annotation.selectors.target === undefined ? null : annotation.selectors.target[0].selector[1].exact,
+        selectors: {},
+        draft: true,
+    }
+
     try {
-        //TODO without checking we add the given user as creator to the DB, that is incorrect -- we need to use the one of the session
-        anno = await Annotation.create({
-            hash: annotation.annotation_id,
-            creator: annotation.user,
-            text: annotation.annotation.target === undefined ? null : annotation.annotation.target[0].selector[1].exact,
-            document: annotation.document_id,
-            selectors: annotation.annotation.target === undefined ? null : annotation.annotation.target,
-            draft: annotation.draft,
-            tags: JSON.stringify(annotation.tags),
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
+        return (await Annotation.create(Object.assign(Object.assign(newAnnotation, annotation), {creator: user_id}))).get({plain: true});
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
@@ -94,163 +102,80 @@ exports.add = async function add(annotation, comment = null) {
         }
     }
 
-    if (comment != null) {
-        try {
-            await Comment.create({
-                hash: comment.id,
-                creator: comment.user,
-                text: comment.text,
-                referenceAnnotation: annotation.annotation_id,
-                referenceComment: null,
-                tags: comment.tags,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
-        } catch (err) {
-            if (isInternalDatabaseError(err)) {
-                throw err;
-            } else {
-                throw InvalidCommentParameters("Provided comment invalid");
-            }
-        }
-    }
 
-    return anno;
 }
 
-exports.deleteAnno = async function deleteAnno(annoId) {
+exports.update = async function update(data) {
+
     try {
-        return await Annotation.update({deleted: true, deletedAt: new Date()}, {
+        return await Annotation.update(subselectFieldsForDB(Object.assign(data, {draft: false}), ["deleted", "text", "tag", "draft"]), {
             where: {
-                hash: annoId
-            }
+                id: data["id"]
+            },
+            returning: true,
+            plain: true
         });
     } catch (err) {
+        logger.error("Cant add tag to database" + err);
+
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
-            throw InvalidAnnotationParameters("Annotation-to-delete non-existent");
-        }
-    }
-}
-
-exports.updateAnno = async function updateAnno(annoId, newSelector = null, newText = null, newComment = null, newTags = null) {
-    let newValues = {updatedAt: new Date(), draft: false};
-
-    if (newSelector != null) {
-        newValues.selector = newSelector;
-    }
-    if (newText != null) {
-        newValues.text = newText;
-    }
-    if (newTags != null) {
-        newValues.tags = newTags.length > 0 ? JSON.stringify(newTags) : "[]";
-    }
-
-    try {
-        await Annotation.update(newValues, {
-            where: {
-                hash: annoId
-            }
-        });
-    } catch (e) {
-        if (isInternalDatabaseError(err)) {
-            throw InternalDatabaseError(err);
-        } else {
-            //todo catch difference: annotation not existent vs. values invalid
-            throw InvalidAnnotationParameters("Update values for annotation invalid");
+            throw err;
         }
     }
 
-    if (newComment != null) {
-        const cid = newComment.id;
-
-        let comment;
-        try {
-            comment = await Comment.findAll({
-                where: {
-                    hash: cid
-                }
-            });
-        } catch (err) {
-            throw InternalDatabaseError(err);
-        }
-
-        if (comment.length > 0) {
-            const newCValues = {
-                text: newComment.text,
-                referenceAnnotation: annoId,
-                referenceComment: null,
-                tags: newComment.tags !== undefined && newComment.tags.length > 0 ? newComment.tags.join() : "",
-                updatedAt: new Date()
-            }
-
-            try {
-                await Comment.update(newCValues, {
-                    where: {
-                        hash: cid
-                    }
-                });
-            } catch (err) {
-                if (isInternalDatabaseError(err)) {
-                    throw InternalDatabaseError(err);
-                } else {
-                    //todo catch difference: comment not existent vs. values invalid
-                    throw InvalidCommentParameters("Update values for comment invalid");
-                }
-            }
-        } else {
-            try {
-                await Comment.create({
-                    hash: newComment.id,
-                    creator: newComment.user,
-                    text: newComment.text,
-                    referenceAnnotation: annoId,
-                    referenceComment: null,
-                    tags: newComment.tags !== undefined && newComment.tags !== null && newComment.tags.length > 0 ? newComment.tags.join() : "",
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                });
-            } catch (err) {
-                if (isInternalDatabaseError(err)) {
-                    throw InternalDatabaseError(err);
-                } else {
-                    //todo catch difference: comment not existent vs. values invalid
-                    throw InvalidCommentParameters("Comment invalid");
-                }
-            }
-        }
-    }
 }
 
 exports.loadByDocument = async function load(docId) {
-    let annotations;
     try {
-        annotations = await Annotation.findAll({
+        return await Annotation.findAll({
             where: {
                 document: docId, deleted: false, draft: false
-            }
+            },
+
+            raw: true
         });
     } catch (err) {
         throw InternalDatabaseError(err);
     }
 
-    let comments = Object();
-    for (const a of annotations) {
-        try {
-            comments[a.hash] = await Comment.findAll({
-                where: {
-                    referenceAnnotation: a.hash
-                }
-            });
-        } catch (err) {
-            throw InternalDatabaseError(err);
-        }
-    }
-
-    return [annotations, comments];
 }
 
+async function resolveAnnoIdToHash(annoId) {
+    try {
+        const anno = await Annotation.findOne({
+            where: {
+                id: annoId, deleted: false, draft: false
+            }
+        });
+        return anno != null ? anno.hash : null;
+    } catch (err) {
+        throw InternalDatabaseError(err);
+    }
+}
+exports.resolveAnnoIdToHash = resolveAnnoIdToHash;
+
+exports.formatForExport = async function format(annotation) {
+    const copyFields = [
+        "hash",
+        "text",
+        "document",
+        "draft",
+        "deleted",
+        "deletedAt",
+        "createdAt",
+        "updatedAt"
+    ]
+
+    let copied = pickObjectAttributeSubset(annotation, copyFields);
+    copied.creator = await resolveUserIdToName(annotation.creator);
+    copied.tags = await getTagsByIds(JSON.parse(annotation.tags).map(t => t.name));
+
+    return copied
+}
+
+/*
 async function toFrontendRepresentationAnno(annotation) {
     return {
         annotation_id: annotation.hash,
@@ -278,6 +203,7 @@ async function toFrontendRepresentationComm(comment) {
 
 exports.toFrontendRepresentationComm = toFrontendRepresentationComm
 
+/*
 exports.mergeAnnosAndComments = async function mergeAnnosAndCommentsFrontendRepresentation(annotationsWithComments) {
     //expects array [annotations, comments]
     return await Promise.all(annotationsWithComments.map(async x => {
@@ -297,3 +223,4 @@ exports.mergeAnnosAndComments = async function mergeAnnosAndCommentsFrontendRepr
         })
     );
 }
+*/

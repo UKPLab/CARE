@@ -50,9 +50,16 @@ const sockets = [
     require("./sockets/user"),
     require("./sockets/tag"),
     require("./sockets/statistic"),
-    require("./sockets/settings")
+    require("./sockets/settings"),
+    require("./sockets/collab"),
+    require("./sockets/comment"),
+    require("./sockets/nlp")
 ];
 const nlp_socket = require("./sockets/nlp");
+
+const subscriptions = [
+    require("./sockets/subscription/documents")
+]
 
 /**
  * The main HTTP server which serves all files to the client
@@ -143,6 +150,9 @@ exports = module.exports = function webserver() {
     });
     logger.debug("Initialize Sockets...");
     sockets.forEach(socket => socket(io));
+
+    logger.debug("Adding subscriptions...");
+    subscriptions.forEach(subscription => subscription(io))
 
     logger.debug("Initialize NLP Service...");
     const nlp = new NLP_Service();
