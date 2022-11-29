@@ -25,12 +25,11 @@ module.exports = class Socket {
         this.user_id = socket.request.session.passport.user.id;
         this.logger.defaultMeta = {user_id: this.user_id};
 
-        this.init();
-
     }
 
     /**
      * Initializes the socket connection
+     * Note: Please overwrite with your sockets!
      */
     init() {
     }

@@ -1,15 +1,3 @@
-/* webServer.js - Defines Express Webserver of Content Server
-
-This module is the heart of the content server. Here the server is configured and
-started. The content server uses express to provide the routes found in the
-subdirectory "routes", the sockets in "sockets" and the front-end compiled into
-the "dist" directory.
-
-Author: Dennis Zyska (zyska@ukp.informatik....)
-Co-Author: Nils Dycke (dycke@ukp.informatik...)
-Source: --
-*/
-
 'use strict';
 
 const express = require('express');
@@ -28,6 +16,17 @@ const db = require("../db");
 const {DataTypes} = require("sequelize");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
+/**
+ * Defines Express Webserver of Content Server
+ *
+ * This module is the heart of the content server. Here the server is configured and
+ * started. The content server uses express to provide the routes found in the
+ * subdirectory "routes", the sockets in "sockets" and the front-end compiled into
+ * the "dist" directory.
+ *
+ * @author Dennis Zyska, Nils Dycke
+ * @type {Server}
+ */
 module.exports = class Server {
     constructor() {
         this.logger = require("../utils/logger.js")("webServer");
@@ -152,26 +151,6 @@ module.exports = class Server {
                 socket.disconnect();
             }
         })
-
-
-        /*this.socket = this.io.on("connection", (socket) => {
-            // Check if session exists, otherwise send logout and disconnect
-            if (!socket.request.session.passport) {
-                try {
-                    socket.request.session.destroy();
-                    this.logger.warn("Session in websocket not available! Send logout...");
-                    socket.emit("logout"); //force logout on client side
-                    socket.disconnect();
-                } catch (e) {
-                    this.logger.debug("Websocket: Session not available + ", e);
-                }
-            }
-            socket.onAny(() => {
-                socket.request.session.touch();
-                socket.request.session.save();
-            })
-            return socket;
-        });*/
     }
 
     /**
