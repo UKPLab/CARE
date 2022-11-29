@@ -1,15 +1,36 @@
-/* Handle user through websocket
-
-Loading user data
-Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
-Source: --
-*/
 const {
-    getAll: dbGetAllUser, minimalFields
+    getAll: dbGetAllUser,
+    getUsername: dbGetUsername,
+    minimalFields
 } = require("../../db/methods/user.js");
 const Socket = require("../Socket.js");
 
+/**
+ * Handle user through websocket
+ *
+ * @author Nils Dycke, Dennis Zyska
+ * @type {UserSocket}
+ */
 module.exports = class UserSocket extends Socket {
+
+    /**
+     * Add username as creator_name of an database entry with column creator
+     *
+     * Accept data as list of objects or single object
+     * Note: returns always list of objects!
+     *
+     * @param data
+     * @returns {Promise<Awaited<*&{creator_name: string|*|undefined}>[]>}
+     */
+    async updateCreatorName(data) {
+        if (!Array.isArray(data)) {
+            data = [data];
+        }
+
+        return Promise.all(data.map(async x => {
+            return {...x, creator_name: await dbGetUsername(x.creator)};
+        }));
+    }
 
     init() {
         this.socket.on("getAllUserData", async (data) => {

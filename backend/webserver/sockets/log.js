@@ -1,11 +1,11 @@
-/* Handle logs through websocket
-
-Author: Dennis Zyska (zyska@ukp.informatik....)
-Source: --
-*/
-
 const Socket = require("../Socket.js");
 
+/**
+ * Handle logs through websocket
+ *
+ * @author Dennis Zyska
+ * @type {LoggerSocket}
+ */
 module.exports = class LoggerSocket extends Socket {
     init() {
 

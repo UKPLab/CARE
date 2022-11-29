@@ -1,24 +1,20 @@
-/* Handle reviews through websocket
-
-Author: Nils Dycke (dycke@ukp.informatik....), Dennis Zyska (zyska@ukp...)
-Source: --
-*/
 const {
-    add, get, update, getByUser, getAll, toReadable, getMetaByUser
+    add: dbAddReview,
+    get: dbGetReview,
+    update: dbUpdateReview,
+    getByUser: dbGetReviewByUser,
+    getAll: dbGetAllReviews,
+    toReadable: dbReviewToReadable,
+    getMetaByUser: dbReviewMetaByUser,
 } = require("../../db/methods/review.js");
 const {
-    add: addDoc,
-    getDoc: getDoc,
-    loadByUser: loadDocs
+    add: dbAddDoc,
+    dbGetDoc: dbGetDoc,
 } = require("../../db/methods/document.js");
 const {
-    add: addAnnotation,
-    getAnnoFromDocRaw: getAnnoFromDocRaw,
-    addRaw: addRawAnnotation,
-    addRawComment: addRawComment,
-    deleteAnno: deleteAnnotation,
-    updateAnno: updateAnnotation,
-    loadByDocument: loadByDocument,
+    getAnnoFromDocRaw: dbGetAnnoFromDocRaw,
+    addRaw: dbAddRawAnnotation,
+    addRawComment: dbAddRawComment,
 } = require('../../db/methods/annotation.js');
 const fs = require("fs");
 const path = require("path");
@@ -27,13 +23,19 @@ const PDF_PATH = `${__dirname}/../../../files`;
 
 const Socket = require("../Socket.js");
 
+/**
+ * Handle reviews through websocket
+ *
+ * @author Nils Dycke, Dennis Zyska
+ * @type {ReviewSocket}
+ */
 module.exports = class ReviewSocket extends Socket {
 
     async updateAllReviews() {
         if (this.isAdmin()) {
             try {
-                const reviews = await getAll();
-                const mappedReviews = await Promise.all(reviews.map(async x => await toReadable(x)));
+                const reviews = await dbGetAllReviews();
+                const mappedReviews = await Promise.all(reviews.map(async x => await dbReviewToReadable(x)));
 
                 this.socket.emit("reviewDataAll", {success: true, reviews: mappedReviews});
             } catch (e) {
@@ -52,7 +54,7 @@ module.exports = class ReviewSocket extends Socket {
         this.socket.on("startReview", async (data) => {
             this.logger.info("Start Review Process for document: " + data.document_id);
 
-            const hash = await add(data.document_id, this.user_id);
+            const hash = await dbAddReview(data.document_id, this.user_id);
             if (hash !== null) {
                 this.socket.emit("reviewProcessStarted", {success: true, reviewHash: hash});
             } else {
@@ -62,7 +64,7 @@ module.exports = class ReviewSocket extends Socket {
 
         this.socket.on("getReview", async (data) => {
             try {
-                let review = await get(data.review_id);
+                let review = await dbGetReview(data.review_id);
                 if (data.decision) { // view for acceptance decision
                     if (review.decisionBy === this.user_id) {
                         if (review.accepted === null) {
@@ -115,8 +117,8 @@ module.exports = class ReviewSocket extends Socket {
 
         this.socket.on("getReviews", async (data) => {
             try {
-                const reviews = await getByUser(this.user_id);
-                const mappedReviews = await Promise.all(reviews.map(async x => await toReadable(x)));
+                const reviews = await dbGetReviewByUser(this.user_id);
+                const mappedReviews = await Promise.all(reviews.map(async x => await dbReviewToReadable(x)));
 
                 this.socket.emit("reviewDataUser", {success: true, reviews: mappedReviews});
             } catch (e) {
@@ -130,8 +132,8 @@ module.exports = class ReviewSocket extends Socket {
 
         this.socket.on("getMetaReviews", async (data) => {
             try {
-                const metaReviews = await getMetaByUser(this.user_id);
-                const mappedReviews = await Promise.all(metaReviews.map(async x => await toReadable(x)));
+                const metaReviews = await dbReviewMetaByUser(this.user_id);
+                const mappedReviews = await Promise.all(metaReviews.map(async x => await dbReviewToReadable(x)));
 
                 this.socket.emit("metaReviewDataUser", {success: true, reviews: mappedReviews});
             } catch (e) {
@@ -149,7 +151,7 @@ module.exports = class ReviewSocket extends Socket {
                 submitted: true,
                 submitAt: new Date(),
             }
-            this.socket.emit("reviewSubmitted", {success: await update(data.review_id, newData)});
+            this.socket.emit("reviewSubmitted", {success: await dbUpdateReview(data.review_id, newData)});
         });
 
         this.socket.on("decisionSubmit", async (data) => {
@@ -159,7 +161,7 @@ module.exports = class ReviewSocket extends Socket {
                 decisionReason: data.reason,
                 accepted: data.accept,
             }
-            this.socket.emit("decisionSubmitted", {success: await update(data.review_id, newData)});
+            this.socket.emit("decisionSubmitted", {success: await dbUpdateReview(data.review_id, newData)});
         });
 
         this.socket.on("editorAssign", async (data) => {
@@ -168,7 +170,7 @@ module.exports = class ReviewSocket extends Socket {
             let newData = {
                 decisionBy: data.editor_id
             }
-            this.socket.emit("editorAssigned", {success: await update(data.review_id, newData)});
+            this.socket.emit("editorAssigned", {success: await dbUpdateReview(data.review_id, newData)});
         });
 
         this.socket.on("copyReview", async (data) => {
@@ -176,25 +178,26 @@ module.exports = class ReviewSocket extends Socket {
             this.logger.info("Copy Review: " + data.hash);
 
             // Copy Document
-            let doc_old = await getDoc(data.document);
-            let doc_new = await addDoc(doc_old.name, this.user_id);
+            let doc_old = await dbGetDoc(data.document);
+            let doc_new = await dbAddDoc(doc_old.name, this.user_id);
             const target = path.join(PDF_PATH, `${doc_new.hash}.pdf`);
             const source = path.join(PDF_PATH, `${data.document}.pdf`);
             fs.copyFileSync(source, target);
 
             // Copy Review
-            let review_old = await get(data.hash);
-            let review_new = await add(doc_new.hash, this.user_id);
+            let review_old = await dbGetReview(data.hash);
+            let review_new = await dbAddReview(doc_new.hash, this.user_id);
 
-            await update(review_new, {
+            await dbUpdateReview(review_new, {
                 startBy: review_old.startBy,
                 submitAt: review_old.submitAt,
                 submitted: review_old.submitted
             });
 
             // Copy annotations & comments
+            // TODO Check if this works after refactoring!
             try {
-                let annotations = await getAnnoFromDocRaw(doc_old.hash);
+                let annotations = await dbGetAnnoFromDocRaw(doc_old.hash);
                 for (const anno of annotations) {
 
                     let new_hash = uuidv4();
@@ -211,7 +214,7 @@ module.exports = class ReviewSocket extends Socket {
                         deleteAt: anno.deletedAt,
                     }
 
-                    await addRawAnnotation(annotation);
+                    await dbAddRawAnnotation(annotation);
                     for (const comment of anno.comments) {
                         let new_comment = {
                             hash: uuidv4(),
@@ -221,14 +224,13 @@ module.exports = class ReviewSocket extends Socket {
                             deleted: comment.deleted,
                             deletedAt: comment.deletedAt
                         }
-                        await addRawComment(new_comment);
+                        await dbAddRawComment(new_comment);
                     }
 
 
                 }
             } catch (e) {
-                //TODO send error to database instead of console.log
-                console.log(e);
+                this.logger.error(e);
             }
 
             await this.updateAllReviews();
