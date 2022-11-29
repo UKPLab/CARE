@@ -70,7 +70,10 @@ export default {
       this.outputType = outputType;
 
       //in the future: do batching if necessary
-      doc_ids.forEach(did => this.$socket.emit("exportByDocument", {"document_id": did}));
+      doc_ids.forEach(did => {
+        this.$socket.emit("exportAnnotationsByDocument", {"document_id": did});
+        this.$socket.emit("exportCommentsByDocument", {"document_id": did});
+      });
     },
     downloadExported(annoExport, commExport, outputType) {
       if (!annoExport.success || !commExport.success) {
