@@ -36,6 +36,7 @@ module.exports = class Server {
         this.sockets = {};
         this.services = {};
         this.socket = null;
+        this.collabs = []; //TODO handle collaborations with db
 
         // No Caching
         this.app.disable('etag');
@@ -55,7 +56,8 @@ module.exports = class Server {
 
         // Routes for login management
         this.logger.debug("Initialize Routes for auth...");
-        require("./routes/auth")(this.app);
+        const auth = require('./routes/auth.js');
+        auth(this.app);
 
         // all further urls reference to frontend
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
@@ -137,7 +139,22 @@ module.exports = class Server {
         this.io.use(wrap(this.session));
         this.io.use(wrap(passport.initialize()));
         this.io.use(wrap(passport.session()));
-        this.socket = this.io.on("connection", (socket) => {
+        this.io.use((socket, next) => {
+            const session = socket.request.session;
+            if (session && "passport" in session) {
+                socket.request.session.touch();
+                socket.request.session.save();
+                next();
+            } else {
+                socket.request.session.destroy();
+                socket.emit("logout"); //force logout on client side
+                this.logger.warn("Session in websocket not available! Send logout...");
+                socket.disconnect();
+            }
+        })
+
+
+        /*this.socket = this.io.on("connection", (socket) => {
             // Check if session exists, otherwise send logout and disconnect
             if (!socket.request.session.passport) {
                 try {
@@ -154,7 +171,7 @@ module.exports = class Server {
                 socket.request.session.save();
             })
             return socket;
-        });
+        });*/
     }
 
     /**

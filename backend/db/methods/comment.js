@@ -55,13 +55,11 @@ exports.add = async function add(document_id, annotation_id, comment_id, user_id
         referenceComment: comment_id
     }
 
-    console.log(newComment);
-
     try {
         return (await Comment.create(newComment)).get({plain: true})
     } catch (err) {
 
-        console.log(err);
+
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         }

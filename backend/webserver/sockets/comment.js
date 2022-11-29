@@ -38,7 +38,7 @@ module.exports = class CommentSocket extends Socket {
             }
 
             const newComment = await dbUpdateComment(data);
-            io.to("doc:" + newComment[1].document).emit("commentUpdate", await this.updateCreatorName(newComment[1].get({plain: true})));
+            this.io.to("doc:" + newComment[1].document).emit("commentUpdate", await this.updateCreatorName(newComment[1].get({plain: true})));
 
         } catch (e) {
             this.logger.error("Could not update comment in database. Error: " + e);
@@ -120,7 +120,7 @@ module.exports = class CommentSocket extends Socket {
         });
 
         this.socket.on("updateComment", async (data) => {
-            await dbUpdateComment(data);
+            await this.updateComment(data);
         });
 
         this.socket.on("loadCommentsByDocument", async (data) => {
