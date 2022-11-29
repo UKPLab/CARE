@@ -22,11 +22,11 @@ module.exports = class Socket {
         this.io = io;
         this.socket = socket;
 
-        this.user_id = this.socket.request.session.passport.user.id;
+        this.user_id = socket.request.session.passport.user.id;
         this.logger.defaultMeta = {user_id: this.user_id};
-        this.collabs = []; //TODO handle collaborations with db
 
         this.init();
+
     }
 
     /**

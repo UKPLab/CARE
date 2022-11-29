@@ -26,7 +26,7 @@ module.exports = class CollabSocket extends Socket {
                 collab["timestamp"] = Date.now();
 
                 if (collab.type === "annotation" || collab.type === "comment") {
-                    io.to("doc:" + collab.doc_id).emit("collab", collab);
+                    this.io.to("doc:" + collab.doc_id).emit("collab", collab);
                 }
             }
         });
@@ -38,7 +38,7 @@ module.exports = class CollabSocket extends Socket {
                 collab["timestamp"] = -1;
 
                 if (data.type === "annotation" || data.type === "comment") {
-                    io.to("doc:" + data.doc_id).emit("collab", collab);
+                    this.io.to("doc:" + data.doc_id).emit("collab", collab);
                 }
 
                 this.server.collabs.splice(this.server.collabs.indexOf(collab), 1);

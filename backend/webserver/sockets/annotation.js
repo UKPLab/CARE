@@ -21,8 +21,10 @@ module.exports = class AnnotationSocket extends Socket {
         this.socket.on("addAnnotation", async (data) => {
             try {
                 const annotation = await this.updateCreatorName(await dbAddAnnotation(data, this.user_id))
-                await this.server.sockets["CommentSocket"].addComment(this.socket, annotation[0].document, annotation[0].id);
+                await this.server.sockets["CommentSocket"].addComment(annotation[0].document, annotation[0].id);
 
+
+                console.log("Test");
                 this.socket.emit("annotationUpdate", annotation)
             } catch (e) {
                 this.logger.error("Could not add annotation and/or comment to database. Error: " + e);
