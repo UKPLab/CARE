@@ -50,7 +50,3 @@ fs.readdir("./webserver/services", (err, files) => {
 
 logger.info("Starting webserver on port " + port + "...");
 server.start(port);
-
-
-
-
