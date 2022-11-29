@@ -21,7 +21,7 @@ module.exports = class AnnotationSocket extends Socket {
         this.socket.on("addAnnotation", async (data) => {
             try {
                 const annotation = await this.updateCreatorName(await dbAddAnnotation(data, this.user_id))
-                await this.server.sockets["CommentSocket"].addComment(annotation[0].document, annotation[0].id);
+                await this.getSocket("CommentSocket").addComment(annotation[0].document, annotation[0].id);
 
 
                 console.log("Test");
@@ -45,7 +45,7 @@ module.exports = class AnnotationSocket extends Socket {
                     this.sendToast("You have no permission to change this annotation", "Annotation Not Saved", "danger");
                 }
 
-                await this.server.sockets["CommentSocket"].loadCommentsByAnnotation(anno.id);
+                await this.getSocket("CommentSocket").loadCommentsByAnnotation(anno.id);
                 this.socket.emit("annotationUpdate", await this.updateCreatorName(anno));
 
             } catch (e) {
@@ -65,7 +65,7 @@ module.exports = class AnnotationSocket extends Socket {
 
                 const newAnno = await dbUpdateAnnotation(data);
                 if (newAnno[1].deleted) {
-                    await this.server.sockets["CommentSocket"].deleteChildCommentsByAnnotation(newAnno[1].id);
+                    await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno[1].id);
                 }
                 this.io.to("doc:" + newAnno[1].document).emit("annotationUpdate", await this.updateCreatorName(newAnno[1].get({plain: true})));
 

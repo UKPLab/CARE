@@ -33,6 +33,7 @@ module.exports = class Server {
         this.app = express();
 
         this.sockets = {};
+        this.availSockets = {};
         this.services = {};
         this.socket = null;
         this.collabs = []; //TODO handle collaborations with db
@@ -151,6 +152,15 @@ module.exports = class Server {
                 socket.disconnect();
             }
         })
+
+        this.io.on("connection", (socket) => {
+            this.availSockets[socket.id] = {};
+
+            Object.entries(this.sockets).map(([socketName, socketClass]) => {
+                this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
+                this.availSockets[socket.id][socketName].init();
+            });
+        });
     }
 
     /**
@@ -161,10 +171,7 @@ module.exports = class Server {
      */
     addSocket(socketClass) {
         this.logger.info("Add socket " + socketClass.name + " to webserver...");
-        this.io.on("connection", (socket) => {
-            this.sockets[socketClass.name] = new socketClass(this, this.io, socket);
-            this.sockets[socketClass.name].init();
-        });
+        this.sockets[socketClass.name] = socketClass;
     }
 
     /**
