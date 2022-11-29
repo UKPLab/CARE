@@ -8,6 +8,7 @@ const {
 } = require('../../db/methods/comment.js')
 
 const Socket = require("../Socket.js");
+const {formatForExport: dbFormatForExport} = require("../../db/methods/comment");
 
 /**
  * Loading the comments through websocket
@@ -130,6 +131,26 @@ module.exports = class CommentSocket extends Socket {
                 this.logger.info("Error during loading of comments: " + e);
                 this.sendToast("Internal Server Error: Could not update comment", "Internal server error", "danger");
             }
+        });
+
+        this.socket.on("exportCommentsByDocument", async (data) => {
+            let comments;
+            try {
+                comments = await this.updateCreatorName(await dbLoadByDocument(data.id));
+            } catch (e) {
+                this.logger.info("Error during loading of comments: " + e);
+
+                this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
+                this.socket.emit("exportedAnnotations", {"success": false, "document_id": data.document_id});
+
+                return;
+            }
+
+            this.socket.emit("exportedComments", {
+                "success": true,
+                "document_id": data.document_id,
+                "objs": await Promise.all(comments.map(async (c) => await dbFormatForExport(c)))
+            });
         });
 
     }

@@ -87,10 +87,10 @@ module.exports = class AnnotationSocket extends Socket {
             }
         });
 
-        this.socket.on("exportByDocument", async (data) => {
+        this.socket.on("exportAnnotationsByDocument", async (data) => {
             let annotations;
             try {
-                annotations = await dbLoadByDocument(data.document_id);
+                annotations = await this.updateCreatorName(await dbLoadByDocument(data.id));
             } catch (e) {
                 this.logger.info("Error during loading of annotations: " + e);
 
