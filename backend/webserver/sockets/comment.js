@@ -1,77 +1,138 @@
-/* Handle all comments through websocket
-
-Loading the comments through websocket
-
-Author: Dennis Zyska (zyska@ukp.informatik....), Nils Dycke (dycke@ukp...)
-Source: --
-*/
 const {
-    get: getComment,
-    loadByDocument: loadByDocument,
-    loadByAnnotation: loadByAnnotation
+    get: dbGetComment,
+    loadByDocument: dbLoadByDocument,
+    loadByAnnotation: dbLoadByAnnotation,
+    loadByComment: dbLoadByComment,
+    add: dbAddComment,
+    update: dbUpdateComment,
 } = require('../../db/methods/comment.js')
-const {addComment, updateComment} = require("./utils/comment");
-const {get: getAnnotation} = require("../../db/methods/annotation");
-const {checkDocumentAccess, updateCreatorName} = require("./utils/user");
-const logger = require("../../utils/logger.js")("sockets/comment");
 
-exports = module.exports = function (io) {
-    io.on("connection", (socket) => {
+const Socket = require("../Socket.js");
 
-        socket.on("addComment", async (data) => {
-            await addComment(socket, data.document_id, data.annotation_id, data.comment_id !== undefined ? data.comment_id : null);
+/**
+ * Loading the comments through websocket
+ *
+ * @author Dennis Zyska, Nils Dycke
+ * @type {CommentSocket}
+ */
+module.exports = class CommentSocket extends Socket {
+
+    async loadCommentsByAnnotation(annotation_id) {
+        try {
+            const comment = await this.updateCreatorName(await this.loadByAnnotation(annotation_id));
+
+            this.io.to("doc:" + comment.document).emit("commentUpdate", comment);
+        } catch (e) {
+            this.logger.info("Error during loading of comments: " + e);
+            this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
+        }
+    }
+
+    async updateComment(data) {
+
+        try {
+            const origComment = await dbGetComment(data.id);
+            if (!this.checkUserAccess(origComment.creator)) {
+                this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
+                return;
+            }
+
+            const newComment = await dbUpdateComment(data);
+            io.to("doc:" + newComment[1].document).emit("commentUpdate", await this.updateCreatorName(newComment[1].get({plain: true})));
+
+        } catch (e) {
+            this.logger.error("Could not update comment in database. Error: " + e);
+
+            if (e.name === "InvalidCommentParameters") {
+                this.sendToast(e.message, "Invalid comment parameters.", "danger");
+            } else {
+                this.sendToast("Internal server error. Failed to update comment.", "Internal server error", "danger");
+            }
+        }
+    }
+
+    async deleteComment(comment) {
+        comment.deleted = true;
+        await this.updateComment(comment);
+    }
+
+    async deleteChildCommentsByComment(comment_id) {
+        const comments = await dbLoadByComment(comment_id);
+        comments.forEach(comment => {
+            this.deleteComment(comment);
+            this.deleteChildCommentsByComment(comment.id);
+        })
+    }
+
+    async deleteChildCommentsByAnnotation(annotation_id) {
+        try {
+            const comment = await dbLoadByAnnotation(annotation_id);
+            await this.deleteComment(comment);
+            await this.deleteChildCommentsByComment(comment.id);
+        } catch (e) {
+            this.logger.info("Error during deletion of comments: " + e);
+        }
+
+
+    }
+
+
+    async addComment(document_id, annotation_id, comment_id = null) {
+        try {
+            this.socket.emit("commentUpdate", await this.updateCreatorName(await dbAddComment(document_id, annotation_id, comment_id, this.user_id)))
+        } catch (e) {
+            this.logger.error("Could not add comment and/or comment to database. Error: " + e);
+
+            if (e.name === "InvalidCommentParameters") {
+                this.sendToast(e.message, "Invalid comment parameters.", "danger");
+
+            } else {
+                this.sendToast("Internal server error. Failed to add comment.", "Internal server error", "danger");
+
+            }
+        }
+    }
+
+
+    init() {
+
+        this.socket.on("addComment", async (data) => {
+            await dbAddComment(this.socket, data.document_id, data.annotation_id, data.comment_id !== undefined ? data.comment_id : null);
         });
 
-        socket.on("getComment", async (data) => {
+        this.socket.on("getComment", async (data) => {
             try {
-                const comment = await getComment(data.id);
-                console.log(comment);
+                const comment = await dbGetComment(data.id);
 
-                if (socket.request.session.passport.user.sysrole !== "admin") {
-
-                    if (comment.creator !== socket.request.session.passport.user.id
-                    && !checkDocumentAccess(data.document_id, socket.request.session.passport.user.id)
-                    ) {
-                        socket.emit("toast", {
-                            message: "You have no permission to change this comment",
-                            title: "Annotation Not Saved",
-                            variant: 'danger'
-                        });
-                        return;
-                    }
+                if (!this.checkUserAccess(comment.creator) && !this.checkDocumentAccess(data.document_id)) {
+                    this.sendToast("You don't have access to this comment", "Error", "danger");
+                    return;
                 }
 
-                console.log("SEND");
-                socket.emit("commentUpdate", await updateCreatorName(comment));
+                this.socket.emit("commentUpdate", await this.updateCreatorName(comment));
 
             } catch (e) {
-                logger.error("Could not get comment and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
+                this.logger.error("Could not get comment and/or comment in database. Error: " + e);
 
-                socket.emit("toast", {
-                    message: "Internal server error. Failed to update annotation.",
-                    title: "Internal server error",
-                    variant: 'danger'
-                });
+                this.sendToast("Internal Server Error: Could not get comment", "Internal server error", "danger");
+
             }
         });
 
-        socket.on("updateComment", async (data) => {
-            await updateComment(io, socket, data);
+        this.socket.on("updateComment", async (data) => {
+            await dbUpdateComment(data);
         });
 
-        socket.on("loadCommentsByDocument", async (data) => {
+        this.socket.on("loadCommentsByDocument", async (data) => {
             try {
-                socket.emit("commentUpdate", await updateCreatorName(await loadByDocument(data.id)));
+                this.socket.emit("commentUpdate", await this.updateCreatorName(await dbLoadByDocument(data.id)));
             } catch (e) {
-                logger.info("Error during loading of comments: " + e, {user: socket.request.session.passport.user.id});
-
-                socket.emit("toast", {
-                    message: "Internal server error. Failed to load comments.",
-                    title: "Internal server error",
-                    variant: 'danger'
-                });
+                this.logger.info("Error during loading of comments: " + e);
+                this.sendToast("Internal Server Error: Could not update comment", "Internal server error", "danger");
             }
         });
 
-    });
+    }
+
+
 }

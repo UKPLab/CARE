@@ -1,13 +1,13 @@
 const request = require('supertest')
-const webserver = require('../webserver/webServer.js')
+const Server = require('../webserver/Server.js')
 const db = require("../db/index.js")
 
-const [app, httpServer] = webserver();
+const server = new Server();
 
 describe('Post Endpoints', () => {
 
     it('should create a new post', async () => {
-        const res = await request(app)
+        const res = await request(server.app)
             .post('/auth/login')
             .send({
                 username: "admin",

@@ -1,36 +1,27 @@
-/* Handle collaboration through sockets
+const Socket = require("../Socket.js");
 
-Author: Dennis Zyska (zyska@ukp.informatik....)
-Source: --
-*/
-const logger = require("../../utils/logger.js")("sockets/collab");
-const {v4: uuidv4} = require("uuid");
+/**
+ * Handle collaboration through sockets
+ *
+ * @author Dennis Zyska
+ * @type {CollabSocket}
+ */
+module.exports = class CollabSocket extends Socket {
 
-let collabs = [];
+    init() {
 
-exports = module.exports = function (io) {
+        this.socket.on("add_collab", (data) => {
+            const collab = Object.assign(data, {user_id: this.user_id, timestamp: Date.now()});
+            this.server.collabs.push(collab);
+            this.socket.emit("start_collab", {id: collab.id});
 
-    io.on("connection", (socket) => {
-
-        socket.on("add_collab", (data) => {
-
-            data["user_id"] = socket.request.session.passport.user.id;
-            data["timestamp"] = Date.now();
-
-            collabs.push(data);
-
-            socket.emit("start_collab", {id: data["id"]});
-
-            if (data.type === "annotation" || data.type === "comment") {
-                io.to("doc:" + data.doc_id).emit("collab", data);
+            if (collab.type === "annotation" || collab.type === "comment") {
+                this.io.to("doc:" + collab.doc_id).emit("collab", collab);
             }
-
         });
 
-        socket.on("update_collab", (data) => {
-
-
-            let collab = collabs.find(c => c.id === data.id && c.user_id === socket.request.session.passport.user.id);
+        this.socket.on("update_collab", (data) => {
+            let collab = this.server.collabs.find(c => c.id === data.id && c.user_id === this.user_id);
             if (collab !== undefined) {
                 collab["timestamp"] = Date.now();
 
@@ -38,12 +29,11 @@ exports = module.exports = function (io) {
                     io.to("doc:" + collab.doc_id).emit("collab", collab);
                 }
             }
-
         });
 
-        socket.on("remove_collab", (data) => {
+        this.socket.on("remove_collab", (data) => {
 
-            let collab = collabs.find(c => c.id === data.id && c.user_id === socket.request.session.passport.user.id);
+            let collab = this.server.collabs.find(c => c.id === data.id && c.user_id === this.user_id);
             if (collab !== undefined) {
                 collab["timestamp"] = -1;
 
@@ -51,12 +41,9 @@ exports = module.exports = function (io) {
                     io.to("doc:" + data.doc_id).emit("collab", collab);
                 }
 
-                collabs.splice(collabs.indexOf(collab), 1);
+                this.server.collabs.splice(this.server.collabs.indexOf(collab), 1);
             }
 
         });
-
-    });
-
-
+    }
 }

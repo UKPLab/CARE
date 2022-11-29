@@ -1,13 +1,14 @@
-/* Handle reviews through websocket
-
-Author: Dennis Zyska (zyska@ukp.informatik....), Nils Dycke (dycke@ukp...)
-Source: --
-*/
 const {getGroups, getElements} = require("../../db/methods/navigation");
 const {getUserSettings, getSettings, setUserSetting} = require("../../db/methods/settings");
 
 const Socket = require("../Socket.js");
 
+/**
+ * Handle settings through websocket
+ *
+ * @author Dennis Zyska, Nils Dycke
+ * @type {SettingSocket}
+ */
 module.exports = class SettingSocket extends Socket {
 
     async sendSettings() {

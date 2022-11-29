@@ -7,8 +7,9 @@ Source: --
 */
 
 module.exports = class Service {
-    constructor(io, socket) {
-        this.io = io;
-        this.socket = socket;
+    constructor(server) {
+        this.logger = require("../utils/logger.js")("Service/" + this.constructor.name);
+
+        this.server = server;
     }
 }

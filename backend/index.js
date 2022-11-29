@@ -16,30 +16,37 @@ if (!fs.existsSync(process.env.LOGGING_PATH || "./logs")) {
 logger.info("Initializing server...");
 const server = new Server();
 
-const NLP_Service = require('./external/nlp.js');
-// sockets
-const sockets = [
-    require("./sockets/annotation"),
-    require("./sockets/documents"),
-    require("./sockets/log"),
-    require("./sockets/review"),
-    require("./sockets/user"),
-    require("./sockets/tag"),
-    require("./sockets/statistic"),
-    require("./sockets/settings"),
-    require("./sockets/collab"),
-    require("./sockets/comment"),
-    require("./sockets/nlp")
-];
-const nlp_socket = require("./sockets/nlp");
-const NLP_Service = require("./webserver/external/nlp");
+logger.info("Adding sockets: ");
+fs.readdir("./webserver/sockets", (err, files) => {
+    if (err) {
+        logger.error("Error while reading sockets directory: " + err);
+        return;
+    }
+    files.forEach(file => {
+        if (file.endsWith(".js")) {
+            const newSocket = require("./webserver/sockets/" + file);
+            if (newSocket.prototype instanceof require("./webserver/Socket.js")) {
+                server.addSocket(newSocket);
+            }
+        }
+    });
+});
 
-const subscriptions = [
-    require("./sockets/subscription/documents")
-]
-
-// TODO add sockets to server class
-// TODO add external services to server class
+logger.info("Adding services: ");
+fs.readdir("./webserver/services", (err, files) => {
+    if (err) {
+        logger.error("Error while reading services directory: " + err);
+        return;
+    }
+    files.forEach(file => {
+        if (file.endsWith(".js")) {
+            const newService = require("./webserver/services/" + file);
+            if (newService.prototype instanceof require("./webserver/Service.js")) {
+                server.addService(newService);
+            }
+        }
+    });
+});
 
 logger.info("Starting webserver on port " + port + "...");
 server.start(port);

@@ -1,13 +1,17 @@
-/* Hold connection and data for external NLP service
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: --
-*/
-const logger = require("../../utils/logger.js")("external/nlp");
 const {io: io_client} = require("socket.io-client");
+const Service = require("../Service.js");
 
-class NLP_Service {
-    constructor() {
+/**
+ * Hold connection and data for external NLP service
+ *
+ * @class
+ * @author Dennis Zyska
+ * @classdesc A service that connects to an external NLP service via socket.io.
+ * @extends Service
+ */
+module.exports = class NLPService extends Service {
+    constructor(server) {
+        super(server);
         this.socket = null;
         this.info = null;
         this.connected = false;
@@ -30,7 +34,7 @@ class NLP_Service {
 
         // Handle connection errors
         this.socket.on("connect_error", () => {
-            logger.error("Connection error, try to connect again...");
+            this.logger.error("Connection error, try to connect again...");
             setTimeout(() => {
                 this.socket.connect();
             }, 10000);
@@ -38,12 +42,12 @@ class NLP_Service {
 
         // Handle reconnection attempts
         this.socket.on("reconnection_attempt", () => {
-            logger.error("Reconnection attempt...");
+            this.logger.error("Reconnection attempt...");
         });
 
         // establishing a connection
         this.socket.on("connect", function () {
-            logger.info(`Connection to NLP server established: ${this.socket.connected}`);
+            this.logger.info(`Connection to NLP server established: ${this.socket.connected}`);
             this.connected = true;
 
             // if connection established, get information about the NLP Service
@@ -52,29 +56,32 @@ class NLP_Service {
 
         // deal with broken connection
         this.socket.on("disconnect", function () {
-            logger.info(`Connection to NLP server disrupted: ${!this.socket.connected}`);
+            this.logger.info(`Connection to NLP server disrupted: ${!this.socket.connected}`);
             this.connected = false;
         });
 
         this.socket.on("info", (data) => {
-            logger.info(`NLP Service: ${data.name} (${data.version})`);
+            this.logger.info(`NLP Service: ${data.name} (${data.version})`);
             this.info = data;
         });
+
+        // TODO: one of the sockets are wrong! should send to Frontend not to NLP
+        // we should get this through this.server.io
 
         // forwarding NLP server messages to frontend
         this.socket.onAny((msg, data) => {
             this.socket.emit("nlp_" + msg.replace("/", "_"), data);
-            logger.info(`Message NLP SERVER -> FRONTEND: nlp_${msg} ${data}`);
+            this.logger.info(`Message NLP SERVER -> FRONTEND: nlp_${msg} ${data}`);
         });
 
         // forwarding frontend messages to NLP server
         this.socket.onAny((msg, data) => {
             if (msg.startsWith("nlp_") && this.connected) {
                 this.socket.emit(msg.slice("nlp_".length).replace("_", "/"), data);
-                logger.info(`Message FRONTEND -> NLP SERVER: ${msg}`);
+                this.logger.info(`Message FRONTEND -> NLP SERVER: ${msg}`);
             } else if (msg.startsWith("nlp_") && !this.connected) {
                 this.socket.emit("nlp_error", "Connection to NLP server disrupted.");
-                logger.info(`Connection to NLP server disrupted on msg ${msg}: ${!this.connected}`);
+                this.logger.info(`Connection to NLP server disrupted on msg ${msg}: ${!this.connected}`);
                 if (msg.startsWith("nlp_")) {
                     this.socket.emit(msg, data)
                 }
@@ -103,5 +110,3 @@ class NLP_Service {
 
 
 }
-
-module.exports = NLP_Service;

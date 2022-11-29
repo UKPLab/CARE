@@ -14,7 +14,7 @@ Source: --
 
 const express = require('express');
 
-const {Server} = require("socket.io");
+const {Server: WebSocketServer} = require("socket.io");
 const http = require('http');
 const cors = require('cors');
 
@@ -22,21 +22,32 @@ const passport = require("passport");
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const bodyParser = require('body-parser');
+const Socket = require('./Socket.js');
+const Sequelize = require('sequelize');
+const db = require("../db");
+const {DataTypes} = require("sequelize");
+const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
 module.exports = class Server {
     constructor() {
         this.logger = require("../utils/logger.js")("webServer");
         this.app = express();
 
+        this.sockets = {};
+        this.services = {};
+        this.socket = null;
+
         // No Caching
         this.app.disable('etag');
-        this.#set_cors()
+        this.#setCors()
         // Make all static files public available
         this.app.use(express.static(`${__dirname}/../../dist/`));
 
-        //Session management
-        this.sessionMiddleware = this.#init_session_management();
-        this.app.use(this.sessionMiddleware);
+        this.logger.info("Initializing Session management...");
+        this.session = this.#initSessionManagement();
+        this.app.use(this.session);
+
+        this.logger.info("Initializing Passport...");
         this.app.use(bodyParser.urlencoded({extended: false}));
         this.app.use(bodyParser.json());
         this.app.use(passport.initialize());
@@ -44,17 +55,16 @@ module.exports = class Server {
 
         // Routes for login management
         this.logger.debug("Initialize Routes for auth...");
-        require("./routes/auth")(app);
+        require("./routes/auth")(this.app);
 
         // all further urls reference to frontend
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
 
         this.httpServer = http.createServer(this.app);
-        this.#init_websockets();
-
+        this.#initWebsocketServer();
     }
 
-    #set_cors() {
+    #setCors() {
         this.logger.debug("Use CORS Restriction");
         this.app.use(cors({
             origin: ['http://localhost:3000', "http://localhost:8080", 'https://peer.ukp.informatik.tu-darmstadt.de'],
@@ -62,20 +72,46 @@ module.exports = class Server {
         }));
     }
 
-    #init_session_management() {
-        return session({
-            store: new FileStore(),
-            secret: 'thatsecretthinggoeshere',
-            resave: false,
-            saveUninitialized: true,
-            /*cookie:{
-                maxAge: 1000*60*90
-            }*/
+    #initSessionManagement() {
+
+        // Define Session Model Table
+        db.sequelize.define("session", {
+            sid: {
+                type: Sequelize.STRING,
+                primaryKey: true,
+            },
+            userId: Sequelize.STRING,
+            expires: Sequelize.DATE,
+            data: Sequelize.TEXT,
         });
+
+        // Sync Session Table
+        db.sequelize.sync();
+
+        // Sequelize Session Store
+        this.logger.info("Initializing Sequelize Session Store...");
+        const dbStore = new SequelizeStore({
+            db: db.sequelize,
+            checkExpirationInterval: 15 * 60 * 1000, // The interval at which to cleanup expired sessions in milliseconds.
+            expiration: 24 * 60 * 60 * 1000  // The maximum age (in milliseconds) of a valid session.
+        });
+        dbStore.sync();
+
+        //Session management
+        return session({
+            secret: "secretString",
+            store: dbStore,
+            resave: false,
+            proxy: true,
+            saveUninitialized: true,
+        })
 
     }
 
-    #init_websockets() {
+    /**
+     * Initialize the websocket server instance
+     */
+    #initWebsocketServer() {
         this.logger.debug("Initialize Websockets...");
         const socketIoOptions = {
             cors: {
@@ -96,12 +132,12 @@ module.exports = class Server {
             maxHttpBufferSize: 1e8 // 100 MB for file upload
         };
 
-        this.io = new Server(this.httpServer, socketIoOptions);
+        this.io = new WebSocketServer(this.httpServer, socketIoOptions);
         const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
-        this.io.use(wrap(this.sessionMiddleware));
+        this.io.use(wrap(this.session));
         this.io.use(wrap(passport.initialize()));
         this.io.use(wrap(passport.session()));
-        this.io.on("connection", (socket) => {
+        this.socket = this.io.on("connection", (socket) => {
             // Check if session exists, otherwise send logout and disconnect
             if (!socket.request.session.passport) {
                 try {
@@ -117,21 +153,33 @@ module.exports = class Server {
                 socket.request.session.touch();
                 socket.request.session.save();
             })
+            return socket;
         });
     }
 
-    add_socket(socket) {
-        this.logger.debug("Add socket to webserver...");
-        sockets.forEach(socket => socket(this.io));
-        this.logger.debug("Adding subscriptions...");
-        subscriptions.forEach(subscription => subscription(this.io))
+    /**
+     *
+     * Add new sockets route of class Socket
+     *
+     * @param socketClass - class of the socket
+     */
+    addSocket(socketClass) {
+        this.logger.info("Add socket " + socketClass.name + " to webserver...");
+        this.io.on("connection", (socket) => {
+            this.sockets[socketClass.name] = new socketClass(this, this.io, socket);
+            this.sockets[socketClass.name].init();
+        });
     }
 
-    add_service() {
-        this.logger.debug("Initialize NLP Service...");
-        const nlp = new NLP_Service();
-        nlp.init();
-        nlp_socket(this.io, nlp);
+    /**
+     * Add external services to the server
+     */
+    addService(serviceClass) {
+        this.logger.info("Add service " + serviceClass.name + " to webserver...");
+
+        this.services[serviceClass.name] = new serviceClass(this);
+        this.services[serviceClass.name].init();
+
     }
 
     start(port) {

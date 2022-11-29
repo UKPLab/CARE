@@ -1,4 +1,4 @@
-const {getDoc: getDoc} = require("../methods/document.js");
+const {dbGetDoc: getDoc} = require("../methods/document.js");
 const db = require("../index");
 
 describe("database document", () => {
