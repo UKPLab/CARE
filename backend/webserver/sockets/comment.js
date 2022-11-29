@@ -19,7 +19,7 @@ module.exports = class CommentSocket extends Socket {
 
     async loadCommentsByAnnotation(annotation_id) {
         try {
-            const comment = await this.updateCreatorName(await this.loadByAnnotation(annotation_id));
+            const comment = await this.updateCreatorName(await dbLoadByAnnotation(annotation_id));
 
             this.io.to("doc:" + comment.document).emit("commentUpdate", comment);
         } catch (e) {
