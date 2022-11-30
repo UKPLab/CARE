@@ -155,12 +155,20 @@ module.exports = class Server {
 
         this.io.on("connection", (socket) => {
             this.availSockets[socket.id] = {};
+            this.logger.debug("Socket connect: " + socket.id);
 
             Object.entries(this.sockets).map(([socketName, socketClass]) => {
                 this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
                 this.availSockets[socket.id][socketName].init();
             });
+
+            socket.on("disconnect", (reason) => {
+                this.logger.debug("Socket disconnected: " + reason);
+                delete this.availSockets[socket.id];
+            });
+
         });
+
     }
 
     /**
