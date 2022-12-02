@@ -59,7 +59,7 @@ exports.add = async function add(doc_name, creator_id) {
     }
 }
 
-exports.getDoc = async function getDoc(hash) {
+exports.dbGetDoc = async function getDoc(hash) {
     try {
         return await Document.findOne({where: {'hash': hash}});
     } catch (err) {

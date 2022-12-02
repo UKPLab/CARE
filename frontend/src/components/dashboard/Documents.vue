@@ -3,8 +3,7 @@
     <div class="card-header d-flex justify-content-between align-items-center">
       Documents
       <div>
-        <button class="btn btn-sm btn-secondary me-1" type="button" @click="exportAllAnnotations()">Export Annotations
-        </button>
+        <button class="btn btn-sm btn-secondary me-1" type="button" @click="exportAll()">Export all</button>
         <Upload @addedDoc="onAddedDoc"></Upload>
       </div>
     </div>
@@ -17,7 +16,7 @@
         <tr>
           <th v-for="field in fields" scope="col">{{ field.name }}</th>
           <th scope="col">Manage</th>
-          <th scope="col">Review</th>
+          <!--<th scope="col">Review</th>-->
         </tr>
         </thead>
         <tbody>
@@ -58,7 +57,7 @@
               </button>-->
             </div>
           </td>
-          <td>
+          <!--<td>
             <button class="btn"
                     :class="reviewState(item.hash) === 'SUBMITTED' ? 'disabled btn-outline-secondary' : reviewState(item.hash) === 'PENDING' ? 'btn-outline-primary' : 'btn-outline-success'"
                     type="button"
@@ -67,12 +66,13 @@
                     : (reviewState(item.hash) === "SUBMITTED" ? "Submitted" : "Start")
               }}
             </button>
-          </td>
+          </td>-->
         </tr>
         </tbody>
       </table>
     </div>
   </div>
+  <Export ref="export"></Export>
 </template>
 
 <script>
@@ -88,12 +88,12 @@ Source: -
 */
 import {mapGetters, mapActions} from "vuex";
 import Upload from "./documents/Upload.vue";
-import {FileSaver} from "file-saver"; //required for window.saveAs to work
+import Export from "../basic/Export.vue";
 
 
 export default {
   name: "Document",
-  components: {Upload},
+  components: {Upload, Export},
   data() {
     return {
       fields: [
@@ -161,39 +161,10 @@ export default {
 
       return this.reviews[review_i].submitted ? "SUBMITTED" : "PENDING";
     },
-    exportAllAnnotations() {
+    exportAll() {
       const doc_ids = this.items.map(i => i.hash);
-      this.exportAnnotations(doc_ids);
+      this.$refs.export.requestExport(doc_ids, "json");
     },
-    exportAnnotations(doc_ids) {
-      this.sockets.subscribe("exportedAnnotations", (r) => {
-        this.sockets.unsubscribe('exportedAnnotations');
-
-        if (r.success) {
-          let exported = 0;
-          r.csvs.forEach((val, index) => {
-            if (val !== null && val.length > 0) {
-              const docId = r.docids[index];
-              exported++;
-              window.saveAs(new Blob([val], {type: "text/csv;charset=utf-8"}), `${docId}_annotations.csv`);
-            }
-          });
-          this.eventBus.emit('toast', {
-            title: "Export Success",
-            message: `Exported annotations for ${exported} documents`,
-            variant: "success"
-          });
-        } else {
-          this.eventBus.emit('toast', {
-            title: "Export Failed",
-            message: "Export failed for some reason.",
-            variant: "danger"
-          });
-        }
-      });
-
-      this.$socket.emit("exportAnnotations", doc_ids);
-    }
   }
 }
 </script>

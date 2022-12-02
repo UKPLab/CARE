@@ -1,192 +1,113 @@
-/* Handle all annotation through websocket
-
-Loading the document through websocket
-
-Author: Dennis Zyska (zyska@ukp.informatik....), Nils Dycke (dycke@ukp...)
-Source: --
-*/
 const {
-    add: addAnnotation,
-    deleteAnno: deleteAnnotation,
-    updateAnno: updateAnnotation,
-    loadByDocument: loadByDocument,
-    toFrontendRepresentationAnno: toFrontendRepresentationAnno,
-    toFrontendRepresentationComm: toFrontendRepresentationComm
+    add: dbAddAnnotation,
+    update: dbUpdateAnnotation,
+    get: dbGetAnnotation,
+    loadByDocument: dbLoadByDocument,
+    formatForExport: dbFormatForExport
 } = require('../../db/methods/annotation.js')
-const logger = require("../../utils/logger.js")("sockets/annotation");
-const ObjectsToCsv = require('objects-to-csv');
-const {mergeAnnosAndComments} = require("../../db/methods/annotation");
-const {getByIds} = require("../../db/methods/tag");
-const {sendTagsUpdate} = require("./utils/tag");
 
-exports = module.exports = function (io) {
-    io.on("connection", (socket) => {
-        socket.on("addAnnotation", async (data) => {
+const Socket = require("../Socket.js");
+
+/**
+ * Handle all annotation through websocket
+ *
+ * @author Dennis Zyska, Nils Dycke
+ * @type {CollabSocket}
+ */
+module.exports = class AnnotationSocket extends Socket {
+
+    init() {
+
+        this.socket.on("addAnnotation", async (data) => {
             try {
-                await addAnnotation(data);
+                const annotation = await this.updateCreatorName(await dbAddAnnotation(data, this.user_id))
+                await this.getSocket("CommentSocket").addComment(annotation[0].document, annotation[0].id);
 
-                //TODO send back the created db object instead!!!
-                //TODO fails to push the created comment to the frontend! Fix this or discard the comment from command.
-                socket.emit("newAnnotation",
-                    {
-                        uid: socket.request.session.passport.user.id,
-                        annotation: data.annotation,
-                        document_id: data.document_id,
-                        annotation_id: data.annotation_id,
-                        tags: JSON.stringify(data.tags)
-                    }
-                );
+
+                console.log("Test");
+                this.socket.emit("annotationUpdate", annotation)
             } catch (e) {
-                logger.error("Could not add annotation and/or comment to database. Error: " + e, {user: socket.request.session.passport.user.id});
+                this.logger.error("Could not add annotation and/or comment to database. Error: " + e);
 
                 if (e.name === "InvalidAnnotationParameters") {
-                    socket.emit("toast", {
-                        message: "Annotation was not created",
-                        title: e.message,
-                        variant: 'danger'
-                    });
-                } else if (e.name === "InvalidCommentParameters") {
-                    socket.emit("toast", {
-                        message: "Comment on annotation was not created",
-                        title: e.message,
-                        variant: 'danger'
-                    });
+                    this.sendToast("Annotation was not created", e.message, "danger");
                 } else {
-                    socket.emit("toast", {
-                        message: "Internal server error. Failed to create annotation.",
-                        title: "Internal server error",
-                        variant: 'danger'
-                    });
+                    this.sendToast("Internal server error. Failed to create annotation.", "Internal server error", "danger");
                 }
             }
         });
 
-        socket.on("updateAnnotation", async (data) => {
-            const newSelector = null ? data.newSelector === undefined : data.newSelector;
-            const newText = null ? data.newText === undefined : data.newText;
-            const newTags = null ? data.newTags === undefined : data.newTags;
-            const newComment = null ? data.newComment === undefined : data.newComment;
-
+        this.socket.on("getAnnotation", async (data) => {
             try {
-                await updateAnnotation(data.annotation_id, newSelector, newText, newComment, newTags);
+                const anno = await dbGetAnnotation(data.id);
+
+                if (!this.checkUserAccess(anno.creator) && !this.checkDocumentAccess(data.document_id)) {
+                    this.sendToast("You have no permission to change this annotation", "Annotation Not Saved", "danger");
+                }
+
+                await this.getSocket("CommentSocket").loadCommentsByAnnotation(anno.id);
+                this.socket.emit("annotationUpdate", await this.updateCreatorName(anno));
+
             } catch (e) {
-                logger.error("Could not update annotation and/or comment in database. Error: " + e, {user: socket.request.session.passport.user.id});
+                this.logger.error("Could not get annotation and/or comment in database. Error: " + e);
+                this.sendToast("Internal server error. Failed to get annotation.", "Internal server error", "danger");
+            }
+        });
+
+        this.socket.on("updateAnnotation", async (data) => {
+            try {
+                const origAnnotation = await dbGetAnnotation(data.id);
+
+                if (!this.checkUserAccess(origAnnotation.creator)) {
+                    this.sendToast("You have no permission to change this annotation", "Annotation Not Saved", "danger");
+                    return;
+                }
+
+                const newAnno = await dbUpdateAnnotation(data);
+                if (newAnno[1].deleted) {
+                    await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno[1].id);
+                }
+                this.io.to("doc:" + newAnno[1].document).emit("annotationUpdate", await this.updateCreatorName(newAnno[1].get({plain: true})));
+
+            } catch (e) {
+                this.logger.error("Could not update annotation and/or comment in database. Error: " + e);
 
                 if (e.name === "InvalidAnnotationParameters" || e.name === "InvalidCommentParameters") {
-                    socket.emit("toast", {
-                        message: "Failed to update annotation",
-                        title: e.message,
-                        variant: 'danger'
-                    });
+                    this.sendToast("Annotation was not saved", e.message, "danger");
                 } else {
-                    socket.emit("toast", {
-                        message: "Internal server error. Failed to update annotation.",
-                        title: "Internal server error",
-                        variant: 'danger'
-                    });
+                    this.sendToast("Internal server error. Failed to save annotation.", "Internal server error", "danger");
                 }
             }
         });
 
-        socket.on("deleteAnnotation", async (data) => {
+        this.socket.on("loadAnnotations", async (data) => {
             try {
-                await deleteAnnotation(data.id);
+                this.socket.emit("annotationUpdate", await this.updateCreatorName(await dbLoadByDocument(data.id)));
             } catch (e) {
-                logger.info("Error during annotation deletion: " + e, {user: socket.request.session.passport.user.id});
-
-                if (e.name === "InvalidAnnotationParameters") {
-                    socket.emit("toast", {
-                        message: "Failed to delete annotation",
-                        title: e.message,
-                        variant: 'danger'
-                    });
-                } else {
-                    socket.emit("toast", {
-                        message: "Internal server error. Failed to delete annotation.",
-                        title: "Internal server error",
-                        variant: 'danger'
-                    });
-                }
+                this.logger.info("Error during loading of annotations: " + e);
+                this.sendToast("Internal server error. Failed to load annotations.", "Internal server error", "danger");
             }
         });
 
-        socket.on("loadAnnotations", async (data) => {
-            let res;
+        this.socket.on("exportAnnotationsByDocument", async (data) => {
+            let annotations;
             try {
-                res = await loadByDocument(data.id);
+                annotations = await this.updateCreatorName(await dbLoadByDocument(data.id));
             } catch (e) {
-                logger.info("Error during loading of annotations: " + e, {user: socket.request.session.passport.user.id});
+                this.logger.info("Error during loading of annotations: " + e);
 
-                socket.emit("toast", {
-                    message: "Internal server error. Failed to load annotations.",
-                    title: "Internal server error",
-                    variant: 'danger'
-                });
+                this.sendToast("Internal server error. Failed to load annotations.", "Internal server error", "danger");
+                this.socket.emit("exportedAnnotations", {"success": false, "document_id": data.document_id});
+
                 return;
             }
 
-            const annos = res[0];
-            const comments = res[1];
-
-            const tags = [...new Set([].concat(...annos.map(a => JSON.parse(a.tags))))];
-            await sendTagsUpdate(socket, await getByIds(tags))
-
-
-            const mappedAnnos = await Promise.all(annos.map(async x => await toFrontendRepresentationAnno(x)));
-            let mappedComments = Object();
-            for (const c in comments) {
-                if (comments[c].length > 0) {
-                    mappedComments[c] = await toFrontendRepresentationComm(comments[c]);
-                }
-            }
-
-            socket.emit("loadAnnotations", {"annotations": mappedAnnos, "comments": mappedComments});
+            this.socket.emit("exportedAnnotations", {
+                "success": true,
+                "document_id": data.id,
+                "objs": await Promise.all(annotations.map(async (a) => await dbFormatForExport(a)))
+            });
         });
-
-        socket.on("exportAnnotations", async (data) => {
-            if (Array.isArray(data)) {
-                const annosWithComments = await Promise.all(data.map(async docid => {
-                    try {
-                        const doc = await loadByDocument(docid);
-                        // check for permission
-                        if (socket.request.session.passport.user.sysrole !== "admin" && !doc.owner === socket.request.session.passport.user.id) {
-                            return null;
-                        } else {
-                            return doc;
-                        }
-                    } catch (e) {
-                        logger.info("Error during loading of annotations: " + e, {
-                            docid: docid,
-                            user: socket.request.session.passport.user.id
-                        });
-
-                        socket.emit("toast", {
-                            message: "Internal server error. Failed to export annotations.",
-                            title: "Internal server error",
-                            variant: 'danger'
-                        });
-                    }
-                }));
-
-                const mappedAnnos = await mergeAnnosAndComments(annosWithComments.filter(x => x !== null))
-
-                const csvStr = await Promise.all(mappedAnnos.map(async annosPerDoc => {
-                    const csv = new ObjectsToCsv(annosPerDoc);
-                    return await csv.toString(true, true);
-                }));
-
-                socket.emit("exportedAnnotations", {success: true, csvs: csvStr, docids: data});
-            } else {
-                logger.info("Invalid parameter for exportAnnotations. Has to be an array of doc-ids: " + e, {user: socket.request.session.passport.user.id});
-
-                socket.emit("toast", {
-                    message: "Internal server error. Failed to export annotations.",
-                    title: "Internal server error",
-                    variant: 'danger'
-                });
-            }
-        });
-    });
-
+    }
 
 }

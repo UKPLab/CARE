@@ -1,27 +1,37 @@
 <template>
-  <div id="sidebar-container" class="collapse collapse-horizontal border-end d-flex flex-column"
-       v-bind:class="showing">
+  <div id="sidebar-container" :class="(show ? 'show' : 'collapsing')"
+       class="collapse collapse-horizontal border-end d-flex flex-column">
     <div id="sidepane" ref="sidepane">
       <div id="spacer"></div>
       <ul id="anno-list" class="list-group">
-        <li v-if="annotations.length === 0">
-          <p class="text-center"> No annotations </p>
+        <li v-if="numberOfCards === 0">
+          <p class="text-center"> No elements </p>
         </li>
+
         <li v-for="anno in annotations" v-bind:id="'anno-' + anno.id"
             :key="anno.id"
             :ref="anno.id"
             class="list-group-i"
             v-on:mouseleave="unhover(anno.id)"
             v-on:mouseover='hover(anno.id)'>
-          <Annotation v-bind:id="anno.id" :annoData="anno" :config="config" :readonly="readonly"
-                      @focus="focusAnnotation"></Annotation>
+          <AnnoCard v-bind:id="anno.id" v-if="hasComment(anno.id)" :annotation_id="anno.id" :document_id="document_id" :readonly="readonly"
+                    @focus="focusAnnotation"></AnnoCard>
         </li>
-        <li id="addPageNote" v-if="!readonly">
-          <button type="button" class="btn btn-light" @click="createDocumentComment">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg"
-                 viewBox="0 0 16 16">
-              <path fill-rule="evenodd"
-                    d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"></path>
+        <li v-for="comment in documentComments" v-bind:id="'documentComment-' + comment.id"
+            :key="'documentComment-' + comment.id"
+            :ref="'documentComment-' + comment.id"
+            class="list-group-i">
+          <DocumentCard v-bind:id="comment.id" :comment_id="comment.id" :document_id="document_id" :readonly="readonly"
+                        @focus="focusAnnotation"></DocumentCard>
+        </li>
+
+
+        <li v-if="!readonly" id="addPageNote">
+          <button class="btn btn-light" type="button" @click="createDocumentComment">
+            <svg class="bi bi-plus-lg" fill="currentColor" height="16" viewBox="0 0 16 16" width="16"
+                 xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
+                    fill-rule="evenodd"></path>
             </svg>
             Document Note
           </button>
@@ -39,14 +49,14 @@ Here the annotations are listed and can be modified, also includes scrolling fea
 Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import {mapGetters, mapMutations} from "vuex";
-import Annotation from "./Annotation.vue";
+import {mapMutations} from "vuex";
+import AnnoCard from "./AnnoCard.vue";
+import DocumentCard from "./DocumentCard.vue";
 import {scrollElement} from "../../../assets/anchoring/scroll";
-import {v4} from "uuid";
 
 export default {
   name: "Sidebar",
-  components: {Annotation},
+  components: {AnnoCard, DocumentCard},
   props: {
     document_id: {
       type: String,
@@ -57,16 +67,13 @@ export default {
       required: false,
       default: false,
     },
-  },
-  data: function () {
-    return {
-      config: null,
-    }
+    show: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
   },
   computed: {
-    sidebarShowing() {
-      return this.$store.getters['anno/isSidebarShowing']
-    },
     annotations() {
       return this.$store.getters['anno/getAnnotations'](this.document_id).sort((a, b) => {
         const a_noanchor = a.anchors === null || a.anchors.length === 0;
@@ -79,9 +86,16 @@ export default {
         return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
       });
     },
-    showing: function () {
-      return this.sidebarShowing ? "show" : "collapsing"
-    }
+
+    documentComments() {
+      return this.$store.getters['comment/getDocumentComments'](this.document_id);
+    },
+    numberOfCards() {
+      if (this.annotations !== null || this.documentComments !== null) {
+        return this.annotations.length + this.documentComments.length;
+      }
+      return 0;
+    },
   },
   mounted() {
     this.eventBus.on('sidebarScroll', (anno_id) => {
@@ -96,9 +110,12 @@ export default {
       hover: "anno/HOVER",
       unhover: "anno/UNHOVER"
     }),
-    ...mapGetters({userData: 'auth/getUser'}),
+    hasComment(anno_id) {
+      return this.$store.getters['comment/getCommentByAnnotation'](anno_id) !== undefined;
+    },
     load() {
       this.$socket.emit("loadAnnotations", {id: this.document_id});
+      this.$socket.emit("loadCommentsByDocument", {id: this.document_id});
     },
     async sidebarScrollTo(annotationId) {
       const scrollContainer = this.$refs.sidepane;
@@ -108,19 +125,13 @@ export default {
       //for now, just scroll to it
       await this.sidebarScrollTo(annotation_id);
     },
+
     createDocumentComment() {
-      const uid = this.userData().id;
-      const anno = {
-        "document_id": this.document_id,
-        "annotation": {},
-        "user": uid,
-        "comment": null,
-        "draft": true,
-        "annotation_id": v4(),
-        "tags": []
-      };
-      this.$socket.emit('addAnnotation', anno);
-      this.eventBus.emit("createdAnnotation", anno.annotation_id);
+      this.$socket.emit('addComment', {
+        document_id: this.document_id,
+        annotation_id: null,
+        comment_id: null
+      });
     }
   }
 }
