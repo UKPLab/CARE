@@ -17,8 +17,10 @@ module.exports = (sequelize, DataTypes) => {
     comment.init({
         hash: DataTypes.STRING,
         creator: DataTypes.INTEGER,
-        text: DataTypes.STRING(2000),
-        referenceAnnotation: DataTypes.STRING,
+        text: DataTypes.STRING(4096),
+        draft: DataTypes.BOOLEAN,
+        document: DataTypes.STRING,
+        referenceAnnotation: DataTypes.INTEGER,
         referenceComment: DataTypes.INTEGER,
         tags: DataTypes.STRING,
         deleted: DataTypes.BOOLEAN,

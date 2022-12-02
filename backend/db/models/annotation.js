@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         hash: DataTypes.STRING,
         creator: DataTypes.STRING,
         text: DataTypes.STRING,
-        tags: DataTypes.STRING,
+        tag: DataTypes.INTEGER,
         document: DataTypes.STRING,
         selectors: DataTypes.JSONB,
         draft: DataTypes.BOOLEAN,

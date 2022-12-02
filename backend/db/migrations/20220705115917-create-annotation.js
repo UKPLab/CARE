@@ -24,8 +24,13 @@ module.exports = {
             text: {
                 type: Sequelize.STRING(1024)
             },
-            tags: {
-                type: Sequelize.STRING
+            tag: {
+                type: Sequelize.INTEGER,
+                references: {
+                    model: "tag",
+                    key: "id"
+                },
+                allowNull: false
             },
             document: {
                 type: Sequelize.STRING,
@@ -35,11 +40,12 @@ module.exports = {
                 }
             },
             selectors: {
-                type: Sequelize.JSONB
+                type: Sequelize.JSONB,
+                allowNull: false,
             },
             draft: {
                 type: Sequelize.BOOLEAN,
-                defaultVale: false
+                defaultVale: true
             },
             deleted: {
                 type: Sequelize.BOOLEAN,

@@ -113,20 +113,13 @@ __Note:__ If you change anything on the structure, also update the architecture 
 
 ![architecture_content_server](docs/architecture.png)
 
-### Architecture of the NLP Server
-
-![architecture_nlp_server](nlp/docs/tech.png)
-
-
 ## Code Structure
 
-The code is structured in three main components: the backend and frontend of the _content server_ 
-and the _NLP server_ acting as a service to the backend (third tier). The code is grouped accordingly.
+The code is structured in two main components: the backend and frontend. The code is grouped accordingly.
 
 ```
 > backend         # backend of content server (express-based)
 > frontend        # frontend of content server (vue-based)
-> nlp             # nlp server
 > docs            # all documentation files (e.g. diagrams) go here
 > resources       # resource files used during building/configuring
 ```
@@ -154,12 +147,6 @@ See also the architecture overview for further information how the frameworks in
 - [Express](https://expressjs.com/de/) - Webserver
 - [Socket.IO](https://socket.io/) - Bidirectional and low-latency websocket connection
 
-__NLP Server__:
-- [Grobid](https://github.com/kermitt2/grobid) for document parsing in the NLP server
-- [Flask](https://flask.palletsprojects.com/en/2.1.x/) as a basic http server 
-- [socketio](https://flask-socketio.readthedocs.io/en/latest/) for websocket communication
-- [Celery](https://docs.celeryq.dev/en/stable/getting-started/introduction.html) for running
-  compute tasks
 
 
 

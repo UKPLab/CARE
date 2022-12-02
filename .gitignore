@@ -11,13 +11,9 @@ backend/sessions
 backend/node_modules
 backend/logs
 
-# ignore files of hypothesis submodules
-frameworks/hypothesis/
-
 # ignore build files
 dist/
 node_modules
-
 
 yarn-error.log
 .tox

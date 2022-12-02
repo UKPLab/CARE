@@ -1,4 +1,4 @@
-const webserver = require("../../webserver/webServer");
+const Server = require("../../webserver/Server");
 const request = require("request");
 const {io: io_client} = require("socket.io-client");
 
@@ -8,9 +8,9 @@ const ADMIN_PWD = process.env.ADMIN_PWD || "admin";
 
 exports.setupTestSocket = function (done_cb) {
     // setup http server
-    const [app, httpServer] = webserver();
+    const server = new Server();
 
-    httpServer.listen(PORT, () => {
+    server.httpServer.listen(PORT, () => {
         console.log("Started test server")
 
         //login as admin
@@ -60,7 +60,7 @@ exports.setupTestSocket = function (done_cb) {
         );
     });
 
-    return [app, httpServer]
+    return [server.app, server.httpServer]
 }
 
 exports.tearDownTestSocket = function (httpServer, socket) {

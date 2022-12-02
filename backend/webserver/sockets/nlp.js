@@ -1,24 +1,23 @@
-/* Handling NLP Environment through websockets
+const Socket = require("../Socket.js");
 
-Author: Nils Dycke (dycke@ukp.informatik....)
-Source: --
-*/
-const logger = require("../../utils/logger.js")("sockets/nlp");
-const {Socket} = require("socket.io");
+/**
+ * Handling NLP Environment through websockets
+ *
+ * @author Dennis Zyska
+ * @type {NLPSocket}
+ */
+module.exports = class NLPSocket extends Socket {
 
-exports = module.exports = function (io) {
-    io.on("connection", (socket) => {
-        let ws2NLP = new Socket(`${process.env.NLP_HOST}:${process.env.NLP_PORT}`);
-        logger.info("Websocket to NLP server established");
-
-        // forwarding frontend messages to NLP server
-        socket.onAny((msg, data) => {
-            if (msg.startsWith("nlp_")) {
-                ws2NLP.emit(msg, data)
-            }
+    init() {
+        this.socket.on("connect", function () {
+            if (!this.server.services['NLPService'].connected)
+                this.server.services['NLPService'].connect();
         });
 
-        // forwarding NLP server messages to frontend
-        ws2NLP.onAny((msg, data) => socket.emit(msg, data));
-    });
+        this.socket.on("disconnect", (reason) => {
+            if (this.server.services['NLPService'].connected) {
+                this.server.services['NLPService'].disconnect();
+            }
+        });
+    }
 }
