@@ -161,16 +161,13 @@ exports.formatForExport = async function format(annotation) {
         "hash",
         "text",
         "document",
-        "draft",
-        "deleted",
-        "deletedAt",
         "createdAt",
         "updatedAt"
     ]
 
     let copied = pickObjectAttributeSubset(annotation, copyFields);
     copied.creator = await resolveUserIdToName(annotation.creator);
-    copied.tags = await getTagsByIds(JSON.parse(annotation.tags).map(t => t.name));
+    copied.tag = (await getTagsByIds(annotation.tag))[0].name;
 
     return copied
 }

@@ -18,8 +18,8 @@
                     @focus="focusAnnotation"></AnnoCard>
         </li>
         <li v-for="comment in documentComments" v-bind:id="'documentComment-' + comment.id"
-            :key="comment.id"
-            :ref="comment.id"
+            :key="'documentComment-' + comment.id"
+            :ref="'documentComment-' + comment.id"
             class="list-group-i">
           <DocumentCard v-bind:id="comment.id" :comment_id="comment.id" :document_id="document_id" :readonly="readonly"
                         @focus="focusAnnotation"></DocumentCard>

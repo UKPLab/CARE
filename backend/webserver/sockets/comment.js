@@ -20,7 +20,7 @@ module.exports = class CommentSocket extends Socket {
 
     async loadCommentsByAnnotation(annotation_id) {
         try {
-            const comment = await this.updateCreatorName(await this.loadByAnnotation(annotation_id));
+            const comment = await this.updateCreatorName(await dbLoadByAnnotation(annotation_id));
 
             this.io.to("doc:" + comment.document).emit("commentUpdate", comment);
         } catch (e) {
@@ -39,7 +39,7 @@ module.exports = class CommentSocket extends Socket {
             }
 
             const newComment = await dbUpdateComment(data);
-            io.to("doc:" + newComment[1].document).emit("commentUpdate", await this.updateCreatorName(newComment[1].get({plain: true})));
+            this.io.to("doc:" + newComment[1].document).emit("commentUpdate", await this.updateCreatorName(newComment[1].get({plain: true})));
 
         } catch (e) {
             this.logger.error("Could not update comment in database. Error: " + e);
@@ -98,7 +98,7 @@ module.exports = class CommentSocket extends Socket {
     init() {
 
         this.socket.on("addComment", async (data) => {
-            await dbAddComment(this.socket, data.document_id, data.annotation_id, data.comment_id !== undefined ? data.comment_id : null);
+            await this.addComment(data.document_id, data.annotation_id !== undefined ? data.annotation_id : null );
         });
 
         this.socket.on("getComment", async (data) => {
@@ -121,7 +121,7 @@ module.exports = class CommentSocket extends Socket {
         });
 
         this.socket.on("updateComment", async (data) => {
-            await dbUpdateComment(data);
+            await this.updateComment(data);
         });
 
         this.socket.on("loadCommentsByDocument", async (data) => {
@@ -141,14 +141,14 @@ module.exports = class CommentSocket extends Socket {
                 this.logger.info("Error during loading of comments: " + e);
 
                 this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
-                this.socket.emit("exportedAnnotations", {"success": false, "document_id": data.document_id});
+                this.socket.emit("exportedComments", {"success": false, "document_id": data.document_id});
 
                 return;
             }
 
             this.socket.emit("exportedComments", {
                 "success": true,
-                "document_id": data.document_id,
+                "document_id": data.id,
                 "objs": await Promise.all(comments.map(async (c) => await dbFormatForExport(c)))
             });
         });

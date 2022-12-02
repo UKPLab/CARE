@@ -16,7 +16,7 @@
         <tr>
           <th v-for="field in fields" scope="col">{{ field.name }}</th>
           <th scope="col">Manage</th>
-          <th scope="col">Review</th>
+          <!--<th scope="col">Review</th>-->
         </tr>
         </thead>
         <tbody>
@@ -57,7 +57,7 @@
               </button>-->
             </div>
           </td>
-          <td>
+          <!--<td>
             <button class="btn"
                     :class="reviewState(item.hash) === 'SUBMITTED' ? 'disabled btn-outline-secondary' : reviewState(item.hash) === 'PENDING' ? 'btn-outline-primary' : 'btn-outline-success'"
                     type="button"
@@ -66,7 +66,7 @@
                     : (reviewState(item.hash) === "SUBMITTED" ? "Submitted" : "Start")
               }}
             </button>
-          </td>
+          </td>-->
         </tr>
         </tbody>
       </table>

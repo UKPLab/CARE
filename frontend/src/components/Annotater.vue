@@ -218,7 +218,7 @@ export default {
       this.$socket.emit("subscribe:document", {doc: this.document_id});
     },
     downloadAnnotations(outputType) {
-      this.$refs.export.requestExport([this.document_id], outputType);
+      this.$refs.export.requestExport([this.document_id], outputType, true);
     }
   }
 }

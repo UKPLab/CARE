@@ -20,17 +20,26 @@ module.exports = class Socket {
 
         this.server = server;
         this.io = io;
+
         this.socket = socket;
-
-        this.user_id = this.socket.request.session.passport.user.id;
+        this.user_id = socket.request.session.passport.user.id;
         this.logger.defaultMeta = {user_id: this.user_id};
-        this.collabs = []; //TODO handle collaborations with db
 
-        this.init();
     }
 
     /**
+     * Get initialized socket class object by class name
+     * @param name
+     * @returns {*}
+     */
+    getSocket(name) {
+        return this.server.availSockets[this.socket.id][name];
+    }
+
+
+    /**
      * Initializes the socket connection
+     * Note: Please overwrite with your sockets!
      */
     init() {
     }
@@ -52,7 +61,7 @@ module.exports = class Socket {
 
     checkDocumentAccess(document_id) {
         if ("DocumentSocket" in this.server.sockets) {
-            return this.server.sockets["DocumentSocket"].checkDocumentAccess(document_id);
+            return this.getSocket("DocumentSocket").checkDocumentAccess(document_id);
         } else {
             return true;
         }
@@ -73,7 +82,7 @@ module.exports = class Socket {
      */
     updateCreatorName(data) {
         if ("UserSocket" in this.server.sockets) {
-            return this.server.sockets["UserSocket"].updateCreatorName(data);
+            return this.getSocket("UserSocket").updateCreatorName(data);
         } else {
             return data;
         }

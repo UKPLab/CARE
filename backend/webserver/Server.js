@@ -1,15 +1,3 @@
-/* webServer.js - Defines Express Webserver of Content Server
-
-This module is the heart of the content server. Here the server is configured and
-started. The content server uses express to provide the routes found in the
-subdirectory "routes", the sockets in "sockets" and the front-end compiled into
-the "dist" directory.
-
-Author: Dennis Zyska (zyska@ukp.informatik....)
-Co-Author: Nils Dycke (dycke@ukp.informatik...)
-Source: --
-*/
-
 'use strict';
 
 const express = require('express');
@@ -28,14 +16,27 @@ const db = require("../db");
 const {DataTypes} = require("sequelize");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
+/**
+ * Defines Express Webserver of Content Server
+ *
+ * This module is the heart of the content server. Here the server is configured and
+ * started. The content server uses express to provide the routes found in the
+ * subdirectory "routes", the sockets in "sockets" and the front-end compiled into
+ * the "dist" directory.
+ *
+ * @author Dennis Zyska, Nils Dycke
+ * @type {Server}
+ */
 module.exports = class Server {
     constructor() {
         this.logger = require("../utils/logger.js")("webServer");
         this.app = express();
 
         this.sockets = {};
+        this.availSockets = {};
         this.services = {};
         this.socket = null;
+        this.collabs = []; //TODO handle collaborations with db
 
         // No Caching
         this.app.disable('etag');
@@ -55,7 +56,8 @@ module.exports = class Server {
 
         // Routes for login management
         this.logger.debug("Initialize Routes for auth...");
-        require("./routes/auth")(this.app);
+        const auth = require('./routes/auth.js');
+        auth(this.app);
 
         // all further urls reference to frontend
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
@@ -137,24 +139,36 @@ module.exports = class Server {
         this.io.use(wrap(this.session));
         this.io.use(wrap(passport.initialize()));
         this.io.use(wrap(passport.session()));
-        this.socket = this.io.on("connection", (socket) => {
-            // Check if session exists, otherwise send logout and disconnect
-            if (!socket.request.session.passport) {
-                try {
-                    socket.request.session.destroy();
-                    this.logger.warn("Session in websocket not available! Send logout...");
-                    socket.emit("logout"); //force logout on client side
-                    socket.disconnect();
-                } catch (e) {
-                    this.logger.debug("Websocket: Session not available + ", e);
-                }
-            }
-            socket.onAny(() => {
+        this.io.use((socket, next) => {
+            const session = socket.request.session;
+            if (session && "passport" in session) {
                 socket.request.session.touch();
                 socket.request.session.save();
-            })
-            return socket;
+                next();
+            } else {
+                socket.request.session.destroy();
+                socket.emit("logout"); //force logout on client side
+                this.logger.warn("Session in websocket not available! Send logout...");
+                socket.disconnect();
+            }
+        })
+
+        this.io.on("connection", (socket) => {
+            this.availSockets[socket.id] = {};
+            this.logger.debug("Socket connect: " + socket.id);
+
+            Object.entries(this.sockets).map(([socketName, socketClass]) => {
+                this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
+                this.availSockets[socket.id][socketName].init();
+            });
+
+            socket.on("disconnect", (reason) => {
+                this.logger.debug("Socket disconnected: " + reason);
+                delete this.availSockets[socket.id];
+            });
+
         });
+
     }
 
     /**
@@ -165,10 +179,7 @@ module.exports = class Server {
      */
     addSocket(socketClass) {
         this.logger.info("Add socket " + socketClass.name + " to webserver...");
-        this.io.on("connection", (socket) => {
-            this.sockets[socketClass.name] = new socketClass(this, this.io, socket);
-            this.sockets[socketClass.name].init();
-        });
+        this.sockets[socketClass.name] = socketClass;
     }
 
     /**

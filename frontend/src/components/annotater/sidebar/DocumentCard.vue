@@ -1,6 +1,5 @@
 <template>
   <SideCard :shake="shake">
-
     <template v-slot:header>
       <div class="row">
         <div class="col">
@@ -20,7 +19,7 @@
       <CommentCard ref="main_comment" @saveCard="save()" :comment_id="comment_id" :edit="editedByMyself"/>
     </template>
 
-    <template v-slot:footer  v-if="annotation.creator === user_id">
+    <template v-slot:footer  v-if="comment.creator === user_id">
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
           <div class="col text-end">
@@ -65,9 +64,9 @@
 </template>
 
 <script>
-/* AnnoCard.vue - annotation elements
+/* DocumentCard.vue - document note elements
 
-This component holds the current data of each annotation and handles the annotation functionality itself
+This component holds the current data of each document note
 
 Author: Nils Dycke (dycke@ukp...)
 Source: -
