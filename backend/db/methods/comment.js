@@ -55,13 +55,9 @@ exports.add = async function add(document_id, annotation_id, comment_id, user_id
         referenceComment: comment_id
     }
 
-    console.log(newComment);
-
     try {
         return (await Comment.create(newComment)).get({plain: true})
     } catch (err) {
-
-        console.log(err);
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         }
@@ -162,18 +158,19 @@ exports.formatForExport = async function format(comment) {
         "hash",
         "text",
         "document",
-        "draft",
-        "deleted",
-        "deletedAt",
         "createdAt",
         "updatedAt"
     ]
 
     let copied = pickObjectAttributeSubset(comment, copyFields);
     copied.creator = await resolveUserIdToName(comment.creator);
-    copied.tags = await getTagsByIds(JSON.parse(comment.tags).map(t => t.name));
+    copied.tags = JSON.parse(comment.tags);
     copied.referenceAnnotation = await resolveAnnoIdToHash(comment.referenceAnnotation);
-    copied.referenceComment = await resolveCommentIdToHash(comment.id);
+    if(comment.referenceComment) {
+        copied.referenceComment = await resolveCommentIdToHash(comment.referenceComment);
+    } else {
+        copied.referenceComment = null;
+    }
 
     return copied
 }

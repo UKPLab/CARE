@@ -58,9 +58,9 @@ module.exports = class TagSocket extends Socket {
     }
 
 
-    async sendTagsByUser(user_id) {
+    async sendTagsByUser() {
         try {
-            await this.sendTagsUpdate(await dbGetAllTagsByUser(user_id));
+            await this.sendTagsUpdate(await dbGetAllTagsByUser(this.user_id));
         } catch (err) {
             this.logger.error(err);
         }
@@ -74,9 +74,9 @@ module.exports = class TagSocket extends Socket {
         }
     };
 
-    async sendTagSetByUser(user_id) {
+    async sendTagSetByUser() {
         try {
-            await this.sendTagSetsUpdate(await dbGetAllTagSetsByUser(user_id));
+            await this.sendTagSetsUpdate(await dbGetAllTagSetsByUser(this.user_id));
         } catch (err) {
             this.logger.error(err);
         }
@@ -134,7 +134,7 @@ module.exports = class TagSocket extends Socket {
             if (this.isAdmin()) {
                 await this.sendTagSet();
             } else {
-                await this.sendTagSetByUser(this.socket.request.session.passport.user);
+                await this.sendTagSetByUser();
             }
         });
 
@@ -142,7 +142,7 @@ module.exports = class TagSocket extends Socket {
             if (this.isAdmin()) {
                 await this.sendTags();
             } else {
-                await this.sendTagsByUser(this.socket.request.session.passport.user);
+                await this.sendTagsByUser();
             }
         });
 

@@ -10,7 +10,7 @@ Author: Nils Dycke
 Source: -
 */
 import {mergeAnnotationsAndComments} from "../../assets/data";
-import {arraysContainSameElements, downloadObjectsAs} from "../../assets/utils";
+import {arraysContainSameElements, downloadObjectsAs, omitObjectAttributeSubset} from "../../assets/utils";
 
 export default {
   name: "Export.vue",
@@ -20,7 +20,9 @@ export default {
       downloadAnnos: [],
       downloadComms: [],
       downloadIds: [],
-      outputType: null
+      outputType: null,
+      timeout: null,
+      simplify: null,
     }
   },
   computed: {
@@ -29,7 +31,7 @@ export default {
     }
   },
   watch: {
-    download_progress(newVal, oldVal) {
+    download_progress(newVal) {
       if (this.downloadIds.length === 0) {
         return;
       }
@@ -43,39 +45,105 @@ export default {
         return;
       }
 
+      // stop timeout
+      clearTimeout(this.timeout);
+
+      // stop listening to such events
+      this.sockets.unsubscribe("exportedAnnotations");
+      this.sockets.unsubscribe("exportedComments");
+
       // export for each document
       for (let i = 0; i < this.downloadIds.length; i++) {
-        this.downloadExported(this.downloadAnnos[i], this.downloadComms[i], this.outputType);
+        const downloadId = this.downloadIds[i];
+
+        this.downloadExported(
+            this.downloadAnnos.find(e => e.document_id === downloadId),
+            this.downloadComms.find(e => e.document_id === downloadId),
+            this.outputType,
+            this.simplify);
       }
 
       this.downloadAnnos = [];
       this.downloadComms = [];
       this.downloadIds = [];
       this.outputType = null;
+      this.simplify = null;
     }
   },
   methods: {
-    requestExport(doc_ids, outputType) {
+    abortExport() {
+      // stop timeout
+      clearTimeout(this.timeout);
+
+      // stop listening
+      this.sockets.unsubscribe("exportedAnnotations");
+      this.sockets.unsubscribe("exportedComments");
+
+      //clear vars
+      this.downloadAnnos = [];
+      this.downloadComms = [];
+      this.downloadIds = [];
+      this.outputType = null;
+
+      //notify user
+       this.eventBus.emit('toast', {
+          title: "Export aborted",
+          message: "The server did not respond. Please try again later.",
+          variant: "danger"
+        });
+    },
+    requestExport(doc_ids, outputType, simplify=false) {
+      // do not allow second downlaod while one is in progress
+      if(this.downloadIds.length > 0){
+        this.eventBus.emit('toast', {message: "Another download is in progress. Please wait.", variant: "warning", delay: 3000});
+        return;
+      }
+
       this.sockets.subscribe("exportedAnnotations", (r) => {
-        this.downloadAnnos.push(r);
-        this.sockets.unsubscribe("exportedAnnotations");
+        if(this.downloadIds.includes(r.document_id)) {
+          this.downloadAnnos.push(r);
+        }
       });
 
       this.sockets.subscribe("exportedComments", (r) => {
-        this.downloadComms.push(r);
-        this.sockets.unsubscribe("exportedComments");
+        if(this.downloadIds.includes(r.document_id)) {
+          this.downloadComms.push(r);
+        }
       });
 
+      this.downloadAnnos = [];
+      this.downloadComms = [];
       this.downloadIds = doc_ids;
       this.outputType = outputType;
+      this.simplify = simplify;
 
       //in the future: do batching if necessary
       doc_ids.forEach(did => {
-        this.$socket.emit("exportAnnotationsByDocument", {"document_id": did});
-        this.$socket.emit("exportCommentsByDocument", {"document_id": did});
+        this.$socket.emit("exportAnnotationsByDocument", {"id": did});
+        this.$socket.emit("exportCommentsByDocument", {"id": did});
       });
+
+      // set timer
+      this.timeout = setTimeout(x => {
+        if(this.download_progress[0].length < this.downloadIds.length || this.download_progress[1].length < this.downloadIds.length) {
+          this.abortExport();
+        } else {
+          clearTimeout(this.timeout);
+        }
+      }, 10000)
     },
-    downloadExported(annoExport, commExport, outputType) {
+    _simple(obj) {
+      const simple = omitObjectAttributeSubset(obj, ["hash", "document", "referenceAnnotation", "referenceComment",
+      "createdAt", "updatedAt"])
+      return Object.fromEntries(Object.entries(simple).map(([k, v]) => {
+        if(typeof v === "object" && v !== null){
+          return [k, this._simple(v)];
+        } else {
+          return [k, v];
+        }
+      }));
+    },
+    downloadExported(annoExport, commExport, outputType, simplify=false) {
       if (!annoExport.success || !commExport.success) {
         this.eventBus.emit('toast', {
           title: "Export Failed",
@@ -85,14 +153,20 @@ export default {
         return;
       }
 
-      const merged = mergeAnnotationsAndComments(
-            annoExport.objs, //opt: in the future subselect fields using utils.js methods
-            commExport.objs  //opt: in the future subselect fields using utils.js methods
+      let [merged, docComments] = mergeAnnotationsAndComments(
+            annoExport.objs,
+            commExport.objs
       );
 
-      //todo possibly refine data structure depending on the output type (e.g. csv doesn't support recursive objs.)
+      if(simplify) {
+        merged = merged.map(i => this._simple(i));
+        docComments = docComments.map(i => this._simple(i));
+      }
 
-      downloadObjectsAs(merged, annoExport.document_id, outputType)
+      downloadObjectsAs(merged, `${annoExport.document_id}_annotations`, outputType);
+      if(docComments.length > 0){
+        downloadObjectsAs(docComments, `${annoExport.document_id}_notes`, outputType);
+      }
 
       this.eventBus.emit('toast', {
           title: "Export Success",

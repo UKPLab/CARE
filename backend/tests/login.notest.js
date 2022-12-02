@@ -6,7 +6,7 @@ const server = new Server();
 
 describe('Post Endpoints', () => {
 
-    it('should create a new post', async () => {
+    it.skip('should create a new post', async () => {
         const res = await request(server.app)
             .post('/auth/login')
             .send({

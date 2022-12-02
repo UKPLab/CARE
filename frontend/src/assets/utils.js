@@ -20,7 +20,16 @@ export function objectsToJSON(objs) {
 }
 
 export function objectsToTXT(objs) {
-    return objs.map(o => Object.entries(o).map(([key, value]) => `${key}: ${value}`).join("\n")).join("\n\n");
+    return objs.map(o => Object.entries(o).map(([k, v]) => {
+        if(typeof v === "object" && v !== null){
+          return `${k}\n${objectsToTXT([v])}`;
+        } else if(v === null) {
+            return `${k}:-`;
+        } else {
+            return `${k}:  ${v}`;
+        }
+    }).join("\n")
+    ).join("\n\n");
 }
 
 export function downloadObjectsAs(objs, name, file_type) {

@@ -68,13 +68,13 @@ build-dev:
 build-clean:
 	@echo "Cleaning project code and database. WARNING: This will remove your current DB state."
 	docker-compose -p "peer_main" rm  -f -s -v
-	docker network rm peer_main_default
+	docker network rm peer_main_default || echo "IGNORING ERROR"
 
 .PHONY: build-dev-clean
 build-dev-clean:
 	@echo "Cleaning project code and database. WARNING: This will remove your current DB state."
 	docker-compose -p "peer_dev"  rm -f -s -v
-	docker network rm peer_dev_default
+	docker network rm peer_dev_default || echo "IGNORING ERROR"
 
 .PHONY: docker
 docker:
@@ -103,7 +103,7 @@ clean: check_clean
 	rm -f backend/node_modules/.uptodate
 	rm -rf dist
 	docker-compose rm -f -s -v
-	docker network rm peer_default
+	docker network rm peer_default || echo "IGNORING ERROR"
 
 .PHONY: init
 init: backend/node_modules/.uptodate

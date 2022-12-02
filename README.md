@@ -82,37 +82,6 @@ make init
 make dev # Build everything and start content-server
 ```
 
-### NLP Server Development Build
-
-For the NLP server we need to start the proper auxiliary services and load the
-right configuration. For developing the NLP server you can run the NLP server
-and celery worker natively while leaving the AMQP broker and result backend in 
-docker containers. To do so, simply run the following commands in individual 
-terminals:
-
-```shell
-make nlp_services
-
-make nlp_celery
-
-make nlp_dev
-
-#only needed if you want to test functions from within the frontend
-#note currently the order of commands is important because retrying is not implemented
-make dev  
-make docker
-```
-
-### NLP Server Deployment Build
-
-If you know that you won't make any changes to the NLP server and instead want
-it up and running for development in the frontend, you can and should run the
-dockerized NLP server with services. For this purpose run:
-
-```shell
-#TODO TBA
-```
-
 ### Production Build
 
 The software will be installed in a Docker environment and in production mode. Run the
@@ -144,15 +113,9 @@ __Note:__ If you change anything on the structure, also update the architecture 
 
 ![architecture_content_server](docs/architecture.png)
 
-### Architecture of the NLP Server
-
-![architecture_nlp_server](nlp/docs/tech.png)
-
-
 ## Code Structure
 
-The code is structured in three main components: the backend and frontend of the _content server_ 
-and the _NLP server_ acting as a service to the backend (third tier). The code is grouped accordingly.
+The code is structured in two main components: the backend and frontend. The code is grouped accordingly.
 
 ```
 > backend         # backend of content server (express-based)
