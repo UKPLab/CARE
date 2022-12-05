@@ -10,7 +10,6 @@
 
         <li v-for="anno in annotations" v-bind:id="'anno-' + anno.id"
             :key="anno.id"
-            :ref="anno.id"
             class="list-group-i"
             v-on:mouseleave="unhover(anno.id)"
             v-on:mouseover='hover(anno.id)'>
@@ -19,7 +18,6 @@
         </li>
         <li v-for="comment in documentComments" v-bind:id="'documentComment-' + comment.id"
             :key="'documentComment-' + comment.id"
-            :ref="'documentComment-' + comment.id"
             class="list-group-i">
           <DocumentCard v-bind:id="comment.id" :comment_id="comment.id" :document_id="document_id" :readonly="readonly"
                         @focus="focusAnnotation"></DocumentCard>
