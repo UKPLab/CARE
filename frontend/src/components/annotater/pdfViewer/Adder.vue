@@ -271,10 +271,6 @@ export default {
       return index;
     },
     async getPageOffset(pageIndex) {
-      if (pageIndex > this.pdf.pageCount) {
-        /* istanbul ignore next - This should never be triggered */
-        throw new Error('Invalid page index');
-      }
       let offset = 0;
       for (let i = 0; i < pageIndex; i++) {
         const text = await this.pdf.getPageTextContent(i);
