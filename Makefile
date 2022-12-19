@@ -12,6 +12,7 @@ default: help
 help:
 	@echo "make help             		 		Show this help message"
 	@echo "make dev             		  		Run the app in the development environment"
+	@echo "make doc 							Build the documentation"
 	@echo "make dev-build       		  		Run the app with a build version of the frontend"
 	@echo "make dev-backend      		 		Run only the backend with already builded frontend"
 	@echo "make dev-build-frontend   		 	Only build frontend for backend-dev development"
@@ -27,6 +28,10 @@ help:
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make clean             				Delete development files"
+
+.PHONY: doc
+doc:
+	docker run -it --rm -v ${PWD}/docs:/docs sphinxdoc/sphinx make html
 
 .PHONY: dev
 dev: node_modules/.uptodate backend/node_modules/.uptodate
