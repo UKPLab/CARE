@@ -30,8 +30,19 @@ help:
 	@echo "make clean             				Delete development files"
 
 .PHONY: doc
-doc:
-	docker run -it --rm -v ${PWD}/docs:/docs sphinxdoc/sphinx make html
+doc: doc_asyncapi doc_sphinx
+
+.PHONY: doc_asyncapi
+doc_asyncapi:
+	@echo "Building asyncapi documentation"
+	@docker run --rm -v ${PWD}/docs/backend.yml:/app/api.yml -v ${PWD}/docs/api:/app/output asyncapi/generator --force-write -o ./output api.yml @asyncapi/html-template
+
+
+.PHONY: doc_sphinx
+doc_sphinx:
+	@echo "Building sphinx documentation"
+	@docker-compose -f docker-compose.yml build docs_sphinx
+	@docker run --rm -v ${PWD}/docs:/docs docs_sphinx make html
 
 .PHONY: dev
 dev: node_modules/.uptodate backend/node_modules/.uptodate

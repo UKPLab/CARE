@@ -86,6 +86,15 @@ build-dev:
   script:
     - docker-compose -f docker-compose.yml -p "peer_dev" --env-file ".env.dev"  up --build -d
     - docker-compose -p "peer_dev"  rm -f -s -v
+    - docker wait peer_dev_docs_sphinx_1
+    - docker wait peer_dev_docs_asyncapi_1
+    - tar -czvf ${PWD}/docs.tar.gz ./docs/build
+    - tar -czvf ${PWD}/doc_api.tar.gz ./docs/api
+  artifacts:
+    name: "documentation"
+    paths:
+      - "docs.tar.gz"
+      - "doc_api.tar.gz"
 
 build-main:
   image:
@@ -100,7 +109,15 @@ build-main:
     - docker-compose version
   script:
     - docker-compose -f docker-compose.yml -p "peer_main" --env-file ".env.main"  up --build -d
-
+    - docker wait peer_main_docs_sphinx_1
+    - docker wait peer_main_docs_asyncapi_1
+    - tar -czvf ${PWD}/docs.tar.gz ./docs/build
+    - tar -czvf ${PWD}/doc_api.tar.gz ./docs/api
+  artifacts:
+    name: "documentation"
+    paths:
+      - "docs.tar.gz"
+      - "doc_api.tar.gz"
 
 .setup-deploy-ssh-template: &setup-ssh
   - apk update && apk add openssh-client
