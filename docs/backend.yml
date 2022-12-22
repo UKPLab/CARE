@@ -1,0 +1,27 @@
+asyncapi: 2.5.0
+info:
+  title: PEER Backend Websocket Description
+  version: 0.1.0
+  description: |
+    This is the websocket API for the PEER backend. It is used to communicate between frontend and backend.
+servers:
+  broker:
+    url: http://localhost:3001
+    protocol: wss
+    description: Backend websocket server
+
+channels:
+  /:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/peerMessage'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/peerMessage'
+
+components:
+  messages:
+    peerMessage:
+      name: Example Message
