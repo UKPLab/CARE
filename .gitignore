@@ -23,3 +23,7 @@ nodesource_setup.sh
 
 */__pycache__
 .idea
+
+# docs
+docs/build
+docs/api
