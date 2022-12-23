@@ -17,12 +17,12 @@ Welcome to PEER's project :-)
 
    getting_started/quickstart
    getting_started/installation
-   getting_started/development
 
 .. toctree::
    :maxdepth: 2
-   :caption: Development:
+   :caption: Development
 
+   development/basics
    development/frameworks
 
 
