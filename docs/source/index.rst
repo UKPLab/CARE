@@ -8,12 +8,22 @@
 Welcome to PEER's documentation!
 ================================
 
-test
+Welcome to PEER's project :-)
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Getting Started
+
+   getting_started/quickstart
+   getting_started/installation
+   getting_started/development
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Development:
 
+   development/frameworks
 
 
 Indices and tables
