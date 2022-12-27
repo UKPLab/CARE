@@ -1,0 +1,6 @@
+name: PeerReview
+version: 0.1.0
+description: Providing peer review process for CARE
+author: CARE
+author_email: care@ukp.tu-darmstadt.de
+main: index.js
