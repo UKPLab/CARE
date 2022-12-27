@@ -23,7 +23,10 @@ Welcome to PEER's project :-)
    :caption: Development
 
    development/basics
+   development/logging
    development/frameworks
+   development/metrics
+   development/plugins
 
 
 Indices and tables
