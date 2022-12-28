@@ -39,10 +39,10 @@ export default {
     shake: function (val) {
       if (val) {
         //TODO: classList is no element in reference
-        this.$refs.card.classList.add("shake");
-        setTimeout(() => this.shake = false, 800);
+        //this.$refs.card.classList.add("shake");
+        //setTimeout(() => this.shake = false, 800);
       } else {
-        this.$refs.card.classList.remove("shake");
+        //this.$refs.card.classList.remove("shake");
       }
     },
   },

@@ -65,13 +65,6 @@ export default {
     }
   },
   mounted() {
-    // get settings
-    //TODO implement one websocket emit for getting all necessary data for the system
-    // (basic vuex store data) and should loaded in App.vue not in Dashboard
-    this.$socket.emit("getTagSets");
-    this.$socket.emit("getTags");
-    this.$socket.emit("getSettings");
-
     this.createNavigation();
   },
   methods: {

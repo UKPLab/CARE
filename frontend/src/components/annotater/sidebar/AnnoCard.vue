@@ -198,7 +198,7 @@ export default {
       } else {
         this.$socket.emit('getAnnotation', {
           "id": this.annotation.id,
-          "document_id": this.document_id
+          "documentId": this.document_id
         });
       }
       this.remove_collab();

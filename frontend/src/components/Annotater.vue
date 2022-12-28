@@ -1,5 +1,5 @@
 <template>
-  <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
+  <div v-if="document_id !== null" class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
       <div class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
         <PDFViewer :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto"
@@ -69,7 +69,7 @@ export default {
   name: "Annotater",
   components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, Export},
   props: {
-    'document_id': {
+    'document_hash': {
       type: String,
       required: true,
     },
@@ -108,7 +108,10 @@ export default {
     },
     comments() {
       return this.$store.getters["comment/getDocumentComments"](this.document_id);
-    }
+    },
+    document_id() {
+      return this.$store.getters["user/getDocumentId"](this.document_hash);
+    },
   },
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {

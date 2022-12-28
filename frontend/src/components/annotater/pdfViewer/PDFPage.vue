@@ -61,13 +61,16 @@ export default {
       if (this.isRendered)
         this.add_anchors();
     },
-    annotationTags(newVal, oldVal) {
+    /*annotationTags(newVal, oldVal) {
       //handle only updated values
       if (this.pdf.pageCount > 0) {
+        console.log(newVal);
         newVal.filter(vnew => oldVal.map(vold => vold.anno).includes(vnew.anno))
             .filter(vnew => {
-              const prevTags = oldVal.find(vold => vold.anno === vnew.anno).tags;
-              const newTags = vnew.tags;
+              const prevTags = oldVal.find(vold => vold.anno === vnew.anno).tag;
+              const newTags = vnew.tag;
+
+              console.log(vnew);
 
               return (prevTags === null) !== (newTags === null) ||
                   (prevTags.sort().toString() !== newTags.sort().toString())
@@ -75,7 +78,7 @@ export default {
             .map(vnew => vnew.anno)
             .map(this.handle_tagchange)
       }
-    },
+    },*/
   },
   data() {
     return {
@@ -104,9 +107,9 @@ export default {
     annotations() {
       return this.$store.getters['anno/getPageAnnotations'](this.document_id, this.pageNumber);
     },
-    annotationTags() {
+    /*annotationTags() {
       return this.$store.getters['anno/getAnnotationTags'](this.document_id);
-    },
+    },*/
     anchors() {
       return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id, this.pageNumber))
     },

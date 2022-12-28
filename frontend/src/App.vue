@@ -20,7 +20,21 @@ export default {
   computed: {
     hideTopbar() {
       return this.$route.meta.hideTopbar !== undefined && this.$route.meta.hideTopbar;
+    },
+    authenticated() {
+      return this.$store.getters['auth/isAuthenticated'];
     }
+  },
+  mounted() {
+    // Load application data on startup
+    if (this.authenticated) {
+      this.$socket.emit("getTagSets");
+      this.$socket.emit("getTags");
+      this.$socket.emit("getSettings");
+      this.$socket.emit("docs_get");
+    }
+    // TODO: wait for all data to be loaded before rendering the page
+    // show loading screen until all data is loaded
   },
   sockets: {
     logout: function (data) {

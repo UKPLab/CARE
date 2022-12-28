@@ -33,7 +33,7 @@ export default {
           return comments.length + comments.map(c => getters.getNumberOfChildrenByComment(c.id)).reduce((pv, cv) => pv + cv, 0);
         },
         getDocumentComments: (state) => (document_id) => {
-            return state.filter(comment => !comment.deleted).filter(comm => comm.document === document_id && comm.referenceAnnotation === null && comm.referenceComment === null);
+            return state.filter(comment => !comment.deleted).filter(comm => comm.documentId === document_id && comm.referenceAnnotation === null && comm.referenceComment === null);
         }
     },
     mutations: {

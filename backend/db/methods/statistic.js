@@ -14,7 +14,7 @@ exports.add = async function add(action, data, user) {
         await Statistic.create({
             action: action,
             data: JSON.stringify(data),
-            user: user,
+            userId: user,
             timestamp: new Date(),
         });
     } catch (e) {
