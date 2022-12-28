@@ -42,7 +42,7 @@ module.exports = {
 
     async down(queryInterface, Sequelize) {
         await queryInterface.bulkDelete("user", {
-            user_name: ['admin', 'guest']
+            userName: ['admin', 'guest']
         }, {})
     }
 };
