@@ -8,18 +8,27 @@ module.exports = {
                 type: Sequelize.STRING
             }, hash: {
                 type: Sequelize.STRING, allowNull: false, unique: true
-            }, creator: {
+            }, userId: {
                 type: Sequelize.INTEGER, allowNull: false, references: {
                     model: "user", key: "id"
                 }
-            }, deleted: {
-                type: Sequelize.BOOLEAN, defaultValue: false
-            }, deletedAt: {
-                type: Sequelize.DATE, defaultValue: null
-            }, createdAt: {
-                allowNull: false, type: Sequelize.DATE
-            }, updatedAt: {
-                allowNull: false, type: Sequelize.DATE
+            },
+            deleted: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            deletedAt: {
+                allowNull: true,
+                defaultValue: null,
+                type: Sequelize.DATE
             }
         });
     }, async down(queryInterface, Sequelize) {

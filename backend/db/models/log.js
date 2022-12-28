@@ -18,8 +18,12 @@ module.exports = (sequelize, DataTypes) => {
         level: DataTypes.STRING,
         message: DataTypes.STRING,
         service: DataTypes.STRING,
-        user: DataTypes.INTEGER,
+        userId: DataTypes.INTEGER,
         timestamp: DataTypes.DATE,
+        deleted: DataTypes.BOOLEAN,
+        deletedAt: DataTypes.DATE,
+        createdAt: DataTypes.DATE,
+        updatedAt: DataTypes.DATE
     }, {
         sequelize,
         modelName: 'log',

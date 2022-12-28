@@ -41,7 +41,7 @@ module.exports = class AnnotationSocket extends Socket {
             try {
                 const anno = await dbGetAnnotation(data.id);
 
-                if (!this.checkUserAccess(anno.creator) && !this.checkDocumentAccess(data.document_id)) {
+                if (!this.checkUserAccess(anno.userId) && !this.checkDocumentAccess(data.document_id)) {
                     this.sendToast("You have no permission to change this annotation", "Annotation Not Saved", "danger");
                 }
 
@@ -58,7 +58,7 @@ module.exports = class AnnotationSocket extends Socket {
             try {
                 const origAnnotation = await dbGetAnnotation(data.id);
 
-                if (!this.checkUserAccess(origAnnotation.creator)) {
+                if (!this.checkUserAccess(origAnnotation.userId)) {
                     this.sendToast("You have no permission to change this annotation", "Annotation Not Saved", "danger");
                     return;
                 }

@@ -6,6 +6,7 @@ const {Server: WebSocketServer} = require("socket.io");
 const http = require('http');
 const cors = require('cors');
 
+const fs = require('fs')
 const passport = require("passport");
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
@@ -43,6 +44,14 @@ module.exports = class Server {
         this.#setCors()
         // Make all static files public available
         this.app.use(express.static(`${__dirname}/../../dist/`));
+
+        // Publish documentation
+        if (fs.existsSync(`${__dirname}/../../docs/build`) && parseInt(process.env.PUBLISH_DOC) === 1) {
+            this.app.use("/docs", express.static(`${__dirname}/../../docs/build/html/`));
+        }
+        if (fs.existsSync(`${__dirname}/../../docs/api`) && parseInt(process.env.PUBLISH_API) === 1) {
+            this.app.use("/api", express.static(`${__dirname}/../../docs/api/`));
+        }
 
         this.logger.info("Initializing Session management...");
         this.session = this.#initSessionManagement();

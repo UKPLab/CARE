@@ -7,6 +7,9 @@ With defined interfaces, the basic functions can be expanded quickly and easily 
 If you want to build a new plugin,you can use the template plugin as a starting point.
 The template plugin is located in the plugins directory.
 
+.. note::
+
+    DISCLAIMER: Plugins are currently in a very early stage of development and are not yet fully functional.
 
 
 Plugin Directory
@@ -28,7 +31,7 @@ The plugin.yml file contains the plugin's configuration with the following optio
 * version - The version of the plugin.
 * description - A description of the plugin.
 * author - The author of the plugin.
+* db - Entries to add to the database.
 
 The plugin.yml file is a YAML file.
-
 

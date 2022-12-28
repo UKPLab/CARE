@@ -33,7 +33,7 @@ module.exports = {
                 allowNull: false
             },
             description: {
-                type: Sequelize.STRING(512)
+                type: Sequelize.STRING
             },
             colorCode: {
                 type: Sequelize.STRING,

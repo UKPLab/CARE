@@ -13,7 +13,7 @@ module.exports = {
                 allowNull: false,
                 unique: true
             },
-            creator: {
+            userId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "user",
@@ -32,11 +32,11 @@ module.exports = {
                 },
                 allowNull: false
             },
-            document: {
-                type: Sequelize.STRING,
+            documentId: {
+                type: Sequelize.INTEGER,
                 references: {
                     model: "document",
-                    key: "hash"
+                    key: "id"
                 }
             },
             selectors: {

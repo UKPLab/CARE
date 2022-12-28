@@ -23,7 +23,7 @@ module.exports = class Socket {
 
         this.socket = socket;
         this.user_id = socket.request.session.passport.user.id;
-        this.logger.defaultMeta = {user_id: this.user_id};
+        this.logger.defaultMeta = {userId: this.user_id};
 
     }
 

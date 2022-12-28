@@ -61,14 +61,14 @@ exports.add = async function add(user_name, first_name, last_name, user_email, p
     try {
         return await User.create({
             sysrole: role,
-            first_name: first_name,
-            last_name: last_name,
-            user_name: user_name,
+            firstName: first_name,
+            lastName: last_name,
+            userName: user_name,
             email: user_email,
-            password_hash: pwdHash,
+            passwordHash: pwdHash,
             salt: salt,
-            accept_terms: terms,
-            accept_stats: stats,
+            acceptTerms: terms,
+            acceptStats: stats,
         });
     } catch (err) {
         if (isInternalDatabaseError(err)) {
@@ -80,7 +80,7 @@ exports.add = async function add(user_name, first_name, last_name, user_email, p
 }
 
 exports.relevantFields = function fields(user) {
-    const exclude = ["password_hash", "salt"]
+    const exclude = ["passwordHash", "salt"]
 
     const entries = Object.entries(user.dataValues);
     const filtered = entries.filter(([k, v]) => exclude.indexOf(k) === -1);
@@ -89,7 +89,7 @@ exports.relevantFields = function fields(user) {
 }
 
 exports.minimalFields = function minimalFields(user) {
-    const include = ["id", "user_name"]
+    const include = ["id", "userName"]
 
     const entries = Object.entries(user.dataValues);
     const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
@@ -102,7 +102,7 @@ exports.find = async function find(username) {
         return await User.findAll({
             where: {
                 [Op.or]: [{
-                    user_name: username
+                    userName: username
                 }, {
                     email: username
                 }]
@@ -139,7 +139,7 @@ exports.resolveUserIdToName = async function resolveUserIdToName(userId) {
             where: {
                 id: userId
             }
-        })).user_name;
+        })).userName;
     } catch (err) {
         throw InternalDatabaseError(err);
     }

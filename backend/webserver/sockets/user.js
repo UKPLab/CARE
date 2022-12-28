@@ -28,7 +28,7 @@ module.exports = class UserSocket extends Socket {
         }
 
         return Promise.all(data.map(async x => {
-            return {...x, creator_name: await dbGetUsername(x.creator)};
+            return {...x, creator_name: await dbGetUsername(x.userId)};
         }));
     }
 

@@ -19,7 +19,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             primaryKey: true
         },
-        description: DataTypes.STRING
+        description: DataTypes.STRING,
+        deleted: DataTypes.BOOLEAN,
+        deletedAt: DataTypes.DATE,
+        createdAt: DataTypes.DATE,
+        updatedAt: DataTypes.DATE
     }, {
         sequelize,
         modelName: 'sysrole',

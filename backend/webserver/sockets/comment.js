@@ -33,7 +33,7 @@ module.exports = class CommentSocket extends Socket {
 
         try {
             const origComment = await dbGetComment(data.id);
-            if (!this.checkUserAccess(origComment.creator)) {
+            if (!this.checkUserAccess(origComment.userId)) {
                 this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
                 return;
             }
@@ -105,7 +105,7 @@ module.exports = class CommentSocket extends Socket {
             try {
                 const comment = await dbGetComment(data.id);
 
-                if (!this.checkUserAccess(comment.creator) && !this.checkDocumentAccess(data.document_id)) {
+                if (!this.checkUserAccess(comment.userId) && !this.checkDocumentAccess(data.document_id)) {
                     this.sendToast("You don't have access to this comment", "Error", "danger");
                     return;
                 }
