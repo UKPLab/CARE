@@ -11,12 +11,21 @@ module.exports = {
             description: {
                 type: Sequelize.STRING
             },
+            deleted: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false
+            },
             createdAt: {
                 allowNull: false,
                 type: Sequelize.DATE
             },
             updatedAt: {
                 allowNull: false,
+                type: Sequelize.DATE
+            },
+            deletedAt: {
+                allowNull: true,
+                defaultValue: null,
                 type: Sequelize.DATE
             }
         });

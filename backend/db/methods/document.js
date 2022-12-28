@@ -21,7 +21,7 @@ function InvalidDocumentParameters(details) {
     };
 }
 
-exports.add = async function add(doc_name, creator_id) {
+exports.add = async function add(doc_name, user_id) {
     let hash;
     let duplicates;
     while (true) {
@@ -48,13 +48,13 @@ exports.add = async function add(doc_name, creator_id) {
 
     try {
         return await Document.create({
-            name: doc_name, hash: hash, creator: creator_id,
+            name: doc_name, hash: hash, userId: user_id,
         });
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
-            throw InvalidDocumentParameters("Provided document name or creator ID are invalid.");
+            throw InvalidDocumentParameters("Provided document name or user ID are invalid.");
         }
     }
 }
@@ -107,14 +107,14 @@ exports.loadByUser = async function load(user_id) {
     try {
         return await Document.findAll({
             where: {
-                creator: user_id, deleted: false
+                userId: user_id, deleted: false
             }
         });
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
         } else {
-            throw InvalidDocumentParameters("Provided creator ID is invalid. Cannot find associated documents.");
+            throw InvalidDocumentParameters("Provided user ID is invalid. Cannot find associated documents.");
         }
     }
 }

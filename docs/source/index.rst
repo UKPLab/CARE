@@ -27,6 +27,7 @@ Welcome to PEER's project :-)
    development/frameworks
    development/metrics
    development/plugins
+   development/database
 
 
 Indices and tables

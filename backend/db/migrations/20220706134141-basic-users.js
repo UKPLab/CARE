@@ -25,14 +25,14 @@ module.exports = {
 
                 return {
                     sysrole: user.role,
-                    first_name: user.name,
-                    last_name: "user",
-                    user_name: user.name,
+                    firstName: user.name,
+                    lastName: "user",
+                    userName: user.name,
                     email: user.email,
-                    password_hash: passwordHash,
+                    passwordHash: passwordHash,
                     salt: salt,
-                    accept_stats: true,
-                    accept_terms: true,
+                    acceptStats: true,
+                    acceptTerms: true,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }

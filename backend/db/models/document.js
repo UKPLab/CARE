@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
     document.init({
         name: DataTypes.STRING,
         hash: DataTypes.STRING,
-        creator: DataTypes.INTEGER,
+        userId: DataTypes.INTEGER,
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,

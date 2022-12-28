@@ -91,7 +91,7 @@ exports.add = async function add(annotation, user_id) {
     }
 
     try {
-        return (await Annotation.create(Object.assign(Object.assign(newAnnotation, annotation), {creator: user_id}))).get({plain: true});
+        return (await Annotation.create(Object.assign(Object.assign(newAnnotation, annotation), {userId: user_id}))).get({plain: true});
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
@@ -166,7 +166,7 @@ exports.formatForExport = async function format(annotation) {
     ]
 
     let copied = pickObjectAttributeSubset(annotation, copyFields);
-    copied.creator = await resolveUserIdToName(annotation.creator);
+    copied.userId = await resolveUserIdToName(annotation.userId);
     copied.tag = (await getTagsByIds(annotation.tag))[0].name;
 
     return copied

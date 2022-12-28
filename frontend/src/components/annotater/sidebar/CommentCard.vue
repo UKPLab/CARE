@@ -14,7 +14,7 @@
       <i>No comment</i>
     </div>
   </div>
-  <TagSelector v-model="comment.tags" v-if="comment" :disabled="!edit" :isEditor="comment.creator === user_id"></TagSelector>
+  <TagSelector v-model="comment.tags" v-if="comment" :disabled="!edit" :isEditor="comment.userId === user_id"></TagSelector>
 </template>
 
 <script>

@@ -204,7 +204,7 @@ module.exports = class ReviewSocket extends Socket {
 
                     let annotation = {
                         hash: new_hash,
-                        creator: anno.creator,
+                        userId: anno.userId,
                         text: anno.text,
                         tags: anno.tags,
                         document: doc_new.hash,
@@ -218,7 +218,7 @@ module.exports = class ReviewSocket extends Socket {
                     for (const comment of anno.comments) {
                         let new_comment = {
                             hash: uuidv4(),
-                            creator: comment.creator,
+                            userId: comment.userId,
                             text: comment.text,
                             referenceAnnotation: new_hash,
                             deleted: comment.deleted,

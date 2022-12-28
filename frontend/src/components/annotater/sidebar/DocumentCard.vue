@@ -19,7 +19,7 @@
       <CommentCard ref="main_comment" @saveCard="save()" :comment_id="comment_id" :edit="editedByMyself"/>
     </template>
 
-    <template v-slot:footer  v-if="comment.creator === user_id">
+    <template v-slot:footer  v-if="comment.userId === user_id">
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
           <div class="col text-end">

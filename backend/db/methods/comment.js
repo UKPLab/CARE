@@ -49,8 +49,8 @@ exports.add = async function add(document_id, annotation_id, comment_id, user_id
         hash: uuidv4(),
         tags: "[]",
         draft: true,
-        creator: user_id,
-        document: document_id,
+        userId: user_id,
+        documentId: document_id,
         referenceAnnotation: annotation_id,
         referenceComment: comment_id
     }
@@ -102,7 +102,7 @@ exports.loadByDocument = async function load(doc_id) {
     try {
         return await Comment.findAll({
             where: {
-                document: doc_id, deleted: false, draft: false
+                documentId: doc_id, deleted: false, draft: false
             }, raw: true
         });
     } catch (err) {
@@ -129,7 +129,7 @@ exports.loadDocumentComments = async function load(doc_id) {
     try {
         return await Comment.findAll({
             where: {
-                document: doc_id, deleted: false, draft: false, referenceAnnotation: null
+                documentId: doc_id, deleted: false, draft: false, referenceAnnotation: null
             }
         });
     } catch (err) {
@@ -163,7 +163,7 @@ exports.formatForExport = async function format(comment) {
     ]
 
     let copied = pickObjectAttributeSubset(comment, copyFields);
-    copied.creator = await resolveUserIdToName(comment.creator);
+    copied.userId = await resolveUserIdToName(comment.userId);
     copied.tags = JSON.parse(comment.tags);
     copied.referenceAnnotation = await resolveAnnoIdToHash(comment.referenceAnnotation);
     if(comment.referenceComment) {

@@ -20,7 +20,7 @@ module.exports = {
                 service: {
                     type: Sequelize.STRING
                 },
-                user: {
+                userId: {
                     type: Sequelize.INTEGER,
                     allowNull: true,
                     references: {
@@ -30,11 +30,23 @@ module.exports = {
                 timestamp: {
                     type: Sequelize.DATE, allowNull: false
                 },
-                createdAt: {
-                    allowNull: false, type: Sequelize.DATE
-                }, updatedAt: {
-                    allowNull: false, type: Sequelize.DATE
-                }
+                deleted: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false
+            },
+            createdAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false,
+                type: Sequelize.DATE
+            },
+            deletedAt: {
+                allowNull: true,
+                defaultValue: null,
+                type: Sequelize.DATE
+            }
             });
     },
 

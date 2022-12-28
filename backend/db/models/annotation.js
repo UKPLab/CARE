@@ -16,10 +16,10 @@ module.exports = (sequelize, DataTypes) => {
 
     annotation.init({
         hash: DataTypes.STRING,
-        creator: DataTypes.STRING,
+        userId: DataTypes.STRING,
         text: DataTypes.STRING,
         tag: DataTypes.INTEGER,
-        document: DataTypes.STRING,
+        documentId: DataTypes.INTEGER,
         selectors: DataTypes.JSONB,
         draft: DataTypes.BOOLEAN,
         deleted: DataTypes.BOOLEAN,
