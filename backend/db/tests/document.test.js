@@ -5,7 +5,7 @@ describe("database document", () => {
     describe("get example document", () => {
 
         test('exists', async () => {
-            const document = await getDoc("8852a746-360e-4c31-add2-4d1c75bfb96d");
+            const document = await getDoc(1);
             expect(document['name']).toBe("Showcase Document")
         });
     });
