@@ -17,7 +17,7 @@ exports.add = async function add(info) {
             level: level,
             message: message,
             service: meta.service,
-            user: meta.user !== undefined ? meta.user : null,
+            userId: meta.userId !== undefined ? meta.userId : null,
             timestamp: new Date(),
         });
     } catch (e) {

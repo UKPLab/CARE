@@ -52,7 +52,8 @@ export default {
     },
     assignableTags() {
       return this.$store.getters["tag/getTags"](this.defaultTagSet);
-    }
+    },
+
   },
   methods: {
     ...mapMutations({addAnnotation: "anno/ADD_ANNOTATION"}),
@@ -83,7 +84,7 @@ export default {
       }));
 
       this.$socket.emit('addAnnotation', {
-        document: this.document_id,
+        documentId: this.document_id,
         selectors: {target},
         tag: tag.id
       });

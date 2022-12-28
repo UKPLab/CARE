@@ -22,7 +22,7 @@ module.exports = class CommentSocket extends Socket {
         try {
             const comment = await this.updateCreatorName(await dbLoadByAnnotation(annotation_id));
 
-            this.io.to("doc:" + comment.document).emit("commentUpdate", comment);
+            this.io.to("doc:" + comment.documentId).emit("commentUpdate", comment);
         } catch (e) {
             this.logger.info("Error during loading of comments: " + e);
             this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
@@ -39,7 +39,7 @@ module.exports = class CommentSocket extends Socket {
             }
 
             const newComment = await dbUpdateComment(data);
-            this.io.to("doc:" + newComment[1].document).emit("commentUpdate", await this.updateCreatorName(newComment[1].get({plain: true})));
+            this.io.to("doc:" + newComment[1].documentId).emit("commentUpdate", await this.updateCreatorName(newComment[1].get({plain: true})));
 
         } catch (e) {
             this.logger.error("Could not update comment in database. Error: " + e);
@@ -129,7 +129,7 @@ module.exports = class CommentSocket extends Socket {
                 this.socket.emit("commentUpdate", await this.updateCreatorName(await dbLoadByDocument(data.id)));
             } catch (e) {
                 this.logger.info("Error during loading of comments: " + e);
-                this.sendToast("Internal Server Error: Could not update comment", "Internal server error", "danger");
+                this.sendToast("Internal Server Error: Could not load comments by document", "Internal server error", "danger");
             }
         });
 
@@ -141,7 +141,7 @@ module.exports = class CommentSocket extends Socket {
                 this.logger.info("Error during loading of comments: " + e);
 
                 this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
-                this.socket.emit("exportedComments", {"success": false, "document_id": data.document_id});
+                this.socket.emit("exportedComments", {"success": false, "document_id": data.documentId});
 
                 return;
             }

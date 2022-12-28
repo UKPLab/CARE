@@ -43,7 +43,7 @@ exports.getUsername = async function getUsername(userId) {
     }
     try {
         const user = await User.findOne({where: {id: userId}});
-        return user["user_name"];
+        return user["userName"];
     } catch (err) {
         logger.error("Error while getting username with userid " + userId + ": " + err);
         throw new InternalDatabaseError();

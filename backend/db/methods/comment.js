@@ -2,14 +2,13 @@
 
 Functions to modify the comments in the database
 
-Author: Nils Dycke (dycke@ukp.informatik...)
+Author: Nils Dycke, Dennis Zyska
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB, pickObjectAttributeSubset} = require("./utils");
 const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
-const {getByIds: getTagsByIds} = require("./tag");
 const {resolveAnnoIdToHash} = require("./annotation");
 
 const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
@@ -98,11 +97,12 @@ exports.loadByAnnotation = async function load(annoId) {
     }
 }
 
-exports.loadByDocument = async function load(doc_id) {
+exports.loadByDocument = async function load(documentId) {
+
     try {
         return await Comment.findAll({
             where: {
-                documentId: doc_id, deleted: false, draft: false
+                documentId: documentId, deleted: false, draft: false
             }, raw: true
         });
     } catch (err) {
@@ -125,11 +125,11 @@ exports.loadByComment = async function loadByComment(comment_id) {
 }
 
 
-exports.loadDocumentComments = async function load(doc_id) {
+exports.loadDocumentComments = async function load(documentId) {
     try {
         return await Comment.findAll({
             where: {
-                documentId: doc_id, deleted: false, draft: false, referenceAnnotation: null
+                documentId: documentId, deleted: false, draft: false, referenceAnnotation: null
             }
         });
     } catch (err) {
@@ -157,7 +157,7 @@ exports.formatForExport = async function format(comment) {
     const copyFields = [
         "hash",
         "text",
-        "document",
+        "documentId",
         "createdAt",
         "updatedAt"
     ]

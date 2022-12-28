@@ -15,7 +15,6 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     annotation.init({
-        hash: DataTypes.STRING,
         userId: DataTypes.STRING,
         text: DataTypes.STRING,
         tag: DataTypes.INTEGER,

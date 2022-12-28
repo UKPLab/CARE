@@ -107,9 +107,12 @@ module.exports = class DocumentSocket extends Socket {
             await this.updateDocuments();
         });
 
-        this.socket.on("pdf_get", (data) => {
+        this.socket.on("pdf_get", async (data) => {
+
+            const doc = await dbGetDoc(data.document_id);
+
             try {
-                const pdf = fs.readFileSync(`${PDF_PATH}/${data.document_id}.pdf`);
+                const pdf = fs.readFileSync(`${PDF_PATH}/${doc['hash']}.pdf`);
                 this.socket.emit("pdf", {file: pdf});
             } catch (e) {
                 this.logger.error(e);

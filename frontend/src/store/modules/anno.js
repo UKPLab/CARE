@@ -20,19 +20,19 @@ export default {
     getters: {
         // returns annotations from the store (local)
         getAnnotations: (state) => (document_id) => {
-            return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.document === document_id);
+            return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.documentId === document_id);
         },
         getAnnotation: (state) => (annotation_id) => {
             return state.annotations.filter(anno => !anno.deleted).find(x => x.id === annotation_id);
         },
         getPageAnnotations: (state) => (document_id, page_id) => {
-            return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.document === document_id)
+            return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.documentId === document_id)
                 .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id);
         },
         getAnchors: (state) => (document_id, page_id) => {
 
             return state.annotations.filter(anno => !anno.deleted)
-                .filter(annotation => annotation.document === document_id)
+                .filter(annotation => annotation.documentId === document_id)
                 .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id)
                 .filter(annotation => annotation.anchors !== null)
                 .map(annotation => annotation.anchors)
@@ -40,14 +40,14 @@ export default {
         },
         getAnchorsFlat: (state) => (document_id, page_id) => {
             return state.annotations.filter(anno => !anno.deleted)
-                .filter(annotation => annotation.document === document_id)
+                .filter(annotation => annotation.documentId === document_id)
                 .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id)
                 .filter(annotation => annotation.anchors !== null)
                 .flatMap(annotation => annotation.anchors)
                 .filter(anchors => anchors !== undefined)
         },
         getAnnotationTags: (state) => (document_id) => {
-            return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.document_id === document_id)
+            return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.documentId === document_id)
                 .map(a => {
                     return {anno: a, tags: a.tags}
                 });

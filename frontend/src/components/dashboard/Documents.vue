@@ -116,7 +116,6 @@ export default {
   },
   methods: {
     load() {
-      this.$socket.emit("docs_get");
       this.$socket.emit("getReviews");
     },
     deleteDoc(docId) {

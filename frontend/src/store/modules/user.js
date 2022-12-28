@@ -28,6 +28,13 @@ export default {
         getDocuments: state => {
             return state["docs"]
         },
+        getDocumentId: state => (hash) => {
+            if (state["docs"].length > 0) {
+                return state["docs"].find(doc => doc.hash === hash)["id"];
+            } else {
+                return null;
+            }
+        },
         //returns review processes from the store (local)
         getReviews: state => {
             return state["reviews"]

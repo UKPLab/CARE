@@ -37,7 +37,6 @@ doc_asyncapi:
 	@echo "Building asyncapi documentation"
 	@docker run --rm -v ${PWD}/docs/api.yml:/app/api.yml -v ${PWD}/docs/api:/app/output asyncapi/generator --force-write -o ./output api.yml @asyncapi/html-template
 
-
 .PHONY: doc_sphinx
 doc_sphinx:
 	@echo "Building sphinx documentation"
@@ -45,8 +44,8 @@ doc_sphinx:
 	@docker run --rm -v ${PWD}/docs:/docs docs_sphinx make html
 
 .PHONY: dev
-dev: node_modules/.uptodate backend/node_modules/.uptodate
-	npm run frontend-dev & cd backend && npm run start
+dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate
+	cd frontend && npm run frontend-dev & cd backend && npm run start
 
 .PHONY: dev-build
 dev-build: backend/node_modules/.uptodate build-frontend
@@ -57,20 +56,20 @@ dev-backend: backend/node_modules/.uptodate
 	cd backend && npm run start
 
 .PHONY: dev-build-frontend
-dev-build-frontend: node_modules/.uptodate
-	npm run frontend-dev-build
+dev-build-frontend: frontend/node_modules/.uptodate
+	cd frontend && npm run frontend-dev-build
 
 .PHONY: build
 build:
 	docker-compose -f docker-compose.yml -p "peer_main" --env-file ".env.main"  up --build -d
 
 .PHONE: build-frontend
-build-frontend: node_modules/.uptodate
-	npm run frontend-build
+build-frontend: frontend/node_modules/.uptodate
+	cd frontend && npm run frontend-build
 
 .PHONE: test-frontend
-test-frontend: node_modules/.uptodate
-	npm run test
+test-frontend: frontend/node_modules/.uptodate
+	cd frontend && npm run test
 
 .PHONY: test-backend
 test-backend: backend/node_modules/.uptodate
@@ -115,7 +114,7 @@ check_clean:
 
 clean: check_clean
 	@echo "Cleaning project code and database. WARNING: This will remove your current DB state."
-	rm -f node_modules/.uptodate
+	rm -f frontend/node_modules/.uptodate
 	rm -f backend/node_modules/.uptodate
 	rm -rf dist
 	docker-compose rm -f -s -v
@@ -127,8 +126,8 @@ init: backend/node_modules/.uptodate
 	cd backend/db && npx sequelize-cli db:create || echo "IGNORING ERROR"
 	cd backend/db && npx sequelize-cli db:migrate
 
-node_modules/.uptodate: package.json package-lock.json
-	npm install
+frontend/node_modules/.uptodate: frontend/package.json frontend/package-lock.json
+	cd frontend && npm install
 	@touch $@
 
 backend/node_modules/.uptodate: backend/package.json backend/package-lock.json

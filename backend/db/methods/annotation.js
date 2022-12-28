@@ -2,11 +2,16 @@
 
 Functions to modify the annotations in the database
 
-Author: Nils Dycke (dycke@ukp.informatik...)
+Author: Nils Dycke, Dennis Zyska
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB, pickObjectAttributeSubset} = require("./utils");
+const {
+    isInternalDatabaseError,
+    InternalDatabaseError,
+    subselectFieldsForDB,
+    pickObjectAttributeSubset
+} = require("./utils");
 const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
 
@@ -24,45 +29,6 @@ function InvalidAnnotationParameters(details) {
         }
     };
 }
-
-
-/*
-exports.addRawComment = async function addRawComment(comment) {
-    try {
-        return await Comment.create(comment);
-    } catch (err) {
-        throw err;
-    }
-}
-
-exports.addRaw = async function addRaw(annotation) {
-    try {
-        let anno = await Annotation.create(annotation);
-        return anno;
-    } catch (err) {
-        throw err;
-
-    }
-
-
-}*/
-/*
-exports.getAnnoFromDocRaw = async function getAnnoFromDocRaw(document) {
-    try {
-        let annotations = await Annotation.findAll({where: {'document': document}});
-        for (let anno of annotations) {
-            anno['comments'] = await Comment.findAll({
-                where: {
-                    referenceAnnotation: anno.hash
-                }
-            });
-        }
-
-        return annotations
-    } catch (err) {
-        throw err;
-    }
-}*/
 
 exports.get = async function get(id) {
     try {
@@ -83,15 +49,17 @@ exports.get = async function get(id) {
 
 exports.add = async function add(annotation, user_id) {
 
+
     let newAnnotation = {
-        hash: uuidv4(),
+        documentId: annotation.documentId,
+        selectors: annotation.selectors,
+        tag: annotation.tag,
         text: annotation.selectors.target === undefined ? null : annotation.selectors.target[0].selector[1].exact,
-        selectors: {},
         draft: true,
     }
 
     try {
-        return (await Annotation.create(Object.assign(Object.assign(newAnnotation, annotation), {userId: user_id}))).get({plain: true});
+        return (await Annotation.create(Object.assign(newAnnotation, {userId: user_id}))).get({plain: true});
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
@@ -127,11 +95,12 @@ exports.update = async function update(data) {
 
 }
 
-exports.loadByDocument = async function load(docId) {
+exports.loadByDocument = async function load(documentId) {
+
     try {
         return await Annotation.findAll({
             where: {
-                document: docId, deleted: false, draft: false
+                documentId: documentId, deleted: false, draft: false
             },
 
             raw: true
@@ -154,13 +123,14 @@ async function resolveAnnoIdToHash(annoId) {
         throw InternalDatabaseError(err);
     }
 }
+
 exports.resolveAnnoIdToHash = resolveAnnoIdToHash;
 
 exports.formatForExport = async function format(annotation) {
     const copyFields = [
         "hash",
         "text",
-        "document",
+        "documentId",
         "createdAt",
         "updatedAt"
     ]

@@ -4,8 +4,7 @@ This file is necessary to specify where and how vue components
 are compiled into a build directory. This file configures
 vite to build the components into the ../dist directory.
 
-Author: Dennis Zyska (zyska@ukp...)
-Co-Author:  Nils Dycke (dycke@ukp...)
+Author: Dennis Zyska, Nils Dycke
 Source: https://vitejs.dev/config/
 */
 import { fileURLToPath, URL } from 'url'
@@ -23,7 +22,7 @@ export default defineConfig({
   build: {
     outDir: "../dist"
   },
-  root: "./frontend",
+  root: "./",
   test: {
     // enable jest-like global test APIs
     globals: true,

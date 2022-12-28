@@ -21,10 +21,8 @@ module.exports = class AnnotationSocket extends Socket {
         this.socket.on("addAnnotation", async (data) => {
             try {
                 const annotation = await this.updateCreatorName(await dbAddAnnotation(data, this.user_id))
-                await this.getSocket("CommentSocket").addComment(annotation[0].document, annotation[0].id);
+                await this.getSocket("CommentSocket").addComment(annotation[0].documentId, annotation[0].id);
 
-
-                console.log("Test");
                 this.socket.emit("annotationUpdate", annotation)
             } catch (e) {
                 this.logger.error("Could not add annotation and/or comment to database. Error: " + e);
@@ -41,7 +39,7 @@ module.exports = class AnnotationSocket extends Socket {
             try {
                 const anno = await dbGetAnnotation(data.id);
 
-                if (!this.checkUserAccess(anno.userId) && !this.checkDocumentAccess(data.document_id)) {
+                if (!this.checkUserAccess(anno.userId) && !this.checkDocumentAccess(data.documentId)) {
                     this.sendToast("You have no permission to change this annotation", "Annotation Not Saved", "danger");
                 }
 
@@ -67,7 +65,7 @@ module.exports = class AnnotationSocket extends Socket {
                 if (newAnno[1].deleted) {
                     await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno[1].id);
                 }
-                this.io.to("doc:" + newAnno[1].document).emit("annotationUpdate", await this.updateCreatorName(newAnno[1].get({plain: true})));
+                this.io.to("doc:" + newAnno[1].documentId).emit("annotationUpdate", await this.updateCreatorName(newAnno[1].get({plain: true})));
 
             } catch (e) {
                 this.logger.error("Could not update annotation and/or comment in database. Error: " + e);
@@ -97,7 +95,7 @@ module.exports = class AnnotationSocket extends Socket {
                 this.logger.info("Error during loading of annotations: " + e);
 
                 this.sendToast("Internal server error. Failed to load annotations.", "Internal server error", "danger");
-                this.socket.emit("exportedAnnotations", {"success": false, "document_id": data.document_id});
+                this.socket.emit("exportedAnnotations", {"success": false, "documentId": data.documentId});
 
                 return;
             }

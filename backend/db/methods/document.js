@@ -59,9 +59,21 @@ exports.add = async function add(doc_name, user_id) {
     }
 }
 
-exports.dbGetDoc = async function getDoc(hash) {
+exports.dbGetDoc = async function getDoc(id) {
     try {
-        return await Document.findOne({where: {'hash': hash}});
+        return await Document.findOne({where: {'id': id}});
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw InvalidDocumentParameters("Provided document hash does not exist");
+        }
+    }
+}
+
+exports.dbGetIdByHash = async function getIdByHash(hash) {
+    try {
+        return (await Document.findOne({where: {'hash': hash}, attributes: ['id'], raw: true}))['id'];
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
