@@ -242,10 +242,7 @@ export default {
           textRange.endOffset
       ).relativeTo(textLayer);
 
-      const startPageIndex = this.getSiblingIndex(
-          /** @type {Node} */ (textLayer.parentNode)
-      );
-      const pageOffset = await this.getPageOffset(startPageIndex);
+      const pageOffset = await this.getPageOffset(page-1);
 
       /** @type {TextPositionSelector} */
       const position = {
@@ -261,14 +258,6 @@ export default {
       }
 
       return [position, quote, pageSelector];
-    },
-    getSiblingIndex(node) {
-      let index = 0;
-      while (node.previousSibling) {
-        ++index;
-        node = node.previousSibling;
-      }
-      return index;
     },
     async getPageOffset(pageIndex) {
       if (pageIndex > this.pdf.pageCount) {
