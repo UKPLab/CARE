@@ -15,6 +15,7 @@
         </span>
       </div>
 
+
       <div class="collapse-sidebar-container list-group-item-action list-group-item"
            @click="toggleSidebar()" title="Toggle sidebar">
         <span class="arrow-toggle sidebar-icon">
