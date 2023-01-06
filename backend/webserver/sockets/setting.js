@@ -1,5 +1,5 @@
 const {getGroups, getElements} = require("../../db/methods/navigation");
-const {getUserSettings, getSettings, setUserSetting} = require("../../db/methods/settings");
+const {getUserSettings, getSettings, setSetting, setUserSetting} = require("../../db/methods/settings");
 
 const Socket = require("../Socket.js");
 
@@ -48,6 +48,26 @@ module.exports = class SettingSocket extends Socket {
             try {
                 await setUserSetting(this.user_id, data.key, data.value);
                 await this.sendSettings()
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+
+        this.socket.on("settingGetAll", async (data) => {
+            try {
+                const settings = await getSettings();
+                this.socket.emit("settingAll", settings);
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+
+        this.socket.on("settingSave", async (data) => {
+            try {
+                if (this.isAdmin()) {
+                    await Promise.all(data.map(setting => setSetting(setting.key, setting.value)));
+                    await this.sendSettings()
+                }
             } catch (err) {
                 this.logger.error(err);
             }

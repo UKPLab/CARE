@@ -29,6 +29,7 @@ Welcome to PEER's project :-)
    development/plugins
    development/database
    development/icons
+   development/loading
 
 
 Indices and tables
