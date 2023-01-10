@@ -199,7 +199,6 @@ module.exports = class Server {
 
         this.services[serviceClass.name] = new serviceClass(this);
         this.services[serviceClass.name].init();
-
     }
 
     start(port) {

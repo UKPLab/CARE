@@ -9,11 +9,13 @@ const Socket = require("../Socket.js");
 module.exports = class NLPSocket extends Socket {
 
     init() {
-        this.socket.on("connect", function () {
-            if (!this.server.services['NLPService'].connected)
-                this.server.services['NLPService'].connect();
-        });
+        // init() called after a socket connection has been established to a client
+        // hence, always check if we need to start a connection to the nlp service
+        if (!this.server.services['NLPService'].connected){
+            this.server.services['NLPService'].connect();
+        }
 
+        // on disconnect of the client, disconnect this specific link to the nlp service
         this.socket.on("disconnect", (reason) => {
             if (this.server.services['NLPService'].connected) {
                 this.server.services['NLPService'].disconnect();
