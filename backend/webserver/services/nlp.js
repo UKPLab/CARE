@@ -13,17 +13,29 @@ module.exports = class NLPService extends Service {
     constructor(server) {
         super(server);
 
-        this.socket = null;
+        this.connections = {};
         this.info = [];
-        this.connected = false;
+
+
     }
 
     init() {
+        //... nothing to do
+    }
+
+    #setupConnectionToNlpService(client){
         // needed for callbacks using "this", as the this pointer changes by context
         // see https://stackoverflow.com/questions/20279484/how-to-access-the-correct-this-inside-a-callback
         let self = this;
+        const clientId = client.socket.id;
+        const toClient = client.socket;
 
-        self.socket = io_client(process.env.NLP_SERVICE,
+        if (process.env.NLP_USE === "false") {
+            self.logger.info("NLP is deactivated! Change NLP_USE environment variable and restart if needed.");
+            return;
+        }
+
+        let socket = io_client(process.env.NLP_SERVICE,
             {
                 auth: {token: process.env.NLP_ACCESS_TOKEN},
                 reconnection: true,
@@ -31,82 +43,87 @@ module.exports = class NLPService extends Service {
                 timeout: 10000, //timeout between connection attempts
             }
         );
-
-        if (process.env.NLP_USE === "false") {
-            self.logger.info("NLP is deactivated! Change NLP_USE environment variable and restart if needed.");
-            return;
-        }
+        self.connections[clientId] = [socket, client, true];
 
         // Handle connection errors
-        self.socket.on("connect_error", () => {
+        socket.on("connect_error", () => {
             self.logger.error("Connection error, try to connect again...");
             setTimeout(() => {
-                self.socket.connect();
+                socket.connect();
             }, 10000);
         });
 
         // Handle reconnection attempts
-        self.socket.on("reconnection_attempt", () => {
+        socket.on("reconnection_attempt", () => {
             self.logger.error("Reconnection attempt...");
         });
 
         // establishing a connection
-        self.socket.on("connect", function () {
-            self.logger.info(`Connection to NLP server established: ${self.socket.connected}`);
-            self.connected = true;
+        socket.on("connect", function () {
+            self.logger.info(`Connection to NLP server established: ${socket.connected}`);
+            self.connections[clientId][2] = true;
 
             // if connection established, get information about the NLP Service
-            self.socket.emit("skillGetAll");
+            socket.emit("skillGetAll");
         });
 
         // deal with broken connection
-        self.socket.on("disconnect", function () {
-            self.logger.info(`Connection to NLP server disrupted: ${!self.socket.connected}`);
-            self.connected = false;
-        });
-
-        // cache skillUpdate messages
-        self.socket.on("skillUpdate", (data) => {
-            self.logger.info(`Available skills: ${data.map(e => e.name)}`);
-            self.info = data;
+        socket.on("disconnect", function () {
+            self.logger.info(`Connection to NLP server disrupted: ${!socket.connected}`);
+            self.connections[clientId][2] = false;
         });
 
         // forwarding NLP server messages to frontend
-        self.socket.onAny((msg, data) => {
+        socket.onAny((msg, data) => {
             self.logger.info(`Message NLP SERVER -> FRONTEND: nlp_${msg} = ${data}`);
-            self.server.io.emit("nlp_" + msg, data);
+            toClient.emit("nlp_" + msg, data);
         });
 
         // forwarding frontend messages to NLP server
-        self.server.io.on("nlp_*", (msg, data) => {
-            if (self.connected) {
-                self.socket.emit(msg.slice("nlp_".length).replace("_", "/"), data);
-                self.logger.info(`Message FRONTEND -> NLP SERVER: ${msg}`);
-            } else if (!self.connected) {
-                self.server.io.emit("nlp_error", "Connection to NLP server disrupted.");
-                self.logger.info(`Connection to NLP server disrupted on msg ${msg}: ${!self.connected}`);
+        toClient.onAny((msg, data) => {
+            if(!msg.startsWith("nlp_")){
+                return;
+            }
+
+            if (self.connections[clientId][2]) {
+                const rmsg = msg.slice("nlp_".length);
+                if(data !== undefined){
+                    socket.emit(rmsg, data);
+                } else {
+                    socket.emit(rmsg);
+                }
+
+                self.logger.info(`Message FRONTEND -> NLP SERVER: ${rmsg}: ${data}`);
+            } else {
+                toClient.emit("nlp_error", "Connection to NLP server disrupted.");
+                self.logger.info(`Connection to NLP server disrupted on msg ${msg}`);
             }
         });
-
     }
 
-    get_info() {
+    #teardownConnectionToNlpService(client) {
+        this.connections[client.socket.id][0].disconnect();
+
+        delete this.connections[client.socket.id];
+    }
+
+    getInfo() {
         return this.info;
     }
 
-    disconnect() {
+    connect(client) {
         if (process.env.NLP_USE === "false") {
             return;
         }
-        this.socket.disconnect();
+
+        this.#setupConnectionToNlpService(client);
     }
 
-    connect() {
+    disconnect(client) {
         if (process.env.NLP_USE === "false") {
             return;
         }
-        this.socket.connect();
+
+        this.#teardownConnectionToNlpService(client);
     }
-
-
 }
