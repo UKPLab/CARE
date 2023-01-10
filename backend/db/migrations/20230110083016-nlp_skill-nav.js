@@ -1,6 +1,11 @@
 'use strict';
 
-const basicElements = [
+const basicGroups = [
+    {'name': "Default",},
+    {'name': "Admin", "admin": true}
+]
+
+const navElements = [
     {
         name: "NLP Skills",
         groupId: "Admin",
@@ -15,19 +20,26 @@ const basicElements = [
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.bulkInsert("nav_element",
-            basicElements.map(t => {
+            await Promise.all(navElements.map(async t => {
+                const groupId = await queryInterface.rawSelect('nav_group', {
+                    where:
+                        {name: t.groupId}
+                    ,
+                }, ['id']);
+
                 t['createdAt'] = new Date();
                 t['updatedAt'] = new Date();
-                t['groupId'] = groups.find(g => g.name === t.groupId).id;
+                t['groupId'] = groupId;
+
                 return t;
             }),
-            {});
+            {}));
     },
 
     async down(queryInterface, Sequelize) {
         //delete nav elements first
         await queryInterface.bulkDelete("nav_element", {
-            name: basicElements.map(t => t.name)
+            name: navElements.map(t => t.name)
         }, {});
     }
 };

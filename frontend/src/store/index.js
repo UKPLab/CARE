@@ -23,6 +23,7 @@ import NavigationStore from "./modules/navigation.js";
 import SettingsStore from "./modules/settings.js";
 import CollaborationStore from "./modules/collab.js";
 import CommentStore from "./modules/comment.js";
+import NlpStore from "./modules/nlp.js";
 import createPersistedState from 'vuex-persistedstate';
 
 
@@ -36,7 +37,8 @@ export default createStore({
         navigation: NavigationStore,
         settings: SettingsStore,
         collab: CollaborationStore,
-        comment: CommentStore
+        comment: CommentStore,
+        nlp: NlpStore
     },
     plugins: [
         createPersistedState({
