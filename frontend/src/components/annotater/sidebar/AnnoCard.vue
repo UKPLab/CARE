@@ -6,7 +6,7 @@
         <div class="col">
           {{ annotation.creator_name }}
           <span v-if="showEditByCollab">
-            <LoadIcon :size="12 " class="fading" iconName="IconPencilFill"></LoadIcon>
+            <LoadIcon :size="12 " class="fading" iconName="pencil-fill"></LoadIcon>
           </span>
 
         </div>
@@ -30,12 +30,12 @@
           <div class="col text-end">
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Save"
                     type="button" v-on:click="save()">
-              <LoadIcon :size="16" class="danger" iconName="IconSaveFill"></LoadIcon>
+              <LoadIcon :size="16" class="danger" iconName="save-fill"></LoadIcon>
               <span class="visually-hidden">Edit</span>
             </button>
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Cancel"
                     type="button" v-on:click="cancel()">
-              <LoadIcon :size="16" iconName="IconXSquareFill"></LoadIcon>
+              <LoadIcon :size="16" iconName="x-square-fill"></LoadIcon>
               <span class="visually-hidden">Edit</span>
             </button>
           </div>
@@ -47,18 +47,18 @@
           <div class="col text-end">
             <!--<button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
                     type="button" v-on:click="reply()">
-              <LoadIcon :size="16" iconName="IconReplyFill"></LoadIcon>
+              <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
               <span class="visually-hidden">Edit</span>
             </button>-->
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
                     type="button" v-on:click="edit()">
-              <LoadIcon :size="16" iconName="IconPencilSquare"></LoadIcon>
+              <LoadIcon :size="16" iconName="pencil-square"></LoadIcon>
               <span class="visually-hidden">Edit</span>
             </button>
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip"
                     title="Delete"
                     type="button" v-on:click="remove()">
-              <LoadIcon :size="16" iconName="IconTrash3"></LoadIcon>
+              <LoadIcon :size="16" iconName="trash3"></LoadIcon>
               <span class="visually-hidden">Delete</span>
             </button>
           </div>
