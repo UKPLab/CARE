@@ -2,7 +2,7 @@
 
 const settings = [
     {
-        key: "navigation.dashboard.component.default",
+        key: "dashboard.navigation.component.default",
         value: "Home",
         description: "The default component to display in the dashboard"
     },

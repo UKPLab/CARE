@@ -28,6 +28,8 @@ Welcome to PEER's project :-)
    development/metrics
    development/plugins
    development/database
+   development/icons
+   development/loading
 
 
 Indices and tables

@@ -41,6 +41,22 @@ exports.getUserSettings = async function getUserSettings(user_id) {
     }
 }
 
+exports.setSetting = async function setSetting(key, value) {
+    try {
+        return await Setting.update({
+            value: value
+        }, {
+            where: {
+                key: key
+            }
+        });
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        }
+    }
+}
+
 exports.setUserSetting = async function setUserSetting(user_id, key, value) {
     const dbObj = {
         userId: user_id,
