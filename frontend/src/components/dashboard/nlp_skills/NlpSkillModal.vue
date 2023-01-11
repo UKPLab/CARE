@@ -24,9 +24,9 @@
 </template>
 
 <script>
-/* Upload.vue - modal for document upload component
+/* NlpSkillModal.vue - modal for details on a given NLP Skill
 
-Author: Dennis Zyska (zyska@ukp...)
+Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 import Modal from "../../basic/Modal.vue";
@@ -49,6 +49,12 @@ export default {
     }
   },
   computed: {
+    /**
+     * Returns the associated skill description based on the vuex stored information. The skill
+     * description is simply shown as a JSON string.
+     *
+     * @returns {string} the JSON string to be shown
+     */
     config(){
       if(this.skillName !== null){
         const stored = this.$store.getters['nlp/getSkillConfig'](this.skillName);
@@ -60,6 +66,11 @@ export default {
     }
   },
   methods: {
+    /**
+     * Opens the modal and triggers (if necessary) a request to the server to get the config for a skill.
+     *
+     * @param skillName, the name of the skill as advertised by a model
+     */
     openModal(skillName) {
       this.skillName = skillName;
 
