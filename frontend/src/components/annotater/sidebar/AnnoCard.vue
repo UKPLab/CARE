@@ -116,6 +116,7 @@ export default {
       //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
       setTimeout(() => this.$emit("focus", this.annotation.id), 100);
       this.shake = true;
+      setTimeout(() => this.shake = false, 1500);
     }
   },
   unmounted() {
@@ -258,35 +259,13 @@ export default {
   cursor: pointer;
 }
 
-
-#text {
-  color: #4d4d4d;
-  font-style: italic;
-  font-size: small;
-  cursor: pointer;
-  display: block;
-  padding: 0;
-}
-
-#text:hover {
+.blockquote:hover {
   color: #000000;
-}
-
-#createButtons {
-  padding-bottom: 6px;
 }
 
 .replies {
   font-size: smaller;
   color: #929292;
-}
-
-#pageNoteFlag {
-  text-align: left
-}
-
-.pageNoteBody {
-  background-color: rgba(0, 0, 0, 0.05);
 }
 
 @keyframes flickerAnimation {

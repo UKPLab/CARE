@@ -32,7 +32,7 @@ export default {
       default: false,
     },
     modelValue: {
-      type: String,
+      type: Array,
       required: true,
     },
     isEditor: {
