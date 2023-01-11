@@ -7,7 +7,6 @@
         :pdf="pdf"
         :document_id="document_id"
         class="scrolling-page"
-        @destroyPage="destroyPage"
         @updateVisibility="updateVisibility"
     />
     <Adder v-if="!readonly" :document_id="document_id" :pdf="pdf"></Adder>
@@ -38,7 +37,7 @@ export default {
 
   props: {
     document_id: {
-      type: String,
+      type: Number,
       required: true
     },
     readonly: {

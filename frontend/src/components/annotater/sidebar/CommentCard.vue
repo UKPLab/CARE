@@ -23,6 +23,7 @@ import TagSelector from "./TagSelector.vue";
 export default {
   name: "CommentCard",
   components: {TagSelector},
+  emits: ["saveCard"],
   props: {
     comment_id: {
       type: Number,
