@@ -40,9 +40,10 @@
 </template>
 
 <script>
-/* NLPSkills.vue - shows the list of availble nlp skills to admins
+/* NLPSkills.vue - shows the list of available nlp skills to admins
 
-This component loads all available skills in a table.
+This component loads all available skills as registered at the NLP broker. Each skill
+is presented in one row and allows to get the details on click in a modal.
 
 Author: Nils Dycke (dycke@ukp...)
 Source: -

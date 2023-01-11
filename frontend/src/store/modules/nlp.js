@@ -47,8 +47,7 @@ export default {
         SOCKET_nlp_skillConfig: (state, data) => {
             state.configs[data.name] = data;
         },
-        //Todo currently wrong message send by broker: should be taskResults
-        SOCKET_nlp_skillResults: (state, data) => {
+        SOCKET_nlp_taskResults: (state, data) => {
             state.result_cache[data.id] = data.data;
         }
     },
