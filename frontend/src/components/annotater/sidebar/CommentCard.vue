@@ -89,7 +89,7 @@ export default {
              this.$store.getters["nlp/getSkillConfig"]("sentiment_classification") !== null;
     },
     nlp_result() {
-      return this.$store.getters["nlp/getTaskResult"](this.comment_id);
+      return this.$store.getters["nlp/getSkillResult"](this.comment_id);
     }
   },
   methods: {

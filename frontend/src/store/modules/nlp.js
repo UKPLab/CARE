@@ -32,7 +32,7 @@ export default {
                 return null;
             }
         },
-        getTaskResult: (state) => (request_id) => {
+        getSkillResult: (state) => (request_id) => {
             if(request_id in state.result_cache) {
                 return state.result_cache[request_id];
             } else {
@@ -47,7 +47,7 @@ export default {
         SOCKET_nlp_skillConfig: (state, data) => {
             state.configs[data.name] = data;
         },
-        SOCKET_nlp_taskResults: (state, data) => {
+        SOCKET_nlp_skillResults: (state, data) => {
             state.result_cache[data.id] = data.data;
         }
     },
