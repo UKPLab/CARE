@@ -35,8 +35,8 @@
               Download Annotations
       </button>
       <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" :checked="nlp_support" :disabled="!nlp_available" @input="changeNlpSetting()">
         <IconBoostrap name="robot" :disabled="!nlp_support || !nlp_available"/>
+        <input class="form-check-input" ref="nlpSwitch" title="Activate/Deactivate NLP support" type="checkbox" role="switch" :checked="nlp_support" :disabled="!nlp_available" @input="e => changeNlpSetting(e.target.checked)">
      </div>
     </form>
   </Teleport>
@@ -147,8 +147,10 @@ export default {
     decisionSubmit(decision) {
       this.$refs.decisionSubmit.open(decision);
     },
-    changeNlpSetting(){
-      //todo add update logic of settings in store (after merge)
+    changeNlpSetting(newNlpActive){
+      if(this.nlp_support !== newNlpActive){
+        this.$socket.emit("setSetting", {key: "annotator.nlp.activated", value: newNlpActive});
+      }
     },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
@@ -255,8 +257,8 @@ export default {
   min-width: 300px;
 }
 
-IconBoostrap:disabled {
-  color: lightgrey;
+IconBoostrap[disabled]{
+  background-color: darkgrey;
 }
 
 </style>

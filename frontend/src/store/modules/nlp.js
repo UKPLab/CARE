@@ -13,6 +13,7 @@ const getDefaultState = () => {
     return {
         skills: [],
         configs: {},
+        result_cache: {}
     };
 };
 
@@ -31,6 +32,13 @@ export default {
                 return null;
             }
         },
+        getTaskResult: (state) => (request_id) => {
+            if(request_id in state.result_cache) {
+                return state.result_cache[request_id];
+            } else {
+                return null;
+            }
+        }
     },
     mutations: {
         SOCKET_nlp_skillUpdate: (state, data) => {
@@ -39,6 +47,10 @@ export default {
         SOCKET_nlp_skillConfig: (state, data) => {
             state.configs[data.name] = data;
         },
+        //Todo currently wrong message send by broker: should be taskResults
+        SOCKET_nlp_skillResults: (state, data) => {
+            state.result_cache[data.id] = data.data;
+        }
     },
     actions: {}
 };
