@@ -38,11 +38,11 @@
 
 <script>
 import TagSelector from "./TagSelector.vue";
-import IconLoading from "../../../icons/IconLoading.vue";
 
 export default {
   name: "CommentCard",
   components: {TagSelector, IconLoading},
+  emits: ["saveCard"],
   props: {
     comment_id: {
       type: Number,

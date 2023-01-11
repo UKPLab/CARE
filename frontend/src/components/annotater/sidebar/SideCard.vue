@@ -35,17 +35,6 @@ export default {
       default: false,
     },
   },
-  watch: {
-    shake: function (val) {
-      if (val) {
-        //TODO: classList is no element in reference
-        //this.$refs.card.classList.add("shake");
-        //setTimeout(() => this.shake = false, 800);
-      } else {
-        //this.$refs.card.classList.remove("shake");
-      }
-    },
-  },
   computed: {
     hasFooterSlot() {
       return !!this.$slots.footer

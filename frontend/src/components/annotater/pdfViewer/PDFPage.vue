@@ -48,11 +48,12 @@ export default {
       default: 0,
     },
     document_id: {
-      type: String,
+      type: Number,
       required: true
     },
 
   },
+  emits: ["updateVisibility", "destroyPage"],
   directives: {
     ObserveVisibility,
   },

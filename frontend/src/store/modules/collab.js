@@ -16,12 +16,10 @@ export default {
     state: getDefaultState(),
     getters: {
         annotations: (state) => (annotation_id) => {
-            console.log(annotation_id);
             return state.filter(s => s.type === "annotation").filter(s =>   s.annotation_id === annotation_id)
                 .filter(c => (Date.now() - c.timestamp) < 2100)
         },
         comment: (state) => (comment_id) => {
-            console.log(comment_id);
             return state.filter(s => s.type === "comment").filter(s =>   s.comment_id === comment_id)
                 .filter(c => (Date.now() - c.timestamp) < 2100)
         },
