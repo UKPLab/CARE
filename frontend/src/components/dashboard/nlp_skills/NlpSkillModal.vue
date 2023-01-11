@@ -43,9 +43,11 @@ export default {
   },
   mounted() {
   },
-  sockets: {
-    nlp_skillConfig: function (data) {
-      this.loading = false;
+  watch: {
+    config(newVal, oldVal) {
+      if(newVal.length > 0){
+        this.loading = false;
+      }
     }
   },
   computed: {
