@@ -161,7 +161,7 @@ export default {
       return this.reviews[review_i].submitted ? "SUBMITTED" : "PENDING";
     },
     exportAll() {
-      const doc_ids = this.items.map(i => i.hash);
+      const doc_ids = this.items.map(i => i.id);
       this.$refs.export.requestExport(doc_ids, "json");
     },
   }
