@@ -48,7 +48,17 @@ const basicElements = [
         admin: true,
         path: "settings",
         'component': 'Settings'
+    },
+    {
+        name: "Logs",
+        groupId: basicGroups[1].name,
+        icon: 'bug-fill',
+        order: 11,
+        admin: true,
+        path: "logs",
+        'component': 'Log'
     }
+
 ];
 
 //TODO add icons in objects

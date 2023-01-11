@@ -6,7 +6,7 @@ const Socket = require("../Socket.js");
  * @author Dennis Zyska
  * @type {LoggerSocket}
  */
-module.exports = class LoggerSocket extends Socket {
+module.exports = class SubscriptionSocket extends Socket {
     init() {
         this.socket.on("subscribe:document", (data) => {
             this.socket.join("doc:" + data.doc);
