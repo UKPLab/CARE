@@ -116,7 +116,7 @@ export default {
       //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
       setTimeout(() => this.$emit("focus", this.annotation.id), 100);
       this.shake = true;
-      setTimeout(() => this.shake = false, 1000);
+      setTimeout(() => this.shake = false, 1500);
     }
   },
   unmounted() {
