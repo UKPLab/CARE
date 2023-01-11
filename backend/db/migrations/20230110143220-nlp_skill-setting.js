@@ -2,22 +2,20 @@
 
 const settings = [
     {
-        key: "dashboard.navigation.component.default",
-        value: "Home",
-        description: "The default component to display in the dashboard"
+        key: "annotator.nlp.activated",
+        value: true,
+        description: "Indicates whether NLP support is activated in the annotation view."
     },
-    {key: "tags.tagSet.default", value: "1", description: "The default tagset to use for new annotations"},
 ]
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        const groups = await queryInterface.bulkInsert('setting',
+        await queryInterface.bulkInsert('setting',
             settings.map(t => {
                 t['createdAt'] = new Date();
                 t['updatedAt'] = new Date();
                 return t;
             }), {returning: true});
-
     },
 
     async down(queryInterface, Sequelize) {
