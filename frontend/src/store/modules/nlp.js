@@ -11,7 +11,9 @@ Source: -
 
 const getDefaultState = () => {
     return {
-        report: null
+        skills: [],
+        configs: {},
+        result_cache: {}
     };
 };
 
@@ -20,16 +22,34 @@ export default {
     strict: true,
     state: getDefaultState(),
     getters: {
-        getReport: state => {
-            return state["report"]
+        getAllSkills: (state) => () => {
+            return state.skills;
+        },
+        getSkillConfig: (state) => (skill_name) => {
+            if(skill_name in state.configs) {
+                return state.configs[skill_name];
+            } else {
+                return null;
+            }
+        },
+        getSkillResult: (state) => (request_id) => {
+            if(request_id in state.result_cache) {
+                return state.result_cache[request_id];
+            } else {
+                return null;
+            }
         }
     },
     mutations: {
-        SOCKET_nlp_report_res: (state, message) => {
-            if (message.success) {
-                state.report = message.report;
-            }
+        SOCKET_nlp_skillUpdate: (state, data) => {
+            state.skills = data;
         },
+        SOCKET_nlp_skillConfig: (state, data) => {
+            state.configs[data.name] = data;
+        },
+        SOCKET_nlp_skillResults: (state, data) => {
+            state.result_cache[data.id] = data.data;
+        }
     },
     actions: {}
 };
