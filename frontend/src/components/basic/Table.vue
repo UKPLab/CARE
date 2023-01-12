@@ -27,9 +27,23 @@
           <span v-if="c.type === 'icon'">
             <LoadIcon :iconName="r[c.key]"></LoadIcon>
           </span>
+          <TableButton v-else-if="c.type === 'button'"
+                       :icon="r[c.key].icon"
+                       :title="r[c.key].title"
+                       :options="r[c.key].options"
+                       :onClick="r[c.key].onClick"
+                       :params="[r]"
+          ></TableButton>
+          <TableButtonGroup v-else-if="c.type === 'button-group'"
+                            :buttons="r[c.key]"
+                            :params="[r]">
+          </TableButtonGroup>
           <span v-else>
                {{ r[c.key] }}
           </span>
+        </span>
+        <span v-else>
+          -
         </span>
       </td>
     </tr>
@@ -62,10 +76,12 @@
 
 <script>
 import LoadIcon from "../../icons/LoadIcon.vue";
+import TableButton from "./TableButton.vue";
+import TableButtonGroup from "./TableButtonGroup.vue"
 
 export default {
   name: "Table.vue",
-  components: {LoadIcon},
+  components: {TableButtonGroup, LoadIcon, TableButton},
   props: {
     data: {
       type: Array,
