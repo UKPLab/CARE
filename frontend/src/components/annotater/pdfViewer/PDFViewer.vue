@@ -1,10 +1,11 @@
 <template>
   <div id="pdfContainer" class="has-transparent-text-layer">
     <PDFPage
-        v-for="page in pdf.pages"
-        :key="page.pageNumber"
-        :pageNumber="page.pageNumber"
+        v-for="page in pdf.pageCount"
+        :key="page"
+        :pageNumber="page"
         :pdf="pdf"
+        :visiblePages="visiblePages"
         :document_id="document_id"
         class="scrolling-page"
         @updateVisibility="updateVisibility"
@@ -51,12 +52,13 @@ export default {
       pdf: new PDF(),
       observer: undefined,
       pdfContainer: null,
+      visiblePages: [],
     }
   },
   watch: {
-    "pdf.pageCount"() {
+    /*"pdf.pageCount"() {
       this.pdf.fetchPages();
-    },
+    },*/
     scrollTo() {
       if (this.scrollTo !== null) {
         this.scrollTo = null;
@@ -74,9 +76,15 @@ export default {
       loadingTask.promise
           .then((pdf) => {
             this.pdf.setPDF(pdf);
+            console.log(this.pdf.pageCount)
           })
           .catch(response => {
             console.log("Error loading PDF: " + response);
+            this.eventBus.emit('toast', {
+              title: "PDF Loading Error",
+              message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
+              variant: "danger"});
+
             this.$router.push("/index.html");
           });
     }
@@ -87,9 +95,15 @@ export default {
   methods: {
     updateVisibility(page) {
       if (page.isVisible) {
-        //TODO: also working to fetch further page on the fly, but can be optimized!
-        this.pdf.fetchPages(page.pageNumber);
+        if (!this.visiblePages.includes(page.pageNumber)) {
+          this.visiblePages.push(page.pageNumber);
+        }
+      } else {
+        if (this.visiblePages.includes(page.pageNumber)) {
+          this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
+        }
       }
+      console.log(this.visiblePages);
     },
     /*fetchPages(currentPage) {
       this.pdf.fetchPages(currentPage);

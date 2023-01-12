@@ -7,8 +7,12 @@
         leading: 'visible',
       },
     }" class="pageContainer">
+
     <div :id="'canvas-wrapper-' + pageNumber" class="canvasWrapper">
-      <canvas :id="'pdf-canvas-' + pageNumber" class="pdf-page"></canvas>
+      <Loader :loading="!isRendered" class="mt-4" :text="'Loading Page ' + pageNumber"></Loader>
+      <canvas :id="'pdf-canvas-' + pageNumber" class="pdf-page">
+
+      </canvas>
     </div>
     <div :id="'text-layer-' + pageNumber" class="textLayer">
 
@@ -34,11 +38,12 @@ import Highlights from "./Highlights.vue";
 import {createPlaceholder, removePlaceholder} from "../../../assets/anchoring/placeholder";
 import {TextPosition, TextRange} from "../../../assets/anchoring/text-range";
 import {matchQuote} from '../../../assets/anchoring/match-quote';
+import Loader from "../../basic/Loader.vue";
 
 
 export default {
   name: 'PDFPage',
-  components: {Highlights},
+  components: {Loader, Highlights},
   props: {
     pdf: {
       type: Object
@@ -51,7 +56,10 @@ export default {
       type: Number,
       required: true
     },
-
+    visiblePages: {
+      type: Array,
+      required: true
+    }
   },
   emits: ["updateVisibility", "destroyPage"],
   directives: {
@@ -88,10 +96,12 @@ export default {
       resizeOb: undefined,
       isRendered: false,
       scale: null,
+      currentWidth: 0
     };
   },
   mounted() {
-    this.init()
+    this.setA4();
+    this.renderCheck();
     this.resizeOb = new ResizeObserver(debounce(this.resizeHandler, 1000));
     this.resizeOb.observe(document.getElementById('canvas-wrapper-' + this.pageNumber));
   },
@@ -116,8 +126,36 @@ export default {
     },
   },
   methods: {
+    renderCheck() {
+      let minPage = Math.max(Math.min(...this.visiblePages) - 3, 1);
+      let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageNumber);
+      console.log(minPage);
+      console.log(this.isVisible);
+      console.log(this.pageNumber);
+      console.log((this.pageNumber >= minPage && this.pageNumber <= maxPage))
+      console.log("visbility")
+      if ((this.isVisible || (this.pageNumber >= minPage && this.pageNumber <= maxPage)) && !this.isRendered) {
+        this.init();
+      }
+    },
+    visibilityChanged(isVisible, entry) {
+      this.isVisible = isVisible;
+      this.$emit('updateVisibility', {pageNumber: this.pageNumber, isVisible: isVisible});
+      this.renderCheck();
+    },
+    setA4() {
+      const canvas = document.getElementById('pdf-canvas-' + this.pageNumber);
+      const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
+      const width = wrapper.getBoundingClientRect().width;
+      const height = width * 1.4142;
+      canvas.height = height;
+      canvas.width = width;
+      this.currentWidth = width;
+    },
     init() {
       this.pdf.getPage(this.pageNumber).then((page) => {
+
+        console.log(page);
         const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber);
         const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
 
@@ -128,29 +166,21 @@ export default {
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
-        if (this.isVisible || !this.isVisible) {
-          // stop rendering and wait for rerendering
-          if (this.renderTask) {
-            this.destroyRenderTask();
-          }
-          this.renderPage(page);
+        if (this.renderTask) {
+          this.destroyRenderTask();
         }
+        this.renderPage(page);
+
       });
     },
-    visibilityChanged(isVisible, entry) {
-      this.isVisible = isVisible;
-      if (this.isVisible && !this.isRendered) {
-        this.init();
-      }
-      this.$emit('updateVisibility', {pageNumber: this.pageNumber, isVisible: isVisible});
-
-      if (this.isVisible) {
-        this.$socket.emit("stats", {action: "pageView", data: {pageNumber: this.pageNumber}});
-      }
-    },
     resizeHandler(event) {
-      //if(this.isRendered) this.destroyPage();
-      //this.init()
+      const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
+      const width = wrapper.getBoundingClientRect().width;
+      if (width !== this.currentWidth) {
+        if (this.isRendered) this.destroyPage();
+        this.currentWidth = width;
+        this.renderCheck()
+      }
     },
     renderPage(page) {
       if (this.renderTask) return;
