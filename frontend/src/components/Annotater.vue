@@ -30,7 +30,7 @@
                     type="button"
                     aria-haspopup="true"
                     aria-expanded="false"
-                    @click="downloadAnnotations('txt')"
+                    @click="downloadAnnotations('json')"
                     >
               Download Annotations
       </button>

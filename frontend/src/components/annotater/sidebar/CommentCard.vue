@@ -38,7 +38,6 @@
 
 <script>
 import TagSelector from "./TagSelector.vue";
-import IconLoading from "../../../icons/IconLoading.vue";
 
 export default {
   name: "CommentCard",
