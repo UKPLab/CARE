@@ -1,9 +1,9 @@
 <template>
   <div class="text-center mt-5">
     <div class="spinner-border" role="status">
-      <span class="visually-hidden">Loading...</span>
+      <span class="visually-hidden">{{ text }}</span>
     </div>
-    <div>Loading Dashboard...</div>
+    <div>{{ text }}</div>
   </div>
 </template>
 
@@ -16,7 +16,14 @@ Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 export default {
-  name: "Loading.vue"
+  name: "Loading.vue",
+  props: {
+    text: {
+      type: String,
+      default: "Loading...",
+      required: false,
+    }
+  }
 }
 </script>
 
