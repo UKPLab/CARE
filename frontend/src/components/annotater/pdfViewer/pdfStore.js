@@ -11,12 +11,14 @@ import _ from 'lodash';
 
 // make sure, it's not been reactive!
 const state = {pdf: undefined};
+const pages = {};
 
 export class PDF {
 
     constructor(BUFFER_PAGES = 10) {
+        this.currentBuffer = [];
         this.pageCount = 0;
-        this.pages = [];
+        //this.pages = [];
         this.cursor = 0;
         this.pageTextCache = new Map();
         this.renderingDone = new Map();
@@ -33,8 +35,21 @@ export class PDF {
         this.pageCount = state.pdf.numPages;
     }
 
-    getPage(pageNumber) {
-        return state.pdf.getPage(pageNumber);
+    async getPage(pageNumber) {
+
+        if (!(pageNumber in pages)) {
+
+            //Buffer handling
+            if (this.currentBuffer.length > this.BUFFER_PAGES) {
+                delete pages[this.currentBuffer.shift()];
+            }
+            this.currentBuffer.push(pageNumber);
+
+            await state.pdf.getPage(pageNumber).then((page) => {
+                pages[pageNumber] = page;
+            });
+        }
+        return pages[pageNumber];
     }
 
     fetchPages(currentPage = 0) {
@@ -50,7 +65,7 @@ export class PDF {
 
         this.getPages(startPage, endPage)
             .then((pages) => {
-                const deleteCount = 0;
+                const deleteCount = 0; // 0 means insert
                 this.pages.splice(startIndex, deleteCount, ...pages);
                 return this.pages;
             }).catch((response) => {
