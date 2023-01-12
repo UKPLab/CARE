@@ -33,10 +33,10 @@
         <tr v-for="tagSet in tagSets" :key="tagSet.id">
           <td>
 
-            <LoadIcon v-if="tagSet.id === selectedTagset" :size="16" iconName="IconStarFill"
+            <LoadIcon v-if="tagSet.id === selectedTagset" :size="16" iconName="star-fill"
                       style="color:yellowgreen;"/>
 
-            <LoadIcon v-else :size="16" iconName="IconStar" role="button" v-tooltip title="Select tagset as default"
+            <LoadIcon v-else :size="16" iconName="star" role="button" v-tooltip title="Select tagset as default"
                       v-on:click="selectAsDefault(tagSet.id)"/>
 
           </td>
