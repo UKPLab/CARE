@@ -1,46 +1,19 @@
 <template>
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <span>Skills</span>
-
-      <div>
-        <button class="btn btn-sm btn-secondary me-1" type="button" @click="load()" title="Refresh">
-          <IconBoostrap name="arrow-clockwise"/>
-        </button>
-      </div>
-    </div>
-    <div class="card-body">
-      <span v-if="items.length === 0">
-        No skills available...
-      </span>
-      <table v-else class="table table-hover">
-        <thead>
-        <tr>
-          <th v-for="field in fields" scope="col">{{ field.name }}</th>
-          <th scope="col">Manage</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="item in items" :key="item.name">
-          <td v-for="field in fields">{{ item[field.col] }}</td>
-          <td>
-            <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
-                      title="Details..." type="button" @click="getDetails(item.name)">
-                <IconBoostrap name="search-heart"></IconBoostrap>
-                <span class="visually-hidden">Details</span>
-              </button>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
+  <Card title="Skills">
+    <template v-slot:headerElements>
+      <button class="btn btn-sm me-1" type="button" @click="load()" title="Refresh">
+        <LoadIcon iconName="arrow-clockwise" @click=""></LoadIcon>
+      </button>
+    </template>
+    <template v-slot:body>
+      <Table :columns="columns" :data="data" :options="options"></Table>
+    </template>
+  </Card>
   <NlpSkillModal ref="nlpSkillModal"></NlpSkillModal>
 </template>
 
 <script>
-/* NLPSkills.vue - shows the list of availble nlp skills to admins
+/* NLPSkills.vue - shows the list of available nlp skills to admins
 
 This component loads all available skills in a table.
 
@@ -48,18 +21,29 @@ Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 
-import IconBoostrap from "../../icons/IconBootstrap.vue";
+import LoadIcon from "../../icons/LoadIcon.vue";
 import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
+import Table from "../basic/Table.vue"
+import Card from "../basic/Card.vue"
 
 export default {
   name: "NlpSkills",
-  components: {NlpSkillModal, IconBoostrap},
+  components: {Table, Card, NlpSkillModal, LoadIcon},
   data() {
     return {
-      fields: [
-        {name: "Name", col: "name"},
-        {name: "# Nodes", col: "nodes"}
-      ]
+      options: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        pagination: 10,
+      },
+      columns: [
+        {name: "Name", key: "name"},
+        {name: "# Nodes", key: "nodes"},
+        {name: "Details", key: "details", type: "button"},
+      ],
     }
   },
   props: {
@@ -72,17 +56,30 @@ export default {
     this.load();
   },
   computed: {
-    items() {
-      return this.$store.getters["nlp/getAllSkills"]();
+    data() {
+      return this.$store.getters["nlp/getAllSkills"]().map(s => {
+        s.details = {
+          icon: "search-heart",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-secondary": true,
+            }
+          },
+          title: "Show config...",
+          onClick: this.getDetails,
+        };
+        return s;
+      });
     },
   },
   methods: {
     load() {
       this.$socket.emit("nlp_skillGetAll");
     },
-    getDetails(skill_name) {
-      this.$refs["nlpSkillModal"].openModal(skill_name);
-    }
+    getDetails(skill_row) {
+      this.$refs["nlpSkillModal"].openModal(skill_row["name"]);
+    },
   }
 }
 </script>

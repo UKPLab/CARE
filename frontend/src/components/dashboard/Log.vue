@@ -36,12 +36,12 @@ export default {
   },
   sockets: {
     logAll: function (data) {
-      console.log(data);
       this.data = data.map(d => {
         d.icon = "bug";
         if (d.userId === null) {
           d.userId = "System";
         }
+
         return d;
       });
     }
