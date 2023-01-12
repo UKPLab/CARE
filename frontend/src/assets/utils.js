@@ -16,7 +16,7 @@ export function objectsToCSV(objs) {
 }
 
 export function objectsToJSON(objs) {
-    return JSON.stringify(objs);
+    return JSON.stringify(objs, null, 2);
 }
 
 export function objectsToTXT(objs) {
