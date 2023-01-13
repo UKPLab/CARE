@@ -1,4 +1,5 @@
 <template>
+  <div>
   <div :id="'page-container-' + pageNumber"
        v-observe-visibility="{
       callback: visibilityChanged,
@@ -7,19 +8,17 @@
         leading: 'visible',
       },
     }" class="pageContainer">
-
+  <canvas v-show="!isRendered" :id="'placeholder-canvas-' + pageNumber"></canvas>
     <div :id="'canvas-wrapper-' + pageNumber" class="canvasWrapper">
-      <Loader :loading="!isRendered" class="mt-4" :text="'Loading Page ' + pageNumber"></Loader>
-      <canvas :id="'pdf-canvas-' + pageNumber" class="pdf-page">
+      <Loader :loading="!isRendered" class="pageLoader" :text="'Loading Page ' + pageNumber"></Loader>
 
-      </canvas>
+      <canvas :style="{'visibility':(isRendered)?'visible':'hidden'}" :id="'pdf-canvas-' + pageNumber"
+              class="pdf-page"></canvas>
     </div>
-    <div :id="'text-layer-' + pageNumber" class="textLayer">
-
-    </div>
+    <div :id="'text-layer-' + pageNumber" class="textLayer"></div>
   </div>
   <Highlights :page_id="pageNumber" ref="highlights" :document_id="document_id"/>
-
+  </div>
 </template>
 
 <script>
@@ -35,9 +34,7 @@ import {ObserveVisibility} from 'vue3-observe-visibility'
 import debounce from 'lodash.debounce';
 import Highlights from "./Highlights.vue";
 
-import {createPlaceholder, removePlaceholder} from "../../../assets/anchoring/placeholder";
-import {TextPosition, TextRange} from "../../../assets/anchoring/text-range";
-import {matchQuote} from '../../../assets/anchoring/match-quote';
+import {Anchoring} from "../../../assets/pdfViewer/anchor.js";
 import Loader from "../../basic/Loader.vue";
 
 
@@ -56,8 +53,8 @@ export default {
       type: Number,
       required: true
     },
-    visiblePages: {
-      type: Array,
+    render: {
+      type: Boolean,
       required: true
     }
   },
@@ -66,6 +63,9 @@ export default {
     ObserveVisibility,
   },
   watch: {
+    render() {
+      this.init();
+    },
     annotations(newVal, oldVal) {
       if (this.isRendered)
         this.add_anchors();
@@ -92,24 +92,25 @@ export default {
   data() {
     return {
       renderTask: undefined,
-      isVisible: false,
       resizeOb: undefined,
       isRendered: false,
       scale: null,
-      currentWidth: 0
+      currentWidth: 0,
+      anchor: null
     };
   },
   mounted() {
     this.setA4();
-    this.renderCheck();
+    this.anchor = new Anchoring(this.pdf, this.pageNumber);
     this.resizeOb = new ResizeObserver(debounce(this.resizeHandler, 1000));
     this.resizeOb.observe(document.getElementById('canvas-wrapper-' + this.pageNumber));
+    this.init();
   },
   beforeUnmount() {
     if (this.resizeOb) {
       this.resizeOb.disconnect();
     }
-    this.destroyPage(this.pageNumber);
+    this.destroyPage();
   },
   unmounted() {
     this.remove_anchors();
@@ -118,33 +119,16 @@ export default {
     annotations() {
       return this.$store.getters['anno/getPageAnnotations'](this.document_id, this.pageNumber);
     },
-    /*annotationTags() {
-      return this.$store.getters['anno/getAnnotationTags'](this.document_id);
-    },*/
     anchors() {
       return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id, this.pageNumber))
     },
   },
   methods: {
-    renderCheck() {
-      let minPage = Math.max(Math.min(...this.visiblePages) - 3, 1);
-      let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageNumber);
-      console.log(minPage);
-      console.log(this.isVisible);
-      console.log(this.pageNumber);
-      console.log((this.pageNumber >= minPage && this.pageNumber <= maxPage))
-      console.log("visbility")
-      if ((this.isVisible || (this.pageNumber >= minPage && this.pageNumber <= maxPage)) && !this.isRendered) {
-        this.init();
-      }
-    },
     visibilityChanged(isVisible, entry) {
-      this.isVisible = isVisible;
       this.$emit('updateVisibility', {pageNumber: this.pageNumber, isVisible: isVisible});
-      this.renderCheck();
     },
     setA4() {
-      const canvas = document.getElementById('pdf-canvas-' + this.pageNumber);
+      const canvas = document.getElementById('placeholder-canvas-' + this.pageNumber);
       const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
       const width = wrapper.getBoundingClientRect().width;
       const height = width * 1.4142;
@@ -153,25 +137,28 @@ export default {
       this.currentWidth = width;
     },
     init() {
-      this.pdf.getPage(this.pageNumber).then((page) => {
+      if (this.render && !this.isRendered) {
+        this.pdf.getPage(this.pageNumber).then((page) => {
 
-        console.log(page);
-        const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber);
-        const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
+          console.log(page);
+          const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber);
+          const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
 
-        this.scale = wrapper.getBoundingClientRect().width /
-            page.getViewport({scale: 1.0}).width;
+          this.scale = wrapper.getBoundingClientRect().width /
+              page.getViewport({scale: 1.0}).width;
 
-        const viewport = page.getViewport({scale: this.scale});
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
+          const viewport = page.getViewport({scale: this.scale});
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
 
-        if (this.renderTask) {
-          this.destroyRenderTask();
-        }
-        this.renderPage(page);
+          if (this.renderTask) {
+            this.destroyRenderTask();
+          }
+          this.renderPage(page);
 
-      });
+        });
+      }
+
     },
     resizeHandler(event) {
       const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
@@ -179,7 +166,7 @@ export default {
       if (width !== this.currentWidth) {
         if (this.isRendered) this.destroyPage();
         this.currentWidth = width;
-        this.renderCheck()
+        this.init()
       }
     },
     renderPage(page) {
@@ -215,8 +202,13 @@ export default {
         })
 
         this.isRendered = true;
+
         this.pdf.renderingDone.set(page.pageNumber, true);
         this.add_anchors();
+
+        console.log("Rendering finished");
+        console.log(this.annotations);
+
 
       }).catch(response => {
         this.destroyRenderTask();
@@ -235,11 +227,18 @@ export default {
       this.renderTask = undefined;
     },
     add_anchors() {
+      console.log("add anchors")
+      console.log(this.annotations);
+      console.log(this.pageNumber);
       this.annotations.filter(anno => anno.anchors == null).forEach(async anno => {
-        anno.anchors = await Promise.all(anno.selectors.target.map(this.locateAnchor));
+        anno.anchors = await Promise.all(anno.selectors.target.map((data) => this.anchor.locateAnchor(data)));
       });
+      console.log(this.annotations);
     },
     remove_anchors() {
+      console.log("remove anchors")
+      console.log(this.annotations);
+      console.log(this.pageNumber);
       this.annotations.forEach(anno => anno.anchors = null);
     },
     _updateAnnotationLayerVisibility() {
@@ -252,314 +251,45 @@ export default {
           !selection.isCollapsed
       );
     },
-    async locateAnchor(target) {
-      /** @type {Anchor} */
-      let anchor;
-      try {
-
-        let quotePositionCache = new Map();
-
-        const anchorByPosition = async (pageIndex, start, end) => {
-
-          if (this.pdf.renderingDone.get(pageIndex + 1)) {
-            const root = document.getElementById('text-layer-' + (pageIndex + 1));
-
-            const startPos = new TextPosition(root, start);
-            const endPos = new TextPosition(root, end);
-            return new TextRange(startPos, endPos).toRange();
-          }
-
-          // The page has not been rendered yet. Create a placeholder element and
-          // anchor to that instead.
-          const placeholder = createPlaceholder(document.getElementById('page-container-' + (pageIndex + 1)));
-          const range = document.createRange();
-          range.setStartBefore(placeholder);
-          range.setEndAfter(placeholder);
-          return range;
-        }
-
-        const quotePositionCacheKey = (quote, pos) => {
-          return `${quote}:${pos}`;
-        }
-
-        const stripSpaces = (str) => {
-          const offsets = [];
-          let stripped = '';
-
-          for (let i = 0; i < str.length; i++) {
-            const char = str[i];
-            if (char === ' ' || char === '\t' || char === '\n') {
-              continue;
-            }
-            stripped += char;
-            offsets.push(i);
-          }
-
-          return [stripped, offsets];
-        }
-
-        const findPageByOffset = async (offset) => {
-
-
-          let pageStartOffset = 0;
-          let pageEndOffset = 0;
-          let text = '';
-
-          for (let i = 0; i < this.pdf.pageCount; i++) {
-            text = await this.pdf.getPageTextContent(i);
-            if (text) {
-              pageStartOffset = pageEndOffset;
-              pageEndOffset += text.length;
-
-              if (pageEndOffset >= offset) {
-                return {index: i, offset: pageStartOffset, text};
-              }
-            }
-          }
-
-          // If the offset is beyond the end of the document, just pretend it was on
-          // the last page.
-          return {index: this.pdf.pageCount - 1, offset: pageStartOffset, text};
-        }
-
-        const anchorQuote = async (quoteSelector, positionHint) => {
-          // Determine which pages to search and in what order. If we have a position
-          // hint we'll try to use that. Otherwise we'll just search all pages in order.
-          const pageCount = this.pdf.pageCount;
-          const pageIndexes = Array(pageCount)
-              .fill(0)
-              .map((_, i) => i);
-
-          let expectedPageIndex;
-          let expectedOffsetInPage;
-
-          if (positionHint) {
-            const {index, offset} = await findPageByOffset(positionHint);
-            expectedPageIndex = index;
-            expectedOffsetInPage = positionHint - offset;
-
-            // Sort pages by distance from the page where we expect to find the quote,
-            // based on the position hint.
-            pageIndexes.sort((a, b) => {
-              const distA = Math.abs(a - index);
-              const distB = Math.abs(b - index);
-              return distA - distB;
-            });
-          }
-
-          // Search pages for the best match, ignoring whitespace differences.
-          const [strippedPrefix] =
-              quoteSelector.prefix !== undefined ? stripSpaces(quoteSelector.prefix) : [];
-          const [strippedSuffix] =
-              quoteSelector.suffix !== undefined ? stripSpaces(quoteSelector.suffix) : [];
-          const [strippedQuote] = stripSpaces(quoteSelector.exact);
-
-          let bestMatch;
-          for (let page of pageIndexes) {
-            const text = await this.pdf.getPageTextContent(page);
-
-            if (!text) continue;
-            const [strippedText, offsets] = stripSpaces(text);
-
-
-            // Determine expected offset of quote in current page based on position hint.
-            let strippedHint;
-            if (expectedPageIndex !== undefined && expectedOffsetInPage !== undefined) {
-              let hint;
-              if (page < expectedPageIndex) {
-                hint = text.length; // Prefer matches closer to end of page.
-              } else if (page === expectedPageIndex) {
-                hint = expectedOffsetInPage;
-              } else {
-                hint = 0; // Prefer matches closer to start of page.
-              }
-
-              // Convert expected offset in original text into offset into stripped text.
-              strippedHint = 0;
-              while (strippedHint < offsets.length && offsets[strippedHint] < hint) {
-                ++strippedHint;
-              }
-            }
-
-            const match = matchQuote(strippedText, strippedQuote, {
-              prefix: strippedPrefix,
-              suffix: strippedSuffix,
-              hint: strippedHint,
-            });
-
-            if (!match) {
-              continue;
-            }
-
-            if (!bestMatch || match.score > bestMatch.match.score) {
-              bestMatch = {
-                page,
-                match: {
-                  start: offsets[match.start],
-
-                  // `match.end` is the offset one past the last character of the match
-                  // in the stripped text. We need the offset one past the corresponding
-                  // character in the original text.
-                  //
-                  // We assume here that matches returned by `matchQuote` must have
-                  // be non-empty, so `match.end` > `match.start`.
-                  end: offsets[match.end - 1] + 1,
-
-                  score: match.score,
-                },
-              };
-
-              // If we find a very good match, stop early.
-              //
-              // There is a tradeoff here between optimizing search performance and
-              // ensuring that we have found the best match in the document.
-              //
-              // The current heuristics are that we require an exact match for the quote
-              // and either the preceding or following context. The context matching
-              // helps to avoid incorrectly stopping the search early if the quote is
-              // a word or phrase that is common in the document.
-              const exactQuoteMatch =
-                  strippedText.slice(match.start, match.end) === strippedQuote;
-
-              const exactPrefixMatch =
-                  strippedPrefix !== undefined &&
-                  strippedText.slice(
-                      Math.max(0, match.start - strippedPrefix.length),
-                      match.start
-                  ) === strippedPrefix;
-
-              const exactSuffixMatch =
-                  strippedSuffix !== undefined &&
-                  strippedText.slice(match.end, strippedSuffix.length) === strippedSuffix;
-
-              const hasContext =
-                  strippedPrefix !== undefined || strippedSuffix !== undefined;
-
-              if (
-                  exactQuoteMatch &&
-                  (exactPrefixMatch || exactSuffixMatch || !hasContext)
-              ) {
-                break;
-              }
-            }
-          }
-
-          if (bestMatch) {
-            const {page, match} = bestMatch;
-
-            // If we found a match, optimize future anchoring of this selector in the
-            // same session by caching the match location.
-            if (positionHint) {
-              const cacheKey = quotePositionCacheKey(quoteSelector.exact, positionHint);
-              quotePositionCache.set(cacheKey, {
-                pageIndex: page,
-                anchor: match,
-              });
-            }
-
-            // Convert the (start, end) position match into a DOM range.
-            return anchorByPosition(page, match.start, match.end);
-          }
-
-          throw new Error('Quote not found');
-        }
-
-        const PDFanchor = async (root, selectors) => {
-          const quote = /** @type {TextQuoteSelector|undefined} */ (
-              selectors.find(s => s.type === 'TextQuoteSelector')
-          );
-
-          // The quote selector is required in order to check that text position
-          // selector results are still valid.
-          if (!quote) {
-            throw new Error('No quote selector found');
-          }
-
-          const position = /** @type {TextPositionSelector|undefined} */ (
-              selectors.find(s => s.type === 'TextPositionSelector')
-          );
-
-          if (position) {
-            // If we have a position selector, try using that first as it is the fastest
-            // anchoring method.
-            try {
-              const {index, offset, text} = await findPageByOffset(position.start);
-              const start = position.start - offset;
-              const end = position.end - offset;
-
-              const matchedText = text.substring(start, end);
-              if (quote.exact !== matchedText) {
-                throw new Error('quote mismatch');
-              }
-
-              const range = await anchorByPosition(index, start, end);
-              return range;
-            } catch {
-              // Fall back to quote selector
-            }
-
-            // If anchoring with the position failed, check for a cached quote-based
-            // match using the quote + position as a cache key.
-            try {
-              const cacheKey = quotePositionCacheKey(quote.exact, position.start);
-              const cachedPos = quotePositionCache.get(cacheKey);
-              if (cachedPos) {
-                const {pageIndex, anchor} = cachedPos;
-                const range = await anchorByPosition(
-                    pageIndex,
-                    anchor.start,
-                    anchor.end
-                );
-                return range;
-              }
-            } catch {
-              // Fall back to uncached quote selector match
-            }
-          }
-
-          return anchorQuote(quote, position?.start);
-        }
-
-        const range = await PDFanchor(
-            document.getElementById('page-container-' + this.pageNumber),
-            target.selector
-        );
-
-        // Convert the `Range` to a `TextRange` which can be converted back to
-        // a `Range` later. The `TextRange` representation allows for highlights
-        // to be inserted during anchoring other annotations without "breaking"
-        // this anchor.
-        const textRange = TextRange.fromRange(range);
-        anchor = {target, range: textRange};
-      } catch (err) {
-        anchor = {target};
-        console.log("Error getting anchors: " + err);
-      }
-      return anchor;
-
-    },
-    handle_tagchange(annotation) {
+    update_highlights(anchors) {
       // skip un-anchored annotations
-      if (annotation.anchors === null || annotation.anchors === undefined || annotation.anchors.length === 0) {
+      if (anchors === null || anchors === undefined || anchors.length === 0) {
         return;
       }
 
       // redraw highlights
-      this.$refs["highlights"].update_highlights(annotation.anchors);
+      this.$refs["highlights"].update_highlights(anchors);
     },
     destroyPage() {
       // PDFPageProxy#_destroy
       // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
       this.$emit('destroyPage', {pageNumber: this.pageNumber});
-      this.destroyRenderTask();
-    },
-  },
+      //this.$refs["highlights"].removeAllHighlights( document.getElementById('text-layer-' + this.pageNumber));
 
-};
+      this.remove_anchors();
+      this.destroyRenderTask();
+      //this.$refs["highlights"].removeAllHighlights( document.getElementById('text-layer-' + this.pageNumber));
+    },
+  }
+  ,
+
+}
+;
 </script>
 <style>
 .pageContainer {
   position: relative;
   border-bottom-style: solid;
+}
+
+.pageLoader {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%)
+}
+
+.canvasWrapper {
+  position: relative;
 }
 </style>

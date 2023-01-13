@@ -2,10 +2,10 @@
   <div id="pdfContainer" class="has-transparent-text-layer">
     <PDFPage
         v-for="page in pdf.pageCount"
-        :key="page"
+        :key="'PDFPageKey' + page"
         :pageNumber="page"
         :pdf="pdf"
-        :visiblePages="visiblePages"
+        :render="renderCheck[page - 1]"
         :document_id="document_id"
         class="scrolling-page"
         @updateVisibility="updateVisibility"
@@ -52,13 +52,10 @@ export default {
       pdf: new PDF(),
       observer: undefined,
       pdfContainer: null,
-      visiblePages: [],
+      visiblePages: [1],
     }
   },
   watch: {
-    /*"pdf.pageCount"() {
-      this.pdf.fetchPages();
-    },*/
     scrollTo() {
       if (this.scrollTo !== null) {
         this.scrollTo = null;
@@ -66,9 +63,12 @@ export default {
     },
   },
   computed: {
-    /*pagesLength() {
-      return this.pdf.pages.length;
-    },*/
+    renderCheck() {
+      let minPage = Math.max(Math.min(...this.visiblePages) - 3, 1);
+      let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
+
+      return [...Array(this.pdf.pageCount).keys()].map((page) => (page + 1 >= minPage && page + 1 <= maxPage));
+    },
   },
   sockets: {
     pdf: function (data) {
@@ -76,7 +76,6 @@ export default {
       loadingTask.promise
           .then((pdf) => {
             this.pdf.setPDF(pdf);
-            console.log(this.pdf.pageCount)
           })
           .catch(response => {
             console.log("Error loading PDF: " + response);
@@ -103,11 +102,7 @@ export default {
           this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
         }
       }
-      console.log(this.visiblePages);
     },
-    /*fetchPages(currentPage) {
-      this.pdf.fetchPages(currentPage);
-    },*/
     ...mapMutations({
       toggleSidebar: "anno/TOGGLE_SIDEBAR"
     }),
