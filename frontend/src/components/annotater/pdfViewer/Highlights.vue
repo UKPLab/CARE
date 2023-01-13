@@ -33,7 +33,7 @@ export default {
   watch: {
     annotations(newVal, oldVal) {
       //Remove highlights of deleted anchors
-      oldVal.filter(anno => !newVal.includes(anno))
+      oldVal.filter(anno => !newVal.includes(anno)) //.filter(anno => anno.anchors !== null)
           .forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor)
               .forEach(anchor => this.removeHighlights(anchor.highlights)))
 
@@ -53,7 +53,7 @@ export default {
     getColor(tag_id) {
       return this.$store.getters['tag/getColor'](tag_id);
     },
-    highlight(annotation) {
+      highlight(annotation) {
       for (let anchor of annotation.anchors) {
         const range = resolveAnchor(anchor);
         if (!range) {

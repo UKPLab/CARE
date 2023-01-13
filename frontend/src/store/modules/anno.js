@@ -26,6 +26,13 @@ export default {
             return state.annotations.filter(anno => !anno.deleted).find(x => x.id === annotation_id);
         },
         getPageAnnotations: (state) => (document_id, page_id) => {
+            if(page_id === 1){
+                console.log("not deleted", state.annotations.filter(anno => !anno.deleted));
+                console.log("and for doc", state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.documentId === document_id));
+                console.log("and with selector", state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.documentId === document_id)
+                .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id));
+            }
+
             return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.documentId === document_id)
                 .filter(annotation => annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === page_id);
         },
