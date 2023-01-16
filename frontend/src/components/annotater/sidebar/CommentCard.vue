@@ -8,6 +8,7 @@
         </textarea>
     </div>
     <div v-else-if="comment.text != null && comment.text.length > 0">
+      <span v-if="nlp_active">&#128578;</span>
       {{ comment.text }}
     </div>
     <div v-else>
@@ -35,12 +36,27 @@ export default {
       default: false,
     },
   },
+  data() {
+    return {
+      awaitingNlpResult: false
+    }
+  },
+  sockets: {
+    nlp_taskResults: function (data) {
+      this.awaitingNlpResult = false;
+
+    }
+  },
   computed: {
     comment() {
       return this.$store.getters["comment/getComment"](this.comment_id);
     },
     user_id() {
       return this.$store.getters["auth/getUserId"];
+    },
+    nlp_active() {
+      return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true" &&
+             this.$store.getters["nlp/getSkillConfig"]("sentiment_classification") !== null;
     },
   },
   methods: {
@@ -50,6 +66,15 @@ export default {
         "tags": JSON.stringify(this.comment.tags.sort()),
         "text": this.comment.text,
       });
+
+      if(this.nlp_active){
+        this.$socket.emit("skillRequest", {
+          id: this.comment_id,
+          name: "sentiment_classification",
+          data: {text: this.comment.text}
+        });
+        this.awaitingNlpResult = true;
+      }
     },
     saveCard() {
       this.$emit("saveCard");

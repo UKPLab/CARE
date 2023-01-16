@@ -12,7 +12,7 @@
   </div>
 
   <Teleport to="#topbarCustomPlaceholder">
-    <form class="container-fluid justify-content-center">
+    <form class="hstack gap-3 container-fluid justify-content-center">
       <button v-if="review" class="btn btn-outline-success me-2" type="button"
               v-on:click="this.$refs.reviewSubmit.open()">Submit Review
       </button>
@@ -34,6 +34,10 @@
                     >
               Download Annotations
       </button>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" role="switch" :checked="nlp_support" :disabled="!nlp_available" @input="changeNlpSetting()">
+        <IconBoostrap name="robot" :disabled="!nlp_support || !nlp_available"/>
+     </div>
     </form>
   </Teleport>
 
@@ -61,13 +65,14 @@ import Report from "./annotater/modals/Report.vue"
 import Loader from "./basic/Loader.vue";
 import DecisionSubmit from "./annotater/modals/DecisionSubmit.vue"
 import Export from "./basic/Export.vue"
+import IconBoostrap from "../icons/IconBootstrap.vue";
 import {offsetRelativeTo, scrollElement} from "../assets/anchoring/scroll";
 import {isInPlaceholder} from "../assets/anchoring/placeholder";
 import {resolveAnchor} from "../assets/anchoring/resolveAnchor";
 
 export default {
   name: "Annotater",
-  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, Export},
+  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, Export, IconBoostrap},
   props: {
     'document_hash': {
       type: String,
@@ -112,6 +117,12 @@ export default {
     document_id() {
       return this.$store.getters["user/getDocumentId"](this.document_hash);
     },
+    nlp_support() {
+      return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true";
+    },
+    nlp_available() {
+      return this.$store.getters["nlp/getSkillConfig"]("sentiment_classification") !== null;
+    }
   },
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {
@@ -135,6 +146,9 @@ export default {
   methods: {
     decisionSubmit(decision) {
       this.$refs.decisionSubmit.open(decision);
+    },
+    changeNlpSetting(){
+      //todo add update logic of settings in store (after merge)
     },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
@@ -219,6 +233,11 @@ export default {
 
       // Join Room for document updates
       this.$socket.emit("subscribe:document", {doc: this.document_id});
+
+      // check for available nlp support (for now hard-coded sentiment analysis)
+      if(!this.nlp_available) {
+        this.$socket.emit("nlp_skillGetConfig", {name: "sentiment_classification"});
+      }
     },
     downloadAnnotations(outputType) {
       this.$refs.export.requestExport([this.document_id], outputType, true);
@@ -234,6 +253,10 @@ export default {
   padding: 0;
   max-width: 300px;
   min-width: 300px;
+}
+
+IconBoostrap:disabled {
+  color: lightgrey;
 }
 
 </style>

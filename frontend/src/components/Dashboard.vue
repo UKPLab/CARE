@@ -48,7 +48,7 @@ export default {
 
         let component = this.navElements.find(element => element.name === this.$route.name);
         if (component === undefined) {
-          component = this.navElements.find(e => e.name === this.settings["navigation.dashboard.component.default"]);
+          component = this.navElements.find(e => e.name === this.settings["dashboard.navigation.component.default"]);
         }
         return defineAsyncComponent(
             {

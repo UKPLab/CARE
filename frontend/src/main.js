@@ -35,7 +35,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 app.use(BootstrapVue3);
-app.use(BToastPlugin)
+app.use(BToastPlugin);
 
 // Socket IO
 // https://www.npmjs.com/package/vue-3-socket.io
