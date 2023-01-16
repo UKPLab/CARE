@@ -33,6 +33,7 @@
             </div>
           </div>
         </div>
+        <div class="text-center">{{ copyright }}</div>
       </div>
     </div>
   </div>
@@ -62,6 +63,11 @@ export default {
   },
   mounted() {
     this.check();
+  },
+  computed: {
+    copyright() {
+      return window.config['app.config.copyright'];
+    }
   },
   methods: {
     ...mapActions({login: "auth/login", check: "auth/check"}),
