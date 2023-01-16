@@ -1,23 +1,23 @@
 <template>
   <div>
-  <div :id="'page-container-' + pageNumber"
-       v-observe-visibility="{
+    <div :id="'page-container-' + pageNumber"
+         v-observe-visibility="{
       callback: visibilityChanged,
       throttle: 300,
       throttleOptions: {
         leading: 'visible',
       },
     }" class="pageContainer">
-  <canvas v-show="!isRendered" :id="'placeholder-canvas-' + pageNumber"></canvas>
-    <div :id="'canvas-wrapper-' + pageNumber" class="canvasWrapper">
-      <Loader :loading="!isRendered" class="pageLoader" :text="'Loading Page ' + pageNumber"></Loader>
+      <canvas v-show="!isRendered" :id="'placeholder-canvas-' + pageNumber"></canvas>
+      <div :id="'canvas-wrapper-' + pageNumber" class="canvasWrapper">
+        <Loader :loading="!isRendered" class="pageLoader" :text="'Loading Page ' + pageNumber"></Loader>
 
-      <canvas :style="{'visibility':(isRendered)?'visible':'hidden'}" :id="'pdf-canvas-' + pageNumber"
-              class="pdf-page"></canvas>
+        <canvas :style="{'visibility':(isRendered)?'visible':'hidden'}" :id="'pdf-canvas-' + pageNumber"
+                class="pdf-page"></canvas>
+      </div>
+      <div :id="'text-layer-' + pageNumber" class="textLayer"></div>
     </div>
-    <div :id="'text-layer-' + pageNumber" class="textLayer"></div>
-  </div>
-  <Highlights :page_id="pageNumber" ref="highlights" :document_id="document_id"/>
+    <Highlights :page_id="pageNumber" ref="highlights" :document_id="document_id"/>
   </div>
 </template>
 
@@ -70,24 +70,6 @@ export default {
       if (this.isRendered)
         this.add_anchors();
     },
-    /*annotationTags(newVal, oldVal) {
-      //handle only updated values
-      if (this.pdf.pageCount > 0) {
-        console.log(newVal);
-        newVal.filter(vnew => oldVal.map(vold => vold.anno).includes(vnew.anno))
-            .filter(vnew => {
-              const prevTags = oldVal.find(vold => vold.anno === vnew.anno).tag;
-              const newTags = vnew.tag;
-
-              console.log(vnew);
-
-              return (prevTags === null) !== (newTags === null) ||
-                  (prevTags.sort().toString() !== newTags.sort().toString())
-            })
-            .map(vnew => vnew.anno)
-            .map(this.handle_tagchange)
-      }
-    },*/
   },
   data() {
     return {
@@ -104,6 +86,7 @@ export default {
     this.anchor = new Anchoring(this.pdf, this.pageNumber);
     this.resizeOb = new ResizeObserver(debounce(this.resizeHandler, 1000));
     this.resizeOb.observe(document.getElementById('canvas-wrapper-' + this.pageNumber));
+
     this.init();
   },
   beforeUnmount() {
@@ -140,7 +123,6 @@ export default {
       if (this.render && !this.isRendered) {
         this.pdf.getPage(this.pageNumber).then((page) => {
 
-          console.log(page);
           const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber);
           const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
 
@@ -167,6 +149,10 @@ export default {
         if (this.isRendered) this.destroyPage();
         this.currentWidth = width;
         this.init()
+        this.$socket.emit("stats", {
+          action: "pdfPageResizeChange",
+          data: {document_id: this.document_id, pageNumber: this.pageNumber, width: width}
+        })
       }
     },
     renderPage(page) {
@@ -201,13 +187,10 @@ export default {
           textDivs: []
         })
 
-        this.isRendered = true;
-
         this.pdf.renderingDone.set(page.pageNumber, true);
         this.add_anchors();
 
-        console.log("Rendering finished");
-        console.log(this.annotations);
+        this.isRendered = true;
 
 
       }).catch(response => {
@@ -225,31 +208,15 @@ export default {
       this.isRendered = false;
       this.pdf.renderingDone.set(this.pageNumber, false);
       this.renderTask = undefined;
+      this.remove_anchors();
     },
     add_anchors() {
-      console.log("add anchors")
-      console.log(this.annotations);
-      console.log(this.pageNumber);
       this.annotations.filter(anno => anno.anchors == null).forEach(async anno => {
         anno.anchors = await Promise.all(anno.selectors.target.map((data) => this.anchor.locateAnchor(data)));
       });
-      console.log(this.annotations);
     },
     remove_anchors() {
-      console.log("remove anchors")
-      console.log(this.annotations);
-      console.log(this.pageNumber);
       this.annotations.forEach(anno => anno.anchors = null);
-    },
-    _updateAnnotationLayerVisibility() {
-      const selection = /** @type {Selection} */ (window.getSelection());
-      // TODO CSS Style
-      // Add CSS class to indicate whether there is a selection. Annotation
-      // layers are then hidden by a CSS rule in `pdfjs-overrides.scss`.
-      this.pdfViewer.viewer.classList.toggle(
-          'is-selecting',
-          !selection.isCollapsed
-      );
     },
     update_highlights(anchors) {
       // skip un-anchored annotations
@@ -264,11 +231,15 @@ export default {
       // PDFPageProxy#_destroy
       // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
       this.$emit('destroyPage', {pageNumber: this.pageNumber});
-      //this.$refs["highlights"].removeAllHighlights( document.getElementById('text-layer-' + this.pageNumber));
+      this.$refs["highlights"].removeAllHighlights(document.getElementById('text-layer-' + this.pageNumber));
 
-      this.remove_anchors();
+      // delete previous contents from text layer
+      const text_layer = document.getElementById('text-layer-' + this.pageNumber);
+      while (text_layer.firstChild) {
+        text_layer.removeChild(text_layer.firstChild);
+      }
+
       this.destroyRenderTask();
-      //this.$refs["highlights"].removeAllHighlights( document.getElementById('text-layer-' + this.pageNumber));
     },
   }
   ,
