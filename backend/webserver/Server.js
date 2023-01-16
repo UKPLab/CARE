@@ -182,7 +182,6 @@ module.exports = class Server {
                 this.logger.debug("Socket disconnected: " + reason);
                 delete this.availSockets[socket.id];
             });
-
         });
 
     }
@@ -206,7 +205,6 @@ module.exports = class Server {
 
         this.services[serviceClass.name] = new serviceClass(this);
         this.services[serviceClass.name].init();
-
     }
 
     start(port) {

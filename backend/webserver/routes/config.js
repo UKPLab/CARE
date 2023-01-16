@@ -16,6 +16,10 @@ module.exports = function (app) {
     app.get('/config.js', async (req, res) => {
         const config = {
             "app.config.copyright": await dbGetSetting("app.config.copyright"),
+            "app.register.requestName": await dbGetSetting("app.register.requestName"),
+            "app.register.requestStats": await dbGetSetting("app.register.requestStats"),
+            "app.register.terms": await dbGetSetting("app.register.terms"),
+            "app.login.guest": await dbGetSetting("app.login.guest"),
         }
         res.set('Content-Type', 'application/javascript');
         res.send(`window.config = ${JSON.stringify(config)}`);

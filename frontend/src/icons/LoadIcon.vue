@@ -1,5 +1,5 @@
 <template>
-  <component :is="icon" :size="size"/>
+  <component :is="icon" :size="size" :name="iconName"/>
 </template>
 
 <script>
@@ -9,7 +9,7 @@ Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
  */
 import {defineAsyncComponent} from "vue";
 import IconLoading from "./IconLoading.vue";
-import IconQuestionCircle from "./bootstrap/IconQuestionCircle.vue";
+import IconBootstrap from "./IconBootstrap.vue";
 
 export default {
   name: "LoadIcon",
@@ -31,11 +31,14 @@ export default {
       if (this.iconName === undefined || this.iconName === null) {
         iconComponent = "IconQuestionCircle";
       }
+      if (this.iconName === "loading") {
+        return IconLoading;
+      }
       return defineAsyncComponent(
           {
-            loader: () => import("./bootstrap/" + iconComponent + ".vue"),
+            loader: () => import("./IconBootstrap.vue"),
             loadingComponent: IconLoading,
-            errorComponent: IconQuestionCircle
+            errorComponent: IconBootstrap
           });
 
     }
