@@ -8,8 +8,8 @@
             <a class="btn btn-sm btn-primary" href="#" @click="this.$router.push('/login')">Login</a>
           </div>
 
-          <div class="card-body mx-4 my-4">
-            <div class="form-group row my-2">
+          <div  class="card-body mx-4 my-4">
+            <div  v-if="requestName" class="form-group row my-2">
               <label class="col-md-4 col-form-label text-md-right" for="first_name">First name</label>
               <div class="col-md-6">
                 <input id="first_name" v-model="first_name" autofocus class="form-control" name="first_name" required
@@ -17,7 +17,7 @@
               </div>
             </div>
 
-            <div class="form-group row my-2">
+            <div v-if="requestName" class="form-group row my-2">
               <label class="col-md-4 col-form-label text-md-right" for="last_name">Last name</label>
               <div class="col-md-6">
                 <input id="last_name" v-model="last_name" class="form-control" name="last_name" required type="text">
@@ -54,15 +54,13 @@
               </div>
             </div>
 
-            <!-- Remove for now, as it is redundant
-            <div class="form-group row my-2">
+            <div v-if="requestStats"  class="form-group row my-2">
               <div class="col-md-6 offset-md-4">
                 <label>
-                  <input v-model="stats" name="stats" type="checkbox"> I allow the collection of <a href="#" v-on:click="this.$refs.stats.open()">anonymous statistics</a>!
+                  <input v-model="stats" name="stats" type="checkbox"> I allow the collection of anonymous statistics!
                 </label>
               </div>
             </div>
-            -->
 
             <div class="col-md-6 offset-md-4">
               <button class="btn btn-primary" type="button" @click="register_user()">Register</button>
@@ -92,6 +90,14 @@ import TermsModal from "./TermsModal.vue";
 export default {
   name: "Register",
   components: {TermsModal},
+  computed: {
+    requestName() {
+      return window.config['app.register.requestName'] === 'true';
+    },
+    requestStats() {
+      return window.config['app.register.requestStats'] === 'true';
+    },
+  },
   data() {
     return {
       first_name: "",

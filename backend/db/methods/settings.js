@@ -25,6 +25,21 @@ exports.getSettings = async function getSettings() {
     }
 }
 
+exports.getSetting = async function getSetting(key) {
+    try {
+        return (await Setting.findOne({
+            where: {
+                key: key,
+                deleted: false,
+            }, raw: true
+        })).value;
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        }
+    }
+}
+
 
 exports.getUserSettings = async function getUserSettings(user_id) {
     try {
