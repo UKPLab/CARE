@@ -33,9 +33,12 @@ export default {
   watch: {
     annotations(newVal, oldVal) {
       //Remove highlights of deleted anchors
-      oldVal.filter(anno => !newVal.includes(anno)) //.filter(anno => anno.anchors !== null)
-          .forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor)
-              .forEach(anchor => this.removeHighlights(anchor.highlights)))
+      oldVal.filter(anno => !newVal.includes(anno))
+          .forEach(anno => {
+            if (anno.anchors != null) {
+            anno.anchors.filter(anchor => "highlights" in anchor)
+                .forEach(anchor => this.removeHighlights(anchor.highlights))
+          }});
 
       newVal.filter(anno => !oldVal.includes(anno))
           .map(this.highlight)

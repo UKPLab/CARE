@@ -1,8 +1,8 @@
 <template>
   <div v-if="document_id !== null" class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
-      <div class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
-        <PDFViewer :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto"
+      <div ref="viewer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
+        <PDFViewer  :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto"
                    class="rounded border border-1 shadow-sm"></PDFViewer>
       </div>
       <div class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;" id="sidebarContainer">
@@ -69,6 +69,7 @@ import IconBoostrap from "../icons/IconBootstrap.vue";
 import {offsetRelativeTo, scrollElement} from "../assets/anchoring/scroll";
 import {isInPlaceholder} from "../assets/anchoring/placeholder";
 import {resolveAnchor} from "../assets/anchoring/resolveAnchor";
+import debounce from 'lodash.debounce';
 
 export default {
   name: "Annotater",
@@ -133,10 +134,19 @@ export default {
       });
     });
     this.load();
+
+    this.$refs.viewer.addEventListener("scroll", debounce(() => {
+      this.$socket.emit("stats", {
+        action: "annotatorScrollActivity",
+        data: {document_id: this.document_id, scrollTop: this.$refs.viewer.scrollTop, scrollHeight: this.$refs.viewer.scrollHeight}
+      })
+    }, 500));
+
   },
   unmounted() {
     // Leave the room for document updates
     this.$socket.emit("unsubscribe:document", {doc: this.document_id});
+    this.$refs.viewer.removeEventListener("scroll");
   },
   sockets: {
     connect: function () {

@@ -35,7 +35,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 export default {
   name: "PDFViewer",
   components: {PDFPage, Adder},
-
   props: {
     document_id: {
       type: Number,
@@ -82,7 +81,8 @@ export default {
             this.eventBus.emit('toast', {
               title: "PDF Loading Error",
               message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
-              variant: "danger"});
+              variant: "danger"
+            });
 
             this.$router.push("/index.html");
           });
@@ -90,6 +90,7 @@ export default {
   },
   mounted() {
     this.$socket.emit("pdf_get", {document_id: this.document_id});
+
   },
   methods: {
     updateVisibility(page) {
@@ -102,6 +103,10 @@ export default {
           this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
         }
       }
+      this.$socket.emit("stats", {
+        action: "pdfPageVisibilityChange",
+        data: {document_id: this.document_id, readonly: this.readonly, "visibility": page}
+      })
     },
     ...mapMutations({
       toggleSidebar: "anno/TOGGLE_SIDEBAR"
