@@ -14,7 +14,7 @@
             <div class="form-group row my-2">
               <label class="col-md-4 col-form-label text-md-right" for="username">Username</label>
               <div class="col-md-6">
-                <input id="username" v-model="username" autocomplete="username" autofocus class="form-control"
+                <input id="username" v-model="username" v-on:keyup.enter="$refs.password.focus()"  autocomplete="username" autofocus class="form-control"
                        placeholder="Username or email" required type="text">
               </div>
             </div>
@@ -22,17 +22,18 @@
             <div class="form-group row my-2">
               <label class="col-md-4 col-form-label text-md-right" for="password">Password</label>
               <div class="col-md-6">
-                <input id="password" v-model="password" autocomplete="current-password" class="form-control"
-                       name="password"
+                <input id="password" ref="password" v-model="password" autocomplete="current-password" class="form-control"
+                       name="password" v-on:keyup.enter="login_user()"
                        placeholder="Password" required type="password"></div>
             </div>
 
             <div class="col-md-6 offset-md-4 my-4">
               <button class="btn btn-primary btn-block" type="button" @click="login_user()">Login</button>
-              <a class="btn btn-link" href="#" @click="login_guest()">Login as Guest</a>
+              <a v-if="guestLogin" class="btn btn-link" href="#" @click="login_guest()">Login as Guest</a>
             </div>
           </div>
         </div>
+        <div class="text-center">{{ copyright }}</div>
       </div>
     </div>
   </div>
@@ -62,6 +63,14 @@ export default {
   },
   mounted() {
     this.check();
+  },
+  computed: {
+    copyright() {
+      return window.config['app.config.copyright'];
+    },
+    guestLogin() {
+      return window.config['app.login.guest'] === 'true';
+    },
   },
   methods: {
     ...mapActions({login: "auth/login", check: "auth/check"}),
