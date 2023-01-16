@@ -16,6 +16,7 @@ const Sequelize = require('sequelize');
 const db = require("../db");
 const {DataTypes} = require("sequelize");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
+//const {stringReplace} = require('string-replace-middleware');
 
 /**
  * Defines Express Webserver of Content Server
@@ -53,6 +54,10 @@ module.exports = class Server {
             this.app.use("/api", express.static(`${__dirname}/../../docs/api/`));
         }
 
+        // Routes for config
+        this.logger.debug("Initializing Routes for config...");
+        require("./routes/config.js")(this.app);
+
         this.logger.info("Initializing Session management...");
         this.session = this.#initSessionManagement();
         this.app.use(this.session);
@@ -62,6 +67,7 @@ module.exports = class Server {
         this.app.use(bodyParser.json());
         this.app.use(passport.initialize());
         this.app.use(passport.session());
+
 
         // Routes for login management
         this.logger.debug("Initialize Routes for auth...");
@@ -74,6 +80,7 @@ module.exports = class Server {
         this.httpServer = http.createServer(this.app);
         this.#initWebsocketServer();
     }
+
 
     #setCors() {
         this.logger.debug("Use CORS Restriction");

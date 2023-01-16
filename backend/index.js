@@ -48,5 +48,6 @@ fs.readdir("./webserver/services", (err, files) => {
     });
 });
 
-logger.info("Starting webserver on port " + port + "...");
+logger.info("Starting webserver on port " + port);
+logger.info("Server started at http://localhost:" + port);
 server.start(port);
