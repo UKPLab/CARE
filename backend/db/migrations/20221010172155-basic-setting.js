@@ -14,7 +14,7 @@ const settings = [
     {key: "app.register.requestName", type: "boolean", value: "true", description: "Whether to request the user's name during registration"},
     {key: "app.register.requestStats", type: "boolean", value: "true", description: "Whether to request the user's statistics approval during registration"},
     {key: "app.login.guest", type: "boolean", value: "true", description: "Whether to allow guest logins"},
-    {key: "app.register.terms", type: "boolean", value: terms, description: "Terms and conditions text to display during registration"},
+    {key: "app.register.terms", type: "html", value: terms, description: "Terms and conditions text to display during registration"},
 ]
 
 module.exports = {

@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
     Setting.init({
         key: DataTypes.STRING,
         value: DataTypes.TEXT,
+        type: DataTypes.STRING,
         description: DataTypes.STRING,
 
     }, {
