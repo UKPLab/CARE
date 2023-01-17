@@ -73,7 +73,7 @@ async function register(user_credentials, res) {
                 if (err.name === "DuplicateUserException") {
                     res.status(400).send("User already exists");
                 } else if (err.name === "InvalidPasswordException") {
-                    res.status(400).send("Password does not match criteria");
+                    res.status(400).send(err.message);
                 } else {
                     res.status(400).send("Unknown error occurred. Consult admins");
                 }
