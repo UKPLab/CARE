@@ -25,8 +25,8 @@ function DuplicateUserException() {
 
 function InvalidPasswordException() {
     return {
-        name: "InvalidCredentialsException",
-        message: "The provided password is invalid.",
+        name: "InvalidPasswordException",
+        message: "The provided password must be at least 8 characters.",
         toString: function () {
             return this.name + ": " + this.message;
         }
@@ -34,7 +34,7 @@ function InvalidPasswordException() {
 }
 
 function validatePassword(password) {
-    return password != null && password.length > 0;
+    return password != null && password.length >= 8;
 }
 
 exports.getUsername = async function getUsername(userId) {
