@@ -98,7 +98,9 @@ module.exports = class CommentSocket extends Socket {
     init() {
 
         this.socket.on("addComment", async (data) => {
-            await this.addComment(data.document_id, data.annotation_id !== undefined ? data.annotation_id : null );
+            await this.addComment(data.document_id,
+                data.annotation_id !== undefined ? data.annotation_id : null,
+                data.comment_id !== undefined ? data.comment_id : null );
         });
 
         this.socket.on("getComment", async (data) => {
