@@ -20,6 +20,8 @@
     <div v-for="k in firstKey" class="card my-3">
       <div class="card-header">
         {{ k }}
+        <br>
+        <span v-if="k === 'app'" class="text-secondary"><small>Main settings of the application <br>Note: Make sure that no sensitive data are present!</small></span>
       </div>
       <div class="card-body">
         <div v-for="s in settings.filter(setting => setting['key'].startsWith(k))" class="row">
