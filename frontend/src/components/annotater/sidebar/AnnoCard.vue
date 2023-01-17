@@ -21,7 +21,8 @@
            :title="tagName" @click="scrollTo(annotation_id)">
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
-      <CommentCard ref="main_comment" @saveCard="save()" :comment_id="comment_id" :edit="editedByMyself"/>
+      <CommentCard ref="main_comment" @saveCard="save()" :comment_id="comment_id" :edit="editedByMyself"
+                   :document_id="document_id"/>
     </template>
 
     <template v-slot:footer v-if="annotation.userId === user_id">
@@ -42,14 +43,18 @@
         </div>
         <div v-else class="row">
           <div class="col">
-            <span v-if="numberReplies > 0" class="replies">Show Replies ({{ numberReplies }})</span>
+            <button v-if="numberReplies > 0" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
+                    type="button" v-on:click="showReplies = !showReplies">
+              <LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>
+              <span>Replies ({{ numberReplies }})</span>
+            </button>
           </div>
           <div class="col text-end">
-            <!--<button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
-                    type="button" v-on:click="reply()">
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
+                    type="button" v-on:click="$refs.main_comment.reply()">
               <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
-              <span class="visually-hidden">Edit</span>
-            </button>-->
+              <span class="visually-hidden">Reply</span>
+            </button>
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
                     type="button" v-on:click="edit()">
               <LoadIcon :size="16" iconName="pencil-square"></LoadIcon>
@@ -65,6 +70,16 @@
         </div>
       </div>
     </template>
+
+    <template v-slot:thread>
+      <div v-if="showReplies" class="d-grid gap-1 my-2">
+        <span v-for="c in childComments" :key="c.id">
+          <CommentCard :document_id="document_id" :comment_id="c.id">
+        </CommentCard>
+        </span>
+      </div>
+    </template>
+
   </SideCard>
 </template>
 
@@ -95,6 +110,7 @@ export default {
       collab_updater: null,
       collab_id: null,
       showEditByCollab: false,
+      showReplies: false,
       showEditTimeout: null,
     }
   },
@@ -156,6 +172,9 @@ export default {
     },
     numberReplies() {
       return this.$store.getters["comment/getNumberOfChildrenByComment"](this.comment_id);
+    },
+    childComments() {
+      return this.$store.getters["comment/getCommentsByCommentId"](this.comment_id);
     },
     color() {
       return this.$store.getters['tag/getColor'](this.annotation.tag);

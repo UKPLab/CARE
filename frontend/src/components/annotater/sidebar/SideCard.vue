@@ -16,6 +16,9 @@
         <slot name="footer"></slot>
       </div>
     </div>
+    <div v-if="hasThreadSlot" class="card-body p-1">
+      <slot name="thread"></slot>
+    </div>
   </b-card>
 </template>
 
@@ -37,9 +40,12 @@ export default {
   },
   computed: {
     hasFooterSlot() {
-      return !!this.$slots.footer
+      return !!this.$slots.footer;
+    },
+    hasThreadSlot() {
+      return !!this.$slots.thread;
     }
-  }
+  },
 }
 </script>
 
