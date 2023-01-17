@@ -11,7 +11,7 @@ describe('Post Endpoints', () => {
             .post('/auth/login')
             .send({
                 username: "admin",
-                password: "admin",
+                password: "admincare",
             })
         expect(res.statusCode).toEqual(200)
         //expect(res.body).toHaveProperty('post')
