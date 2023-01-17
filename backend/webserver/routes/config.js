@@ -20,8 +20,8 @@ module.exports = function (app) {
             "app.register.requestStats": await dbGetSetting("app.register.requestStats"),
             "app.register.terms": await dbGetSetting("app.register.terms"),
             "app.login.guest": await dbGetSetting("app.login.guest"),
-        }
+        };
         res.set('Content-Type', 'application/javascript');
-        res.send(`window.config = ${JSON.stringify(config)}`);
+        res.send(`window.config = JSON.parse(${JSON.stringify(JSON.stringify(config))})`);
     });
 }
