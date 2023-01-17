@@ -34,7 +34,7 @@
 
             <div class="col-md-6 offset-md-4 my-4">
               <button class="btn btn-primary btn-block" type="submit" @click="trySubmit">Login</button>
-              <a class="btn btn-link" href="#" @click="login_guest()">Login as Guest</a>
+              <a v-if="showGuestLogin" class="btn btn-link" href="#" @click="login_guest()">Login as Guest</a>
             </div>
           </div>
         </div>
@@ -73,7 +73,7 @@ export default {
     copyright() {
       return window.config['app.config.copyright'];
     },
-    guestLogin() {
+    showGuestLogin() {
       return window.config['app.login.guest'] === 'true';
     },
   },
