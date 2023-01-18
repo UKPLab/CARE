@@ -1,7 +1,7 @@
 asyncapi: 2.5.0
 info:
   title: Backend Websocket Description
-  version: 0.1.0
+  version: 1.0.0
   description: |
     This is the websocket backend API. It is used to communicate between frontend and backend.
 servers:
@@ -28,6 +28,9 @@ channels:
           - $ref: '#/components/messages/commentUpdate'
           - $ref: '#/components/messages/commentGetByDocument'
           - $ref: '#/components/messages/commentExportByDocument'
+          - $ref: '#/components/messages/documentGetAll'
+          - $ref: '#/components/messages/logGetAll'
+          - $ref: '#/components/messages/logAdd'
     subscribe:
       message:
         oneOf:
@@ -274,6 +277,34 @@ components:
       payload:
         type: array
         description: List of DB Comment Objects
+    documentGetAll:
+      name: documentGetAll
+      title: Get all documents available by user
+      summary: Get all documents available by user
+    logGetAll:
+      name: logGetAll
+      title: Get all logs
+      summary: Get all logs (only for admin)
+    logAdd:
+      name: logAdd
+      title: Add log
+      summary: Add log (Env-Var LOGGING_ALLOW_FRONTEND must be set to "true")
+      payload:
+        type: object
+        description: Payload object
+        required:
+          - level
+          - message
+        properties:
+          level:
+            type: string
+            description: Log level
+          message:
+            type: string
+            description: Log message
+          meta:
+            type: object
+            description: Additional meta data
   schemas:
     documentId:
       type: integer
