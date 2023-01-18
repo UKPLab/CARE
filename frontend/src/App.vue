@@ -31,7 +31,7 @@ export default {
       this.$socket.emit("getTagSets");
       this.$socket.emit("getTags");
       this.$socket.emit("getSettings");
-      this.$socket.emit("docs_get");
+      this.$socket.emit("documentGetAll");
     }
     // TODO: wait for all data to be loaded before rendering the page
     // show loading screen until all data is loaded

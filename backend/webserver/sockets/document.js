@@ -53,7 +53,7 @@ module.exports = class DocumentSocket extends Socket {
 
     init() {
 
-        this.socket.on("docs_get", async (data) => {
+        this.socket.on("documentGetAll", async (data) => {
             await this.updateDocuments();
         });
 
