@@ -5,10 +5,7 @@
       <div class="row">
         <div class="col">
           {{ annotation.creator_name }}
-          <span v-if="showEditByCollab">
-            <LoadIcon :size="12 " class="fading" iconName="pencil-fill"></LoadIcon>
-          </span>
-
+          <Collaboration @collabStatus="(x) => this.editMode = x"></Collaboration>
         </div>
         <div class="col text-end">
           {{ new Date(annotation.updatedAt).toLocaleDateString() }}
@@ -97,34 +94,18 @@ import SideCard from "./SideCard.vue";
 import CommentCard from "./CommentCard.vue";
 import LoadIcon from "../../../icons/LoadIcon.vue";
 import {v4 as uuidv4} from 'uuid';
+import Collaboration from "../../basic/Collaboration.vue"
 
 
 export default {
   name: "AnnoCard",
-  components: {SideCard, CommentCard, LoadIcon},
+  components: {Collaboration, SideCard, CommentCard, LoadIcon},
   props: ["annotation_id", "readonly", "document_id"],
   data: function () {
     return {
       shake: false,
-      edit_mode: false,
-      collab_updater: null,
-      collab_id: null,
-      showEditByCollab: false,
       showReplies: false,
       showEditTimeout: null,
-    }
-  },
-  sockets: {
-    start_collab: function (data) {
-      if (data.id === this.collab_id) {
-        this.edit_mode = true;
-        if (this.collab_updater !== null) {
-          clearInterval(this.collab_updater);
-        }
-        this.collab_updater = setInterval(() => {
-          this.update_collab();
-        }, 1000);
-      }
     }
   },
   mounted() {
@@ -140,29 +121,12 @@ export default {
       this.remove_collab();
     }
   },
-  watch: {
-    collaborations(t) {
-      if (t.length > 0) {
-        this.showEditByCollab = true;
-        if (this.showEditTimeout !== null) {
-          clearTimeout(this.showEditTimeout);
-        }
-        this.showEditTimeout = setTimeout(() => {
-          this.showEditByCollab = false;
-          this.showEditTimeout = null;
-        }, 1000);
-      }
-    }
-  },
   computed: {
     user_id() {
       return this.$store.getters["auth/getUserId"];
     },
     annotation() {
       return this.$store.getters["anno/getAnnotation"](this.annotation_id);
-    },
-    collaborations() {
-      return this.$store.getters["collab/annotations"](this.annotation_id);
     },
     comment_id() {
       return this.$store.getters["comment/getCommentByAnnotation"](this.annotation_id)["id"];
@@ -234,29 +198,6 @@ export default {
     edit() {
       this.start_collab();
     },
-    start_collab() {
-      this.collab_id = uuidv4();
-      this.$socket.emit("add_collab",
-          {
-            type: "annotation",
-            doc_id: this.document_id,
-            annotation_id: this.annotation_id,
-            id: this.collab_id
-          });
-    },
-    update_collab() {
-      this.$socket.emit("update_collab", {id: this.collab_id});
-    },
-    remove_collab() {
-      this.$socket.emit("remove_collab", {id: this.collab_id});
-      if (this.collab_updater !== null) {
-        clearInterval(this.collab_updater);
-        this.collab_updater = null;
-      }
-      this.edit_mode = false;
-      this.collab_id = null;
-    },
-
   }
 }
 </script>
