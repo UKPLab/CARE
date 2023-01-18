@@ -50,7 +50,7 @@ describe('Annotation Exporting Test', () => {
             tags: JSON.parse('["Highlight"]')
         };
 
-        ioClient.on("exportedAnnotations", (data) => {
+        ioClient.on("annotationExport", (data) => {
             expect("success" in data && data["success"]);
             expect("csvs" in data && "docids" in data);
 

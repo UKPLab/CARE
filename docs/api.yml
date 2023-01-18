@@ -1,9 +1,9 @@
 asyncapi: 2.5.0
 info:
-  title: PEER Backend Websocket Description
+  title: Backend Websocket Description
   version: 0.1.0
   description: |
-    This is the websocket API for the PEER backend. It is used to communicate between frontend and backend.
+    This is the websocket backend API. It is used to communicate between frontend and backend.
 servers:
   broker:
     url: http://localhost:3001
@@ -15,13 +15,112 @@ channels:
     publish:
       message:
         oneOf:
-          - $ref: '#/components/messages/peerMessage'
+          - $ref: '#/components/messages/annotationAdd'
+          - $ref: '#/components/messages/annotationGet'
+          - $ref: '#/components/messages/annotationUpdate'
+          - $ref: '#/components/messages/annotationGetByDocument'
     subscribe:
       message:
         oneOf:
-          - $ref: '#/components/messages/peerMessage'
+          - $ref: '#/components/messages/annotationRefresh'
+          - $ref: '#/components/messages/annotationExport'
 
 components:
   messages:
-    peerMessage:
-      name: Example Message
+    annotationAdd:
+      name: Add annotation
+      title: Add annotation
+      summary: Add annotation to a document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          tagId:
+            $ref: "#/components/schemas/tagId"
+          selectors:
+              type: object
+              description: selectors of the annotation
+    annotationGet:
+      name: Get annotation
+      title: Get annotation
+      summary: Get annotation by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          annotationId:
+            $ref: "#/components/schemas/annotationId"
+    annotationRefresh:
+      name: Update annotation
+      title: Update annotation
+      summary: Update annotation by Id
+      payload:
+        type: array
+        description: List of Annotation DB Objects
+    annotationUpdate:
+      name: Update annotation
+      title: Update annotation
+      summary: Update annotation by Id, Payload can have additional fields which wants to be set, Draft will be set to false!
+      payload:
+        type: object
+        description: Annotation DB Object
+        required:
+          - annotationId
+        properties:
+          annotationId:
+            $ref: "#/components/schemas/annotationId"
+          tagId:
+            $ref: "#/components/schemas/tagId"
+          deleted:
+            type: boolean
+            description: If the annotation is deleted
+    annotationGetByDocument:
+      name: Get annotation by document id
+      title: Get annotation by document id
+      summary: Get annotation by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    annotationExportByDocument:
+      name: Export annotation by document id
+      title: Export annotation by document id
+      summary: Export annotation by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    annotationExport:
+      name: Export annotation
+      title: Export annotation
+      summary: Export annotation by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the export was successful
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          objs:
+            type: array
+            description: List of Annotation DB Objects
+  schemas:
+    documentId:
+      type: integer
+      description: id of the document
+    tagId:
+      type: integer
+      description: id of the tag
+    annotationId:
+      type: integer
+      description: id of the annotation

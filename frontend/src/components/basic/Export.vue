@@ -49,7 +49,7 @@ export default {
       clearTimeout(this.timeout);
 
       // stop listening to such events
-      this.sockets.unsubscribe("exportedAnnotations");
+      this.sockets.unsubscribe("annotationExport");
       this.sockets.unsubscribe("exportedComments");
 
       // export for each document
@@ -57,8 +57,8 @@ export default {
         const downloadId = this.downloadIds[i];
 
         this.downloadExported(
-            this.downloadAnnos.find(e => e.document_id === downloadId),
-            this.downloadComms.find(e => e.document_id === downloadId),
+            this.downloadAnnos.find(e => e.documentId === downloadId),
+            this.downloadComms.find(e => e.documentId === downloadId),
             this.outputType,
             this.simplify);
       }
@@ -76,7 +76,7 @@ export default {
       clearTimeout(this.timeout);
 
       // stop listening
-      this.sockets.unsubscribe("exportedAnnotations");
+      this.sockets.unsubscribe("annotationExport");
       this.sockets.unsubscribe("exportedComments");
 
       //clear vars
@@ -99,8 +99,8 @@ export default {
         return;
       }
 
-      this.sockets.subscribe("exportedAnnotations", (r) => {
-        if(this.downloadIds.includes(r.document_id)) {
+      this.sockets.subscribe("annotationExport", (r) => {
+        if(this.downloadIds.includes(r.documentId)) {
           this.downloadAnnos.push(r);
         }
       });
@@ -119,7 +119,7 @@ export default {
 
       //in the future: do batching if necessary
       doc_ids.forEach(did => {
-        this.$socket.emit("exportAnnotationsByDocument", {"id": did});
+        this.$socket.emit("annotationExportByDocument", {"documentId": did});
         this.$socket.emit("exportCommentsByDocument", {"id": did});
       });
 

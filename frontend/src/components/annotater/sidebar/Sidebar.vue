@@ -112,7 +112,7 @@ export default {
       return this.$store.getters['comment/getCommentByAnnotation'](anno_id) !== undefined;
     },
     load() {
-      this.$socket.emit("loadAnnotations", {id: this.document_id});
+      this.$socket.emit("annotationGetByDocument", {documentId: this.document_id});
       this.$socket.emit("loadCommentsByDocument", {id: this.document_id});
     },
     async sidebarScrollTo(annotationId) {

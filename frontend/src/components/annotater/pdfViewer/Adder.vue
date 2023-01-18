@@ -83,10 +83,10 @@ export default {
         selector: selectors,
       }));
 
-      this.$socket.emit('addAnnotation', {
+      this.$socket.emit('annotationAdd', {
         documentId: this.document_id,
         selectors: {target},
-        tag: tag.id
+        tagId: tag.id
       });
 
       this.isVisible = false;
