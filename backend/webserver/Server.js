@@ -38,7 +38,6 @@ module.exports = class Server {
         this.availSockets = {};
         this.services = {};
         this.socket = null;
-        this.collabs = []; //TODO handle collaborations with db
 
         // No Caching
         this.app.disable('etag');

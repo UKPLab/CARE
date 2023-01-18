@@ -13,23 +13,40 @@ export default {
   components: {LoadIcon},
   emits: ["collabStatus"],
   props: {
+    targetType: {
+      type: String,
+      required: true
+    },
+    targetId: {
+      type: Number,
+      required: true
+    },
+    documentId: {
+      type: Number,
+      required: true
+    },
   },
   data() {
     return {
-      edit_mode: false,
-      collab_updater: null,
-      collab_id: null,
+      editMode: false,
+      collabUpdater: null,
+      collabId: null,
+      collabHash: null,
+      showEditByCollab: false
     }
   },
   sockets: {
-    start_collab: function (data) {
-      if (data.id === this.collab_id) {
-        this.edit_mode = true;
-        if (this.collab_updater !== null) {
-          clearInterval(this.collab_updater);
+    collabStart: function (data) {
+      if (data.collabHash === this.collabHash) {
+        this.collabId = data.id;
+        this.editMode = true;
+        this.$emit('collabStatus', true);
+
+        if (this.collabUpdater !== null) {
+          clearInterval(this.collabUpdater);
         }
-        this.collab_updater = setInterval(() => {
-          this.update_collab();
+        this.collabUpdater = setInterval(() => {
+          this.updateCollab();
         }, 1000);
       }
     }
@@ -50,31 +67,33 @@ export default {
   },
   computed: {
     collaborations() {
-      return this.$store.getters["collab/annotations"](this.annotation_id);
+      return this.$store.getters["collab/getCollab"](this.targetType, this.targetId);
     },
   },
   methods: {
-    start_collab() {
-      this.collab_id = uuidv4();
-      this.$socket.emit("add_collab",
+    updateCollab() {
+      this.$socket.emit("collabUpdate", {id: this.collabId});
+    },
+    startCollab() {
+      this.collabHash = uuidv4();
+      this.$socket.emit("collabAdd",
           {
-            type: "annotation",
-            doc_id: this.document_id,
-            annotation_id: this.annotation_id,
-            id: this.collab_id
+            targetType: this.targetType,
+            targetId: this.targetId,
+            documentId: this.documentId,
+            collabHash: this.collabHash
           });
     },
-    update_collab() {
-      this.$socket.emit("update_collab", {id: this.collab_id});
-    },
-    remove_collab() {
-      this.$socket.emit("remove_collab", {id: this.collab_id});
-      if (this.collab_updater !== null) {
-        clearInterval(this.collab_updater);
-        this.collab_updater = null;
+    removeCollab() {
+      this.$socket.emit("collabDelete", {id: this.collabId});
+      if (this.collabUpdater !== null) {
+        clearInterval(this.collabUpdater);
+        this.collabUpdater = null;
       }
-      this.edit_mode = false;
-      this.collab_id = null;
+      this.editMode = false;
+      this.$emit("collabStatus", false);
+      this.collabId = null;
+      this.collabHash = null;
     },
   }
 }

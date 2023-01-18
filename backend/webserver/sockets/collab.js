@@ -1,4 +1,11 @@
 const Socket = require("../Socket.js");
+const {
+    add: dbAdd,
+    update: dbUpdate,
+    get: dbGet,
+    getAll: dbGetAll,
+    delete: dbDelete
+} = require("../../db/methods/collab.js");
 
 /**
  * Handle collaboration through sockets
@@ -10,38 +17,42 @@ module.exports = class CollabSocket extends Socket {
 
     init() {
 
-        this.socket.on("add_collab", (data) => {
-            const collab = Object.assign(data, {user_id: this.user_id, timestamp: Date.now()});
-            this.server.collabs.push(collab);
-            this.socket.emit("start_collab", {id: collab.id});
+        this.socket.on("collabAdd", async (data) => {
 
-            if (collab.type === "annotation" || collab.type === "comment") {
-                this.io.to("doc:" + collab.doc_id).emit("collab", collab);
+            try {
+                const newCollab = await dbAdd(Object.assign(data, {userId: this.user_id, timestamp: Date.now()}));
+                this.socket.emit("collabStart", {id: newCollab.id, collabHash: newCollab.collabHash});
+
+                this.io.to("doc:" + newCollab.documentId).emit("collabRefresh", newCollab);
+
+            } catch (e) {
+                this.logger.error("Could not add collab to database. Error: " + e);
+                this.sendToast(e.message, "Collaboration Error", "danger");
             }
+
+
         });
 
-        this.socket.on("update_collab", (data) => {
-            let collab = this.server.collabs.find(c => c.id === data.id && c.user_id === this.user_id);
-            if (collab !== undefined) {
-                collab["timestamp"] = Date.now();
+        this.socket.on("collabUpdate", async (data) => {
 
-                if (collab.type === "annotation" || collab.type === "comment") {
-                    this.io.to("doc:" + collab.doc_id).emit("collab", collab);
-                }
+            try {
+                const collabUpdate = await dbUpdate(data.id);
+                this.io.to("doc:" + collabUpdate[1].documentId).emit("collabRefresh", collabUpdate[1]);
+            } catch (e) {
+                this.logger.error("Could not update collab to database. Error: " + e);
+                this.sendToast(e.message, "Collaboration Error", "danger");
             }
+
         });
 
-        this.socket.on("remove_collab", (data) => {
+        this.socket.on("collabDelete", async (data) => {
 
-            let collab = this.server.collabs.find(c => c.id === data.id && c.user_id === this.user_id);
-            if (collab !== undefined) {
-                collab["timestamp"] = -1;
-
-                if (data.type === "annotation" || data.type === "comment") {
-                    this.io.to("doc:" + data.doc_id).emit("collab", collab);
-                }
-
-                this.server.collabs.splice(this.server.collabs.indexOf(collab), 1);
+            try {
+                const collabUpdate = await dbDelete(data.id);
+                this.io.to("doc:" + collabUpdate.documentId).emit("collabRefresh", collabUpdate);
+            } catch (e) {
+                this.logger.error("Could not delete collab to database. Error: " + e);
+                this.sendToast(e.message, "Collaboration Error", "danger");
             }
 
         });

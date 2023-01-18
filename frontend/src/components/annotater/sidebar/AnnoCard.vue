@@ -5,7 +5,10 @@
       <div class="row">
         <div class="col">
           {{ annotation.creator_name }}
-          <Collaboration @collabStatus="(x) => this.editMode = x"></Collaboration>
+          <Collaboration ref="collab"
+                         target-type="annotation"
+                         :target-id="annotation_id"
+                         :document-id="document_id"></Collaboration>
         </div>
         <div class="col text-end">
           {{ new Date(annotation.updatedAt).toLocaleDateString() }}
@@ -118,7 +121,7 @@ export default {
   },
   unmounted() {
     if (this.edit_mode) {
-      this.remove_collab();
+      this.$refs.collab.removeCollab();
     }
   },
   computed: {
@@ -174,7 +177,7 @@ export default {
         "tags": JSON.stringify(this.annotation.tags),
       });
       this.$refs.main_comment.save();
-      this.remove_collab();
+      this.$refs.collab.removeCollab();
     },
     cancel() {
       if (this.annotation.draft) {
@@ -185,7 +188,7 @@ export default {
           "documentId": this.document_id
         });
       }
-      this.remove_collab();
+      this.$refs.collab.removeCollab();
       this.edit_mode = null;
     },
     remove() {
@@ -196,7 +199,7 @@ export default {
       });
     },
     edit() {
-      this.start_collab();
+      this.$refs.collab.startCollab();
     },
   }
 }
