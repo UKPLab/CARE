@@ -15,6 +15,12 @@ const settings = [
     {key: "app.register.requestStats", type: "boolean", value: "true", description: "Whether to request the user's statistics approval during registration"},
     {key: "app.login.guest", type: "boolean", value: "true", description: "Whether to allow guest logins"},
     {key: "app.register.terms", type: "html", value: terms, description: "Terms and conditions text to display during registration"},
+    {key: "app.landing.showDocs", type: "boolean", value: "true", description: "Whether to show the documentation links on the landing page"},
+    {key: "app.landing.linkDocs", value: "/docs", description: "The URL to the documentation"},
+    {key: "app.landing.showProject", type: "boolean", value: "true", description: "Whether to show the official project page link on the landing page"},
+    {key: "app.landing.linkProject", value: process.env.APP_LINK_PROJECT, description: "The URL to the official project page"},
+    {key: "app.landing.showFeedback", type: "boolean", value: "true", description: "Whether to show the official feedback link on the landing page"},
+    {key: "app.landing.linkFeedback", value: process.env.APP_LINK_FEEDBACK, description: "The URL to the official feedback page"},
 ]
 
 module.exports = {

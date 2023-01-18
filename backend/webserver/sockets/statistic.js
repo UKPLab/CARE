@@ -18,13 +18,9 @@ module.exports = class StatisticSocket extends Socket {
     init() {
         this.socket.on("stats", async (data) => {
             try {
-
-                //TODO the field acccept_stats is always null, so we can't check it here
-                //console.log(socket.request.session.passport.user);
-
-                //if (socket.request.session.passport.user.accept_stats) {
-                await dbAddStat(data.action, data.data, this.user_id);
-                //}
+                if(this.socket.request.session.passport.user.acceptStats) {
+                    await dbAddStat(data.action, data.data, this.user_id);
+                }
             } catch (e) {
                 this.logger.error("Can't add statistics: " + JSON.stringify(data));
             }

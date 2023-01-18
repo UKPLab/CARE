@@ -20,6 +20,12 @@ module.exports = function (app) {
             "app.register.requestStats": await dbGetSetting("app.register.requestStats"),
             "app.register.terms": await dbGetSetting("app.register.terms"),
             "app.login.guest": await dbGetSetting("app.login.guest"),
+            "app.landing.showDocs": await dbGetSetting("app.landing.showDocs"),
+            "app.landing.linkDocs": await dbGetSetting("app.landing.linkDocs"),
+            "app.landing.showProject": await dbGetSetting("app.landing.showProject"),
+            "app.landing.linkProject": await dbGetSetting("app.landing.linkProject"),
+            "app.landing.showFeedback": await dbGetSetting("app.landing.showFeedback"),
+            "app.landing.linkFeedback": await dbGetSetting("app.landing.linkFeedback"),
         };
         res.set('Content-Type', 'application/javascript');
         res.send(`window.config = JSON.parse(${JSON.stringify(JSON.stringify(config))})`);
