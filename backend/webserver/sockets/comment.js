@@ -141,14 +141,14 @@ module.exports = class CommentSocket extends Socket {
                 this.logger.info("Error during loading of comments: " + e);
 
                 this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
-                this.socket.emit("exportedComments", {"success": false, "document_id": data.documentId});
+                this.socket.emit("exportedComments", {"success": false, "id": data.documentId});
 
                 return;
             }
 
             this.socket.emit("exportedComments", {
                 "success": true,
-                "document_id": data.id,
+                "id": data.id,
                 "objs": await Promise.all(comments.map(async (c) => await dbFormatForExport(c)))
             });
         });

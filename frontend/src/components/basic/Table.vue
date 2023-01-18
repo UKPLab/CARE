@@ -115,8 +115,8 @@ export default {
       sortColumn: null,
       sortDirection: "asc",
       currentPage: 1,
-      selectedRows: [],
-      selectableRows: this.options && this.options.selectableRows
+      selectableRows: this.options && this.options.selectableRows,
+      selectedRows: []
     }
   },
   methods: {

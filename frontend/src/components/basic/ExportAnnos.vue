@@ -1,136 +1,96 @@
 <template>
+  <DownloadSet name="annotations" ref="annotations"
+               req-msg="exportAnnotationsByDocument"
+               res-msg="exportedAnnotations"
+              @result="r => this.result[0] = r"
+              @progress="p => this.progress[0] = p">
+  </DownloadSet>
+  <DownloadSet name="comments" ref="comments"
+               req-msg="exportCommentsByDocument"
+               res-msg="exportedComments"
+               @result="r => this.result[1] = r"
+               @progress="p => this.progress[1] = p">
+  </DownloadSet>
 </template>
 
 <script>
 /* ExportAnnos.vue - default anno and comment export component
 
-Export logic
+Export logic for annos and comments
 
 Author: Nils Dycke
 Source: -
 */
 import {mergeAnnotationsAndComments} from "../../assets/data";
-import {arraysContainSameElements, downloadObjectsAs, omitObjectAttributeSubset} from "../../assets/utils";
+import {downloadObjectsAs, omitObjectAttributeSubset} from "../../assets/utils";
+import DownloadSet from "./DownloadSet.vue";
 
 export default {
   name: "ExportAnnos.vue",
+  components: {DownloadSet},
   props: [],
   data() {
     return {
-      downloadAnnos: [],
-      downloadComms: [],
-      downloadIds: [],
+      progress: [0,0],
       outputType: null,
-      timeout: null,
       simplify: null,
+      result: null,
+      downloadIds: null
     }
   },
   computed: {
     download_progress() {
-      return [this.downloadAnnos.map(i => i.document_id), this.downloadComms.map(i => i.document_id)]
+      if(this.progress !== null){
+        return Math.min(...this.progress);
+      }
+      return 0;
     }
   },
   watch: {
     download_progress(newVal) {
-      if (this.downloadIds.length === 0) {
+      if (newVal !== 1) {
         return;
       }
-
-      const annoDocIds = newVal[0];
-      const commDocIds = newVal[1];
-      if (annoDocIds.length !== this.downloadIds.length
-          || commDocIds.length !== this.downloadIds.length
-          || !arraysContainSameElements(annoDocIds, this.downloadIds)
-          || !arraysContainSameElements(commDocIds, this.downloadIds)) {
-        return;
-      }
-
-      // stop timeout
-      clearTimeout(this.timeout);
-
-      // stop listening to such events
-      this.sockets.unsubscribe("exportedAnnotations");
-      this.sockets.unsubscribe("exportedComments");
 
       // export for each document
       for (let i = 0; i < this.downloadIds.length; i++) {
         const downloadId = this.downloadIds[i];
 
-        this.downloadExported(
-            this.downloadAnnos.find(e => e.document_id === downloadId),
-            this.downloadComms.find(e => e.document_id === downloadId),
-            this.outputType,
-            this.simplify);
+        this.exportDownloaded(
+            this.result[0].find(e => e.id === downloadId),
+            this.result[1].find(e => e.id === downloadId));
       }
 
-      this.downloadAnnos = [];
-      this.downloadComms = [];
-      this.downloadIds = [];
-      this.outputType = null;
-      this.simplify = null;
+      this.reset();
     }
   },
   methods: {
-    abortExport() {
-      // stop timeout
-      clearTimeout(this.timeout);
-
-      // stop listening
-      this.sockets.unsubscribe("exportedAnnotations");
-      this.sockets.unsubscribe("exportedComments");
-
-      //clear vars
-      this.downloadAnnos = [];
-      this.downloadComms = [];
-      this.downloadIds = [];
+    reset() {
+      this.progress = [0,0];
       this.outputType = null;
+      this.simplify = null;
+      this.result = null;
+      this.downloadIds = null;
 
-      //notify user
-       this.eventBus.emit('toast', {
-          title: "Export aborted",
-          message: "The server did not respond. Please try again later.",
-          variant: "danger"
-        });
+      this.$refs.annotations.reset();
+      this.$refs.comments.reset();
     },
+
     requestExport(doc_ids, outputType, simplify=false) {
       // do not allow second downlaod while one is in progress
-      if(this.downloadIds.length > 0){
+      if(this.downloadIds){
         this.eventBus.emit('toast', {message: "Another download is in progress. Please wait.", variant: "warning", delay: 3000});
         return;
       }
 
-      this.sockets.subscribe("exportedAnnotations", (r) => {
-        if(this.downloadIds.includes(r.document_id)) {
-          this.downloadAnnos.push(r);
-        }
-      });
-
-      this.sockets.subscribe("exportedComments", (r) => {
-        if(this.downloadIds.includes(r.document_id)) {
-          this.downloadComms.push(r);
-        }
-      });
-
-      this.downloadAnnos = [];
-      this.downloadComms = [];
       this.downloadIds = doc_ids;
       this.outputType = outputType;
       this.simplify = simplify;
+      this.result= [null, null];
+      this.progress = [0, 0];
 
-      //in the future: do batching if necessary
-      doc_ids.forEach(did => {
-        this.$socket.emit("exportAnnotationsByDocument", {"id": did});
-        this.$socket.emit("exportCommentsByDocument", {"id": did});
-      });
-
-      // set timer
-      this.timeout = setTimeout(x => {
-        if(this.download_progress[0].length < this.downloadIds.length || this.download_progress[1].length < this.downloadIds.length) {
-          this.abortExport();
-        } else {
-          clearTimeout(this.timeout);
-        }
-      }, 10000)
+      this.$refs.annotations.requestDownload(this.downloadIds);
+      this.$refs.comments.requestDownload(this.downloadIds);
     },
     _simple(obj) {
       const simple = omitObjectAttributeSubset(obj, ["hash", "document", "referenceAnnotation", "referenceComment",
@@ -143,11 +103,11 @@ export default {
         }
       }));
     },
-    downloadExported(annoExport, commExport, outputType, simplify=false) {
+    exportDownloaded(annoExport, commExport) {
       if (!annoExport.success || !commExport.success) {
         this.eventBus.emit('toast', {
           title: "Export Failed",
-          message: "Export failed for " + annoExport.document_id + ".",
+          message: "Export failed for " + annoExport.id + ".",
           variant: "danger"
         });
         return;
@@ -158,19 +118,19 @@ export default {
             commExport.objs
       );
 
-      if(simplify) {
+      if(this.simplify) {
         merged = merged.map(i => this._simple(i));
         docComments = docComments.map(i => this._simple(i));
       }
 
-      downloadObjectsAs(merged, `${annoExport.document_id}_annotations`, outputType);
+      downloadObjectsAs(merged, `${annoExport.id}_annotations`, this.outputType);
       if(docComments.length > 0){
-        downloadObjectsAs(docComments, `${annoExport.document_id}_notes`, outputType);
+        downloadObjectsAs(docComments, `${annoExport.id}_notes`, this.outputType);
       }
 
       this.eventBus.emit('toast', {
           title: "Export Success",
-          message: `Exported annotations for ${annoExport.document_id}`,
+          message: `Exported annotations for ${annoExport.id}`,
           variant: "success"
         });
     },

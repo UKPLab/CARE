@@ -31,8 +31,12 @@ export default {
         getUsers: state => {
             return state["users"]
         },
-        getStatsByUser: state => (userIds) => {
-            return Object.entries(state["user_stats"]).filter(([sid, s]) => s.userId in userIds);
+        getStatsByUser: state => (userId) => {
+            if(userId in state["user_stats"]){
+                return state["user_stats"][userId];
+            } else {
+                return null;
+            }
         },
     },
     mutations: {
@@ -56,11 +60,10 @@ export default {
         },
         SOCKET_statsByUser: (state, message) => {
             if (message.success) {
-                message.statistics.forEach(s => {
-                    state.user_stats[s.id] = s;
-                });
+                state.user_stats[message.userId] = message.statistics;
             }
         },
     },
-    actions: {}
+    actions: {
+    }
 };
