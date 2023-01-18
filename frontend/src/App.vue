@@ -28,9 +28,9 @@ export default {
   mounted() {
     // Load application data on startup
     if (this.authenticated) {
-      this.$socket.emit("getTagSets");
-      this.$socket.emit("getTags");
-      this.$socket.emit("getSettings");
+      this.$socket.emit("tagSetGetAll");
+      this.$socket.emit("tagGetAll");
+      this.$socket.emit("settingGetAll");
       this.$socket.emit("documentGetAll");
     }
     // TODO: wait for all data to be loaded before rendering the page

@@ -12,4 +12,22 @@ module.exports = class Service {
 
         this.server = server;
     }
+
+    /**
+     * This method is called when a client connects to the service
+     * @param {client} client The client that connected
+     * @param {object} data The data that was sent with the connection
+     */
+    connectClient(client, data) {
+        this.logger.info("Client connected with data " + data);
+    }
+
+    /**
+     * This method is called when a client disconnects from the service
+     * @param {client} client The client that disconnected
+     * @param {object} data The data that was sent with the disconnection
+     */
+    disconnectClient(client, data) {
+        this.logger.info("Client disconnected with data " + data);
+    }
 }

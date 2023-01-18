@@ -45,7 +45,7 @@ export default {
                 state.reviews = message.reviews;
             }
         },
-        SOCKET_userDataAll: (state, message) => {
+        SOCKET_userData: (state, message) => {
             if (message.success) {
                 state.users = message.users;
             }

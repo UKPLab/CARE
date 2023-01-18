@@ -30,7 +30,6 @@ module.exports = class CollabSocket extends Socket {
                 this.sendToast(e.message, "Collaboration Error", "danger");
             }
 
-
         });
 
         this.socket.on("collabUpdate", async (data) => {
@@ -55,6 +54,16 @@ module.exports = class CollabSocket extends Socket {
                 this.sendToast(e.message, "Collaboration Error", "danger");
             }
 
+        });
+
+        this.socket.on("collabSubscribe", (data) => {
+            this.socket.join("doc:" + data.documentId);
+            this.logger.info("Subscribe document " + data.documentId);
+        });
+
+        this.socket.on("collabUnsubscribe", (data) => {
+            this.socket.leave("doc:" + data.documentId);
+            this.logger.info("Unsubscribe document " + data.documentId);
         });
     }
 }

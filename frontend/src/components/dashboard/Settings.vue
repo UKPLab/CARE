@@ -74,7 +74,7 @@ export default {
     }
   },
   sockets: {
-    settingAll: function (data) {
+    settingData: function (data) {
       this.settings = data.sort((a, b) => (a.key > b.key) ? 1 : ((b.key > a.key) ? -1 : 0))
     }
   },
@@ -87,7 +87,7 @@ export default {
     },
     load() {
       this.settings = null;
-      this.$socket.emit("settingGetAll");
+      this.$socket.emit("settingGetData");
     },
     openEditor(setting) {
       this.editorSetting = setting;

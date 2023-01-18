@@ -84,23 +84,24 @@ export default {
       });
     },
     save() {
-      this.sockets.subscribe("tagSetSaved", (data) => {
+      this.sockets.subscribe("tagSetUpdated", (data) => {
         this.$refs.tagSetModal.closeModal();
-        this.sockets.unsubscribe('tagSetSaved');
+        this.sockets.unsubscribe('tagSetUpdated');
         if (data.success) {
           this.eventBus.emit('toast', {title: "Tagset saved", message: "Successful saved tagset!", variant: "success"});
         } else {
           this.eventBus.emit('toast', {title: "Tagset not saved", message: data.message, variant: "danger"});
         }
       });
-      this.$socket.emit("saveTagset", {
-        "tagset": this.$store.getters["tag/getTagSet"](this.id),
+      this.$socket.emit("tagSetUpdate", {
+        "tagSetId": this.id,
+        "tagSet": this.$store.getters["tag/getTagSet"](this.id),
         "tags": this.$store.getters["tag/getTags"](this.id, false)
       });
       this.$refs.tagSetModal.waiting = true;
     },
     cancel() {
-      this.$socket.emit("getTagSetById", this.id);
+      this.$socket.emit("tagSetGet", {tagSetId: this.id});
       this.back();
     },
     back() {
