@@ -32,7 +32,7 @@ export default {
     }
   },
   mounted() {
-    this.$socket.emit("getAllUserData");
+    this.$socket.emit("userGetData");
   },
   methods: {
     ...mapGetters({items: 'admin/getUsers'}),

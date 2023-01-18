@@ -1,5 +1,6 @@
 const {io: io_client} = require("socket.io-client");
 const Service = require("../Service.js");
+const {getSetting} = require("../../db/methods/settings.js");
 
 /**
  * Hold connection and data for external NLP service
@@ -35,12 +36,12 @@ module.exports = class NLPService extends Service {
             return;
         }
 
-        let socket = io_client(process.env.NLP_SERVICE,
+        let socket = io_client(getSetting("service.nlp.url"),
             {
-                auth: {token: process.env.NLP_ACCESS_TOKEN},
+                auth: {token: getSetting("service.nlp.token")},
                 reconnection: true,
-                autoConnect: (process.env.NLP_USE !== "false"),
-                timeout: 10000, //timeout between connection attempts
+                autoConnect: true,
+                timeout: getSetting("service.nlp.timeout"), //timeout between connection attempts
             }
         );
         self.connections[clientId] = [socket, client, true];
@@ -50,7 +51,7 @@ module.exports = class NLPService extends Service {
             self.logger.error("Connection error, try to connect again...");
             setTimeout(() => {
                 socket.connect();
-            }, 10000);
+            }, getSetting("service.nlp.retryDelay"));
         });
 
         // Handle reconnection attempts
@@ -111,7 +112,7 @@ module.exports = class NLPService extends Service {
         return this.info;
     }
 
-    connect(client) {
+    connectClient(client, data) {
         if (process.env.NLP_USE === "false") {
             return;
         }
@@ -119,7 +120,7 @@ module.exports = class NLPService extends Service {
         this.#setupConnectionToNlpService(client);
     }
 
-    disconnect(client) {
+    disconnectClient(client, data) {
         if (process.env.NLP_USE === "false") {
             return;
         }

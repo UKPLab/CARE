@@ -145,7 +145,7 @@ export default {
   },
   unmounted() {
     // Leave the room for document updates
-    this.$socket.emit("unsubscribe:document", {doc: this.document_id});
+    this.$socket.emit("collabUnsubscribe", {documentId: this.document_id});
     this.$refs.viewer.removeEventListener("scroll");
   },
   sockets: {
@@ -159,7 +159,7 @@ export default {
     },
     changeNlpSetting(newNlpActive){
       if(this.nlp_support !== newNlpActive){
-        this.$socket.emit("setSetting", {key: "annotator.nlp.activated", value: newNlpActive});
+        this.$socket.emit("settingSet", {key: "annotator.nlp.activated", value: newNlpActive});
       }
     },
     async scrollTo(annotationId) {
@@ -239,12 +239,12 @@ export default {
     },
     load() {
       // TODO data should loaded in app for basic settings
-      this.$socket.emit("getTagSets");
-      this.$socket.emit("getTags");
-      this.$socket.emit("getSettings");
+      this.$socket.emit("tagSetGetAll");
+      this.$socket.emit("tagGetAll");
+      this.$socket.emit("settingGetAll");
 
       // Join Room for document updates
-      this.$socket.emit("subscribe:document", {doc: this.document_id});
+      this.$socket.emit("collabSubscribe", {documentId: this.document_id});
 
       // check for available nlp support (for now hard-coded sentiment analysis)
       if(!this.nlp_available) {

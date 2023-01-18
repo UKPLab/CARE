@@ -58,7 +58,7 @@ export default {
           this.eventBus.emit('toast', {title: "Tagset not published", message: data.message, variant: "danger"});
         }
       });
-      this.$socket.emit("publishTagset", {id: this.id});
+      this.$socket.emit("tagSetPublish", {tagSetId: this.id});
       this.$refs.tagSetPublishModal.waiting = true;
     },
     cancel() {

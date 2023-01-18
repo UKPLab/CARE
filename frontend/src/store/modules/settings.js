@@ -33,7 +33,7 @@ export default {
         },
     },
     mutations: {
-        SOCKET_settings: (state, settings) => {
+        SOCKET_settingRefresh: (state, settings) => {
             Object.entries(settings).forEach(([key, value]) => {
                 state[key] = value
             });

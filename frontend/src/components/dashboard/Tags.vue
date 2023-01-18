@@ -150,7 +150,7 @@ export default {
   },
   methods: {
     selectAsDefault(tagSetId) {
-      this.$socket.emit("setSetting", {key: "tags.tagSet.default", value: tagSetId});
+      this.$socket.emit("settingSet", {key: "tags.tagSet.default", value: tagSetId});
     },
   },
   computed: {

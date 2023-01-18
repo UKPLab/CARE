@@ -52,7 +52,7 @@ export default {
           this.eventBus.emit('toast', {title:"Tagset not deleted", message: data.message, variant: "danger"});
         }
       });
-      this.$socket.emit("deleteTagset", { id: this.id });
+      this.$socket.emit("tagSetDelete", { tagSetId: this.id });
       this.$refs.tagSetDeleteModal.waiting = true;
     },
     cancel() {
