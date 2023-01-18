@@ -2,13 +2,13 @@
 
 const navElements = [
     {
-        name: "NLP Skills",
+        name: "User Statistics",
         groupId: "Admin",
-        icon: 'cpu',
+        icon: 'bar-chart-steps',
         order: 10,
         admin: true,
-        path: "nlp_skills",
-        component: 'NlpSkills'
+        path: "behavior_dashboard",
+        component: 'BehaviorDashboard'
     }
 ];
 

@@ -13,7 +13,8 @@ const getDefaultState = () => {
     return {
         docs: [],
         reviews: [],
-        users: []
+        users: [],
+        user_stats: {}
     };
 };
 
@@ -29,7 +30,10 @@ export default {
         },
         getUsers: state => {
             return state["users"]
-        }
+        },
+        getStatsByUser: state => (userIds) => {
+            return Object.entries(state["user_stats"]).filter(([sid, s]) => s.userId in userIds);
+        },
     },
     mutations: {
         // updates the local store to the given documents
@@ -48,6 +52,13 @@ export default {
         SOCKET_userDataAll: (state, message) => {
             if (message.success) {
                 state.users = message.users;
+            }
+        },
+        SOCKET_statsByUser: (state, message) => {
+            if (message.success) {
+                message.statistics.forEach(s => {
+                    state.user_stats[s.id] = s;
+                });
             }
         },
     },

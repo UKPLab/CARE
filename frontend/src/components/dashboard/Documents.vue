@@ -3,7 +3,7 @@
     <template v-slot:headerElements>
       <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAll()" title="Export">
         <LoadIcon iconName="cloud-arrow-down" @click=""></LoadIcon>
-        Export all
+        Export annotations
       </button>
       <Upload @addedDoc="onAddedDoc"></Upload>
     </template>
@@ -11,7 +11,7 @@
       <Table :columns="columns" :data="docs" :options="options"></Table>
     </template>
   </Card>
-  <Export ref="export"></Export>
+  <ExportAnnos ref="export"></ExportAnnos>
 </template>
 
 <script>
@@ -27,7 +27,7 @@ Source: -
 */
 import {mapGetters} from "vuex";
 import Upload from "./documents/Upload.vue";
-import Export from "../basic/Export.vue";
+import ExportAnnos from "../basic/ExportAnnos.vue";
 import Card from "../basic/Card.vue";
 import Table from "../basic/Table.vue";
 import LoadIcon from "../../icons/LoadIcon.vue";
@@ -35,7 +35,7 @@ import LoadIcon from "../../icons/LoadIcon.vue";
 
 export default {
   name: "Document",
-  components: {Upload, Export, Card, LoadIcon, Table},
+  components: {Upload, ExportAnnos, Card, LoadIcon, Table},
   data() {
     return {
       options: {

@@ -1,7 +1,7 @@
 const {
     getAll: dbGetAllUser,
     getUsername: dbGetUsername,
-    minimalFields
+    adminFields
 } = require("../../db/methods/user.js");
 const Socket = require("../Socket.js");
 
@@ -34,12 +34,10 @@ module.exports = class UserSocket extends Socket {
 
     init() {
         this.socket.on("getAllUserData", async (data) => {
-            console.log("GETTING ALL USER DATA");
-
             if (this.isAdmin()) {
                 try {
                     const users = await dbGetAllUser();
-                    const mappedUsers = users.map(x => minimalFields(x));
+                    const mappedUsers = users.map(x => adminFields(x));
 
                     this.socket.emit("userDataAll", {success: true, users: mappedUsers});
                 } catch (e) {

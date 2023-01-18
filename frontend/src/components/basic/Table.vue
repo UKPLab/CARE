@@ -2,6 +2,7 @@
   <table :class="tableClass" class="table">
     <thead>
     <tr>
+      <th v-if="selectableRows"></th>
       <th v-for="c in columns">
         {{ c.name }}
         <LoadIcon v-if="c.sortable"
@@ -22,6 +23,11 @@
       </td>
     </tr>
     <tr v-for="r in tableData" v-else>
+      <td v-if="selectableRows">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" @input="e => selectRow(e.target.checked, r)">
+          </div>
+      </td>
       <td v-for="c in columns">
         <span v-if="c.key in r">
           <span v-if="c.type === 'icon'">
@@ -82,6 +88,7 @@ import TableButtonGroup from "./TableButtonGroup.vue"
 export default {
   name: "Table.vue",
   components: {TableButtonGroup, LoadIcon, TableButton},
+  emits: ["rowSelection"],
   props: {
     data: {
       type: Array,
@@ -108,6 +115,8 @@ export default {
       sortColumn: null,
       sortDirection: "asc",
       currentPage: 1,
+      selectedRows: [],
+      selectableRows: this.options && this.options.selectableRows
     }
   },
   methods: {
@@ -118,6 +127,16 @@ export default {
         this.sortDirection = "asc";
       }
       this.sortColumn = column;
+    },
+    selectRow(action, row){
+      if(this.selectableRows) {
+        if (action) {
+          this.selectedRows.push(row);
+        } else {
+          this.selectedRows = this.selectedRows.filter(r => r !== row);
+        }
+        this.$emit("rowSelection", this.selectedRows);
+      }
     }
   },
   computed: {

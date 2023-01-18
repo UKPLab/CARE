@@ -14,6 +14,10 @@ const crypto = require('crypto');
 const {add: addUser, find: findUser, relevantFields: getUserFields} = require('../../db/methods/user.js')
 const logger = require("../../utils/logger.js")("routes/auth");
 
+const {
+    update: updateUser
+} = require("../../db/methods/user.js");
+
 // internal login procedure using passport and postgres
 passport.use(new LocalStrategy(function verify(username, password, cb) {
     findUser(username, password)
@@ -92,10 +96,13 @@ module.exports = function (app) {
             if (!user) {
                 return res.status(401).send(info);
             }
-            req.logIn(user, function (err) {
+            req.logIn(user, async function (err) {
                 if (err) {
                     return next(err);
                 }
+
+                await updateUser(user.id, {lastLoginAt: new Date()});
+
                 res.status(200).send({user: user});
             });
         })(req, res, next);
