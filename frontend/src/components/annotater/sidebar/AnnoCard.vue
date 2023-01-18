@@ -5,10 +5,10 @@
       <div class="row">
         <div class="col">
           {{ annotation.creator_name }}
-          <span v-if="showEditByCollab">
-            <LoadIcon :size="12 " class="fading" iconName="pencil-fill"></LoadIcon>
-          </span>
-
+          <Collaboration ref="collab"
+                         target-type="annotation"
+                         :target-id="annotation_id"
+                         :document-id="document_id"></Collaboration>
         </div>
         <div class="col text-end">
           {{ new Date(annotation.updatedAt).toLocaleDateString() }}
@@ -21,7 +21,8 @@
            :title="tagName" @click="scrollTo(annotation_id)">
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
-      <CommentCard ref="main_comment" @saveCard="save()" :comment_id="comment_id" :edit="editedByMyself"/>
+      <CommentCard ref="main_comment" @saveCard="save()" :comment_id="comment_id" :edit="editedByMyself"
+                   :document_id="document_id"/>
     </template>
 
     <template v-slot:footer v-if="annotation.userId === user_id">
@@ -42,14 +43,18 @@
         </div>
         <div v-else class="row">
           <div class="col">
-            <span v-if="numberReplies > 0" class="replies">Show Replies ({{ numberReplies }})</span>
+            <button v-if="numberReplies > 0" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
+                    type="button" v-on:click="showReplies = !showReplies">
+              <LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>
+              <span>Replies ({{ numberReplies }})</span>
+            </button>
           </div>
           <div class="col text-end">
-            <!--<button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
-                    type="button" v-on:click="reply()">
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
+                    type="button" v-on:click="$refs.main_comment.reply()">
               <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
-              <span class="visually-hidden">Edit</span>
-            </button>-->
+              <span class="visually-hidden">Reply</span>
+            </button>
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
                     type="button" v-on:click="edit()">
               <LoadIcon :size="16" iconName="pencil-square"></LoadIcon>
@@ -65,6 +70,16 @@
         </div>
       </div>
     </template>
+
+    <template v-slot:thread>
+      <div v-if="showReplies" class="d-grid gap-1 my-2">
+        <span v-for="c in childComments" :key="c.id">
+          <CommentCard :document_id="document_id" :comment_id="c.id">
+        </CommentCard>
+        </span>
+      </div>
+    </template>
+
   </SideCard>
 </template>
 
@@ -82,33 +97,18 @@ import SideCard from "./SideCard.vue";
 import CommentCard from "./CommentCard.vue";
 import LoadIcon from "../../../icons/LoadIcon.vue";
 import {v4 as uuidv4} from 'uuid';
+import Collaboration from "../../basic/Collaboration.vue"
 
 
 export default {
   name: "AnnoCard",
-  components: {SideCard, CommentCard, LoadIcon},
+  components: {Collaboration, SideCard, CommentCard, LoadIcon},
   props: ["annotation_id", "readonly", "document_id"],
   data: function () {
     return {
       shake: false,
-      edit_mode: false,
-      collab_updater: null,
-      collab_id: null,
-      showEditByCollab: false,
+      showReplies: false,
       showEditTimeout: null,
-    }
-  },
-  sockets: {
-    start_collab: function (data) {
-      if (data.id === this.collab_id) {
-        this.edit_mode = true;
-        if (this.collab_updater !== null) {
-          clearInterval(this.collab_updater);
-        }
-        this.collab_updater = setInterval(() => {
-          this.update_collab();
-        }, 1000);
-      }
     }
   },
   mounted() {
@@ -121,21 +121,7 @@ export default {
   },
   unmounted() {
     if (this.edit_mode) {
-      this.remove_collab();
-    }
-  },
-  watch: {
-    collaborations(t) {
-      if (t.length > 0) {
-        this.showEditByCollab = true;
-        if (this.showEditTimeout !== null) {
-          clearTimeout(this.showEditTimeout);
-        }
-        this.showEditTimeout = setTimeout(() => {
-          this.showEditByCollab = false;
-          this.showEditTimeout = null;
-        }, 1000);
-      }
+      this.$refs.collab.removeCollab();
     }
   },
   computed: {
@@ -145,9 +131,6 @@ export default {
     annotation() {
       return this.$store.getters["anno/getAnnotation"](this.annotation_id);
     },
-    collaborations() {
-      return this.$store.getters["collab/annotations"](this.annotation_id);
-    },
     comment_id() {
       return this.$store.getters["comment/getCommentByAnnotation"](this.annotation_id)["id"];
     },
@@ -156,6 +139,9 @@ export default {
     },
     numberReplies() {
       return this.$store.getters["comment/getNumberOfChildrenByComment"](this.comment_id);
+    },
+    childComments() {
+      return this.$store.getters["comment/getCommentsByCommentId"](this.comment_id);
     },
     color() {
       return this.$store.getters['tag/getColor'](this.annotation.tag);
@@ -192,7 +178,7 @@ export default {
         "tags": JSON.stringify(this.annotation.tags),
       });
       this.$refs.main_comment.save();
-      this.remove_collab();
+      this.$refs.collab.removeCollab();
     },
     cancel() {
       if (this.annotation.draft) {
@@ -203,7 +189,7 @@ export default {
           "documentId": this.document_id
         });
       }
-      this.remove_collab();
+      this.$refs.collab.removeCollab();
       this.edit_mode = null;
     },
     remove() {
@@ -215,31 +201,8 @@ export default {
       });
     },
     edit() {
-      this.start_collab();
+      this.$refs.collab.startCollab();
     },
-    start_collab() {
-      this.collab_id = uuidv4();
-      this.$socket.emit("add_collab",
-          {
-            type: "annotation",
-            doc_id: this.document_id,
-            annotation_id: this.annotation_id,
-            id: this.collab_id
-          });
-    },
-    update_collab() {
-      this.$socket.emit("update_collab", {id: this.collab_id});
-    },
-    remove_collab() {
-      this.$socket.emit("remove_collab", {id: this.collab_id});
-      if (this.collab_updater !== null) {
-        clearInterval(this.collab_updater);
-        this.collab_updater = null;
-      }
-      this.edit_mode = false;
-      this.collab_id = null;
-    },
-
   }
 }
 </script>
