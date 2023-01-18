@@ -46,7 +46,7 @@
           @decisionSubmit="decisionSubmit"></Report>
   <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id"
                   :document_id="document_id"></DecisionSubmit>
-  <Export ref="export"></Export>
+  <ExportAnnos ref="export"></ExportAnnos>
 </template>
 
 <script>
@@ -64,7 +64,7 @@ import ReviewSubmit from "./annotater/modals/ReviewSubmit.vue"
 import Report from "./annotater/modals/Report.vue"
 import Loader from "./basic/Loader.vue";
 import DecisionSubmit from "./annotater/modals/DecisionSubmit.vue"
-import Export from "./basic/Export.vue"
+import ExportAnnos from "./basic/ExportAnnos.vue"
 import IconBoostrap from "../icons/IconBootstrap.vue";
 import {offsetRelativeTo, scrollElement} from "../assets/anchoring/scroll";
 import {isInPlaceholder} from "../assets/anchoring/placeholder";
@@ -72,7 +72,7 @@ import {resolveAnchor} from "../assets/anchoring/resolveAnchor";
 
 export default {
   name: "Annotater",
-  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, Export, IconBoostrap},
+  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, ExportAnnos, IconBoostrap},
   props: {
     'document_hash': {
       type: String,

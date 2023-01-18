@@ -2,7 +2,7 @@
 </template>
 
 <script>
-/* Export.vue - default anno and comment export component
+/* ExportAnnos.vue - default anno and comment export component
 
 Export logic
 
@@ -13,7 +13,7 @@ import {mergeAnnotationsAndComments} from "../../assets/data";
 import {arraysContainSameElements, downloadObjectsAs, omitObjectAttributeSubset} from "../../assets/utils";
 
 export default {
-  name: "Export.vue",
+  name: "ExportAnnos.vue",
   props: [],
   data() {
     return {
