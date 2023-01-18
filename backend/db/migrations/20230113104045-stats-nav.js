@@ -7,8 +7,8 @@ const navElements = [
         icon: 'bar-chart-steps',
         order: 10,
         admin: true,
-        path: "behavior_dashboard",
-        component: 'BehaviorDashboard'
+        path: "user_stats",
+        component: 'UserStatistics'
     }
 ];
 

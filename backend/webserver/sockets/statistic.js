@@ -33,15 +33,15 @@ module.exports = class StatisticSocket extends Socket {
              if (this.isAdmin()) {
                 try {
                     //TODO load only for those users with the stats flag set
-                    const stats = await getByUser(data.userIds);
-                    this.socket.emit("statsByUser", {success: true, statistics: stats});
+                    const stats = await getByUser(data.userId);
+                    this.socket.emit("statsByUser", {success: true, userId: data.userId, statistics: stats});
                 } catch (e) {
-                    this.socket.emit("statsByUser", {success: false, message: "Failed to retrieve stats for users"});
+                    this.socket.emit("statsByUser", {success: false, userId: data.userId, message: "Failed to retrieve stats for users"});
                     this.logger.error("Can't load statistics due to error " + e.toString());
                 }
             } else {
-                this.socket.emit("statsByUser", {success: false, message: "User rights and argument mismatch"});
-                this.logger.error("User right and request parameter mismatch" + JSON.stringify(userIds));
+                this.socket.emit("statsByUser", {success: false, userId: data.userId, message: "User rights and argument mismatch"});
+                this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
             }
         });
 

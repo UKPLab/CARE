@@ -1,4 +1,5 @@
 <template>
+  <!-- opt. show progress bar -->
 </template>
 
 <script>
@@ -27,6 +28,7 @@ export default {
       required: true,
     }
   },
+  emits: ["progress", "result"],
   data() {
     return {
       downloaded: [],
@@ -47,6 +49,9 @@ export default {
     },
   },
   watch: {
+    progress(newVal) {
+      this.$emit("progress", newVal);
+    },
     downloaded_ids(newVal) {
       if (this.toDownload.length === 0) {
         return;
@@ -61,6 +66,9 @@ export default {
 
       // stop listening to such events
       this.sockets.unsubscribe(this.resMsg);
+
+      //send result
+      this.$emit("result", this.downloaded);
     }
   },
   methods: {
@@ -80,7 +88,7 @@ export default {
 
       //notify user
        this.eventBus.emit('toast', {
-          title: "Export aborted",
+          title: "Download aborted",
           message: "The server did not respond. Please try again later.",
           variant: "danger"
         });
