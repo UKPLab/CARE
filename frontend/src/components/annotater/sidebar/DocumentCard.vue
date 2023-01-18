@@ -155,17 +155,16 @@ export default {
       if (this.comment.draft) {
         this.remove();
       } else {
-        this.$socket.emit('getComment', {
-          "id": this.comment_id,
-          "document_id": this.document_id
+        this.$socket.emit('commentGet', {
+          "commentId": this.comment_id,
         });
       }
       this.remove_collab();
       this.edit_mode = null;
     },
     remove() {
-      this.$socket.emit('updateComment', {
-        "id": this.comment_id,
+      this.$socket.emit('commentUpdate', {
+        "commentId": this.comment_id,
         "deleted": true
       });
     },

@@ -38,7 +38,7 @@ export default {
   sockets: {
     collabStart: function (data) {
       if (data.collabHash === this.collabHash) {
-        this.collabId = data.id;
+        this.collabId = data.collabId;
         this.editMode = true;
         this.$emit('collabStatus', true);
 
@@ -72,7 +72,7 @@ export default {
   },
   methods: {
     updateCollab() {
-      this.$socket.emit("collabUpdate", {id: this.collabId});
+      this.$socket.emit("collabUpdate", {collabId: this.collabId});
     },
     startCollab() {
       this.collabHash = uuidv4();
@@ -85,7 +85,7 @@ export default {
           });
     },
     removeCollab() {
-      this.$socket.emit("collabDelete", {id: this.collabId});
+      this.$socket.emit("collabDelete", {collabId: this.collabId});
       if (this.collabUpdater !== null) {
         clearInterval(this.collabUpdater);
         this.collabUpdater = null;

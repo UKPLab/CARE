@@ -37,7 +37,7 @@ export default {
         }
     },
     mutations: {
-        SOCKET_commentUpdate: (state, data) => {
+        SOCKET_commentRefresh: (state, data) => {
             if (!Array.isArray(data)) {
                 data = [data];
             }

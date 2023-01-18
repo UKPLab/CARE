@@ -19,16 +19,29 @@ channels:
           - $ref: '#/components/messages/annotationGet'
           - $ref: '#/components/messages/annotationUpdate'
           - $ref: '#/components/messages/annotationGetByDocument'
+          - $ref: '#/components/messages/annotationExportByDocument'
+          - $ref: '#/components/messages/collabAdd'
+          - $ref: '#/components/messages/collabUpdate'
+          - $ref: '#/components/messages/collabDelete'
+          - $ref: '#/components/messages/commentAdd'
+          - $ref: '#/components/messages/commentGet'
+          - $ref: '#/components/messages/commentUpdate'
+          - $ref: '#/components/messages/commentGetByDocument'
+          - $ref: '#/components/messages/commentExportByDocument'
     subscribe:
       message:
         oneOf:
           - $ref: '#/components/messages/annotationRefresh'
           - $ref: '#/components/messages/annotationExport'
+          - $ref: '#/components/messages/collabRefresh'
+          - $ref: '#/components/messages/collabStart'
+          - $ref: '#/components/messages/commentRefresh'
+          - $ref: '#/components/messages/commentExport'
 
 components:
   messages:
     annotationAdd:
-      name: Add annotation
+      name: annotationAdd
       title: Add annotation
       summary: Add annotation to a document
       payload:
@@ -43,7 +56,7 @@ components:
               type: object
               description: selectors of the annotation
     annotationGet:
-      name: Get annotation
+      name: annotationGet
       title: Get annotation
       summary: Get annotation by Id
       payload:
@@ -55,14 +68,14 @@ components:
           annotationId:
             $ref: "#/components/schemas/annotationId"
     annotationRefresh:
-      name: Update annotation
+      name: annotationRefresh
       title: Update annotation
       summary: Update annotation by Id
       payload:
         type: array
         description: List of Annotation DB Objects
     annotationUpdate:
-      name: Update annotation
+      name: annotationUpdate
       title: Update annotation
       summary: Update annotation by Id, Payload can have additional fields which wants to be set, Draft will be set to false!
       payload:
@@ -79,7 +92,7 @@ components:
             type: boolean
             description: If the annotation is deleted
     annotationGetByDocument:
-      name: Get annotation by document id
+      name: annotationGetByDocument
       title: Get annotation by document id
       summary: Get annotation by document id
       payload:
@@ -89,7 +102,7 @@ components:
           documentId:
             $ref: "#/components/schemas/documentId"
     annotationExportByDocument:
-      name: Export annotation by document id
+      name: annotationExportByDocument
       title: Export annotation by document id
       summary: Export annotation by document id
       payload:
@@ -99,7 +112,7 @@ components:
           documentId:
             $ref: "#/components/schemas/documentId"
     annotationExport:
-      name: Export annotation
+      name: annotationExport
       title: Export annotation
       summary: Export annotation by document id
       payload:
@@ -114,6 +127,153 @@ components:
           objs:
             type: array
             description: List of Annotation DB Objects
+    collabAdd:
+      name: collabAdd
+      title: Add collaboration
+      summary: Add collaboration to a document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          targetType:
+            $ref: "#/components/schemas/collabTargetType"
+          targetId:
+            $ref: "#/components/schemas/collabTargetId"
+          collabHash:
+            $ref: "#/components/schemas/collabHash"
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    collabUpdate:
+      name: collabUpdate
+      title: Update collaboration
+      summary: Update collaboration by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          collabId:
+            $ref: "#/components/schemas/collabId"
+    collabDelete:
+      name: collabDelete
+      title: Delete collaboration
+      summary: Delete collaboration by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          collabId:
+            $ref: "#/components/schemas/collabId"
+    collabRefresh:
+      name: collabRefresh
+      title: Refresh collaboration
+      summary: Refresh collaboration by Id
+      payload:
+        type: object
+        description: Collaboration DB Object
+    collabStart:
+      name: collabStart
+      title: Start collaboration indicator
+      summary: Start collaboration indicator with hash
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          collabId:
+            $ref: "#/components/schemas/collabId"
+          collabHash:
+            $ref: "#/components/schemas/collabHash"
+    commentAdd:
+      name: commentAdd
+      title: Add comment
+      summary: Add comment to a document
+      payload:
+        type: object
+        description: Payload object
+        required:
+          - documentId
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          annotationId:
+            $ref: "#/components/schemas/annotationId"
+          commentId:
+            $ref: "#/components/schemas/commentId"
+    commentGet:
+      name: commentGet
+      title: Get comment
+      summary: Get comment by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          commentId:
+            $ref: "#/components/schemas/commentId"
+    commentUpdate:
+      name: commentUpdate
+      title: Update comment
+      summary: Update comment by Id
+      payload:
+        type: object
+        description: Payload object
+        required:
+          - commentId
+        properties:
+          commentId:
+            $ref: "#/components/schemas/commentId"
+          text:
+            type: string
+            description: Text of the comment
+          deleted:
+            type: boolean
+            description: If the comment is deleted
+          tags:
+            type: array
+            description: List of tags
+            items:
+              type: string
+    commentGetByDocument:
+      name: commentGetByDocument
+      title: Get comment by document id
+      summary: Get comment by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    commentExportByDocument:
+      name: commentExportByDocument
+      title: Export comment by document id
+      summary: Export comment by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    commentExport:
+      name: commentExport
+      title: Export comment
+      summary: Export comment by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the export was successful
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          objs:
+            type: array
+            description: List of Comment DB Objects
+    commentRefresh:
+      name: commentRefresh
+      title: Refresh comments
+      summary: Refresh comment by Id
+      payload:
+        type: array
+        description: List of DB Comment Objects
   schemas:
     documentId:
       type: integer
@@ -124,3 +284,18 @@ components:
     annotationId:
       type: integer
       description: id of the annotation
+    commentId:
+      type: integer
+      description: id of the comment
+    collabId:
+      type: integer
+      description: id of the collaboration
+    collabTargetType:
+      type: string
+      description: type of the collaboration target
+    collabTargetId:
+      type: integer
+      description: id of the collaboration target
+    collabHash:
+      type: string
+      description: hash of the collaboration

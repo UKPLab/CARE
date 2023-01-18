@@ -22,7 +22,7 @@ module.exports = class CommentSocket extends Socket {
         try {
             const comment = await this.updateCreatorName(await dbLoadByAnnotation(annotation_id));
 
-            this.io.to("doc:" + comment.documentId).emit("commentUpdate", comment);
+            this.io.to("doc:" + comment.documentId).emit("commentRefresh", comment);
         } catch (e) {
             this.logger.info("Error during loading of comments: " + e);
             this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
@@ -32,14 +32,14 @@ module.exports = class CommentSocket extends Socket {
     async updateComment(data) {
 
         try {
-            const origComment = await dbGetComment(data.id);
+            const origComment = await dbGetComment(data.commentId);
             if (!this.checkUserAccess(origComment.userId)) {
                 this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
                 return;
             }
 
             const newComment = await dbUpdateComment(data);
-            this.io.to("doc:" + newComment[1].documentId).emit("commentUpdate", await this.updateCreatorName(newComment[1].get({plain: true})));
+            this.io.to("doc:" + newComment[1].documentId).emit("commentRefresh", await this.updateCreatorName(newComment[1].get({plain: true})));
 
         } catch (e) {
             this.logger.error("Could not update comment in database. Error: " + e);
@@ -80,7 +80,7 @@ module.exports = class CommentSocket extends Socket {
 
     async addComment(document_id, annotation_id, comment_id = null) {
         try {
-            this.socket.emit("commentUpdate", await this.updateCreatorName(await dbAddComment(document_id, annotation_id, comment_id, this.user_id)))
+            this.socket.emit("commentRefresh", await this.updateCreatorName(await dbAddComment(document_id, annotation_id, comment_id, this.user_id)))
         } catch (e) {
             this.logger.error("Could not add comment and/or comment to database. Error: " + e);
 
@@ -97,22 +97,22 @@ module.exports = class CommentSocket extends Socket {
 
     init() {
 
-        this.socket.on("addComment", async (data) => {
-            await this.addComment(data.document_id,
+        this.socket.on("commentAdd", async (data) => {
+            await this.addComment(data.documentId,
                 data.annotation_id !== undefined ? data.annotation_id : null,
-                data.comment_id !== undefined ? data.comment_id : null );
+                data.commentId !== undefined ? data.commentId : null );
         });
 
-        this.socket.on("getComment", async (data) => {
+        this.socket.on("commentGet", async (data) => {
             try {
-                const comment = await dbGetComment(data.id);
+                const comment = await dbGetComment(data.commentId);
 
-                if (!this.checkUserAccess(comment.userId) && !this.checkDocumentAccess(data.document_id)) {
+                if (!this.checkUserAccess(comment.userId) && !this.checkDocumentAccess(comment.documentId)) {
                     this.sendToast("You don't have access to this comment", "Error", "danger");
                     return;
                 }
 
-                this.socket.emit("commentUpdate", await this.updateCreatorName(comment));
+                this.socket.emit("commentRefresh", await this.updateCreatorName(comment));
 
             } catch (e) {
                 this.logger.error("Could not get comment and/or comment in database. Error: " + e);
@@ -122,35 +122,35 @@ module.exports = class CommentSocket extends Socket {
             }
         });
 
-        this.socket.on("updateComment", async (data) => {
+        this.socket.on("commentUpdate", async (data) => {
             await this.updateComment(data);
         });
 
-        this.socket.on("loadCommentsByDocument", async (data) => {
+        this.socket.on("commentGetByDocument", async (data) => {
             try {
-                this.socket.emit("commentUpdate", await this.updateCreatorName(await dbLoadByDocument(data.id)));
+                this.socket.emit("commentRefresh", await this.updateCreatorName(await dbLoadByDocument(data.documentId)));
             } catch (e) {
                 this.logger.info("Error during loading of comments: " + e);
                 this.sendToast("Internal Server Error: Could not load comments by document", "Internal server error", "danger");
             }
         });
 
-        this.socket.on("exportCommentsByDocument", async (data) => {
+        this.socket.on("commentExportByDocument", async (data) => {
             let comments;
             try {
-                comments = await this.updateCreatorName(await dbLoadByDocument(data.id));
+                comments = await this.updateCreatorName(await dbLoadByDocument(data.documentId));
             } catch (e) {
                 this.logger.info("Error during loading of comments: " + e);
 
                 this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
-                this.socket.emit("exportedComments", {"success": false, "document_id": data.documentId});
+                this.socket.emit("commentExport", {"success": false, "documentId": data.documentId});
 
                 return;
             }
 
-            this.socket.emit("exportedComments", {
+            this.socket.emit("commentExport", {
                 "success": true,
-                "document_id": data.id,
+                "documentId": data.id,
                 "objs": await Promise.all(comments.map(async (c) => await dbFormatForExport(c)))
             });
         });

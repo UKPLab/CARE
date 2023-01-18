@@ -140,8 +140,8 @@ export default {
   },
   methods: {
     save() {
-      this.$socket.emit('updateComment', {
-        "id": this.comment_id,
+      this.$socket.emit('commentUpdate', {
+        "commentId": this.comment_id,
         "tags": JSON.stringify(this.comment.tags.sort()),
         "text": this.comment.text,
       });
@@ -152,9 +152,9 @@ export default {
       }
     },
     reply() {
-      this.$socket.emit('addComment', {
-        "document_id": this.document_id,
-        "comment_id": this.comment_id
+      this.$socket.emit('commentAdd', {
+        "documentId": this.document_id,
+        "commentId": this.comment_id
       });
     },
     saveCard() {

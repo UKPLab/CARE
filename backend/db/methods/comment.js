@@ -68,7 +68,7 @@ exports.update = async function update(data) {
     try {
         return await Comment.update(subselectFieldsForDB(Object.assign(data, {draft: false}), ["deleted", "text", "tags", "draft"]), {
             where: {
-                id: data["id"]
+                id: data["commentId"]
             },
             returning: true,
             plain: true
