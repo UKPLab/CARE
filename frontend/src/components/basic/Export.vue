@@ -50,7 +50,7 @@ export default {
 
       // stop listening to such events
       this.sockets.unsubscribe("annotationExport");
-      this.sockets.unsubscribe("exportedComments");
+      this.sockets.unsubscribe("commentExport");
 
       // export for each document
       for (let i = 0; i < this.downloadIds.length; i++) {
@@ -77,7 +77,7 @@ export default {
 
       // stop listening
       this.sockets.unsubscribe("annotationExport");
-      this.sockets.unsubscribe("exportedComments");
+      this.sockets.unsubscribe("commentExport");
 
       //clear vars
       this.downloadAnnos = [];
@@ -105,8 +105,8 @@ export default {
         }
       });
 
-      this.sockets.subscribe("exportedComments", (r) => {
-        if(this.downloadIds.includes(r.document_id)) {
+      this.sockets.subscribe("commentExport", (r) => {
+        if(this.downloadIds.includes(r.documentId)) {
           this.downloadComms.push(r);
         }
       });
@@ -120,7 +120,7 @@ export default {
       //in the future: do batching if necessary
       doc_ids.forEach(did => {
         this.$socket.emit("annotationExportByDocument", {"documentId": did});
-        this.$socket.emit("exportCommentsByDocument", {"id": did});
+        this.$socket.emit("commentExportByDocument", {"documentId": did});
       });
 
       // set timer

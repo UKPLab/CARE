@@ -21,7 +21,7 @@ module.exports = class CollabSocket extends Socket {
 
             try {
                 const newCollab = await dbAdd(Object.assign(data, {userId: this.user_id, timestamp: Date.now()}));
-                this.socket.emit("collabStart", {id: newCollab.id, collabHash: newCollab.collabHash});
+                this.socket.emit("collabStart", {collabId: newCollab.id, collabHash: newCollab.collabHash});
 
                 this.io.to("doc:" + newCollab.documentId).emit("collabRefresh", newCollab);
 
@@ -36,7 +36,7 @@ module.exports = class CollabSocket extends Socket {
         this.socket.on("collabUpdate", async (data) => {
 
             try {
-                const collabUpdate = await dbUpdate(data.id);
+                const collabUpdate = await dbUpdate(data.collabId);
                 this.io.to("doc:" + collabUpdate[1].documentId).emit("collabRefresh", collabUpdate[1]);
             } catch (e) {
                 this.logger.error("Could not update collab to database. Error: " + e);
@@ -48,7 +48,7 @@ module.exports = class CollabSocket extends Socket {
         this.socket.on("collabDelete", async (data) => {
 
             try {
-                const collabUpdate = await dbDelete(data.id);
+                const collabUpdate = await dbDelete(data.collabId);
                 this.io.to("doc:" + collabUpdate.documentId).emit("collabRefresh", collabUpdate);
             } catch (e) {
                 this.logger.error("Could not delete collab to database. Error: " + e);

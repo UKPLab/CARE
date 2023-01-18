@@ -113,7 +113,7 @@ export default {
     },
     load() {
       this.$socket.emit("annotationGetByDocument", {documentId: this.document_id});
-      this.$socket.emit("loadCommentsByDocument", {id: this.document_id});
+      this.$socket.emit("commentGetByDocument", {documentId: this.document_id});
     },
     async sidebarScrollTo(annotationId) {
       const scrollContainer = this.$refs.sidepane;
@@ -125,10 +125,10 @@ export default {
     },
 
     createDocumentComment() {
-      this.$socket.emit('addComment', {
-        document_id: this.document_id,
-        annotation_id: null,
-        comment_id: null
+      this.$socket.emit('commentAdd', {
+        documentId: this.document_id,
+        annotationId: null,
+        commentId: null
       });
     }
   }
