@@ -186,8 +186,9 @@ export default {
       this.eventBus.emit('pdfScroll', anno_id);
     },
     save() {
-      this.$socket.emit('updateAnnotation', {
-        "id": this.annotation.id,
+      this.$socket.emit('annotationUpdate', {
+        "annotationId": this.annotation.id,
+        //TODO tags is not existing anymore in annotation table
         "tags": JSON.stringify(this.annotation.tags),
       });
       this.$refs.main_comment.save();
@@ -197,8 +198,8 @@ export default {
       if (this.annotation.draft) {
         this.remove();
       } else {
-        this.$socket.emit('getAnnotation', {
-          "id": this.annotation.id,
+        this.$socket.emit('annotationGet', {
+          "annotationId": this.annotation.id,
           "documentId": this.document_id
         });
       }
@@ -206,8 +207,9 @@ export default {
       this.edit_mode = null;
     },
     remove() {
-      this.$socket.emit('updateAnnotation', {
-        "id": this.annotation.id,
+      this.$socket.emit('annotationUpdate', {
+        "annotationId": this.annotation.id,
+        //TODO tags is not existing anymore in annotation table
         "tags": JSON.stringify(this.annotation.tags),
         "deleted": true
       });

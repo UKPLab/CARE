@@ -53,7 +53,7 @@ exports.add = async function add(annotation, user_id) {
     let newAnnotation = {
         documentId: annotation.documentId,
         selectors: annotation.selectors,
-        tag: annotation.tag,
+        tagId: annotation.tagId,
         text: annotation.selectors.target === undefined ? null : annotation.selectors.target[0].selector[1].exact,
         draft: true,
     }
@@ -76,9 +76,9 @@ exports.add = async function add(annotation, user_id) {
 exports.update = async function update(data) {
 
     try {
-        return await Annotation.update(subselectFieldsForDB(Object.assign(data, {draft: false}), ["deleted", "text", "tag", "draft"]), {
+        return await Annotation.update(subselectFieldsForDB(Object.assign(data, {draft: false}), ["deleted", "text", "tagId", "draft"]), {
             where: {
-                id: data["id"]
+                id: data["annotationId"]
             },
             returning: true,
             plain: true

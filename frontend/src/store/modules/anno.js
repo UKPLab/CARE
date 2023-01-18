@@ -61,7 +61,7 @@ export default {
         },
     },
     mutations: {
-        SOCKET_annotationUpdate: (state, data) => {
+        SOCKET_annotationRefresh: (state, data) => {
             if (!Array.isArray(data)) {
                 data = [data];
             }
