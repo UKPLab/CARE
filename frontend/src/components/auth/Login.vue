@@ -12,13 +12,13 @@
 
             <p v-if="showError" class="text-danger text-center">{{ this.errorMessage }}</p>
             <div class="form-group row my-2">
-                <label class="col-md-4 col-form-label text-md-right" for="username">Username</label>
-                <div class="col-md-6">
-                  <input id="username" v-model="username" autocomplete="username" autofocus class="form-control"
-                         placeholder="Username or email" required type="text" @input="setValidity" @blur="setValidity">
-                         <div class="feedback-invalid">Please provide your username or email.</div>
-                </div>
+              <label class="col-md-4 col-form-label text-md-right" for="username">Username</label>
+              <div class="col-md-6">
+                <input id="username" v-model="username" autocomplete="username" autofocus class="form-control"
+                       placeholder="Username or email" required type="text" @blur="setValidity" @input="setValidity">
+                <div class="feedback-invalid">Please provide your username or email.</div>
               </div>
+            </div>
 
 
             <div class="form-group row my-2">
@@ -38,7 +38,14 @@
             </div>
           </div>
         </div>
-        <div class="text-center">{{ copyright }}</div>
+        <div v-if="showDocs || showFeedback || showProject" class="text-center">
+          <span v-if="showDocs"><a :href="linkDocs" target="_blank">Documentation</a></span>
+          <span v-if="showFeedback && showDocs" class="mx-1">&#x2022;</span>
+          <span v-if="showFeedback"><a :href="linkFeedback" target="_blank">Feedback</a></span>
+          <span v-if="showProject && (showDocs || showFeedback)" class="mx-1">&#x2022;</span>
+          <span v-if="showProject"><a :href="linkProject" target="_blank">Project Page</a></span>
+        </div>
+        <div class="text-center text-secondary">{{ copyright }}</div>
       </div>
     </div>
   </form>
@@ -76,12 +83,30 @@ export default {
     showGuestLogin() {
       return window.config['app.login.guest'] === 'true';
     },
+    linkDocs() {
+      return window.config['app.landing.linkDocs'];
+    },
+    showDocs() {
+      return window.config['app.landing.showDocs'] === 'true' && this.linkDocs !== '';
+    },
+    linkFeedback() {
+      return window.config['app.landing.linkFeedback'];
+    },
+    showFeedback() {
+      return window.config['app.landing.showFeedback'] === 'true' && this.linkFeedback !== '';
+    },
+    linkProject() {
+      return window.config['app.landing.linkProject'];
+    },
+    showProject() {
+      return window.config['app.landing.showProject'] === 'true' && this.linkProject !== '';
+    }
   },
   methods: {
     ...mapActions({login: "auth/login", check: "auth/check"}),
     findNextSiblingWithClass(element, className) {
       var nextSibling = element.nextElementSibling;
-      while(nextSibling != null) {
+      while (nextSibling != null) {
         if (nextSibling.classList.contains(className)) {
           return nextSibling;
         }
@@ -164,14 +189,15 @@ export default {
 .feedback-invalid.invalid {
   visibility: visible;
 }
+
 input.custom-invalid {
-  border:transparent;
+  border: transparent;
   outline: 1px solid firebrick;
   border-radius: 1px;
 }
 
 input:focus.custom-invalid {
-  outline:none;
+  outline: none;
   border: 1px solid #ced4da;
   border-radius: 0.25rem;
 }
