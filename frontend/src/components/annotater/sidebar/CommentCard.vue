@@ -1,25 +1,28 @@
 <template>
-   <div v-if="!comment.referenceAnnotation" class="mb-1">
-      <div class="container-fluid">
-        <div class="row">
-          <div class="col">
-            {{ comment.creator_name }}
-            <!--<span v-if="showEditByCollab">
-              <LoadIcon :size="12 " class="fading" iconName="pencil-fill"></LoadIcon>
-            </span>-->
+  <div v-if="!comment.referenceAnnotation" class="mb-1">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col">
+          <LoadIcon size="12" :iconName="(collapseComment) ? 'chevron-right' : 'chevron-down'" @click="collapseComment = !collapseComment"></LoadIcon>
 
-          </div>
-          <div class="col text-end">
-            {{ new Date(comment.updatedAt).toLocaleDateString() }}
-          </div>
+          {{ comment.creator_name }}
+          <!--<span v-if="showEditByCollab">
+            <LoadIcon :size="12 " class="fading" iconName="pencil-fill"></LoadIcon>
+          </span>-->
+          <Collaboration ref="collab" :document-id="document_id" :target-id="comment_id" target-type="comment"
+                         @collabStatus="x => editMode = x"></Collaboration>
         </div>
-
+        <div class="col text-end">
+          {{ new Date(comment.updatedAt).toLocaleDateString() }}
+        </div>
       </div>
+
     </div>
-  <div class="comment blockquote card-text">
+  </div>
+  <div v-if="!collapseComment" class="comment card-text blockquote pb-1" :class="{blockquoteMain: comment.referenceAnnotation, blockquoteSub: !comment.referenceAnnotation}">
 
 
-    <div v-if="edit">
+    <div v-if="edit || editedByMyself">
         <textarea v-model="comment.text"
                   class="form-control"
                   placeholder="Enter text..."
@@ -55,25 +58,48 @@
     <TagSelector v-model="comment.tags" v-if="comment" :disabled="!edit"
                  :isEditor="comment.userId === user_id"></TagSelector>
     <div v-if="!comment.referenceAnnotation">
-      <div class="text-end">
-        <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
-                type="button" v-on:click="$refs.main_comment.reply()">
-          <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
-          <span class="visually-hidden">Reply</span>
-        </button>
-        <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
-                type="button" v-on:click="edit()">
-          <LoadIcon :size="16" iconName="pencil-square"></LoadIcon>
-          <span class="visually-hidden">Edit</span>
-        </button>
-        <button class="btn btn-sm" data-placement="top" data-toggle="tooltip"
-                title="Delete"
-                type="button" v-on:click="remove()">
-          <LoadIcon :size="16" iconName="trash3"></LoadIcon>
-          <span class="visually-hidden">Delete</span>
-        </button>
+      <div class="ms-auto">
+        <div v-if="editedByMyself" class="row">
+          <div class="col text-end">
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Save"
+                    type="button" v-on:click="save()">
+              <LoadIcon :size="16" class="danger" iconName="save-fill"></LoadIcon>
+              <span class="visually-hidden">Edit</span>
+            </button>
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Cancel"
+                    type="button" v-on:click="cancel()">
+              <LoadIcon :size="16" iconName="x-square-fill"></LoadIcon>
+              <span class="visually-hidden">Edit</span>
+            </button>
+          </div>
+        </div>
+        <div v-else class="row">
+          <div class="col text-end">
+            <button v-if="settingResponse" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
+                    type="button" v-on:click="reply()">
+              <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
+              <span class="visually-hidden">Reply</span>
+            </button>
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
+                    type="button" v-on:click="editComment()">
+              <LoadIcon :size="16" iconName="pencil-square"></LoadIcon>
+              <span class="visually-hidden">Edit</span>
+            </button>
+            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip"
+                    title="Delete"
+                    type="button" v-on:click="remove()">
+              <LoadIcon :size="16" iconName="trash3"></LoadIcon>
+              <span class="visually-hidden">Delete</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
+        <span  v-if="!comment.referenceAnnotation"  v-for="c in childComments" :key="c.id">
+          <hr class="hr"/>
+          <CommentCard :document_id="document_id" :comment_id="c.id" :level="level + 1">
+        </CommentCard>
+        </span>
   </div>
 </template>
 
@@ -81,10 +107,11 @@
 import TagSelector from "./TagSelector.vue";
 import IconLoading from "../../../icons/IconLoading.vue";
 import LoadIcon from "../../../icons/LoadIcon.vue"
+import Collaboration from "../../basic/Collaboration.vue"
 
 export default {
   name: "CommentCard",
-  components: {TagSelector, IconLoading, LoadIcon},
+  components: {TagSelector, IconLoading, LoadIcon, Collaboration},
   emits: ["saveCard"],
   props: {
     comment_id: {
@@ -100,10 +127,17 @@ export default {
       required: false,
       default: false,
     },
+    level: {
+      type: Number,
+      require: false,
+      default: 1,
+    }
   },
   data() {
     return {
-      awaitingNlpResult: false
+      awaitingNlpResult: false,
+      editMode: false,
+      collapseComment: true,
     }
   },
   watch: {
@@ -122,13 +156,25 @@ export default {
     if (this.nlp_active && this.nlp_result === null) {
       this.requestNlpFeedback();
     }
+    if (this.level === 1) {
+      this.collapseComment = false;
+    }
   },
   computed: {
     comment() {
       return this.$store.getters["comment/getComment"](this.comment_id);
     },
+    settingResponse() {
+      return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
+    },
     user_id() {
       return this.$store.getters["auth/getUserId"];
+    },
+    editedByMyself() {
+      return this.comment.draft || this.editMode;
+    },
+    childComments() {
+      return this.$store.getters["comment/getCommentsByCommentId"](this.comment_id);
     },
     nlp_active() {
       return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true" &&
@@ -145,11 +191,32 @@ export default {
         "tags": JSON.stringify(this.comment.tags.sort()),
         "text": this.comment.text,
       });
+      this.$refs.collab.removeCollab();
 
       // send to model upon save (regardless of the server response on the update (!))
       if (this.nlp_active) {
         this.requestNlpFeedback()
       }
+    },
+    cancel() {
+      if (this.comment.draft) {
+        this.remove();
+      } else {
+        this.$socket.emit('commentGet', {
+          "commentId": this.comment.id,
+        });
+      }
+      this.$refs.collab.removeCollab();
+      this.edit_mode = null;
+    },
+    remove() {
+      this.$socket.emit('commentUpdate', {
+        "commentId": this.comment.id,
+        "deleted": true
+      });
+    },
+    editComment() {
+      this.$refs.collab.startCollab();
     },
     reply() {
       this.$socket.emit('commentAdd', {
@@ -177,4 +244,16 @@ export default {
   color: #666666;
   font-style: normal;
 }
+
+.blockquote {
+  padding-right: 0;
+
+}
+.blockquoteSub {
+    margin-left:4px;
+}
+.blockquoteMain:hover {
+  color: #000000;
+}
+
 </style>

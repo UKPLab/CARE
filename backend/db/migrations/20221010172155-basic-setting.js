@@ -23,9 +23,10 @@ const settings = [
     {key: "app.landing.linkFeedback", value: process.env.APP_LINK_FEEDBACK, description: "The URL to the official feedback page"},
     {key: "service.nlp.url", value: process.env.SERVICE_NLP_URL, description: "The URL of the NLP service"},
     {key: "service.nlp.token", value: process.env.SERVICE_NLP_TOKEN, description: "The token to use for the NLP service"},
-    {key: "service.nlp.timeout", type: "number", value: "10000", description: "The timeout between connection attempts for the NLP service (ms)"},
-    {key: "service.nlp.retryDelay", type: "number", value: "60000", description: "The delay between retries if connection errors occurs for the NLP service (ms)"},
-    {key: "service.nlp.enabled", type: process.env.SERVICE_NLP_ENABLED, value: "true", description: "Whether to automatically connect to the NLP service"},
+    {key: "service.nlp.timeout", type: "number", value: "60000", description: "The timeout between connection attempts for the NLP service (ms)"},
+    {key: "service.nlp.retryDelay", type: "number", value: "10000", description: "The delay between retries if connection errors occurs for the NLP service (ms)"},
+    {key: "service.nlp.enabled", value: process.env.SERVICE_NLP_ENABLED, type: "boolean", description: "Whether to automatically connect to the NLP service"},
+    {key: "annotator.collab.response", value: "true", type: "boolean", description: "Whether the comment response functionality is activated."},
 ]
 
 module.exports = {

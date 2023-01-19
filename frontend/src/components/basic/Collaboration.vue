@@ -65,6 +65,11 @@ export default {
       }
     }
   },
+  unmounted() {
+    if (this.editMode) {
+      this.removeCollab();
+    }
+  },
   computed: {
     collaborations() {
       return this.$store.getters["collab/getCollab"](this.targetType, this.targetId);

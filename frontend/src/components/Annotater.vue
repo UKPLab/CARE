@@ -34,7 +34,7 @@
                     >
               Download Annotations
       </button>
-      <div class="form-check form-switch">
+      <div v-if="nlp_enabled" class="form-check form-switch">
         <IconBoostrap name="robot" :disabled="!nlp_support || !nlp_available"/>
         <input class="form-check-input" ref="nlpSwitch" title="Activate/Deactivate NLP support" type="checkbox" role="switch" :checked="nlp_support" :disabled="!nlp_available" @input="e => changeNlpSetting(e.target.checked)">
      </div>
@@ -123,7 +123,10 @@ export default {
     },
     nlp_available() {
       return this.$store.getters["nlp/getSkillConfig"]("sentiment_classification") !== null;
-    }
+    },
+    nlp_enabled() {
+      return this.$store.getters["settings/getValue"]('service.nlp.enabled') === "true";
+    },
   },
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {

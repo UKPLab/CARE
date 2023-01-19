@@ -8,7 +8,8 @@
           <Collaboration ref="collab"
                          target-type="annotation"
                          :target-id="annotation_id"
-                         :document-id="document_id"></Collaboration>
+                         :document-id="document_id"
+                         @collabStatus="toEditMode"></Collaboration>
         </div>
         <div class="col text-end">
           {{ new Date(annotation.updatedAt).toLocaleDateString() }}
@@ -45,12 +46,12 @@
           <div class="col">
             <button v-if="numberReplies > 0" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
                     type="button" v-on:click="showReplies = !showReplies">
-              <LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>
-              <span>Replies ({{ numberReplies }})</span>
+              <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
+              <span>{{showReplies ? 'Hide' : 'Show'}} Replies ({{ numberReplies }})</span>
             </button>
           </div>
           <div class="col text-end">
-            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
+            <button v-if="settingResponse" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
                     type="button" v-on:click="$refs.main_comment.reply()">
               <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
               <span class="visually-hidden">Reply</span>
@@ -92,11 +93,9 @@ Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 
-import {mapActions, mapGetters} from 'vuex';
 import SideCard from "./SideCard.vue";
 import CommentCard from "./CommentCard.vue";
 import LoadIcon from "../../../icons/LoadIcon.vue";
-import {v4 as uuidv4} from 'uuid';
 import Collaboration from "../../basic/Collaboration.vue"
 
 
@@ -109,6 +108,7 @@ export default {
       shake: false,
       showReplies: false,
       showEditTimeout: null,
+      edit_mode: false
     }
   },
   mounted() {
@@ -119,14 +119,12 @@ export default {
       setTimeout(() => this.shake = false, 1500);
     }
   },
-  unmounted() {
-    if (this.edit_mode) {
-      this.$refs.collab.removeCollab();
-    }
-  },
   computed: {
     user_id() {
       return this.$store.getters["auth/getUserId"];
+    },
+    settingResponse() {
+      return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
     },
     annotation() {
       return this.$store.getters["anno/getAnnotation"](this.annotation_id);
@@ -203,6 +201,9 @@ export default {
     edit() {
       this.$refs.collab.startCollab();
     },
+    toEditMode(status){
+      this.edit_mode = status;
+    }
   }
 }
 </script>
@@ -224,9 +225,6 @@ export default {
   cursor: pointer;
 }
 
-.blockquote:hover {
-  color: #000000;
-}
 
 .replies {
   font-size: smaller;
