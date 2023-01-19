@@ -50,6 +50,7 @@ export default {
         if (component === undefined) {
           component = this.navElements.find(e => e.name === this.settings["dashboard.navigation.component.default"]);
         }
+        console.log(component);
         return defineAsyncComponent(
             {
               loader: () => import("./dashboard/" + component.component + ".vue"),
