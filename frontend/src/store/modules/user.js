@@ -12,7 +12,6 @@ import createPersistedState from 'vuex-persistedstate';
 
 const getDefaultState = () => {
     return {
-        docs: [],
         reviews: [],
         meta_reviews: []
     };
@@ -24,17 +23,6 @@ export default {
     plugins: [createPersistedState()],
     state: getDefaultState(),
     getters: {
-        //returns documents from the store (local)
-        getDocuments: state => {
-            return state["docs"]
-        },
-        getDocumentId: state => (hash) => {
-            if (state["docs"].length > 0) {
-                return state["docs"].find(doc => doc.hash === hash)["id"];
-            } else {
-                return null;
-            }
-        },
         //returns review processes from the store (local)
         getReviews: state => {
             return state["reviews"]
@@ -44,18 +32,6 @@ export default {
         }
     },
     mutations: {
-        // updates the local store to the given documents
-        SET_DOCUMENTS: (state, docs) => {
-            state.docs = docs;
-        },
-        // resets the local document store to the default state
-        RESET: state => {
-            Object.assign(state, getDefaultState());
-        },
-        SOCKET_documentRefresh: (state, message) => {
-            //TODO: Update document with id mechanism like in other refreshes
-            state.docs = message.docs;
-        },
         SOCKET_reviewDataUser: (state, message) => {
             if (message.success) {
                 state.reviews = message.reviews;

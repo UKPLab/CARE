@@ -144,10 +144,10 @@ export default {
       return this.$store.getters["comment/getCommentsByCommentId"](this.comment_id);
     },
     color() {
-      return this.$store.getters['tag/getColor'](this.annotation.tag);
+      return this.$store.getters['tag/getColor'](this.annotation.tagId);
     },
     tagName() {
-      return this.$store.getters['tag/getTag'](this.annotation.tag).name;
+      return this.$store.getters['tag/getTag'](this.annotation.tagId).name;
     },
 
   },
@@ -175,7 +175,7 @@ export default {
       this.$socket.emit('annotationUpdate', {
         "annotationId": this.annotation.id,
         //TODO tags is not existing anymore in annotation table
-        "tags": JSON.stringify(this.annotation.tags),
+        "tagId": JSON.stringify(this.annotation.tagId),
       });
       this.$refs.main_comment.save();
       this.$refs.collab.removeCollab();
@@ -196,7 +196,7 @@ export default {
       this.$socket.emit('annotationUpdate', {
         "annotationId": this.annotation.id,
         //TODO tags is not existing anymore in annotation table
-        "tags": JSON.stringify(this.annotation.tags),
+        "tagId": JSON.stringify(this.annotation.tagId),
         "deleted": true
       });
     },

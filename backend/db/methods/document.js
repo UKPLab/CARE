@@ -47,9 +47,9 @@ exports.add = async function add(doc_name, user_id) {
     }
 
     try {
-        return await Document.create({
+        return (await Document.create({
             name: doc_name, hash: hash, userId: user_id,
-        });
+        })).get({plain: true});
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
@@ -61,7 +61,8 @@ exports.add = async function add(doc_name, user_id) {
 
 exports.dbGetDoc = async function getDoc(id) {
     try {
-        return await Document.findOne({where: {'id': id}});
+        return await Document.findOne({where: {'id': id},
+            raw: true});
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);
@@ -88,7 +89,9 @@ exports.deleteDoc = async function deleteDoc(doc_id) {
         return await Document.update({deleted: true, deletedAt: new Date()}, {
             where: {
                 id: doc_id
-            }
+            },
+            returning: true,
+            plain: true
         });
     } catch (err) {
         if (isInternalDatabaseError(err)) {
@@ -104,7 +107,9 @@ exports.update = async function update(documentId, document) {
         return await Document.update(subselectFieldsForDB(document, ["name", "hash", "public", "deleted"]), {
             where: {
                 id: documentId
-            }
+            },
+            returning: true,
+            plain: true
         });
     } catch (err) {
         if (isInternalDatabaseError(err)) {
@@ -116,28 +121,12 @@ exports.update = async function update(documentId, document) {
 
 }
 
-exports.rename = async function rename(doc_id, name) {
-    try {
-        return await Document.update({name: name}, {
-            where: {
-                id: doc_id
-            }
-        });
-    } catch (err) {
-        if (isInternalDatabaseError(err)) {
-            throw InternalDatabaseError(err);
-        } else {
-            throw InvalidDocumentParameters("Provided document ID does not exist or new name is invalid.");
-        }
-    }
-}
-
 exports.getAll = async function getAll(user_id = null) {
     try {
         if (user_id === null) {
-            return await Document.findAll({where: {deleted: false}});
+            return await Document.findAll({where: {deleted: false}, raw: true});
         } else {
-            return await Document.findAll({where: {[Op.or]: [{userId: user_id, public: true}], deleted: false}});
+            return await Document.findAll({where: {[Op.or]: [{userId: user_id, public: true}], deleted: false}, raw: true});
         }
     } catch (err) {
         if (isInternalDatabaseError(err)) {
