@@ -111,10 +111,10 @@ export default {
       this.$socket.emit("getReviews");
     },
     deleteDoc(row) {
-      this.$socket.emit("doc_delete", {docId: row.id});
+      this.$socket.emit("documentDelete", {documentId: row.id});
     },
     renameDoc(row) {
-      this.$socket.emit("doc_rename", {docId: row.id, newName: "default_name"});
+      this.$socket.emit("documentUpdate", {documentId: row.id, document: {name: "default_name"}});
     },
     accessDoc(row) {
       this.$router.push(`/annotate/${row.hash}`);

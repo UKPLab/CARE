@@ -43,7 +43,7 @@ export default {
   mounted() {
   },
   sockets: {
-    upload_result: function (data) {
+    uploadResult: function (data) {
       this.$refs.uploadModal.closeModal();
       this.uploading = false;
       if (data.success) {
@@ -69,7 +69,7 @@ export default {
         return
       }
 
-      this.$socket.emit("doc_upload", {file: fileElement.files[0], name: fileElement.files[0].name});
+      this.$socket.emit("uploadFile", {type: "document", file: fileElement.files[0]});
       this.uploading = true;
     }
   },

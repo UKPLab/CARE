@@ -8,7 +8,7 @@ const {v4: uuidv4} = require("uuid");
 
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./utils");
 const Document = require("../models/document.js")(db.sequelize, DataTypes);
 
 function InvalidDocumentParameters(details) {
@@ -99,6 +99,23 @@ exports.deleteDoc = async function deleteDoc(doc_id) {
     }
 }
 
+exports.update = async function update(documentId, document) {
+    try {
+        return await Document.update(subselectFieldsForDB(document, ["name", "hash", "public", "deleted"]), {
+            where: {
+                id: documentId
+            }
+        });
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        } else {
+            throw err;
+        }
+    }
+
+}
+
 exports.rename = async function rename(doc_id, name) {
     try {
         return await Document.update({name: name}, {
@@ -115,13 +132,13 @@ exports.rename = async function rename(doc_id, name) {
     }
 }
 
-exports.loadByUser = async function load(user_id) {
+exports.getAll = async function getAll(user_id = null) {
     try {
-        return await Document.findAll({
-            where: {
-                userId: user_id, deleted: false
-            }
-        });
+        if (user_id === null) {
+            return await Document.findAll({where: {deleted: false}});
+        } else {
+            return await Document.findAll({where: {[Op.or]: [{userId: user_id, public: true}], deleted: false}});
+        }
     } catch (err) {
         if (isInternalDatabaseError(err)) {
             throw InternalDatabaseError(err);

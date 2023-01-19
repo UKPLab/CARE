@@ -306,7 +306,7 @@ components:
     documentGetAll:
       name: documentGetAll
       title: Get all documents available by user
-      summary: Get all documents available by user
+      summary: Get all documents (only for admin) otherwise selected by user
     logGetAll:
       name: logGetAll
       title: Get all logs
@@ -596,6 +596,115 @@ components:
           data:
             type: object
             description: Additional data
+    documentRefresh:
+      name: documentRefresh
+      title: Refresh document
+      summary: Refresh document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documents:
+            type: array
+            description: List of DB document objects
+    documentDelete:
+      name: documentDelete
+      title: Delete document
+      summary: Delete document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    documentUpdate:
+      name: documentUpdate
+      title: Update document
+      summary: Update document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          document:
+            type: object
+            description: Document DB Object to overwrite
+    uploadFile:
+      name: uploadFile
+      title: Upload file
+      summary: Upload file
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          type:
+            type: string
+            description: File type (document)
+          file:
+            type: object
+            description: File object
+    uploadResult:
+      name: uploadResult
+      title: Upload result
+      summary: Upload result
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the upload was successful
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    documentGet:
+      name: documentGet
+      title: Get document
+      summary: Get document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    documentFile:
+      name: documentFile
+      title: Receive document file
+      summary: Receive requested document file
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          document:
+            type: object
+            description: Document DB Object
+          file:
+            type: object
+            description: File object
+    documentPublish:
+      name: documentPublish
+      title: Publish document
+      summary: Publish document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    documentPublished:
+      name: documentPublished
+      title: Published document
+      summary: Info about the published document after documentPublish
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the publishing was successful
+          message:
+            type: string
+            description: Message if the publishing was not successful
   schemas:
     documentId:
       type: integer
@@ -604,8 +713,8 @@ components:
       type: integer
       description: id of the tag
     tagSetId:
-        type: integer
-        description: id of the tag set
+      type: integer
+      description: id of the tag set
     annotationId:
       type: integer
       description: id of the annotation
