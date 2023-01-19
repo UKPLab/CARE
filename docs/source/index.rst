@@ -20,14 +20,26 @@ Welcome to PEER's project :-)
 
 .. toctree::
    :maxdepth: 2
-   :caption: Development
+   :caption: For Developers
 
-   development/basics
-   development/logging
-   development/frameworks
-   development/metrics
-   development/plugins
-   development/database
+   for_developers/basics
+   for_developers/conventions
+   for_developers/frameworks
+   for_developers/plugins
+   for_developers/database
+   for_developers/user_stats
+   for_developers/logging
+
+.. toctree::
+   :maxdepth: 2
+   :caption: For Researchers
+
+   for_researchers/basics
+   for_researchers/nlp
+   for_researchers/exporting
+   for_researchers/user_stats
+
+
 
 
 Indices and tables
