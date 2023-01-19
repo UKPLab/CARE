@@ -70,26 +70,28 @@ export default {
     },
   },
   sockets: {
-    pdf: function (data) {
-      const loadingTask = pdfjsLib.getDocument(data.file);
-      loadingTask.promise
-          .then((pdf) => {
-            this.pdf.setPDF(pdf);
-          })
-          .catch(response => {
-            console.log("Error loading PDF: " + response);
-            this.eventBus.emit('toast', {
-              title: "PDF Loading Error",
-              message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
-              variant: "danger"
-            });
+    documentFile: function (data) {
+      if (data.document.id === this.document_id) {
+        const loadingTask = pdfjsLib.getDocument(data.file);
+        loadingTask.promise
+            .then((pdf) => {
+              this.pdf.setPDF(pdf);
+            })
+            .catch(response => {
+              console.log("Error loading PDF: " + response);
+              this.eventBus.emit('toast', {
+                title: "PDF Loading Error",
+                message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
+                variant: "danger"
+              });
 
-            this.$router.push("/index.html");
-          });
+              this.$router.push("/index.html");
+            });
+      }
     }
   },
   mounted() {
-    this.$socket.emit("pdf_get", {document_id: this.document_id});
+    this.$socket.emit("documentGet", {documentId: this.document_id});
 
   },
   methods: {

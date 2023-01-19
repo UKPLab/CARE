@@ -1,16 +1,15 @@
 const {
-    add: dbAddDoc,
     deleteDoc: dbDeleteDoc,
-    rename: dbRenameDoc,
-    loadByUser: dbLoadDocs,
+    getAll: dbGetAllDocs,
+    update: dbUpdateDoc,
     dbGetDoc: dbGetDoc
 } = require("../../db/methods/document.js");
 const fs = require("fs");
-const path = require("path");
-
-const PDF_PATH = `${__dirname}/../../../files`;
+const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const Socket = require("../Socket.js");
+const {get: dbGetTagSet, dbPublishTagSet} = require("../../db/methods/tag_set");
+const {getAllBySetId: dbGetAllTagsBySetId, dbPublishTag} = require("../../db/methods/tag");
 
 /**
  * Handle all document through websocket
@@ -22,7 +21,7 @@ const Socket = require("../Socket.js");
  */
 module.exports = class DocumentSocket extends Socket {
 
-     /**
+    /**
      *
      * Check if user has rights to read the document data
      *
@@ -38,85 +37,93 @@ module.exports = class DocumentSocket extends Socket {
         return doc !== null;
     }
 
-    async updateDocuments() {
-        let rows;
+    async updateAllDocuments() {
         try {
-            rows = await dbLoadDocs(this.user_id);
+            if (this.isAdmin()) {
+                this.socket.emit("documentRefresh", {"documents": await dbGetAllDocs()});
+            } else {
+                this.socket.emit("documentRefresh", {"documents": await dbGetAllDocs(this.user_id)});
+            }
         } catch (err) {
             this.logger.error(err);
-            this.socket.emit("update_docs", {"docs": [], "status": "FAIL"});
-            return;
+            this.sendToast(err, "Error loading documents", "Danger");
         }
-        this.socket.emit("update_docs", {"docs": rows, "status": "OK"});
     }
 
 
     init() {
 
+        //Make sure upload directory exists
+        fs.mkdirSync(UPLOAD_PATH, {recursive: true});
+
         this.socket.on("documentGetAll", async (data) => {
-            await this.updateDocuments();
+            await this.updateAllDocuments();
         });
 
-        this.socket.on("doc_delete", async (data) => {
-            // TODO: Security Check - check if user can delete this document?
+        this.socket.on("documentDelete", async (data) => {
             try {
-                await dbDeleteDoc(data.docId)
+                const currentDocument = await dbGetDoc(data.documentId);
+                if (this.isAdmin() || currentDocument.userId === this.user_id()) {
+                    await dbDeleteDoc(currentDocument.id);
+                    //TODO only return changed document (note: first fix vuex document updater)
+                    await this.updateAllDocuments();
+                } else {
+                    this.sendToast("You are not allowed to delete this document", "Error", "Danger");
+                }
             } catch (err) {
                 this.logger.error(err);
-                return;
+                this.sendToast(err, "Error deleting document", "Danger");
             }
-
-            await this.updateDocuments();
         });
 
-        this.socket.on("doc_rename", async (data) => {
-            // TODO check if user can rename this document?
+        this.socket.on("documentUpdate", async (data) => {
             try {
-                await dbRenameDoc(data.docId, data.newName);
+                const currentDocument = await dbGetDoc(data.documentId);
+                if (this.isAdmin() || currentDocument.userId === this.user_id()) {
+                    await dbUpdateDoc(data.documentId, data.document);
+                    //TODO only return changed document (note: first fix vuex document updater)
+                    await this.updateAllDocuments();
+                } else {
+                    this.sendToast("You are not allowed to update this document", "Error", "Danger");
+                }
             } catch (err) {
                 this.logger.error(err);
-                return;
+                this.sendToast(err, "Error updating document", "Danger");
             }
-
-            await this.updateDocuments();
         });
 
-        this.socket.on("doc_upload", async (data) => {
-            //Make sure upload directory exists
-            fs.mkdirSync(PDF_PATH, {recursive: true});
-
-            // Add document to database
-            const name = data.name.replace(/.pdf$/, '');
-            let doc;
+        this.socket.on("documentGet", async (data) => {
             try {
-                doc = await dbAddDoc(name, this.user_id);
-            } catch (err) {
-                this.logger.error("Upload error: " + err);
-                this.socket.emit("upload_result", {success: false});
-                return;
-            }
-
-            const pdf_id = doc.hash;
-            const target = path.join(PDF_PATH, `${pdf_id}.pdf`);
-
-            fs.writeFile(target, data.file, (err) => {
-                this.socket.emit("upload_result", {success: !err, id: pdf_id})
-            });
-
-            //Update Document list
-            await this.updateDocuments();
-        });
-
-        this.socket.on("pdf_get", async (data) => {
-
-            const doc = await dbGetDoc(data.document_id);
-
-            try {
-                const pdf = fs.readFileSync(`${PDF_PATH}/${doc['hash']}.pdf`);
-                this.socket.emit("pdf", {file: pdf});
+                const doc = await dbGetDoc(data.documentId);
+                // TODO async file loading?
+                const pdf = fs.readFileSync(`${UPLOAD_PATH}/${doc['hash']}.pdf`);
+                this.socket.emit("documentFile", {document: doc, file: pdf});
             } catch (e) {
                 this.logger.error(e);
                 this.sendToast("Error while loading pdf file!", "PDF Error", "danger");
+            }
+        });
+
+        this.socket.on("documentPublish", async (data) => {
+            try {
+                const doc = await dbGetDoc(data.documentId);
+                if (this.checkUserAccess(doc.userId)) {
+                    await dbUpdateDoc(doc.id, {public: true});
+                    this.socket.emit("tagSetPublished", {success: true});
+                } else {
+                    this.logger.error("No permission to publish document: " + data.documentId);
+                this.socket.emit("documentPublished", {
+                    success: false,
+                    message: "No permission to publish document"
+                });
+                }
+            } catch (e) {
+                this.logger.error(e);
+                this.socket.emit("documentPublished", {
+                    success: false,
+                    message: "Error while publishing document"
+                });
+
             }
         });
     }

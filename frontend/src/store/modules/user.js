@@ -52,10 +52,9 @@ export default {
         RESET: state => {
             Object.assign(state, getDefaultState());
         },
-        SOCKET_update_docs: (state, message) => {
-            if (message.status === "OK") {
-                state.docs = message.docs;
-            }
+        SOCKET_documentRefresh: (state, message) => {
+            //TODO: Update document with id mechanism like in other refreshes
+            state.docs = message.docs;
         },
         SOCKET_reviewDataUser: (state, message) => {
             if (message.success) {
