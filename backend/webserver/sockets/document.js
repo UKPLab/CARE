@@ -40,9 +40,9 @@ module.exports = class DocumentSocket extends Socket {
     async updateAllDocuments() {
         try {
             if (this.isAdmin()) {
-                this.socket.emit("documentRefresh", {"documents": await dbGetAllDocs()});
+                this.socket.emit("documentRefresh", [await dbGetAllDocs()]);
             } else {
-                this.socket.emit("documentRefresh", {"documents": await dbGetAllDocs(this.user_id)});
+                this.socket.emit("documentRefresh", [await dbGetAllDocs(this.user_id)]);
             }
         } catch (err) {
             this.logger.error(err);
@@ -64,9 +64,7 @@ module.exports = class DocumentSocket extends Socket {
             try {
                 const currentDocument = await dbGetDoc(data.documentId);
                 if (this.isAdmin() || currentDocument.userId === this.user_id()) {
-                    await dbDeleteDoc(currentDocument.id);
-                    //TODO only return changed document (note: first fix vuex document updater)
-                    await this.updateAllDocuments();
+                    this.socket.emit("documentRefresh", await dbDeleteDoc(currentDocument.id));
                 } else {
                     this.sendToast("You are not allowed to delete this document", "Error", "Danger");
                 }
@@ -80,9 +78,7 @@ module.exports = class DocumentSocket extends Socket {
             try {
                 const currentDocument = await dbGetDoc(data.documentId);
                 if (this.isAdmin() || currentDocument.userId === this.user_id()) {
-                    await dbUpdateDoc(data.documentId, data.document);
-                    //TODO only return changed document (note: first fix vuex document updater)
-                    await this.updateAllDocuments();
+                    this.socket.emit("documentRefresh", await dbUpdateDoc(data.documentId, data.document));
                 } else {
                     this.sendToast("You are not allowed to update this document", "Error", "Danger");
                 }
@@ -108,14 +104,14 @@ module.exports = class DocumentSocket extends Socket {
             try {
                 const doc = await dbGetDoc(data.documentId);
                 if (this.checkUserAccess(doc.userId)) {
-                    await dbUpdateDoc(doc.id, {public: true});
+                    this.socket.emit("documentRefresh", await dbUpdateDoc(doc.id, {public: true}));
                     this.socket.emit("tagSetPublished", {success: true});
                 } else {
                     this.logger.error("No permission to publish document: " + data.documentId);
-                this.socket.emit("documentPublished", {
-                    success: false,
-                    message: "No permission to publish document"
-                });
+                    this.socket.emit("documentPublished", {
+                        success: false,
+                        message: "No permission to publish document"
+                    });
                 }
             } catch (e) {
                 this.logger.error(e);

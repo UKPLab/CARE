@@ -1,7 +1,7 @@
 <template>
   <Card title="Documents">
     <template v-slot:headerElements>
-      <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAll()" title="Export">
+      <button class="btn btn-sm me-1 btn-secondary" title="Export" type="button" @click="exportAll()">
         <LoadIcon iconName="cloud-arrow-down" @click=""></LoadIcon>
         Export all
       </button>
@@ -31,7 +31,6 @@ import Export from "../basic/Export.vue";
 import Card from "../basic/Card.vue";
 import Table from "../basic/Table.vue";
 import LoadIcon from "../../icons/LoadIcon.vue";
-
 
 export default {
   name: "Document",
@@ -64,7 +63,9 @@ export default {
   },
   computed: {
     docs() {
-      return this.$store.getters["user/getDocuments"].map(d => {
+      return this.$store.getters["document/getDocuments"].map(d => {
+
+        console.log(d)
         d.manage = [
           {
             icon: "box-arrow-in-right",
@@ -88,18 +89,18 @@ export default {
             title: "Delete document...",
             onClick: this.deleteDoc,
           },
-            /*
-          {
-            icon: "pencil",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              }
-            },
-            title: "Rename document...",
-            onClick: this.renameDoc,
-          },  */
+          /*
+        {
+          icon: "pencil",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Rename document...",
+          onClick: this.renameDoc,
+        },  */
         ];
         return d;
       });

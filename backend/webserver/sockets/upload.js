@@ -4,7 +4,7 @@ const path = require("path");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const Socket = require("../Socket.js");
-const {add: dbAddDoc} = require("../../db/methods/document");
+const {add: dbAddDoc, dbUpdateDoc} = require("../../db/methods/document");
 
 /**
  * Handle all uploads through websocket
@@ -33,8 +33,7 @@ module.exports = class UploadSocket extends Socket {
                         this.socket.emit("uploadResult", {success: !err, documentId: doc.id})
                     });
 
-                    //TODO send only new document
-                    await this.getSocket("DocumentSocket").updateAllDocuments();
+                    this.socket.emit("documentRefresh", doc);
 
                 } catch (err) {
                     this.logger.error("Upload error: " + err);

@@ -71,6 +71,7 @@ export default {
   },
   sockets: {
     documentFile: function (data) {
+      console.log(data);
       if (data.document.id === this.document_id) {
         const loadingTask = pdfjsLib.getDocument(data.file);
         loadingTask.promise

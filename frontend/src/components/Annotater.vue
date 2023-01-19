@@ -116,7 +116,7 @@ export default {
       return this.$store.getters["comment/getDocumentComments"](this.document_id);
     },
     document_id() {
-      return this.$store.getters["user/getDocumentId"](this.document_hash);
+      return this.$store.getters["document/getDocumentId"](this.document_hash);
     },
     nlp_support() {
       return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true";
@@ -149,6 +149,7 @@ export default {
     this.$refs.viewer.removeEventListener("scroll");
   },
   sockets: {
+    //TODO what is that connect for?
     connect: function () {
       this.load();
     },

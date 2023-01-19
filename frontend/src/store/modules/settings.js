@@ -6,7 +6,9 @@ Source: -
 */
 
 const getDefaultState = () => {
-    return null;
+    return {
+        settings: {}
+    };
 };
 
 export default {
@@ -15,27 +17,27 @@ export default {
     state: getDefaultState(),
     getters: {
         getSettings: state => {
-            return state
+            return state['settings']
         },
         getValue: state => (key) => {
-            if (state === null) {
+            if (state['settings'] === null) {
                 return null;
             }
 
-            return state[key];
+            return state['settings'][key];
         },
         getValueAsInt: state => (key) => {
-            if (state === null) {
+            if (state['settings'] === null) {
                 return null;
             }
 
-            return parseInt(state[key]);
+            return parseInt(state['settings'][key]);
         },
     },
     mutations: {
         SOCKET_settingRefresh: (state, settings) => {
             Object.entries(settings).forEach(([key, value]) => {
-                state[key] = value
+                state['settings'][key] = value
             });
         },
     },
