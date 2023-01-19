@@ -126,7 +126,7 @@ exports.getAll = async function getAll(user_id = null) {
         if (user_id === null) {
             return await Document.findAll({where: {deleted: false}, raw: true});
         } else {
-            return await Document.findAll({where: {[Op.or]: [{userId: user_id, public: true}], deleted: false}, raw: true});
+            return await Document.findAll({where: {[Op.or]: [{userId: user_id}, {public: true}], deleted: false}, raw: true});
         }
     } catch (err) {
         if (isInternalDatabaseError(err)) {

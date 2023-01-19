@@ -40,9 +40,9 @@ module.exports = class DocumentSocket extends Socket {
     async updateAllDocuments() {
         try {
             if (this.isAdmin()) {
-                this.socket.emit("documentRefresh", [await dbGetAllDocs()]);
+                this.socket.emit("documentRefresh", await dbGetAllDocs());
             } else {
-                this.socket.emit("documentRefresh", [await dbGetAllDocs(this.user_id)]);
+                this.socket.emit("documentRefresh", await dbGetAllDocs(this.user_id));
             }
         } catch (err) {
             this.logger.error(err);

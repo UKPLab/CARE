@@ -18,12 +18,11 @@ export default {
     state: getDefaultState(),
     getters: {
         getDocuments: state => {
-            //TODO didn't understand why we need index 0
-            return state['documents'][0];
+            return state['documents'];
         },
         getDocumentId: state => (hash) => {
             if (state['documents'].length > 0) {
-                return state['documents'][0].find(doc => doc.hash === hash)["id"];
+                return state['documents'].find(doc => doc.hash === hash)["id"];
             } else {
                 return null;
             }
