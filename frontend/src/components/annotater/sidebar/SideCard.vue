@@ -31,7 +31,7 @@
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import Loader from "../../basic/Loader.vue";
+import Loader from "@/basic/Loader.vue";
 
 export default {
   name: "SideCard.vue",
