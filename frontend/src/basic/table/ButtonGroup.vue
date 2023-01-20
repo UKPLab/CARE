@@ -1,12 +1,13 @@
 <template>
   <div class="btn-group">
     <TableButton v-for="b in buttons"
-                       :icon="b.icon"
-                       :title="b.title"
-                       :options="b.options"
-                       :onClick="b.onClick"
-                       :params="params"
-          ></TableButton>
+                 :action="b.action"
+                 :icon="b.icon"
+                 :options="b.options"
+                 :params="params"
+                 :title="b.title"
+                 @action="actionEmitter"
+    ></TableButton>
   </div>
 </template>
 
@@ -17,6 +18,7 @@ import TableButton from "./Button.vue";
 export default {
   name: "TableButtonGroup.vue",
   components: {LoadIcon, TableButton},
+  emits: ['action'],
   props: {
     buttons: {
       type: Array,
@@ -26,6 +28,11 @@ export default {
       type: Array,
       required: false,
       default: []
+    }
+  },
+  methods: {
+    actionEmitter(data){
+      this.$emit('action', data);
     }
   }
 }
