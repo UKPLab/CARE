@@ -25,9 +25,9 @@ Source: -
 */
 import Sidebar from "./navigation/Sidebar.vue";
 import {defineAsyncComponent} from "vue";
-import Loading from "./basic/Loading.vue";
+import Loading from "@/basic/Loading.vue";
 import Dashboard from "./Dashboard.vue";
-import NotFoundPage from "./NotFoundPage.vue";
+import NotFoundPage from "@/basic/NotFound.vue";
 
 export default {
 
@@ -80,7 +80,7 @@ export default {
           name: e.name,
           alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
           path: "/dashboard/" + e.path,
-          component: () => import('./basic/Loading.vue'),
+          component: () => import('@/basic/Loading.vue'),
         };
         if ("navigation.dashboard.component.default" in this.settings &&
             child.name === this.settings["navigation.dashboard.component.default"]) {

@@ -7,11 +7,11 @@ vite to build the components into the ../dist directory.
 Author: Dennis Zyska, Nils Dycke
 Source: https://vitejs.dev/config/
 */
-import {fileURLToPath, URL} from 'url'
-
 import {defineConfig} from 'vite'
 import vue from '@vitejs/plugin-vue'
 import {createHtmlPlugin} from 'vite-plugin-html'
+import path from 'path'
+import { fileURLToPath, URL } from "url";
 
 export default defineConfig({
     plugins: [vue(),
@@ -25,10 +25,10 @@ export default defineConfig({
             }
         })],
     resolve: {
-        alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url)),
-        }
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
+  },
     build: {
         outDir: "../dist"
     },

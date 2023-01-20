@@ -105,9 +105,9 @@
 
 <script>
 import TagSelector from "./TagSelector.vue";
-import IconLoading from "../../../icons/IconLoading.vue";
-import LoadIcon from "../../../icons/LoadIcon.vue"
-import Collaboration from "../../basic/Collaboration.vue"
+import IconLoading from "@/icons/IconLoading.vue";
+import LoadIcon from "@/icons/LoadIcon.vue"
+import Collaboration from "@/basic/Collaboration.vue"
 
 export default {
   name: "CommentCard",

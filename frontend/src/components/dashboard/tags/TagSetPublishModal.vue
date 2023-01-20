@@ -25,7 +25,7 @@ To get a confirmation before publish the tagset
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import Modal from "../../basic/Modal.vue";
+import Modal from "@/basic/Modal.vue";
 
 export default {
   name: "TagSetPublishModal",

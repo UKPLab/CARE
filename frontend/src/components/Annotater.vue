@@ -62,13 +62,13 @@ import PDFViewer from "./annotater/pdfViewer/PDFViewer.vue";
 import Sidebar from "./annotater/sidebar/Sidebar.vue";
 import ReviewSubmit from "./annotater/modals/ReviewSubmit.vue"
 import Report from "./annotater/modals/Report.vue"
-import Loader from "./basic/Loader.vue";
+import Loader from "@/basic/Loader.vue";
 import DecisionSubmit from "./annotater/modals/DecisionSubmit.vue"
-import Export from "./basic/Export.vue"
+import Export from "@/basic/Export.vue"
 import IconBoostrap from "../icons/IconBootstrap.vue";
-import {offsetRelativeTo, scrollElement} from "../assets/anchoring/scroll";
-import {isInPlaceholder} from "../assets/anchoring/placeholder";
-import {resolveAnchor} from "../assets/anchoring/resolveAnchor";
+import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
+import {isInPlaceholder} from "@/assets/anchoring/placeholder";
+import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
 
 export default {

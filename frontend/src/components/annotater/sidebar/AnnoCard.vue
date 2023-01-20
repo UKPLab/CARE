@@ -95,8 +95,8 @@ Source: -
 
 import SideCard from "./SideCard.vue";
 import CommentCard from "./CommentCard.vue";
-import LoadIcon from "../../../icons/LoadIcon.vue";
-import Collaboration from "../../basic/Collaboration.vue"
+import LoadIcon from "@/icons/LoadIcon.vue";
+import Collaboration from "@/basic/Collaboration.vue"
 
 
 export default {

@@ -11,8 +11,8 @@
 </template>
 
 <script>
-import LoadIcon from "../../icons/LoadIcon.vue";
-import TableButton from "./TableButton.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
+import TableButton from "./Button.vue";
 
 export default {
   name: "TableButtonGroup.vue",

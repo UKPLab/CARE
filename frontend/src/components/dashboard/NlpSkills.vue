@@ -22,10 +22,10 @@ Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 
-import LoadIcon from "../../icons/LoadIcon.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
-import Table from "../basic/Table.vue"
-import Card from "../basic/Card.vue"
+import Table from "@/basic/table/Table.vue"
+import Card from "@/basic/Card.vue"
 
 export default {
   name: "NlpSkills",

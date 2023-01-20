@@ -24,8 +24,8 @@ Author: Dennis Zyska (zyska@ukp...)
 Co-author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import {TextPosition, TextRange} from "../../../assets/anchoring/text-range";
-import {TextQuoteAnchor} from '../../../assets/anchoring/types';
+import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
+import {TextQuoteAnchor} from '@/assets/anchoring/types';
 import {mapMutations} from "vuex";
 
 export default {
