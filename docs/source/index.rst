@@ -17,6 +17,7 @@ Welcome to PEER's project :-)
 
    getting_started/quickstart
    getting_started/installation
+   getting_started/architecture
 
 .. toctree::
    :maxdepth: 2
