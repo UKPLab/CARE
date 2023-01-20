@@ -1,22 +1,25 @@
 <template>
   <b-card ref="card" :class="{ shake: shake }" class="card">
-    <div class="card-header">
+    <div v-if="!loading" class="card-header">
       <div class="container-fluid">
         <slot name="header"></slot>
 
       </div>
     </div>
     <div class="card-body p-1">
-      <div class="d-grid gap-1 my-2">
+      <div v-if="!loading" class="d-grid gap-1 my-2">
         <slot name="body"></slot>
       </div>
+      <div v-else>
+        <Loader :loading="loading"></Loader>
+      </div>
     </div>
-    <div v-if="hasFooterSlot" class="card-footer">
+    <div v-if="!loading && hasFooterSlot" class="card-footer">
       <div id="footer-controls" class="container">
         <slot name="footer"></slot>
       </div>
     </div>
-    <div v-if="hasThreadSlot" class="card-body p-1">
+    <div v-if="!loading && hasThreadSlot" class="card-body p-1">
       <slot name="thread"></slot>
     </div>
   </b-card>
@@ -28,15 +31,22 @@
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
+import Loader from "../../basic/Loader.vue";
 
 export default {
   name: "SideCard.vue",
+  components: {Loader},
   props: {
     shake: {
       type: Boolean,
       required: false,
       default: false,
     },
+    loading: {
+      type: Boolean,
+      required: false,
+      default: false,
+    }
   },
   computed: {
     hasFooterSlot() {

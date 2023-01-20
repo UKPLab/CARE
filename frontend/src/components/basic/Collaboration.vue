@@ -90,15 +90,17 @@ export default {
           });
     },
     removeCollab() {
-      this.$socket.emit("collabDelete", {collabId: this.collabId});
-      if (this.collabUpdater !== null) {
-        clearInterval(this.collabUpdater);
-        this.collabUpdater = null;
+      if(this.collabId !== null){
+        this.$socket.emit("collabDelete", {collabId: this.collabId});
+        if (this.collabUpdater !== null) {
+          clearInterval(this.collabUpdater);
+          this.collabUpdater = null;
+        }
+        this.editMode = false;
+        this.$emit("collabStatus", false);
+        this.collabId = null;
+        this.collabHash = null;
       }
-      this.editMode = false;
-      this.$emit("collabStatus", false);
-      this.collabId = null;
-      this.collabHash = null;
     },
   }
 }

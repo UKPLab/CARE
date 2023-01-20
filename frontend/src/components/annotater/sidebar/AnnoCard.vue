@@ -1,32 +1,38 @@
 <template>
-  <SideCard :shake="shake">
+  <SideCard :loading="loading()" :shake="shake">
 
     <template v-slot:header>
       <div class="row">
         <div class="col">
-          {{ annotation.creator_name }}
+          {{ comment.creator_name }}
           <Collaboration ref="collab"
-                         target-type="annotation"
-                         :target-id="annotation_id"
+                         target-type="comment"
+                         :target-id="comment_id"
                          :document-id="document_id"
                          @collabStatus="toEditMode"></Collaboration>
         </div>
         <div class="col text-end">
-          {{ new Date(annotation.updatedAt).toLocaleDateString() }}
+          <span v-if="annotation">
+            {{ new Date(annotation.updatedAt).toLocaleDateString() }}
+          </span>
+          <span v-else>
+            {{ new Date(comment.updatedAt).toLocaleDateString() }}
+          </span>
         </div>
       </div>
     </template>
 
     <template v-slot:body>
-      <div class="blockquote card-text" :style="'border-color:#' + color" data-placement="top" data-toogle="tooltip"
+      <div v-if="annotation_id" class="blockquote card-text" :style="'border-color:#' + color" data-placement="top"
+           data-toogle="tooltip"
            :title="tagName" @click="scrollTo(annotation_id)">
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
-      <CommentCard ref="main_comment" @saveCard="save()" :comment_id="comment_id" :edit="editedByMyself"
+      <CommentCard ref="main_comment" @saveCard="save()" :level=0 :comment_id="comment_id" :edit="editedByMyself"
                    :document_id="document_id"/>
     </template>
 
-    <template v-slot:footer v-if="annotation.userId === user_id">
+    <template v-slot:footer v-if="comment.userId === user_id">
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
           <div class="col text-end">
@@ -47,7 +53,7 @@
             <button v-if="numberReplies > 0" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
                     type="button" v-on:click="showReplies = !showReplies">
               <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
-              <span>{{showReplies ? 'Hide' : 'Show'}} Replies ({{ numberReplies }})</span>
+              <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
             </button>
           </div>
           <div class="col text-end">
@@ -75,7 +81,7 @@
     <template v-slot:thread>
       <div v-if="showReplies" class="d-grid gap-1 my-2">
         <span v-for="c in childComments" :key="c.id">
-          <CommentCard :document_id="document_id" :comment_id="c.id">
+          <CommentCard :document_id="document_id" :level=1 :comment_id="c.id">
         </CommentCard>
         </span>
       </div>
@@ -102,7 +108,7 @@ import Collaboration from "../../basic/Collaboration.vue"
 export default {
   name: "AnnoCard",
   components: {Collaboration, SideCard, CommentCard, LoadIcon},
-  props: ["annotation_id", "readonly", "document_id"],
+  props: ["comment_id", "readonly", "document_id"],
   data: function () {
     return {
       shake: false,
@@ -112,9 +118,9 @@ export default {
     }
   },
   mounted() {
-    if (this.annotation.draft) {
+    if (this.comment.draft) {
       //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
-      setTimeout(() => this.$emit("focus", this.annotation.id), 100);
+      setTimeout(() => this.$emit("focus", this.comment_id), 100);
       this.shake = true;
       setTimeout(() => this.shake = false, 1500);
     }
@@ -127,13 +133,20 @@ export default {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
     },
     annotation() {
-      return this.$store.getters["anno/getAnnotation"](this.annotation_id);
+      if (this.annotation_id)
+        console.log(this.annotation_id);
+      console.log(this.$store.getters["anno/getAnnotation"](this.annotation_id));
+        return this.$store.getters["anno/getAnnotation"](this.annotation_id);
     },
-    comment_id() {
-      return this.$store.getters["comment/getCommentByAnnotation"](this.annotation_id)["id"];
+    annotation_id() {
+      const annotationId = this.comment.referenceAnnotation;
+      console.log("annnoasajf")
+      console.log(annotationId);
+      if (annotationId)
+        return annotationId;
     },
     editedByMyself() {
-      return this.annotation.draft || this.edit_mode;
+      return this.comment.draft || this.edit_mode;
     },
     numberReplies() {
       return this.$store.getters["comment/getNumberOfChildrenByComment"](this.comment_id);
@@ -141,11 +154,16 @@ export default {
     childComments() {
       return this.$store.getters["comment/getCommentsByCommentId"](this.comment_id);
     },
+    comment() {
+      return this.$store.getters['comment/getComment'](this.comment_id);
+    },
     color() {
-      return this.$store.getters['tag/getColor'](this.annotation.tagId);
+      if (this.annotation_id)
+        return this.$store.getters['tag/getColor'](this.annotation.tagId);
     },
     tagName() {
-      return this.$store.getters['tag/getTag'](this.annotation.tagId).name;
+      if (this.annotation_id)
+        return this.$store.getters['tag/getTag'](this.annotation.tagId).name;
     },
 
   },
@@ -166,42 +184,69 @@ export default {
         return text;
       }
     },
+    loading() {
+      if (this.annotation_id && !this.annotation) {
+        return true;
+      }
+      return false;
+    },
     scrollTo(anno_id) {
       this.eventBus.emit('pdfScroll', anno_id);
     },
     save() {
-      this.$socket.emit('annotationUpdate', {
-        "annotationId": this.annotation.id,
-        //TODO tags is not existing anymore in annotation table
-        "tagId": JSON.stringify(this.annotation.tagId),
-      });
+      if (this.annotation_id) {
+        this.$socket.emit('annotationUpdate', {
+          "annotationId": this.annotation.id,
+          //TODO tags is not existing anymore in annotation table
+          "tagId": JSON.stringify(this.annotation.tagId),
+        });
+      }
+
       this.$refs.main_comment.save();
       this.$refs.collab.removeCollab();
     },
     cancel() {
-      if (this.annotation.draft) {
-        this.remove();
+      if (this.annotation_id) {
+
+        if (this.annotation.draft) {
+          this.remove();
+        } else {
+          this.$socket.emit('annotationGet', {
+            "annotationId": this.annotation.id,
+            "documentId": this.document_id
+          });
+        }
       } else {
-        this.$socket.emit('annotationGet', {
-          "annotationId": this.annotation.id,
-          "documentId": this.document_id
-        });
+        if (this.comment.draft) {
+          this.remove();
+        } else {
+          this.$socket.emit('commentGet', {
+            "commentId": this.comment.id,
+          });
+        }
       }
       this.$refs.collab.removeCollab();
       this.edit_mode = null;
     },
     remove() {
-      this.$socket.emit('annotationUpdate', {
-        "annotationId": this.annotation.id,
-        //TODO tags is not existing anymore in annotation table
-        "tagId": JSON.stringify(this.annotation.tagId),
-        "deleted": true
-      });
+      if (this.annotation_id) {
+        this.$socket.emit('annotationUpdate', {
+          "annotationId": this.annotation.id,
+          //TODO tags is not existing anymore in annotation table
+          "tagId": JSON.stringify(this.annotation.tagId),
+          "deleted": true
+        });
+      } else {
+        this.$socket.emit('commentUpdate', {
+          "commentId": this.comment.id,
+          "deleted": true
+        });
+      }
     },
     edit() {
       this.$refs.collab.startCollab();
     },
-    toEditMode(status){
+    toEditMode(status) {
       this.edit_mode = status;
     }
   }

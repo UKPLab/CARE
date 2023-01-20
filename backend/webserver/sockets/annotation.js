@@ -88,23 +88,22 @@ module.exports = class AnnotationSocket extends Socket {
         });
 
         this.socket.on("annotationExportByDocument", async (data) => {
-            let annotations;
             try {
-                annotations = await this.updateCreatorName(await dbLoadByDocument(data.documentId));
+                let annotations = await this.updateCreatorName(await dbLoadByDocument(data.documentId));
+                this.socket.emit("annotationExport", {
+                    "success": true,
+                    "documentId": data.documentId,
+                    "objs": await Promise.all(annotations.map(async (a) => await dbFormatForExport(a)))
+                });
             } catch (e) {
                 this.logger.info("Error during loading of annotations: " + e);
 
                 this.sendToast("Internal server error. Failed to load annotations.", "Internal server error", "danger");
                 this.socket.emit("annotationExport", {"success": false, "documentId": data.documentId});
 
-                return;
             }
 
-            this.socket.emit("annotationExport", {
-                "success": true,
-                "documentId": data.id,
-                "objs": await Promise.all(annotations.map(async (a) => await dbFormatForExport(a)))
-            });
+
         });
     }
 

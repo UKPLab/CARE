@@ -15,7 +15,7 @@ const {
 const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
 
-const {getByIds: getTagsByIds} = require('../../db/methods/tag.js')
+const {get: getTagById} = require('../../db/methods/tag.js')
 
 const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
 const logger = require("../../utils/logger.js")("db/annotation");
@@ -127,8 +127,9 @@ async function resolveAnnoIdToHash(annoId) {
 exports.resolveAnnoIdToHash = resolveAnnoIdToHash;
 
 exports.formatForExport = async function format(annotation) {
+    console.log(annotation);
     const copyFields = [
-        "hash",
+        "id",
         "text",
         "documentId",
         "createdAt",
@@ -137,7 +138,7 @@ exports.formatForExport = async function format(annotation) {
 
     let copied = pickObjectAttributeSubset(annotation, copyFields);
     copied.userId = await resolveUserIdToName(annotation.userId);
-    copied.tag = (await getTagsByIds(annotation.tag))[0].name;
+    copied.tag = (await getTagById(annotation.tagId)).name;
 
     return copied
 }
