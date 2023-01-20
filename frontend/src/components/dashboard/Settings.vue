@@ -49,10 +49,10 @@
 </template>
 
 <script>
-import Loading from "../basic/Loading.vue";
-import LoadIcon from "../../icons/LoadIcon.vue";
-import Modal from "../basic/Modal.vue";
-import EditorModal from "../basic/EditorModal.vue";
+import Loading from "@/basic/Loading.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
+import Modal from "@/basic/Modal.vue";
+import EditorModal from "@/basic/editor/Modal.vue";
 
 export default {
   name: "Settings",

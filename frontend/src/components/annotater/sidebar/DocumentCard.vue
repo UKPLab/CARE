@@ -74,7 +74,7 @@ Source: -
 
 import SideCard from "./SideCard.vue";
 import CommentCard from "./CommentCard.vue";
-import LoadIcon from "../../../icons/LoadIcon.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 import {v4 as uuidv4} from 'uuid';
 
 

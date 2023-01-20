@@ -28,7 +28,7 @@
 <script>
 import {Editor, EditorContent} from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
-import LoadIcon from "../../icons/LoadIcon.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Editor",

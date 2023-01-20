@@ -50,7 +50,7 @@ Source: -
 import {mapMutations} from "vuex";
 import AnnoCard from "./AnnoCard.vue";
 import DocumentCard from "./DocumentCard.vue";
-import {scrollElement} from "../../../assets/anchoring/scroll";
+import {scrollElement} from "@/assets/anchoring/scroll";
 
 export default {
   name: "Sidebar",

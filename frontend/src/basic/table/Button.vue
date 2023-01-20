@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import LoadIcon from "../../icons/LoadIcon.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "TableButton.vue",

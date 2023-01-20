@@ -21,16 +21,15 @@ This component loads the user-specific documents from the server
 and allows to interact with them. The user can delete existing
 documents or access the annotator view for the respective pdf.
 
-Author: Nils Dycke (dycke@ukp...)
-Co-Author:  Dennis Zyska (zyska@ukp...)
+Author: Nils Dycke, Dennis Zyska
 Source: -
 */
 import {mapGetters} from "vuex";
 import Upload from "./documents/Upload.vue";
-import Export from "../basic/Export.vue";
-import Card from "../basic/Card.vue";
-import Table from "../basic/Table.vue";
-import LoadIcon from "../../icons/LoadIcon.vue";
+import Export from "@/basic/Export.vue";
+import Card from "@/basic/Card.vue";
+import Table from "@/basic/table/Table.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Document",
@@ -48,15 +47,18 @@ export default {
       columns: [
         {name: "Title", key: "name"},
         {name: "Created At", key: "createdAt"},
+        {
+          name: "Public Shared",
+          key: "public",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", false: "No"},
+            classMapping: {true: "bg-success", false: "bg-danger"}
+          }
+        },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
     }
-  },
-  props: {
-    'admin': {
-      required: false,
-      default: false
-    },
   },
   mounted() {
     this.load();
@@ -64,8 +66,6 @@ export default {
   computed: {
     docs() {
       return this.$store.getters["document/getDocuments"].map(d => {
-
-        console.log(d)
         d.manage = [
           {
             icon: "box-arrow-in-right",

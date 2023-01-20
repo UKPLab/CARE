@@ -18,7 +18,7 @@
 
 <script>
 import Editor from "./Editor.vue";
-import Modal from "./Modal.vue";
+import Modal from "@/basic/Modal.vue";
 
 export default {
   name: "EditorModal.vue",

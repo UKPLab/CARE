@@ -41,7 +41,7 @@ Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import Tags from "bootstrap5-tags/tags.js";
-import Modal from "../../basic/Modal.vue";
+import Modal from "@/basic/Modal.vue";
 import TagsTable from "./TagsTable.vue";
 import {mapMutations} from "vuex";
 

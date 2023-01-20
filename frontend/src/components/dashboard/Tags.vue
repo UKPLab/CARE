@@ -121,12 +121,12 @@ Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import {mapGetters} from "vuex";
-import Loader from "../basic/Loader.vue";
+import Loader from "@/basic/Loader.vue";
 import TagSetModal from "./tags/TagSetModal.vue";
 import TagSetPublishModal from "./tags/TagSetPublishModal.vue";
 import TagSetDeleteModal from "./tags/TagSetDeleteModal.vue";
-import {tooltip} from "../../assets/tooltip.js";
-import LoadIcon from "../../icons/LoadIcon.vue";
+import {tooltip} from "@/assets/tooltip.js";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Tags",
