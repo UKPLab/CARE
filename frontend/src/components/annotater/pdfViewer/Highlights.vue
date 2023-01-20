@@ -221,11 +221,11 @@ export default {
       svgHighlightLayer.append(...highlightRects);
     },
     setSVGHighlightColor(annotation, svgHighlightEl) {
-      if (!annotation || !annotation.tag) {
+      if (!annotation || !annotation.tagId) {
         return;
       }
 
-      svgHighlightEl.style.fill = "#" + this.getColor(annotation.tag);
+      svgHighlightEl.style.fill = "#" + this.getColor(annotation.tagId);
       svgHighlightEl.style.opacity = 0.6;
     },
     removeAllHighlights(root) {

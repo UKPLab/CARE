@@ -1,9 +1,9 @@
 <template>
-  <div v-if="!comment.referenceAnnotation" class="mb-1">
+  <div v-if="level >= 1" class="mb-1">
     <div class="container-fluid">
       <div class="row">
         <div class="col">
-          <LoadIcon size="12" :iconName="(collapseComment) ? 'chevron-right' : 'chevron-down'" @click="collapseComment = !collapseComment"></LoadIcon>
+          <LoadIcon size=12 :iconName="(collapseComment) ? 'chevron-right' : 'chevron-down'" @click="collapseComment = !collapseComment"></LoadIcon>
 
           {{ comment.creator_name }}
           <!--<span v-if="showEditByCollab">
@@ -57,7 +57,7 @@
 
     <TagSelector v-model="comment.tags" v-if="comment" :disabled="!edit"
                  :isEditor="comment.userId === user_id"></TagSelector>
-    <div v-if="!comment.referenceAnnotation">
+    <div v-if="level >= 1">
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
           <div class="col text-end">
@@ -95,7 +95,7 @@
         </div>
       </div>
     </div>
-        <span  v-if="!comment.referenceAnnotation"  v-for="c in childComments" :key="c.id">
+        <span  v-if="level >= 1"  v-for="c in childComments" :key="c.id">
           <hr class="hr"/>
           <CommentCard :document_id="document_id" :comment_id="c.id" :level="level + 1">
         </CommentCard>
@@ -156,7 +156,7 @@ export default {
     if (this.nlp_active && this.nlp_result === null) {
       this.requestNlpFeedback();
     }
-    if (this.level === 1) {
+    if (this.level <= 1 || this.comment.draft) {
       this.collapseComment = false;
     }
   },
@@ -191,7 +191,9 @@ export default {
         "tags": JSON.stringify(this.comment.tags.sort()),
         "text": this.comment.text,
       });
-      this.$refs.collab.removeCollab();
+      if(this.$refs.collab){
+        this.$refs.collab.removeCollab();
+      }
 
       // send to model upon save (regardless of the server response on the update (!))
       if (this.nlp_active) {
@@ -206,7 +208,9 @@ export default {
           "commentId": this.comment.id,
         });
       }
-      this.$refs.collab.removeCollab();
+      if(this.$refs.collab) {
+        this.$refs.collab.removeCollab();
+      }
       this.edit_mode = null;
     },
     remove() {

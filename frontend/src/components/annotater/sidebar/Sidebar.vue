@@ -4,32 +4,26 @@
     <div id="sidepane" ref="sidepane">
       <div id="spacer"></div>
       <ul id="anno-list" class="list-group">
-        <li v-if="numberOfCards === 0">
+        <li v-if="documentComments.length === 0">
           <p class="text-center"> No elements </p>
         </li>
-
-        <li v-for="anno in annotations" v-bind:id="'anno-' + anno.id"
-            :key="anno.id"
-            class="list-group-i"
-            v-on:mouseleave="unhover(anno.id)"
-            v-on:mouseover='hover(anno.id)'>
-          <AnnoCard v-bind:id="anno.id" v-if="hasComment(anno.id)" :annotation_id="anno.id" :document_id="document_id" :readonly="readonly"
-                    @focus="focusAnnotation"></AnnoCard>
-        </li>
-        <li v-for="comment in documentComments" v-bind:id="'documentComment-' + comment.id"
+        <li v-for="comment in documentComments" v-bind:id="'comment-' + comment.id"
             :key="'documentComment-' + comment.id"
-            class="list-group-i">
-          <DocumentCard v-bind:id="comment.id" :comment_id="comment.id" :document_id="document_id" :readonly="readonly"
-                        @focus="focusAnnotation"></DocumentCard>
+            class="list-group-i"
+            v-on:mouseleave="unhover(comment.id)"
+            v-on:mouseover='hover(comment.id)'
+        >
+          <AnnoCard v-bind:id="comment.id" :comment_id="comment.id" :document_id="document_id" :readonly="readonly"
+                    @focus="sidebarScrollTo"></AnnoCard>
         </li>
-
 
         <li v-if="!readonly" id="addPageNote">
           <button class="btn btn-light" type="button" @click="createDocumentComment">
             <svg class="bi bi-plus-lg" fill="currentColor" height="16" viewBox="0 0 16 16" width="16"
                  xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
-                    fill-rule="evenodd"></path>
+              <path
+                  d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
+                  fill-rule="evenodd"></path>
             </svg>
             Document Note
           </button>
@@ -49,12 +43,11 @@ Source: -
 */
 import {mapMutations} from "vuex";
 import AnnoCard from "./AnnoCard.vue";
-import DocumentCard from "./DocumentCard.vue";
 import {scrollElement} from "../../../assets/anchoring/scroll";
 
 export default {
   name: "Sidebar",
-  components: {AnnoCard, DocumentCard},
+  components: {AnnoCard},
   props: {
     document_id: {
       type: String,
@@ -72,32 +65,29 @@ export default {
     },
   },
   computed: {
-    annotations() {
-      return this.$store.getters['anno/getAnnotations'](this.document_id).sort((a, b) => {
-        const a_noanchor = a.anchors === null || a.anchors.length === 0;
-        const b_noanchor = b.anchors === null || b.anchors.length === 0;
-
-        if (a_noanchor || b_noanchor) {
-          return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
-        }
-
-        return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
-      });
-    },
-
     documentComments() {
-      return this.$store.getters['comment/getDocumentComments'](this.document_id);
-    },
-    numberOfCards() {
-      if (this.annotations !== null || this.documentComments !== null) {
-        return this.annotations.length + this.documentComments.length;
-      }
-      return 0;
+      return this.$store.getters['comment/getDocumentComments'](this.document_id).sort((a, b) => {
+        if(!a.referenceAnnotation && !b.referenceAnnotation) {
+          return Date.parse(a) - Date.parse(b);
+        } else if(a.referenceAnnotation && b.referenceAnnotation){
+          const aAnno = this.$store.getters['anno/getAnnotation'](a.referenceAnnotation);
+          const bAnno = this.$store.getters['anno/getAnnotation'](b.referenceAnnotation);
+
+          if(!aAnno || !bAnno){
+            return 0;
+          }
+
+          return (aAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start
+              - bAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start);
+        } else {
+          return !a.referenceAnnotation ? 1 : -1;
+        }
+      });
     },
   },
   mounted() {
     this.eventBus.on('sidebarScroll', (anno_id) => {
-      this.sidebarScrollTo(anno_id);
+      this.sidebarScrollTo(this.$store.getters["comment/getCommentByAnnotation"](anno_id).id);
       this.$socket.emit("stats", {action: "sidebarScroll", data: {document_id: this.document_id, anno_id: anno_id}});
     })
     this.load();
@@ -105,25 +95,30 @@ export default {
   methods: {
     ...mapMutations({
       toggleSidebar: "anno/TOGGLE_SIDEBAR",
-      hover: "anno/HOVER",
-      unhover: "anno/UNHOVER"
+      annoHover: "anno/HOVER",
+      annoUnhover: "anno/UNHOVER"
     }),
-    hasComment(anno_id) {
+    /*hasComment(anno_id) {
       return this.$store.getters['comment/getCommentByAnnotation'](anno_id) !== undefined;
+    },*/
+    hover(commentId) {
+      const annotationId = this.$store.getters['comment/getComment'](commentId).referenceAnnotation;
+      if (annotationId)
+        this.annoHover(annotationId)
+    },
+    unhover(commentId) {
+      const annotationId = this.$store.getters['comment/getComment'](commentId).referenceAnnotation;
+      if (annotationId)
+        this.annoHover(annotationId)
     },
     load() {
       this.$socket.emit("annotationGetByDocument", {documentId: this.document_id});
       this.$socket.emit("commentGetByDocument", {documentId: this.document_id});
     },
-    async sidebarScrollTo(annotationId) {
+    async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;
-      await scrollElement(scrollContainer, document.getElementById('anno-' + annotationId).offsetTop - 52.5);
+      await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
     },
-    async focusAnnotation(annotation_id) {
-      //for now, just scroll to it
-      await this.sidebarScrollTo(annotation_id);
-    },
-
     createDocumentComment() {
       this.$socket.emit('commentAdd', {
         documentId: this.document_id,
@@ -137,12 +132,12 @@ export default {
 
 <style scoped>
 #sidebar-container {
-  max-width: 300px;
+  max-width: 400px;
   height: 100%;
 }
 
 #spacer {
-  width: 300px;
+  width: 400px;
   background-color: transparent;
 }
 
