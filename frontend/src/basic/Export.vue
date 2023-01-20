@@ -9,8 +9,8 @@ Export logic
 Author: Nils Dycke
 Source: -
 */
-import {mergeAnnotationsAndComments} from "../../assets/data";
-import {arraysContainSameElements, downloadObjectsAs, omitObjectAttributeSubset} from "../../assets/utils";
+import {mergeAnnotationsAndComments} from "@/assets/data";
+import {arraysContainSameElements, downloadObjectsAs, omitObjectAttributeSubset} from "@/assets/utils";
 
 export default {
   name: "Export.vue",

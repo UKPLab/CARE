@@ -40,7 +40,7 @@
 Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import Modal from "../../basic/Modal.vue";
+import Modal from "@/basic/Modal.vue";
 import ReportItem from "../ReportItem.vue";
 
 export default {

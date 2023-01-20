@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import Modal from "../basic/Modal.vue";
+import Modal from "@/basic/Modal.vue";
 
 export default {
   name: "TermsModal",

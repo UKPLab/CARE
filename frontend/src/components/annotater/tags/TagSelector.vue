@@ -6,19 +6,15 @@
           class="form-select"
           data-allow-new="false"
           multiple name="tags_new[]">
-      <option disabled hidden selected value="">Choose a tag...</option>
-
-
-
-
-      <option v-for="t in assignableTags" :key="t.id" :value="t.id" selected="true"
-              v-bind:data-badge-style="t.colorCode">{{ t.name }}
-      </option>
-      <option
-          v-for="t in tags.filter(tag => tagsIdsUsed.includes(tag.id)).filter(tag => !assignableTags.map(at => at.id).includes(tag.id))"
-          :key="t.id" :data-badge-style="t.colorCode" :value="t.id" selected="true">{{ t.name }}
-      </option>
-    </select>
+    <option disabled hidden selected value="">Choose a tag...</option>
+    <option v-for="t in assignableTags" :key="t.id" :value="t.id" selected="true"
+            v-bind:data-badge-style="t.colorCode">{{ t.name }}
+    </option>
+    <option
+        v-for="t in tags.filter(tag => tagsIdsUsed.includes(tag.id)).filter(tag => !assignableTags.map(at => at.id).includes(tag.id))"
+        :key="t.id" :data-badge-style="t.colorCode" :value="t.id" selected="true">{{ t.name }}
+    </option>
+  </select>
 </template>
 
 <script>

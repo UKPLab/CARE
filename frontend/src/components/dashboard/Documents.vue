@@ -1,4 +1,5 @@
 <template>
+  <PublishModal ref="publishModal"></PublishModal>
   <Card title="Documents">
     <template v-slot:headerElements>
       <button class="btn btn-sm me-1 btn-secondary" title="Export" type="button" @click="exportAll()">
@@ -8,7 +9,7 @@
       <Upload @addedDoc="onAddedDoc"></Upload>
     </template>
     <template v-slot:body>
-      <Table :columns="columns" :data="docs" :options="options"></Table>
+      <Table :columns="columns" :data="docs" :options="options" @action="action"></Table>
     </template>
   </Card>
   <Export ref="export"></Export>
@@ -21,20 +22,20 @@ This component loads the user-specific documents from the server
 and allows to interact with them. The user can delete existing
 documents or access the annotator view for the respective pdf.
 
-Author: Nils Dycke (dycke@ukp...)
-Co-Author:  Dennis Zyska (zyska@ukp...)
+Author: Nils Dycke, Dennis Zyska
 Source: -
 */
 import {mapGetters} from "vuex";
 import Upload from "./documents/Upload.vue";
-import Export from "../basic/Export.vue";
-import Card from "../basic/Card.vue";
-import Table from "../basic/Table.vue";
-import LoadIcon from "../../icons/LoadIcon.vue";
+import PublishModal from "./documents/PublishModal.vue";
+import Export from "@/basic/Export.vue";
+import Card from "@/basic/Card.vue";
+import Table from "@/basic/table/Table.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Document",
-  components: {Upload, Export, Card, LoadIcon, Table},
+  components: {Upload, Export, Card, LoadIcon, Table, PublishModal},
   data() {
     return {
       options: {
@@ -48,15 +49,18 @@ export default {
       columns: [
         {name: "Title", key: "name"},
         {name: "Created At", key: "createdAt"},
+        {
+          name: "Public Shared",
+          key: "public",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", false: "No"},
+            classMapping: {true: "bg-success", false: "bg-danger"}
+          }
+        },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
     }
-  },
-  props: {
-    'admin': {
-      required: false,
-      default: false
-    },
   },
   mounted() {
     this.load();
@@ -64,8 +68,6 @@ export default {
   computed: {
     docs() {
       return this.$store.getters["document/getDocuments"].map(d => {
-
-        console.log(d)
         d.manage = [
           {
             icon: "box-arrow-in-right",
@@ -76,7 +78,7 @@ export default {
               }
             },
             title: "Access document...",
-            onClick: this.accessDoc,
+            action: "accessDoc",
           },
           {
             icon: "trash",
@@ -87,8 +89,19 @@ export default {
               }
             },
             title: "Delete document...",
-            onClick: this.deleteDoc,
+            action: "deleteDoc",
           },
+          {
+            icon: "cloud-arrow-up",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              }
+            },
+            title: "Publish document...",
+            action: "publicDoc",
+          }
           /*
         {
           icon: "pencil",
@@ -108,6 +121,10 @@ export default {
     ...mapGetters({reviews: 'user/getReviews'})
   },
   methods: {
+    action(data) {
+
+      console.log(data);
+    },
     load() {
       this.$socket.emit("getReviews");
     },
@@ -152,6 +169,10 @@ export default {
       }
 
       return this.reviews[review_i].submitted ? "SUBMITTED" : "PENDING";
+    },
+    publishDoc(row) {
+      console.log(row);
+      this.$refs.publishModal.open(row.id);
     },
     exportAll() {
       const doc_ids = this.docs.map(i => i.id);

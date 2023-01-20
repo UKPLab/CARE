@@ -23,7 +23,7 @@ To get a confirmation before deleting the tagset
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import Modal from "../../basic/Modal.vue";
+import Modal from "@/basic/Modal.vue";
 
 export default {
   name: "TagSetDeleteModal",

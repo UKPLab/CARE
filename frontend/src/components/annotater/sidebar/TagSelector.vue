@@ -26,7 +26,6 @@
 
 <script>
 import Tags from "bootstrap5-tags/tags.js";
-import {watch} from "vue";
 
 export default {
   name: "TagSelector",

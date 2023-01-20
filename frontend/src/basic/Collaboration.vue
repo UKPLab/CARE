@@ -6,7 +6,7 @@
 
 <script>
 import {v4 as uuidv4} from "uuid";
-import LoadIcon from "../../icons/LoadIcon.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Collaboration.vue",

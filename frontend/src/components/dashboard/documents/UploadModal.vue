@@ -28,7 +28,7 @@
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import Modal from "../../basic/Modal.vue";
+import Modal from "@/basic/Modal.vue";
 import {mapMutations} from "vuex";
 
 export default {
