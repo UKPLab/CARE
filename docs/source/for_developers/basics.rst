@@ -24,6 +24,8 @@ and deployment mode. Please install them according to the official documentation
 * `Docker <https://docs.docker.com/engine/installation/>`_
 * `Docker Compose <https://docs.docker.com/compose/install/>`_
 
+If `make <https://www.gnu.org/software/make/>`_ should not be installed already, we highly recommend to install it,
+to be able to use the below commands for convenience.
 
 Customizing Builds
 ------------------
@@ -39,7 +41,7 @@ The environment variables are completely managed in the ``.env`` files at the to
 default settings should work for you, but if you want to adapt ports and hosts these are the files to change. Also note
 that the admin account and password are stored here in cleartext.
 
-``.env``-files
+.env-files
 ~~~~~~~~~~~~~~
 
 You need to adapt different env-files depending on whether you build for development (``.env.dev``), for deployment
@@ -82,6 +84,8 @@ according to your needs.
 
     After changes to the ``.env`` configuration files, you need to restart your server by running the build commands
     again.
+
+|
 
 Development Build
 -----------------
@@ -164,7 +168,7 @@ After that, the backend can be started with:
 
 To shorten things, both commands can also be executed with `make dev-build` at once.
 
-
+|
 
 Deployment Build
 ----------------
@@ -184,6 +188,7 @@ You can check the status and logs of the docker containers using the standard do
 `Portainer <https://www.portainer.io/>`_. The container with the name ending in ``_content_server`` hosts the actual
 backend.
 
+|
 
 More Commands
 -------------
