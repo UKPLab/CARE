@@ -26,10 +26,10 @@
         <span v-if="c.key in r">
           <TIcon v-if="c.type === 'icon'" :value="r[c.key]" />
           <TBadge v-else-if="c.type === 'badge'" :options="c.typeOptions" :value="r[c.key]" />
-          <TButton v-else-if="c.type === 'button'" :icon="r[c.key].icon" :action="r[c.key].action" @action="actionEmitter" :options="r[c.key].options" :params="[r]" :title="r[c.key].title" />
+          <TButton v-else-if="c.type === 'button'" :icon="r[c.key].icon" :action="r[c.key].action" @action="actionEmitter" :options="r[c.key].options" :params="r" :title="r[c.key].title" />
           <TButtonGroup v-else-if="c.type === 'button-group'" @action="actionEmitter"
                             :buttons="r[c.key]"
-                            :params="[r]" />
+                            :params="r" />
 
           <span v-else>
                {{ r[c.key] }}
