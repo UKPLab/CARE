@@ -122,8 +122,13 @@ export default {
   },
   methods: {
     action(data) {
-
-      console.log(data);
+      if (data.action === "accessDoc") {
+        this.accessDoc(data.params);
+      } else if (data.action === "deleteDoc") {
+        this.deleteDoc(data.params);
+      } else if (data.action === "publicDoc") {
+        this.$refs.publishModal.show(data.params.id);
+      }
     },
     load() {
       this.$socket.emit("getReviews");
