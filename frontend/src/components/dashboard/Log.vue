@@ -7,8 +7,8 @@
 </template>
 
 <script>
-import Table from "../../components/basic/Table.vue";
-import Card from "../../components/basic/Card.vue";
+import Table from "@/basic/table/Table.vue";
+import Card from "@/basic/Card.vue";
 
 export default {
   name: "Log.vue",

@@ -34,8 +34,8 @@ import {ObserveVisibility} from 'vue3-observe-visibility'
 import debounce from 'lodash.debounce';
 import Highlights from "./Highlights.vue";
 
-import {Anchoring} from "../../../assets/pdfViewer/anchor.js";
-import Loader from "../../basic/Loader.vue";
+import {Anchoring} from "@/assets/pdfViewer/anchor.js";
+import Loader from "@/basic/Loader.vue";
 
 
 export default {

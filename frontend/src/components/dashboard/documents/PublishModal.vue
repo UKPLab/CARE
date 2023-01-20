@@ -1,7 +1,7 @@
 <template>
-  <Modal ref="tagSetPublishModal">
+  <Modal ref="publishModal">
     <template v-slot:title>
-      Publish Tagset
+      Publish Document
     </template>
     <template v-slot:body>
       Do you really want to publish the tagset? <br>
@@ -18,17 +18,10 @@
 </template>
 
 <script>
-/* TagSetPublishModal.vue - modal component for publish a tagset
-
-To get a confirmation before publish the tagset
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
 import Modal from "@/basic/Modal.vue";
 
 export default {
-  name: "TagSetPublishModal",
+  name: "PublishModal.vue",
   components: {Modal},
   data() {
     return {
@@ -69,7 +62,6 @@ export default {
       });
     },
   }
-
 }
 </script>
 

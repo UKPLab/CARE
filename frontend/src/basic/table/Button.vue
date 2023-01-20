@@ -1,19 +1,20 @@
 <template>
-  <button class="btn" :class="buttonClass.specifiers" type="button" @click="this.onClickWithContext()" :title="this.title">
+  <button class="btn" :class="buttonClass.specifiers" type="button" @click="actionEmitter" :title="this.title">
     <LoadIcon v-if="this.icon !== null" :iconName="this.icon"></LoadIcon>
     <span v-if="this.icon === null || !this.buttonClass.iconOnly">{{this.title}}</span>
   </button>
 </template>
 
 <script>
-import LoadIcon from "../../icons/LoadIcon.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "TableButton.vue",
   components: {LoadIcon},
+  emits: ['action'],
   props: {
-    onClick: {
-      type: Function,
+    action: {
+      type: String,
       required: true
     },
     title: {
@@ -44,8 +45,8 @@ export default {
     }
   },
   methods: {
-    onClickWithContext(){
-      this.onClick(...this.params);
+    actionEmitter(){
+      this.$emit('action', {action: this.action, params: this.params});
     }
   }
 }
