@@ -26,8 +26,8 @@
         <span v-if="c.key in r">
           <TIcon v-if="c.type === 'icon'" :value="r[c.key]" />
           <TBadge v-else-if="c.type === 'badge'" :options="c.typeOptions" :value="r[c.key]" />
-          <TButton v-else-if="c.type === 'button'" :icon="r[c.key].icon" :onClick="r[c.key].onClick" :options="r[c.key].options" :params="[r]" :title="r[c.key].title" />
-          <TButtonGroup v-else-if="c.type === 'button-group'"
+          <TButton v-else-if="c.type === 'button'" :icon="r[c.key].icon" :action="r[c.key].action" @action="actionEmitter" :options="r[c.key].options" :params="[r]" :title="r[c.key].title" />
+          <TButtonGroup v-else-if="c.type === 'button-group'" @action="actionEmitter"
                             :buttons="r[c.key]"
                             :params="[r]" />
 
@@ -56,6 +56,7 @@ import LoadIcon from "@/icons/LoadIcon.vue";
 export default {
   name: "Table.vue",
   components: {Pagination, TIcon, TBadge, TButtonGroup, TButton, LoadIcon},
+  emits: ["action"],
   props: {
     data: {
       type: Array,
@@ -93,6 +94,9 @@ export default {
         this.sortDirection = "asc";
       }
       this.sortColumn = column;
+    },
+    actionEmitter(data){
+      this.$emit("action", data);
     }
   },
   computed: {
@@ -123,7 +127,7 @@ export default {
       }
       return data;
     },
-  }
+  },
 }
 </script>
 
