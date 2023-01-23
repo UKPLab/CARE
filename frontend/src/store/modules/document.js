@@ -20,6 +20,9 @@ export default {
         getDocuments: state => {
             return state['documents'];
         },
+        getDocument: state => id => {
+            return state['documents'].find(doc => doc.id === id);
+        },
         getDocumentId: state => (hash) => {
             if (state['documents'].length > 0) {
                 return state['documents'].find(doc => doc.hash === hash)["id"];
