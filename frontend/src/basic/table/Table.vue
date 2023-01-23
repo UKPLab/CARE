@@ -97,6 +97,10 @@ export default {
     },
     actionEmitter(data){
       this.$emit("action", data);
+      this.$socket.emit("stats", {
+        action: "actionClick",
+        data: data
+      });
     }
   },
   computed: {

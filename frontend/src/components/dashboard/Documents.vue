@@ -66,8 +66,14 @@ export default {
     this.load();
   },
   computed: {
+    documents() {
+      return this.$store.getters["document/getDocuments"];
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
     docs() {
-      return this.$store.getters["document/getDocuments"].map(d => {
+      return this.documents.filter(doc => doc.userId === this.userId).map(d => {
         d.manage = [
           {
             icon: "box-arrow-in-right",
@@ -124,10 +130,12 @@ export default {
     action(data) {
       if (data.action === "accessDoc") {
         this.accessDoc(data.params);
-      } else if (data.action === "deleteDoc") {
+      }
+      if (data.action === "deleteDoc") {
         this.deleteDoc(data.params);
-      } else if (data.action === "publicDoc") {
-        this.$refs.publishModal.show(data.params.id);
+      }
+      if (data.action === "publicDoc") {
+        this.$refs.publishModal.open(data.params.id);
       }
     },
     load() {

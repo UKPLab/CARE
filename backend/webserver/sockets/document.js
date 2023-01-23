@@ -104,8 +104,8 @@ module.exports = class DocumentSocket extends Socket {
             try {
                 const doc = await dbGetDoc(data.documentId);
                 if (this.checkUserAccess(doc.userId)) {
-                    this.socket.emit("documentRefresh", await dbUpdateDoc(doc.id, {public: true}));
-                    this.socket.emit("tagSetPublished", {success: true});
+                    this.socket.emit("documentRefresh", (await dbUpdateDoc(doc.id, {public: true}))[1]);
+                    this.socket.emit("documentPublished", {success: true});
                 } else {
                     this.logger.error("No permission to publish document: " + data.documentId);
                     this.socket.emit("documentPublished", {
