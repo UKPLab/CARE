@@ -255,7 +255,7 @@ module.exports = class Server {
         });
     }
 
-    close() {
+    stop() {
         this.http.close();
     }
 

@@ -83,7 +83,7 @@ describe('Test Login', () => {
     });
 
     afterAll(() => {
-        this.server.close();
+        this.server.stop();
     });
 
 })

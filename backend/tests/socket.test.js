@@ -53,4 +53,8 @@ describe("Test Websockets", () => {
         clientSocket.disconnect();
     });
 
+    afterAll(() => {
+        this.server.stop();
+    });
+
 });
