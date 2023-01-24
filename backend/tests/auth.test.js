@@ -58,12 +58,11 @@ describe('Test Login', () => {
                 terms: true,
             });
         expect(register.statusCode).toEqual(201);
-        const login = await request(this.server.app)
+        return request(this.server.app)
             .post('/auth/login')
             .send({
                 username: 'testuser',
                 password: 'testuser',
-            });
-        expect(login.statusCode).toEqual(200);
+            }).expect(200);
     });
 })
