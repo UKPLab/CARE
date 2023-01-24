@@ -15,7 +15,9 @@ module.exports = class NLPService extends Service {
         super(server);
 
         this.retryDelay = 10000;
-        this.info = null;
+
+        this.skills = null;
+        this.configs = null;
         this.timer = null;
 
         this.toNlpSocket = null;
@@ -31,33 +33,37 @@ module.exports = class NLPService extends Service {
         // TODO Check socket io nlp service url is the same like in the db (if not, reconnect)
 
         //connect to nlp broker
-        this.connect();
+        await this.connect();
 
         // reset
-        const self = this;
-        self.info = null;
+        this.skills = null;
+        this.configs = null;
         if (this.timer) {
             this.cancelTimer();
         }
 
         //setup timer to periodically clean the info cache
+        const self = this;
         this.timer = setInterval(() => {
             self.info = null;
         }, 300 * 1000);
     }
 
-    async connectClient(client, data) {
-        if (!this.toNlpSocket) {
-            await this.init();
-        }
-    }
-
-    getInfo() {
-        return this.info;
-    }
-
     isConnected() {
         return this.toNlpSocket !== null && this.toNlpSocket.connected;
+    }
+
+    async connectClient(client, data) {
+        if (!this.isConnected()) {
+            await this.init();
+        }
+
+        // send current set of skills to client
+        this.send(client, {
+            service: "NLPService",
+            type: "skillUpdate",
+            data: this.skills !== null ? this.skills : []
+        });
     }
 
     async connect() {
@@ -74,7 +80,9 @@ module.exports = class NLPService extends Service {
         // Handle connection errors
         self.toNlpSocket.on("connect_error", async () => {
             setTimeout(() => {
-                if (self.toNlpSocket) self.toNlpSocket.connect();
+                if (self.toNlpSocket) {
+                    self.toNlpSocket.connect();
+                }
             }, self.retryDelay);
         });
 
@@ -88,7 +96,7 @@ module.exports = class NLPService extends Service {
             self.logger.info(`Connection to NLP server established: ${self.toNlpSocket.connected}`);
 
             // if connection established, get information about the NLP Service
-            self.toNlpSocket.emit("skillGetAll", {});
+            self.toNlpSocket.emit("skillGetAll");
         });
 
         // deal with broken connection
@@ -97,63 +105,81 @@ module.exports = class NLPService extends Service {
         });
 
         // forwarding NLP server messages to frontend
+        self.toNlpSocket.on("skillConfig", (data) => {
+            //deep copy (otherwise we may get an undefined)
+            const up = JSON.parse(JSON.stringify(data));
+
+            self.#updateConfigCache(up);
+        });
+
         self.toNlpSocket.on("skillUpdate", (data) => {
-            //deep copy (otherwise info becomes undefined)
-            const up = JSON.parse(JSON.stringify(data.data));
-            const upSkills = up.map(s => s.name);
+            // update cache with deep copy of data
+            const up = JSON.parse(JSON.stringify(data));
+            this.#updateSkillCache(up);
 
-            if (self.info !== null) {
-                self.info = self.info.filter(e => !upSkills.includes(e.name));
-                self.info = self.info.concat(up.filter(s => s.nodes > 0));
-            } else {
-                self.info = up;
-            }
-
-            // TODO Configs cachen
-            self.toNlpSocket.emit("skillGetConfig", {});
+            // delete configs of removed skills and request configs for changed services (that were not deleted)
+            up.filter(s => s.nodes === 0 && s.name in self.configs).forEach(s => delete self.configs[s.name]);
+            up.filter(s => s.nodes > 0).forEach(s => self.toNlpSocket.emit("skillGetConfig", {name: s.name}));
 
             self.sendAll({
-                service: "NLPService", type: "skillUpdate", data: self.info
-            })
+                service: "NLPService", type: "skillUpdate", data: self.skills
+            });
         });
 
-        self.toNlpSocket.onAny((msg, data) => {
-
-            // TODO Reponse using client id and send response
-            const cid = NLPService.#extractClientId(data);
-            const toClientSocket = self.server.availSockets[cid]["NLPSocket"].socket;
-            this.toNlpSocket.emit(msg, {clientId: cid, clientSecret: null, data: data ? data : null});
-
-            toClientSocket.emit("nlp_" + msg, {id: data.id ? data.id : null, data: data.data});
+        self.toNlpSocket.on("taskResult", (data) => {
+            self.send(self.#getClient(data.clientId), {type: "taskResult", data: data});
         });
+
+        self.toNlpSocket.connect();
+    }
+
+    #updateSkillCache(updatedSkills) {
+        if (this.skills !== null) {
+            const upSkills = updatedSkills.map(s => s.name);
+
+            this.skills = this.skills.filter(e => !upSkills.includes(e.name));
+            this.skills = this.skills.concat(updatedSkills.filter(s => s.nodes > 0));
+        } else {
+            this.skills = updatedSkills;
+        }
+    }
+
+    #updateConfigCache(updatedConfig) {
+        if (this.configs === null) {
+            this.configs = {};
+        }
+        this.configs[updatedConfig.name] = updatedConfig;
+    }
+
+    #getClient(clientId) {
+        return this.server.availSockets[clientId]["ServiceSocket"];
     }
 
     command(client, command, data) {
-        if (command === "skillGetAll" && this.info !== null) {
-            const toClientSocket = this.server.availSockets[cid]["NLPSocket"].socket;
-
-            toClientSocket.emit("nlp_skillUpdate", this.info);
-        }
-
-        // TODO Configs send from cache
-        if (command === "skillGetConfig") {
-
+        if (command === "skillGetAll") {
+            if (!this.skills) {
+                this.send(client, {type: "skillUpdate", data: {skills: [], error: true}})
+            } else {
+                this.send(client, {type: "skillUpdate", data: {skills: this.skills}});
+            }
+        } else if (command === "skillGetConfig") {
+            if (this.configs && data.name in this.configs) {
+                this.send(client, {type: "skillConfig", data: {config: this.configs[data.name]}});
+            } else {
+                this.send(client, {type: "skillConfig", data: {config: null, error: true}});
+            }
         }
     }
 
     request(client, data) {
         data["clientId"] = client.socket.id;
-        this.toNlpSocket.emit("skilLRequest", data);
+        this.toNlpSocket.emit("skillRequest", data);
     }
 
     cancelTimer() {
         if (this.timer) {
             clearInterval(this.timer);
         }
-    }
-
-    static #extractClientId(data) {
-        return data.clientId ? data.clientId : null;
     }
 
     close() {

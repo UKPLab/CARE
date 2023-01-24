@@ -58,7 +58,7 @@ export default {
   },
   computed: {
     data() {
-      return this.$store.getters["nlp/getAllSkills"]().map(s => {
+      return this.$store.getters["service/get"]("NLPService", "skillUpdate").map(s => {
         s.details = {
           icon: "search-heart",
           options: {
@@ -70,13 +70,15 @@ export default {
           title: "Show config...",
           onClick: this.getDetails,
         };
+        console.log("table entry", s);
         return s;
       });
     },
   },
   methods: {
     load() {
-      this.$socket.emit("nlp_skillGetAll");
+      //todo condition on what's loaded in the store already
+      this.$socket.emit("serviceCommand", {service: "NLPService", data: {type: "skillGetAll"}});
     },
     getDetails(skill_row) {
       this.$refs["nlpSkillModal"].openModal(skill_row["name"]);

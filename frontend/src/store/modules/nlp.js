@@ -49,7 +49,6 @@ export default {
             state.configs[data.data.name] = data.data;
         },
         SOCKET_nlp_skillResults: (state, data) => {
-            console.log("NEW SKILL RESULT:::::::", data);
             state.result_cache[data.id] = data.data;
         }
     },
