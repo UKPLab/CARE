@@ -127,4 +127,8 @@ module.exports = class NLPService extends Service {
 
         this.#teardownConnectionToNlpService(client);
     }
+
+    close() {
+
+    }
 }
