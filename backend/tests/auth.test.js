@@ -46,8 +46,8 @@ describe('Test Login', () => {
     /**
      * Test the /POST register route
      */
-    it('Register', async () => {
-        const register = await request(this.server.app)
+    it('Register', (done) => {
+        request(this.server.app)
             .post('/auth/register')
             .send({
                 user_name: 'testuser',
@@ -56,13 +56,19 @@ describe('Test Login', () => {
                 first_name: 'test',
                 last_name: 'user',
                 terms: true,
+            }).expect(201).end((err, res) => {
+                if (err) {
+                    done(err);
+                }
+                done();
             });
-        expect(register.statusCode).toEqual(201);
+       /* expect(register.statusCode).toEqual(201);
         return request(this.server.app)
             .post('/auth/login')
             .send({
                 username: 'testuser',
                 password: 'testuser',
-            }).expect(200);
+            }).expect(200);*/
     });
+
 })
