@@ -79,7 +79,7 @@ export default {
       this.$refs.nlpSkillModal.openModal();
 
       if(this.config.length === 0) {
-        this.$socket.emit("nlp_skillGetConfig", {name: this.skillName});
+        this.$socket.emit("serviceCommand", {service: "NLPService", data: {type: "skillGetConfig", name: this.skillName}});
       }
     }
   },

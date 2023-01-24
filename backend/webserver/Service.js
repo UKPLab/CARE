@@ -11,6 +11,7 @@ module.exports = class Service {
         this.logger = require("../utils/logger.js")("Service/" + this.constructor.name);
 
         this.server = server;
+        this.clients = {}
     }
 
     /**
@@ -40,7 +41,7 @@ module.exports = class Service {
     }
 
     send(client, data) {
-        client.emit("serviceRefresh", data);
+        client.socket.emit("serviceRefresh", data);
     }
 
     sendAll(data) {
@@ -55,6 +56,5 @@ module.exports = class Service {
      */
     command(client, command, data) {
         this.logger.info("Client command " + command + " with data " + data);
-
     }
 }
