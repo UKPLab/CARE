@@ -14,6 +14,7 @@ module.exports = class NLPService extends Service {
     constructor(server) {
         super(server);
 
+        this.retryDelay = 10000;
         this.info = null;
         this.timer = null;
 
@@ -25,6 +26,8 @@ module.exports = class NLPService extends Service {
             this.logger.info("NLP is deactivated! Change service.nlp.enabled setting in the DB.");
             return;
         }
+        this.retryDelay = await getSetting("service.nlp.retryDelay");
+
         // TODO Check socket io nlp service url is the same like in the db (if not, reconnect)
 
         //connect to nlp broker
@@ -70,10 +73,9 @@ module.exports = class NLPService extends Service {
 
         // Handle connection errors
         self.toNlpSocket.on("connect_error", async () => {
-            self.logger.error("Connection error, try to connect again...");
             setTimeout(() => {
-                self.toNlpSocket.connect();
-            }, await getSetting("service.nlp.retryDelay"));
+                if (self.toNlpSocket) self.toNlpSocket.connect();
+            }, self.retryDelay);
         });
 
         // Handle reconnection attempts
@@ -117,10 +119,10 @@ module.exports = class NLPService extends Service {
 
         self.toNlpSocket.onAny((msg, data) => {
 
-                // TODO Reponse using client id and send response
+            // TODO Reponse using client id and send response
             const cid = NLPService.#extractClientId(data);
             const toClientSocket = self.server.availSockets[cid]["NLPSocket"].socket;
-        this.toNlpSocket.emit(msg, {clientId: cid, clientSecret: null, data: data ? data : null});
+            this.toNlpSocket.emit(msg, {clientId: cid, clientSecret: null, data: data ? data : null});
 
             toClientSocket.emit("nlp_" + msg, {id: data.id ? data.id : null, data: data.data});
         });
@@ -157,7 +159,8 @@ module.exports = class NLPService extends Service {
     close() {
         this.cancelTimer();
         if (this.toNlpSocket) {
-            this.toNlpSocket.close();
+            this.toNlpSocket.disconnect();
+            this.toNlpSocket = null;
         }
     }
 }
