@@ -30,4 +30,8 @@ module.exports = class Service {
     disconnectClient(client, data) {
         this.logger.info("Client disconnected with data " + data);
     }
+
+    close() {
+
+    }
 }

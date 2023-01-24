@@ -256,7 +256,12 @@ module.exports = class Server {
     }
 
     stop() {
+        Object.entries(this.services).forEach(([name, service]) => {
+            service.close();
+        });
+        this.io.close();
         this.http.close();
+
     }
 
 }
