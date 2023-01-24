@@ -34,4 +34,27 @@ module.exports = class Service {
     close() {
 
     }
+
+    request(client, data) {
+        this.logger.info("Client request with data " + data);
+    }
+
+    send(client, data) {
+        client.emit("serviceRefresh", data);
+    }
+
+    sendAll(data) {
+        this.server.io.emit("serviceRefresh", data);
+    }
+
+    /**
+     * Additional commands for services
+     * @param client
+     * @param command
+     * @param data
+     */
+    command(client, command, data) {
+        this.logger.info("Client command " + command + " with data " + data);
+
+    }
 }
