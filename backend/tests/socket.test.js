@@ -13,7 +13,7 @@ describe("Test Websockets", () => {
     });
 
     beforeEach(async () => {
-        const res = await request(this.server.app)
+        const res = await request(this.server.http)
             .post('/auth/login')
             .send({
                 username: process.env.ADMIN_EMAIL,
@@ -41,7 +41,7 @@ describe("Test Websockets", () => {
         clientSocket = Client("http://localhost:3010", options);
     });
 
-    it("Test Settings", (done) => {
+    test("Test Settings", (done) => {
         clientSocket.on("settingRefresh", (data) => {
             expect('tags.tagSet.default' in data).toBe(true);
             done();
@@ -53,9 +53,9 @@ describe("Test Websockets", () => {
         clientSocket.disconnect();
     });
 
-    afterAll(() => {
+    afterAll(async () => {
         this.server.stop();
+        await new Promise(resolve => setTimeout(() => resolve(), 500)); // avoid jest open handle error
     });
-
 
 });

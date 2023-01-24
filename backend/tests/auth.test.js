@@ -5,13 +5,12 @@ describe('Test Login', () => {
 
     beforeAll(() => {
         this.server = new Server();
-        this.server.start(3011);
     });
 
     /**
      * Test the /POST login route with valid credentials
      */
-    it('Admin Login', async () => {
+    test('Admin Login', async () => {
         return request(this.server.app)
             .post('/auth/login')
             .send({
@@ -24,7 +23,7 @@ describe('Test Login', () => {
     /**
      * Test the /POST login route with invalid credentials
      */
-    it('Invalid Login', async () => {
+    test('Invalid Login', async () => {
         return request(this.server.app)
             .post('/auth/login')
             .send({
@@ -36,7 +35,7 @@ describe('Test Login', () => {
     /**
      * Test the /GET config route
      */
-    it('Get Config', async () => {
+    test('Get Config', async () => {
         return request(this.server.app)
             .get('/config.js')
             .expect(200);
@@ -46,7 +45,7 @@ describe('Test Login', () => {
     /**
      * Test the /POST register route
      */
-    it('Register', (done) => {
+    test('Register', (done) => {
         request(this.server.app)
             .post('/auth/register')
             .send({
@@ -82,8 +81,8 @@ describe('Test Login', () => {
              }).expect(200);*/
     });
 
-    afterAll(() => {
-        this.server.stop();
+    afterAll(async () => {
+        await new Promise(resolve => setTimeout(() => resolve(), 500)); // avoid jest open handle error
     });
 
 })
