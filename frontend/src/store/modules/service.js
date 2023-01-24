@@ -22,7 +22,7 @@ export default {
     getters: {
         get: (state) => (service, serviceType) => {
             return service in state.services && serviceType in state.services[service] ?
-                state.services[service][serviceType] : null;
+                state.services[service][serviceType] : [];
         },
     },
     mutations: {
@@ -36,7 +36,7 @@ export default {
 
             // service dependent update logic
             if (service === "NLPService") {
-                if (serviceType === "skillUpdate") {
+                if (serviceType === "skills") {
                     if (!(serviceType in state.services[service])) {
                         state.services[service][serviceType] = [];
                     }
@@ -49,12 +49,13 @@ export default {
 
                         state.services[service][serviceType] = newSkills;
                     }
-                } else if (serviceType === "skillConfig") {
+                } else if (serviceType === "configs") {
                     if (!(serviceType in state.services[service])) {
                         state.services[service][serviceType] = {};
                     }
-
-                    state.services[service][serviceType][data.data.name] = data;
+                    Object.entries(data.data).forEach(([key, value]) => {
+                        state.services[service][serviceType][key] = value;
+                    });
                 }
             }
         },
