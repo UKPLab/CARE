@@ -42,12 +42,14 @@ export default {
     },
     mutations: {
         SOCKET_nlp_skillUpdate: (state, data) => {
+            console.log("Skills update to", data);
             state.skills = data;
         },
         SOCKET_nlp_skillConfig: (state, data) => {
-            state.configs[data.name] = data;
+            state.configs[data.data.name] = data.data;
         },
         SOCKET_nlp_skillResults: (state, data) => {
+            console.log("NEW SKILL RESULT:::::::", data);
             state.result_cache[data.id] = data.data;
         }
     },
