@@ -28,10 +28,21 @@ module.exports = class NLPService extends Service {
     }
 
     loadFallbacks() {
-        return fs.readdirSync(path.resolve(__dirname, "../../../files/sdf"))
+        this.logger.info("Loading skill fallbacks");
+        const skills = fs.readdirSync(path.resolve(__dirname, "../../../files/sdf"))
             .filter(file => file.endsWith(".yaml")).map((file) => {
-                   return yaml.load(fs.readFileSync(path.join(path.resolve(__dirname, "../../../files/sdf"), file), "utf8"));
+                return yaml.load(fs.readFileSync(path.join(path.resolve(__dirname, "../../../files/sdf"), file), "utf8"));
             });
+        this.skills = skills.map(skill => {
+            return {name: skill.name, nodes: 1, "fallback": true};
+        });
+        this.configs = skills.reduce(function (map, obj) {
+            map[obj.name] = obj;
+            return map;
+        }, {});
+        console.log(this.configs);
+        this.logger.info("Loaded fallbacks for skills: " + this.skills.map(skill => skill.name).join(", "));
+        return skills;
     }
 
     fallbackResponse(skill) {
@@ -41,7 +52,7 @@ module.exports = class NLPService extends Service {
 
     fallbackConfig(skill) {
         if (this.fallbacks.length > 0) {
-           return this.fallbacks.find((fallback) => fallback.name === skill)
+            return this.fallbacks.find((fallback) => fallback.name === skill)
         }
     }
 
@@ -79,16 +90,13 @@ module.exports = class NLPService extends Service {
     }
 
     async connectClient(client, data) {
-        if (!this.isConnected()) {
+        if (this.toNlpSocket === null) {
             await this.init();
         }
 
         // send current set of skills to client
-        this.send(client, {
-            service: "NLPService",
-            type: "skillUpdate",
-            data: this.skills !== null ? this.skills : []
-        });
+        this.send(client, "skills", this.skills !== null ? this.skills : {});
+
     }
 
     async connect() {
@@ -107,11 +115,11 @@ module.exports = class NLPService extends Service {
             if (await getSetting("service.nlp.test.fallback") === "true") {
                 this.fallbacks = this.loadFallbacks();
             } else {
-            setTimeout(() => {
-                if (self.toNlpSocket) {
-                    self.toNlpSocket.connect();
-                }
-            }, self.retryDelay);
+                setTimeout(() => {
+                    if (self.toNlpSocket) {
+                        self.toNlpSocket.connect();
+                    }
+                }, self.retryDelay);
             }
         });
 
@@ -150,13 +158,11 @@ module.exports = class NLPService extends Service {
             up.filter(s => s.nodes === 0 && s.name in self.configs).forEach(s => delete self.configs[s.name]);
             up.filter(s => s.nodes > 0).forEach(s => self.toNlpSocket.emit("skillGetConfig", {name: s.name}));
 
-            self.sendAll({
-                service: "NLPService", type: "skillUpdate", data: self.skills
-            });
+            self.sendAll("skillUpdate", self.skills);
         });
 
         self.toNlpSocket.on("taskResult", (data) => {
-            self.send(self.#getClient(data.clientId), {type: "taskResult", data: data});
+            self.send(self.#getClient(data.clientId), "taskResult", data);
         });
 
         self.toNlpSocket.connect();
@@ -185,18 +191,16 @@ module.exports = class NLPService extends Service {
     }
 
     command(client, command, data) {
+        console.log(command)
+        console.log(data)
+        console.log(this.configs);
+
+
         if (command === "skillGetAll") {
-            if (!this.skills) {
-                this.send(client, {type: "skillUpdate", data: {skills: [], error: true}})
-            } else {
-                this.send(client, {type: "skillUpdate", data: {skills: this.skills}});
-            }
-        } else if (command === "skillGetConfig") {
-            if (this.configs && data.name in this.configs) {
-                this.send(client, {type: "skillConfig", data: {config: this.configs[data.name]}});
-            } else {
-                this.send(client, {type: "skillConfig", data: {config: null, error: true}});
-            }
+            this.send(client, "skills", this.skills !== null ? this.skills : {});
+        }
+        if (command === "skillGetConfig") {
+            this.send(client, "configs", this.configs !== null ? this.configs : []);
         }
     }
 

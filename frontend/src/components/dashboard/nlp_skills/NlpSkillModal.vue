@@ -59,9 +59,9 @@ export default {
      */
     config(){
       if(this.skillName !== null){
-        const stored = this.$store.getters['nlp/getSkillConfig'](this.skillName);
-        if(stored !== null){
-          return JSON.stringify(stored, null, 2);
+        const stored = this.$store.getters["service/get"]("NLPService", "configs");
+        if (this.skillName in stored){
+          return JSON.stringify(stored[this.skillName], null, 2);
         }
       }
       return "";
@@ -79,7 +79,7 @@ export default {
       this.$refs.nlpSkillModal.openModal();
 
       if(this.config.length === 0) {
-        this.$socket.emit("serviceCommand", {service: "NLPService", data: {type: "skillGetConfig", name: this.skillName}});
+        this.$socket.emit("serviceCommand", {service: "NLPService", command:"skillGetConfig", data: {skill: this.skillName}});
       }
     }
   },

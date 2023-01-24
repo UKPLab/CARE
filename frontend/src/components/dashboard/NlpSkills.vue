@@ -1,12 +1,12 @@
 <template>
   <Card title="Skills">
     <template v-slot:headerElements>
-      <button class="btn btn-sm me-1" type="button" @click="load()" title="Refresh">
-        <LoadIcon iconName="arrow-clockwise" @click=""></LoadIcon>
+      <button class="btn btn-sm me-1" title="Refresh" type="button" @click="load()">
+        <LoadIcon iconName="arrow-clockwise" @click="load()"></LoadIcon>
       </button>
     </template>
     <template v-slot:body>
-      <Table :columns="columns" :data="data" :options="options"></Table>
+      <Table :columns="columns" :data="data" :options="options" @action="action"></Table>
     </template>
   </Card>
   <NlpSkillModal ref="nlpSkillModal"></NlpSkillModal>
@@ -43,48 +43,80 @@ export default {
       columns: [
         {name: "Name", key: "name"},
         {name: "# Nodes", key: "nodes"},
+        {
+          name: "Fallback",
+          key: "fallback",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", default: "No"},
+            classMapping: {true: "bg-success", default: "bg-danger"}
+          },
+        },
         {name: "Details", key: "details", type: "button"},
+
+
       ],
     }
   },
-  props: {
-    'admin': {
-      required: false,
-      default: false
-    },
-  },
-  mounted() {
-    this.load();
-  },
-  computed: {
-    data() {
-      return this.$store.getters["service/get"]("NLPService", "skillUpdate").map(s => {
-        s.details = {
-          icon: "search-heart",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-secondary": true,
-            }
-          },
-          title: "Show config...",
-          onClick: this.getDetails,
-        };
-        console.log("table entry", s);
-        return s;
-      });
-    },
-  },
-  methods: {
-    load() {
-      //todo condition on what's loaded in the store already
-      this.$socket.emit("serviceCommand", {service: "NLPService", data: {type: "skillGetAll"}});
-    },
-    getDetails(skill_row) {
-      this.$refs["nlpSkillModal"].openModal(skill_row["name"]);
-    },
+    props: {
+      'admin'
+    :
+      {
+        required: false,
+      default:
+        false
+      }
+    ,
+    }
+  ,
+    mounted()
+    {
+      this.load();
+    }
+  ,
+    computed: {
+      data()
+      {
+        return this.$store.getters["service/get"]("NLPService", "skills").map(s => {
+          s.details = {
+            icon: "search-heart",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-secondary": true,
+              }
+            },
+            title: "Show config...",
+            action: "getDetails",
+          };
+          console.log("table entry", s);
+          return s;
+        });
+      }
+    ,
+    }
+  ,
+    methods: {
+      action(data)
+      {
+        if (data.action === "getDetails") {
+          this.getDetails(data.params);
+        }
+      }
+    ,
+      load()
+      {
+        //todo condition on what's loaded in the store already
+        this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll"});
+      }
+    ,
+      getDetails(skill_row)
+      {
+        this.$refs["nlpSkillModal"].openModal(skill_row["name"]);
+      }
+    ,
+    }
   }
-}
 </script>
 
 <style scoped>
