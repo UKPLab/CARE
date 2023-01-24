@@ -28,5 +28,20 @@ module.exports = class ServiceSocket extends Socket {
                 this.server.services[data.service].disconnectClient(this, data.data);
             }
         });
+
+        this.socket.on("serviceRequest", (data) => {
+            if (this.server.services[data.service]) {
+                this.server.services[data.service].request(this, data.data);
+            }
+        })
+
+        this.socket.on("serviceCommand", (data) => {
+            if (this.server.services[data.service]) {
+                this.server.services[data.service].command(this, data.command, data.data);
+            }
+        })
+
+
+
     }
 }
