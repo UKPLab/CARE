@@ -250,9 +250,13 @@ module.exports = class Server {
 
     start(port) {
         this.logger.debug("Start Webserver...");
-        this.httpServer.listen(port, () => {
+        this.http = this.httpServer.listen(port, () => {
             this.logger.info("Server started on port " + port);
         });
+    }
+
+    close() {
+        this.http.close();
     }
 
 }

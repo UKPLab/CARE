@@ -57,18 +57,33 @@ describe('Test Login', () => {
                 last_name: 'user',
                 terms: true,
             }).expect(201).end((err, res) => {
+            if (err) {
+                done(err);
+            }
+            request(this.server.app)
+                .post('/auth/login')
+                .send({
+                    username: 'testuser',
+                    password: 'testuser',
+                }).expect(200).end((err, res) => {
                 if (err) {
                     done(err);
                 }
                 done();
             });
-       /* expect(register.statusCode).toEqual(201);
-        return request(this.server.app)
-            .post('/auth/login')
-            .send({
-                username: 'testuser',
-                password: 'testuser',
-            }).expect(200);*/
+
+        });
+        /* expect(register.statusCode).toEqual(201);
+         return request(this.server.app)
+             .post('/auth/login')
+             .send({
+                 username: 'testuser',
+                 password: 'testuser',
+             }).expect(200);*/
+    });
+
+    afterAll(() => {
+        this.server.close();
     });
 
 })
