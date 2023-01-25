@@ -1,8 +1,8 @@
 <template>
   <Card title="Skills">
     <template v-slot:headerElements>
-      <button class="btn btn-sm me-1" type="button" @click="load()" title="Refresh">
-        <LoadIcon iconName="arrow-clockwise" @click=""></LoadIcon>
+      <button class="btn btn-sm me-1" title="Refresh" type="button" @click="load()">
+        <LoadIcon iconName="arrow-clockwise" @click="load()"></LoadIcon>
       </button>
     </template>
     <template v-slot:body>
@@ -43,6 +43,15 @@ export default {
       columns: [
         {name: "Name", key: "name"},
         {name: "# Nodes", key: "nodes"},
+        {
+          name: "Fallback",
+          key: "fallback",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", default: "No"},
+            classMapping: {true: "bg-success", default: "bg-danger"}
+          },
+        },
         {name: "Details", key: "details", type: "button"},
       ],
     }
@@ -58,7 +67,8 @@ export default {
   },
   computed: {
     data() {
-      return this.$store.getters["service/get"]("NLPService", "skillUpdate").map(s => {
+      const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
+      return skills ? skills.map(s => {
         s.details = {
           icon: "search-heart",
           options: {
@@ -72,7 +82,7 @@ export default {
         };
         console.log("table entry", s);
         return s;
-      });
+      }) : [];
     },
   },
   methods: {

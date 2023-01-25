@@ -41,11 +41,11 @@ export default {
                         state.services[service][serviceType] = [];
                     }
 
-                    if(!data.data.error && data.data.length > 0){
-                        const skillNames = data.data.map(s => s.name);
+                    if(!data.data.error && data.data.skills.length > 0){
+                        const skillNames = data.data.skills.map(s => s.name);
 
                         let newSkills = state.services[service][serviceType].filter(s => !skillNames.includes(s.name));
-                        newSkills = newSkills.concat(data.data);
+                        newSkills = newSkills.concat(data.data.skills);
 
                         state.services[service][serviceType] = newSkills;
                     }

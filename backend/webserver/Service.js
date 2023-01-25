@@ -32,6 +32,10 @@ module.exports = class Service {
         this.logger.info("Client disconnected with data " + data);
     }
 
+    /**
+     * This method should be overwritte if the service needs to close any ressources
+     * when the app is closed
+     */
     close() {
 
     }
@@ -45,8 +49,8 @@ module.exports = class Service {
         client.socket.emit("serviceRefresh", data);
     }
 
-    sendAll(data) {
-        this.server.io.emit("serviceRefresh", data);
+    sendAll(type, data) {
+        this.server.io.emit("serviceRefresh", {service: this.constructor.name, type: type, data:data});
     }
 
     /**
