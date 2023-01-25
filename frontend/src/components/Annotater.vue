@@ -122,7 +122,8 @@ export default {
       return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true";
     },
     nlp_available() {
-      return this.$store.getters["nlp/getSkillConfig"]("sentiment_classification") !== null;
+      const conf = this.$store.getters["service/get"]("NLPService", "skillConfig");
+      return conf && "sentiment_classification" in conf;
     },
     nlp_enabled() {
       return this.$store.getters["settings/getValue"]('service.nlp.enabled') === "true";
@@ -252,7 +253,7 @@ export default {
 
       // check for available nlp support (for now hard-coded sentiment analysis)
       if(!this.nlp_available) {
-        this.$socket.emit("nlp_skillGetConfig", {name: "sentiment_classification"});
+        this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetConfig", data: {name: "sentiment_classification"}});
       }
     },
     downloadAnnotations(outputType) {

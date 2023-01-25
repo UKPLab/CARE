@@ -3,7 +3,8 @@
     <div class="container-fluid">
       <div class="row">
         <div class="col">
-          <LoadIcon size=12 :iconName="(collapseComment) ? 'chevron-right' : 'chevron-down'" @click="collapseComment = !collapseComment"></LoadIcon>
+          <LoadIcon size=12 :iconName="(collapseComment) ? 'chevron-right' : 'chevron-down'"
+                    @click="collapseComment = !collapseComment"></LoadIcon>
 
           {{ comment.creator_name }}
           <!--<span v-if="showEditByCollab">
@@ -19,7 +20,8 @@
 
     </div>
   </div>
-  <div v-if="!collapseComment" class="comment card-text blockquote pb-1" :class="{blockquoteMain: comment.referenceAnnotation, blockquoteSub: !comment.referenceAnnotation}">
+  <div v-if="!collapseComment" class="comment card-text blockquote pb-1"
+       :class="{blockquoteMain: comment.referenceAnnotation, blockquoteSub: !comment.referenceAnnotation}">
 
 
     <div v-if="edit || editedByMyself">
@@ -95,7 +97,7 @@
         </div>
       </div>
     </div>
-        <span  v-if="level >= 1"  v-for="c in childComments" :key="c.id">
+    <span v-if="level >= 1" v-for="c in childComments" :key="c.id">
           <hr class="hr"/>
           <CommentCard :document_id="document_id" :comment_id="c.id" :level="level + 1">
         </CommentCard>
@@ -177,11 +179,12 @@ export default {
       return this.$store.getters["comment/getCommentsByCommentId"](this.comment_id);
     },
     nlp_active() {
-      return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true" &&
-          this.$store.getters["nlp/getSkillConfig"]("sentiment_classification") !== null;
+      const conf = this.$store.getters["service/get"]("NLPService", "skillConfig");
+      return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true" && conf && "sentiment_classification" in conf;
     },
     nlp_result() {
-      return this.$store.getters["nlp/getSkillResult"](this.comment_id);
+      const res = this.$store.getters["service/get"]("NLPService", "skillResults");
+      return res && this.comment_id in res ? res[this.comment_id] : null;
     }
   },
   methods: {
@@ -191,7 +194,7 @@ export default {
         "tags": JSON.stringify(this.comment.tags.sort()),
         "text": this.comment.text,
       });
-      if(this.$refs.collab){
+      if (this.$refs.collab) {
         this.$refs.collab.removeCollab();
       }
 
@@ -208,7 +211,7 @@ export default {
           "commentId": this.comment.id,
         });
       }
-      if(this.$refs.collab) {
+      if (this.$refs.collab) {
         this.$refs.collab.removeCollab();
       }
       this.edit_mode = null;
@@ -232,11 +235,16 @@ export default {
       this.$emit("saveCard");
     },
     requestNlpFeedback() {
-      this.$socket.emit("nlp_skillRequest", {
-        id: this.comment_id,
-        name: "sentiment_classification",
-        data: {text: this.comment.text}
-      });
+      this.$socket.emit("serviceRequest",
+          {
+            service: "NLPService",
+            data: {
+              id: this.comment_id,
+              name: "sentiment_classification",
+              data: {text: this.comment.text}
+            }
+          }
+      );
       this.awaitingNlpResult = true;
     }
   }
@@ -253,9 +261,11 @@ export default {
   padding-right: 0;
 
 }
+
 .blockquoteSub {
-    margin-left:4px;
+  margin-left: 4px;
 }
+
 .blockquoteMain:hover {
   color: #000000;
 }

@@ -41,7 +41,7 @@ export default {
                         state.services[service][serviceType] = [];
                     }
 
-                    if(data.data.length > 0){
+                    if(!data.data.error && data.data.length > 0){
                         const skillNames = data.data.map(s => s.name);
 
                         let newSkills = state.services[service][serviceType].filter(s => !skillNames.includes(s.name));
@@ -54,7 +54,16 @@ export default {
                         state.services[service][serviceType] = {};
                     }
 
-                    state.services[service][serviceType][data.data.name] = data;
+                    if(!data.data.error){
+                        state.services[service][serviceType][data.data.config.name] = data.data.config;
+                    }
+                } else if (serviceType === "skillResults") {
+                    if (!(serviceType in state.services[service])) {
+                        state.services[service][serviceType] = {};
+                    }
+                    if(!data.data.error){
+                        state.services[service][serviceType][data.data.id] = data.data.data;
+                    }
                 }
             }
         },
