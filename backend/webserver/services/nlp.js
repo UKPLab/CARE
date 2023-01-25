@@ -1,6 +1,10 @@
 const {io: io_client} = require("socket.io-client");
 const Service = require("../Service.js");
 const {getSetting} = require("../../db/methods/settings");
+const fs = require("fs");
+const path = require("path");
+const yaml = require('js-yaml')
+
 
 /**
  * Hold connection and data for external NLP service
@@ -21,11 +25,44 @@ module.exports = class NLPService extends Service {
         this.timer = null;
 
         this.toNlpSocket = null;
+        this.fallbacks = [];
+    }
+
+    loadFallbacks() {
+        this.logger.info("Loading skill fallbacks");
+        const skills = fs.readdirSync(path.resolve(__dirname, "../../../files/sdf"))
+            .filter(file => file.endsWith(".yaml")).map((file) => {
+                return yaml.load(fs.readFileSync(path.join(path.resolve(__dirname, "../../../files/sdf"), file), "utf8"));
+            });
+        this.skills = skills.map(skill => {
+            return {name: skill.name, nodes: 1, "fallback": true};
+        });
+        this.configs = skills.reduce(function (map, obj) {
+            map[obj.name] = obj;
+            return map;
+        }, {});
+        console.log(this.configs);
+        this.logger.info("Loaded fallbacks for skills: " + this.skills.map(skill => skill.name).join(", "));
+        return skills;
+    }
+
+    fallbackResponse(skill) {
+        const skillConfig = this.fallbackConfig(skill)
+        if (skillConfig) return skillConfig.output.example;
+    }
+
+    fallbackConfig(skill) {
+        if (this.fallbacks.length > 0) {
+            return this.fallbacks.find((fallback) => fallback.name === skill)
+        }
     }
 
     async init() {
         if (await getSetting("service.nlp.enabled") === "false") {
             this.logger.info("NLP is deactivated! Change service.nlp.enabled setting in the DB.");
+            if (await getSetting("service.nlp.test.fallback") === "true") {
+                this.fallbacks = this.loadFallbacks();
+            }
             return;
         }
         this.retryDelay = await getSetting("service.nlp.retryDelay");
@@ -79,11 +116,15 @@ module.exports = class NLPService extends Service {
 
         // Handle connection errors
         self.toNlpSocket.on("connect_error", async () => {
-            setTimeout(() => {
-                if (self.toNlpSocket) {
-                    self.toNlpSocket.connect();
-                }
-            }, self.retryDelay);
+            if (await getSetting("service.nlp.test.fallback") === "true") {
+                this.fallbacks = this.loadFallbacks();
+            } else {
+                setTimeout(() => {
+                    if (self.toNlpSocket) {
+                        self.toNlpSocket.connect();
+                    }
+                }, self.retryDelay);
+            }
         });
 
         // Handle reconnection attempts
@@ -121,9 +162,7 @@ module.exports = class NLPService extends Service {
             up.filter(s => s.nodes === 0 && s.name in self.configs).forEach(s => delete self.configs[s.name]);
             up.filter(s => s.nodes > 0).forEach(s => self.toNlpSocket.emit("skillGetConfig", {name: s.name}));
 
-            self.sendAll({
-                type: "skillUpdate", data: self.skills
-            });
+            self.sendAll("skillUpdate", self.skills);
         });
 
         self.toNlpSocket.on("skillResults", (data) => {
