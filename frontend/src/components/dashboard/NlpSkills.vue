@@ -6,7 +6,7 @@
       </button>
     </template>
     <template v-slot:body>
-      <Table :columns="columns" :data="data" :options="options"></Table>
+      <Table :columns="columns" :data="data" :options="options"  @action="action"></Table>
     </template>
   </Card>
   <NlpSkillModal ref="nlpSkillModal"></NlpSkillModal>
@@ -68,7 +68,7 @@ export default {
             }
           },
           title: "Show config...",
-          onClick: this.getDetails,
+          action: "getDetails",
         };
         console.log("table entry", s);
         return s;
@@ -76,9 +76,14 @@ export default {
     },
   },
   methods: {
+    action(data) {
+      if (data.action === "getDetails") {
+        this.getDetails(data.params);
+      }
+    },
     load() {
       //todo condition on what's loaded in the store already
-      this.$socket.emit("serviceCommand", {service: "NLPService", data: {type: "skillGetAll"}});
+      this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll", data: {}});
     },
     getDetails(skill_row) {
       this.$refs["nlpSkillModal"].openModal(skill_row["name"]);

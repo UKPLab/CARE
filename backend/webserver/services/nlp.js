@@ -122,12 +122,14 @@ module.exports = class NLPService extends Service {
             up.filter(s => s.nodes > 0).forEach(s => self.toNlpSocket.emit("skillGetConfig", {name: s.name}));
 
             self.sendAll({
-                service: "NLPService", type: "skillUpdate", data: self.skills
+                type: "skillUpdate", data: self.skills
             });
         });
 
-        self.toNlpSocket.on("taskResult", (data) => {
-            self.send(self.#getClient(data.clientId), {type: "taskResult", data: data});
+        self.toNlpSocket.on("skillResults", (data) => {
+            delete data.clientId;
+
+            self.send(self.#getClient(data.clientId), {type: "skillResults", data: data});
         });
 
         self.toNlpSocket.connect();

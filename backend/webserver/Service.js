@@ -41,6 +41,7 @@ module.exports = class Service {
     }
 
     send(client, data) {
+        data.service = this.constructor.name;
         client.socket.emit("serviceRefresh", data);
     }
 

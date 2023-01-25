@@ -50,7 +50,7 @@ export default {
         {name: "Title", key: "name"},
         {name: "Created At", key: "createdAt"},
         {
-          name: "Public Shared",
+          name: "Public",
           key: "public",
           type: "badge",
           typeOptions: {
