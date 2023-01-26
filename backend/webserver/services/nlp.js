@@ -46,9 +46,9 @@ module.exports = class NLPService extends Service {
         return skills;
     }
 
-    fallbackResponse(skill) {
+    fallbackResponse(skill, reqId) {
         const skillConfig = this.fallbackConfig(skill)
-        if (skillConfig) return skillConfig.output.example;
+        if (skillConfig) return {id: reqId, data: skillConfig.output.example};
     }
 
     fallbackConfig(skill) {
@@ -99,7 +99,7 @@ module.exports = class NLPService extends Service {
         this.send(client, {
             service: "NLPService",
             type: "skillUpdate",
-            data: this.skills !== null ? this.skills : []
+            data: {skills: this.skills !== null ? this.skills : []}
         });
     }
 
@@ -212,9 +212,14 @@ module.exports = class NLPService extends Service {
         }
     }
 
-    request(client, data) {
+    async request(client, data) {
         data["clientId"] = client.socket.id;
-        this.toNlpSocket.emit("skillRequest", data);
+
+        if(this.isConnected()){
+            this.toNlpSocket.emit("skillRequest", data);
+        } else if(await getSetting("service.nlp.test.fallback") === "true"){
+            this.send(client, {type: "skillResults", data: this.fallbackResponse(data.name, data.id)});
+        }
     }
 
     cancelTimer() {
