@@ -155,7 +155,7 @@ export default {
     }
   },
   mounted() {
-    if (this.nlp_active && this.nlp_result === null) {
+    if (this.nlp_active && this.nlp_result === null && this.comment.text !== null) {
       this.requestNlpFeedback();
     }
     if (this.level <= 1 || this.comment.draft) {
@@ -199,7 +199,7 @@ export default {
       }
 
       // send to model upon save (regardless of the server response on the update (!))
-      if (this.nlp_active) {
+      if (this.comment.text && this.nlp_active) {
         this.requestNlpFeedback()
       }
     },
@@ -235,6 +235,8 @@ export default {
       this.$emit("saveCard");
     },
     requestNlpFeedback() {
+      console.log("REQUESTING NLP!!!", this.comment);
+
       this.$socket.emit("serviceRequest",
           {
             service: "NLPService",
