@@ -41,7 +41,6 @@ module.exports = class NLPService extends Service {
             map[obj.name] = obj;
             return map;
         }, {});
-        console.log(this.configs);
         this.logger.info("Loaded fallbacks for skills: " + this.skills.map(skill => skill.name).join(", "));
         return skills;
     }
@@ -96,11 +95,7 @@ module.exports = class NLPService extends Service {
         }
 
         // send current set of skills to client
-        this.send(client, {
-            service: "NLPService",
-            type: "skillUpdate",
-            data: {skills: this.skills !== null ? this.skills : []}
-        });
+        this.send(client,"skillUpdate", this.skills !== null ? this.skills : []);
     }
 
     async connect() {
@@ -167,8 +162,7 @@ module.exports = class NLPService extends Service {
 
         self.toNlpSocket.on("skillResults", (data) => {
             delete data.clientId;
-
-            self.send(self.#getClient(data.clientId), {type: "skillResults", data: data});
+            self.send(self.#getClient(data.clientId), "skillResults", data);
         });
 
         self.toNlpSocket.connect();
@@ -199,15 +193,15 @@ module.exports = class NLPService extends Service {
     command(client, command, data) {
         if (command === "skillGetAll") {
             if (!this.skills) {
-                this.send(client, {type: "skillUpdate", data: {skills: [], error: true}})
+                this.send(client, "skillUpdate", [])
             } else {
-                this.send(client, {type: "skillUpdate", data: {skills: this.skills}});
+                this.send(client,  "skillUpdate", this.skills);
             }
         } else if (command === "skillGetConfig") {
             if (this.configs && data.name in this.configs) {
-                this.send(client, {type: "skillConfig", data: {config: this.configs[data.name]}});
+                this.send(client, "skillConfig", this.configs[data.name]);
             } else {
-                this.send(client, {type: "skillConfig", data: {config: null, error: true}});
+                this.send(client, "skillConfig", null);
             }
         }
     }
@@ -217,8 +211,8 @@ module.exports = class NLPService extends Service {
 
         if(this.isConnected()){
             this.toNlpSocket.emit("skillRequest", data);
-        } else if(await getSetting("service.nlp.test.fallback") === "true"){
-            this.send(client, {type: "skillResults", data: this.fallbackResponse(data.name, data.id)});
+        } else if(this.fallbacks.length > 0){
+            this.send(client, "skillResults", this.fallbackResponse(data.name, data.id));
         }
     }
 

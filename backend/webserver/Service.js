@@ -44,9 +44,8 @@ module.exports = class Service {
         this.logger.info("Client request with data " + data);
     }
 
-    send(client, data) {
-        data.service = this.constructor.name;
-        client.socket.emit("serviceRefresh", data);
+    send(client, type, data) {
+        client.socket.emit("serviceRefresh", {service: this.constructor.name, type: type, data:data});
     }
 
     sendAll(type, data) {
