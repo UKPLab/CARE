@@ -54,6 +54,7 @@ module.exports = class CommentSocket extends Socket {
 
     async deleteComment(comment) {
         comment.deleted = true;
+        comment.commentId = comment.id;
         await this.updateComment(comment);
     }
 
