@@ -25,10 +25,11 @@ module.exports = class NLPService extends Service {
         this.timer = null;
 
         this.toNlpSocket = null;
-        this.fallbacks = [];
+        this.fallbacks = null;
     }
 
     loadFallbacks() {
+
         this.logger.info("Loading skill fallbacks");
         const skills = fs.readdirSync(path.resolve(__dirname, "../../../files/sdf"))
             .filter(file => file.endsWith(".yaml")).map((file) => {
@@ -51,7 +52,7 @@ module.exports = class NLPService extends Service {
     }
 
     fallbackConfig(skill) {
-        if (this.fallbacks.length > 0) {
+        if (this.fallbacks !== null && this.fallbacks.length > 0) {
             return this.fallbacks.find((fallback) => fallback.name === skill)
         }
     }
@@ -66,7 +67,6 @@ module.exports = class NLPService extends Service {
         }
         this.retryDelay = await getSetting("service.nlp.retryDelay");
 
-        // TODO Check socket io nlp service url is the same like in the db (if not, reconnect)
 
         //connect to nlp broker
         await this.connect();
@@ -93,9 +93,11 @@ module.exports = class NLPService extends Service {
         if (!this.isConnected()) {
             await this.init();
         }
+        // TODO Check socket io nlp service url is the same like in the db (if not, reconnect)
+
 
         // send current set of skills to client
-        this.send(client,"skillUpdate", this.skills !== null ? this.skills : []);
+        this.send(client, "skillUpdate", this.skills !== null ? this.skills : []);
     }
 
     async connect() {
@@ -112,14 +114,16 @@ module.exports = class NLPService extends Service {
         // Handle connection errors
         self.toNlpSocket.on("connect_error", async () => {
             if (await getSetting("service.nlp.test.fallback") === "true") {
-                this.fallbacks = this.loadFallbacks();
-            } else {
-                setTimeout(() => {
-                    if (self.toNlpSocket) {
-                        self.toNlpSocket.connect();
-                    }
-                }, self.retryDelay);
+                if (this.fallbacks === null) {
+                    this.fallbacks = this.loadFallbacks();
+                }
             }
+            setTimeout(() => {
+                if (self.toNlpSocket) {
+                    self.toNlpSocket.connect();
+                }
+            }, self.retryDelay);
+
         });
 
         // Handle reconnection attempts
@@ -132,6 +136,8 @@ module.exports = class NLPService extends Service {
             self.logger.info(`Connection to NLP server established: ${self.toNlpSocket.connected}`);
 
             // if connection established, get information about the NLP Service
+            this.fallbacks = null;
+            this.skills = null;
             self.toNlpSocket.emit("skillGetAll");
         });
 
@@ -161,8 +167,11 @@ module.exports = class NLPService extends Service {
         });
 
         self.toNlpSocket.on("skillResults", (data) => {
+            const client = self.#getClient(data.clientId)
             delete data.clientId;
-            self.send(self.#getClient(data.clientId), "skillResults", data);
+            if (client) {
+                self.send(client, "skillResults", data);
+            }
         });
 
         self.toNlpSocket.connect();
@@ -187,7 +196,11 @@ module.exports = class NLPService extends Service {
     }
 
     #getClient(clientId) {
-        return this.server.availSockets[clientId]["ServiceSocket"];
+        if (clientId in this.server.availSockets) {
+            return this.server.availSockets[clientId]["ServiceSocket"];
+        } else {
+            this.logger.error(`Client ${clientId} not found!`);
+        }
     }
 
     command(client, command, data) {
@@ -195,7 +208,7 @@ module.exports = class NLPService extends Service {
             if (!this.skills) {
                 this.send(client, "skillUpdate", [])
             } else {
-                this.send(client,  "skillUpdate", this.skills);
+                this.send(client, "skillUpdate", this.skills);
             }
         } else if (command === "skillGetConfig") {
             if (this.configs && data.name in this.configs) {
@@ -209,9 +222,9 @@ module.exports = class NLPService extends Service {
     async request(client, data) {
         data["clientId"] = client.socket.id;
 
-        if(this.isConnected()){
+        if (this.isConnected()) {
             this.toNlpSocket.emit("skillRequest", data);
-        } else if(this.fallbacks.length > 0){
+        } else if (this.fallbacks !== null && this.fallbacks.length > 0) {
             this.send(client, "skillResults", this.fallbackResponse(data.name, data.id));
         }
     }
