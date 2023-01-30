@@ -35,7 +35,7 @@
                    @saveCard="save()"/>
     </template>
 
-    <template v-if="comment.userId === user_id" v-slot:footer>
+    <template  v-slot:footer>
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
           <div class="col text-end">
@@ -61,22 +61,22 @@
           </div>
           <div class="col text-end">
             <button v-if="settingResponse" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
-                    type="button" v-on:click="$refs.main_comment.reply()">
+                    type="button" v-on:click="$refs.main_comment.reply();showReplies = !showReplies">
               <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
               <span class="visually-hidden">Reply</span>
             </button>
-            <button v-if="summarizationAvailable" :disabled="summarizeRequest" class="btn btn-sm" data-placement="top"
+            <button v-if="summarizationAvailable && comment.userId === user_id" :disabled="summarizeRequest" class="btn btn-sm" data-placement="top"
                     data-toggle="tooltip" title="Summarize"
                     type="button" v-on:click="summarize()">
               <LoadIcon :size="16" iconName="file-text"></LoadIcon>
               <span class="visually-hidden">Summarize</span>
             </button>
-            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
+            <button v-if="comment.userId === user_id" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
                     type="button" v-on:click="edit()">
               <LoadIcon :size="16" iconName="pencil-square"></LoadIcon>
               <span class="visually-hidden">Edit</span>
             </button>
-            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip"
+            <button v-if="comment.userId === user_id" class="btn btn-sm" data-placement="top" data-toggle="tooltip"
                     title="Delete"
                     type="button" v-on:click="remove()">
               <LoadIcon :size="16" iconName="trash3"></LoadIcon>
@@ -136,9 +136,11 @@ export default {
         this.$socket.emit('commentAdd', {
           "documentId": this.document_id,
           "commentId": this.comment_id,
-          "text": results[this.summarizeRequest][0]['summary_text'],
+          "text": "Summarization: " + results[this.summarizeRequest][0]['summary_text'],
           "userId": "Bot"
         });
+        this.summarizeRequest = null;
+        this.showReplies = !this.showReplies;
       }
     },
   },

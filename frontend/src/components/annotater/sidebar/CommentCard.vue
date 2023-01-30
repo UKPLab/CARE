@@ -3,7 +3,7 @@
     <div class="container-fluid">
       <div class="row">
         <div class="col">
-          <LoadIcon size=12 :iconName="(collapseComment) ? 'chevron-right' : 'chevron-down'"
+          <LoadIcon :iconName="(collapseComment) ? 'chevron-right' : 'chevron-down'" size=12
                     @click="collapseComment = !collapseComment"></LoadIcon>
 
           {{ comment.creator_name }}
@@ -20,8 +20,8 @@
 
     </div>
   </div>
-  <div v-if="!collapseComment" class="comment card-text blockquote pb-1"
-       :class="{blockquoteMain: comment.referenceAnnotation, blockquoteSub: !comment.referenceAnnotation}">
+  <div v-if="!collapseComment" :class="{blockquoteMain: comment.referenceAnnotation, blockquoteSub: !comment.referenceAnnotation}"
+       class="comment card-text blockquote pb-1">
 
 
     <div v-if="edit || editedByMyself">
@@ -57,7 +57,7 @@
       </span>
     </div>
 
-    <TagSelector v-model="comment.tags" v-if="comment" :disabled="!edit"
+    <TagSelector v-if="comment" v-model="comment.tags" :disabled="!edit"
                  :isEditor="comment.userId === user_id"></TagSelector>
     <div v-if="level >= 1">
       <div class="ms-auto">
@@ -82,12 +82,13 @@
               <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
               <span class="visually-hidden">Reply</span>
             </button>
-            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
+            <button v-if="comment.userId === user_id" class="btn btn-sm" data-placement="top" data-toggle="tooltip"
+                    title="Edit"
                     type="button" v-on:click="editComment()">
               <LoadIcon :size="16" iconName="pencil-square"></LoadIcon>
               <span class="visually-hidden">Edit</span>
             </button>
-            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip"
+            <button v-if="comment.userId === user_id || myBotRequest" class="btn btn-sm" data-placement="top" data-toggle="tooltip"
                     title="Delete"
                     type="button" v-on:click="remove()">
               <LoadIcon :size="16" iconName="trash3"></LoadIcon>
@@ -97,9 +98,9 @@
         </div>
       </div>
     </div>
-    <span v-if="level >= 1" v-for="c in childComments" :key="c.id">
+    <span v-for="c in childComments" v-if="level >= 1" :key="c.id">
           <hr class="hr"/>
-          <CommentCard :document_id="document_id" :comment_id="c.id" :level="level + 1">
+          <CommentCard :comment_id="c.id" :document_id="document_id" :level="level + 1">
         </CommentCard>
         </span>
   </div>
@@ -171,6 +172,13 @@ export default {
     },
     settingResponse() {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
+    },
+    myBotRequest() {
+      if (this.comment.creator_name === "Bot" && this.$store.getters["comment/getComment"](this.comment.referenceComment)["userId"] === this.user_id) {
+        return true;
+      } else {
+        return false;
+      }
     },
     user_id() {
       return this.$store.getters["auth/getUserId"];
