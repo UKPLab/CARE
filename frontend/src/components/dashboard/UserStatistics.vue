@@ -58,9 +58,9 @@ Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 import LoadIcon from "../../icons/LoadIcon.vue";
-import Table from "../basic/Table.vue";
-import Card from "../basic/Card.vue";
-import ExportSingle from "../basic/ExportSingle.vue";
+import Table from "@/basic/table/Table.vue";
+import Card from "@/basic/Card.vue";
+import ExportSingle from "@/basic/download/ExportSingle.vue";
 
 export default {
   name: "UserStatistics",

@@ -9,7 +9,6 @@ const db = require("../index.js")
 const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB, pickObjectAttributeSubset} = require("./utils");
 const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
-const {resolveAnnoIdToHash} = require("./annotation");
 
 const Comment = require("../models/comment.js")(db.sequelize, DataTypes);
 const logger = require("../../utils/logger.js")("db/comment");
@@ -68,7 +67,7 @@ exports.update = async function update(data) {
     try {
         return await Comment.update(subselectFieldsForDB(Object.assign(data, {draft: false}), ["deleted", "text", "tags", "draft"]), {
             where: {
-                id: data["id"]
+                id: data["commentId"]
             },
             returning: true,
             plain: true
@@ -138,39 +137,31 @@ exports.loadDocumentComments = async function load(documentId) {
 
 }
 
-async function resolveCommentIdToHash(commentId) {
-    try {
-        const comm = await Comment.findOne({
-            where: {
-                id: commentId, deleted: false, draft: false
-            }
-        });
-        return comm != null ? comm.hash : null;
-    } catch (err) {
-        throw InternalDatabaseError(err);
-    }
-}
-exports.resolveCommentIdToHash = resolveCommentIdToHash;
-
 
 exports.formatForExport = async function format(comment) {
     const copyFields = [
-        "hash",
+        "id",
         "text",
         "documentId",
         "createdAt",
-        "updatedAt"
+        "updatedAt",
     ]
 
     let copied = pickObjectAttributeSubset(comment, copyFields);
     copied.userId = await resolveUserIdToName(comment.userId);
     copied.tags = JSON.parse(comment.tags);
-    copied.referenceAnnotation = await resolveAnnoIdToHash(comment.referenceAnnotation);
+
+    if(comment.referenceAnnotation){
+        copied.referenceAnnotation = comment.referenceAnnotation;
+    } else {
+        copied.referenceAnnotation = null;
+    }
+
     if(comment.referenceComment) {
-        copied.referenceComment = await resolveCommentIdToHash(comment.referenceComment);
+        copied.referenceComment = comment.referenceComment;
     } else {
         copied.referenceComment = null;
     }
 
-    return copied
+    return copied;
 }

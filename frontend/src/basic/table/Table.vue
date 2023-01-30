@@ -30,20 +30,13 @@
       </td>
       <td v-for="c in columns">
         <span v-if="c.key in r">
-          <span v-if="c.type === 'icon'">
-            <LoadIcon :iconName="r[c.key]"></LoadIcon>
-          </span>
-          <TableButton v-else-if="c.type === 'button'"
-                       :icon="r[c.key].icon"
-                       :title="r[c.key].title"
-                       :options="r[c.key].options"
-                       :onClick="r[c.key].onClick"
-                       :params="[r]"
-          ></TableButton>
-          <TableButtonGroup v-else-if="c.type === 'button-group'"
+          <TIcon v-if="c.type === 'icon'" :value="r[c.key]" />
+          <TBadge v-else-if="c.type === 'badge'" :options="c.typeOptions" :value="r[c.key]" />
+          <TButton v-else-if="c.type === 'button'" :icon="r[c.key].icon" :action="r[c.key].action" @action="actionEmitter" :options="r[c.key].options" :params="r" :title="r[c.key].title" />
+          <TButtonGroup v-else-if="c.type === 'button-group'" @action="actionEmitter"
                             :buttons="r[c.key]"
-                            :params="[r]">
-          </TableButtonGroup>
+                            :params="r" />
+
           <span v-else>
                {{ r[c.key] }}
           </span>
@@ -55,40 +48,21 @@
     </tr>
     </tbody>
   </table>
-  <!-- Pagination -->
-  <nav v-if="options && options.pagination && pages > 1" aria-label="Pagination">
-
-    <ul class="pagination justify-content-end">
-      <li :class="{'disabled':(currentPage ===1)}" class="page-item">
-        <button class="page-link" @click="currentPage -= 1">
-          <span aria-hidden="true">&laquo;</span>
-        </button>
-      </li>
-      <li v-for="p in pages" :class="{'active': p === currentPage, 'disabled': (p === currentPage - 3 || p === currentPage + 3)}" class="page-item">
-
-        <button v-if="p === currentPage - 3" class="page-link">...</button>
-        <button v-if="p < currentPage + 3 && p > currentPage - 3" class="page-link" @click="currentPage = p">{{ p }}</button>
-        <button v-if="p === currentPage + 3" class="page-link">...</button>
-
-      </li>
-      <li :class="{'disabled':(currentPage === pages)}" class="page-item">
-        <button class="page-link" @click="currentPage += 1">
-          <span aria-hidden="true">&raquo;</span>
-        </button>
-      </li>
-    </ul>
-  </nav>
+  <Pagination v-if="options && options.pagination" :pages="pages" :current-page="pages" />
 </template>
 
 <script>
-import LoadIcon from "../../icons/LoadIcon.vue";
-import TableButton from "./TableButton.vue";
-import TableButtonGroup from "./TableButtonGroup.vue"
+import TButton from "./Button.vue";
+import TButtonGroup from "./ButtonGroup.vue"
+import TBadge from "./Badge.vue";
+import TIcon from "./Icon.vue";
+import Pagination from "./Pagination.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Table.vue",
-  components: {TableButtonGroup, LoadIcon, TableButton},
-  emits: ["rowSelection"],
+  components: {Pagination, TIcon, TBadge, TButtonGroup, TButton, LoadIcon},
+  emits: ["action"],
   props: {
     data: {
       type: Array,
@@ -100,7 +74,8 @@ export default {
     },
     options: {
       type: Object,
-      required: false
+      required: false,
+      default: {}
     }
   },
   data: function () {
@@ -127,6 +102,13 @@ export default {
         this.sortDirection = "asc";
       }
       this.sortColumn = column;
+    },
+    actionEmitter(data){
+      this.$emit("action", data);
+      this.$socket.emit("stats", {
+        action: "actionClick",
+        data: data
+      });
     },
     selectRow(action, row){
       if(this.selectableRows) {
@@ -167,7 +149,7 @@ export default {
       }
       return data;
     },
-  }
+  },
 }
 </script>
 

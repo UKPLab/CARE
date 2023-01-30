@@ -15,7 +15,7 @@ const {
 const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
 
-const {getByIds: getTagsByIds} = require('../../db/methods/tag.js')
+const {get: getTagById} = require('../../db/methods/tag.js')
 
 const Annotation = require("../models/annotation.js")(db.sequelize, DataTypes);
 const logger = require("../../utils/logger.js")("db/annotation");
@@ -53,7 +53,7 @@ exports.add = async function add(annotation, user_id) {
     let newAnnotation = {
         documentId: annotation.documentId,
         selectors: annotation.selectors,
-        tag: annotation.tag,
+        tagId: annotation.tagId,
         text: annotation.selectors.target === undefined ? null : annotation.selectors.target[0].selector[1].exact,
         draft: true,
     }
@@ -76,9 +76,9 @@ exports.add = async function add(annotation, user_id) {
 exports.update = async function update(data) {
 
     try {
-        return await Annotation.update(subselectFieldsForDB(Object.assign(data, {draft: false}), ["deleted", "text", "tag", "draft"]), {
+        return await Annotation.update(subselectFieldsForDB(Object.assign(data, {draft: false}), ["deleted", "text", "tagId", "draft"]), {
             where: {
-                id: data["id"]
+                id: data["annotationId"]
             },
             returning: true,
             plain: true
@@ -111,25 +111,10 @@ exports.loadByDocument = async function load(documentId) {
 
 }
 
-async function resolveAnnoIdToHash(annoId) {
-    try {
-        const anno = await Annotation.findOne({
-            where: {
-                id: annoId, deleted: false, draft: false
-            }
-        });
-        return anno != null ? anno.hash : null;
-    } catch (err) {
-        throw InternalDatabaseError(err);
-    }
-}
-
-exports.resolveAnnoIdToHash = resolveAnnoIdToHash;
-
 exports.formatForExport = async function format(annotation) {
     const copyFields = [
-        "hash",
         "text",
+        "id",
         "documentId",
         "createdAt",
         "updatedAt"
@@ -137,7 +122,7 @@ exports.formatForExport = async function format(annotation) {
 
     let copied = pickObjectAttributeSubset(annotation, copyFields);
     copied.userId = await resolveUserIdToName(annotation.userId);
-    copied.tag = (await getTagsByIds(annotation.tag))[0].name;
+    copied.tag = (await getTagById(annotation.tagId)).name;
 
     return copied
 }

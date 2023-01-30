@@ -36,7 +36,6 @@ module.exports = class Socket {
         return this.server.availSockets[this.socket.id][name];
     }
 
-
     /**
      * Initializes the socket connection
      * Note: Please overwrite with your sockets!

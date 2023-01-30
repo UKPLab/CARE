@@ -24,8 +24,8 @@ Author: Dennis Zyska (zyska@ukp...)
 Co-author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import {TextPosition, TextRange} from "../../../assets/anchoring/text-range";
-import {TextQuoteAnchor} from '../../../assets/anchoring/types';
+import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
+import {TextQuoteAnchor} from '@/assets/anchoring/types';
 import {mapMutations} from "vuex";
 
 export default {
@@ -83,10 +83,10 @@ export default {
         selector: selectors,
       }));
 
-      this.$socket.emit('addAnnotation', {
+      this.$socket.emit('annotationAdd', {
         documentId: this.document_id,
         selectors: {target},
-        tag: tag.id
+        tagId: tag.id
       });
 
       this.isVisible = false;

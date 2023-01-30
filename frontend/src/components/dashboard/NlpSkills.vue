@@ -1,12 +1,12 @@
 <template>
   <Card title="Skills">
     <template v-slot:headerElements>
-      <button class="btn btn-sm me-1" type="button" @click="load()" title="Refresh">
-        <LoadIcon iconName="arrow-clockwise" @click=""></LoadIcon>
+      <button class="btn btn-sm me-1" title="Refresh" type="button" @click="load()">
+        <LoadIcon iconName="arrow-clockwise" @click="load()"></LoadIcon>
       </button>
     </template>
     <template v-slot:body>
-      <Table :columns="columns" :data="data" :options="options"></Table>
+      <Table :columns="columns" :data="data" :options="options"  @action="action"></Table>
     </template>
   </Card>
   <NlpSkillModal ref="nlpSkillModal"></NlpSkillModal>
@@ -22,10 +22,10 @@ Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 
-import LoadIcon from "../../icons/LoadIcon.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
-import Table from "../basic/Table.vue"
-import Card from "../basic/Card.vue"
+import Table from "@/basic/table/Table.vue"
+import Card from "@/basic/Card.vue"
 
 export default {
   name: "NlpSkills",
@@ -43,6 +43,15 @@ export default {
       columns: [
         {name: "Name", key: "name"},
         {name: "# Nodes", key: "nodes"},
+        {
+          name: "Fallback",
+          key: "fallback",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", default: "No"},
+            classMapping: {true: "bg-success", default: "bg-danger"}
+          },
+        },
         {name: "Details", key: "details", type: "button"},
       ],
     }
@@ -58,7 +67,8 @@ export default {
   },
   computed: {
     data() {
-      return this.$store.getters["nlp/getAllSkills"]().map(s => {
+      const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
+      return skills ? skills.map(s => {
         s.details = {
           icon: "search-heart",
           options: {
@@ -68,15 +78,22 @@ export default {
             }
           },
           title: "Show config...",
-          onClick: this.getDetails,
+          action: "getDetails",
         };
+        console.log("table entry", s);
         return s;
-      });
+      }) : [];
     },
   },
   methods: {
+    action(data) {
+      if (data.action === "getDetails") {
+        this.getDetails(data.params);
+      }
+    },
     load() {
-      this.$socket.emit("nlp_skillGetAll");
+      //todo condition on what's loaded in the store already
+      this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll", data: {}});
     },
     getDetails(skill_row) {
       this.$refs["nlpSkillModal"].openModal(skill_row["name"]);

@@ -53,6 +53,11 @@ export default {
       required: false,
       default: false,
     },
+    open: {
+      type: Boolean,
+      required: false,
+      default: false,
+    }
   },
   data() {
     return {
@@ -62,6 +67,9 @@ export default {
   },
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
+    if (this.open) {
+      this.openModal();
+    }
   },
   methods: {
     openModal() {

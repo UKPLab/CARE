@@ -29,7 +29,7 @@
 Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import Modal from "../../basic/Modal.vue";
+import Modal from "@/basic/Modal.vue";
 
 export default {
   name: "NlpSkillModal",
@@ -59,9 +59,9 @@ export default {
      */
     config(){
       if(this.skillName !== null){
-        const stored = this.$store.getters['nlp/getSkillConfig'](this.skillName);
-        if(stored !== null){
-          return JSON.stringify(stored, null, 2);
+        const stored = this.$store.getters["service/get"]("NLPService", "skillConfig");
+        if(stored && this.skillName in stored){
+          return JSON.stringify(stored[this.skillName], null, 2);
         }
       }
       return "";
@@ -79,7 +79,7 @@ export default {
       this.$refs.nlpSkillModal.openModal();
 
       if(this.config.length === 0) {
-        this.$socket.emit("nlp_skillGetConfig", {name: this.skillName});
+        this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetConfig", data: {name: this.skillName}});
       }
     }
   },

@@ -3,12 +3,12 @@
     <template v-slot:headerElements>
       <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAll()" title="Export">
         <LoadIcon iconName="cloud-arrow-down" @click=""></LoadIcon>
-        Export annotations
+        Export all
       </button>
       <Upload @addedDoc="onAddedDoc"></Upload>
     </template>
     <template v-slot:body>
-      <Table :columns="columns" :data="docs" :options="options"></Table>
+      <Table :columns="columns" :data="docs" :options="options" @action="action"></Table>
     </template>
   </Card>
   <ExportAnnos ref="export"></ExportAnnos>
@@ -27,15 +27,15 @@ Source: -
 */
 import {mapGetters} from "vuex";
 import Upload from "./documents/Upload.vue";
-import ExportAnnos from "../basic/ExportAnnos.vue";
-import Card from "../basic/Card.vue";
-import Table from "../basic/Table.vue";
-import LoadIcon from "../../icons/LoadIcon.vue";
-
+import PublishModal from "./documents/PublishModal.vue";
+import ExportAnnos from "@/basic/download/ExportAnnos.vue";
+import Card from "@/basic/Card.vue";
+import Table from "@/basic/table/Table.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Document",
-  components: {Upload, ExportAnnos, Card, LoadIcon, Table},
+  components: {Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal},
   data() {
     return {
       options: {
@@ -49,22 +49,31 @@ export default {
       columns: [
         {name: "Title", key: "name"},
         {name: "Created At", key: "createdAt"},
+        {
+          name: "Public",
+          key: "public",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", false: "No"},
+            classMapping: {true: "bg-success", false: "bg-danger"}
+          }
+        },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
     }
-  },
-  props: {
-    'admin': {
-      required: false,
-      default: false
-    },
   },
   mounted() {
     this.load();
   },
   computed: {
+    documents() {
+      return this.$store.getters["document/getDocuments"];
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
     docs() {
-      return this.$store.getters["user/getDocuments"].map(d => {
+      return this.documents.filter(doc => doc.userId === this.userId).map(d => {
         d.manage = [
           {
             icon: "box-arrow-in-right",
@@ -75,7 +84,7 @@ export default {
               }
             },
             title: "Access document...",
-            onClick: this.accessDoc,
+            action: "accessDoc",
           },
           {
             icon: "trash",
@@ -86,20 +95,31 @@ export default {
               }
             },
             title: "Delete document...",
-            onClick: this.deleteDoc,
+            action: "deleteDoc",
           },
-            /*
           {
-            icon: "pencil",
+            icon: "cloud-arrow-up",
             options: {
               iconOnly: true,
               specifiers: {
                 "btn-outline-secondary": true,
               }
             },
-            title: "Rename document...",
-            onClick: this.renameDoc,
-          },  */
+            title: "Publish document...",
+            action: "publicDoc",
+          }
+          /*
+        {
+          icon: "pencil",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Rename document...",
+          onClick: this.renameDoc,
+        },  */
         ];
         return d;
       });
@@ -107,14 +127,25 @@ export default {
     ...mapGetters({reviews: 'user/getReviews'})
   },
   methods: {
+    action(data) {
+      if (data.action === "accessDoc") {
+        this.accessDoc(data.params);
+      }
+      if (data.action === "deleteDoc") {
+        this.deleteDoc(data.params);
+      }
+      if (data.action === "publicDoc") {
+        this.$refs.publishModal.open(data.params.id);
+      }
+    },
     load() {
       this.$socket.emit("getReviews");
     },
     deleteDoc(row) {
-      this.$socket.emit("doc_delete", {docId: row.id});
+      this.$socket.emit("documentDelete", {documentId: row.id});
     },
     renameDoc(row) {
-      this.$socket.emit("doc_rename", {docId: row.id, newName: "default_name"});
+      this.$socket.emit("documentUpdate", {documentId: row.id, document: {name: "default_name"}});
     },
     accessDoc(row) {
       this.$router.push(`/annotate/${row.hash}`);
@@ -151,6 +182,10 @@ export default {
       }
 
       return this.reviews[review_i].submitted ? "SUBMITTED" : "PENDING";
+    },
+    publishDoc(row) {
+      console.log(row);
+      this.$refs.publishModal.open(row.id);
     },
     exportAll() {
       const doc_ids = this.docs.map(i => i.id);

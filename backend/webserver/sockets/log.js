@@ -12,7 +12,7 @@ module.exports = class LoggerSocket extends Socket {
 
     init() {
 
-        this.socket.on("log", (data) => {
+        this.socket.on("logAdd", (data) => {
             if (process.env.LOGGING_ALLOW_FRONTEND === 'true') {
                 try {
                     if (data.meta) {
