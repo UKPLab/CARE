@@ -25,8 +25,8 @@ function DuplicateUserException() {
 
 function InvalidPasswordException() {
     return {
-        name: "InvalidCredentialsException",
-        message: "The provided password is invalid.",
+        name: "InvalidPasswordException",
+        message: "The provided password must be at least 8 characters.",
         toString: function () {
             return this.name + ": " + this.message;
         }
@@ -34,7 +34,7 @@ function InvalidPasswordException() {
 }
 
 function validatePassword(password) {
-    return password != null && password.length > 0;
+    return password != null && password.length >= 8;
 }
 
 exports.getUsername = async function getUsername(userId) {
@@ -97,6 +97,15 @@ exports.minimalFields = function minimalFields(user) {
     return Object.fromEntries(filtered);
 }
 
+exports.adminFields = function adminFields(user) {
+    const include = ["id", "userName", "sysrole", "lastLoginAt"];
+
+    const entries = Object.entries(user.dataValues);
+    const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
+
+    return Object.fromEntries(filtered);
+}
+
 exports.find = async function find(username) {
     try {
         return await User.findAll({
@@ -143,4 +152,19 @@ exports.resolveUserIdToName = async function resolveUserIdToName(userId) {
     } catch (err) {
         throw InternalDatabaseError(err);
     }
+}
+
+exports.update = async function update(userId, data) {
+    try {
+        data.updatedAt = new Date();
+        await User.update(data, {
+            where: {
+                id: userId
+            }
+        });
+        return true;
+    } catch (err) {
+        logger.error("Cant update user " + userId + " in database: " + err);
+    }
+    return false;
 }

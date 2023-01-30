@@ -22,6 +22,7 @@ import router from './routes.js';
 import mitt from 'mitt';
 //Bootstrap v5
 import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap/dist/js/bootstrap.bundle.js'
 import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
 import getServerURL from './assets/serverUrl.js';
 
@@ -35,7 +36,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 app.use(BootstrapVue3);
-app.use(BToastPlugin)
+app.use(BToastPlugin);
 
 // Socket IO
 // https://www.npmjs.com/package/vue-3-socket.io

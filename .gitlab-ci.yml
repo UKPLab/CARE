@@ -38,7 +38,7 @@ services:
   - echo "deb-src ${DEBIAN_MIRROR} stretch main" >> /etc/apt/sources.list
   - cat /etc/apt/sources.list
 
-test-backend:
+test:
   image:
     name: docker/compose:debian-1.29.2
   stage: test
@@ -57,27 +57,12 @@ test-backend:
 
 # https://stackoverflow.com/questions/36399848/install-node-in-dockerfile
 
-test-frontend:
-  image:
-    name: docker/compose:debian-1.29.2
-  stage: test
-  needs: []
-  before_script:
-    - *add-debian-mirror
-    - docker info
-    - docker version
-    - docker-compose version
-    - *setup-nvm
-    - apt update && apt install make -y
-  script:
-    - make ENV=test test-frontend
-
 build-dev:
   image:
     name: docker/compose:1.29.2
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
-  needs: ['test-backend', 'test-frontend']
+  needs: ['test']
   before_script:
     - docker info
     - docker version
@@ -101,7 +86,7 @@ build-main:
     name: docker/compose:1.29.2
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
-  needs: ['test-backend', 'test-frontend']
+  needs: ['test']
   before_script:
     - docker info
     - docker version

@@ -24,8 +24,8 @@ Author: Dennis Zyska (zyska@ukp...)
 Co-author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import {TextPosition, TextRange} from "../../../assets/anchoring/text-range";
-import {TextQuoteAnchor} from '../../../assets/anchoring/types';
+import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
+import {TextQuoteAnchor} from '@/assets/anchoring/types';
 import {mapMutations} from "vuex";
 
 export default {
@@ -83,10 +83,10 @@ export default {
         selector: selectors,
       }));
 
-      this.$socket.emit('addAnnotation', {
+      this.$socket.emit('annotationAdd', {
         documentId: this.document_id,
         selectors: {target},
-        tag: tag.id
+        tagId: tag.id
       });
 
       this.isVisible = false;
@@ -243,10 +243,7 @@ export default {
           textRange.endOffset
       ).relativeTo(textLayer);
 
-      const startPageIndex = this.getSiblingIndex(
-          /** @type {Node} */ (textLayer.parentNode)
-      );
-      const pageOffset = await this.getPageOffset(startPageIndex);
+      const pageOffset = await this.getPageOffset(page-1);
 
       /** @type {TextPositionSelector} */
       const position = {
@@ -262,14 +259,6 @@ export default {
       }
 
       return [position, quote, pageSelector];
-    },
-    getSiblingIndex(node) {
-      let index = 0;
-      while (node.previousSibling) {
-        ++index;
-        node = node.previousSibling;
-      }
-      return index;
     },
     async getPageOffset(pageIndex) {
       let offset = 0;

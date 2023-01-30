@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
     annotation.init({
         userId: DataTypes.STRING,
         text: DataTypes.STRING,
-        tag: DataTypes.INTEGER,
+        tagId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
         selectors: DataTypes.JSONB,
         draft: DataTypes.BOOLEAN,

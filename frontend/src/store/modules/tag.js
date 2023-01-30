@@ -162,7 +162,7 @@ export default {
         SOCKET_tagSetsUpdate: (state, data) => {
             state.tagSets = data;
         },
-        SOCKET_tagSetUpdate: (state, data) => {
+        SOCKET_tagSetRefresh: (state, data) => {
             // remove old tagset instance first if available
             if (state["tagSets"] !== null) {
                 const oldTagSet = state["tagSets"].find(s => s.id === data.id);
@@ -174,7 +174,7 @@ export default {
                 state["tagSets"] = data;
             }
         },
-        SOCKET_tagsUpdate: (state, data) => {
+        SOCKET_tagRefresh: (state, data) => {
             if (state["tags"] === null) {
                 state["tags"] = data;
             } else {

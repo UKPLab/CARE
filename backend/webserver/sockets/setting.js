@@ -1,5 +1,5 @@
 const {getGroups, getElements} = require("../../db/methods/navigation");
-const {getUserSettings, getSettings, setUserSetting} = require("../../db/methods/settings");
+const {getUserSettings, getSettings, setSetting, setUserSetting} = require("../../db/methods/settings");
 
 const Socket = require("../Socket.js");
 
@@ -20,7 +20,7 @@ module.exports = class SettingSocket extends Socket {
             settings.forEach(s => returnSettings[s.key] = s.value);
             userSettings.forEach(s => returnSettings[s.key] = s.value);
 
-            this.socket.emit("settings", returnSettings);
+            this.socket.emit("settingRefresh", returnSettings);
         } catch (err) {
             this.logger.error(err);
         }
@@ -31,7 +31,7 @@ module.exports = class SettingSocket extends Socket {
             const elements = await getElements();
             const groups = await getGroups();
 
-            this.socket.emit("navigation", {groups: groups, elements: elements})
+            this.socket.emit("settingNavigation", {groups: groups, elements: elements})
         } catch (err) {
             this.logger.error(err);
         }
@@ -39,12 +39,12 @@ module.exports = class SettingSocket extends Socket {
 
     init() {
 
-        this.socket.on("getSettings", async (data) => {
+        this.socket.on("settingGetAll", async (data) => {
             await this.sendSettings();
             await this.sendNavigation();
         });
 
-        this.socket.on("setSetting", async (data) => {
+        this.socket.on("settingSet", async (data) => {
             try {
                 await setUserSetting(this.user_id, data.key, data.value);
                 await this.sendSettings()
@@ -52,6 +52,30 @@ module.exports = class SettingSocket extends Socket {
                 this.logger.error(err);
             }
         });
+
+        this.socket.on("settingGetData", async (data) => {
+            if (this.isAdmin()) {
+                try {
+                    const settings = await getSettings();
+                    this.socket.emit("settingData", settings);
+                } catch (err) {
+                    this.logger.error(err);
+                }
+            }
+        });
+
+        this.socket.on("settingSave", async (data) => {
+            try {
+                if (this.isAdmin()) {
+                    await Promise.all(data.map(setting => setSetting(setting.key, setting.value)));
+                    await this.sendSettings()
+                }
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+
+
 
     }
 

@@ -33,10 +33,10 @@
         <tr v-for="tagSet in tagSets" :key="tagSet.id">
           <td>
 
-            <LoadIcon v-if="tagSet.id === selectedTagset" :size="16" iconName="IconStarFill"
+            <LoadIcon v-if="tagSet.id === selectedTagset" :size="16" iconName="star-fill"
                       style="color:yellowgreen;"/>
 
-            <LoadIcon v-else :size="16" iconName="IconStar" role="button" v-tooltip title="Select tagset as default"
+            <LoadIcon v-else :size="16" iconName="star" role="button" v-tooltip title="Select tagset as default"
                       v-on:click="selectAsDefault(tagSet.id)"/>
 
           </td>
@@ -121,12 +121,12 @@ Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import {mapGetters} from "vuex";
-import Loader from "../basic/Loader.vue";
+import Loader from "@/basic/Loader.vue";
 import TagSetModal from "./tags/TagSetModal.vue";
 import TagSetPublishModal from "./tags/TagSetPublishModal.vue";
 import TagSetDeleteModal from "./tags/TagSetDeleteModal.vue";
-import {tooltip} from "../../assets/tooltip.js";
-import LoadIcon from "../../icons/LoadIcon.vue";
+import {tooltip} from "@/assets/tooltip.js";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Tags",
@@ -150,7 +150,7 @@ export default {
   },
   methods: {
     selectAsDefault(tagSetId) {
-      this.$socket.emit("setSetting", {key: "tags.tagSet.default", value: tagSetId});
+      this.$socket.emit("settingSet", {key: "tags.tagSet.default", value: tagSetId});
     },
   },
   computed: {

@@ -12,7 +12,12 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const crypto = require('crypto');
 const {add: addUser, find: findUser, relevantFields: getUserFields} = require('../../db/methods/user.js')
+const {getSetting} = require("../../db/methods/settings");
 const logger = require("../../utils/logger.js")("routes/auth");
+
+const {
+    update: updateUser
+} = require("../../db/methods/user.js");
 
 // internal login procedure using passport and postgres
 passport.use(new LocalStrategy(function verify(username, password, cb) {
@@ -60,7 +65,17 @@ async function register(user_credentials, res) {
     const agree = user_credentials["terms"];
     const stats = user_credentials["stats"];
 
-    if (!user_name || !email || !first_name || !last_name || !pwd || !agree) {
+    if (await getSetting("app.register.requestName") === "true") {
+        if (!first_name) {
+            return res.status(400).json({message: "Please provide a user name."});
+        }
+        if (!last_name) {
+            return res.status(400).json({message: "Please provide a user name."});
+        }
+    }
+
+
+    if (!user_name || !email || !pwd || !agree) {
         res.status(400).send("All credential fields need to be provided");
     } else {
         addUser(user_name, first_name, last_name, email, pwd, "regular", agree, stats)
@@ -73,7 +88,7 @@ async function register(user_credentials, res) {
                 if (err.name === "DuplicateUserException") {
                     res.status(400).send("User already exists");
                 } else if (err.name === "InvalidPasswordException") {
-                    res.status(400).send("Password does not match criteria");
+                    res.status(400).send(err.message);
                 } else {
                     res.status(400).send("Unknown error occurred. Consult admins");
                 }
@@ -92,10 +107,13 @@ module.exports = function (app) {
             if (!user) {
                 return res.status(401).send(info);
             }
-            req.logIn(user, function (err) {
+            req.logIn(user, async function (err) {
                 if (err) {
                     return next(err);
                 }
+
+                await updateUser(user.id, {lastLoginAt: new Date()});
+
                 res.status(200).send({user: user});
             });
         })(req, res, next);

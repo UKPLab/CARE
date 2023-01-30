@@ -1,82 +1,21 @@
 <template>
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      Documents
-      <div>
-        <button class="btn btn-sm btn-secondary me-1" type="button" @click="exportAll()">Export all</button>
-        <Upload @addedDoc="onAddedDoc"></Upload>
-      </div>
-    </div>
-    <div class="card-body">
-      <span v-if="items.length === 0">
-        No documents available...
-      </span>
-      <table v-else class="table table-hover">
-        <thead>
-        <tr>
-          <th v-for="field in fields" scope="col">{{ field.name }}</th>
-          <th scope="col">Manage</th>
-          <!--<th scope="col">Review</th>-->
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="item in items" :key="item.hash">
-          <td v-for="field in fields">{{ item[field.col] }}</td>
-          <td>
-            <div class="btn-group">
-
-              <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
-                      title="Access document..." type="button" @click="accessDoc(item.hash)">
-                <svg class="bi bi-box-arrow-right" fill="currentColor" height="16" viewBox="0 0 16 16"
-                     width="16" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"
-                        fill-rule="evenodd"></path>
-                  <path d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"
-                        fill-rule="evenodd"></path>
-                </svg>
-                <span class="visually-hidden">Access</span>
-              </button>
-
-
-              <button class="btn btn-outline-secondary" data-placement="top" data-toggle="tooltip"
-                      title="Delete document..."
-                      type="button" @click="deleteDoc(item.id)">
-                <svg class="bi bi-trash3-fill" fill="currentColor" height="16" viewBox="0 0 16 16"
-                     width="16" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                      d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5Zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5ZM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06Zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528ZM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5Z"/>
-                </svg>
-                <span class="visually-hidden">Delete</span>
-              </button>
-              <!--<button type="button" class="btn btn-outline-secondary" @click="renameDoc(item.id, 'default_name')" data-toggle="tooltip" data-placement="top" title="Rename document...">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
-                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                    <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
-                  </svg>
-                  <span class="visually-hidden">Rename</span>
-              </button>-->
-            </div>
-          </td>
-          <!--<td>
-            <button class="btn"
-                    :class="reviewState(item.hash) === 'SUBMITTED' ? 'disabled btn-outline-secondary' : reviewState(item.hash) === 'PENDING' ? 'btn-outline-primary' : 'btn-outline-success'"
-                    type="button"
-                    @click="startReview(item.hash)">{{
-                reviewState(item.hash) === "PENDING" ? "Continue"
-                    : (reviewState(item.hash) === "SUBMITTED" ? "Submitted" : "Start")
-              }}
-            </button>
-          </td>-->
-        </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <Export ref="export"></Export>
+  <Card title="Documents">
+    <template v-slot:headerElements>
+      <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAll()" title="Export">
+        <LoadIcon iconName="cloud-arrow-down" @click=""></LoadIcon>
+        Export all
+      </button>
+      <Upload @addedDoc="onAddedDoc"></Upload>
+    </template>
+    <template v-slot:body>
+      <Table :columns="columns" :data="docs" :options="options" @action="action"></Table>
+    </template>
+  </Card>
+  <ExportAnnos ref="export"></ExportAnnos>
 </template>
 
 <script>
-/* List.vue - document list management
+/* Documents.vue - document list component
 
 This component loads the user-specific documents from the server
 and allows to interact with them. The user can delete existing
@@ -86,46 +25,130 @@ Author: Nils Dycke (dycke@ukp...)
 Co-Author:  Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import {mapGetters, mapActions} from "vuex";
+import {mapGetters} from "vuex";
 import Upload from "./documents/Upload.vue";
-import Export from "../basic/Export.vue";
-
+import PublishModal from "./documents/PublishModal.vue";
+import ExportAnnos from "@/basic/download/ExportAnnos.vue";
+import Card from "@/basic/Card.vue";
+import Table from "@/basic/table/Table.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Document",
-  components: {Upload, Export},
+  components: {Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal},
   data() {
     return {
-      fields: [
-        {name: "Title", col: "name"},
-        {name: "Created At", col: "createdAt"}
+      options: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        pagination: 10,
+      },
+      columns: [
+        {name: "Title", key: "name"},
+        {name: "Created At", key: "createdAt"},
+        {
+          name: "Public",
+          key: "public",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", false: "No"},
+            classMapping: {true: "bg-success", false: "bg-danger"}
+          }
+        },
+        {name: "Manage", key: "manage", type: "button-group"},
       ]
     }
-  },
-  props: {
-    'admin': {
-      required: false,
-      default: false
-    },
   },
   mounted() {
     this.load();
   },
   computed: {
-    ...mapGetters({items: 'user/getDocuments', reviews: 'user/getReviews'})
+    documents() {
+      return this.$store.getters["document/getDocuments"];
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    docs() {
+      return this.documents.filter(doc => doc.userId === this.userId).map(d => {
+        d.manage = [
+          {
+            icon: "box-arrow-in-right",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              }
+            },
+            title: "Access document...",
+            action: "accessDoc",
+          },
+          {
+            icon: "trash",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              }
+            },
+            title: "Delete document...",
+            action: "deleteDoc",
+          },
+          {
+            icon: "cloud-arrow-up",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              }
+            },
+            title: "Publish document...",
+            action: "publicDoc",
+          }
+          /*
+        {
+          icon: "pencil",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Rename document...",
+          onClick: this.renameDoc,
+        },  */
+        ];
+        return d;
+      });
+    },
+    ...mapGetters({reviews: 'user/getReviews'})
   },
   methods: {
+    action(data) {
+      if (data.action === "accessDoc") {
+        this.accessDoc(data.params);
+      }
+      if (data.action === "deleteDoc") {
+        this.deleteDoc(data.params);
+      }
+      if (data.action === "publicDoc") {
+        this.$refs.publishModal.open(data.params.id);
+      }
+    },
     load() {
       this.$socket.emit("getReviews");
     },
-    deleteDoc(docId) {
-      this.$socket.emit("doc_delete", {docId: docId});
+    deleteDoc(row) {
+      this.$socket.emit("documentDelete", {documentId: row.id});
     },
-    renameDoc(docId, name) {
-      this.$socket.emit("doc_rename", {docId: docId, newName: name});
+    renameDoc(row) {
+      this.$socket.emit("documentUpdate", {documentId: row.id, document: {name: "default_name"}});
     },
-    accessDoc(docHash) {
-      this.$router.push(`/annotate/${docHash}`);
+    accessDoc(row) {
+      this.$router.push(`/annotate/${row.hash}`);
     },
     onAddedDoc() {
       this.load();
@@ -160,8 +183,12 @@ export default {
 
       return this.reviews[review_i].submitted ? "SUBMITTED" : "PENDING";
     },
+    publishDoc(row) {
+      console.log(row);
+      this.$refs.publishModal.open(row.id);
+    },
     exportAll() {
-      const doc_ids = this.items.map(i => i.hash);
+      const doc_ids = this.docs.map(i => i.id);
       this.$refs.export.requestExport(doc_ids, "json");
     },
   }

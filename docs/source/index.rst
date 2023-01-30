@@ -1,14 +1,14 @@
-.. PEER documentation master file, created by
+.. CARE documentation master file, created by
    sphinx-quickstart on Mon Dec 19 14:54:30 2022.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 
 
-Welcome to PEER's documentation!
+Welcome to CARE!
 ================================
 
-Welcome to PEER's project :-)
+Welcome to the CARE project -- contribute towards AI-assisted collaborative reading.
 
 
 .. toctree::
@@ -20,16 +20,14 @@ Welcome to PEER's project :-)
    getting_started/architecture
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: For Developers
 
-   for_developers/basics
-   for_developers/conventions
-   for_developers/frameworks
-   for_developers/plugins
-   for_developers/database
-   for_developers/user_stats
-   for_developers/logging
+   for_developers/before_you_start
+
+   for_developers/basics/basics
+   for_developers/advanced/advanced
+
 
 .. toctree::
    :maxdepth: 2
@@ -39,7 +37,6 @@ Welcome to PEER's project :-)
    for_researchers/nlp
    for_researchers/exporting
    for_researchers/user_stats
-
 
 
 

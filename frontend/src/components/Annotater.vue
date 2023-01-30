@@ -1,8 +1,8 @@
 <template>
   <div v-if="document_id !== null" class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
-      <div class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
-        <PDFViewer :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto"
+      <div ref="viewer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
+        <PDFViewer  :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto"
                    class="rounded border border-1 shadow-sm"></PDFViewer>
       </div>
       <div class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;" id="sidebarContainer">
@@ -12,7 +12,7 @@
   </div>
 
   <Teleport to="#topbarCustomPlaceholder">
-    <form class="container-fluid justify-content-center">
+    <form class="hstack gap-3 container-fluid justify-content-center">
       <button v-if="review" class="btn btn-outline-success me-2" type="button"
               v-on:click="this.$refs.reviewSubmit.open()">Submit Review
       </button>
@@ -30,10 +30,14 @@
                     type="button"
                     aria-haspopup="true"
                     aria-expanded="false"
-                    @click="downloadAnnotations('txt')"
+                    @click="downloadAnnotations('json')"
                     >
               Download Annotations
       </button>
+      <div v-if="nlp_enabled" class="form-check form-switch">
+        <IconBoostrap name="robot" :disabled="!nlp_support || !nlp_available"/>
+        <input class="form-check-input" ref="nlpSwitch" title="Activate/Deactivate NLP support" type="checkbox" role="switch" :checked="nlp_support" :disabled="!nlp_available" @input="e => changeNlpSetting(e.target.checked)">
+     </div>
     </form>
   </Teleport>
 
@@ -42,7 +46,7 @@
           @decisionSubmit="decisionSubmit"></Report>
   <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id"
                   :document_id="document_id"></DecisionSubmit>
-  <Export ref="export"></Export>
+  <ExportAnnos ref="export"></ExportAnnos>
 </template>
 
 <script>
@@ -58,16 +62,18 @@ import PDFViewer from "./annotater/pdfViewer/PDFViewer.vue";
 import Sidebar from "./annotater/sidebar/Sidebar.vue";
 import ReviewSubmit from "./annotater/modals/ReviewSubmit.vue"
 import Report from "./annotater/modals/Report.vue"
-import Loader from "./basic/Loader.vue";
+import Loader from "@/basic/Loader.vue";
 import DecisionSubmit from "./annotater/modals/DecisionSubmit.vue"
-import Export from "./basic/Export.vue"
-import {offsetRelativeTo, scrollElement} from "../assets/anchoring/scroll";
-import {isInPlaceholder} from "../assets/anchoring/placeholder";
-import {resolveAnchor} from "../assets/anchoring/resolveAnchor";
+import ExportAnnos from "@/basic/download/ExportAnnos.vue"
+import IconBoostrap from "../icons/IconBootstrap.vue";
+import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
+import {isInPlaceholder} from "@/assets/anchoring/placeholder";
+import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
+import debounce from 'lodash.debounce';
 
 export default {
   name: "Annotater",
-  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, Export},
+  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, ExportAnnos, IconBoostrap},
   props: {
     'document_hash': {
       type: String,
@@ -110,7 +116,17 @@ export default {
       return this.$store.getters["comment/getDocumentComments"](this.document_id);
     },
     document_id() {
-      return this.$store.getters["user/getDocumentId"](this.document_hash);
+      return this.$store.getters["document/getDocumentId"](this.document_hash);
+    },
+    nlp_support() {
+      return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true";
+    },
+    nlp_available() {
+      const conf = this.$store.getters["service/get"]("NLPService", "skillConfig");
+      return conf && "sentiment_classification" in conf;
+    },
+    nlp_enabled() {
+      return this.$store.getters["settings/getValue"]('service.nlp.enabled') === "true";
     },
   },
   mounted() {
@@ -122,12 +138,22 @@ export default {
       });
     });
     this.load();
+
+    this.$refs.viewer.addEventListener("scroll", debounce(() => {
+      this.$socket.emit("stats", {
+        action: "annotatorScrollActivity",
+        data: {document_id: this.document_id, scrollTop: this.$refs.viewer.scrollTop, scrollHeight: this.$refs.viewer.scrollHeight}
+      })
+    }, 500));
+
   },
   unmounted() {
     // Leave the room for document updates
-    this.$socket.emit("unsubscribe:document", {doc: this.document_id});
+    this.$socket.emit("collabUnsubscribe", {documentId: this.document_id});
+    this.$refs.viewer.removeEventListener("scroll");
   },
   sockets: {
+    //TODO what is that connect for?
     connect: function () {
       this.load();
     },
@@ -135,6 +161,11 @@ export default {
   methods: {
     decisionSubmit(decision) {
       this.$refs.decisionSubmit.open(decision);
+    },
+    changeNlpSetting(newNlpActive){
+      if(this.nlp_support !== newNlpActive){
+        this.$socket.emit("settingSet", {key: "annotator.nlp.activated", value: newNlpActive});
+      }
     },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
@@ -213,12 +244,17 @@ export default {
     },
     load() {
       // TODO data should loaded in app for basic settings
-      this.$socket.emit("getTagSets");
-      this.$socket.emit("getTags");
-      this.$socket.emit("getSettings");
+      this.$socket.emit("tagSetGetAll");
+      this.$socket.emit("tagGetAll");
+      this.$socket.emit("settingGetAll");
 
       // Join Room for document updates
-      this.$socket.emit("subscribe:document", {doc: this.document_id});
+      this.$socket.emit("collabSubscribe", {documentId: this.document_id});
+
+      // check for available nlp support (for now hard-coded sentiment analysis)
+      if(!this.nlp_available) {
+        this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetConfig", data: {name: "sentiment_classification"}});
+      }
     },
     downloadAnnotations(outputType) {
       this.$refs.export.requestExport([this.document_id], outputType, true);
@@ -232,8 +268,12 @@ export default {
 #sidebarContainer {
   position: relative;
   padding: 0;
-  max-width: 300px;
-  min-width: 300px;
+  max-width:400px;
+  min-width: 400px;
+}
+
+IconBoostrap[disabled]{
+  background-color: darkgrey;
 }
 
 </style>

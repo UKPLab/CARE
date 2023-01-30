@@ -31,14 +31,14 @@ module.exports = class TagSocket extends Socket {
 
     async sendTagSetUpdate(tagSet) {
         tagSet.dataValues['username'] = await dbGetUsername(tagSet['userId'])
-        this.socket.emit("tagSetUpdate", tagSet);
+        this.socket.emit("tagSetRefresh", tagSet);
     }
 
     async sendTagsUpdate(tags) {
         for (let tag of tags) {
             tag.dataValues['username'] = await dbGetUsername(tag['userId'])
         }
-        this.socket.emit("tagsUpdate", tags);
+        this.socket.emit("tagRefresh", tags);
     }
 
 
@@ -46,7 +46,7 @@ module.exports = class TagSocket extends Socket {
         for (let tagSet of tagSets) {
             tagSet.dataValues['username'] = await dbGetUsername(tagSet['userId'])
         }
-        this.socket.emit("tagSetsUpdate", tagSets);
+        this.socket.emit("tagSetRefresh", tagSets);
     }
 
     async sendTags() {
@@ -66,7 +66,7 @@ module.exports = class TagSocket extends Socket {
         }
     };
 
-    async sendTagSet() {
+    async sendTagSets() {
         try {
             await this.sendTagSetsUpdate(await dbGetAllTagSets());
         } catch (err) {
@@ -74,7 +74,7 @@ module.exports = class TagSocket extends Socket {
         }
     };
 
-    async sendTagSetByUser() {
+    async sendTagSetsByUser() {
         try {
             await this.sendTagSetsUpdate(await dbGetAllTagSetsByUser(this.user_id));
         } catch (err) {
@@ -82,23 +82,23 @@ module.exports = class TagSocket extends Socket {
         }
     };
 
-    async sendTagsBySetId(user, id) {
+    async sendTagsBySetId(tagSetId) {
         try {
-            const tags = await dbGetAllTagsBySetId(id);
+            const tags = await dbGetAllTagsBySetId(tagSetId);
 
-            if (user.sysrole === "admin") {
+            if (this.isAdmin()) {
                 await this.sendTagsUpdate(tags);
             } else {
-                await this.sendTagsUpdate(tags.filter(t => t.public || t.userId === user.id))
+                await this.sendTagsUpdate(tags.filter(t => t.public || t.userId === this.user_id))
             }
         } catch (err) {
             this.logger.error(err);
         }
     }
 
-    async sendTagSetById(user, id) {
+    async sendTagSetById(tagSetId) {
         try {
-            const tagSet = await dbGetTagSet(id);
+            const tagSet = await dbGetTagSet(tagSetId);
             if (this.checkUserAccess(tagSet.userId) || tagSet.public) {
                 await this.sendTagSetUpdate(tagSet);
             } else {
@@ -111,9 +111,9 @@ module.exports = class TagSocket extends Socket {
 
 
     init() {
-        this.socket.on("getTagById", async (id) => {
+        this.socket.on("tagGet", async (data) => {
             try {
-                const tag = await dbGetTag(id);
+                const tag = await dbGetTag(data.tagId);
                 if (this.checkUserAccess(tag.userId) || tag.public) {
                     await this.sendTagsUpdate([tag]);
                 } else {
@@ -124,21 +124,20 @@ module.exports = class TagSocket extends Socket {
             }
         });
 
-        this.socket.on("getTagSetById", async (id) => {
-            const user = this.socket.request.session.passport.user;
-            await this.sendTagSetById(user, id);
-            await this.sendTagsBySetId(user, id);
+        this.socket.on("tagSetGet", async (data) => {
+            await this.sendTagSetById(data.tagSetId);
+            await this.sendTagsBySetId(data.tagSetId);
         });
 
-        this.socket.on("getTagSets", async () => {
+        this.socket.on("tagSetGetAll", async () => {
             if (this.isAdmin()) {
-                await this.sendTagSet();
+                await this.sendTagSets();
             } else {
-                await this.sendTagSetByUser();
+                await this.sendTagSetsByUser();
             }
         });
 
-        this.socket.on("getTags", async () => {
+        this.socket.on("tagGetAll", async () => {
             if (this.isAdmin()) {
                 await this.sendTags();
             } else {
@@ -146,27 +145,27 @@ module.exports = class TagSocket extends Socket {
             }
         });
 
-        this.socket.on("saveTagset", async (data) => {
+        this.socket.on("tagSetUpdate", async (data) => {
             let tagSetObj;
-            if (data.tagset.id === 0) {
-                data.tagset.userId = this.user_id;
-                tagSetObj = await dbAddTagSet(data.tagset);
+            if (!data.tagSetId || data.tagSetId === 0) {
+                data.tagSet.userId = this.user_id;
+                tagSetObj = await dbAddTagSet(data.tagSet);
             } else {
                 // security check
-                const prevTagSet = await dbGetTagSet(data.tagset.id);
+                const prevTagSet = await dbGetTagSet(data.tagSetId);
                 if (!this.checkUserAccess(prevTagSet.userId)) {
                     this.sendToast("You have no permission to edit this tagSet", "Permission Error", "danger");
                     return;
                 }
 
-                tagSetObj = await dbUpdateTagSet(data.tagset);
+                tagSetObj = await dbUpdateTagSet(data.tagSetId, data.tagSet);
                 tagSetObj = tagSetObj[1];
             }
 
             const tagObjs = await Promise.all(data.tags.map(async (t) => {
                 t.setId = tagSetObj.id;
                 if (t.id === 0) {
-                    t.userId = this.socket.request.session.passport.user.id;
+                    t.userId = this.user_id;
                     return await dbAddTag(t);
                 } else {
                     const prevTag = await dbGetTag(t.id);
@@ -178,26 +177,26 @@ module.exports = class TagSocket extends Socket {
             }));
 
             if (tagObjs.includes(null)) {
-                this.socket.emit("tagSetSaved", {success: false, message: "You have no permission to change this tag"});
+                this.socket.emit("tagSetUpdated", {success: false, message: "You have no permission to change this tag"});
                 return;
             }
 
             await this.sendTagSetUpdate(tagSetObj);
             await this.sendTagsUpdate(await Promise.all(tagObjs));
-            this.socket.emit("tagSetSaved", {success: true});
+            this.socket.emit("tagSetUpdated", {success: true});
         });
 
-        this.socket.on("publishTagset", async (tagSetId) => {
+        this.socket.on("tagSetPublish", async (data) => {
 
-            const prevTagSet = await dbGetTagSet(tagSetId.id);
+            const prevTagSet = await dbGetTagSet(data.tagSetId);
             if (!this.checkUserAccess(prevTagSet.userId)) {
-                this.logger.error("No permission to publish tagSet: " + tagSetId);
+                this.logger.error("No permission to publish tagSet: " + data.tagSetId);
                 this.socket.emit("tagSetPublished", {success: false, message: "No permission to publish tagSet"});
                 return;
             }
 
-            const newTagSet = await dbPublishTagSet(tagSetId.id);
-            const tags = await dbGetAllTagsBySetId(tagSetId.id);
+            const newTagSet = await dbPublishTagSet(data.tagSetId);
+            const tags = await dbGetAllTagsBySetId(data.tagSetId);
             const newTags = await Promise.all(tags.map(async t => await dbPublishTag(t.id)));
 
             await this.sendTagSetUpdate(newTagSet[1]);
@@ -207,16 +206,16 @@ module.exports = class TagSocket extends Socket {
         });
 
 
-        this.socket.on("deleteTagset", async (tagSetId) => {
+        this.socket.on("tagSetDelete", async (data) => {
 
-            const prevTagSet = await dbGetTagSet(tagSetId.id);
+            const prevTagSet = await dbGetTagSet(data.tagSetId);
             if (!this.checkUserAccess(prevTagSet.userId)) {
-                this.logger.error("No permission to delete tagset: " + tagSetId);
+                this.logger.error("No permission to delete tagset: " + data.tagSetId);
                 this.socket.emit("tagSetDeleted", {success: false, message: "No permission to delete tagset"});
                 return;
             }
 
-            const newTagSet = await dbDeleteTagSet(tagSetId.id);
+            const newTagSet = await dbDeleteTagSet(data.tagSetId);
             const tags = await dbGetAllTagsBySetId(newTagSet[1].id);
             const newTags = await Promise.all(tags.map(async t => await dbDeleteTag(t.id)));
 

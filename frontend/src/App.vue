@@ -5,8 +5,8 @@
 </template>
 
 <script>
-import Toast from "./components/basic/Toast.vue";
-import Topbar from "./components/navigation/Topbar.vue";
+import Toast from "@/basic/Toast.vue";
+import Topbar from "@/components/navigation/Topbar.vue";
 
 export default {
   components: {Topbar, Toast},
@@ -28,10 +28,10 @@ export default {
   mounted() {
     // Load application data on startup
     if (this.authenticated) {
-      this.$socket.emit("getTagSets");
-      this.$socket.emit("getTags");
-      this.$socket.emit("getSettings");
-      this.$socket.emit("docs_get");
+      this.$socket.emit("tagSetGetAll");
+      this.$socket.emit("tagGetAll");
+      this.$socket.emit("settingGetAll");
+      this.$socket.emit("documentGetAll");
     }
     // TODO: wait for all data to be loaded before rendering the page
     // show loading screen until all data is loaded

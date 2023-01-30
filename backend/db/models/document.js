@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         name: DataTypes.STRING,
         hash: DataTypes.STRING,
         userId: DataTypes.INTEGER,
+        public: DataTypes.BOOLEAN,
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
