@@ -50,6 +50,16 @@ exports.getUsername = async function getUsername(userId) {
     }
 }
 
+exports.getUserId = async function getUserId(userName) {
+    try {
+        const user = await User.findOne({where: {userName: userName}});
+        return user["id"];
+    } catch (err) {
+        logger.error("Error while getting username with userid " + userId + ": " + err);
+        throw new InternalDatabaseError();
+    }
+}
+
 exports.add = async function add(user_name, first_name, last_name, user_email, password, role, terms, stats) {
     if (!validatePassword(password)) {
         throw InvalidPasswordException();
@@ -105,7 +115,10 @@ exports.find = async function find(username) {
                     userName: username
                 }, {
                     email: username
-                }]
+                }],
+                [Op.not]: {
+                    sysrole: "system"
+                }
             }
         });
     } catch (err) {

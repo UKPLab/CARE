@@ -152,7 +152,7 @@ export default {
       if (this.nlp_active && this.nlp_result === null) {
         this.requestNlpFeedback();
       }
-    }
+    },
   },
   mounted() {
     if (this.nlp_active && this.nlp_result === null && this.comment.text !== null) {
@@ -165,6 +165,9 @@ export default {
   computed: {
     comment() {
       return this.$store.getters["comment/getComment"](this.comment_id);
+    },
+    skills() {
+      return this.$store.getters["service/getNLPSkills"];
     },
     settingResponse() {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
@@ -234,6 +237,7 @@ export default {
     saveCard() {
       this.$emit("saveCard");
     },
+
     requestNlpFeedback() {
       console.log("REQUESTING NLP!!!", this.comment);
 
