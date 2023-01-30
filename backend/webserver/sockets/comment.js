@@ -9,6 +9,7 @@ const {
 
 const Socket = require("../Socket.js");
 const {formatForExport: dbFormatForExport} = require("../../db/methods/comment");
+const {getUserId:dbGetUserId} = require("../../db/methods/user.js");
 
 /**
  * Loading the comments through websocket
@@ -79,9 +80,31 @@ module.exports = class CommentSocket extends Socket {
     }
 
 
-    async addComment(document_id, annotation_id, comment_id = null) {
+    async addComment(data) {
+
+        //Check access rights
+        if (data.userId !== undefined) {
+            if (data.userId === 'Bot') {
+                const parentComment = await dbGetComment(data.commentId);
+                if (!this.checkUserAccess(parentComment.userId))
+                {
+                   this.sendToast("You are not allowed to add a comment.", "Access denied", "danger");
+                return;
+                } else {
+                    data.userId = await dbGetUserId("Bot");
+                    data.draft = false;
+                }
+            } else if (!this.checkUserAccess(data.userId))
+            {
+                this.sendToast("You are not allowed to add a comment.", "Access denied", "danger");
+                return;
+            }
+        } else {
+            data.userId = this.user_id;
+        }
+
         try {
-            this.socket.emit("commentRefresh", await this.updateCreatorName(await dbAddComment(document_id, annotation_id, comment_id, this.user_id)))
+            this.socket.emit("commentRefresh", await this.updateCreatorName(await dbAddComment(data)))
         } catch (e) {
             this.logger.error("Could not add comment and/or comment to database. Error: " + e);
 
@@ -99,9 +122,7 @@ module.exports = class CommentSocket extends Socket {
     init() {
 
         this.socket.on("commentAdd", async (data) => {
-            await this.addComment(data.documentId,
-                data.annotation_id !== undefined ? data.annotation_id : null,
-                data.commentId !== undefined ? data.commentId : null );
+            await this.addComment(data);
         });
 
         this.socket.on("commentGet", async (data) => {

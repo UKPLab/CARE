@@ -3,12 +3,19 @@ const {genSalt, genPwdHash} = require("../methods/utils.js");
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        const users = [{
-            name: "admin",
-            role: "admin",
-            email: process.env.ADMIN_EMAIL,
-            pwd: process.env.ADMIN_PWD
-        },
+        const users = [
+            {
+                name: "admin",
+                role: "admin",
+                email: process.env.ADMIN_EMAIL,
+                pwd: process.env.ADMIN_PWD
+            },
+            {
+                name: "Bot",
+                role: "system",
+                email: "noreply@localhost",
+                pwd: "<nopasswordneed>"
+            },
             {
                 name: "guest",
                 role: "regular",

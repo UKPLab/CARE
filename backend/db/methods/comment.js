@@ -42,16 +42,17 @@ exports.get = async function get(id) {
     }
 }
 
-exports.add = async function add(document_id, annotation_id, comment_id, user_id) {
+exports.add = async function add(data) {
 
     let newComment = {
         hash: uuidv4(),
         tags: "[]",
-        draft: true,
-        userId: user_id,
-        documentId: document_id,
-        referenceAnnotation: annotation_id,
-        referenceComment: comment_id
+        draft: data.draft !== undefined ? data.draft : true,
+        text: data.text !== undefined ? data.text : null,
+        userId: data.userId,
+        documentId: data.documentId,
+        referenceAnnotation: data.annotationId !== undefined ? data.annotationId : null,
+        referenceComment: data.commentId !== undefined ? data.commentId : null
     }
 
     try {

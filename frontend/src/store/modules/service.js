@@ -24,6 +24,14 @@ export default {
             return service in state.services && serviceType in state.services[service] ?
                 state.services[service][serviceType] : null;
         },
+        getNLPSkills: (state) => {
+            return "NLPService" in state.services && 'skillUpdate' in state.services["NLPService"] ?
+                state.services["NLPService"]['skillUpdate'].map(skill => skill.name) : [];
+        },
+        getNLPResults: (state) => {
+            return "NLPService" in state.services && 'skillResults' in state.services["NLPService"] ?
+                state.services["NLPService"]['skillResults'] : {};
+        },
     },
     mutations: {
         SOCKET_serviceRefresh: (state, data) => {
