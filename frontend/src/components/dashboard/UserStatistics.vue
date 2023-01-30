@@ -3,38 +3,34 @@
     <div class="row gy-2">
       <div class="col">
         <Card title="Users">
-        <template v-slot:headerElements>
-          <button class="btn btn-sm me-1" type="button" @click="loadUserData()" title="Refresh">
-            <LoadIcon iconName="arrow-clockwise"></LoadIcon>
-          </button>
-        </template>
-        <template v-slot:body>
-          <Table :columns="user_table.columns"
-                 :data="users"
-                 :options="user_table.options"
-                 ref="user_table"
-                 @rowSelection="e => loadUserStats(e)"></Table>
-        </template>
-          <template v-slot:footer>
-            <div class="text-center">
-              <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAllStats()" title="Export">
-                <LoadIcon iconName="cloud-arrow-down"></LoadIcon>
-                Export all users' statistics
-              </button>
-            </div>
+          <template v-slot:headerElements>
+            <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAllStats()" title="Export">
+              <LoadIcon iconName="cloud-arrow-down"></LoadIcon>
+              Export all statistics
+            </button>
+            <button class="btn btn-sm me-1" type="button" @click="loadUserData()" title="Refresh">
+              <LoadIcon iconName="arrow-clockwise"></LoadIcon>
+            </button>
           </template>
-      </Card>
+          <template v-slot:body>
+            <Table :columns="user_table.columns"
+                   :data="users"
+                   :options="user_table.options"
+                   ref="user_table"
+                   @rowSelection="e => loadUserStats(e)"></Table>
+          </template>
+        </Card>
       </div>
     </div>
     <div class="row gy-2">
       <div class="col">
-         <Card title="User Log">
+        <Card title="User Log">
           <template v-slot:body>
             <Table :columns="stats_table.columns"
                    :data="stats"
                    :options="stats_table.options"
                    ref="stats_table"
-                   ></Table>
+            ></Table>
           </template>
         </Card>
       </div>
@@ -78,7 +74,7 @@ export default {
           selectableRows: true
         },
         columns: [
-          {name: "User", key: "userName", sortable:true},
+          {name: "User", key: "userName", sortable: true},
           {name: "ID", key: "id", sortable: true},
           {name: "Role", key: "sysrole", sortable: true},
           {name: "Last Login", key: "lastLoginAt", sortable: true},
@@ -96,7 +92,7 @@ export default {
         columns: [
           {name: "Time", key: "timestamp", sortable: true},
           {name: "User", key: "userId", sortable: true},
-          {name: "Action", key: "action", sortable:true},
+          {name: "Action", key: "action", sortable: true},
           {name: "Data", key: "data", sortable: true},
         ],
       },
@@ -122,11 +118,11 @@ export default {
   },
   methods: {
     loadUserData() {
-      this.$socket.emit("getAllUserData");
+      this.$socket.emit("userGetData");
     },
-    loadUserStats(userIds, force=false) {
+    loadUserStats(userIds, force = false) {
       userIds.forEach(user => {
-        if(this.$store.getters["admin/getStatsByUser"](user.id) == null) {
+        if (this.$store.getters["admin/getStatsByUser"](user.id) == null) {
           this.$socket.emit("statsGetByUser", {userId: user.id})
         }
       });

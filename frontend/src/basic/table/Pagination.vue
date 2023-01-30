@@ -31,16 +31,30 @@
 <script>
 export default {
   name: "Pagination.vue",
+  data() {
+    return {
+      currentPage: null
+    }
+  },
+  emits: ["pageChange"],
   props: {
     pages: {
       type: Number,
       required: true
     },
-    currentPage: {
+    startPage: {
       type: Number,
       required: true
     },
   },
+  mounted() {
+    this.currentPage = this.startPage;
+  },
+  watch:{
+    currentPage(newVal){
+      this.$emit("pageChange", newVal);
+    }
+  }
 }
 </script>
 
