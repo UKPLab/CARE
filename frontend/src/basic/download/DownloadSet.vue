@@ -1,5 +1,5 @@
 <template>
-  <!-- opt. show progress bar -->
+  <!-- todo opt. show progress bar -->
 </template>
 
 <script>
@@ -10,12 +10,12 @@ Generic download logic for a single stream of items with ids
 Author: Nils Dycke
 Source: -
 */
-import {arraysContainSameElements} from "../../assets/utils";
+import {arraysContainSameElements} from "@/assets/utils";
 
 export default {
   name: "DownloadSet.vue",
   props: {
-    name: {
+    index: {
       type: String,
       required: true
     },
@@ -38,7 +38,7 @@ export default {
   },
   computed: {
     downloaded_ids() {
-      return this.downloaded.map(i => i.id)
+      return this.downloaded.map(i => i[`${this.index}Id`])
     },
     progress() {
       if(this.toDownload.length === 0){
@@ -101,7 +101,7 @@ export default {
       }
 
       this.sockets.subscribe(this.resMsg, (r) => {
-        if(this.toDownload.includes(r.id)) {
+        if(this.toDownload.includes(r[`${this.index}Id`])) {
           this.downloaded.push(r);
         }
       });
@@ -111,7 +111,10 @@ export default {
 
       //in the future: do batching if necessary
       ids.forEach(iid => {
-        this.$socket.emit(this.reqMsg, {"id": iid});
+        let req = Object();
+        req[`${this.index}Id`] = iid;
+
+        this.$socket.emit(this.reqMsg, req);
       });
 
       // set timer

@@ -1,10 +1,11 @@
 <template>
   <div id="pdfContainer" class="has-transparent-text-layer">
     <PDFPage
-        v-for="page in pdf.pages"
-        :key="page.pageNumber"
-        :pageNumber="page.pageNumber"
+        v-for="page in pdf.pageCount"
+        :key="'PDFPageKey' + page"
+        :pageNumber="page"
         :pdf="pdf"
+        :render="renderCheck[page - 1]"
         :document_id="document_id"
         class="scrolling-page"
         @updateVisibility="updateVisibility"
@@ -34,7 +35,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 export default {
   name: "PDFViewer",
   components: {PDFPage, Adder},
-
   props: {
     document_id: {
       type: Number,
@@ -51,12 +51,10 @@ export default {
       pdf: new PDF(),
       observer: undefined,
       pdfContainer: null,
+      visiblePages: [1],
     }
   },
   watch: {
-    "pdf.pageCount"() {
-      this.pdf.fetchPages();
-    },
     scrollTo() {
       if (this.scrollTo !== null) {
         this.scrollTo = null;
@@ -64,36 +62,55 @@ export default {
     },
   },
   computed: {
-    /*pagesLength() {
-      return this.pdf.pages.length;
-    },*/
+    renderCheck() {
+      let minPage = Math.max(Math.min(...this.visiblePages) - 3, 1);
+      let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
+
+      return [...Array(this.pdf.pageCount).keys()].map((page) => (page + 1 >= minPage && page + 1 <= maxPage));
+    },
   },
   sockets: {
-    pdf: function (data) {
-      const loadingTask = pdfjsLib.getDocument(data.file);
-      loadingTask.promise
-          .then((pdf) => {
-            this.pdf.setPDF(pdf);
-          })
-          .catch(response => {
-            console.log("Error loading PDF: " + response);
-            this.$router.push("/index.html");
-          });
+    documentFile: function (data) {
+      console.log(data);
+      if (data.document.id === this.document_id) {
+        const loadingTask = pdfjsLib.getDocument(data.file);
+        loadingTask.promise
+            .then((pdf) => {
+              this.pdf.setPDF(pdf);
+            })
+            .catch(response => {
+              console.log("Error loading PDF: " + response);
+              this.eventBus.emit('toast', {
+                title: "PDF Loading Error",
+                message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
+                variant: "danger"
+              });
+
+              this.$router.push("/index.html");
+            });
+      }
     }
   },
   mounted() {
-    this.$socket.emit("pdf_get", {document_id: this.document_id});
+    this.$socket.emit("documentGet", {documentId: this.document_id});
+
   },
   methods: {
     updateVisibility(page) {
       if (page.isVisible) {
-        //TODO: also working to fetch further page on the fly, but can be optimized!
-        this.pdf.fetchPages(page.pageNumber);
+        if (!this.visiblePages.includes(page.pageNumber)) {
+          this.visiblePages.push(page.pageNumber);
+        }
+      } else {
+        if (this.visiblePages.includes(page.pageNumber)) {
+          this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
+        }
       }
+      this.$socket.emit("stats", {
+        action: "pdfPageVisibilityChange",
+        data: {document_id: this.document_id, readonly: this.readonly, "visibility": page}
+      })
     },
-    /*fetchPages(currentPage) {
-      this.pdf.fetchPages(currentPage);
-    },*/
     ...mapMutations({
       toggleSidebar: "anno/TOGGLE_SIDEBAR"
     }),

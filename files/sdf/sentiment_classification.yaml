@@ -1,0 +1,18 @@
+name: sentiment_classification
+description: This classifies a given paragraph according to it's sentiment returning a polarity estimate.
+input:
+  data:
+    text:
+      type: string
+      required: true
+      description: The text to be classified
+  example: {text: "This restaurant is awesome!"}
+output:
+  data:
+    score:
+      type: float
+      description: The score of the classification
+    label:
+      type: string
+      description: The label of the classification
+  example: {score: 0.9, label: "pos"}

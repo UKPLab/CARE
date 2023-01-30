@@ -1,13 +1,14 @@
 <template>
-  <div>
+  <div v-show="!disabled">
     <select ref="tags"
             v-model="tags"
             v-bind:disabled="disabled"
             :placeholder="placeholder"
             allowClear="true"
-            class="form-select selector"
+            class="form-select selector form-select-sm"
             data-allow-new="true"
             multiple
+
             name="tags_new[]">
       <option disabled hidden selected value="">Choose a tag...</option>
       <!--<option v-for="t in tags" :value="t">
@@ -16,11 +17,15 @@
     </select>
     <div class="invalid-feedback">Please select a valid tag.</div>
   </div>
+  <div v-if="disabled && tags.length > 0">
+    <span v-for="t in tags" class="badge bg-primary">
+      {{ t }}
+    </span>
+  </div>
 </template>
 
 <script>
 import Tags from "bootstrap5-tags/tags.js";
-import {watch} from "vue";
 
 export default {
   name: "TagSelector",
@@ -99,7 +104,7 @@ export default {
 </script>
 
 <style scoped>
-.tags {
+#select {
   padding-left: 0;
   padding-right: 0;
   border: none;

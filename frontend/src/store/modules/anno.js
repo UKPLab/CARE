@@ -20,7 +20,18 @@ export default {
     getters: {
         // returns annotations from the store (local)
         getAnnotations: (state) => (document_id) => {
-            return state.annotations.filter(anno => !anno.deleted).filter(annotation => annotation.documentId === document_id);
+            return state.annotations.filter(anno => !anno.deleted)
+                .filter(annotation => annotation.documentId === document_id)
+                .sort((a, b) => {
+                    const a_noanchor = a.anchors === null || a.anchors.length === 0;
+                    const b_noanchor = b.anchors === null || b.anchors.length === 0;
+
+                    if (a_noanchor || b_noanchor) {
+                      return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+                    }
+
+                    return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+                  });
         },
         getAnnotation: (state) => (annotation_id) => {
             return state.annotations.filter(anno => !anno.deleted).find(x => x.id === annotation_id);
@@ -54,7 +65,7 @@ export default {
         },
     },
     mutations: {
-        SOCKET_annotationUpdate: (state, data) => {
+        SOCKET_annotationRefresh: (state, data) => {
             if (!Array.isArray(data)) {
                 data = [data];
             }

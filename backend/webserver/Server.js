@@ -6,15 +6,14 @@ const {Server: WebSocketServer} = require("socket.io");
 const http = require('http');
 const cors = require('cors');
 
-const fs = require('fs')
+const fs = require('fs');
+const path = require('path');
 const passport = require("passport");
 const session = require('express-session');
-const FileStore = require('session-file-store')(session);
 const bodyParser = require('body-parser');
 const Socket = require('./Socket.js');
 const Sequelize = require('sequelize');
 const db = require("../db");
-const {DataTypes} = require("sequelize");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
 /**
@@ -37,7 +36,6 @@ module.exports = class Server {
         this.availSockets = {};
         this.services = {};
         this.socket = null;
-        this.collabs = []; //TODO handle collaborations with db
 
         // No Caching
         this.app.disable('etag');
@@ -53,6 +51,10 @@ module.exports = class Server {
             this.app.use("/api", express.static(`${__dirname}/../../docs/api/`));
         }
 
+        // Routes for config
+        this.logger.debug("Initializing Routes for config...");
+        require("./routes/config.js")(this.app);
+
         this.logger.info("Initializing Session management...");
         this.session = this.#initSessionManagement();
         this.app.use(this.session);
@@ -62,6 +64,7 @@ module.exports = class Server {
         this.app.use(bodyParser.json());
         this.app.use(passport.initialize());
         this.app.use(passport.session());
+
 
         // Routes for login management
         this.logger.debug("Initialize Routes for auth...");
@@ -73,7 +76,10 @@ module.exports = class Server {
 
         this.httpServer = http.createServer(this.app);
         this.#initWebsocketServer();
+        this.#addSockets();
+        this.#addServices();
     }
+
 
     #setCors() {
         this.logger.debug("Use CORS Restriction");
@@ -180,6 +186,27 @@ module.exports = class Server {
     }
 
     /**
+     * Find and add sockets to the server
+     */
+    #addSockets() {
+        this.logger.info("Adding sockets: ");
+        fs.readdir(path.resolve(__dirname, "./sockets"), (err, files) => {
+            if (err) {
+                this.logger.error("Error while reading sockets directory: " + err);
+                return;
+            }
+            files.forEach(file => {
+                if (file.endsWith(".js")) {
+                    const newSocket = require(path.resolve(__dirname, "./sockets") + "/" + file);
+                    if (newSocket.prototype instanceof require(path.resolve(__dirname, "./Socket.js"))) {
+                        this.addSocket(newSocket);
+                    }
+                }
+            });
+        });
+    }
+
+    /**
      *
      * Add new sockets route of class Socket
      *
@@ -188,6 +215,27 @@ module.exports = class Server {
     addSocket(socketClass) {
         this.logger.info("Add socket " + socketClass.name + " to webserver...");
         this.sockets[socketClass.name] = socketClass;
+    }
+
+    /**
+     * Find and add services to the server
+     */
+    #addServices() {
+        this.logger.info("Adding services: ");
+        fs.readdir(path.resolve(__dirname, "./services"), (err, files) => {
+            if (err) {
+                this.logger.error("Error while reading services directory: " + err);
+                return;
+            }
+            files.forEach(file => {
+                if (file.endsWith(".js")) {
+                    const newService = require(path.resolve(__dirname, "./services") + "/" + file);
+                    if (newService.prototype instanceof require(path.resolve(__dirname, "./Service.js"))) {
+                        this.addService(newService);
+                    }
+                }
+            });
+        });
     }
 
     /**
@@ -202,9 +250,18 @@ module.exports = class Server {
 
     start(port) {
         this.logger.debug("Start Webserver...");
-        this.httpServer.listen(port, () => {
+        this.http = this.httpServer.listen(port, () => {
             this.logger.info("Server started on port " + port);
         });
+    }
+
+    stop() {
+        Object.entries(this.services).forEach(([name, service]) => {
+            service.close();
+        });
+        this.io.close();
+        this.http.close();
+
     }
 
 }

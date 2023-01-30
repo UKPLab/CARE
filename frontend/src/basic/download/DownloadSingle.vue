@@ -9,7 +9,7 @@ Generic download logic for a single message
 Author: Nils Dycke
 Source: -
 */
-import {arraysContainSameElements} from "../../assets/utils";
+import {arraysContainSameElements} from "@/assets/utils";
 
 export default {
   name: "DownloadSingle.vue",

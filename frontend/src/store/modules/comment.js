@@ -26,18 +26,26 @@ export default {
                 .find(comm => comm.referenceComment === null);
         },
         getCommentsByCommentId: (state) => (comment_id) => {
-            return state.filter(comm => comm.referenceComment === comment_id);
+            return state.filter(comment => !comment.deleted).filter(comm => comm.referenceComment === comment_id).sort(
+                function(a, b) {
+                    let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
+                    if (keyA < keyB) return -1;
+                    if (keyA > keyB) return 1;
+                    return 0;
+                }
+            );
         },
         getNumberOfChildrenByComment: (state, getters) => (comment_id) => {
           const comments = getters.getCommentsByCommentId(comment_id);
           return comments.length + comments.map(c => getters.getNumberOfChildrenByComment(c.id)).reduce((pv, cv) => pv + cv, 0);
         },
         getDocumentComments: (state) => (document_id) => {
-            return state.filter(comment => !comment.deleted).filter(comm => comm.documentId === document_id && comm.referenceAnnotation === null && comm.referenceComment === null);
+            return state.filter(comment => !comment.deleted)
+                .filter(comm => comm.documentId === document_id && comm.referenceComment === null);
         }
     },
     mutations: {
-        SOCKET_commentUpdate: (state, data) => {
+        SOCKET_commentRefresh: (state, data) => {
             if (!Array.isArray(data)) {
                 data = [data];
             }
