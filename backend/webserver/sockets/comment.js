@@ -9,7 +9,7 @@ const {
 
 const Socket = require("../Socket.js");
 const {formatForExport: dbFormatForExport} = require("../../db/methods/comment");
-const {getUserId:dbGetUserId} = require("../../db/methods/user.js");
+const {getUserId: dbGetUserId} = require("../../db/methods/user.js");
 
 /**
  * Loading the comments through websocket
@@ -34,7 +34,14 @@ module.exports = class CommentSocket extends Socket {
 
         try {
             const origComment = await dbGetComment(data.commentId);
-            if (!this.checkUserAccess(origComment.userId)) {
+
+            if (origComment.userId === await dbGetUserId("Bot")) {
+                const parentComment = await dbGetComment(origComment.referenceComment);
+                if (!this.checkUserAccess(parentComment.userId)) {
+                    this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
+                    return;
+                }
+            } else if (!this.checkUserAccess(origComment.userId)) {
                 this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
                 return;
             }
@@ -42,7 +49,8 @@ module.exports = class CommentSocket extends Socket {
             const newComment = await dbUpdateComment(data);
             this.io.to("doc:" + newComment[1].documentId).emit("commentRefresh", await this.updateCreatorName(newComment[1].get({plain: true})));
 
-        } catch (e) {
+        } catch
+            (e) {
             this.logger.error("Could not update comment in database. Error: " + e);
 
             if (e.name === "InvalidCommentParameters") {
@@ -86,16 +94,14 @@ module.exports = class CommentSocket extends Socket {
         if (data.userId !== undefined) {
             if (data.userId === 'Bot') {
                 const parentComment = await dbGetComment(data.commentId);
-                if (!this.checkUserAccess(parentComment.userId))
-                {
-                   this.sendToast("You are not allowed to add a comment.", "Access denied", "danger");
-                return;
+                if (!this.checkUserAccess(parentComment.userId)) {
+                    this.sendToast("You are not allowed to add a comment.", "Access denied", "danger");
+                    return;
                 } else {
                     data.userId = await dbGetUserId("Bot");
                     data.draft = false;
                 }
-            } else if (!this.checkUserAccess(data.userId))
-            {
+            } else if (!this.checkUserAccess(data.userId)) {
                 this.sendToast("You are not allowed to add a comment.", "Access denied", "danger");
                 return;
             }
