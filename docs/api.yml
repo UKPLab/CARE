@@ -1,9 +1,9 @@
 asyncapi: 2.5.0
 info:
-  title: PEER Backend Websocket Description
-  version: 0.1.0
+  title: Backend Websocket Description
+  version: 1.0.0
   description: |
-    This is the websocket API for the PEER backend. It is used to communicate between frontend and backend.
+    This is the websocket backend API. It is used to communicate between frontend and backend.
 servers:
   broker:
     url: http://localhost:3001
@@ -15,13 +15,721 @@ channels:
     publish:
       message:
         oneOf:
-          - $ref: '#/components/messages/peerMessage'
+          - $ref: '#/components/messages/annotationAdd'
+          - $ref: '#/components/messages/annotationGet'
+          - $ref: '#/components/messages/annotationUpdate'
+          - $ref: '#/components/messages/annotationGetByDocument'
+          - $ref: '#/components/messages/annotationExportByDocument'
+          - $ref: '#/components/messages/collabAdd'
+          - $ref: '#/components/messages/collabUpdate'
+          - $ref: '#/components/messages/collabDelete'
+          - $ref: '#/components/messages/commentAdd'
+          - $ref: '#/components/messages/commentGet'
+          - $ref: '#/components/messages/commentUpdate'
+          - $ref: '#/components/messages/commentGetByDocument'
+          - $ref: '#/components/messages/commentExportByDocument'
+          - $ref: '#/components/messages/documentGetAll'
+          - $ref: '#/components/messages/logGetAll'
+          - $ref: '#/components/messages/logAdd'
+          - $ref: '#/components/messages/userGetData'
+          - $ref: '#/components/messages/tagGet'
+          - $ref: '#/components/messages/tagSetGet'
+          - $ref: '#/components/messages/tagSetGetAll'
+          - $ref: '#/components/messages/tagGetAll'
+          - $ref: '#/components/messages/tagGetAll'
+          - $ref: '#/components/messages/tagSetUpdate'
+          - $ref: '#/components/messages/tagSetPublish'
+          - $ref: '#/components/messages/tagSetDelete'
+          - $ref: '#/components/messages/collabSubscribe'
+          - $ref: '#/components/messages/collabUnsubscribe'
+          - $ref: '#/components/messages/stats'
+          - $ref: '#/components/messages/settingGetAll'
+          - $ref: '#/components/messages/settingSet'
+          - $ref: '#/components/messages/settingGetData'
+          - $ref: '#/components/messages/settingSave'
+          - $ref: '#/components/messages/serviceConnect'
+          - $ref: '#/components/messages/serviceDisconnect'
     subscribe:
       message:
         oneOf:
-          - $ref: '#/components/messages/peerMessage'
+          - $ref: '#/components/messages/annotationRefresh'
+          - $ref: '#/components/messages/annotationExport'
+          - $ref: '#/components/messages/collabRefresh'
+          - $ref: '#/components/messages/collabStart'
+          - $ref: '#/components/messages/commentRefresh'
+          - $ref: '#/components/messages/commentExport'
+          - $ref: '#/components/messages/userData'
+          - $ref: '#/components/messages/tagSetRefresh'
+          - $ref: '#/components/messages/tagRefresh'
+          - $ref: '#/components/messages/tagSetPublished'
+          - $ref: '#/components/messages/tagSetUpdated'
+          - $ref: '#/components/messages/settingRefresh'
+          - $ref: '#/components/messages/settingNavigation'
+          - $ref: '#/components/messages/settingData'
 
 components:
   messages:
-    peerMessage:
-      name: Example Message
+    annotationAdd:
+      name: annotationAdd
+      title: Add annotation
+      summary: Add annotation to a document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          tagId:
+            $ref: "#/components/schemas/tagId"
+          selectors:
+              type: object
+              description: selectors of the annotation
+    annotationGet:
+      name: annotationGet
+      title: Get annotation
+      summary: Get annotation by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          annotationId:
+            $ref: "#/components/schemas/annotationId"
+    annotationRefresh:
+      name: annotationRefresh
+      title: Update annotation
+      summary: Update annotation by Id
+      payload:
+        type: array
+        description: List of Annotation DB Objects
+    annotationUpdate:
+      name: annotationUpdate
+      title: Update annotation
+      summary: Update annotation by Id, Payload can have additional fields which wants to be set, Draft will be set to false!
+      payload:
+        type: object
+        description: Annotation DB Object
+        required:
+          - annotationId
+        properties:
+          annotationId:
+            $ref: "#/components/schemas/annotationId"
+          tagId:
+            $ref: "#/components/schemas/tagId"
+          deleted:
+            type: boolean
+            description: If the annotation is deleted
+    annotationGetByDocument:
+      name: annotationGetByDocument
+      title: Get annotation by document id
+      summary: Get annotation by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    annotationExportByDocument:
+      name: annotationExportByDocument
+      title: Export annotation by document id
+      summary: Export annotation by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    annotationExport:
+      name: annotationExport
+      title: Export annotation
+      summary: Export annotation by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the export was successful
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          objs:
+            type: array
+            description: List of Annotation DB Objects
+    collabAdd:
+      name: collabAdd
+      title: Add collaboration
+      summary: Add collaboration to a document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          targetType:
+            $ref: "#/components/schemas/collabTargetType"
+          targetId:
+            $ref: "#/components/schemas/collabTargetId"
+          collabHash:
+            $ref: "#/components/schemas/collabHash"
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    collabUpdate:
+      name: collabUpdate
+      title: Update collaboration
+      summary: Update collaboration by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          collabId:
+            $ref: "#/components/schemas/collabId"
+    collabDelete:
+      name: collabDelete
+      title: Delete collaboration
+      summary: Delete collaboration by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          collabId:
+            $ref: "#/components/schemas/collabId"
+    collabRefresh:
+      name: collabRefresh
+      title: Refresh collaboration
+      summary: Refresh collaboration by Id
+      payload:
+        type: object
+        description: Collaboration DB Object
+    collabStart:
+      name: collabStart
+      title: Start collaboration indicator
+      summary: Start collaboration indicator with hash
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          collabId:
+            $ref: "#/components/schemas/collabId"
+          collabHash:
+            $ref: "#/components/schemas/collabHash"
+    commentAdd:
+      name: commentAdd
+      title: Add comment
+      summary: Add comment to a document
+      payload:
+        type: object
+        description: Payload object
+        required:
+          - documentId
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          annotationId:
+            $ref: "#/components/schemas/annotationId"
+          commentId:
+            $ref: "#/components/schemas/commentId"
+    commentGet:
+      name: commentGet
+      title: Get comment
+      summary: Get comment by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          commentId:
+            $ref: "#/components/schemas/commentId"
+    commentUpdate:
+      name: commentUpdate
+      title: Update comment
+      summary: Update comment by Id
+      payload:
+        type: object
+        description: Payload object
+        required:
+          - commentId
+        properties:
+          commentId:
+            $ref: "#/components/schemas/commentId"
+          text:
+            type: string
+            description: Text of the comment
+          deleted:
+            type: boolean
+            description: If the comment is deleted
+          tags:
+            type: array
+            description: List of tags
+            items:
+              type: string
+    commentGetByDocument:
+      name: commentGetByDocument
+      title: Get comment by document id
+      summary: Get comment by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    commentExportByDocument:
+      name: commentExportByDocument
+      title: Export comment by document id
+      summary: Export comment by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    commentExport:
+      name: commentExport
+      title: Export comment
+      summary: Export comment by document id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the export was successful
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          objs:
+            type: array
+            description: List of Comment DB Objects
+    commentRefresh:
+      name: commentRefresh
+      title: Refresh comments
+      summary: Refresh comment by Id
+      payload:
+        type: array
+        description: List of DB Comment Objects
+    documentGetAll:
+      name: documentGetAll
+      title: Get all documents available by user
+      summary: Get all documents (only for admin) otherwise selected by user
+    logGetAll:
+      name: logGetAll
+      title: Get all logs
+      summary: Get all logs (only for admin)
+    logAdd:
+      name: logAdd
+      title: Add log
+      summary: Add log (Env-Var LOGGING_ALLOW_FRONTEND must be set to "true")
+      payload:
+        type: object
+        description: Payload object
+        required:
+          - level
+          - message
+        properties:
+          level:
+            type: string
+            description: Log level
+          message:
+            type: string
+            description: Log message
+          meta:
+            type: object
+            description: Additional meta data
+    userGetData:
+      name: userGetData
+      title: Get all users
+      summary: Get all users (only for admin)
+    userData:
+      name: userData
+      title: All user data
+      summary: Update all user data
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the retrieving was successful
+          users:
+            type: array
+            description: List of User DB Objects
+    tagGet:
+      name: tagGet
+      title: Get tag
+      summary: Get tag by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          tagId:
+            $ref: "#/components/schemas/tagId"
+    tagSetGet:
+      name: tagSetGet
+      title: Get tag set
+      summary: Get tag set by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          tagSetId:
+            $ref: "#/components/schemas/tagSetId"
+    tagSetGetAll:
+      name: tagSetGetAll
+      title: Get all tag sets
+      summary: Get all tag sets (only for admin) otherwise only the tag sets of the user
+    tagGetAll:
+      name: tagGetAll
+      title: Get all tags
+      summary: Get all tags (only for admin) otherwise only the tags of the user
+    tagSetUpdate:
+      name: tagSetUpdate
+      title: Save tag set
+      summary: Save tag set (if tagSetId is set, the tag set will be updated)
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          tagSetId:
+            $ref: "#/components/schemas/tagSetId"
+          tagSet:
+            type: object
+            description: Tag Set DB Object to overwrite
+          tags:
+            type: array
+            description: List of tags
+            items:
+              type: object
+              description: Tag DB Object to overwrite
+    tagSetPublish:
+      name: tagSetPublish
+      title: Publish tag set
+      summary: Publish tag set by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          tagSetId:
+            $ref: "#/components/schemas/tagSetId"
+    tagSetDelete:
+      name: tagSetDelete
+      title: Delete tag set
+      summary: Delete tag set by Id
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          tagSetId:
+            $ref: "#/components/schemas/tagSetId"
+    tagSetRefresh:
+      name: tagSetRefresh
+      title: Refresh tag sets
+      summary: Refresh tag sets
+      payload:
+        type: array
+        description: List of DB Tag Set Objects
+    tagRefresh:
+      name: tagRefresh
+      title: Refresh tags
+      summary: Refresh tags
+      payload:
+        type: array
+        description: List of DB Tag Objects
+    tagSetUpdated:
+      name: tagSetUpdated
+      title: Saved tag set
+      summary: Info about the saved tag set after tagSetSave
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the saving was successful
+          message:
+            type: string
+            description: Message if the saving was not successful
+    tagSetPublished:
+      name: tagSetPublished
+      title: Published tag set
+      summary: Info about the published tag set after tagSetPublish
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the publishing was successful
+          message:
+            type: string
+            description: Message if the publishing was not successful
+    collabSubscribe:
+      name: collabSubscribe
+      title: Subscribe to collaborations
+      summary: Subscribe to collaboration in an document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    collabUnsubscribe:
+      name: collabUnsubscribe
+      title: Unsubscribe from collaborations
+      summary: Unsubscribe from collaboration in an document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    stats:
+      name: stats
+      title: Add stats
+      summary: Add stats entry
+      payload:
+        type: object
+        description: Payload object
+        required:
+        - action
+        properties:
+          action:
+            type: string
+            description: Action name
+          data:
+            type: object
+            description: Additional data
+    settingSave:
+      name: settingSave
+      title: Save setting
+      summary: Save setting
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          key:
+            type: string
+            description: Setting key
+          value:
+            type: string
+            description: Setting value
+    settingGetData:
+      name: settingGetData
+      title: Get all settings
+      summary: Get all settings (only for admin)
+    settingData:
+      name: settingData
+      title: All settings
+      summary: All settings
+      payload:
+        type: array
+        description: List of DB settings objects
+    settingSet:
+      name: settingSet
+      title: Set setting
+      summary: Set setting as user (overwrites global setting)
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          key:
+            type: string
+            description: Setting key
+          value:
+            type: string
+            description: Setting value
+    settingGetAll:
+      name: settingGetAll
+      title: Get all settings
+      summary: Get all settings overwritten by user settings
+    settingNavigation:
+      name: settingNavigation
+      title: Get navigation settings
+      summary: Get navigation settings
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          groups:
+            type: array
+            description: List of navigation groups
+            items:
+              type: object
+              description: Navigation group
+          elements:
+            type: array
+            description: List of navigation elements
+            items:
+              type: object
+              description: Navigation element
+    settingRefresh:
+      name: settingRefresh
+      title: Refresh settings
+      summary: Refresh settings
+      payload:
+        type: array
+        description: List of DB settings objects
+    serviceConnect:
+      name: serviceConnect
+      title: Connect service
+      summary: Connect client to service
+      payload:
+        type: object
+        description: Payload object
+        required:
+          - service
+        properties:
+          service:
+            type: string
+            description: Service name
+          data:
+            type: object
+            description: Additional data
+    serviceDisconnect:
+      name: serviceDisconnect
+      title: Disconnect service
+      summary: Disconnect client from service
+      payload:
+        type: object
+        description: Payload object
+        required:
+          - service
+        properties:
+          service:
+            type: string
+            description: Service name
+          data:
+            type: object
+            description: Additional data
+    documentRefresh:
+      name: documentRefresh
+      title: Refresh document
+      summary: Refresh document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documents:
+            type: array
+            description: List of DB document objects
+    documentDelete:
+      name: documentDelete
+      title: Delete document
+      summary: Delete document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    documentUpdate:
+      name: documentUpdate
+      title: Update document
+      summary: Update document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+          document:
+            type: object
+            description: Document DB Object to overwrite
+    uploadFile:
+      name: uploadFile
+      title: Upload file
+      summary: Upload file
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          type:
+            type: string
+            description: File type (document)
+          file:
+            type: object
+            description: File object
+    uploadResult:
+      name: uploadResult
+      title: Upload result
+      summary: Upload result
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the upload was successful
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    documentGet:
+      name: documentGet
+      title: Get document
+      summary: Get document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    documentFile:
+      name: documentFile
+      title: Receive document file
+      summary: Receive requested document file
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          document:
+            type: object
+            description: Document DB Object
+          file:
+            type: object
+            description: File object
+    documentPublish:
+      name: documentPublish
+      title: Publish document
+      summary: Publish document
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          documentId:
+            $ref: "#/components/schemas/documentId"
+    documentPublished:
+      name: documentPublished
+      title: Published document
+      summary: Info about the published document after documentPublish
+      payload:
+        type: object
+        description: Payload object
+        properties:
+          success:
+            type: boolean
+            description: If the publishing was successful
+          message:
+            type: string
+            description: Message if the publishing was not successful
+  schemas:
+    documentId:
+      type: integer
+      description: id of the document
+    tagId:
+      type: integer
+      description: id of the tag
+    tagSetId:
+      type: integer
+      description: id of the tag set
+    annotationId:
+      type: integer
+      description: id of the annotation
+    commentId:
+      type: integer
+      description: id of the comment
+    collabId:
+      type: integer
+      description: id of the collaboration
+    collabTargetType:
+      type: string
+      description: type of the collaboration target
+    collabTargetId:
+      type: integer
+      description: id of the collaboration target
+    collabHash:
+      type: string
+      description: hash of the collaboration

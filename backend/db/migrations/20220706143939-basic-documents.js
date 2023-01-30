@@ -9,6 +9,7 @@ module.exports = {
                 name: "Showcase Document",
                 hash: "8852a746-360e-4c31-add2-4d1c75bfb96d",
                 userId: guestId,
+                public: false,
                 updatedAt: new Date(),
                 createdAt: new Date(),
                 deleted: false

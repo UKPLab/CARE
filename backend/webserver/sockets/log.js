@@ -1,4 +1,6 @@
 const Socket = require("../Socket.js");
+const {getAll:dbGetAll} = require("../../db/methods/log.js");
+
 
 /**
  * Handle logs through websocket
@@ -7,9 +9,10 @@ const Socket = require("../Socket.js");
  * @type {LoggerSocket}
  */
 module.exports = class LoggerSocket extends Socket {
+
     init() {
 
-        this.socket.on("log", (data) => {
+        this.socket.on("logAdd", (data) => {
             if (process.env.LOGGING_ALLOW_FRONTEND === 'true') {
                 try {
                     if (data.meta) {
@@ -22,6 +25,18 @@ module.exports = class LoggerSocket extends Socket {
                 }
             }
         });
+
+        this.socket.on("logGetAll", async (data) => {
+            try {
+                if (this.isAdmin()) {
+                    this.socket.emit("logAll", await dbGetAll(data['limit']));
+                }
+            } catch(err) {
+                this.logger.error(err);
+            }
+        });
+
+
 
     }
 }

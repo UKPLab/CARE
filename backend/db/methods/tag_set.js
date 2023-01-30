@@ -37,11 +37,11 @@ exports.add = async function add(tagset) {
     }
 }
 
-exports.update = async function update(tagset) {
+exports.update = async function update(tagSetId, tagSetData) {
     try {
-        return await TagSet.update(subselectFieldsForDB(tagset, ["name", "description"]), {
+        return await TagSet.update(subselectFieldsForDB(tagSetData, ["name", "description"]), {
             where: {
-                id: tagset["id"]
+                id: tagSetId
             },
             returning: true,
             plain: true

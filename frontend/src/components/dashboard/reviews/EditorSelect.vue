@@ -23,7 +23,7 @@
 Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import Modal from "../../basic/Modal.vue";
+import Modal from "@/basic/Modal.vue";
 import {mapGetters} from "vuex";
 
 export default {
@@ -37,7 +37,7 @@ export default {
     }
   },
   mounted() {
-    this.$socket.emit("getAllUserData");
+    this.$socket.emit("userGetData");
   },
   methods: {
     ...mapGetters({items: 'admin/getUsers'}),

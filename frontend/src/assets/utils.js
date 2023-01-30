@@ -11,12 +11,16 @@ export function omitObjectAttributeSubset(obj, keys) {
     return Object.fromEntries(Object.entries(obj).filter(([key]) => !keys.includes(key)));
 }
 
+export function overrideObjectAttributes(obj_orig, obj_over) {
+    return Object.fromEntries(Object.entries(obj_orig).map(([key, value]) => [key, key in obj_over ? obj_over[key] : value]));
+}
+
 export function objectsToCSV(objs) {
     return Papa.unparse(objs);
 }
 
 export function objectsToJSON(objs) {
-    return JSON.stringify(objs);
+    return JSON.stringify(objs, null, 2);
 }
 
 export function objectsToTXT(objs) {

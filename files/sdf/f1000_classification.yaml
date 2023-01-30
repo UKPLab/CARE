@@ -1,0 +1,22 @@
+name: f1000_classification
+description: This is a classification task
+pipeline:
+  task: text-classification
+  tokenizer: allenai/scibert_scivocab_uncased
+  model: checkpoint-2500
+input:
+  data:
+    text:
+      type: string
+      required: true
+      description: The text to be classified
+  example: {text: "This restaurant is awesome!"}
+output:
+  data:
+    score:
+      type: float
+      description: The score of the classification
+    label:
+      type: string
+      description: The label of the classification
+  example: {score: 0.9, label: "Other"}

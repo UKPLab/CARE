@@ -19,7 +19,7 @@ module.exports = {
             text: {
                 type: Sequelize.STRING(1024)
             },
-            tag: {
+            tagId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "tag",

@@ -27,3 +27,12 @@ exports.add = async function add(info) {
     }
 
 }
+
+exports.getAll = async function getAll(limit = 100) {
+    return await Log.findAll({
+        order: [
+            ['timestamp', 'DESC']
+        ],
+        limit: limit
+    });
+}

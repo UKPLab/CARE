@@ -1,70 +1,92 @@
 <template>
-  <SideCard :shake="shake">
+  <SideCard :loading="loading()" :shake="shake">
 
     <template v-slot:header>
       <div class="row">
         <div class="col">
-          {{ annotation.creator_name }}
-          <span v-if="showEditByCollab">
-            <LoadIcon :size="12 " class="fading" iconName="IconPencilFill"></LoadIcon>
-          </span>
-
+          {{ comment.creator_name }}
+          <Collaboration ref="collab"
+                         target-type="comment"
+                         :target-id="comment_id"
+                         :document-id="document_id"
+                         @collabStatus="toEditMode"></Collaboration>
         </div>
         <div class="col text-end">
-          {{ new Date(annotation.updatedAt).toLocaleDateString() }}
+          <span v-if="annotation">
+            {{ new Date(annotation.updatedAt).toLocaleDateString() }}
+          </span>
+          <span v-else>
+            {{ new Date(comment.updatedAt).toLocaleDateString() }}
+          </span>
         </div>
       </div>
     </template>
 
     <template v-slot:body>
-      <div class="blockquote card-text" :style="'border-color:#' + color" data-placement="top" data-toogle="tooltip"
+      <div v-if="annotation_id" class="blockquote card-text" :style="'border-color:#' + color" data-placement="top"
+           data-toogle="tooltip"
            :title="tagName" @click="scrollTo(annotation_id)">
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
-      <CommentCard ref="main_comment" @saveCard="save()" :comment_id="comment_id" :edit="editedByMyself"/>
+      <CommentCard ref="main_comment" @saveCard="save()" :level=0 :comment_id="comment_id" :edit="editedByMyself"
+                   :document_id="document_id"/>
     </template>
 
-    <template v-slot:footer v-if="annotation.userId === user_id">
+    <template v-slot:footer v-if="comment.userId === user_id">
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
           <div class="col text-end">
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Save"
                     type="button" v-on:click="save()">
-              <LoadIcon :size="16" class="danger" iconName="IconSaveFill"></LoadIcon>
+              <LoadIcon :size="16" class="danger" iconName="save-fill"></LoadIcon>
               <span class="visually-hidden">Edit</span>
             </button>
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Cancel"
                     type="button" v-on:click="cancel()">
-              <LoadIcon :size="16" iconName="IconXSquareFill"></LoadIcon>
+              <LoadIcon :size="16" iconName="x-square-fill"></LoadIcon>
               <span class="visually-hidden">Edit</span>
             </button>
           </div>
         </div>
         <div v-else class="row">
           <div class="col">
-            <span v-if="numberReplies > 0" class="replies">Show Replies ({{ numberReplies }})</span>
+            <button v-if="numberReplies > 0" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
+                    type="button" v-on:click="showReplies = !showReplies">
+              <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
+              <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
+            </button>
           </div>
           <div class="col text-end">
-            <!--<button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
-                    type="button" v-on:click="reply()">
-              <LoadIcon :size="16" iconName="IconReplyFill"></LoadIcon>
-              <span class="visually-hidden">Edit</span>
-            </button>-->
+            <button v-if="settingResponse" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
+                    type="button" v-on:click="$refs.main_comment.reply()">
+              <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
+              <span class="visually-hidden">Reply</span>
+            </button>
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
                     type="button" v-on:click="edit()">
-              <LoadIcon :size="16" iconName="IconPencilSquare"></LoadIcon>
+              <LoadIcon :size="16" iconName="pencil-square"></LoadIcon>
               <span class="visually-hidden">Edit</span>
             </button>
             <button class="btn btn-sm" data-placement="top" data-toggle="tooltip"
                     title="Delete"
                     type="button" v-on:click="remove()">
-              <LoadIcon :size="16" iconName="IconTrash3"></LoadIcon>
+              <LoadIcon :size="16" iconName="trash3"></LoadIcon>
               <span class="visually-hidden">Delete</span>
             </button>
           </div>
         </div>
       </div>
     </template>
+
+    <template v-slot:thread>
+      <div v-if="showReplies" class="d-grid gap-1 my-2">
+        <span v-for="c in childComments" :key="c.id">
+          <CommentCard :document_id="document_id" :level=1 :comment_id="c.id">
+        </CommentCard>
+        </span>
+      </div>
+    </template>
+
   </SideCard>
 </template>
 
@@ -77,90 +99,71 @@ Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
 
-import {mapActions, mapGetters} from 'vuex';
 import SideCard from "./SideCard.vue";
 import CommentCard from "./CommentCard.vue";
-import LoadIcon from "../../../icons/LoadIcon.vue";
-import {v4 as uuidv4} from 'uuid';
+import LoadIcon from "@/icons/LoadIcon.vue";
+import Collaboration from "@/basic/Collaboration.vue"
 
 
 export default {
   name: "AnnoCard",
-  components: {SideCard, CommentCard, LoadIcon},
-  props: ["annotation_id", "readonly", "document_id"],
+  components: {Collaboration, SideCard, CommentCard, LoadIcon},
+  props: ["comment_id", "readonly", "document_id"],
   data: function () {
     return {
       shake: false,
-      edit_mode: false,
-      collab_updater: null,
-      collab_id: null,
-      showEditByCollab: false,
+      showReplies: false,
       showEditTimeout: null,
-    }
-  },
-  sockets: {
-    start_collab: function (data) {
-      if (data.id === this.collab_id) {
-        this.edit_mode = true;
-        if (this.collab_updater !== null) {
-          clearInterval(this.collab_updater);
-        }
-        this.collab_updater = setInterval(() => {
-          this.update_collab();
-        }, 1000);
-      }
+      edit_mode: false
     }
   },
   mounted() {
-    if (this.annotation.draft) {
+    if (this.comment.draft) {
       //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
-      setTimeout(() => this.$emit("focus", this.annotation.id), 100);
+      setTimeout(() => this.$emit("focus", this.comment_id), 100);
       this.shake = true;
-    }
-  },
-  unmounted() {
-    if (this.edit_mode) {
-      this.remove_collab();
-    }
-  },
-  watch: {
-    collaborations(t) {
-      if (t.length > 0) {
-        this.showEditByCollab = true;
-        if (this.showEditTimeout !== null) {
-          clearTimeout(this.showEditTimeout);
-        }
-        this.showEditTimeout = setTimeout(() => {
-          this.showEditByCollab = false;
-          this.showEditTimeout = null;
-        }, 1000);
-      }
+      setTimeout(() => this.shake = false, 1500);
     }
   },
   computed: {
     user_id() {
       return this.$store.getters["auth/getUserId"];
     },
+    settingResponse() {
+      return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
+    },
     annotation() {
-      return this.$store.getters["anno/getAnnotation"](this.annotation_id);
+      if (this.annotation_id)
+        console.log(this.annotation_id);
+      console.log(this.$store.getters["anno/getAnnotation"](this.annotation_id));
+        return this.$store.getters["anno/getAnnotation"](this.annotation_id);
     },
-    collaborations() {
-      return this.$store.getters["collab/annotations"](this.annotation_id);
-    },
-    comment_id() {
-      return this.$store.getters["comment/getCommentByAnnotation"](this.annotation_id)["id"];
+    annotation_id() {
+      const annotationId = this.comment.referenceAnnotation;
+      console.log("annnoasajf")
+      console.log(annotationId);
+      if (annotationId)
+        return annotationId;
     },
     editedByMyself() {
-      return this.annotation.draft || this.edit_mode;
+      return this.comment.draft || this.edit_mode;
     },
     numberReplies() {
       return this.$store.getters["comment/getNumberOfChildrenByComment"](this.comment_id);
     },
+    childComments() {
+      return this.$store.getters["comment/getCommentsByCommentId"](this.comment_id);
+    },
+    comment() {
+      return this.$store.getters['comment/getComment'](this.comment_id);
+    },
     color() {
-      return this.$store.getters['tag/getColor'](this.annotation.tag);
+      if (this.annotation_id)
+        return this.$store.getters['tag/getColor'](this.annotation.tagId);
     },
     tagName() {
-      return this.$store.getters['tag/getTag'](this.annotation.tag).name;
+      if (this.annotation_id)
+        return this.$store.getters['tag/getTag'](this.annotation.tagId).name;
     },
 
   },
@@ -181,62 +184,71 @@ export default {
         return text;
       }
     },
+    loading() {
+      if (this.annotation_id && !this.annotation) {
+        return true;
+      }
+      return false;
+    },
     scrollTo(anno_id) {
       this.eventBus.emit('pdfScroll', anno_id);
     },
     save() {
-      this.$socket.emit('updateAnnotation', {
-        "id": this.annotation.id,
-        "tags": JSON.stringify(this.annotation.tags),
-      });
-      this.$refs.main_comment.save();
-      this.remove_collab();
-    },
-    cancel() {
-      if (this.annotation.draft) {
-        this.remove();
-      } else {
-        this.$socket.emit('getAnnotation', {
-          "id": this.annotation.id,
-          "documentId": this.document_id
+      if (this.annotation_id) {
+        this.$socket.emit('annotationUpdate', {
+          "annotationId": this.annotation.id,
+          //TODO tags is not existing anymore in annotation table
+          "tagId": JSON.stringify(this.annotation.tagId),
         });
       }
-      this.remove_collab();
+
+      this.$refs.main_comment.save();
+      this.$refs.collab.removeCollab();
+    },
+    cancel() {
+      if (this.annotation_id) {
+
+        if (this.annotation.draft) {
+          this.remove();
+        } else {
+          this.$socket.emit('annotationGet', {
+            "annotationId": this.annotation.id,
+            "documentId": this.document_id
+          });
+        }
+      } else {
+        if (this.comment.draft) {
+          this.remove();
+        } else {
+          this.$socket.emit('commentGet', {
+            "commentId": this.comment.id,
+          });
+        }
+      }
+      this.$refs.collab.removeCollab();
       this.edit_mode = null;
     },
     remove() {
-      this.$socket.emit('updateAnnotation', {
-        "id": this.annotation.id,
-        "tags": JSON.stringify(this.annotation.tags),
-        "deleted": true
-      });
+      if (this.annotation_id) {
+        this.$socket.emit('annotationUpdate', {
+          "annotationId": this.annotation.id,
+          //TODO tags is not existing anymore in annotation table
+          "tagId": JSON.stringify(this.annotation.tagId),
+          "deleted": true
+        });
+      } else {
+        this.$socket.emit('commentUpdate', {
+          "commentId": this.comment.id,
+          "deleted": true
+        });
+      }
     },
     edit() {
-      this.start_collab();
+      this.$refs.collab.startCollab();
     },
-    start_collab() {
-      this.collab_id = uuidv4();
-      this.$socket.emit("add_collab",
-          {
-            type: "annotation",
-            doc_id: this.document_id,
-            annotation_id: this.annotation_id,
-            id: this.collab_id
-          });
-    },
-    update_collab() {
-      this.$socket.emit("update_collab", {id: this.collab_id});
-    },
-    remove_collab() {
-      this.$socket.emit("remove_collab", {id: this.collab_id});
-      if (this.collab_updater !== null) {
-        clearInterval(this.collab_updater);
-        this.collab_updater = null;
-      }
-      this.edit_mode = false;
-      this.collab_id = null;
-    },
-
+    toEditMode(status) {
+      this.edit_mode = status;
+    }
   }
 }
 </script>
@@ -259,34 +271,9 @@ export default {
 }
 
 
-#text {
-  color: #4d4d4d;
-  font-style: italic;
-  font-size: small;
-  cursor: pointer;
-  display: block;
-  padding: 0;
-}
-
-#text:hover {
-  color: #000000;
-}
-
-#createButtons {
-  padding-bottom: 6px;
-}
-
 .replies {
   font-size: smaller;
   color: #929292;
-}
-
-#pageNoteFlag {
-  text-align: left
-}
-
-.pageNoteBody {
-  background-color: rgba(0, 0, 0, 0.05);
 }
 
 @keyframes flickerAnimation {

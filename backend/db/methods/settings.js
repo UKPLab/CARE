@@ -25,6 +25,21 @@ exports.getSettings = async function getSettings() {
     }
 }
 
+exports.getSetting = async function getSetting(key) {
+    try {
+        return (await Setting.findOne({
+            where: {
+                key: key,
+                deleted: false,
+            }, raw: true
+        })).value;
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        }
+    }
+}
+
 
 exports.getUserSettings = async function getUserSettings(user_id) {
     try {
@@ -32,6 +47,22 @@ exports.getUserSettings = async function getUserSettings(user_id) {
             where: {
                 deleted: false,
                 userId: user_id
+            }
+        });
+    } catch (err) {
+        if (isInternalDatabaseError(err)) {
+            throw InternalDatabaseError(err);
+        }
+    }
+}
+
+exports.setSetting = async function setSetting(key, value) {
+    try {
+        return await Setting.update({
+            value: value
+        }, {
+            where: {
+                key: key
             }
         });
     } catch (err) {

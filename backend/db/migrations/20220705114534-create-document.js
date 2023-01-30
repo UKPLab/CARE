@@ -13,6 +13,11 @@ module.exports = {
                     model: "user", key: "id"
                 }
             },
+            public: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: false
+            },
             deleted: {
                 type: Sequelize.BOOLEAN,
                 defaultValue: false

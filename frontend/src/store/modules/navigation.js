@@ -47,7 +47,7 @@ export default {
 
     },
     mutations: {
-        SOCKET_navigation: (state, message) => {
+        SOCKET_settingNavigation: (state, message) => {
             state['groups'] = message.groups;
             state['elements'] = message.elements;
 

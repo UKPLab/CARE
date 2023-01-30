@@ -15,6 +15,7 @@
         </span>
       </div>
 
+
       <div class="collapse-sidebar-container list-group-item-action list-group-item"
            @click="toggleSidebar()" title="Toggle sidebar">
         <span class="arrow-toggle sidebar-icon">
@@ -39,7 +40,7 @@ Co-Author: Dennis Zyska (zyska@ukp...)
 Source: left toggleable toolbar - adapted simple sidebar found at https://github.com/StartBootstrap/startbootstrap-simple-sidebar
 */
 
-import LoadIcon from "../../icons/LoadIcon.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Sidebar",
