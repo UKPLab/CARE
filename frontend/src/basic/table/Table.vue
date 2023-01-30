@@ -48,7 +48,7 @@
     </tr>
     </tbody>
   </table>
-  <Pagination v-if="options && options.pagination" :pages="pages" :current-page="pages" />
+  <Pagination v-if="options && options.pagination" :pages="pages" :start-page="currentPage" @pageChange="(x) => this.currentPage = x"/>
 </template>
 
 <script>
@@ -62,7 +62,7 @@ import LoadIcon from "@/icons/LoadIcon.vue";
 export default {
   name: "Table.vue",
   components: {Pagination, TIcon, TBadge, TButtonGroup, TButton, LoadIcon},
-  emits: ["action"],
+  emits: ["action", "rowSelection"],
   props: {
     data: {
       type: Array,
