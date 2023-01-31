@@ -34,7 +34,7 @@ export default {
       id: 0,
       data: {
         name: "",
-        timeLimit: true,
+        timeLimit: 0,
       },
       fields: [
         {
@@ -46,7 +46,16 @@ export default {
         {
           name: "timeLimit",
           label: "Enable time limitation",
-          type: "checkbox",
+          type: "switch",
+          size: 4,
+          help: "If enabled, the user study will be automatically closed after the specified time limit.",
+          required: false,
+        },
+        {
+          name: "time",
+          type: "text",
+          label: "Time Limit (in minutes)",
+          size: 12,
           required: false,
         }
       ],
