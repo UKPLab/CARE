@@ -104,6 +104,12 @@ const settings = [
         value: 15000,
         type: "integer",
         description: "The timeout for the NLP Service request."
+    },
+    {
+        key: "app.study.enabled",
+        value: "true",
+        type: "boolean",
+        description: "Whether to enable the user study functionality"
     }
 ]
 
