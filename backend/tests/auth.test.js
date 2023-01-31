@@ -3,10 +3,10 @@ const Server = require("../webserver/Server.js");
 
 describe('Test Login', () => {
 
-    beforeAll(() => {
+    beforeAll(async () => {
         this.server = new Server();
         this.server.start(3020);
-
+        await new Promise(resolve => setTimeout(() => resolve(), 500));
     });
 
     /**
