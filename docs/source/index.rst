@@ -20,17 +20,18 @@ Welcome to the CARE project -- contribute towards AI-assisted collaborative read
    getting_started/architecture
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 1
    :caption: For Developers
 
    for_developers/before_you_start
 
    for_developers/basics/basics
    for_developers/advanced/advanced
+   for_developers/extending/extending
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: For Researchers
 
    for_researchers/basics

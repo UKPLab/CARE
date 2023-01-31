@@ -17,7 +17,4 @@ Architectural Paradigms
 Communication Paradigms
 -----------------------
 naming conventions
-
-
-
-~~~~~~~~
+keeping services lean and simple
