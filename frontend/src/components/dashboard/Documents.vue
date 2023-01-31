@@ -1,4 +1,6 @@
 <template>
+  <PublishModal ref="publishModal"></PublishModal>
+  <StudyCoordinatorModal ref="studyCoordinator"></StudyCoordinatorModal>
   <Card title="Documents">
     <template v-slot:headerElements>
       <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAll()" title="Export">
@@ -32,10 +34,11 @@ import ExportAnnos from "@/basic/download/ExportAnnos.vue";
 import Card from "@/basic/Card.vue";
 import Table from "@/basic/table/Table.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
+import StudyCoordinatorModal from "./documents/StudyCoordinatorModal.vue";
 
 export default {
   name: "Document",
-  components: {Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal},
+  components: {StudyCoordinatorModal, Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal},
   data() {
     return {
       options: {
@@ -121,8 +124,24 @@ export default {
           onClick: this.renameDoc,
         },  */
         ];
+        if (this.studiesEnabled) {
+          d.manage.push({
+            icon: "person-workspace",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
+              }
+            },
+            title: "Open study coordinator...",
+            action: "studyCoordinator",
+          });
+        }
         return d;
       });
+    },
+    studiesEnabled() {
+      return this.$store.getters["settings/getValue"]('app.study.enabled') === "true";
     },
     ...mapGetters({reviews: 'user/getReviews'})
   },
@@ -136,6 +155,9 @@ export default {
       }
       if (data.action === "publicDoc") {
         this.$refs.publishModal.open(data.params.id);
+      }
+      if (data.action === "studyCoordinator") {
+        this.studyCoordinator(data.params);
       }
     },
     load() {
@@ -191,6 +213,9 @@ export default {
       const doc_ids = this.docs.map(i => i.id);
       this.$refs.export.requestExport(doc_ids, "json");
     },
+    studyCoordinator(row) {
+      this.$refs.studyCoordinator.open(row.id);
+    }
   }
 }
 </script>
