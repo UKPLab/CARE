@@ -4,8 +4,7 @@ Before You Start
 Before you start your development process within the CARE tool, please read this quick overview
 on prerequisites and your building options.
 
-If you want to contribute code to the CARE community, please make sure that you adhere to the
-:doc:`Coding Conventions and Development Paradigms <../for_developers/conventions>`.
+If you just want to get started real quick, check out the `devbuild`_ below.
 
 
 
@@ -87,6 +86,7 @@ according to your needs.
 
 |
 
+.. _devbuild:
 Development Build
 -----------------
 
