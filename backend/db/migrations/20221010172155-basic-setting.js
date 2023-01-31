@@ -99,6 +99,12 @@ const settings = [
         type: "boolean",
         description: "Whether to use the fallback NLP service if the main service is not available, files on local file system are used as fallback and return examples"
     },
+    {
+        key: "annotator.nlp.request.timeout",
+        value: 15000,
+        type: "integer",
+        description: "The timeout for the NLP Service request."
+    }
 ]
 
 module.exports = {

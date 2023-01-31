@@ -10,7 +10,6 @@
                          :target-id="comment_id"
                          target-type="comment"
                          @collabStatus="toEditMode"></Collaboration>
-          <IconLoading v-if="summarizeRequest" :loading="summarizeRequest" size="12"></IconLoading>
 
         </div>
         <div class="col text-end">
@@ -35,7 +34,7 @@
                    @saveCard="save()"/>
     </template>
 
-    <template  v-slot:footer>
+    <template v-slot:footer>
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
           <div class="col text-end">
@@ -65,13 +64,17 @@
               <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
               <span class="visually-hidden">Reply</span>
             </button>
-            <button v-if="summarizationAvailable && comment.userId === user_id" :disabled="summarizeRequest" class="btn btn-sm" data-placement="top"
-                    data-toggle="tooltip" title="Summarize"
-                    type="button" v-on:click="summarize()">
-              <LoadIcon :size="16" iconName="file-text"></LoadIcon>
-              <span class="visually-hidden">Summarize</span>
-            </button>
-            <button v-if="comment.userId === user_id" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Edit"
+            <NLPService
+                v-if="summarizationAvailable && comment.userId === user_id"
+                :skill="summarizationSkillName"
+                :data="summarizationRequestData"
+                icon-name="file-text"
+                title="Summarize"
+                type="button"
+                @response="summarizeResponse"
+            ></NLPService>
+            <button v-if="comment.userId === user_id" class="btn btn-sm" data-placement="top" data-toggle="tooltip"
+                    title="Edit"
                     type="button" v-on:click="edit()">
               <LoadIcon :size="16" iconName="pencil-square"></LoadIcon>
               <span class="visually-hidden">Edit</span>
@@ -113,11 +116,12 @@ import CommentCard from "./CommentCard.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 import Collaboration from "@/basic/Collaboration.vue"
 import IconLoading from "@/icons/IconLoading.vue"
-import {v4 as uuidv4} from "uuid";
+
+import NLPService from "@/basic/NLPService.vue";
 
 export default {
   name: "AnnoCard",
-  components: {Collaboration, SideCard, CommentCard, LoadIcon, IconLoading},
+  components: {NLPService, Collaboration, SideCard, CommentCard, LoadIcon, IconLoading},
   props: ["comment_id", "readonly", "document_id"],
   data: function () {
     return {
@@ -125,24 +129,7 @@ export default {
       showReplies: false,
       showEditTimeout: null,
       edit_mode: false,
-      summarizeRequest: null,
     }
-  },
-  watch: {
-    nlpResults: function (results) {
-      if (this.summarizeRequest &&
-          this.summarizeRequest in results
-      ) {
-        this.$socket.emit('commentAdd', {
-          "documentId": this.document_id,
-          "commentId": this.comment_id,
-          "text": "Summarization: " + results[this.summarizeRequest][0]['summary_text'],
-          "userId": "Bot"
-        });
-        this.summarizeRequest = null;
-        this.showReplies = !this.showReplies;
-      }
-    },
   },
   mounted() {
     if (this.comment.draft) {
@@ -187,36 +174,35 @@ export default {
       if (this.annotation_id)
         return this.$store.getters['tag/getTag'](this.annotation.tagId).name;
     },
-    settingSummarizationMinLength() {
+    summarizationMinLength() {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.minLength'));
     },
-    settingSummarizationMaxLength() {
+    summarizationMaxLength() {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.maxLength'));
     },
-    settingSummarizationAnnoLength() {
+    summarizationRequestData() {
+      return {
+        text: this.annotation.text,
+        params: {
+          min_length: this.summarizationMinLength,
+          max_length: this.summarizationMaxLength
+        }
+      }
+    },
+    summarizationMinAnnoLength() {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.annoLength'));
     },
-    settingSummarizationTimeout() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.timeout'));
-    },
-    settingSummarizationActivated() {
+    summarizationActivated() {
       return this.$store.getters["settings/getValue"]('annotator.nlp.summarization.activated') === "true";
     },
-    settingSummarizationSkillName() {
+    summarizationSkillName() {
       return this.$store.getters["settings/getValue"]('annotator.nlp.summarization.skillName');
     },
     summarizationAvailable() {
-      return this.annotation.text !== null && this.annotation.text.length >= this.settingSummarizationAnnoLength
-          && this.settingSummarizationActivated && this.nlpSkills.includes(this.settingSummarizationSkillName);
-    },
-    nlpSkills() {
-      return this.$store.getters["service/getNLPSkills"];
-    },
-    nlpResults() {
-      return this.$store.getters["service/getNLPResults"];
+      return this.annotation.text !== null && this.annotation.text.length >= this.summarizationMinAnnoLength
+          && this.summarizationActivated;
     },
   },
-
   methods: {
     truncatedText(text) {
       const thresh = 150;
@@ -298,37 +284,15 @@ export default {
     toEditMode(status) {
       this.edit_mode = status;
     },
-    summarize() {
-      this.summarizeRequest = uuidv4();
-      this.$socket.emit("serviceRequest",
-          {
-            service: "NLPService",
-            data: {
-              id: this.summarizeRequest,
-              name: this.settingSummarizationSkillName,
-              data: {
-                text: this.annotation.text,
-                params: {
-                  min_length: this.settingSummarizationMinLength,
-                  max_length: this.settingSummarizationMaxLength
-                }
-              }
-            }
-          }
-      );
-      setTimeout(() => {
-        if (this.summarizeRequest) {
-          this.eventBus.emit('toast', {
-            title: "Summarization Request",
-            message: "Timeout in summarization request. Request failed.",
-            variant: "danger"
-          });
-          this.summarizeRequest = null;
-        }
-      }, this.settingSummarizationTimeout);
-
-
-    },
+    summarizeResponse(data) {
+      this.$socket.emit('commentAdd', {
+        "documentId": this.document_id,
+        "commentId": this.comment_id,
+        "text": "Summarization: " + data[0]['summary_text'],
+        "userId": "Bot"
+      });
+      this.showReplies = !this.showReplies;
+    }
   }
 }
 </script>

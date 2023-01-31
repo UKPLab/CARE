@@ -35,12 +35,7 @@ const settings = [
         type: "integer",
         description: "The maximum length of the summary (in tokens of the model)."
     },
-    {
-        key: "annotator.nlp.summarization.timeout",
-        value: 10000,
-        type: "integer",
-        description: "The timeout for the summarization request."
-    }
+
 ]
 
 module.exports = {

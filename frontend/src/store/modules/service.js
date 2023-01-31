@@ -32,6 +32,7 @@ export default {
             return "NLPService" in state.services && 'skillResults' in state.services["NLPService"] ?
                 state.services["NLPService"]['skillResults'] : {};
         },
+
     },
     mutations: {
         SOCKET_serviceRefresh: (state, data) => {
@@ -49,7 +50,7 @@ export default {
                         state.services[service][serviceType] = [];
                     }
 
-                    if(data.data.length > 0){
+                    if (data.data.length > 0) {
                         const skillNames = data.data.map(s => s.name);
 
                         let newSkills = state.services[service][serviceType].filter(s => !skillNames.includes(s.name));
@@ -62,19 +63,28 @@ export default {
                         state.services[service][serviceType] = {};
                     }
 
-                    if(data.data){
+                    if (data.data) {
                         state.services[service][serviceType][data.data.name] = data.data;
                     }
                 } else if (serviceType === "skillResults") {
                     if (!(serviceType in state.services[service])) {
                         state.services[service][serviceType] = {};
                     }
-                    if(!data.data.error){
+                    if (!data.data.error) {
                         state.services[service][serviceType][data.data.id] = data.data.data;
                     }
                 }
             }
         },
+        removeNLPResults: (state, requestId) => {
+            if ("NLPService" in state.services && 'skillResults' in state.services["NLPService"]) {
+                delete state.services["NLPService"]['skillResults'][requestId];
+            }
+        },
     },
-    actions: {}
+    actions: {
+        removeNLPResults: (context, requestId) => {
+            context.commit('removeNLPResults', requestId);
+        }
+    }
 };
