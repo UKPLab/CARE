@@ -5,13 +5,15 @@ describe('Test Login', () => {
 
     beforeAll(() => {
         this.server = new Server();
+        this.server.start(3020);
+
     });
 
     /**
      * Test the /POST login route with valid credentials
      */
     test('Admin Login', async () => {
-        return request(this.server.app)
+        return request(this.server.http)
             .post('/auth/login')
             .send({
                 username: process.env.ADMIN_EMAIL,
@@ -24,7 +26,7 @@ describe('Test Login', () => {
      * Test the /POST login route with invalid credentials
      */
     test('Invalid Login', async () => {
-        return request(this.server.app)
+        return request(this.server.http)
             .post('/auth/login')
             .send({
                 username: process.env.ADMIN_EMAIL,
@@ -36,7 +38,7 @@ describe('Test Login', () => {
      * Test the /GET config route
      */
     test('Get Config', async () => {
-        return request(this.server.app)
+        return request(this.server.http)
             .get('/config.js')
             .expect(200);
         // TODO additional check if config holds some values
@@ -46,7 +48,7 @@ describe('Test Login', () => {
      * Test the /POST register route
      */
     test('Register', (done) => {
-        request(this.server.app)
+        request(this.server.http)
             .post('/auth/register')
             .send({
                 user_name: 'testuser',
@@ -59,7 +61,7 @@ describe('Test Login', () => {
             if (err) {
                 done(err);
             }
-            request(this.server.app)
+            request(this.server.http)
                 .post('/auth/login')
                 .send({
                     username: 'testuser',
@@ -82,6 +84,7 @@ describe('Test Login', () => {
     });
 
     afterAll(async () => {
+        this.server.stop();
         await new Promise(resolve => setTimeout(() => resolve(), 500)); // avoid jest open handle error
     });
 
