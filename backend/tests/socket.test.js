@@ -7,9 +7,10 @@ const COOKIE_NAME = "connect.sid";
 
 describe("Test Websockets", () => {
     let clientSocket;
-    beforeAll(() => {
+    beforeAll(async () => {
         this.server = new Server();
         this.server.start(3010);
+        await new Promise(resolve => setTimeout(() => resolve(), 500));
     });
 
     beforeEach(async () => {
