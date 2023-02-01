@@ -10,7 +10,7 @@ describe("Test Websockets", () => {
     beforeAll(async () => {
         this.server = new Server();
         this.server.start(3010);
-        await new Promise(resolve => setTimeout(() => resolve(), 2000));
+        await new Promise(resolve => setTimeout(() => resolve(), 5000));
     });
 
     beforeEach(async () => {
