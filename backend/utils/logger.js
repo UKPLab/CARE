@@ -50,7 +50,9 @@ exports = module.exports = function (service = "log") {
         ),
         defaultMeta: {service: service},
         exitOnError: false,
-        transports: [
+        silent: (process.env.DISABLE_LOGGING === "true" || process.env.DISABLE_LOGGING === 1),
+        transports:
+            [
             new winston.transports.File({filename: logging_dir + '/error.log', level: 'error'}),
             new winston.transports.File({filename: logging_dir + '/complete.log', level: process.env.LOGGING_LEVEL}),
             new winston.transports.File({filename: logging_dir + '/activity.log', level: 'info'}),

@@ -23,6 +23,7 @@ module.exports = {
         host: process.env.POSTGRES_HOST,
         port: process.env.POSTGRES_PORT,
         dialect: 'postgres',
+        logging: false
     },
     production: {
         username: 'postgres',
@@ -31,5 +32,6 @@ module.exports = {
         host: process.env.POSTGRES_HOST,
         port: process.env.POSTGRES_PORT,
         dialect: 'postgres',
+        logging: false
     },
 };
