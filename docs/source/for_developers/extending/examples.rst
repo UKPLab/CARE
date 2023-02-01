@@ -1,5 +1,5 @@
-An Example-based Guide
-======================
+Examples
+===========
 
 Prerequisites
 ------------
