@@ -10,7 +10,6 @@ describe("Test Websockets", () => {
     beforeAll(async () => {
         this.server = new Server();
         this.server.start(3010);
-        await new Promise(resolve => setTimeout(() => resolve(), 2000));
     });
 
     beforeEach(async () => {
@@ -24,7 +23,6 @@ describe("Test Websockets", () => {
         if (res.statusCode !== 200) {
             throw new Error("Could not login");
         }
-        console.log("Cookie: ", cookie);
 
         const options = {
             transportOptions: {
