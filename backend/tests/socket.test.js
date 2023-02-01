@@ -10,7 +10,7 @@ describe("Test Websockets", () => {
     beforeAll(async () => {
         this.server = new Server();
         this.server.start(3010);
-        await new Promise(resolve => setTimeout(() => resolve(), 5000));
+        await new Promise(resolve => setTimeout(() => resolve(), 2000));
     });
 
     beforeEach(async () => {
@@ -56,7 +56,7 @@ describe("Test Websockets", () => {
 
     afterAll(async () => {
         this.server.stop();
-        await new Promise(resolve => setTimeout(() => resolve(), 500)); // avoid jest open handle error
+        await new Promise(resolve => setTimeout(() => resolve(), 1000)); // avoid jest open handle error
     });
 
 });
