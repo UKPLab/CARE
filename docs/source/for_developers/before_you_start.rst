@@ -4,7 +4,8 @@ Before You Start
 Before you start your development process within the CARE tool, please read this quick overview
 on prerequisites and your building options.
 
-If you just want to get started real quick, check out the `devbuild`_ below.
+.. note::
+    If you just want to get started *real quick*, check out the `Development Build`_ section below.
 
 
 
@@ -86,7 +87,6 @@ according to your needs.
 
 |
 
-.. _devbuild:
 Development Build
 -----------------
 

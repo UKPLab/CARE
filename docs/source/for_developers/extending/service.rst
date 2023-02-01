@@ -33,11 +33,12 @@ be forwarded to an external service that carries the computational load.
 
 Adding a New Service Class
 --------------------------
-Let's say we want to add a new service called ``Test`` to CARE. First, we add a new file ``test.js`` to the
-``backend/webserver/services`` directory that exports the new service class :
+Let's say we want to add a new service called ``TestService`` to CARE. First, we add a new file ``test.js`` to the
+``backend/webserver/services`` directory that exports the new service class:
 
 .. code-block:: javascript
 
+    const Service = require("@/Service.js");
     /**
      * <documentation>
      */
@@ -69,8 +70,9 @@ command, we broadcast a dummy response to all connected clients.
 .. code-block:: javascript
 
     /**
-     * <documentation>
+     * ... HEADER BOILERPLATE
      */
+
     module.exports = class TestService extends Service {
         constructor(server) {
             super(server);
@@ -116,13 +118,14 @@ you add the required communication logic to your service class. We highly recomm
 used throughout the rest of the CARE tool.
 
 Realizing forwarding of client messages using websockets is quite simple. You first need to open a client socket
-towards your web server running a socketio server and then you cache and forward all client requests to through
+towards your web server running a socketio server or client and then you cache and forward all client requests to
 this client.
 
 .. note::
 
     For an example on how to realize the socketio server in Python on the other end of the service, please refer
-    to the repository of NLP broker, which uses flask and socketio to realize this functionality.
+    to the repository of NLP broker, which uses flask and socketio to realize this functionality. For an example
+    of a socketio client realized in Python checkout the NLP model repository.
 
 To implement this, we initialize a connection to the external service and listen on result messages. We assume
 that we provide client Ids that are copied for the response by the external service. We forward messages by the
@@ -134,8 +137,9 @@ starting point.
 .. code-block:: javascript
 
     /**
-     * <documentation>
+     * ... HEADER BOILERPLATE
      */
+
     module.exports = class TestService extends Service {
         constructor(server) {
             super(server);
