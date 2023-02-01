@@ -6,6 +6,7 @@ describe('Test Login', () => {
     beforeAll(async () => {
         this.server = new Server();
         this.server.start(3020);
+        await new Promise(resolve => setTimeout(() => resolve(), 1000));
     });
 
     /**
