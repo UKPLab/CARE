@@ -102,6 +102,7 @@ module.exports = function (app) {
         passport.authenticate('local', function (err, user, info) {
             if (err) {
                 logger.info("Login failed: " + err);
+                console.log("Login failed: " + err);
                 return res.status(500).send("Failed to login");
             }
             if (!user) {
