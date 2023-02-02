@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         collabHash: DataTypes.STRING,
         userId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
+        studySessionId: DataTypes.INTEGER,
         targetType: DataTypes.STRING,
         targetId: DataTypes.INTEGER,
         timestamp: DataTypes.DATE,

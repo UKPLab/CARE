@@ -3,7 +3,7 @@ const {
     Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-    class Annotation extends Model {
+    class Study extends Model {
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -14,22 +14,25 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
 
-    Annotation.init({
-        userId: DataTypes.STRING,
-        text: DataTypes.STRING,
-        tagId: DataTypes.INTEGER,
+    Study.init({
+        name: DataTypes.STRING,
+        hash: DataTypes.STRING,
+        userId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
-        studySessionId: DataTypes.INTEGER,
-        selectors: DataTypes.JSONB,
-        draft: DataTypes.BOOLEAN,
+        collab: DataTypes.BOOLEAN,
+        resumable: DataTypes.BOOLEAN,
+        levels: DataTypes.INTEGER,
+        timeLimit: DataTypes.INTEGER,
+        start: DataTypes.DATE,
+        end: DataTypes.DATE,
+        updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
-        createdAt: DataTypes.DATE,
-        updatedAt: DataTypes.DATE
+        createdAt: DataTypes.DATE
     }, {
-        sequelize,
-        modelName: 'annotation',
-        tableName: 'annotation'
+        sequelize: sequelize,
+        modelName: 'study',
+        tableName: 'study'
     });
-    return Annotation;
+    return Study;
 };

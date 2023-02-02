@@ -3,7 +3,7 @@ const {
     Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-    class sysrole extends Model {
+    class Sysrole extends Model {
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
 
-    sysrole.init({
+    Sysrole.init({
         name: {
             type: DataTypes.STRING,
             primaryKey: true
@@ -29,5 +29,5 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'sysrole',
         tableName: 'sysrole'
     });
-    return sysrole;
+    return Sysrole;
 };
