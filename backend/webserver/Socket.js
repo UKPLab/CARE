@@ -19,6 +19,7 @@ module.exports = class Socket {
         this.logger = require("../utils/logger.js")("Socket/" + this.constructor.name);
 
         this.server = server;
+        this.models = this.server.db.models;
         this.io = io;
 
         this.socket = socket;

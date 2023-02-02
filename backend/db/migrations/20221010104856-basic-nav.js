@@ -22,23 +22,6 @@ const basicElements = [
         "path": "documents",
         'component': 'Documents'
     },
-    {
-        name: "Reviews",
-        groupId: basicGroups[0].name,
-        icon: 'file-earmark-break-fill',
-        order: 10,
-        "path": "reviews",
-        'component': 'Reviews'
-    },
-    {
-        name: "Meta Reviews",
-        groupId: basicGroups[0].name,
-        icon: 'file-earmark-medical',
-        order: 10,
-        admin: true,
-        path: "meta_reviews",
-        'component': 'MetaReviews'
-    },
     {name: "Tags", groupId: basicGroups[0].name, icon: 'tags-fill', path: "tags", order: 10, 'component': 'Tags'},
     {
         name: "Settings",
@@ -57,7 +40,16 @@ const basicElements = [
         admin: true,
         path: "logs",
         'component': 'Log'
-    }
+    },
+    {
+        name: "Studies",
+        groupId: basicGroups[0].name,
+        icon: 'clipboard2-pulse',
+        order: 11,
+        admin: false,
+        path: "studies",
+        'component': 'Study'
+    },
 
 ];
 

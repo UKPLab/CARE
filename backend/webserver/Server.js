@@ -13,7 +13,6 @@ const session = require('express-session');
 const bodyParser = require('body-parser');
 const Socket = require('./Socket.js');
 const Sequelize = require('sequelize');
-const db = require("../db");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
 /**
@@ -30,6 +29,7 @@ const SequelizeStore = require('connect-session-sequelize')(session.Store);
 module.exports = class Server {
     constructor() {
         this.logger = require("../utils/logger.js")("webServer");
+        this.db = require("../db");
         this.app = express();
 
         this.sockets = {};
@@ -92,7 +92,7 @@ module.exports = class Server {
     #initSessionManagement() {
 
         // Define Session Model Table
-        db.sequelize.define("session", {
+        this.db.sequelize.define("session", {
             sid: {
                 type: Sequelize.STRING,
                 primaryKey: true,
@@ -103,12 +103,12 @@ module.exports = class Server {
         });
 
         // Sync Session Table
-        db.sequelize.sync();
+        this.db.sequelize.sync();
 
         // Sequelize Session Store
         this.logger.info("Initializing Sequelize Session Store...");
         const dbStore = new SequelizeStore({
-            db: db.sequelize,
+            db: this.db.sequelize,
             checkExpirationInterval: 15 * 60 * 1000, // The interval at which to cleanup expired sessions in milliseconds.
             expiration: 24 * 60 * 60 * 1000  // The maximum age (in milliseconds) of a valid session.
         });
@@ -261,7 +261,6 @@ module.exports = class Server {
         });
         this.io.close();
         this.http.close();
-
     }
 
 }

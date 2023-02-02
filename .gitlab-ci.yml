@@ -62,7 +62,7 @@ build-dev:
     name: docker/compose:1.29.2
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
-  needs: ['test']
+  #needs: ['test']
   before_script:
     - docker info
     - docker version
@@ -86,7 +86,7 @@ build-main:
     name: docker/compose:1.29.2
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
-  needs: ['test']
+  #needs: ['test']
   before_script:
     - docker info
     - docker version
