@@ -32,12 +32,16 @@ console and run the following command to generate a new migration with an associ
     npx sequelize migration:generate --name NAME_OF_MIGRATION
 
 
+This adds a new file ``<timestamp>-NAME_OF_MIGRATION`` to the migrations directory. Please refer to the official
+Sequelize migration guide linked above to understand the details of writing migrations. Conceptually, you need
+to define the up function for modifying the database (e.g. adding a new table) and the down function to revert
+the said changes. Please refer to the numerous examples of migrations in the code base as an example.
+
 .. note::
 
     Make sure that you have the `Sequelize migration CLI <https://sequelize.org/docs/v6/other-topics/migrations/>`_
     (called npx) installed before creating a new migration. Alternatively, you can also create all files manually,
     but we recommend using the CLI.
-
 
 
 Creating a Model
