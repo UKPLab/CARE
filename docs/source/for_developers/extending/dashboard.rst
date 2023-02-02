@@ -8,3 +8,7 @@ TBA
 Populating a New Dashboard Component
 ------------------------------------
 TBA
+
+Establishing a New Socket Message Type
+--------------------------------------
+TBA
