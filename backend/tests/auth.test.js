@@ -6,7 +6,7 @@ describe('Test Login', () => {
     beforeAll(async () => {
         this.server = new Server();
         this.server.start(3020);
-        await new Promise(resolve => setTimeout(() => resolve(), 500));
+        await new Promise(resolve => setTimeout(() => resolve(), 1000));
     });
 
     /**
@@ -85,7 +85,7 @@ describe('Test Login', () => {
 
     afterAll(async () => {
         this.server.stop();
-        await new Promise(resolve => setTimeout(() => resolve(), 500)); // avoid jest open handle error
+        await new Promise(resolve => setTimeout(() => resolve(), 1000)); // avoid jest open handle error
     });
 
 })

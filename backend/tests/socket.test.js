@@ -10,7 +10,7 @@ describe("Test Websockets", () => {
     beforeAll(async () => {
         this.server = new Server();
         this.server.start(3010);
-        await new Promise(resolve => setTimeout(() => resolve(), 500));
+        await new Promise(resolve => setTimeout(() => resolve(), 1000));
     });
 
     beforeEach(async () => {
@@ -24,7 +24,6 @@ describe("Test Websockets", () => {
         if (res.statusCode !== 200) {
             throw new Error("Could not login");
         }
-        console.log("Cookie: ", cookie);
 
         const options = {
             transportOptions: {
@@ -56,7 +55,7 @@ describe("Test Websockets", () => {
 
     afterAll(async () => {
         this.server.stop();
-        await new Promise(resolve => setTimeout(() => resolve(), 500)); // avoid jest open handle error
+        await new Promise(resolve => setTimeout(() => resolve(), 1000)); // avoid jest open handle error
     });
 
 });

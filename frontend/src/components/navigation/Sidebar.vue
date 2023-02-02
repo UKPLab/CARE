@@ -50,15 +50,16 @@ export default {
       return this.$store.getters['navigation/getSidebarElements'];
     },
     sidebarGroups() {
-      return this.$store.getters['navigation/getSidebarGroups'];
+      return this.$store.getters['navigation/getSidebarGroups'].filter(group => !group.admin || this.isAdmin);
+    },
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
     }
   },
   methods: {
     toggleSidebar() {
       document.body.classList.toggle('sb-sidenav-toggled');
     },
-
-
   },
   mounted() {
     document.body.classList.add('sidebar-exists');
