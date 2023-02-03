@@ -1,8 +1,8 @@
 <template>
   <Modal ref="studyCoordinatorModal" lg>
     <template v-slot:title>
-      <span v-if="id !== 0">
-        Study Coordinator for {{ document.name }}
+      <span>
+        Study Coordinator - Create a user study
       </span>
     </template>
     <template v-slot:body>
@@ -31,33 +31,81 @@ export default {
   components: {Modal, Form},
   data() {
     return {
-      id: 0,
       data: {
         name: "",
+        documentId: 0,
+        collab: false,
+        resumable: true,
+        levels: 1,
         timeLimit: 0,
+        start: null,
+        end: "2023-02-03T10:31:56.427Z",
       },
       fields: [
         {
+          name: "documentId",
+          label: "Selected document for user study",
+          type: "select",
+          options: this.$store.getters["document/getDocuments"].map(document => {
+            return {"value": document.id, "name": document.name}
+          }),
+          icon: "file-earmark",
+          required: true,
+        },
+        {
           name: "name",
           label: "Name of the user study",
+          placeholder: "My user study",
           type: "text",
           required: true,
         },
         {
           name: "timeLimit",
-          label: "Enable time limitation",
-          type: "switch",
-          size: 4,
-          help: "If enabled, the user study will be automatically closed after the specified time limit.",
+          type: "slider",
+          label: "How many time does a participant have for the study?",
+          help: "0 = disable time limitation",
+          size: 12,
+          unit: "min",
+          min: 0,
+          max: 180,
+          step: 10,
           required: false,
         },
-        {
-          name: "time",
-          type: "text",
-          label: "Time Limit (in minutes)",
-          size: 12,
-          required: false,
-        }
+          {
+          name: "collab",
+          label: "Should the study be collaborative?",
+          type: "switch",
+          required: true,
+        },
+            {
+          name: "resumable",
+          label: "Should the study be resumable?",
+          type: "switch",
+          required: true,
+        },
+            {
+          name: "levels",
+          label: "How many reviews are possible for each session?",
+          type: "slider",
+              min: 1,
+              step: 1,
+              max: 5,
+          required: true,
+        },
+          {
+          name: "start",
+          label: "User study sessions can't start before",
+          type: "datetime",
+            size: 6,
+          required: true,
+        },
+          {
+          name: "end",
+          label: "User study sessions can't start after:",
+          type: "datetime",
+            size: 6,
+          required: true,
+        },
       ],
       success: false,
     }
@@ -72,7 +120,7 @@ export default {
   },
   methods: {
     open(id) {
-      this.id = id;
+      this.data.documentId = id;
       this.success = false;
       this.$refs.studyCoordinatorModal.openModal();
       this.$socket.emit("stats", {
