@@ -1,4 +1,4 @@
-Extending the Socket Interface
+Sockets
 ==============================
 
 There might be rare occasions where you need to extend the existing socket interface; e.g. after adding a new database

@@ -1,8 +1,14 @@
 Database
 ========
 
-The backend database is a `PostgreSQL <https://www.postgresql.org/>`_ database attached through `Sequelize <http://docs.sequelizejs.com/>`_.
-This allows the use of other database systems, but without support from our side.
+The underlying data store of CARE is a relational database. The `PostgresSQL <https://www.postgresql.org/>`_ database is
+managed and accessed via `Sequelize <https://sequelize.org/>`_. The backend services and sockets of CARE access the
+database via methods provided in the ``backend/db/methods`` directory, which in turn utilize Sequelize as an layer
+of abstraction to query and update the database.
+
+The database schema is modified via `Sequelize's migration system <https://sequelize.org/docs/v6/other-topics/migrations/>`_.
+``make init`` adds any new migrations to the database. Modifying the database schema therefore means adding a new
+migration and potentially a new Sequelize model.
 
 All relevant files can be found in the ``backend/db`` folder.
 
@@ -35,6 +41,8 @@ After that, you can run ``npx sequelize --help`` to see all available commands.
 
 To create a new migration, run ``npx sequelize migration:generate --name <name>``.
 This will create a new file in the ``migrations`` folder, containing a ``up`` and a ``down`` function.
+
+
 
 Adding a new model
 ~~~~~~~~~~~~~~~~~~
