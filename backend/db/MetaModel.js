@@ -3,6 +3,20 @@ const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = r
 
 module.exports = class MetaModel extends Model {
 
+    static async getById(id) {
+        try {
+            return await this.findOne({
+                where: {'id': id},
+                raw: true
+            });
+        } catch (err) {
+            if (isInternalDatabaseError(err)) {
+                throw InternalDatabaseError(err);
+            } else {
+                throw err;
+            }
+        }
+    }
 
     static async getAll() {
         try {

@@ -1,9 +1,8 @@
 'use strict';
-const {
-    Model
-} = require('sequelize');
+const MetaModel = require("../MetaModel.js");
+
 module.exports = (sequelize, DataTypes) => {
-    class Sysrole extends Model {
+    class Sysrole extends MetaModel {
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.

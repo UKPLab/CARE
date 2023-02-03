@@ -50,11 +50,17 @@ const basicElements = [
         path: "studies",
         'component': 'Study'
     },
+    {
+        name: "Study Sessions",
+        groupId: basicGroups[0].name,
+        icon: 'person-video3',
+        order: 12,
+        admin: false,
+        path: "study_sessions",
+        'component': 'StudySession'
+    },
 
 ];
-
-//TODO add icons in objects
-
 
 module.exports = {
     async up(queryInterface, Sequelize) {
