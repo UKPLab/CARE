@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
 
     Statistic.init({
         action: DataTypes.STRING,
-        data: DataTypes.STRING,
+        data: DataTypes.TEXT,
         userId: DataTypes.INTEGER,
         timestamp: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,

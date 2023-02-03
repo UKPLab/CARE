@@ -37,12 +37,13 @@ module.exports = class StudySocket extends Socket {
             try {
                 if (data.studyId && data.studyId !== 0) {
                     const currentStudy = await this.models['study'].getById(data.studyId)
-                    if (this.isAdmin() || currentStudy.userId === this.user_id()) {
+                    if (this.isAdmin() || currentStudy.userId === this.user_id) {
                         this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].updateById(data.studyId, data)))
                     } else {
                         this.sendToast("You are not allowed to update this study", "Error", "Danger");
                     }
                 } else {
+                    data.userId = this.user_id;
                     this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].add(data)))
                 }
             } catch (err) {
@@ -76,12 +77,13 @@ module.exports = class StudySocket extends Socket {
             try {
                 if (data.studySessionId && data.studySessionId !== 0) {
                     const currentStudySession = await this.models['study_session'].getById(data.studySessionId)
-                    if (this.isAdmin() || currentStudySession.userId === this.user_id()) {
+                    if (this.isAdmin() || currentStudySession.userId === this.user_id) {
                         this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].updateById(data.studySessionId, data)))
                     } else {
                         this.sendToast("You are not allowed to update this study session", "Error", "Danger");
                     }
                 } else {
+                    data.userId = this.user_id;
                     this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].add(data)))
                 }
             } catch (err) {

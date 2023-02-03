@@ -1,5 +1,6 @@
 const {Model, Op} = require("sequelize");
 const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./methods/utils");
+const {v4: uuidv4} = require("uuid");
 
 module.exports = class MetaModel extends Model {
 
@@ -76,6 +77,10 @@ module.exports = class MetaModel extends Model {
 
     static async add(data) {
         try {
+            if ("hash" in this.getAttributes()) {
+                data.hash = uuidv4();
+            }
+
             return (await this.create(data)).get({plain: true});
         } catch (err) {
             if (isInternalDatabaseError(err)) {
