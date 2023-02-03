@@ -25,6 +25,8 @@ import CollaborationStore from "./modules/collab.js";
 import CommentStore from "./modules/comment.js";
 import ServiceStore from "./modules/service.js";
 import DocumentStore from "./modules/document.js";
+import StudyStore from "./modules/study.js";
+import StudySessionStore from "./modules/study_session.js";
 import createPersistedState from 'vuex-persistedstate';
 
 
@@ -40,7 +42,9 @@ export default createStore({
         settings: SettingsStore,
         collab: CollaborationStore,
         comment: CommentStore,
-        service: ServiceStore
+        service: ServiceStore,
+        study: StudyStore,
+        study_session: StudySessionStore
     },
     plugins: [
         createPersistedState({
