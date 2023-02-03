@@ -24,11 +24,11 @@ Welcome to the CARE project -- contribute towards AI-assisted collaborative read
    :caption: For Developers
 
    for_developers/before_you_start
-
    for_developers/basics/basics
-   for_developers/advanced/advanced
-   for_developers/extending/extending
 
+   for_developers/frontend/frontend
+   for_developers/backend/backend
+   for_developers/examples/examples
 
 .. toctree::
    :maxdepth: 1

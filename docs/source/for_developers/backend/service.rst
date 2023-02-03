@@ -1,5 +1,5 @@
-Adding a Service
-=======================
+Services
+=========
 
 You can couple any external, event-based service into the infrastructure of CARE; e.g. you may couple your own data
 processing pipeline or even a search query interface. Read this chapter to learn how to add your own services and
