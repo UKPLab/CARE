@@ -6,9 +6,13 @@
       </span>
     </template>
     <template v-slot:body>
-      <Form :data="data" :fields="fields"></Form>
+      <span v-if="success" class="btn-group">
+        {{ hash }}
+      </span>
+      <span v-else>
+        <Form v-model="data" :fields="fields"></Form>
+      </span>
     </template>
-
     <template v-slot:footer>
       <span v-if="success" class="btn-group">
         <button class="btn btn-secondary" @click="close">Close</button>
@@ -29,8 +33,16 @@ import Form from "@/basic/form/Form.vue";
 export default {
   name: "StudyCoordinatorModal.vue",
   components: {Modal, Form},
+  watch: {
+    data: {
+      handler() {
+        console.log(this.data);
+      }, deep: true
+    }
+  },
   data() {
     return {
+      hash: null,
       data: {
         name: "",
         documentId: 0,
@@ -71,39 +83,39 @@ export default {
           step: 10,
           required: false,
         },
-          {
+        {
           name: "collab",
           label: "Should the study be collaborative?",
           type: "switch",
           required: true,
         },
-            {
+        {
           name: "resumable",
           label: "Should the study be resumable?",
           type: "switch",
           required: true,
         },
-            {
+        {
           name: "levels",
           label: "How many reviews are possible for each session?",
           type: "slider",
-              min: 1,
-              step: 1,
-              max: 5,
+          min: 1,
+          step: 1,
+          max: 5,
           required: true,
         },
-          {
+        {
           name: "start",
           label: "User study sessions can't start before",
           type: "datetime",
-            size: 6,
+          size: 6,
           required: true,
         },
-          {
+        {
           name: "end",
           label: "User study sessions can't start after:",
           type: "datetime",
-            size: 6,
+          size: 6,
           required: true,
         },
       ],
@@ -122,6 +134,7 @@ export default {
     open(id) {
       this.data.documentId = id;
       this.success = false;
+      this.hash = null;
       this.$refs.studyCoordinatorModal.openModal();
       this.$socket.emit("stats", {
         action: "openModalDocumentStudyCoordinator",
@@ -129,32 +142,29 @@ export default {
       });
     },
     publish() {
-      console.log(this.data);
-      /*
-      this.sockets.subscribe("documentPublished", (data) => {
-        this.sockets.unsubscribe('documentPublished');
+      this.sockets.subscribe("studyPublished", (data) => {
+        this.sockets.unsubscribe('studyPublished');
         if (data.success) {
           this.success = true;
-          this.$refs.publishModal.waiting = false;
+          this.hash = data.hash;
+          this.$refs.studyCoordinatorModal.waiting = false;
           this.eventBus.emit('toast', {
-            title: "Document published",
-            message: "Successful published tagset!",
+            title: "Study published",
+            message: "Successful started study!",
             variant: "success"
           });
         } else {
           this.$refs.publishModal.closeModal();
-          this.eventBus.emit('toast', {title: "Document not published", message: data.message, variant: "danger"});
+          this.eventBus.emit('toast', {title: "Study not published", message: data.message, variant: "danger"});
         }
       });
-      this.$socket.emit("documentPublish", {documentId: this.id});
-      this.$refs.publishModal.waiting = true;
-      */
-
+      this.$socket.emit("studyPublish", this.data);
+      this.$refs.studyCoordinatorModal.waiting = true;
     },
     close() {
-      this.$refs.publishModal.closeModal();
+      this.$refs.studyCoordinatorModal.closeModal();
       this.$socket.emit("stats", {
-        action: "cancelModalPublishDocument",
+        action: "cancelModalStudyCoordinator",
         data: {documentId: this.id}
       });
     },

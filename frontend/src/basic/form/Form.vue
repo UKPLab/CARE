@@ -1,11 +1,10 @@
 <template>
   <form>
-    <div class="row g-3">
+    <div v-if="currentData !== null" class="row g-3">
       <div v-for="field in fields" :key="field.name" :class="('size' in field)?'col-md-' + field.size :'col-12'">
         <span v-if="field.type === 'switch'"
               class="form-check form-switch">
-          <input class="form-check-input" type="checkbox"                  v-model="currentData[field.name]"
->
+          <input v-model="currentData[field.name]" class="form-check-input" type="checkbox">
           <label :for="field.name" class="form-label">{{ field.label }}</label>
            <button v-if="'help' in field" :title="field.help" class="btn btn-sm mt-0 pt-0" data-bs-html="true"
                    data-bs-placement="top"
@@ -33,17 +32,19 @@
             <LoadIcon :icon-name="field.icon" :size="16"/>
           </div>
 
-        <DatetimePicker v-if="field.type === 'datetime'" v-model="currentData[field.name]" :options="field"  />
+        <DatetimePicker v-if="field.type === 'datetime'" v-model="currentData[field.name]" :options="field"/>
 
 
            <select v-else-if="field.type === 'select'" v-model="currentData[field.name]" class="form-select">
               <option v-for="option in field.options" :value="option.value">{{ option.name }}</option>
          </select>
-            <input  v-else-if="field.type === 'slider'" :id="field.name" v-model="currentData[field.name]" :max="field.max"
+            <input v-else-if="field.type === 'slider'" :id="field.name" v-model="currentData[field.name]"
+                   :max="field.max"
                    :min="field.min" :step="field.step" class="form-range" type="range">
 
 
-          <input v-else-if="field.type === 'checkbox'" :id="field.name" v-model="currentData[field.name]" :name="field.name"
+          <input v-else-if="field.type === 'checkbox'" :id="field.name" v-model="currentData[field.name]"
+                 :name="field.name"
                  :required="field.required" :type="field.type" class="form-check-input"/>
             <textarea v-else-if="field.type === 'textarea'" :id="field.name" v-model="currentData[field.name]"
                       :name="field.name"
@@ -75,13 +76,14 @@ import DatetimePicker from "./DatetimePicker.vue";
 export default {
   name: "Form",
   components: {LoadIcon, DatetimePicker},
+  emits: ["update:modelValue"],
   data() {
     return {
       currentData: null,
     }
   },
   props: {
-    data: {
+    modelValue: {
       type: Object,
       required: true
     },
@@ -91,13 +93,17 @@ export default {
     },
   },
   watch: {
-    currentData() {
-      console.log(this.currentData);
+    currentData: {
+      handler() {
+        this.$emit("update:modelValue", this.currentData);
+      }, deep: true
+    },
+    modelValue: {
+      handler() {
+        this.currentData = this.modelValue;
+      }, deep: true
     }
   },
-  created() {
-    this.currentData = this.data;
-  }
 }
 </script>
 

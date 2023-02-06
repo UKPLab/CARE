@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const {dbGetDoc, dbUpdateDoc} = require("../../db/methods/document");
 /**
  * Handle all studies through websocket
  *
@@ -8,6 +9,29 @@ const Socket = require("../Socket.js");
  * @type {DocumentSocket}
  */
 module.exports = class StudySocket extends Socket {
+
+    async updateStudy(data) {
+        try {
+            if (data.studyId && data.studyId !== 0) {
+                const currentStudy = await this.models['study'].getById(data.studyId)
+                if (this.isAdmin() || currentStudy.userId === this.user_id) {
+                    const study = await this.updateCreatorName(await this.models['study'].updateById(data.studyId, data));
+                    this.socket.emit("studyRefresh", study)
+                    return study;
+                } else {
+                    this.sendToast("You are not allowed to update this study", "Error", "Danger");
+                }
+            } else {
+                data.userId = this.user_id;
+                const study = await this.updateCreatorName(await this.models['study'].add(data));
+                this.socket.emit("studyRefresh", study);
+                return study;
+            }
+        } catch (err) {
+            this.logger.error(err);
+            this.sendToast(err, "Error updating study", "Danger");
+        }
+    }
 
 
     async init() {
@@ -34,21 +58,36 @@ module.exports = class StudySocket extends Socket {
         });
 
         this.socket.on("studyUpdate", async (data) => {
+            await this.updateStudy(data);
+        });
+
+        this.socket.on("studyPublish", async (data) => {
             try {
-                if (data.studyId && data.studyId !== 0) {
-                    const currentStudy = await this.models['study'].getById(data.studyId)
-                    if (this.isAdmin() || currentStudy.userId === this.user_id) {
-                        this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].updateById(data.studyId, data)))
+                const doc = await dbGetDoc(data.documentId);
+                if (this.checkUserAccess(doc.userId)) {
+                    const study = await this.updateStudy(data);
+                    if (study) {
+                        this.socket.emit("studyPublished", {success: true, hash: study[0].hash});
                     } else {
-                        this.sendToast("You are not allowed to update this study", "Error", "Danger");
+                        this.socket.emit("studyPublished", {
+                            success: false,
+                            message: "Error publishing study."
+                        });
                     }
                 } else {
-                    data.userId = this.user_id;
-                    this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].add(data)))
+                    this.logger.error("No permission to publish document: " + data.documentId);
+                    this.socket.emit("studyPublished", {
+                        success: false,
+                        message: "No permission to publish study"
+                    });
                 }
-            } catch (err) {
-                this.logger.error(err);
-                this.sendToast(err, "Error updating study", "Danger");
+            } catch (e) {
+                this.logger.error(e);
+                this.socket.emit("documentPublished", {
+                    success: false,
+                    message: "Error while publishing document"
+                });
+
             }
         });
 
