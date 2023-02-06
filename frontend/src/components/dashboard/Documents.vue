@@ -1,6 +1,6 @@
 <template>
   <PublishModal ref="publishModal"></PublishModal>
-  <StudyCoordinatorModal ref="studyCoordinator"></StudyCoordinatorModal>
+  <StudyModal ref="studyCoordinator"></StudyModal>
   <Card title="Documents">
     <template v-slot:headerElements>
       <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAll()" title="Export">
@@ -34,11 +34,11 @@ import ExportAnnos from "@/basic/download/ExportAnnos.vue";
 import Card from "@/basic/Card.vue";
 import Table from "@/basic/table/Table.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
-import StudyCoordinatorModal from "./documents/StudyCoordinatorModal.vue";
+import StudyModal from "./study/StudyModal.vue";
 
 export default {
   name: "Document",
-  components: {StudyCoordinatorModal, Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal},
+  components: {StudyModal, Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal},
   data() {
     return {
       options: {
@@ -214,7 +214,7 @@ export default {
       this.$refs.export.requestExport(doc_ids, "json");
     },
     studyCoordinator(row) {
-      this.$refs.studyCoordinator.open(row.id);
+      this.$refs.studyCoordinator.open(0, row.id);
     }
   }
 }

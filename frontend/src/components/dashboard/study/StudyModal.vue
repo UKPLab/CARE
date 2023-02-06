@@ -6,11 +6,13 @@
       </span>
     </template>
     <template v-slot:body>
-      <span v-if="success" class="btn-group">
-        {{ hash }}
+      <span v-if="success" >
+        The study is successfully published<br>
+        Participants can start the study under the following link:<br><br>
+          <a :href="link" target="_blank">{{ link }}</a>
       </span>
       <span v-else>
-        <Form v-model="data" :fields="fields"></Form>
+        <Form v-model="study" :fields="fields"></Form>
       </span>
     </template>
     <template v-slot:footer>
@@ -43,16 +45,8 @@ export default {
   data() {
     return {
       hash: null,
-      data: {
-        name: "",
-        documentId: 0,
-        collab: false,
-        resumable: true,
-        levels: 1,
-        timeLimit: 0,
-        start: null,
-        end: "2023-02-03T10:31:56.427Z",
-      },
+      studyId: 0,
+      documentId: 0,
       fields: [
         {
           name: "documentId",
@@ -123,22 +117,39 @@ export default {
     }
   },
   computed: {
-    document() {
-      return this.$store.getters["document/getDocument"](this.id);
+    study() {
+      if (this.studyId === 0) {
+        return {
+          name: "",
+          documentId: this.documentId,
+          collab: false,
+          resumable: true,
+          levels: 1,
+          timeLimit: 0,
+          start: null,
+          end: null,
+        }
+      } else {
+        console.log(this.studyId);
+        return this.$store.getters['study/getStudyById'](this.studyId)
+      }
     },
     link() {
-      return window.location.origin + "/annotate/" + this.document.hash;
+      return window.location.origin + "/study/" + this.hash;
     }
   },
   methods: {
-    open(id) {
-      this.data.documentId = id;
+    open(studyId, documentId = null) {
+      if (documentId !== null) {
+        this.documentId = documentId;
+      }
+      this.studyId = studyId;
       this.success = false;
       this.hash = null;
       this.$refs.studyCoordinatorModal.openModal();
       this.$socket.emit("stats", {
-        action: "openModalDocumentStudyCoordinator",
-        data: {documentId: this.id}
+        action: "openModalStudy",
+        data: {documentId: this.documentId, studyId: this.studyId}
       });
     },
     publish() {
@@ -154,18 +165,18 @@ export default {
             variant: "success"
           });
         } else {
-          this.$refs.publishModal.closeModal();
+          this.$refs.studyCoordinatorModal.closeModal();
           this.eventBus.emit('toast', {title: "Study not published", message: data.message, variant: "danger"});
         }
       });
-      this.$socket.emit("studyPublish", this.data);
+      this.$socket.emit("studyPublish", this.study);
       this.$refs.studyCoordinatorModal.waiting = true;
     },
     close() {
       this.$refs.studyCoordinatorModal.closeModal();
       this.$socket.emit("stats", {
-        action: "cancelModalStudyCoordinator",
-        data: {documentId: this.id}
+        action: "cancelModalStudy",
+        data: {documentId: this.documentId, studyId: this.studyId}
       });
     },
     async copyURL() {

@@ -44,14 +44,17 @@ module.exports = class StudySocket extends Socket {
             }
         });
 
+        this.socket.on("studyGetByHash", async (data) => {
+            try {
+                this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getByHash(data.studyHash)));
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+
         this.socket.on("studyGetAll", async (data) => {
             try {
-                if (this.isAdmin()) {
-                    this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getAll()));
-                } else {
-                    this.sendToast("You don't have access to all studies", "Error", "danger");
-                    this.logger.error("User requested access to all studies without rights");
-                }
+                this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getAll()));
             } catch (err) {
                 this.logger.error(err);
             }
