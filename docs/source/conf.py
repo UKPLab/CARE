@@ -41,8 +41,6 @@ autoclass_content = 'both'  # Include both class docstring and __init__ docstrin
 templates_path = ['_templates']
 exclude_patterns = []
 
-
-
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
@@ -52,5 +50,6 @@ html_static_path = ['_static']
 # Replacements
 
 rst_epilog = """
+.. |SERVICE_NLP_URL| replace:: {nlpurl}
 .. |This message should not appear| replace:: {test}
-""".format(test="")
+""".format(test="", nlpurl=os.environ.get("SERVICE_NLP_URL"))
