@@ -45,7 +45,6 @@ module.exports = class StudySocket extends Socket {
         });
 
 
-
         this.socket.on("studyGetByHash", async (data) => {
             try {
                 this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getByHash(data.studyHash)));
@@ -66,14 +65,28 @@ module.exports = class StudySocket extends Socket {
             await this.updateStudy(data);
         });
 
-         this.socket.on("studyStart", async (data) => {
+        this.socket.on("studyStart", async (data) => {
             try {
                 const study = await this.models['study'].getById(data.studyId);
-                //TODO check study can be started (start date / end date)
-                // add session
-                // send session
-                // send studyStarted with session Id
+                if (study.start !== null && new Date() < new Date(study.start)) {
+                    this.sendToast("Failed to start study, the study hasn't started yet.", "Study Failure", "danger");
+                    return;
+                }
+                if (study.end !== null && new Date(study.end) < new Date()) {
+                    this.sendToast("Failed to start study, the study already finished.", "Study Failure", "danger");
+                    return;
+                }
+
+                const studySession = await this.models["study_session"].add({
+                    studyId: study.id,
+                    userId: this.user_id,
+                    start: new Date().toISOString()
+                });
+
+                this.socket.emit("studySessionRefresh", await this.updateCreatorName(studySession));
+                this.socket.emit("studyStarted", {success: true, studySessionId: studySession.id});
             } catch (err) {
+                this.socket.emit("studyStarted", {success: false});
                 this.logger.error(err);
             }
         });
@@ -145,6 +158,32 @@ module.exports = class StudySocket extends Socket {
             } catch (err) {
                 this.logger.error(err);
                 this.sendToast(err, "Error updating study", "Danger");
+            }
+        });
+
+        this.socket.on("studySessionGetByHash", async (data) => {
+            try {
+                const session = await this.models['study_session'].getByHash(data.studySessionHash);
+                if (session) {
+                    const study = await this.models['study'].getById(session.studyId);
+                    if (this.user_id === session.userId || this.user_id === study.userId || this.isAdmin()) {
+                        this.socket.emit("studyRefresh", study);
+                        this.socket.emit("studySessionRefresh", session);
+                    } else {
+                        this.socket.emit("studySessionError", {
+                            studySessionHash: data.studySessionHash,
+                            message: "No access rights"
+                        });
+                    }
+                } else {
+                    this.socket.emit("studySessionError", {
+                        studySessionHash: data.studySessionHash,
+                        message: "Not found"
+                    });
+                }
+            } catch (err) {
+                this.socket.emit("studySessionError", {studySessionHash: data.studySessionHash, message: err});
+                this.logger.error(err);
             }
         });
 

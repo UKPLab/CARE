@@ -1,54 +1,64 @@
 <template>
-  <Annotater :document_id="documentId"
-             review_id="review_id"
-             readonly="decision"
-             review="!decision"
-             approve="decision"/>
+  <Loader v-if="studySessionId === 0" :loading="true"></Loader>
+  <Study v-else :init-study-session-id="studySessionId" :readonly="readonly" ></Study>
 </template>
 
 <script>
+import Study from "./Study.vue";
+import Loader from "@/basic/Loader.vue"
 
 export default {
   name: "StudySession",
+  components: {Study, Loader},
   data() {
     return {
       loading: true,
+      readonly: false,
     }
   },
   props: {
-    'studyHash': {
+    'studySessionHash': {
       type: String,
       required: true,
     },
   },
+  sockets: {
+    studySessionError: function (data) {
+      if (data.studySessionHash === this.studySessionHash) {
+        this.eventBus.emit('toast', {
+          title: "Study Session Error",
+          message: data.message,
+          variant: "danger"
+        });
+        this.$router.push("/");
+      }
+    }
+  },
   mounted() {
-    // TODO load session, is resumable, otherwise error
     this.load();
   },
-  computed: {
-    study() {
-      return this.$store.getters['study/getStudyByHash'](this.studyHash);
+  watch: {
+    studySession(newVal) {
+      if (newVal && newVal.end) {
+        this.readonly = true;
+      }
     },
-    studyId() {
-      if (this.study) {
-        return this.study.id;
+  },
+  computed: {
+    studySession() {
+      return this.$store.getters['study_session/getStudySessionByHash'](this.studySessionHash);
+    },
+    studySessionId() {
+      if (this.studySession) {
+        return this.studySession.id;
       } else
         return 0;
-    },
-    documentId() {
-      if (this.study) {
-        return this.study.documentId;
-      }
     },
   },
   methods: {
     load() {
-      this.$refs.studyModal.open();
-      this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
+      this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
     },
-    start(data) {
-      console.log(data);
-    }
   }
 }
 </script>
