@@ -63,7 +63,7 @@ const routes = [
         meta: {requireAuth: true}
     },
     {
-        path: "/session/:sessionHash",
+        path: "/session/:studySessionHash",
         component: () => import("@/components/StudySession.vue"),
         props: true,
         meta: {requireAuth: true}

@@ -80,7 +80,7 @@ module.exports = class MetaModel extends Model {
         if ("hash" in this.getAttributes()) {
             try {
 
-                return await this.findAll({
+                return await this.findOne({
                     where: {hash: hash, deleted: deleted},
                     raw: true
                 });

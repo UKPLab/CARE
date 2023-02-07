@@ -11,7 +11,7 @@
         <div v-if="!started" class="text-xxl-center text-secondary fs-5">The study has not started yet! <br>
           Start: {{ new Date(study.start).toLocaleString() }}</div>
         <div v-if="ended" class="text-xxl-center text-danger fs-5">This study has finished on
-         {{ new Date(study.start).toLocaleString() }}</div>
+         {{ new Date(study.end).toLocaleString() }}</div>
         <span v-else>
           <div v-html="study.description"></div>
           <div v-if="study.timeLimit > 0 || study.collab">
@@ -74,15 +74,15 @@ export default {
     },
     started() {
       if (this.studyId !== 0) {
-        return !(this.study.start !== null && new Date(this.study.start) < new Date.now());
+        return (this.study.start !== null && new Date(this.study.start) < new Date());
       }
       return false;
     },
     ended() {
       if (this.studyId !== 0) {
-        return (this.study.end !== null && new Date(this.study.end) > new Date.now());
+        return !(this.study.end !== null && new Date() < new Date(this.study.end));
       }
-      return true;
+      return false;
     },
     available() {
       return (this.started && !this.ended);
@@ -111,7 +111,7 @@ export default {
           this.eventBus.emit('toast', {title: "Study cannot be started!", message: data.message, variant: "danger"});
         }
       });
-      this.$socket.emit("studyStart", this.studyId);
+      this.$socket.emit("studyStart", {studyId: this.studyId});
       this.$refs.studyModal.waiting = true;
     },
   }
