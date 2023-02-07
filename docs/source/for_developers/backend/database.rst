@@ -44,52 +44,116 @@ This will create a new file in the ``migrations`` folder, containing a ``up`` an
 
 
 
-Adding a new model
+Adding a New Model
 ~~~~~~~~~~~~~~~~~~
 
 1. Use the CLI to create a model and a migration file.
 
 .. code-block:: bash
 
-    npx sequelize-cli model:generate --name <tablename> --attributes attribute1:type1,...,attributeN:typeN
+    npx sequelize migration:generate --name <name>-nav
 
 2. In the newly generated migration file under migrations change the table name. It should be
    a singular lower-case term.
-3. Add this table name under the newly generated model file in the models directory to the init options:
+3. Now you need to add a new model file for this table. Create a new file in ``backend/db/models``
+   that exports a function for generating the model as an instance of a MetaModel from a given
+   Sequelize object. This looks as follows for a table called ``simpletable`` (the name introduced in 2.):
 
 .. code-block:: javascript
+    'use strict';
+    const MetaModel = require("@/backend/db/MetaModel.js");
 
-    tableName: '<name>'
+    module.exports = (sequelize, DataTypes) => {
+        class SimpleTable extends MetaModel {
+            static associate(models) {
+            }
+        }
+
+        SimpleTable.init({
+            updatedAt: DataTypes.DATE,
+            deleted: DataTypes.BOOLEAN,
+            deletedAt: DataTypes.DATE,
+            createdAt: DataTypes.DATE
+        }, {
+            sequelize: sequelize,
+            modelName: 'simpletable',
+            tableName: 'simpletable'
+        });
+        return SimpleTable;
+    };
 
 
 4. Add the foreign keys and constraints to the migration file as desired. For examples check out
-   the other migrations.
-5. If necessary update the model file accordingly (if fields have been changed). Make sure adding additional columns like deleted, createdAt, updatedAt and deletedAt is done in the migration file.
+   the other migrations. For a very simple table ``simpletable`` this would look like this:
+
+.. code-block:: javascript
+    module.exports = {
+    async up(queryInterface, Sequelize) {
+        await queryInterface.createTable('simpletable', {
+            id: {
+                allowNull: false, autoIncrement: true, primaryKey: true, type: Sequelize.INTEGER
+            },
+            deleted: {
+                type: Sequelize.BOOLEAN, defaultValue: false
+            },
+            createdAt: {
+                allowNull: false, type: Sequelize.DATE
+            },
+            updatedAt: {
+                allowNull: false, type: Sequelize.DATE
+            },
+            deletedAt: {
+                allowNull: true, defaultValue: null, type: Sequelize.DATE
+            }
+        });
+    }, async down(queryInterface, Sequelize) {
+        await queryInterface.dropTable('simpletable');
+    }
+
+5. If necessary update the model file accordingly (if fields have been changed). Make sure adding additional columns
+   like deleted, createdAt, updatedAt and deletedAt is done in the migration file.
+
+Accessing a Model
+~~~~~~~~~~~~~~~~~
 
 The above steps are necessary to create a new migration and associated model. To encapsulate
-the database interactions, the directory "methods" contains interface methods for each of the models.
-If you created a new migration for a new table, please follow these additional steps:
-
-1. Create a new file "methods/<modelname>.js"
-2. Add the header for importing the model definition
+the database interactions, the ``MetaModel`` class already contains several convenience functions for accessing the
+respective table. For instance, getting a single row entry by a provided ID (``getById(id)``). Accessing the DB via
+these default functions is as simple as accessing the table model and executing the static method.
 
 .. code-block:: javascript
+    // usually, you just access the models loaded in the web server; for completeness we provide the imports here:
+    const {DataTypes} = require("sequelize")
+    const db = require("@/backend/db/index.js")
+    const SimpleTable = require("../models/simpletable.js")(db.sequelize, DataTypes);
 
-    const {DataTypes, Op} = require("sequelize")
-    const db = require("../models/index.js")
+    SimpleTable.getById("x");
 
-    const ModelName = require("../models/<modelname>.js")(db.sequelize, DataTypes);
+.. note::
+    Generally you should *not* import the db object yourself and load a model as in the provided example. Instead,
+    the web server object already holds the respective models in a class attribute. Please check out the
+    :doc:`guide on how to extend a socket <for_developers/backend/socket>`_ for the details.
 
-3. Export the interface functions by adding them to the export object. To ensure consistency
-all functions that interact with the database should be async functions. Also, ensure
-proper error management, i.e. catching DB connection errors etc. Hence, do not return
-the sequelize Promise directly, instead await them and encapsulate them with a try-catch-block.
+In case you need more specific functions, you may simply add static access methods to the new model class. For instance:
 
 .. code-block:: javascript
+    'use strict';
+    const MetaModel = require("@/backend/db/MetaModel.js");
 
-    exports.funName = async function funName(document_id, user_id) {
-    //...
-    }
+    module.exports = (sequelize, DataTypes) => {
+        class SimpleTable extends MetaModel {
+            static associate(models) {
+            }
+
+            // new access function specific to this model
+            static async getDefaultRow() {
+                //do error management -- ommitted for brevity
+                return await this.findOne({ where: {'id': "x"}, raw: true});
+            }
+        }
+        //... initialization etc.
+    };
+
 
 Populating a Table
 ~~~~~~~~~~~~~~~~~~

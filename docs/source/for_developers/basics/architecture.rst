@@ -18,8 +18,9 @@ Code Structure
 
 The code is structured in two main components: the backend and frontend. The code is grouped accordingly.
 
-```
-> backend         # backend of content server (express-based)
-> frontend        # frontend of content server (vue-based)
-> docs            # all documentation files (e.g. diagrams) go here
-```
+.. code-block::
+
+    > backend         # backend of content server (express-based)
+    > frontend        # frontend of content server (vue-based)
+    > docs            # all documentation files (e.g. diagrams) go here
+
