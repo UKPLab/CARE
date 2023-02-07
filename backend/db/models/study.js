@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         documentId: DataTypes.INTEGER,
         collab: DataTypes.BOOLEAN,
         resumable: DataTypes.BOOLEAN,
+        description: DataTypes.TEXT,
         levels: DataTypes.INTEGER,
         timeLimit: DataTypes.INTEGER,
         start: DataTypes.DATE,

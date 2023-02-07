@@ -63,6 +63,12 @@ const routes = [
         meta: {requireAuth: true}
     },
     {
+        path: "/session/:sessionHash",
+        component: () => import("@/components/StudySession.vue"),
+        props: true,
+        meta: {requireAuth: true}
+    },
+    {
         path: "/:catchAll(.*)",
         name: "NotFound",
         component: () => import("@/basic/NotFound.vue"),

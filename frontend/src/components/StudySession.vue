@@ -1,5 +1,4 @@
 <template>
-  <StudyModal ref="studyModal" :study-id="studyId" @start="start"></StudyModal>
   <Annotater :document_id="documentId"
              review_id="review_id"
              readonly="decision"
@@ -8,11 +7,9 @@
 </template>
 
 <script>
-import StudyModal from "./study/StudyModal.vue";
 
 export default {
-  name: "Study",
-  components: {StudyModal},
+  name: "StudySession",
   data() {
     return {
       loading: true,
@@ -25,6 +22,7 @@ export default {
     },
   },
   mounted() {
+    // TODO load session, is resumable, otherwise error
     this.load();
   },
   computed: {
@@ -50,7 +48,6 @@ export default {
     },
     start(data) {
       console.log(data);
-      // TODO get session id, load session and display annotator
     }
   }
 }

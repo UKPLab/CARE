@@ -50,6 +50,8 @@
                       :name="field.name"
                       :required="field.required" :type="field.type" class="form-control"/>
 
+            <Editor class="form-control p-0" v-else-if="field.type === 'editor' || field.type === 'html'"
+                    v-model="currentData[field.name]"></Editor>
           <input v-else
                  :id="field.name"
                  v-model="currentData[field.name]"
@@ -72,10 +74,11 @@
 <script>
 import LoadIcon from "@/icons/LoadIcon.vue";
 import DatetimePicker from "./DatetimePicker.vue";
+import Editor from "@/basic/editor/Editor.vue"
 
 export default {
   name: "Form",
-  components: {LoadIcon, DatetimePicker},
+  components: {LoadIcon, DatetimePicker, Editor},
   emits: ["update:modelValue"],
   data() {
     return {
