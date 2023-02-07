@@ -2,7 +2,7 @@
   <Modal ref="studyCoordinatorModal" lg>
     <template v-slot:title>
       <span>
-        Study Coordinator - Create a user study
+        Study Coordinator
       </span>
     </template>
     <template v-slot:body>
@@ -50,7 +50,7 @@ export default {
       fields: [
         {
           name: "documentId",
-          label: "Selected document for user study",
+          label: "Selected document for user study:",
           type: "select",
           options: this.$store.getters["document/getDocuments"].map(document => {
             return {"value": document.id, "name": document.name}
@@ -60,10 +60,16 @@ export default {
         },
         {
           name: "name",
-          label: "Name of the user study",
+          label: "Name of the user study:",
           placeholder: "My user study",
           type: "text",
           required: true,
+        },
+        {
+          name: "description",
+          label: "Description ot the user study:",
+          help: "This text will be displayed at the beginning of the user study!",
+          type: "editor",
         },
         {
           name: "timeLimit",
@@ -126,6 +132,7 @@ export default {
           resumable: true,
           levels: 1,
           timeLimit: 0,
+          description: "",
           start: null,
           end: null,
         }

@@ -33,6 +33,9 @@ module.exports = {
                     type: Sequelize.BOOLEAN,
                     default: false,
                 },
+                description: {
+                  type: Sequelize.TEXT,
+                },
                 resumable: {
                     type: Sequelize.BOOLEAN,
                     default: false,

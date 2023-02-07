@@ -1,6 +1,6 @@
 <template>
   <div ref="Modal" aria-hidden="true" aria-labelledby="ModalLabel" class="modal fade"
-       data-bs-backdrop="static"
+       data-bs-backdrop="static" :data-bs-keyboard="!disableKeyboard"
        role="dialog" tabindex="-1">
     <div class="modal-dialog" :class="xl && 'modal-xl' || lg && 'modal-lg'" role="document">
       <div class="modal-content">
@@ -8,9 +8,7 @@
           <h5 class="modal-title">
             <slot name="title"></slot>
           </h5>
-          <button aria-label="Close" class="close" data-bs-dismiss="modal" type="button">
-            <span aria-hidden="true">&times;</span>
-          </button>
+          <button v-if="!removeClose" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div v-if="waiting" class="justify-content-center flex-grow-1 d-flex" role="status">
@@ -39,9 +37,11 @@ Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 import {Modal} from 'bootstrap';
+import LoadIcon from "@/icons/LoadIcon.vue"
 
 export default {
   name: "Modal",
+  components: {LoadIcon},
   props: {
     xl: {
       type: Boolean,
@@ -54,6 +54,16 @@ export default {
       default: false,
     },
     open: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    disableKeyboard: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    removeClose: {
       type: Boolean,
       required: false,
       default: false,

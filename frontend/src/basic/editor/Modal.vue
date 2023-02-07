@@ -4,7 +4,7 @@
       <h5 class="modal-title">{{ title }}</h5>
     </template>
     <template v-slot:body>
-      <Editor ref="editor" :content="content"></Editor>
+      <Editor ref="editor" v-model="content"></Editor>
     </template>
     <template v-slot:footer>
       <button class="btn btn-secondary" data-bs-dismiss="modal" type="button"

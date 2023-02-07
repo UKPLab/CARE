@@ -44,6 +44,8 @@ module.exports = class StudySocket extends Socket {
             }
         });
 
+
+
         this.socket.on("studyGetByHash", async (data) => {
             try {
                 this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getByHash(data.studyHash)));
@@ -62,6 +64,18 @@ module.exports = class StudySocket extends Socket {
 
         this.socket.on("studyUpdate", async (data) => {
             await this.updateStudy(data);
+        });
+
+         this.socket.on("studyStart", async (data) => {
+            try {
+                const study = await this.models['study'].getById(data.studyId);
+                //TODO check study can be started (start date / end date)
+                // add session
+                // send session
+                // send studyStarted with session Id
+            } catch (err) {
+                this.logger.error(err);
+            }
         });
 
         this.socket.on("studyPublish", async (data) => {
