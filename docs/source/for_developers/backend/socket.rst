@@ -122,8 +122,9 @@ Error and Rights Management
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 When interacting with the database the key challenge is error handling, marshalling (i.e. the translation of the DB
 data representation into a suitable format for the frontend) and rights management.
-For now, we assume that we want to call an already defined database interface method ``updateTest`` and integrate this
-call into the above example. Let's also assume that only administrators are allowed to change this value.
+For now, we assume that we want to call an already defined database a model ``Test`` specified in
+``backend/db/models/test.js`` and integrate this call into the above example.
+Let's also assume that only administrators are allowed to change this value.
 
 .. note::
 
@@ -132,7 +133,6 @@ call into the above example. Let's also assume that only administrators are allo
 
 .. code-block:: javascript
 
-    const {update: dbUpdateTest} = require("../../db/methods/test"); //careful: does not exist, only an example
     /**
      * HEADER BOILERPLATE...
      */
@@ -144,7 +144,7 @@ call into the above example. Let's also assume that only administrators are allo
             // use base class method to check for admin rights
             if (this.isAdmin()) {
                 try {
-                    const result = await dbUpdateTest(newVal);
+                    const result = await this.models["test"].updateById("x", {val: newVal});
                     this.socket.emit("testResult", {success: true, val: result});
                 } catch (e) {
                     this.socket.emit("testResult", {success: false, message: "Failed to update test!"});
