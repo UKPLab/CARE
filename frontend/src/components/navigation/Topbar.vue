@@ -1,31 +1,48 @@
 <template>
-  <div class="nav-container" id="wrapper">
+  <div id="wrapper" class="nav-container">
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
       <div class="container-fluid">
-        <button class="btn" id='backButton' href @click="this.$router.back()" title="Go back...">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left"
-               viewBox="0 0 16 16">
-            <path fill-rule="evenodd"
-                  d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+        <button id='backButton' class="btn" href title="Go back..." @click="this.$router.push('/')">
+          <svg class="bi bi-arrow-left" fill="currentColor" height="16" viewBox="0 0 16 16" width="16"
+               xmlns="http://www.w3.org/2000/svg">
+            <path
+                d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"
+                fill-rule="evenodd"/>
           </svg>
         </button>
-        <a class="navbar-brand" href @click="this.$router.push('/')">PEER</a>
+        <a class="navbar-brand" href @click="this.$router.push('/')">
+          <b>C</b><span class="small">ollaborative </span>
+          AI<span class="small">-</span>
+          <b>A</b><span class="small">ssisted </span>
+          <b>R</b><span class="small">eading </span>
+          <b>E</b><span class="small">nironment</span>
+        </a>
         <div id="topbarCustomPlaceholder">
 
         </div>
         <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
+          <span id="topBarNavItems"></span>
+          <li class="nav-item dropstart">
+            <button aria-expanded="false" class="btn btn-outline rounded-circle me-2" data-bs-toggle="dropdown"
+                    type="button">
+              <LoadIcon :size="20" icon-name="three-dots-vertical"></LoadIcon>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start">
+              <span id="topBarExtendMenuItems"></span>
+            </ul>
+          </li>
           <li class="nav-item dropdown">
             <div class="dropdown" @click="toggleProfileDropdown()" @focusout="toggleProfileDropdown()">
-              <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton"
-                      data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <button id="dropdownMenuButton" aria-expanded="false" aria-haspopup="true"
+                      class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" type="button">
                 {{ firstLetterUsername }}
               </button>
-              <div id="dropdown-show" class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
+              <div id="dropdown-show" aria-labelledby="dropdownMenuButton" class="dropdown-menu dropdown-menu-right">
                 <a class="dropdown-item display-username">Signed in as {{ username }} </a>
-                <a class="dropdown-item" href="#">Profile</a>
+                <!--<a class="dropdown-item" href="#">Profile</a>
                 <a class="dropdown-item" href="#">Settings</a>
                 <hr class="dropdown-divider">
-                <a class="dropdown-item" href="#">Privacy Policy</a>
+                <a class="dropdown-item" href="#">Privacy Policy</a>-->
                 <a class="dropdown-item" href="#" @click="logout()">Logout</a>
               </div>
             </div>
@@ -41,13 +58,16 @@
 
 This component provides both a topbar and left toggleable side toolbar.
 
-Author: Carly Gettinger (cjgettinger@gmail.com)
+Author: Carly Gettinger (cjgettinger@gmail.com), Dennis Zyska
 Co-Author: 
 Source:  
 */
 
+import LoadIcon from "@/icons/LoadIcon.vue";
+
 export default {
   name: "Topbar",
+  components: {LoadIcon},
   computed: {
     username() {
       return this.$store.getters['auth/getUsername'];

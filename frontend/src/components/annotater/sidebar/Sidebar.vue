@@ -50,8 +50,13 @@ export default {
   components: {AnnoCard},
   props: {
     documentId: {
-      type: String,
+      type: Number,
       required: true
+    },
+    'studySessionId': {
+      type: Number,
+      required: false,
+      default: 0
     },
     readonly: {
       type: Boolean,
@@ -67,13 +72,13 @@ export default {
   computed: {
     documentComments() {
       return this.$store.getters['comment/getDocumentComments'](this.documentId).sort((a, b) => {
-        if(!a.referenceAnnotation && !b.referenceAnnotation) {
+        if (!a.referenceAnnotation && !b.referenceAnnotation) {
           return Date.parse(a) - Date.parse(b);
-        } else if(a.referenceAnnotation && b.referenceAnnotation){
+        } else if (a.referenceAnnotation && b.referenceAnnotation) {
           const aAnno = this.$store.getters['anno/getAnnotation'](a.referenceAnnotation);
           const bAnno = this.$store.getters['anno/getAnnotation'](b.referenceAnnotation);
 
-          if(!aAnno || !bAnno){
+          if (!aAnno || !bAnno) {
             return 0;
           }
 

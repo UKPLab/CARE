@@ -1,5 +1,5 @@
 <template>
-  <svg class="bi" fill="currentColor" :height="size" :width="size">
+  <svg class="bi" fill="currentColor" :height="size" :width="size" :style="(color)?'color:'+color:''">
     <use :xlink:href="`${iconUrl}`" />
   </svg>
 </template>
@@ -19,6 +19,11 @@ export default {
       type: Number,
       default: 16,
       required: false,
+    },
+     color: {
+      type: String,
+      default: null,
+      required: false
     }
   },
   computed: {

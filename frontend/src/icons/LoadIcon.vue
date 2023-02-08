@@ -1,5 +1,5 @@
 <template>
-  <component :is="icon" :size="size" :name="iconName"/>
+  <component :is="icon" :size="size" :color="color" :name="iconName"/>
 </template>
 
 <script>
@@ -23,13 +23,17 @@ export default {
       type: String,
       default: "IconQuestionCircle",
       required: false,
+    },
+    color: {
+      type: String,
+      default: null,
+      required: false
     }
   },
   computed: {
     icon() {
-      let iconComponent = this.iconName;
       if (this.iconName === undefined || this.iconName === null) {
-        iconComponent = "IconQuestionCircle";
+        this.iconName = "question-circle";
       }
       if (this.iconName === "loading") {
         return IconLoading;

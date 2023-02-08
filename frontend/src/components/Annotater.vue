@@ -1,52 +1,57 @@
 <template>
-  <div v-if="documentId !== 0" class="container-fluid d-flex min-vh-100 vh-100 flex-column">
-    <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
-      <div ref="viewer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
-        <PDFViewer  :documentId="documentId" :readonly="readonly" ref="pdfViewer" style="margin:auto"
-                   class="rounded border border-1 shadow-sm"></PDFViewer>
-      </div>
-      <div class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;" id="sidebarContainer">
-        <Sidebar :documentId="documentId" :readonly="readonly"/>
+  <Loader v-if="documentId === 0" :loading="true" class="pageLoader"/>
+  <div v-else>
+    <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
+      <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
+        <div id="viewerContainer" ref="viewer" class="col border mh-100 justify-content-center p-3"
+             style="overflow-y: scroll;">
+          <PDFViewer ref="pdfViewer" :document-id="documentId" :readonly="readonly" :study-session-id="studySessionId"
+                     class="rounded border border-1 shadow-sm"
+                     style="margin:auto"></PDFViewer>
+        </div>
+        <div id="sidebarContainer" class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;">
+          <Sidebar :document-id="documentId" :readonly="readonly" :study-session-id="studySessionId"/>
+        </div>
       </div>
     </div>
+
+    <Teleport to="#topBarNavItems">
+      <button v-if="nlp_enabled" class="btn rounded-circle" title="Activate/Deactivate NLP support" type="button"
+              @click="changeNlpSetting">
+        <LoadIcon :color="(!nlp_support || !nlp_available)?'#777777':'#097969'" :size="18" icon-name="robot"></LoadIcon>
+      </button>
+    </Teleport>
+
+    <Teleport to="#topBarExtendMenuItems">
+      <li><a :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
+             class="dropdown-item" href="#" @click="downloadAnnotations('json')">Download
+        Annotations</a></li>
+    </Teleport>
+
+    <Teleport to="#topbarCustomPlaceholder">
+      <form class="hstack gap-3 container-fluid justify-content-center">
+        <button v-if="review" class="btn btn-outline-success me-2" type="button"
+                v-on:click="this.$refs.reviewSubmit.open()">Submit Review
+        </button>
+        <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">
+          Report
+        </button>
+        <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">
+          Accept
+        </button>
+        <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">
+          Reject
+        </button>
+      </form>
+    </Teleport>
+
+    <ReviewSubmit v-if="review" ref="reviewSubmit" :documentId="documentId" :review_id="review_id"></ReviewSubmit>
+    <Report v-if="approve" ref="report" :documentId="documentId" :review_id="review_id"
+            @decisionSubmit="decisionSubmit"></Report>
+    <DecisionSubmit v-if="approve" ref="decisionSubmit" :documentId="documentId"
+                    :review_id="review_id"></DecisionSubmit>
+    <ExportAnnos ref="export"></ExportAnnos>
   </div>
-
-  <Teleport to="#topbarCustomPlaceholder">
-    <form class="hstack gap-3 container-fluid justify-content-center">
-      <button v-if="review" class="btn btn-outline-success me-2" type="button"
-              v-on:click="this.$refs.reviewSubmit.open()">Submit Review
-      </button>
-      <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">
-        Report
-      </button>
-      <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">
-        Accept
-      </button>
-      <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">
-        Reject
-      </button>
-      <button :class="annotations.length  + comments.length > 0 && !downloading ? '' : 'disabled'"
-                    class="btn btn-outline-secondary"
-                    type="button"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                    @click="downloadAnnotations('json')"
-                    >
-              Download Annotations
-      </button>
-      <div v-if="nlp_enabled" class="form-check form-switch">
-        <IconBoostrap name="robot" :disabled="!nlp_support || !nlp_available"/>
-        <input class="form-check-input" ref="nlpSwitch" title="Activate/Deactivate NLP support" type="checkbox" role="switch" :checked="nlp_support" :disabled="!nlp_available" @input="e => changeNlpSetting(e.target.checked)">
-     </div>
-    </form>
-  </Teleport>
-
-  <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :documentId="documentId"></ReviewSubmit>
-  <Report v-if="approve" ref="report" :review_id="review_id" :documentId="documentId"
-          @decisionSubmit="decisionSubmit"></Report>
-  <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id"
-                  :documentId="documentId"></DecisionSubmit>
-  <ExportAnnos ref="export"></ExportAnnos>
 </template>
 
 <script>
@@ -70,10 +75,11 @@ import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Annotater",
-  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, ExportAnnos, IconBoostrap},
+  components: {LoadIcon, PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, ExportAnnos, IconBoostrap},
   props: {
     'documentId': {
       type: Number,
@@ -140,34 +146,35 @@ export default {
       });
     });
     this.load();
-
-    this.$refs.viewer.addEventListener("scroll", debounce(() => {
-      this.$socket.emit("stats", {
-        action: "annotatorScrollActivity",
-        data: {documentId: this.documentId, scrollTop: this.$refs.viewer.scrollTop, scrollHeight: this.$refs.viewer.scrollHeight}
-      })
-    }, 500));
+    this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
 
   },
-  unmounted() {
+  beforeUnmount() {
     // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
-    this.$refs.viewer.removeEventListener("scroll");
-  },
-  sockets: {
-    //TODO what is that connect for?
-    connect: function () {
-      this.load();
-    },
+    this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
   },
   methods: {
     decisionSubmit(decision) {
       this.$refs.decisionSubmit.open(decision);
     },
-    changeNlpSetting(newNlpActive){
-      if(this.nlp_support !== newNlpActive){
+    changeNlpSetting(newNlpActive) {
+      // TODO switch NLP Settings
+      if (this.nlp_support !== newNlpActive) {
         this.$socket.emit("settingSet", {key: "annotator.nlp.activated", value: newNlpActive});
       }
+    },
+    scrollActivity() {
+      debounce(() => {
+        this.$socket.emit("stats", {
+          action: "annotatorScrollActivity",
+          data: {
+            documentId: this.documentId,
+            scrollTop: this.$refs.viewer.scrollTop,
+            scrollHeight: this.$refs.viewer.scrollHeight
+          }
+        })
+      }, 500);
     },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
@@ -245,17 +252,16 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      // TODO data should loaded in app for basic settings
-      this.$socket.emit("tagSetGetAll");
-      this.$socket.emit("tagGetAll");
-      this.$socket.emit("settingGetAll");
-
       // Join Room for document updates
       this.$socket.emit("collabSubscribe", {documentId: this.documentId});
 
       // check for available nlp support (for now hard-coded sentiment analysis)
-      if(!this.nlp_available) {
-        this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetConfig", data: {name: "sentiment_classification"}});
+      if (!this.nlp_available) {
+        this.$socket.emit("serviceCommand", {
+          service: "NLPService",
+          command: "skillGetConfig",
+          data: {name: "sentiment_classification"}
+        });
       }
     },
     downloadAnnotations(outputType) {
@@ -270,11 +276,11 @@ export default {
 #sidebarContainer {
   position: relative;
   padding: 0;
-  max-width:400px;
+  max-width: 400px;
   min-width: 400px;
 }
 
-IconBoostrap[disabled]{
+IconBoostrap[disabled] {
   background-color: darkgrey;
 }
 

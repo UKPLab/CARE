@@ -101,6 +101,8 @@ module.exports = class DocumentSocket extends Socket {
         this.socket.on("documentGet", async (data) => {
             try {
                 const doc = await dbGetDoc(data.documentId);
+                this.socket.emit("documentRefresh", await this.updateCreatorName(doc));
+                // TODO access rights?
                 // TODO async file loading?
                 const pdf = fs.readFileSync(`${UPLOAD_PATH}/${doc['hash']}.pdf`);
                 this.socket.emit("documentFile", {document: doc, file: pdf});
