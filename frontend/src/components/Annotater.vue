@@ -18,10 +18,13 @@
 
 
     <Teleport to="#topBarNavItems">
-      <button v-if="nlp_enabled" class="btn rounded-circle" title="Activate/Deactivate NLP support" type="button"
-              @click="changeNlpSetting">
-        <LoadIcon :color="(!nlp_support || !nlp_available)?'#777777':'#097969'" :size="18" icon-name="robot"></LoadIcon>
-      </button>
+      <li class="nav-item">
+        <button v-if="nlp_enabled" class="btn rounded-circle" title="Activate/Deactivate NLP support" type="button"
+                  @click="changeNlpSetting">
+          <LoadIcon :color="(!nlp_support || !nlp_available)?'#777777':'#097969'" :size="18" icon-name="robot"></LoadIcon>
+        </button>
+      </li>
+      <ExpandMenu class="nav-item"></ExpandMenu>
     </Teleport>
 
     <Teleport to="#topBarExtendMenuItems">
@@ -31,7 +34,8 @@
     </Teleport>
 
     <Teleport to="#topbarCustomPlaceholder">
-      <span v-if="studySessionId !== 0 && false" class="text-center">User Study Collab: {{study.collab}} TimeLimit: {{study.timeLimit}} Sessions: {{studySessions.length}} Online: TODO, Finish Button Modal</span>
+      <span v-if="studySessionId !== 0 && false"
+            class="text-center">User Study Collab: {{ study.collab }} TimeLimit: {{ study.timeLimit }} Sessions: {{ studySessions.length }} Online: TODO, Finish Button Modal</span>
       <form class="hstack gap-3 container-fluid justify-content-center">
         <button v-if="review" class="btn btn-outline-success me-2" type="button"
                 v-on:click="this.$refs.reviewSubmit.open()">Submit Review
@@ -79,10 +83,23 @@ import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
 import LoadIcon from "@/icons/LoadIcon.vue";
+import ExpandMenu from "./navigation/ExpandMenu.vue";
+
 
 export default {
   name: "Annotater",
-  components: {LoadIcon, PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, ExportAnnos, IconBoostrap},
+  components: {
+    LoadIcon,
+    PDFViewer,
+    ExpandMenu,
+    Sidebar,
+    ReviewSubmit,
+    Report,
+    DecisionSubmit,
+    Loader,
+    ExportAnnos,
+    IconBoostrap
+  },
   props: {
     'documentId': {
       type: Number,
