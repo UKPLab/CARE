@@ -201,6 +201,7 @@ export default {
       return this.$store.getters["settings/getValue"]('annotator.nlp.summarization.skillName');
     },
     summarizationAvailable() {
+      if (this.annotation)
       return this.annotation.text !== null && this.annotation.text.length >= this.summarizationMinAnnoLength
           && this.summarizationActivated;
     },

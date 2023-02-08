@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="studyModal" disable-keyboard lg remove-close>
+  <Modal ref="modal" :props="this.$props" disable-keyboard lg name="studyStart" remove-close>
     <template v-slot:title>
       <span v-if="showSessions">
         Open Sessions for study: {{ study.name }}
@@ -70,20 +70,12 @@ import Table from "@/basic/table/Table.vue";
 export default {
   name: "StudyModal.vue",
   components: {Loader, Modal, Form, Table},
-  emits: ["start"],
+  emits: ["start", "finish"],
   props: {
     studyId: {
       type: Number,
       required: true,
       default: 0,
-
-    }
-  },
-  watch: {
-    data: {
-      handler() {
-        console.log(this.data);
-      }, deep: true
     }
   },
   data() {
@@ -176,60 +168,60 @@ export default {
             ;
       }
       return [];
-    }
-    ,
+    },
     started() {
       if (this.study && this.study.start !== null) {
         return (new Date(this.study.start) < new Date());
       }
       return true;
-    }
-    ,
+    },
     ended() {
       if (this.study && this.study.end !== null) {
         return !(new Date() < new Date(this.study.end));
       }
       return false;
-    }
-    ,
+    },
     available() {
       return (this.started && !this.ended);
-    }
-    ,
+    },
     link() {
       return window.location.origin + "/study/" + this.hash;
     }
   },
   methods: {
     open() {
-      this.$refs.studyModal.openModal();
+      this.$refs.modal.open();
+    },
+    close() {
+      this.$refs.modal.close();
     },
     start() {
       this.sockets.subscribe("studyStarted", (data) => {
         if (data.success) {
           this.$emit("start", data.studySessionId);
-          this.$refs.studyModal.waiting = false;
-          this.$refs.studyModal.closeModal();
+          this.$refs.modal.waiting = false;
+          this.$refs.modal.close();
           this.eventBus.emit('toast', {
             title: "Study started",
             message: "Enjoy your time :-)",
             variant: "success"
           });
         } else {
-          this.$refs.studyModal.waiting = false;
+          this.$refs.modal.waiting = false;
           this.eventBus.emit('toast', {title: "Study cannot be started!", message: data.message, variant: "danger"});
         }
       });
       this.$socket.emit("studyStart", {studyId: this.studyId});
-      this.$refs.studyModal.waiting = true;
+      this.$refs.modal.waiting = true;
     },
     sessionAction(data) {
       if (data.action === "finishSession") {
-        //TODO finish
+        this.$emit("finish", data.params.id);
+        this.$refs.modal.close();
       }
       if (data.action === "resumeSession") {
         this.$emit("start", data.params.id);
-        this.$refs.studyModal.closeModal();
+        this.$refs.modal.close();
       }
     }
   }
