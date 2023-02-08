@@ -7,9 +7,7 @@ Source: -
 */
 
 const getDefaultState = () => {
-    return {
-        documents: []
-    };
+    return [];
 };
 
 export default {
@@ -18,18 +16,14 @@ export default {
     state: getDefaultState(),
     getters: {
         getDocuments: state => {
-            return state['documents'];
+            return state;
         },
         getDocument: state => id => {
-            return state['documents'].find(doc => doc.id === id);
+            return state.find(doc => doc.id === id);
         },
-        getDocumentId: state => (hash) => {
-            if (state['documents'].length > 0) {
-                return state['documents'].find(doc => doc.hash === hash)["id"];
-            } else {
-                return null;
-            }
-        },
+        getDocumentByHash: state => hash => {
+            return state.find(doc => doc.hash === hash);
+        }
     },
     mutations: {
         SOCKET_documentRefresh: (state, data) => {
@@ -38,11 +32,11 @@ export default {
             }
 
             data.forEach((doc) => {
-                const oldDoc = state['documents'].find(s => s.id === doc.id);
+                const oldDoc = state.find(s => s.id === doc.id);
                 if (oldDoc !== undefined) {
-                    state['documents'].splice(state['documents'].indexOf(oldDoc), 1);
+                    state.splice(state.indexOf(oldDoc), 1);
                 }
-                state['documents'].push(doc);
+                state.push(doc);
             });
         },
     },

@@ -15,14 +15,14 @@ export default {
     strict: true,
     state: getDefaultState(),
      getters: {
-        getStudySessions: state => {
-            return state;
+        getStudySessionsByStudyId: state => (studyId) => {
+            return state.filter(session => session.studyId === studyId);
         },
-        getStudySessionById: state => studyId => {
-            return state.find(study => study.id === studyId);
+        getStudySessionById: state => studySessionId => {
+            return state.find(session => session.id === studySessionId);
         },
-        getStudySessionByHash: state => studyHash => {
-            return state.find(study => study.hash === studyHash);
+        getStudySessionByHash: state => studySessionHash => {
+            return state.find(session => session.hash === studySessionHash);
         }
     },
     mutations: {

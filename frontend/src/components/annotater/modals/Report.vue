@@ -53,7 +53,7 @@ export default {
     }
   },
   props: {
-    document_id: {
+    documentId: {
       type: String,
       required: true
     },
@@ -74,7 +74,7 @@ export default {
   },
   computed: {
     annotations() {
-      return this.$store.getters['anno/getAnnotations'](this.document_id);
+      return this.$store.getters['anno/getAnnotations'](this.documentId);
     },
     tagSet() {
       return this.$store.getters["tag/getTags"];

@@ -25,7 +25,7 @@ export default {
   name: "ReviewSubmit",
   components: {Modal},
   props: {
-    document_id: {
+    documentId: {
       type: String,
       required: true
     },
@@ -39,14 +39,14 @@ export default {
       this.$refs.reviewSubmit.openModal();
       this.$socket.emit("stats", {
         action: "openModalReviewSubmit",
-        data: {review_id: this.review_id, document_id: this.document_id}
+        data: {review_id: this.review_id, documentId: this.documentId}
       });
     },
     cancel() {
       this.$refs.reviewSubmit.closeModal();
       this.$socket.emit("stats", {
         action: "cancelModalReviewSubmit",
-        data: {review_id: this.review_id, document_id: this.document_id}
+        data: {review_id: this.review_id, documentId: this.documentId}
       });
     },
     submit() {
@@ -71,7 +71,7 @@ export default {
       });
       this.$socket.emit('reviewSubmit',
           {
-            "document_id": this.document_id,
+            "documentId": this.documentId,
             "review_id": this.review_id
           });
     }

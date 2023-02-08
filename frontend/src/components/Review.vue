@@ -4,7 +4,7 @@
       <span class="visually-hidden">Loading...</span>
     </div>
   </div>
-  <Annotater v-else :document_id="document_id" :review_id="review_id" :readonly="decision" :review="!decision"
+  <Annotater v-else :documentId="documentId" :review_id="review_id" :readonly="decision" :review="!decision"
              :approve="decision"/>
 </template>
 
@@ -25,7 +25,7 @@ export default {
   data() {
     return {
       waiting: true,
-      document_id: null,
+      documentId: null,
     }
   },
   props: {
@@ -49,7 +49,7 @@ export default {
     this.sockets.subscribe("reviewData", (data) => {
       this.sockets.unsubscribe('reviewData');
       if (data.success) {
-        this.document_id = data.document_id;
+        this.documentId = data.documentId;
         this.waiting = false;
       } else {
         this.$router.push("/");

@@ -6,11 +6,11 @@
         :pageNumber="page"
         :pdf="pdf"
         :render="renderCheck[page - 1]"
-        :document_id="document_id"
+        :documentId="documentId"
         class="scrolling-page"
         @updateVisibility="updateVisibility"
     />
-    <Adder v-if="!readonly" :document_id="document_id" :pdf="pdf"></Adder>
+    <Adder v-if="!readonly" :documentId="documentId" :pdf="pdf"></Adder>
   </div>
 </template>
 
@@ -36,7 +36,7 @@ export default {
   name: "PDFViewer",
   components: {PDFPage, Adder},
   props: {
-    document_id: {
+    documentId: {
       type: Number,
       required: true
     },
@@ -72,7 +72,7 @@ export default {
   sockets: {
     documentFile: function (data) {
       console.log(data);
-      if (data.document.id === this.document_id) {
+      if (data.document.id === this.documentId) {
         const loadingTask = pdfjsLib.getDocument(data.file);
         loadingTask.promise
             .then((pdf) => {
@@ -92,7 +92,7 @@ export default {
     }
   },
   mounted() {
-    this.$socket.emit("documentGet", {documentId: this.document_id});
+    this.$socket.emit("documentGet", {documentId: this.documentId});
 
   },
   methods: {
@@ -108,7 +108,7 @@ export default {
       }
       this.$socket.emit("stats", {
         action: "pdfPageVisibilityChange",
-        data: {document_id: this.document_id, readonly: this.readonly, "visibility": page}
+        data: {documentId: this.documentId, readonly: this.readonly, "visibility": page}
       })
     },
     ...mapMutations({

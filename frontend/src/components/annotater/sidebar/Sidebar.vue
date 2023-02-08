@@ -13,7 +13,7 @@
             v-on:mouseleave="unhover(comment.id)"
             v-on:mouseover='hover(comment.id)'
         >
-          <AnnoCard v-bind:id="comment.id" :comment_id="comment.id" :document_id="document_id" :readonly="readonly"
+          <AnnoCard v-bind:id="comment.id" :comment_id="comment.id" :documentId="documentId" :readonly="readonly"
                     @focus="sidebarScrollTo"></AnnoCard>
         </li>
 
@@ -49,7 +49,7 @@ export default {
   name: "Sidebar",
   components: {AnnoCard},
   props: {
-    document_id: {
+    documentId: {
       type: String,
       required: true
     },
@@ -66,7 +66,7 @@ export default {
   },
   computed: {
     documentComments() {
-      return this.$store.getters['comment/getDocumentComments'](this.document_id).sort((a, b) => {
+      return this.$store.getters['comment/getDocumentComments'](this.documentId).sort((a, b) => {
         if(!a.referenceAnnotation && !b.referenceAnnotation) {
           return Date.parse(a) - Date.parse(b);
         } else if(a.referenceAnnotation && b.referenceAnnotation){
@@ -88,7 +88,7 @@ export default {
   mounted() {
     this.eventBus.on('sidebarScroll', (anno_id) => {
       this.sidebarScrollTo(this.$store.getters["comment/getCommentByAnnotation"](anno_id).id);
-      this.$socket.emit("stats", {action: "sidebarScroll", data: {document_id: this.document_id, anno_id: anno_id}});
+      this.$socket.emit("stats", {action: "sidebarScroll", data: {documentId: this.documentId, anno_id: anno_id}});
     })
     this.load();
   },
@@ -112,8 +112,8 @@ export default {
         this.annoHover(annotationId)
     },
     load() {
-      this.$socket.emit("annotationGetByDocument", {documentId: this.document_id});
-      this.$socket.emit("commentGetByDocument", {documentId: this.document_id});
+      this.$socket.emit("annotationGetByDocument", {documentId: this.documentId});
+      this.$socket.emit("commentGetByDocument", {documentId: this.documentId});
     },
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;
@@ -121,7 +121,7 @@ export default {
     },
     createDocumentComment() {
       this.$socket.emit('commentAdd', {
-        documentId: this.document_id,
+        documentId: this.documentId,
         annotationId: null,
         commentId: null
       });

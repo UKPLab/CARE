@@ -39,9 +39,9 @@ export default {
           const comments = getters.getCommentsByCommentId(comment_id);
           return comments.length + comments.map(c => getters.getNumberOfChildrenByComment(c.id)).reduce((pv, cv) => pv + cv, 0);
         },
-        getDocumentComments: (state) => (document_id) => {
+        getDocumentComments: (state) => (documentId) => {
             return state.filter(comment => !comment.deleted)
-                .filter(comm => comm.documentId === document_id && comm.referenceComment === null);
+                .filter(comm => comm.documentId === documentId && comm.referenceComment === null);
         }
     },
     mutations: {

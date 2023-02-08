@@ -45,8 +45,14 @@ const routes = [
         meta: {requiresAuth: false, hideTopbar: true}
     },
     {
-        path: "/annotate/:documentHash",
+        path: "/annotater/:documentId",
         component: () => import('@/components/Annotater.vue'),
+        props: true,
+        meta: {requiresAuth: true}
+    },
+    {
+        path: "/document/:documentHash",
+        component: () => import('@/components/Document.vue'),
         props: true,
         meta: {requiresAuth: true}
     },

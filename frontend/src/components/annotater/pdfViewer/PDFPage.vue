@@ -17,7 +17,7 @@
       </div>
       <div :id="'text-layer-' + pageNumber" class="textLayer"></div>
     </div>
-    <Highlights :page_id="pageNumber" ref="highlights" :document_id="document_id"/>
+    <Highlights :page_id="pageNumber" ref="highlights" :documentId="documentId"/>
   </div>
 </template>
 
@@ -49,7 +49,7 @@ export default {
       type: Number,
       default: 0,
     },
-    document_id: {
+    documentId: {
       type: Number,
       required: true
     },
@@ -100,10 +100,10 @@ export default {
   },
   computed: {
     annotations() {
-      return this.$store.getters['anno/getPageAnnotations'](this.document_id, this.pageNumber);
+      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageNumber);
     },
     anchors() {
-      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id, this.pageNumber))
+      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId, this.pageNumber))
     },
   },
   methods: {
@@ -151,7 +151,7 @@ export default {
         this.init()
         this.$socket.emit("stats", {
           action: "pdfPageResizeChange",
-          data: {document_id: this.document_id, pageNumber: this.pageNumber, width: width}
+          data: {documentId: this.documentId, pageNumber: this.pageNumber, width: width}
         })
       }
     },

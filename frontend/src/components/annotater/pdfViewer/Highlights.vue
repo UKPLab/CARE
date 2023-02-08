@@ -15,7 +15,7 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 
 export default {
   name: "Highlights",
-  props: ['document_id', 'page_id'],
+  props: ['documentId', 'page_id'],
   data: function () {
     return {}
   },
@@ -24,7 +24,7 @@ export default {
   },
   computed: {
     annotations() {
-      return this.$store.getters['anno/getPageAnnotations'](this.document_id, this.page_id).filter(anno => anno.anchors !== null)
+      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.page_id).filter(anno => anno.anchors !== null)
     },
     tags() {
       return this.$store.getters['tag/getAllTags'](false);
