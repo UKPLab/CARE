@@ -80,7 +80,7 @@ export default {
           unit: "min",
           min: 0,
           max: 180,
-          step: 10,
+          step: 1,
           required: false,
         },
         {
