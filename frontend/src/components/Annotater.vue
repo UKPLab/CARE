@@ -1,6 +1,6 @@
 <template>
   <Loader v-if="documentId === 0" :loading="true" class="pageLoader"/>
-  <div v-else>
+  <span v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
         <div id="viewerContainer" ref="viewer" class="col border mh-100 justify-content-center p-3"
@@ -51,7 +51,7 @@
     <DecisionSubmit v-if="approve" ref="decisionSubmit" :documentId="documentId"
                     :review_id="review_id"></DecisionSubmit>
     <ExportAnnos ref="export"></ExportAnnos>
-  </div>
+  </span>
 </template>
 
 <script>
