@@ -38,16 +38,16 @@
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
           <div class="col text-end">
-            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Save"
-                    type="button" v-on:click="save()">
-              <LoadIcon :size="16" class="danger" iconName="save-fill"></LoadIcon>
-              <span class="visually-hidden">Edit</span>
-            </button>
-            <button class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Cancel"
-                    type="button" v-on:click="cancel()">
-              <LoadIcon :size="16" iconName="x-square-fill"></LoadIcon>
-              <span class="visually-hidden">Edit</span>
-            </button>
+            <SidebarButton :loading="false"
+                           :props="this.$props"
+                           icon="save-fill"
+                           title="Save"
+                           @click="save" />
+            <SidebarButton :loading="false"
+                           :props="this.$props"
+                           icon="x-square-fill"
+                           title="Cancel"
+                           @click="cancel" />
           </div>
         </div>
         <div v-else class="row">
@@ -59,32 +59,33 @@
             </button>
           </div>
           <div class="col text-end">
-            <button v-if="settingResponse" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
-                    type="button" v-on:click="$refs.main_comment.reply();showReplies = !showReplies">
-              <LoadIcon :size="16" iconName="reply-fill"></LoadIcon>
-              <span class="visually-hidden">Reply</span>
-            </button>
+            <SidebarButton v-if="settingResponse"
+                           :loading="false"
+                           :props="this.$props"
+                           icon="reply-fill"
+                           title="Reply"
+                           @click="$refs.main_comment.reply();showReplies = !showReplies" />
             <NLPService
                 v-if="summarizationAvailable && comment.userId === user_id"
-                :skill="summarizationSkillName"
                 :data="summarizationRequestData"
+                :skill="summarizationSkillName"
                 icon-name="file-text"
                 title="Summarize"
                 type="button"
                 @response="summarizeResponse"
             ></NLPService>
-            <button v-if="comment.userId === user_id" class="btn btn-sm" data-placement="top" data-toggle="tooltip"
-                    title="Edit"
-                    type="button" v-on:click="edit()">
-              <LoadIcon :size="16" iconName="pencil-square"></LoadIcon>
-              <span class="visually-hidden">Edit</span>
-            </button>
-            <button v-if="comment.userId === user_id" class="btn btn-sm" data-placement="top" data-toggle="tooltip"
-                    title="Delete"
-                    type="button" v-on:click="remove()">
-              <LoadIcon :size="16" iconName="trash3"></LoadIcon>
-              <span class="visually-hidden">Delete</span>
-            </button>
+            <SidebarButton v-if="comment.userId === user_id"
+                           :loading="false"
+                           :props="this.$props"
+                           icon="pencil-square"
+                           title="Edit"
+                           @click="edit" />
+            <SidebarButton v-if="comment.userId === user_id"
+                           :loading="false"
+                           :props="this.$props"
+                           icon="trash3"
+                           title="Delete"
+                           @click="remove" />
           </div>
         </div>
       </div>
@@ -116,12 +117,13 @@ import CommentCard from "./CommentCard.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 import Collaboration from "@/basic/Collaboration.vue"
 import IconLoading from "@/icons/IconLoading.vue"
+import SidebarButton from "./SidebarButton.vue"
 
 import NLPService from "@/basic/NLPService.vue";
 
 export default {
   name: "AnnoCard",
-  components: {NLPService, Collaboration, SideCard, CommentCard, LoadIcon, IconLoading},
+  components: {NLPService, Collaboration, SideCard, CommentCard, LoadIcon, IconLoading, SidebarButton},
   props: ["comment_id", "readonly", "documentId"],
   data: function () {
     return {
