@@ -132,7 +132,8 @@ export default {
     studySessions() {
       if (this.studyId) {
         return this.$store.getters['study_session/getStudySessionsByStudyId'](this.studyId)
-            .map(study => {
+            .map(s => {
+              let study = {...s}
               study.resumable = this.study.resumable;
               study.startParsed = new Date(study.start).toLocaleString();
               study.finished = study.end !== null
