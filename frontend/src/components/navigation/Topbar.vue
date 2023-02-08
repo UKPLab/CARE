@@ -20,17 +20,9 @@
         <div id="topbarCustomPlaceholder">
 
         </div>
-        <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
-          <span id="topBarNavItems"></span>
-          <li class="nav-item dropstart">
-            <button aria-expanded="false" class="btn btn-outline rounded-circle me-2" data-bs-toggle="dropdown"
-                    type="button">
-              <LoadIcon :size="20" icon-name="three-dots-vertical"></LoadIcon>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start">
-              <span id="topBarExtendMenuItems"></span>
-            </ul>
-          </li>
+        <ul class="navbar-nav ms-auto mt-2 mt-lg-0" id="topBarNavItems">
+        </ul>
+        <ul class="navbar-nav">
           <li class="nav-item dropdown">
             <div class="dropdown" @click="toggleProfileDropdown()" @focusout="toggleProfileDropdown()">
               <button id="dropdownMenuButton" aria-expanded="false" aria-haspopup="true"
