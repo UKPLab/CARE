@@ -4,18 +4,14 @@
               :study-id="studyId"
               @finish="finish"
               @start="start"/>
-  <FinishModal ref="studyFinishModal" :study-id="studyId"/>
-  <!--
-  TODO open modal when time is up - (if not resumable add not closeable)
-  -->
-
+  <FinishModal ref="studyFinishModal" :closeable="!timeUp" :finished="finished" :study-id="studyId"
+               @finish="finalFinish"/>
   <Teleport to="#topbarCustomPlaceholder">
     <button class="btn btn-outline-secondary" type="button" @click="finish">Finish Study</button>
     <button v-if="timeLeft > 0" class="btn mb-1" type="button">
       <LoadIcon :size="21" class="me-1 middle" icon-name="stopwatch"/>
       <span :class="{'text-danger':timeLeft < (5 * 60)}" class="middle"><b>Time Left:</b> {{ timeLeftHuman }}</span>
     </button>
-
   </Teleport>
   <Annotater v-if="documentId !== 0" :document-id="documentId"
              :readonly="readonly"
@@ -96,6 +92,19 @@ export default {
       }
       return 0;
     },
+    finished() {
+      if (this.studySession && this.studySession.end)
+        return true;
+      return false;
+    },
+    timeUp() {
+      if (this.study && this.study.timeLimit > 0) {
+        if (this.timeLeft < 0) {
+          return true;
+        }
+      }
+      return false;
+    },
     timeLeftHuman() {
       if (this.timeLeft < 60) {
         return Math.round(this.timeLeft) + "s";
@@ -115,6 +124,13 @@ export default {
         this.calcTimeLeft();
       }
     },
+    finalFinish(data) {
+      this.$socket.emit("studySessionUpdate", {
+        sessionId: this.studySessionId,
+        comment: data.comment,
+        end: Date.now()
+      })
+    },
     finish(data) {
       this.studySessionId = data;
       this.$refs.studyFinishModal.open();
@@ -125,8 +141,7 @@ export default {
 
       if (this.timeLeft < 0) {
         this.finish(this.studySessionId);
-      }
-      else if (!this.studySession.end) {
+      } else if (!this.studySession.end) {
         setTimeout(this.calcTimeLeft, 1000);
       }
     }
