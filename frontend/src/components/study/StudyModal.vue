@@ -124,6 +124,7 @@ export default {
     studySessions() {
       if (this.studyId) {
         return this.$store.getters['study_session/getStudySessionsByStudyId'](this.studyId)
+            .filter(s => s.end === null)
             .map(s => {
               let study = {...s}
               study.resumable = this.study.resumable;
