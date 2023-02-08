@@ -170,15 +170,15 @@ export default {
       this.$socket.emit("documentUpdate", {documentId: row.id, document: {name: "default_name"}});
     },
     accessDoc(row) {
-      this.$router.push(`/annotate/${row.hash}`);
+      this.$router.push(`/document/${row.hash}`);
     },
     onAddedDoc() {
       this.load();
     },
-    startReview(document_id) {
+    startReview(documentId) {
       //if a review was already started on this document, don't start a new one
-      if (this.reviews.map(r => r.document).includes(document_id)) {
-        const review_i = this.reviews.map(r => r.document).indexOf(document_id);
+      if (this.reviews.map(r => r.document).includes(documentId)) {
+        const review_i = this.reviews.map(r => r.document).indexOf(documentId);
 
         this.$router.push(`/review/${this.reviews[review_i].hash}`);
       } else {
@@ -194,11 +194,11 @@ export default {
             });
           }
         });
-        this.$socket.emit("startReview", {document_id: document_id});
+        this.$socket.emit("startReview", {documentId: documentId});
       }
     },
-    reviewState(document_id) {
-      const review_i = this.reviews.map(r => r.document).indexOf(document_id); //gets first review matching the document
+    reviewState(documentId) {
+      const review_i = this.reviews.map(r => r.document).indexOf(documentId); //gets first review matching the document
       if (review_i === -1) {
         return "NOT_STARTED";
       }

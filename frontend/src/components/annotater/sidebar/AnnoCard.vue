@@ -6,7 +6,7 @@
         <div class="col">
           {{ comment.creator_name }}
           <Collaboration ref="collab"
-                         :document-id="document_id"
+                         :document-id="documentId"
                          :target-id="comment_id"
                          target-type="comment"
                          @collabStatus="toEditMode"></Collaboration>
@@ -29,7 +29,7 @@
            data-toogle="tooltip" @click="scrollTo(annotation_id)">
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
-      <CommentCard ref="main_comment" :comment_id="comment_id" :document_id="document_id" :edit="editedByMyself"
+      <CommentCard ref="main_comment" :comment_id="comment_id" :documentId="documentId" :edit="editedByMyself"
                    :level=0
                    @saveCard="save()"/>
     </template>
@@ -93,7 +93,7 @@
     <template v-slot:thread>
       <div v-if="showReplies" class="d-grid gap-1 my-2">
         <span v-for="c in childComments" :key="c.id">
-          <CommentCard :comment_id="c.id" :document_id="document_id" :level=1>
+          <CommentCard :comment_id="c.id" :documentId="documentId" :level=1>
         </CommentCard>
         </span>
       </div>
@@ -122,7 +122,7 @@ import NLPService from "@/basic/NLPService.vue";
 export default {
   name: "AnnoCard",
   components: {NLPService, Collaboration, SideCard, CommentCard, LoadIcon, IconLoading},
-  props: ["comment_id", "readonly", "document_id"],
+  props: ["comment_id", "readonly", "documentId"],
   data: function () {
     return {
       shake: false,
@@ -248,7 +248,7 @@ export default {
         } else {
           this.$socket.emit('annotationGet', {
             "annotationId": this.annotation.id,
-            "documentId": this.document_id
+            "documentId": this.documentId
           });
         }
       } else {
@@ -286,7 +286,7 @@ export default {
     },
     summarizeResponse(data) {
       this.$socket.emit('commentAdd', {
-        "documentId": this.document_id,
+        "documentId": this.documentId,
         "commentId": this.comment_id,
         "text": "Summarization: " + data[0]['summary_text'],
         "userId": "Bot"

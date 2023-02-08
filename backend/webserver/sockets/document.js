@@ -60,6 +60,16 @@ module.exports = class DocumentSocket extends Socket {
             await this.updateAllDocuments();
         });
 
+        this.socket.on("studyGetByHash", async (data) => {
+            try {
+                const document = await this.models['document'].getByHash(data.documentHash);
+                //TODO check rights, public or study
+                this.socket.emit("documentRefresh", await this.updateCreatorName(document));
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+
         this.socket.on("documentDelete", async (data) => {
             try {
                 const currentDocument = await dbGetDoc(data.documentId);

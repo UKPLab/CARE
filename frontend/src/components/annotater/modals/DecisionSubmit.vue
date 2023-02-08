@@ -29,7 +29,7 @@ export default {
   name: "DecisionSubmit",
   components: {Modal},
   props: {
-    document_id: {
+    documentId: {
       type: String,
       required: true
     },
@@ -47,11 +47,11 @@ export default {
     open(accept) {
       this.accept = accept;
       this.$refs.decisionSubmit.openModal();
-      this.$socket.emit("stats", {action: "openModalDecisionSubmit", data: {review_id: this.review_id, document_id: this.document_id}});
+      this.$socket.emit("stats", {action: "openModalDecisionSubmit", data: {review_id: this.review_id, documentId: this.documentId}});
     },
     cancel() {
       this.$refs.decisionSubmit.closeModal();
-      this.$socket.emit("stats", {action: "cancelModalDecisionSubmit", data: {review_id: this.review_id, document_id: this.document_id}});
+      this.$socket.emit("stats", {action: "cancelModalDecisionSubmit", data: {review_id: this.review_id, documentId: this.documentId}});
     },
     submit() {
       this.$refs.decisionSubmit.waiting = true;
@@ -67,7 +67,7 @@ export default {
       });
       this.$socket.emit('decisionSubmit',
           {
-            "document_id": this.document_id,
+            "documentId": this.documentId,
             "reason": document.getElementById('reason').value,
             "accept": this.accept,
             "review_id": this.review_id

@@ -47,7 +47,7 @@ export default {
       return this.$store.getters["document/getDocument"](this.id);
     },
     link() {
-      return window.location.origin + "/annotate/" + this.document.hash;
+      return window.location.origin + "/document/" + this.document.hash;
     }
   },
   methods: {

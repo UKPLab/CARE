@@ -10,7 +10,7 @@
           <!--<span v-if="showEditByCollab">
             <LoadIcon :size="12 " class="fading" iconName="pencil-fill"></LoadIcon>
           </span>-->
-          <Collaboration ref="collab" :document-id="document_id" :target-id="comment_id" target-type="comment"
+          <Collaboration ref="collab" :document-id="documentId" :target-id="comment_id" target-type="comment"
                          @collabStatus="x => editMode = x"></Collaboration>
         </div>
         <div class="col text-end">
@@ -100,7 +100,7 @@
     </div>
     <span v-for="c in childComments" v-if="level >= 1" :key="c.id">
           <hr class="hr"/>
-          <CommentCard :comment_id="c.id" :document_id="document_id" :level="level + 1">
+          <CommentCard :comment_id="c.id" :documentId="documentId" :level="level + 1">
         </CommentCard>
         </span>
   </div>
@@ -121,7 +121,7 @@ export default {
       type: Number,
       required: true
     },
-    document_id: {
+    documentId: {
       type: Number,
       required: true
     },
@@ -238,7 +238,7 @@ export default {
     },
     reply() {
       this.$socket.emit('commentAdd', {
-        "documentId": this.document_id,
+        "documentId": this.documentId,
         "commentId": this.comment_id
       });
     },

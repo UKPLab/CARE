@@ -47,7 +47,17 @@ module.exports = class StudySocket extends Socket {
 
         this.socket.on("studyGetByHash", async (data) => {
             try {
-                this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getByHash(data.studyHash)));
+                const study = await this.models['study'].getByHash(data.studyHash);
+                if (study) {
+                    const sessions = await this.models['study_session'].getAllByUserId(this.user_id)
+                    this.socket.emit("studySessionRefresh", sessions.filter(s => s.studyId === study.id))
+                    this.socket.emit("studyRefresh", await this.updateCreatorName(study));
+                } else {
+                    this.socket.emit("studyError", {
+                        studyHash: data.studyHash,
+                        message: "Not found!"
+                    });
+                }
             } catch (err) {
                 this.logger.error(err);
             }

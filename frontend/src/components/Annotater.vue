@@ -1,12 +1,12 @@
 <template>
-  <div v-if="document_id !== null" class="container-fluid d-flex min-vh-100 vh-100 flex-column">
+  <div v-if="documentId !== 0" class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
       <div ref="viewer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
-        <PDFViewer  :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto"
+        <PDFViewer  :documentId="documentId" :readonly="readonly" ref="pdfViewer" style="margin:auto"
                    class="rounded border border-1 shadow-sm"></PDFViewer>
       </div>
       <div class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;" id="sidebarContainer">
-        <Sidebar :document_id="document_id" :readonly="readonly"/>
+        <Sidebar :documentId="documentId" :readonly="readonly"/>
       </div>
     </div>
   </div>
@@ -41,11 +41,11 @@
     </form>
   </Teleport>
 
-  <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id"></ReviewSubmit>
-  <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id"
+  <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :documentId="documentId"></ReviewSubmit>
+  <Report v-if="approve" ref="report" :review_id="review_id" :documentId="documentId"
           @decisionSubmit="decisionSubmit"></Report>
   <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id"
-                  :document_id="document_id"></DecisionSubmit>
+                  :documentId="documentId"></DecisionSubmit>
   <ExportAnnos ref="export"></ExportAnnos>
 </template>
 
@@ -75,14 +75,19 @@ export default {
   name: "Annotater",
   components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, ExportAnnos, IconBoostrap},
   props: {
-    'documentHash': {
-      type: String,
-      required: true,
+    'documentId': {
+      type: Number,
+      required: true
     },
     'review_id': {
       type: String,
       required: false,
       default: null
+    },
+    'studySessionId': {
+      type: Number,
+      required: false,
+      default: 0
     },
     'readonly': {
       type: Boolean,
@@ -107,16 +112,13 @@ export default {
   },
   computed: {
     anchors() {
-      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id))
+      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId))
     },
     annotations() {
-      return this.$store.getters["anno/getAnnotations"](this.document_id);
+      return this.$store.getters["anno/getAnnotations"](this.documentId);
     },
     comments() {
-      return this.$store.getters["comment/getDocumentComments"](this.document_id);
-    },
-    document_id() {
-      return this.$store.getters["document/getDocumentId"](this.documentHash);
+      return this.$store.getters["comment/getDocumentComments"](this.documentId);
     },
     nlp_support() {
       return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true";
@@ -134,7 +136,7 @@ export default {
       this.scrollTo(anno_id);
       this.$socket.emit("stats", {
         action: "pdfScroll",
-        data: {review_id: this.review_id, document_id: this.document_id, anno_id: anno_id}
+        data: {review_id: this.review_id, documentId: this.documentId, anno_id: anno_id}
       });
     });
     this.load();
@@ -142,14 +144,14 @@ export default {
     this.$refs.viewer.addEventListener("scroll", debounce(() => {
       this.$socket.emit("stats", {
         action: "annotatorScrollActivity",
-        data: {document_id: this.document_id, scrollTop: this.$refs.viewer.scrollTop, scrollHeight: this.$refs.viewer.scrollHeight}
+        data: {documentId: this.documentId, scrollTop: this.$refs.viewer.scrollTop, scrollHeight: this.$refs.viewer.scrollHeight}
       })
     }, 500));
 
   },
   unmounted() {
     // Leave the room for document updates
-    this.$socket.emit("collabUnsubscribe", {documentId: this.document_id});
+    this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll");
   },
   sockets: {
@@ -249,7 +251,7 @@ export default {
       this.$socket.emit("settingGetAll");
 
       // Join Room for document updates
-      this.$socket.emit("collabSubscribe", {documentId: this.document_id});
+      this.$socket.emit("collabSubscribe", {documentId: this.documentId});
 
       // check for available nlp support (for now hard-coded sentiment analysis)
       if(!this.nlp_available) {
@@ -257,7 +259,7 @@ export default {
       }
     },
     downloadAnnotations(outputType) {
-      this.$refs.export.requestExport([this.document_id], outputType, true);
+      this.$refs.export.requestExport([this.documentId], outputType, true);
     }
   }
 }

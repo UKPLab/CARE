@@ -2,18 +2,26 @@
   <Modal ref="studyModal" disable-keyboard lg remove-close>
     <template v-slot:title>
       <span v-if="studyId !== 0">
-        Study: {{ study.name }}
+        <span>Study:</span> {{ study.name }}
       </span>
     </template>
     <template v-slot:body>
       <Loader v-if="studyId === 0" :loading="true"></Loader>
+      <span v-else-if="showSessions">
+        <Table :columns="sessionTableColumns" :data="studySessions" :options="sessionTableOptions"
+               @action="sessionAction">
+        </Table>
+      </span>
       <span v-else>
         <div v-if="!started" class="text-xxl-center text-secondary fs-5">The study has not started yet! <br>
           Start: {{ new Date(study.start).toLocaleString() }}</div>
-        <div v-if="ended" class="text-xxl-center text-danger fs-5">This study has finished on
+        <div v-else-if="ended" class="text-xxl-center text-danger fs-5">This study has finished on
          {{ new Date(study.end).toLocaleString() }}</div>
         <span v-else>
-          <div v-html="study.description"></div>
+          <div v-if="study.description" v-html="study.description"></div>
+          <div v-else>
+            Click "Start User Study" to start the user study.
+          </div>
           <div v-if="study.timeLimit > 0 || study.collab">
             <hr>
           </div>
@@ -27,12 +35,27 @@
       </span>
     </template>
     <template v-slot:footer>
-      <span class="btn-group">
-        <button :disabled="studyId === 0 && available" class="btn btn-primary me-2" type="button" @click="start">
-          <span v-if="studyId !== 0 && study.collab">Join User Study</span>
-          <span v-else>Start User Study</span>
-        </button>
-      </span>
+      <div class="btn-group">
+        <div v-if="showSessions">
+          <button class="btn btn-primary" type="button" @click="showSessions=!showSessions">
+            <span>New Study</span>
+          </button>
+        </div>
+        <div v-else>
+          <button v-if="studySessions.length > 0" class="btn btn-secondary" type="button"
+                  @click="showSessions=!showSessions">
+            <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-dark">
+              {{ studySessions.length }}
+              <span class="visually-hidden">open sessions</span>
+            </span>
+            <span>Open Sessions</span>
+          </button>
+          <button :disabled="studyId === 0 && available" class="btn btn-primary" type="button" @click="start">
+            <span v-if="studyId !== 0 && study.collab">Join User Study</span>
+            <span v-else>Start User Study</span>
+          </button>
+        </div>
+      </div>
     </template>
   </Modal>
 </template>
@@ -40,17 +63,19 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import Form from "@/basic/form/Form.vue";
-import Loader from "@/basic/Loader.vue";
+import Loader from "@/basic/Loader.vue"
+import Table from "@/basic/table/Table.vue";
 
 export default {
   name: "StudyModal.vue",
-  components: {Loader, Modal, Form},
+  components: {Loader, Modal, Form, Table},
   emits: ["start"],
   props: {
     studyId: {
       type: Number,
       required: true,
-      default: 0
+      default: 0,
+
     }
   },
   watch: {
@@ -64,6 +89,37 @@ export default {
     return {
       hash: null,
       documentId: 0,
+      showSessions: false,
+      sessionTableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        pagination: 10,
+      },
+      sessionTableColumns: [
+        {name: "Start", key: "startParsed"},
+        {
+          name: "Finished",
+          key: "finished",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", false: "No"},
+            classMapping: {true: "bg-success", false: "bg-danger"}
+          }
+        },
+        {
+          name: "Resumable",
+          key: "resumable",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", false: "No"},
+            classMapping: {true: "bg-success", false: "bg-danger"}
+          }
+        },
+        {name: "Manage", key: "manage", type: "button-group"},
+      ]
     }
   },
   computed: {
@@ -72,21 +128,70 @@ export default {
         return this.$store.getters['study/getStudyById'](this.studyId)
       }
     },
+    studySessions() {
+      if (this.studyId) {
+        return this.$store.getters['study_session/getStudySessionsByStudyId'](this.studyId)
+            .map(study => {
+              study.resumable = this.study.resumable;
+              study.startParsed = new Date(study.start).toLocaleString();
+              study.finished = study.end !== null
+              study.manage = []
+              if (!study.finished) {
+                study.manage.push(
+                    {
+                      icon: "box-arrow-in-right",
+                      options: {
+                        iconOnly: true,
+                        specifiers: {
+                          "btn-outline-secondary": true,
+                          "btn-sm": true,
+                        }
+                      },
+                      title: "Finish session",
+                      action: "finishSession",
+                    })
+
+
+                if (study.resumable) {
+                  study.manage.push({
+                    icon: "box-arrow-in-right",
+                    options: {
+                      iconOnly: true,
+                      specifiers: {
+                        "btn-outline-secondary": true,
+                        "btn-sm": true,
+                      }
+                    },
+                    title: "Resume session",
+                    action: "resumeSession",
+                  });
+                }
+              }
+              return study;
+            })
+            ;
+      }
+      return [];
+    }
+    ,
     started() {
-      if (this.studyId !== 0) {
-        return (this.study.start !== null && new Date(this.study.start) < new Date());
+      if (this.study && this.study.start !== null) {
+        return (new Date(this.study.start) < new Date());
       }
-      return false;
-    },
+      return true;
+    }
+    ,
     ended() {
-      if (this.studyId !== 0) {
-        return !(this.study.end !== null && new Date() < new Date(this.study.end));
+      if (this.study && this.study.end !== null) {
+        return !(new Date() < new Date(this.study.end));
       }
       return false;
-    },
+    }
+    ,
     available() {
       return (this.started && !this.ended);
-    },
+    }
+    ,
     link() {
       return window.location.origin + "/study/" + this.hash;
     }
@@ -103,7 +208,7 @@ export default {
           this.$refs.studyModal.closeModal();
           this.eventBus.emit('toast', {
             title: "Study started",
-            message: "Successful started study!",
+            message: "Enjoy your time :-)",
             variant: "success"
           });
         } else {
@@ -114,6 +219,14 @@ export default {
       this.$socket.emit("studyStart", {studyId: this.studyId});
       this.$refs.studyModal.waiting = true;
     },
+    sessionAction(data) {
+      if (data.action === "finishSession") {
+        //TODO finish
+      }
+      if (data.action === "resumeSession") {
+        //TODO resume
+      }
+    }
   }
 }
 </script>
