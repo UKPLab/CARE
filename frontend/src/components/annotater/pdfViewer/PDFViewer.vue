@@ -3,10 +3,10 @@
     <PDFPage
         v-for="page in pdf.pageCount"
         :key="'PDFPageKey' + page"
+        :documentId="documentId"
         :pageNumber="page"
         :pdf="pdf"
         :render="renderCheck[page - 1]"
-        :documentId="documentId"
         class="scrolling-page"
         @updateVisibility="updateVisibility"
     />
@@ -39,6 +39,11 @@ export default {
     documentId: {
       type: Number,
       required: true
+    },
+    'studySessionId': {
+      type: Number,
+      required: false,
+      default: 0
     },
     readonly: {
       type: Boolean,
