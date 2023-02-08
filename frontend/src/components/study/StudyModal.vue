@@ -1,7 +1,10 @@
 <template>
   <Modal ref="studyModal" disable-keyboard lg remove-close>
     <template v-slot:title>
-      <span v-if="studyId !== 0">
+      <span v-if="showSessions">
+        Open Sessions for study: {{ study.name }}
+      </span>
+      <span v-else-if="studyId !== 0">
         <span>Study:</span> {{ study.name }}
       </span>
     </template>
@@ -35,26 +38,24 @@
       </span>
     </template>
     <template v-slot:footer>
-      <div class="btn-group">
-        <div v-if="showSessions">
-          <button class="btn btn-primary" type="button" @click="showSessions=!showSessions">
-            <span>New Study</span>
-          </button>
-        </div>
-        <div v-else>
-          <button v-if="studySessions.length > 0" class="btn btn-secondary" type="button"
-                  @click="showSessions=!showSessions">
-            <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-dark">
-              {{ studySessions.length }}
-              <span class="visually-hidden">open sessions</span>
-            </span>
-            <span>Open Sessions</span>
-          </button>
-          <button :disabled="studyId === 0 && available" class="btn btn-primary" type="button" @click="start">
-            <span v-if="studyId !== 0 && study.collab">Join User Study</span>
-            <span v-else>Start User Study</span>
-          </button>
-        </div>
+      <div v-if="showSessions" class="btn-group">
+        <button class="btn btn-primary" type="button" @click="showSessions=!showSessions">
+          <span>New Study</span>
+        </button>
+      </div>
+      <div v-else class="btn-group">
+        <button v-if="studySessions.length > 0" class="btn btn-secondary" type="button"
+                @click="showSessions=!showSessions">
+          <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-dark">
+            {{ studySessions.length }}
+            <span class="visually-hidden">open sessions</span>
+          </span>
+          <span>Open Sessions</span>
+        </button>
+        <button :disabled="studyId === 0 && available" class="btn btn-primary" type="button" @click="start">
+          <span v-if="studyId !== 0 && study.collab">Join User Study</span>
+          <span v-else>Start User Study</span>
+        </button>
       </div>
     </template>
   </Modal>
@@ -99,7 +100,7 @@ export default {
         pagination: 10,
       },
       sessionTableColumns: [
-        {name: "Start", key: "startParsed"},
+        {name: "Started", key: "startParsed"},
         {
           name: "Finished",
           key: "finished",
@@ -137,19 +138,6 @@ export default {
               study.finished = study.end !== null
               study.manage = []
               if (!study.finished) {
-                study.manage.push(
-                    {
-                      icon: "box-arrow-in-right",
-                      options: {
-                        iconOnly: true,
-                        specifiers: {
-                          "btn-outline-secondary": true,
-                          "btn-sm": true,
-                        }
-                      },
-                      title: "Finish session",
-                      action: "finishSession",
-                    })
 
 
                 if (study.resumable) {
@@ -166,6 +154,21 @@ export default {
                     action: "resumeSession",
                   });
                 }
+                study.manage.push(
+                    {
+                      icon: "x-octagon",
+                      options: {
+                        iconOnly: true,
+                        specifiers: {
+                          "btn-outline-secondary": true,
+                          "btn-sm": true,
+                        }
+                      },
+                      title: "Finish session",
+                      action: "finishSession",
+                    })
+
+
               }
               return study;
             })
@@ -224,7 +227,8 @@ export default {
         //TODO finish
       }
       if (data.action === "resumeSession") {
-        //TODO resume
+        this.$emit("start", data.params.id);
+        this.$refs.studyModal.closeModal();
       }
     }
   }
