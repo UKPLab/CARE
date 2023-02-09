@@ -94,6 +94,23 @@ module.exports = class MetaModel extends Model {
         }
     }
 
+    static async getAllByFK(fk, id, deleted = false) {
+        if (fk in this.getAttributes()) {
+            try {
+                return await this.findAll({
+                    where: {[fk]: id, deleted: deleted},
+                    raw: true
+                });
+            } catch (err) {
+                if (isInternalDatabaseError(err)) {
+                    throw InternalDatabaseError(err);
+                }
+            }
+        } else {
+            throw InternalDatabaseError("DB MetaModel Class " + fk + " not available: " + this.constructor.name)
+        }
+    }
+
     static async add(data) {
         try {
             if ("hash" in this.getAttributes()) {

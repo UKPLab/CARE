@@ -1,12 +1,13 @@
 <template>
-  <Modal ref="studyCoordinatorModal" lg remove-close>
+  <Modal ref="studyCoordinatorModal" lg remove-close name="studyCoordinatorModal"
+         :props="{studyId: studyId, documentId: documentId}">
     <template v-slot:title>
       <span>
         Study Coordinator
       </span>
     </template>
     <template v-slot:body>
-      <span v-if="success" >
+      <span v-if="success">
         The study has been successfully published<br>
         Participants can join the study under the following link:<br><br>
           <a :href="link" target="_blank">{{ link }}</a>
@@ -23,7 +24,7 @@
       <span v-else class="btn-group">
         <button class="btn btn-secondary" type="button" @click="close">Cancel</button>
         <button class="btn btn-primary me-2" type="button" @click="publish">
-          {{this.studyId === 0 ? "Start User Study" : "Update User Study"}}
+          {{ this.studyId === 0 ? "Start User Study" : "Update User Study" }}
         </button>
       </span>
     </template>
@@ -139,7 +140,7 @@ export default {
           end: null,
         }
       } else {
-        return this.$store.getters['study/getStudyById'](this.studyId);
+        return {...this.$store.getters['study/getStudyById'](this.studyId)};
       }
     },
     link() {
@@ -156,11 +157,6 @@ export default {
       this.hash = this.studyId !== 0 ? this.study.hash : this.hash;
       this.success = loadInitialized;
       this.$refs.studyCoordinatorModal.openModal();
-
-      this.$socket.emit("stats", {
-        action: "openModalStudy",
-        data: {documentId: this.documentId, studyId: this.studyId}
-      });
     },
     publish() {
       this.sockets.subscribe("studyPublished", (data) => {
@@ -187,11 +183,6 @@ export default {
     },
     close() {
       this.$refs.studyCoordinatorModal.closeModal();
-
-      this.$socket.emit("stats", {
-        action: "cancelModalStudy",
-        data: {documentId: this.documentId, studyId: this.studyId}
-      });
     },
     async copyURL() {
       try {

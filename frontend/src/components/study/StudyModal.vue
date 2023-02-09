@@ -217,11 +217,11 @@ export default {
     },
     sessionAction(data) {
       if (data.action === "finishSession") {
-        this.$emit("finish", data.params.id);
+        this.$emit("finish", {studySessionId: data.params.id});
         this.$refs.modal.close();
       }
       if (data.action === "resumeSession") {
-        this.$emit("start", data.params.id);
+        this.$emit("start", {studySessionId: data.params.id});
         this.$refs.modal.close();
       }
     }

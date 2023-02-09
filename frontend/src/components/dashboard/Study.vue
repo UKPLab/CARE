@@ -42,11 +42,12 @@ export default {
       columns: [
         {name: "Name", key: "name"},
         {name: "Document", key: "documentName"},
-        {name: "Start", key: "start"},
-        {name: "End", key: "end"},
-        {name: "Created", key: "createdAt"},
+        {name: "Start", key: "start", sortable: true},
+        {name: "End", key: "end", sortable: true},
+        {name: "Created", key: "createdAt", sortable: true},
         {name: "Levels", key: "levels"},
-        {name: "Time Limit", key: "timeLimit"},
+          {name: "Sessions", key: "sessions"},
+        {name: "Time Limit", key: "timeLimit", sortable: true},
         {
           name: "Resumable",
           key: "resumable",
@@ -81,6 +82,7 @@ export default {
     studies() {
       return this.$store.getters["study/getStudies"]
           .filter(study => study.userId === this.userId)
+          .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
           .map(st => {
                 let study = {...st};
                 // dates
@@ -99,6 +101,8 @@ export default {
                 study.createdAt = new Date(study.createdAt).toLocaleString()
 
                 study.documentName = this.$store.getters["document/getDocument"](study.documentId)['name'];
+
+                study.sessions = this.$store.getters["study_session/getStudySessionsByStudyId"](study.id).length;
 
 
                 study.manage = [
@@ -176,6 +180,7 @@ export default {
     },
     load() {
       this.$socket.emit("studyGet");
+      this.$socket.emit("studySessionGetAll");
     },
     studyCoordinator(row, linkOnly=false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);

@@ -169,10 +169,11 @@ module.exports = class StudySocket extends Socket {
         this.socket.on("studySessionGetAll", async (data) => {
             try {
                 if (this.isAdmin()) {
-                    this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study'].getAll()));
+                    this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].getAll()));
                 } else {
-                    this.sendToast("You don't have access to all study sessions", "Error", "danger");
-                    this.logger.error("User requested access to all study sessions without rights");
+                    const studies = await this.models['study'].getAllByUserId(this.user_id);
+                    const sessionsPerStudy = await Promise.all(studies.map(async s => await this.models['study_session'].getAllByFK("studyId", s.id)))
+                    this.socket.emit("studySessionRefresh", await this.updateCreatorName(sessionsPerStudy.flat(1)));
                 }
             } catch (err) {
                 this.logger.error(err);

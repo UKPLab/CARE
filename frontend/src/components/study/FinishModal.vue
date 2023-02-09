@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="modal" :disable-keyboard="!closeable" :props="this.$props" :remove-close="!closeable" lg
+  <Modal ref="modal" :props="this.$props" :remove-close="!closeable" :disable-keyboard="!closeable" lg
          name="studyFinish">
     <template v-slot:title>
       Finish Study
@@ -40,7 +40,7 @@ export default {
   components: {Modal},
   emits: ["finish"],
   props: {
-    studyId: {
+    studySessionId: {
       type: Number,
       required: true,
       default: 0,
