@@ -1,32 +1,67 @@
 <template>
-  <span>Study Sessions</span>
+  <Card title="Study Sessions">
+    <template v-slot:body>
+      <div class="container">
+        <div class="row">
+          <div v-for="s in studies" :key="s.id" class="col-6 col-sm-3 col-md-4 col-lg-6">
+            <Card :title="s.name ? `Study: ${s.name}` : '<no name>'">
+              <template v-slot:body>
+                <StudySessionTable :study-id="s.id"> </StudySessionTable>
+              </template>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </template>
+  </Card>
 </template>
 
 <script>
-/* Study.vue - dashboard component for handling studies
+/* StudySession.vue - dashboard component for handling study sessions
 
-Author: Dennis Zyska, Nils Dycke
+Author: Nils Dycke, Dennis Zyska
 Source: -
 */
 
+import Card from "@/basic/Card.vue";
+import Table from "@/basic/table/Table.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
+import StudyModal from "@/components/dashboard/study/StudyModal.vue";
+import StudySessionTable from "@/components/dashboard/study/StudySessionTable.vue";
+
 export default {
   name: "StudySession",
-  components: {},
+  components: {Card, Table, LoadIcon, StudyModal, StudySessionTable},
   data() {
-    return {}
+    return {
+    }
   },
   props: {},
+  sockets: {
+    "studySessionRefresh": function (data) {
+      data.forEach(s =>{
+        if(this.$store.getters["study/getStudyById"](s.studyId) === undefined){
+          this.$socket.emit("studyGetById", {studyId: s.studyId});
+        }
+      });
+    }
+  },
   mounted() {
     this.load();
   },
-  computed: {},
+  computed: {
+    studies() {
+      return this.$store.getters["study/getStudies"].filter(s => this.sessions.includes(s.id));
+    },
+    sessions() {
+      return this.$store.getters["study_session/getStudySessionsByUser"](this.$store.getters["auth/getUserId"]).map(s => s.studyId);
+    }
+  },
   methods: {
     load() {
-
+      // load all study sessions of the user
       this.$socket.emit("studySessionGet");
-
     },
-
   }
 }
 </script>

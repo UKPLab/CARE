@@ -14,7 +14,7 @@ export default {
     namespaced: true,
     strict: true,
     state: getDefaultState(),
-     getters: {
+    getters: {
         getStudySessionsByStudyId: state => (studyId) => {
             return state.filter(session => session.studyId === studyId);
         },
@@ -23,7 +23,10 @@ export default {
         },
         getStudySessionByHash: state => studySessionHash => {
             return state.find(session => session.hash === studySessionHash);
-        }
+        },
+        getStudySessionsByUser: state => (userId) => {
+            return state.filter(session => session.userId === userId);
+        },
     },
     mutations: {
         SOCKET_studySessionRefresh: (state, data) => {

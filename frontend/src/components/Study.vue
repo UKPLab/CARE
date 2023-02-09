@@ -93,9 +93,7 @@ export default {
       return 0;
     },
     finished() {
-      if (this.studySession && this.studySession.end)
-        return true;
-      return false;
+      return this.studySession && this.studySession.end;
     },
     timeUp() {
       if (this.study && this.study.timeLimit > 0) {
