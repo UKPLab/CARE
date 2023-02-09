@@ -160,9 +160,9 @@ export default {
       } else if (data.action === "deleteStudy") {
         this.$socket.emit("studyDelete", {studyId: data.params.id})
       } else if (data.action === "openStudy") {
-
+        this.$router.push("/study/" + data.params.hash);
       } else if (data.action === "linkStudy") {
-
+        this.studyCoordinator(data.params, true);
       }
     },
     add() {
@@ -171,8 +171,8 @@ export default {
     load() {
       this.$socket.emit("studyGet");
     },
-    studyCoordinator(row) {
-      this.$refs.studyCoordinator.open(row.id);
+    studyCoordinator(row, linkOnly=false) {
+      this.$refs.studyCoordinator.open(row.id, null, linkOnly);
     }
 
   }
