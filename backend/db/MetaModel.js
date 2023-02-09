@@ -31,7 +31,7 @@ module.exports = class MetaModel extends Model {
 
     static async delete(id) {
         try {
-            return await this.update({'deleted': true}, {
+            return await this.update({'deleted': true, 'deletedAt': Date.now()}, {
                     where: {
                         id: id
                     },
@@ -111,16 +111,16 @@ module.exports = class MetaModel extends Model {
     }
 
     static async updateById(id, data) {
-        const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key))
+        const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
         try {
-            return await this.update(subselectFieldsForDB(data, possibleFields), {
+            return (await this.update(subselectFieldsForDB(data, possibleFields), {
                     where: {
                         id: id
                     },
                     returning: true,
                     plain: true
                 }
-            );
+            ))[1].dataValues;
         } catch (err) {
             if (isInternalDatabaseError(err)) {
                 throw InternalDatabaseError(err);
