@@ -29,8 +29,11 @@ export default {
   watch: {
     modelValue(oldVal, newVal) {
       if (oldVal !== newVal) {
-        if (this.modelValue !== null)
+        if (this.modelValue !== null) {
           this.currentDate = new Date(this.modelValue);
+        } else {
+          this.date = null;
+        }
       }
     },
     currentDate() {

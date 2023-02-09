@@ -1,24 +1,24 @@
 <template>
-  <form>
+  <form v-if="currentData">
     <div v-if="currentData !== null" class="row g-3">
       <div v-for="field in fields" :key="field.name" :class="('size' in field)?'col-md-' + field.size :'col-12'">
         <span v-if="field.type === 'switch'"
               class="form-check form-switch">
           <input v-model="currentData[field.name]" class="form-check-input" type="checkbox">
           <label :for="field.name" class="form-label">{{ field.label }}</label>
-           <button v-if="'help' in field" :title="field.help" class="btn btn-sm mt-0 pt-0" data-bs-html="true"
+           <span v-if="'help' in field" :title="field.help" class="btn btn-sm mt-0 pt-0" disabled data-bs-html="true"
                    data-bs-placement="top"
                    data-bs-toggle="tooltip">
               <LoadIcon :size="16" iconName="question-square-fill"></LoadIcon>
-           </button>
+           </span>
         </span>
         <span v-else>
             <label v-if="'label' in field" :for="field.name" class="form-label">{{ field.label }}</label>
-            <button v-if="'help' in field" :title="field.help" class="btn btn-sm mt-0 pt-0" data-bs-html="true"
+            <span v-if="'help' in field" :title="field.help" class="btn btn-sm mt-0 pt-0" data-bs-html="true"
                     data-bs-placement="top"
                     data-bs-toggle="tooltip">
               <LoadIcon :size="16" iconName="question-square-fill"></LoadIcon>
-            </button>
+            </span>
 
           <div class="input-group">
           <span v-if="field.type === 'slider'" class="flex-grow-1 text-end">

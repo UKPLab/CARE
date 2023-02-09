@@ -4,7 +4,7 @@
               :study-id="studyId"
               @finish="finish"
               @start="start"/>
-  <FinishModal ref="studyFinishModal" :closeable="!timeUp" :finished="finished" :study-id="studyId"
+  <FinishModal ref="studyFinishModal" :closeable="!timeUp" :finished="finished" :study-session-id="studySessionId"
                @finish="finalFinish"/>
   <Teleport to="#topbarCustomPlaceholder">
     <button class="btn btn-outline-secondary" type="button" @click="finish">Finish Study</button>
@@ -31,6 +31,7 @@ export default {
     return {
       studySessionId: 0,
       timeLeft: 0,
+      timerInterval: null,
     }
   },
   props: {
@@ -93,7 +94,10 @@ export default {
       return 0;
     },
     finished() {
-      return this.studySession && this.studySession.end;
+      if (this.studySession) {
+        return this.studySession.end !== null;
+      }
+      return false;
     },
     timeUp() {
       if (this.study && this.study.timeLimit > 0) {
@@ -105,9 +109,27 @@ export default {
     },
     timeLeftHuman() {
       if (this.timeLeft < 60) {
+        console.log(this.timeLeft);
         return Math.round(this.timeLeft) + "s";
       }
       return Math.round(this.timeLeft / 60) + "min";
+    }
+  },
+  watch: {
+    studySession(newVal) {
+      if (this.study.timeLimit > 0) {
+        if (this.timerInterval) {
+          clearInterval(this.timerInterval);
+          this.timerInterval = null;
+        }
+
+        this.calcTimeLeft();
+        if (!newVal.end) {
+          this.timerInterval = setInterval(this.calcTimeLeft, 1000);
+        }
+
+
+      }
     }
   },
   methods: {
@@ -117,10 +139,7 @@ export default {
         this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
     },
     start(data) {
-      this.studySessionId = data;
-      if (this.study.timeLimit > 0) {
-        this.calcTimeLeft();
-      }
+      this.studySessionId = data.studySessionId;
     },
     finalFinish(data) {
       this.$socket.emit("studySessionUpdate", {
@@ -130,7 +149,9 @@ export default {
       })
     },
     finish(data) {
-      this.studySessionId = data;
+      if (data.studySessionId) {
+        this.studySessionId = data.studySessionId;
+      }
       this.$refs.studyFinishModal.open();
     },
     calcTimeLeft() {
@@ -138,10 +159,9 @@ export default {
       this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
       if (this.timeLeft < 0) {
-        this.finish(this.studySessionId);
-      } else if (!this.studySession.end) {
-        setTimeout(this.calcTimeLeft, 1000);
+        this.finish({studySessionId:this.studySessionId});
       }
+
     }
   }
 }
