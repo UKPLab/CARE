@@ -12,10 +12,10 @@ module.exports = class StudySocket extends Socket {
 
     async updateStudy(data) {
         try {
-            if (data.studyId && data.studyId !== 0) {
-                const currentStudy = await this.models['study'].getById(data.studyId);
+            if (data.id && data.id !== 0) {
+                const currentStudy = await this.models['study'].getById(data.id);
                 if (this.isAdmin() || currentStudy.userId === this.user_id) {
-                    const study = await this.updateCreatorName(await this.models['study'].updateById(data.studyId, data));
+                    const study = await this.updateCreatorName(await this.models['study'].updateById(data.id, data));
                     this.socket.emit("studyRefresh", study)
                     return study;
                 } else {
@@ -45,8 +45,9 @@ module.exports = class StudySocket extends Socket {
 
         this.socket.on("studyDelete", async (data) => {
             try {
+                //todo delete existing sessions beforehand
                 this.socket.emit("studyRefresh", await this.updateCreatorName(await this.updateStudy(
-                    {studyId: data.studyId, deleted: true, deletedAt: new Date()}
+                    {id: data.studyId, deleted: true, deletedAt: new Date()}
                 )));
             } catch (err) {
                 this.logger.error(err);
@@ -115,6 +116,7 @@ module.exports = class StudySocket extends Socket {
                 const doc = await dbGetDoc(data.documentId);
                 if (this.checkUserAccess(doc.userId)) {
                     const study = await this.updateStudy(data);
+                    console.log("Updated study------", study);
                     if (study) {
                         this.socket.emit("studyPublished", {success: true, hash: study[0].hash});
                     } else {

@@ -95,6 +95,9 @@ export default {
       required: true
     },
   },
+  beforeMount() {
+    this.currentData = this.modelValue;
+  },
   watch: {
     currentData: {
       handler() {

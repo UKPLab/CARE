@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="studyCoordinatorModal" lg>
+  <Modal ref="studyCoordinatorModal" lg remove-close>
     <template v-slot:title>
       <span>
         Study Coordinator
@@ -7,8 +7,8 @@
     </template>
     <template v-slot:body>
       <span v-if="success" >
-        The study is successfully published<br>
-        Participants can start the study under the following link:<br><br>
+        The study has been successfully published<br>
+        Participants can join the study under the following link:<br><br>
           <a :href="link" target="_blank">{{ link }}</a>
       </span>
       <span v-else>
@@ -22,7 +22,9 @@
       </span>
       <span v-else class="btn-group">
         <button class="btn btn-secondary" type="button" @click="close">Cancel</button>
-        <button class="btn btn-primary me-2" type="button" @click="publish">Start User Study</button>
+        <button class="btn btn-primary me-2" type="button" @click="publish">
+          {{this.studyId === 0 ? "Start User Study" : "Update User Study"}}
+        </button>
       </span>
     </template>
   </Modal>
@@ -33,7 +35,7 @@ import Modal from "@/basic/Modal.vue";
 import Form from "@/basic/form/Form.vue";
 
 export default {
-  name: "StudyCoordinatorModal.vue",
+  name: "StudyCoordinatorModal",
   components: {Modal, Form},
   watch: {
     data: {
@@ -44,13 +46,12 @@ export default {
   },
   data() {
     return {
-      hash: null,
       studyId: 0,
       documentId: 0,
       fields: [
         {
           name: "documentId",
-          label: "Selected document for user study:",
+          label: "Selected document for the study:",
           type: "select",
           options: this.$store.getters["document/getDocuments"].map(document => {
             return {"value": document.id, "name": document.name}
@@ -60,21 +61,21 @@ export default {
         },
         {
           name: "name",
-          label: "Name of the user study:",
+          label: "Name of the study:",
           placeholder: "My user study",
           type: "text",
           required: true,
         },
         {
           name: "description",
-          label: "Description ot the user study:",
+          label: "Description of the study:",
           help: "This text will be displayed at the beginning of the user study!",
           type: "editor",
         },
         {
           name: "timeLimit",
           type: "slider",
-          label: "How many time does a participant have for the study?",
+          label: "How much time does a participant have for the study?",
           help: "0 = disable time limitation",
           size: 12,
           unit: "min",
@@ -106,20 +107,21 @@ export default {
         },
         {
           name: "start",
-          label: "User study sessions can't start before",
+          label: "Study sessions can't start before",
           type: "datetime",
           size: 6,
           required: true,
         },
         {
           name: "end",
-          label: "User study sessions can't start after:",
+          label: "Study sessions can't start after:",
           type: "datetime",
           size: 6,
           required: true,
         },
       ],
       success: false,
+      hash: null
     }
   },
   computed: {
@@ -137,23 +139,24 @@ export default {
           end: null,
         }
       } else {
-        console.log(this.studyId);
-        return this.$store.getters['study/getStudyById'](this.studyId)
+        return this.$store.getters['study/getStudyById'](this.studyId);
       }
     },
     link() {
       return window.location.origin + "/study/" + this.hash;
-    }
+    },
   },
   methods: {
-    open(studyId, documentId = null) {
+    open(studyId, documentId = null, loadInitialized = false) {
+      console.log("opening study modal with", loadInitialized, documentId, studyId);
       if (documentId !== null) {
         this.documentId = documentId;
       }
       this.studyId = studyId;
-      this.success = false;
-      this.hash = null;
+      this.hash = this.studyId !== 0 ? this.study.hash : this.hash;
+      this.success = loadInitialized;
       this.$refs.studyCoordinatorModal.openModal();
+
       this.$socket.emit("stats", {
         action: "openModalStudy",
         data: {documentId: this.documentId, studyId: this.studyId}
@@ -164,8 +167,10 @@ export default {
         this.sockets.unsubscribe('studyPublished');
         if (data.success) {
           this.success = true;
+          this.studyId = data.id;
           this.hash = data.hash;
           this.$refs.studyCoordinatorModal.waiting = false;
+
           this.eventBus.emit('toast', {
             title: "Study published",
             message: "Successful started study!",
@@ -173,6 +178,7 @@ export default {
           });
         } else {
           this.$refs.studyCoordinatorModal.closeModal();
+
           this.eventBus.emit('toast', {title: "Study not published", message: data.message, variant: "danger"});
         }
       });
@@ -181,6 +187,7 @@ export default {
     },
     close() {
       this.$refs.studyCoordinatorModal.closeModal();
+
       this.$socket.emit("stats", {
         action: "cancelModalStudy",
         data: {documentId: this.documentId, studyId: this.studyId}
