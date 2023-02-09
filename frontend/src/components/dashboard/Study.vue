@@ -27,7 +27,7 @@ import LoadIcon from "@/icons/LoadIcon.vue";
 import StudyModal from "./study/StudyModal.vue";
 
 export default {
-  name: "Study",
+  name: "Study.vue",
   components: {Card, Table, LoadIcon, StudyModal},
   data() {
     return {
@@ -156,12 +156,18 @@ export default {
   methods: {
     action(data) {
       if (data.action === "editStudy") {
+        this.$socket.emit("stats", {action: "editStudy", data: {studyId: data.params.id}});
+
         this.studyCoordinator(data.params);
       } else if (data.action === "deleteStudy") {
+        this.$socket.emit("stats", {action: "studyDelete", data: {studyId: data.params.id}});
+
         this.$socket.emit("studyDelete", {studyId: data.params.id})
       } else if (data.action === "openStudy") {
         this.$router.push("/study/" + data.params.hash);
       } else if (data.action === "linkStudy") {
+        this.$socket.emit("stats", {action: "copyStudyLink", data: {studyId: data.params.id}});
+
         this.studyCoordinator(data.params, true);
       }
     },

@@ -19,6 +19,7 @@ export default {
             return state;
         },
         getStudyById: state => studyId => {
+            console.log("getting study by id", state, studyId);
             return state.find(study => study.id === studyId);
         },
         getStudyByHash: state => studyHash => {

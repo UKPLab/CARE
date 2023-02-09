@@ -68,7 +68,7 @@ import Loader from "@/basic/Loader.vue"
 import Table from "@/basic/table/Table.vue";
 
 export default {
-  name: "StudyModal.vue",
+  name: "StudyModal",
   components: {Loader, Modal, Form, Table},
   emits: ["start", "finish"],
   props: {
@@ -121,7 +121,7 @@ export default {
         return this.$store.getters['study/getStudyById'](this.studyId)
       }
     },
-    studySessions() {
+    studySessions() { //todo use the studysessiontable
       if (this.studyId) {
         return this.$store.getters['study_session/getStudySessionsByStudyId'](this.studyId)
             .filter(s => s.end === null)

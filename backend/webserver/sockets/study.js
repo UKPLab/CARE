@@ -73,6 +73,22 @@ module.exports = class StudySocket extends Socket {
             }
         });
 
+        this.socket.on("studyGetById", async (data) => {
+            try {
+                const study = await this.models['study'].getById(data.studyId);
+                if (study) {
+                    this.socket.emit("studyRefresh", await this.updateCreatorName(study));
+                } else {
+                    this.socket.emit("studyError", {
+                        studyHash: data.studyHash,
+                        message: "Not found!"
+                    });
+                }
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+
         this.socket.on("studyGetAll", async (data) => {
             try {
                 this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getAll()));
