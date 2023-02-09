@@ -13,7 +13,7 @@ module.exports = class StudySocket extends Socket {
     async updateStudy(data) {
         try {
             if (data.studyId && data.studyId !== 0) {
-                const currentStudy = await this.models['study'].getById(data.studyId)
+                const currentStudy = await this.models['study'].getById(data.studyId);
                 if (this.isAdmin() || currentStudy.userId === this.user_id) {
                     const study = await this.updateCreatorName(await this.models['study'].updateById(data.studyId, data));
                     this.socket.emit("studyRefresh", study)
@@ -35,10 +35,19 @@ module.exports = class StudySocket extends Socket {
 
 
     async init() {
-
         this.socket.on("studyGet", async (data) => {
             try {
                 this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getAllByUserId(this.user_id)));
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+
+        this.socket.on("studyDelete", async (data) => {
+            try {
+                this.socket.emit("studyRefresh", await this.updateCreatorName(await this.updateStudy(
+                    {studyId: data.studyId, deleted: true, deletedAt: new Date()}
+                )));
             } catch (err) {
                 this.logger.error(err);
             }

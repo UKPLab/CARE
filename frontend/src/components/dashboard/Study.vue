@@ -82,7 +82,7 @@ export default {
       return this.$store.getters["study/getStudies"]
           .filter(study => study.userId === this.userId)
           .map(st => {
-            let study = {...st};
+                let study = {...st};
                 // dates
                 if (study.start === null) {
                   study.start = "-"
@@ -101,63 +101,68 @@ export default {
                 study.documentName = this.$store.getters["document/getDocument"](study.documentId)['name'];
 
 
-                    study.manage = [
-                      {
-                        icon: "pencil-square",
-                        options: {
-                          iconOnly: true,
-                          specifiers: {
-                            "btn-outline-secondary": true,
-                          }
-                        },
-                        title: "Edit user study",
-                        action: "editStudy",
-                      },
-                      {
-                        icon: "trash",
-                        options: {
-                          iconOnly: true,
-                          specifiers: {
-                            "btn-outline-secondary": true,
-                          }
-                        },
-                        title: "Delete user study",
-                        action: "deleteStudy",
-                      },
-                      {
-                        icon: "box-arrow-in-right",
-                        options: {
-                          iconOnly: true,
-                          specifiers: {
-                            "btn-outline-secondary": true,
-                          }
-                        },
-                        title: "Open user study",
-                        action: "openStudy",
-                      },
-                      {
-                        icon: "link-45deg",
-                        options: {
-                          iconOnly: true,
-                          specifiers: {
-                            "btn-outline-secondary": true,
-                          }
-                        },
-                        title: "Copy link to user study",
-                        action: "linkStudy",
+                study.manage = [
+                  {
+                    icon: "pencil-square",
+                    options: {
+                      iconOnly: true,
+                      specifiers: {
+                        "btn-outline-secondary": true,
                       }
-                    ];
+                    },
+                    title: "Edit user study",
+                    action: "editStudy",
+                  },
+                  {
+                    icon: "trash",
+                    options: {
+                      iconOnly: true,
+                      specifiers: {
+                        "btn-outline-secondary": true,
+                      }
+                    },
+                    title: "Delete user study",
+                    action: "deleteStudy",
+                  },
+                  {
+                    icon: "box-arrow-in-right",
+                    options: {
+                      iconOnly: true,
+                      specifiers: {
+                        "btn-outline-secondary": true,
+                      }
+                    },
+                    title: "Open user study",
+                    action: "openStudy",
+                  },
+                  {
+                    icon: "link-45deg",
+                    options: {
+                      iconOnly: true,
+                      specifiers: {
+                        "btn-outline-secondary": true,
+                      }
+                    },
+                    title: "Copy link to user study",
+                    action: "linkStudy",
+                  }
+                ];
                 console.log(study);
                 return study
               }
           );
     },
-
   },
   methods: {
     action(data) {
       if (data.action === "editStudy") {
         this.studyCoordinator(data.params);
+      } else if (data.action === "deleteStudy") {
+        this.$socket.emit("studyDelete", {studyId: data.params.id})
+      } else if (data.action === "openStudy") {
+
+      } else if (data.action === "linkStudy") {
+
       }
     },
     add() {
