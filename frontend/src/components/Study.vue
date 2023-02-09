@@ -1,5 +1,18 @@
 <template>
-  <StudyModal v-if="studySessionId === 0" ref="studyModal" :study-id="studyId" @start="start"></StudyModal>
+  <StudyModal v-if="studySessionId === 0"
+              ref="studyModal"
+              :study-id="studyId"
+              @finish="finish"
+              @start="start"/>
+  <FinishModal ref="studyFinishModal" :closeable="!timeUp" :finished="finished" :study-id="studyId"
+               @finish="finalFinish"/>
+  <Teleport to="#topbarCustomPlaceholder">
+    <button class="btn btn-outline-secondary" type="button" @click="finish">Finish Study</button>
+    <button v-if="timeLeft > 0" class="btn mb-1" type="button">
+      <LoadIcon :size="21" class="me-1 middle" icon-name="stopwatch"/>
+      <span :class="{'text-danger':timeLeft < (5 * 60)}" class="middle"><b>Time Left:</b> {{ timeLeftHuman }}</span>
+    </button>
+  </Teleport>
   <Annotater v-if="documentId !== 0" :document-id="documentId"
              :readonly="readonly"
              :study-session-id="studySessionId"/>
@@ -8,13 +21,16 @@
 <script>
 import StudyModal from "./study/StudyModal.vue";
 import Annotater from "./Annotater.vue";
+import FinishModal from "./study/FinishModal.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Study",
-  components: {StudyModal, Annotater},
+  components: {LoadIcon, FinishModal, StudyModal, Annotater},
   data() {
     return {
       studySessionId: 0,
+      timeLeft: 0,
     }
   },
   props: {
@@ -76,6 +92,25 @@ export default {
       }
       return 0;
     },
+    finished() {
+      if (this.studySession && this.studySession.end)
+        return true;
+      return false;
+    },
+    timeUp() {
+      if (this.study && this.study.timeLimit > 0) {
+        if (this.timeLeft < 0) {
+          return true;
+        }
+      }
+      return false;
+    },
+    timeLeftHuman() {
+      if (this.timeLeft < 60) {
+        return Math.round(this.timeLeft) + "s";
+      }
+      return Math.round(this.timeLeft / 60) + "min";
+    }
   },
   methods: {
     load() {
@@ -85,6 +120,30 @@ export default {
     },
     start(data) {
       this.studySessionId = data;
+      if (this.study.timeLimit > 0) {
+        this.calcTimeLeft();
+      }
+    },
+    finalFinish(data) {
+      this.$socket.emit("studySessionUpdate", {
+        sessionId: this.studySessionId,
+        comment: data.comment,
+        end: Date.now()
+      })
+    },
+    finish(data) {
+      this.studySessionId = data;
+      this.$refs.studyFinishModal.open();
+    },
+    calcTimeLeft() {
+      const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
+      this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
+
+      if (this.timeLeft < 0) {
+        this.finish(this.studySessionId);
+      } else if (!this.studySession.end) {
+        setTimeout(this.calcTimeLeft, 1000);
+      }
     }
   }
 }

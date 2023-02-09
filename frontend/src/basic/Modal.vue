@@ -53,7 +53,7 @@ export default {
       required: false,
       default: false,
     },
-    open: {
+    autoOpen: {
       type: Boolean,
       required: false,
       default: false,
@@ -67,6 +67,14 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    props: {
+      type: Object,
+      required: false
+    },
+    name: {
+      type: String,
+      required: true
     }
   },
   data() {
@@ -77,17 +85,31 @@ export default {
   },
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
-    if (this.open) {
+    if (this.autoOpen) {
       this.openModal();
     }
   },
   methods: {
+    open() {
+      this.openModal();
+    },
     openModal() {
       this.waiting = false;
       this.modal.show();
+      this.$socket.emit("stats", {
+        action: "openModal",
+        data: {"name": this.name, "props": this.props}
+      });
+    },
+    close() {
+      this.closeModal();
     },
     closeModal() {
       this.modal.hide();
+      this.$socket.emit("stats", {
+        action: "hideModal",
+        data: {"name": this.name, "props": this.props}
+      });
     }
   }
 }
