@@ -14,6 +14,10 @@ module.exports = class Service {
         this.clients = {}
     }
 
+    init() {
+
+    }
+
     /**
      * This method is called when a client connects to the service
      * @param {client} client The client that connected
