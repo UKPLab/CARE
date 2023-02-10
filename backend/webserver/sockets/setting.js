@@ -15,6 +15,7 @@ module.exports = class SettingSocket extends Socket {
         try {
             const settings = await getSettings();
             const userSettings = await getUserSettings(this.user_id);
+            console.log(userSettings);
 
             let returnSettings = {};
             settings.forEach(s => returnSettings[s.key] = s.value);
@@ -46,6 +47,7 @@ module.exports = class SettingSocket extends Socket {
 
         this.socket.on("settingSet", async (data) => {
             try {
+                console.log(data);
                 await setUserSetting(this.user_id, data.key, data.value);
                 await this.sendSettings()
             } catch (err) {

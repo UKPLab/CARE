@@ -50,13 +50,22 @@ export default {
             .map(s => s.id);
       }
     },
+    showAll() {
+      const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
+      return (showAllComments !== undefined && showAllComments);
+    },
     annotations() {
       return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageId)
           .filter(anno => {
             if (this.studySessionIds) {
               return this.studySessionIds.includes(anno.studySessionId);
+            } else {
+              if (this.showAll) {
+                return true;
+              } else {
+                return anno.studySessionId === null
+              }
             }
-            return true;
           })
           .filter(anno => anno.anchors !== null)
     },

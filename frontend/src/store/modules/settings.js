@@ -1,14 +1,12 @@
 /* Store for navigation elements
 
 Defines the store for navigation elements
-Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
+Author: Nils Dycke, Dennis Zyska
 Source: -
 */
 
 const getDefaultState = () => {
-    return {
-        settings: {}
-    };
+    return {};
 };
 
 export default {
@@ -17,29 +15,30 @@ export default {
     state: getDefaultState(),
     getters: {
         getSettings: state => {
-            return state['settings']
+            return state
         },
         getValue: state => (key) => {
-            if (state['settings'] === null) {
-                return null;
+            if (key in state) {
+                return state[key];
             }
-
-            return state['settings'][key];
         },
         getValueAsInt: state => (key) => {
-            if (state['settings'] === null) {
-                return null;
+            if (key in state) {
+                return parseInt(state[key]);
             }
-
-            return parseInt(state['settings'][key]);
         },
     },
     mutations: {
         SOCKET_settingRefresh: (state, settings) => {
             Object.entries(settings).forEach(([key, value]) => {
-                state['settings'][key] = value
+                state[key] = value
             });
         },
+        set: (state, {key, value}) => {
+            state[key] = value;
+        },
     },
-    actions: {}
+    actions: {
+
+    }
 };

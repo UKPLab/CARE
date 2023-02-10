@@ -45,16 +45,4 @@ export default {
         },
     },
     actions: {},
-    /*utations: {
-        SOCKET_studySessionRefresh: (state, data) => {
-            const old = state.find(c => c.id === data.id);
-            if (old !== undefined) {
-                state.splice(state.indexOf(old), 1);
-            }
-            if (!data.deleted) {
-                state.push(data);
-            }
-        },
-    },
-    actions: {}*/
 };
