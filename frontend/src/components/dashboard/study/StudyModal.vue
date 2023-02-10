@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="studyCoordinatorModal" lg remove-close name="studyCoordinatorModal"
+  <Modal ref="studyCoordinatorModal" lg name="studyCoordinatorModal" @hide="reset"
          :props="{studyId: studyId, documentId: documentId}">
     <template v-slot:title>
       <span>
@@ -38,17 +38,21 @@ import Form from "@/basic/form/Form.vue";
 export default {
   name: "StudyCoordinatorModal",
   components: {Modal, Form},
-  watch: {
-    data: {
-      handler() {
-        console.log(this.data);
-      }, deep: true
-    }
-  },
   data() {
     return {
       studyId: 0,
       documentId: 0,
+      defaultValue: {
+          name: "",
+          documentId: this.documentId,
+          collab: false,
+          resumable: true,
+          levels: 1,
+          timeLimit: 0,
+          description: "",
+          start: null,
+          end: null,
+        },
       fields: [
         {
           name: "documentId",
@@ -122,23 +126,15 @@ export default {
         },
       ],
       success: false,
-      hash: null
+      hash: null,
+      resets: 0,
     }
   },
   computed: {
     study() {
+      const resetCounter = this.resets; //do not remove; need for refreshing study object on modal hide!
       if (this.studyId === 0) {
-        return {
-          name: "",
-          documentId: this.documentId,
-          collab: false,
-          resumable: true,
-          levels: 1,
-          timeLimit: 0,
-          description: "",
-          start: null,
-          end: null,
-        }
+        return {...this.defaultValue};
       } else {
         return {...this.$store.getters['study/getStudyById'](this.studyId)};
       }
@@ -149,7 +145,6 @@ export default {
   },
   methods: {
     open(studyId, documentId = null, loadInitialized = false) {
-      console.log("opening study modal with", loadInitialized, documentId, studyId);
       if (documentId !== null) {
         this.documentId = documentId;
       }
@@ -183,6 +178,9 @@ export default {
     },
     close() {
       this.$refs.studyCoordinatorModal.closeModal();
+    },
+    reset() {
+      this.resets++;
     },
     async copyURL() {
       try {

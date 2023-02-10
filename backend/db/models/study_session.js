@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         studySessionId: DataTypes.INTEGER,
         evaluation: DataTypes.INTEGER,
         comment: DataTypes.TEXT,
+        reviewComment: DataTypes.TEXT,
         public: DataTypes.BOOLEAN,
         start: DataTypes.DATE,
         end: DataTypes.DATE,

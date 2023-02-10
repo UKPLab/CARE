@@ -7,7 +7,7 @@
           {{ comment.creator_name }}
           <Collaboration ref="collab"
                          :document-id="documentId"
-                         :target-id="comment_id"
+                         :target-id="commentId"
                          target-type="comment"
                          @collabStatus="toEditMode"></Collaboration>
 
@@ -29,7 +29,7 @@
            data-toogle="tooltip" @click="scrollTo(annotation_id)">
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
-      <CommentCard ref="main_comment" :comment_id="comment_id" :documentId="documentId" :edit="editedByMyself"
+      <CommentCard ref="main_comment" :commentId="commentId" :documentId="documentId" :edit="editedByMyself" :study-session-id="studySessionId" :readonly="readonly"
                    :level=0
                    @saveCard="save()"/>
     </template>
@@ -58,7 +58,7 @@
               <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
             </button>
           </div>
-          <div class="col text-end">
+          <div v-if="!readonly" class="col text-end">
             <SidebarButton v-if="settingResponse"
                            :loading="false"
                            :props="this.$props"
@@ -94,7 +94,7 @@
     <template v-slot:thread>
       <div v-if="showReplies" class="d-grid gap-1 my-2">
         <span v-for="c in childComments" :key="c.id">
-          <CommentCard :comment_id="c.id" :documentId="documentId" :level=1>
+          <CommentCard :readonly="readonly" :study-session-id="studySessionId" :commentId="c.id" :documentId="documentId" :level=1>
         </CommentCard>
         </span>
       </div>
@@ -124,7 +124,26 @@ import NLPService from "@/basic/NLPService.vue";
 export default {
   name: "AnnoCard",
   components: {NLPService, Collaboration, SideCard, CommentCard, LoadIcon, IconLoading, SidebarButton},
-  props: ["comment_id", "readonly", "documentId"],
+  props: {
+    'studySessionId': {
+      type: Number,
+      required: false,
+      default: null
+    },
+    'commentId': {
+      type: Number,
+      required: true,
+    },
+    readonly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    'documentId': {
+      type: Number,
+      required: true
+    },
+  },
   data: function () {
     return {
       shake: false,
@@ -136,7 +155,7 @@ export default {
   mounted() {
     if (this.comment.draft) {
       //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
-      setTimeout(() => this.$emit("focus", this.comment_id), 100);
+      setTimeout(() => this.$emit("focus", this.commentId), 100);
       this.shake = true;
       setTimeout(() => this.shake = false, 1500);
     }
@@ -160,13 +179,13 @@ export default {
       return this.comment.draft || this.edit_mode;
     },
     numberReplies() {
-      return this.$store.getters["comment/getNumberOfChildrenByComment"](this.comment_id);
+      return this.$store.getters["comment/getNumberOfChildrenByComment"](this.commentId);
     },
     childComments() {
-      return this.$store.getters["comment/getCommentsByCommentId"](this.comment_id);
+      return this.$store.getters["comment/getCommentsByCommentId"](this.commentId);
     },
     comment() {
-      return this.$store.getters['comment/getComment'](this.comment_id);
+      return this.$store.getters['comment/getComment'](this.commentId);
     },
     color() {
       if (this.annotation_id)
@@ -290,7 +309,8 @@ export default {
     summarizeResponse(data) {
       this.$socket.emit('commentAdd', {
         "documentId": this.documentId,
-        "commentId": this.comment_id,
+        "commentId": this.commentId,
+        "studySessionId": this.studySessionId,
         "text": "Summarization: " + data[0]['summary_text'],
         "userId": "Bot"
       });

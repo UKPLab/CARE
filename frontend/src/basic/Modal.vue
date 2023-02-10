@@ -8,7 +8,8 @@
           <h5 class="modal-title">
             <slot name="title"></slot>
           </h5>
-          <button v-if="!removeClose" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button v-if="!removeClose" type="button" class="btn-close" data-bs-dismiss="modal"
+                  aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div v-if="waiting" class="justify-content-center flex-grow-1 d-flex" role="status">
@@ -33,7 +34,7 @@
 
 Provide a default modal component to include modals into other components
 
-Author: Dennis Zyska (zyska@ukp...)
+Author: Dennis Zyska
 Source: -
 */
 import {Modal} from 'bootstrap';
@@ -42,6 +43,7 @@ import LoadIcon from "@/icons/LoadIcon.vue"
 export default {
   name: "Modal",
   components: {LoadIcon},
+  emits: ['show', 'hide'],
   props: {
     xl: {
       type: Boolean,
@@ -85,31 +87,45 @@ export default {
   },
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
+    this.$refs.Modal.addEventListener('hide.bs.modal', this.hideEvent);
+    this.$refs.Modal.addEventListener('show.bs.modal', this.showEvent);
+
     if (this.autoOpen) {
       this.openModal();
     }
   },
+  beforeUnmount() {
+    this.$refs.Modal.removeEventListener('hide.bs.modal', this.hideEvent);
+    this.$refs.Modal.removeEventListener('show.bs.modal', this.showEvent);
+    this.modal.hide();
+  },
   methods: {
+    hideEvent(event) {
+      this.$emit('hide');
+      this.$socket.emit("stats", {
+        action: "hideModal",
+        data: {"name": this.name, "props": this.props}
+      });
+    },
+    showEvent(event) {
+      this.$emit('show');
+      this.$socket.emit("stats", {
+        action: "openModal",
+        data: {"name": this.name, "props": this.props}
+      });
+    },
     open() {
       this.openModal();
     },
     openModal() {
       this.waiting = false;
       this.modal.show();
-      this.$socket.emit("stats", {
-        action: "openModal",
-        data: {"name": this.name, "props": this.props}
-      });
     },
     close() {
       this.closeModal();
     },
     closeModal() {
       this.modal.hide();
-      this.$socket.emit("stats", {
-        action: "hideModal",
-        data: {"name": this.name, "props": this.props}
-      });
     }
   }
 }

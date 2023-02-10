@@ -49,6 +49,10 @@ module.exports = {
                     type: Sequelize.INTEGER,
                     allowNull: true
                 },
+                reviewComment: {
+                    allowNull: true,
+                    type: Sequelize.TEXT
+                },
                 comment: {
                     allowNull: true,
                     type: Sequelize.TEXT

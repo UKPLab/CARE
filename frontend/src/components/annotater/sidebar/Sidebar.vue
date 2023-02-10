@@ -12,8 +12,8 @@
             class="list-group-i"
             v-on:mouseleave="unhover(comment.id)"
             v-on:mouseover='hover(comment.id)'>
-          <AnnoCard v-bind:id="comment.id" :comment_id="comment.id" :documentId="documentId" :readonly="readonly"
-                    @focus="sidebarScrollTo"></AnnoCard>
+          <AnnoCard v-bind:id="comment.id" :documentId="documentId" :readonly="readonly" :study-session-id="studySessionId"
+                    @focus="sidebarScrollTo" :comment-id="comment.id"></AnnoCard>
         </li>
 
         <li v-if="!readonly" id="addPageNote">

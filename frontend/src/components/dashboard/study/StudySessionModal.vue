@@ -28,6 +28,7 @@ export default {
   data() {
     return {
       studyId: 0,
+      hash: null,
       options: {
         striped: true,
         hover: true,
@@ -54,13 +55,7 @@ export default {
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
-        {
-          name: "Open",
-          key: "open",
-          type: "button",
-          icon: "box-arrow-in-right",
-          action: "openStudySession"
-        },
+        {name: "Manage", key: "manage", type: "button-group"},
       ]
     }
   },
@@ -80,7 +75,8 @@ export default {
 
             session.startParsed = new Date(session.start).toLocaleString();
             session.finished = session.end !== null;
-            session.open = {
+            session.manage = [
+                {
                 icon: "box-arrow-in-right",
                 options: {
                   iconOnly: true,
@@ -91,7 +87,33 @@ export default {
                 },
                 title: "Open session",
                 action: "openStudySession",
-            };
+              },
+                {
+                icon: "link-45deg",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                    "btn-sm": true,
+                  }
+                },
+                title: "Copy session link",
+                action: "copyStudySessionLink",
+              },
+                {
+                icon: "trash",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                    "btn-sm": true,
+                  }
+                },
+                title: "Delete Study Session",
+                action: "deleteStudySession",
+              },
+            ];
+
             return session;
           });
     },
@@ -111,10 +133,35 @@ export default {
         this.$socket.emit("studyGetById", {studyId: this.studyId});
       }
     },
-    action() {
-      if (data.action === "openStudySession") {
-        console.log("opening study session in readonly mode");
-        //todo
+    action(data) {
+      switch(data.action) {
+        case "openStudySession":
+          this.$router.push("/review/" + data.params.hash);
+          break;
+        case "copyStudySessionLink":
+          this.copyURL(data.params.hash);
+          break;
+        case "deleteStudySession":
+          this.$socket.emit("studySessionUpdate", {sessionId: data.params.id, deleted:true});
+          break;
+      }
+    },
+    async copyURL(hash) {
+      const link = window.location.origin + "/review/" + hash;
+
+      try {
+        await navigator.clipboard.writeText(link);
+        this.eventBus.emit('toast', {
+          title: "Link copied",
+          message: "Study session link copied to clipboard!",
+          variant: "success"
+        });
+      } catch ($e) {
+        this.eventBus.emit('toast', {
+          title: "Link not copied",
+          message: "Could not copy study session link to clipboard!",
+          variant: "danger"
+        });
       }
     }
   }

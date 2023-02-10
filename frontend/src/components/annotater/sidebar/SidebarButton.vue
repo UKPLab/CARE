@@ -14,7 +14,7 @@ import LoadIcon from "@/icons/LoadIcon.vue";
 import IconLoading from "@/icons/IconLoading.vue";
 
 export default {
-  name: "SidebarButton.vue",
+  name: "SidebarButton",
   components: {LoadIcon, IconLoading},
   emits: ["click"],
   props: {

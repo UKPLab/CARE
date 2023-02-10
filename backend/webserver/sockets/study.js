@@ -184,7 +184,8 @@ module.exports = class StudySocket extends Socket {
             try {
                 if (data.sessionId && data.sessionId !== 0) {
                     const currentStudySession = await this.models['study_session'].getById(data.sessionId)
-                    if (this.isAdmin() || currentStudySession.userId === this.user_id) {
+                    const study = await this.models['study'].getById(currentStudySession.studyId);
+                    if (this.isAdmin() || this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
                         this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].updateById(data.sessionId, data)))
                     } else {
                         this.sendToast("You are not allowed to update this study session", "Error", "Danger");
