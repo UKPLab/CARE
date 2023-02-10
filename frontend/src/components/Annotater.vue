@@ -17,9 +17,16 @@
 
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
-        <button v-if="nlp_enabled" class="btn rounded-circle" title="Activate/Deactivate NLP support" type="button"
-                @click="changeNlpSetting">
-          <LoadIcon :color="(!nlp_support || !nlp_available)?'#777777':'#097969'" :size="18"
+        <button v-if="studySessionId === null" class="btn rounded-circle"
+                :title="showAll ?  'Hide study comments' : 'Show study comments'" type="button"
+                @click="setSetting({key: 'annotator.showAllComments', value: !showAll})">
+          <LoadIcon :size="18" :icon-name="showAll ?  'eye-slash-fill' : 'eye-fill'"></LoadIcon>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button v-if="nlpEnabled" class="btn rounded-circle" :title="nlpActive ?  'Deactivate NLP support' : 'Activate NLP support'" type="button"
+                @click="toggleNlp">
+          <LoadIcon :color="(!nlpActive) ?'#777777':'#097969'" :size="18"
                     icon-name="robot"></LoadIcon>
         </button>
       </li>
@@ -85,6 +92,7 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
 import LoadIcon from "@/icons/LoadIcon.vue";
 import ExpandMenu from "./navigation/ExpandMenu.vue";
+import {mapMutations} from "vuex";
 
 
 export default {
@@ -150,21 +158,21 @@ export default {
     anchors() {
       return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId))
     },
+    showAll() {
+      const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
+      return (showAllComments !== undefined && showAllComments);
+    },
     annotations() {
       return this.$store.getters["anno/getAnnotations"](this.documentId);
     },
     comments() {
       return this.$store.getters["comment/getDocumentComments"](this.documentId);
     },
-    nlp_support() {
-      return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true";
+    nlpActive() {
+      const nlpActive = this.$store.getters["settings/getValue"]("annotator.nlp.activated");
+      return (nlpActive === true || nlpActive === "true");
     },
-    nlp_available() {
-      const conf = this.$store.getters["service/get"]("NLPService", "skillConfig");
-      // TODO check only sentiment_classification here?
-      return conf && "sentiment_classification" in conf;
-    },
-    nlp_enabled() {
+    nlpEnabled() {
       return this.$store.getters["settings/getValue"]('service.nlp.enabled') === "true";
     },
   },
@@ -186,14 +194,16 @@ export default {
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
   },
   methods: {
+    ...mapMutations({
+      setSetting: "settings/set",
+    }),
     decisionSubmit(decision) {
       this.$refs.decisionSubmit.open(decision);
     },
-    changeNlpSetting(newNlpActive) {
-      // TODO switch NLP Settings
-      if (this.nlp_support !== newNlpActive) {
-        this.$socket.emit("settingSet", {key: "annotator.nlp.activated", value: newNlpActive});
-      }
+    toggleNlp() {
+      const newNlpActive = !this.nlpActive;
+      this.setSetting({key: "annotator.nlp.activated", value: newNlpActive});
+      this.$socket.emit("settingSet", {key: "annotator.nlp.activated", value: newNlpActive});
     },
     scrollActivity() {
       debounce(() => {

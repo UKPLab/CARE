@@ -85,13 +85,22 @@ export default {
             .map(s => s.id);
       }
     },
+    showAll() {
+      const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
+      return (showAllComments !== undefined && showAllComments);
+    },
     documentComments() {
       return this.$store.getters['comment/getDocumentComments'](this.documentId)
           .filter(comment => {
             if (this.studySessionIds) {
               return this.studySessionIds.includes(comment.studySessionId);
+            } else {
+              if (this.showAll) {
+                return true;
+              } else {
+                return comment.studySessionId === null
+              }
             }
-            return true;
           })
           .sort((a, b) => {
             if (!a.referenceAnnotation && !b.referenceAnnotation) {
