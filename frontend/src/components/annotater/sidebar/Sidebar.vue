@@ -168,6 +168,7 @@ export default {
     createDocumentComment() {
       this.$socket.emit('commentAdd', {
         documentId: this.documentId,
+        studySessionId: this.studySessionId,
         annotationId: null,
         commentId: null
       });
