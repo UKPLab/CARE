@@ -54,6 +54,7 @@ exports.add = async function add(annotation, user_id) {
         documentId: annotation.documentId,
         selectors: annotation.selectors,
         tagId: annotation.tagId,
+        studySessionId: annotation.studySessionId,
         text: annotation.selectors.target === undefined ? null : annotation.selectors.target[0].selector[1].exact,
         draft: true,
     }

@@ -2,11 +2,11 @@
 </template>
 
 <script>
-/* Highlights.vue - highlights of the annotation in pdf document
+/* Highlights handling of annotation in pdf document
 
 This component creates the highlights of all the annotations inside the pdf document
 
-Author: Dennis Zyska (zyska@ukp...)
+Author: Dennis Zyska
 Source: -
 */
 import {isNodeInRange} from "@/assets/anchoring/range-util";
@@ -15,16 +15,50 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 
 export default {
   name: "Highlights",
-  props: ['documentId', 'page_id'],
-  data: function () {
-    return {}
+  props: {
+    documentId: {
+      type: Number,
+      required: true
+    },
+    'studySessionId': {
+      type: Number,
+      required: false,
+      default: null
+    },
+    'pageId': {
+      type: Number,
+      required: true,
+    }
   },
   mounted() {
     this.annotations.map(this.highlight);
   },
   computed: {
+    study() {
+      if (this.studySession) {
+        return this.$store.getters["study/getStudyById"](this.studySession.studyId);
+      }
+    },
+    studySession() {
+      if (this.studySessionId && this.studySessionId !== 0) {
+        return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
+      }
+    },
+    studySessionIds() {
+      if (this.study) {
+        return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
+            .map(s => s.id);
+      }
+    },
     annotations() {
-      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.page_id).filter(anno => anno.anchors !== null)
+      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageId)
+          .filter(anno => {
+            if (this.studySessionIds) {
+              return this.studySessionIds.includes(anno.studySessionId);
+            }
+            return true;
+          })
+          .filter(anno => anno.anchors !== null)
     },
     tags() {
       return this.$store.getters['tag/getAllTags'](false);
@@ -36,9 +70,10 @@ export default {
       oldVal.filter(anno => !newVal.includes(anno))
           .forEach(anno => {
             if (anno.anchors != null) {
-            anno.anchors.filter(anchor => "highlights" in anchor)
-                .forEach(anchor => this.removeHighlights(anchor.highlights))
-          }});
+              anno.anchors.filter(anchor => "highlights" in anchor)
+                  .forEach(anchor => this.removeHighlights(anchor.highlights))
+            }
+          });
 
       newVal.filter(anno => !oldVal.includes(anno))
           .map(this.highlight)
@@ -56,7 +91,7 @@ export default {
     getColor(tag_id) {
       return this.$store.getters['tag/getColor'](tag_id);
     },
-      highlight(annotation) {
+    highlight(annotation) {
       for (let anchor of annotation.anchors) {
         const range = resolveAnchor(anchor);
         if (!range) {

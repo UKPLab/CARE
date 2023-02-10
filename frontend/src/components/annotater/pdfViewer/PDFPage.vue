@@ -17,7 +17,7 @@
       </div>
       <div :id="'text-layer-' + pageNumber" class="textLayer"></div>
     </div>
-    <Highlights :page_id="pageNumber" ref="highlights" :documentId="documentId"/>
+    <Highlights :page-id="pageNumber" ref="highlights" :documentId="documentId" :study-session-id="studySessionId" />
   </div>
 </template>
 
@@ -52,6 +52,11 @@ export default {
     documentId: {
       type: Number,
       required: true
+    },
+    'studySessionId': {
+      type: Number,
+      required: false,
+      default: null
     },
     render: {
       type: Boolean,
