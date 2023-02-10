@@ -7,9 +7,6 @@
                     @click="collapseComment = !collapseComment"></LoadIcon>
 
           {{ comment.creator_name }}
-          <!--<span v-if="showEditByCollab">
-            <LoadIcon :size="12 " class="fading" iconName="pencil-fill"></LoadIcon>
-          </span>-->
           <Collaboration ref="collab" :document-id="documentId" :target-id="commentId" target-type="comment"
                          @collabStatus="x => editMode = x"></Collaboration>
         </div>

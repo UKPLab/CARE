@@ -44,7 +44,7 @@ export default {
       documentId: 0,
       defaultValue: {
           name: "",
-          documentId: this.documentId,
+          documentId: 0,
           collab: false,
           resumable: true,
           levels: 1,
@@ -134,7 +134,9 @@ export default {
     study() {
       const resetCounter = this.resets; //do not remove; need for refreshing study object on modal hide!
       if (this.studyId === 0) {
-        return {...this.defaultValue};
+        let defaultObject = {...this.defaultValue};
+        defaultObject.documentId = this.documentId;
+        return defaultObject;
       } else {
         return {...this.$store.getters['study/getStudyById'](this.studyId)};
       }
