@@ -48,7 +48,7 @@ module.exports = class UserSocket extends Socket {
                 }
             } else {
                 this.socket.emit("userData", {success: false, message: "User rights and argument mismatch"});
-                this.logger.error("User right and request parameter mismatch" + JSON.stringify(e));
+                this.logger.error("User right and request parameter mismatch");
             }
         });
 
