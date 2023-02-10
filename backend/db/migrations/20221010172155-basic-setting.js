@@ -12,7 +12,7 @@ const settings = [
     {key: "tags.tagSet.default", value: "1", description: "The default tagset to use for new annotations"},
     {
         key: "app.config.copyright",
-        value: "Copyright © 2022-2023 Team Care UKP Labs (TU Darmstadt)",
+        value: "Copyright © 2022-2023 Team Care UKP Lab (TU Darmstadt)",
         description: "The copyright text to display on the login page"
     },
     {
