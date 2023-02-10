@@ -12,6 +12,7 @@
     </template>
   </Card>
   </span>
+  <StudySessionModal ref="studySessionModal"></StudySessionModal>
 </template>
 
 <script>
@@ -25,10 +26,11 @@ import Card from "@/basic/Card.vue";
 import Table from "@/basic/table/Table.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 import StudyModal from "./study/StudyModal.vue";
+import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 
 export default {
   name: "Study.vue",
-  components: {Card, Table, LoadIcon, StudyModal},
+  components: {Card, Table, LoadIcon, StudyModal, StudySessionModal},
   data() {
     return {
       options: {
@@ -114,7 +116,7 @@ export default {
                         "btn-outline-secondary": true,
                       }
                     },
-                    title: "Edit user study",
+                    title: "Edit study",
                     action: "editStudy",
                   },
                   {
@@ -125,7 +127,7 @@ export default {
                         "btn-outline-secondary": true,
                       }
                     },
-                    title: "Delete user study",
+                    title: "Delete study",
                     action: "deleteStudy",
                   },
                   {
@@ -136,7 +138,7 @@ export default {
                         "btn-outline-secondary": true,
                       }
                     },
-                    title: "Open user study",
+                    title: "Open study",
                     action: "openStudy",
                   },
                   {
@@ -147,11 +149,21 @@ export default {
                         "btn-outline-secondary": true,
                       }
                     },
-                    title: "Copy link to user study",
+                    title: "Copy link to study",
                     action: "linkStudy",
+                  },
+                    {
+                    icon: "card-list",
+                    options: {
+                      iconOnly: true,
+                      specifiers: {
+                        "btn-outline-secondary": true,
+                      }
+                    },
+                    title: "Inspect sessions",
+                    action: "inspectSessions",
                   }
                 ];
-                console.log(study);
                 return study
               }
           );
@@ -172,7 +184,38 @@ export default {
       } else if (data.action === "linkStudy") {
         this.$socket.emit("stats", {action: "copyStudyLink", data: {studyId: data.params.id}});
 
-        this.studyCoordinator(data.params, true);
+        this.copyLink(data.params.id);
+      } else if (data.action === "inspectSessions") {
+        this.$socket.emit("stats", {action: "inspectSessions", data: {studyId: data.params.id}});
+
+        this.$refs.studySessionModal.open(data.params.id);
+      }
+    },
+    async copyLink(studyId){
+      const study = this.$store.getters["study/getStudyById"](studyId);
+      if(!study){
+        this.eventBus.emit('toast', {
+          title: "Link not copied",
+          message: "Failed to retrieve URL. Try again later.",
+          variant: "danger"
+        });
+        return;
+      }
+
+      const link = window.location.origin + "/study/" + study.hash;
+      try {
+        await navigator.clipboard.writeText(link);
+        this.eventBus.emit('toast', {
+          title: "Link copied",
+          message: "Document link copied to clipboard!",
+          variant: "success"
+        });
+      } catch ($e) {
+        this.eventBus.emit('toast', {
+          title: "Link not copied",
+          message: "Could not copy document link to clipboard!",
+          variant: "danger"
+        });
       }
     },
     add() {
@@ -185,7 +228,6 @@ export default {
     studyCoordinator(row, linkOnly=false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
     }
-
   }
 }
 </script>
