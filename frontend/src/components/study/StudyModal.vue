@@ -199,7 +199,7 @@ export default {
     start() {
       this.sockets.subscribe("studyStarted", (data) => {
         if (data.success) {
-          this.$emit("start", data.studySessionId);
+          this.$emit("start", {studySessionId: data.studySessionId});
           this.$refs.modal.waiting = false;
           this.$refs.modal.close();
           this.eventBus.emit('toast', {

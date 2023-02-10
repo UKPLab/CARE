@@ -50,6 +50,7 @@ export default {
       default: false,
     }
   },
+
   mounted() {
     this.studySessionId = this.initStudySessionId;
     this.load();
@@ -130,7 +131,15 @@ export default {
 
 
       }
-    }
+    },
+    studySessionId(newVal, oldVal) {
+      if (oldVal !== newVal) {
+        console.log(oldVal);
+        console.log(newVal);
+        console.log(this.studySessionId);
+
+      }
+    },
   },
   methods: {
     load() {
@@ -159,7 +168,7 @@ export default {
       this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
       if (this.timeLeft < 0) {
-        this.finish({studySessionId:this.studySessionId});
+        this.finish({studySessionId: this.studySessionId});
       }
 
     }
