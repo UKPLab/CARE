@@ -11,8 +11,7 @@
             :key="'documentComment-' + comment.id"
             class="list-group-i"
             v-on:mouseleave="unhover(comment.id)"
-            v-on:mouseover='hover(comment.id)'
-        >
+            v-on:mouseover='hover(comment.id)'>
           <AnnoCard v-bind:id="comment.id" :comment_id="comment.id" :documentId="documentId" :readonly="readonly"
                     @focus="sidebarScrollTo"></AnnoCard>
         </li>
@@ -38,7 +37,7 @@
 
 Here the annotations are listed and can be modified, also includes scrolling feature.
 
-Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
+Author: Nils Dycke, Dennis Zyska
 Source: -
 */
 import {mapMutations} from "vuex";
@@ -49,14 +48,14 @@ export default {
   name: "Sidebar",
   components: {AnnoCard},
   props: {
-    documentId: {
+    'documentId': {
       type: Number,
       required: true
     },
     'studySessionId': {
       type: Number,
       required: false,
-      default: 0
+      default: null
     },
     readonly: {
       type: Boolean,
@@ -93,9 +92,22 @@ export default {
   mounted() {
     this.eventBus.on('sidebarScroll', (anno_id) => {
       this.sidebarScrollTo(this.$store.getters["comment/getCommentByAnnotation"](anno_id).id);
-      this.$socket.emit("stats", {action: "sidebarScroll", data: {documentId: this.documentId, anno_id: anno_id}});
+      this.$socket.emit("stats", {
+        action: "sidebarScroll",
+        data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}
+      });
     })
     this.load();
+  },
+  watch: {
+    studySessionId(newVal, oldVal) {
+      if (oldVal !== newVal) {
+        console.log(oldVal);
+        console.log(newVal);
+        console.log(this.studySessionId);
+        this.load();
+      }
+    }
   },
   methods: {
     ...mapMutations({
@@ -103,9 +115,6 @@ export default {
       annoHover: "anno/HOVER",
       annoUnhover: "anno/UNHOVER"
     }),
-    /*hasComment(anno_id) {
-      return this.$store.getters['comment/getCommentByAnnotation'](anno_id) !== undefined;
-    },*/
     hover(commentId) {
       const annotationId = this.$store.getters['comment/getComment'](commentId).referenceAnnotation;
       if (annotationId)
@@ -117,8 +126,9 @@ export default {
         this.annoHover(annotationId)
     },
     load() {
-      this.$socket.emit("annotationGetByDocument", {documentId: this.documentId});
-      this.$socket.emit("commentGetByDocument", {documentId: this.documentId});
+      if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0)) {
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+      }
     },
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;

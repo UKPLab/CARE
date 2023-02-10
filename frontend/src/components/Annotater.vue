@@ -15,8 +15,6 @@
       </div>
     </div>
 
-
-
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
         <button v-if="nlp_enabled" class="btn rounded-circle" title="Activate/Deactivate NLP support" type="button"
@@ -113,7 +111,7 @@ export default {
     'studySessionId': {
       type: Number,
       required: false,
-      default: 0
+      default: null
     },
     'readonly': {
       type: Boolean,
@@ -134,6 +132,15 @@ export default {
   data() {
     return {
       downloading: false
+    }
+  },
+  watch: {
+    studySessionId(newVal, oldVal) {
+      if (oldVal !== newVal) {
+        console.log(oldVal);
+        console.log(newVal);
+        console.log(this.studySessionId);
+      }
     }
   },
   computed: {

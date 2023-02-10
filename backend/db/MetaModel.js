@@ -94,13 +94,20 @@ module.exports = class MetaModel extends Model {
         }
     }
 
-    static async getAllByFK(fk, id, deleted = false) {
+    static async getAllByFK(fk, id, deleted = false, includeDraft = false) {
         if (fk in this.getAttributes()) {
             try {
-                return await this.findAll({
-                    where: {[fk]: id, deleted: deleted},
-                    raw: true
-                });
+                if (!includeDraft && "draft" in this.getAttributes()) {
+                    return await this.findAll({
+                        where: {[fk]: id, deleted: deleted, draft: false},
+                        raw: true
+                    });
+                } else {
+                    return await this.findAll({
+                        where: {[fk]: id, deleted: deleted},
+                        raw: true
+                    });
+                }
             } catch (err) {
                 if (isInternalDatabaseError(err)) {
                     throw InternalDatabaseError(err);
