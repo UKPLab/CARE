@@ -12,7 +12,6 @@ export default {
   components: {Study, Loader},
   data() {
     return {
-      loading: true,
       readonly: false,
     }
   },

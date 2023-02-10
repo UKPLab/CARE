@@ -128,16 +128,6 @@ export default {
         if (!newVal.end) {
           this.timerInterval = setInterval(this.calcTimeLeft, 1000);
         }
-
-
-      }
-    },
-    studySessionId(newVal, oldVal) {
-      if (oldVal !== newVal) {
-        console.log(oldVal);
-        console.log(newVal);
-        console.log(this.studySessionId);
-
       }
     },
   },

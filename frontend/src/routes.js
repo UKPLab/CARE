@@ -45,21 +45,15 @@ const routes = [
         meta: {requiresAuth: false, hideTopbar: true}
     },
     {
-        path: "/annotater/:documentId",
-        component: () => import('@/components/Annotater.vue'),
-        props: true,
-        meta: {requiresAuth: true}
-    },
-    {
         path: "/document/:documentHash",
         component: () => import('@/components/Document.vue'),
         props: true,
         meta: {requiresAuth: true}
     },
     {
-        path: "/report/:documentHash",
-        component: () => import('@/components/Annotater.vue'),
-        props: route => ({documentHash: route.params.documentHash, readonly: true}),
+        path: "/review/:studySessionHash",
+        component: () => import('@/components/Review.vue'),
+        props: true,
         meta: {requireAuth: true}
     },
     {

@@ -10,7 +10,7 @@
           <!--<span v-if="showEditByCollab">
             <LoadIcon :size="12 " class="fading" iconName="pencil-fill"></LoadIcon>
           </span>-->
-          <Collaboration ref="collab" :document-id="documentId" :target-id="comment_id" target-type="comment"
+          <Collaboration ref="collab" :document-id="documentId" :target-id="commentId" target-type="comment"
                          @collabStatus="x => editMode = x"></Collaboration>
         </div>
         <div class="col text-end">
@@ -63,7 +63,7 @@
     <div v-if="level >= 1">
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
-          <div class="col text-end">
+          <div v-if="!readonly" class="col text-end">
             <SidebarButton
                 :loading="false"
                 :props="this.$props"
@@ -79,7 +79,7 @@
           </div>
         </div>
         <div v-else class="row">
-          <div class="col text-end">
+          <div v-if="!readonly" class="col text-end">
             <SidebarButton v-if="settingResponse"
                            :loading="false"
                            :props="this.$props"
@@ -104,7 +104,7 @@
     </div>
     <span v-for="c in childComments" v-if="level >= 1" :key="c.id">
           <hr class="hr"/>
-          <CommentCard :comment_id="c.id" :documentId="documentId" :level="level + 1">
+          <CommentCard :commentId="c.id" :documentId="documentId" :level="level + 1" :readonly="readonly" :study-session-id="studySessionId">
         </CommentCard>
         </span>
   </div>
@@ -122,15 +122,25 @@ export default {
   components: {TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration},
   emits: ["saveCard"],
   props: {
-    comment_id: {
+    'studySessionId': {
+      type: Number,
+      required: false,
+      default: null
+    },
+    'commentId': {
+      type: Number,
+      required: true,
+    },
+    readonly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    'documentId': {
       type: Number,
       required: true
     },
-    documentId: {
-      type: Number,
-      required: true
-    },
-    edit: {
+     edit: {
       type: Boolean,
       required: false,
       default: false,
@@ -170,7 +180,7 @@ export default {
   },
   computed: {
     comment() {
-      return this.$store.getters["comment/getComment"](this.comment_id);
+      return this.$store.getters["comment/getComment"](this.commentId);
     },
     skills() {
       return this.$store.getters["service/getNLPSkills"];
@@ -192,7 +202,7 @@ export default {
       return this.comment.draft || this.editMode;
     },
     childComments() {
-      return this.$store.getters["comment/getCommentsByCommentId"](this.comment_id);
+      return this.$store.getters["comment/getCommentsByCommentId"](this.commentId);
     },
     nlp_active() {
       const conf = this.$store.getters["service/get"]("NLPService", "skillConfig");
@@ -200,13 +210,13 @@ export default {
     },
     nlp_result() {
       const res = this.$store.getters["service/get"]("NLPService", "skillResults");
-      return res && this.comment_id in res ? res[this.comment_id] : null;
+      return res && this.commentId in res ? res[this.commentId] : null;
     }
   },
   methods: {
     save() {
       this.$socket.emit('commentUpdate', {
-        "commentId": this.comment_id,
+        "commentId": this.commentId,
         "tags": JSON.stringify(this.comment.tags.sort()),
         "text": this.comment.text,
       });
@@ -244,7 +254,8 @@ export default {
     reply() {
       this.$socket.emit('commentAdd', {
         "documentId": this.documentId,
-        "commentId": this.comment_id
+        "commentId": this.commentId,
+        "studySessionId": this.studySessionId,
       });
     },
     saveCard() {
@@ -258,7 +269,7 @@ export default {
           {
             service: "NLPService",
             data: {
-              id: this.comment_id,
+              id: this.commentId,
               name: "sentiment_classification",
               data: {text: this.comment.text}
             }

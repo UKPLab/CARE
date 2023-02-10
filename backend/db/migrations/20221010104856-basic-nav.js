@@ -12,7 +12,7 @@ const basicElements = [
         order: 1,
         icon: 'house',
         path: "home",
-        component: 'Home'
+        component: 'Documents'
     },
     {
         name: "Documents",

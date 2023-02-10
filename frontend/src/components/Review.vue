@@ -1,70 +1,97 @@
 <template>
-  <div v-if="waiting" class="justify-content-center flex-grow-1 d-flex" role="status">
-    <div class="spinner-border m-5">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-  </div>
-  <Annotater v-else :documentId="documentId" :review_id="review_id" :readonly="decision" :review="!decision"
-             :approve="decision"/>
+  <Loader v-if="studySessionId === 0 || documentId === 0" :loading="true"></Loader>
+
+  <Annotater v-else :document-id="documentId"
+             :readonly="true"
+             :study-session-id="studySessionId"/>
+  <!--
+    <StudyModal v-if="studySessionId === 0"
+                ref="studyModal"
+                :study-id="studyId"
+                @finish="finish"
+                @start="start"/>
+    <FinishModal ref="studyFinishModal" :closeable="!timeUp" :finished="finished" :study-session-id="studySessionId"
+                 @finish="finalFinish"/>
+    <Teleport to="#topbarCustomPlaceholder">
+      <button class="btn btn-outline-secondary" type="button" @click="finish">Finish Study</button>
+      <button v-if="timeLeft > 0" class="btn mb-1" type="button">
+        <LoadIcon :size="21" class="me-1 middle" icon-name="stopwatch"/>
+        <span :class="{'text-danger':timeLeft < (5 * 60)}" class="middle"><b>Time Left:</b> {{ timeLeftHuman }}</span>
+      </button>
+    </Teleport>-->
+
 </template>
 
 <script>
-/* Review.vue - Showing Annotator through review id
-
-This parent component provides the annotation view, which
-currently consists of all elements of the annotator.
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
-import Annotater from "./Annotater.vue";
+import Loader from "@/basic/Loader.vue"
+import Annotater from "@/components/Annotater.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
   name: "Review",
-  components: {Annotater},
+  components: {LoadIcon, Loader, Annotater},
   data() {
-    return {
-      waiting: true,
-      documentId: null,
-    }
+    return {}
   },
   props: {
-    'review_id': {
+    'studySessionHash': {
       type: String,
       required: true,
     },
-    'readonly': {
-      type: Boolean,
-      required: false,
-      default: false,
+  },
+  sockets: {
+    studySessionError: function (data) {
+      if (data.studySessionHash === this.studySessionHash) {
+        this.eventBus.emit('toast', {
+          title: "Study Session Error",
+          message: data.message,
+          variant: "danger"
+        });
+        this.$router.push("/");
+      }
+    }
+  },
+  mounted() {
+    this.load();
+  },
+
+
+  computed: {
+    studySession() {
+      return this.$store.getters['study_session/getStudySessionByHash'](this.studySessionHash);
     },
-    decision: {
-      type: Boolean,
-      required: false,
-      default: false,
+    study() {
+      if (this.studySession) {
+        return this.$store.getters['study/getStudyById'](this.studySession.studyId);
+      }
+    },
+    documentId() {
+      if (this.study) {
+        return this.study.documentId;
+      }
+      return 0;
+    },
+    studySessionId() {
+      if (this.studySession) {
+        return this.studySession.id;
+      } else
+        return 0;
     },
   },
-  created() {
-    this.waiting = true;
-    this.sockets.subscribe("reviewData", (data) => {
-      this.sockets.unsubscribe('reviewData');
-      if (data.success) {
-        this.documentId = data.documentId;
-        this.waiting = false;
-      } else {
-        this.$router.push("/");
-        this.eventBus.emit('toast', {title: "Review Process", message: data.message, variant: "danger"});
-      }
-    });
-    this.$socket.emit('getReview',
-        {
-          "review_id": this.review_id,
-          "decision": this.decision,
-        });
+
+  methods: {
+    load() {
+      this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
+    }
   }
 }
 </script>
 
 <style scoped>
-
+.pageLoader {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%)
+}
 </style>

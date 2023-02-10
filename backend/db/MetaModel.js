@@ -136,6 +136,11 @@ module.exports = class MetaModel extends Model {
 
     static async updateById(id, data) {
         const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
+
+        if (data.deleted) {
+            data.deletedAt = Date.now();
+        }
+
         try {
             return (await this.update(subselectFieldsForDB(data, possibleFields), {
                     where: {
