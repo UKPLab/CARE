@@ -69,24 +69,46 @@ export default {
     },
   },
   computed: {
+    study() {
+      if (this.studySession) {
+        return this.$store.getters["study/getStudyById"](this.studySession.studyId);
+      }
+    },
+    studySession() {
+      if (this.studySessionId && this.studySessionId !== 0) {
+        return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
+      }
+    },
+    studySessionIds() {
+      if (this.study) {
+        return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
+            .map(s => s.id);
+      }
+    },
     documentComments() {
-      return this.$store.getters['comment/getDocumentComments'](this.documentId).sort((a, b) => {
-        if (!a.referenceAnnotation && !b.referenceAnnotation) {
-          return Date.parse(a) - Date.parse(b);
-        } else if (a.referenceAnnotation && b.referenceAnnotation) {
-          const aAnno = this.$store.getters['anno/getAnnotation'](a.referenceAnnotation);
-          const bAnno = this.$store.getters['anno/getAnnotation'](b.referenceAnnotation);
+      return this.$store.getters['comment/getDocumentComments'](this.documentId)
+          .filter(comment => {
+            if (this.studySessionIds) {
+              return this.studySessionIds.includes(comment.studySessionId);
+            }
+            return true;
+          })
+          .sort((a, b) => {
+            if (!a.referenceAnnotation && !b.referenceAnnotation) {
+              return Date.parse(a) - Date.parse(b);
+            } else if (a.referenceAnnotation && b.referenceAnnotation) {
+              const aAnno = this.$store.getters['anno/getAnnotation'](a.referenceAnnotation);
+              const bAnno = this.$store.getters['anno/getAnnotation'](b.referenceAnnotation);
 
-          if (!aAnno || !bAnno) {
-            return 0;
-          }
-
-          return (aAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start
-              - bAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start);
-        } else {
-          return !a.referenceAnnotation ? 1 : -1;
-        }
-      });
+              if (!aAnno || !bAnno) {
+                return 0;
+              }
+              return (aAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start
+                  - bAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start);
+            } else {
+              return !a.referenceAnnotation ? 1 : -1;
+            }
+          });
     },
   },
   mounted() {

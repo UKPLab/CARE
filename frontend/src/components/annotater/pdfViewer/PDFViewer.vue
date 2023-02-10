@@ -5,22 +5,23 @@
         :key="'PDFPageKey' + page"
         :documentId="documentId"
         :pageNumber="page"
+        :study-session-id="studySessionId"
         :pdf="pdf"
         :render="renderCheck[page - 1]"
         class="scrolling-page"
         @updateVisibility="updateVisibility"
     />
-    <Adder v-if="!readonly" :documentId="documentId" :pdf="pdf"></Adder>
+    <Adder v-if="!readonly" :documentId="documentId" :pdf="pdf" :study-session-id="studySessionId" ></Adder>
   </div>
 </template>
 
 <script>
-/* PDFViewer.vue - PDF
+/* PDF Viewer
 
 This component holds the PDF Pages and the all interacting vue components.
 Central PDF View component.
 
-Author: Dennis Zyska (zyska@ukp...)
+Author: Dennis Zyska
 */
 import PDFPage from "./PDFPage.vue";
 import {PDF} from './pdfStore.js';
@@ -90,15 +91,13 @@ export default {
                 message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
                 variant: "danger"
               });
-
-              this.$router.push("/index.html");
+              this.$router.push("/");
             });
       }
     }
   },
   mounted() {
     this.$socket.emit("documentGet", {documentId: this.documentId});
-
   },
   methods: {
     updateVisibility(page) {
@@ -113,7 +112,12 @@ export default {
       }
       this.$socket.emit("stats", {
         action: "pdfPageVisibilityChange",
-        data: {documentId: this.documentId, readonly: this.readonly, "visibility": page}
+        data: {
+          documentId: this.documentId,
+          readonly: this.readonly,
+          "visibility": page,
+          studySessionId: this.studySessionId
+        }
       })
     },
     ...mapMutations({

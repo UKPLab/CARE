@@ -50,6 +50,7 @@ exports.add = async function add(data) {
         text: data.text !== undefined ? data.text : null,
         userId: data.userId,
         documentId: data.documentId,
+        studySessionId: data.studySessionId,
         referenceAnnotation: data.annotationId !== undefined ? data.annotationId : null,
         referenceComment: data.commentId !== undefined ? data.commentId : null
     }

@@ -23,6 +23,7 @@ module.exports = class AnnotationSocket extends Socket {
                 const annotation = await this.updateCreatorName(await dbAddAnnotation(data, this.user_id))
                 await this.getSocket("CommentSocket").addComment({
                     documentId: annotation[0].documentId,
+                    studySessionId: annotation[0].studySessionId,
                     annotationId: annotation[0].id
                 });
 

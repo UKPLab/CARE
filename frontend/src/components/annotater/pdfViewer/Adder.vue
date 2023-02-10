@@ -30,8 +30,21 @@ import {mapMutations} from "vuex";
 
 export default {
   name: "Adder",
-  components: {},
-  props: ['documentId', 'pdf'],
+  props: {
+    documentId: {
+      type: Number,
+      required: true
+    },
+    'studySessionId': {
+      type: Number,
+      required: false,
+      default: null
+    },
+    'pdf': {
+      type: Object,
+      required: true,
+    }
+  },
   data() {
     return {
       _fadeOutBox: [],
@@ -85,6 +98,7 @@ export default {
 
       this.$socket.emit('annotationAdd', {
         documentId: this.documentId,
+        studySessionId: this.studySessionId,
         selectors: {target},
         tagId: tag.id
       });
@@ -132,7 +146,10 @@ export default {
       this.show(event.clientX, event.clientY);
       this.$socket.emit("stats", {
         action: "onTextSelect",
-        data: {documentId: this.documentId, eventClientX: event.clientX, eventClientY: event.clientY}
+        data: {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          eventClientX: event.clientX, eventClientY: event.clientY}
       });
 
     },
