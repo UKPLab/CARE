@@ -30,7 +30,7 @@ module.exports = {
                     key: "id"
                 }
             },
-            referenceAnnotation: {
+            annotationId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "annotation",
@@ -39,7 +39,7 @@ module.exports = {
                 allowNull: true,
                 defaultValue: null
             },
-            referenceComment: {
+            commentId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "comment",

@@ -6,7 +6,7 @@ Author: Dennis Zyska (zyska@ukp...)
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError} = require("../utils");
 
 const NavElement = require("../models/nav_element.js")(db.sequelize, DataTypes);
 const NavGroup = require("../models/nav_group.js")(db.sequelize, DataTypes);

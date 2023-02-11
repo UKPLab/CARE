@@ -11,7 +11,7 @@ const {
     InternalDatabaseError,
     subselectFieldsForDB,
     pickObjectAttributeSubset
-} = require("./utils");
+} = require("../utils");
 const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
 
@@ -112,18 +112,3 @@ exports.loadByDocument = async function load(documentId) {
 
 }
 
-exports.formatForExport = async function format(annotation) {
-    const copyFields = [
-        "text",
-        "id",
-        "documentId",
-        "createdAt",
-        "updatedAt"
-    ]
-
-    let copied = pickObjectAttributeSubset(annotation, copyFields);
-    copied.userId = await resolveUserIdToName(annotation.userId);
-    copied.tag = (await getTagById(annotation.tagId)).name;
-
-    return copied
-}

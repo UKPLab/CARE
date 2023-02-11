@@ -95,7 +95,7 @@ export default {
       this.$refs.comments.requestDownload(this.downloadIds);
     },
     _simple(obj) {
-      const simple = omitObjectAttributeSubset(obj, ["hash", "document", "referenceAnnotation", "referenceComment",
+      const simple = omitObjectAttributeSubset(obj, ["hash", "document", "annotationId", "commentId",
       "createdAt", "updatedAt"])
       return Object.fromEntries(Object.entries(simple).map(([k, v]) => {
         if(typeof v === "object" && v !== null){

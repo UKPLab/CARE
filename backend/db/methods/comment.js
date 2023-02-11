@@ -6,7 +6,7 @@ Author: Nils Dycke, Dennis Zyska
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB, pickObjectAttributeSubset} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB, pickObjectAttributeSubset} = require("../utils");
 const {resolveUserIdToName} = require("./user");
 const {v4: uuidv4} = require("uuid");
 
@@ -51,8 +51,8 @@ exports.add = async function add(data) {
         userId: data.userId,
         documentId: data.documentId,
         studySessionId: data.studySessionId,
-        referenceAnnotation: data.annotationId !== undefined ? data.annotationId : null,
-        referenceComment: data.commentId !== undefined ? data.commentId : null
+        annotationId: data.annotationId !== undefined ? data.annotationId : null,
+        commentId: data.commentId !== undefined ? data.commentId : null
     }
 
     try {
@@ -89,7 +89,7 @@ exports.loadByAnnotation = async function load(annoId) {
     try {
         return await Comment.findOne({
             where: {
-                referenceAnnotation: annoId, deleted: false, draft: false
+                annotationId: annoId, deleted: false, draft: false
             },
             raw:true,
         });
@@ -116,7 +116,7 @@ exports.loadByComment = async function loadByComment(comment_id) {
     try {
         return await Comment.findAll({
             where: {
-                referenceComment: comment_id, deleted: false, draft: false
+                commentId: comment_id, deleted: false, draft: false
             }, raw: true
         });
     } catch (err) {
@@ -130,7 +130,7 @@ exports.loadDocumentComments = async function load(documentId) {
     try {
         return await Comment.findAll({
             where: {
-                documentId: documentId, deleted: false, draft: false, referenceAnnotation: null
+                documentId: documentId, deleted: false, draft: false, annotationId: null
             }
         });
     } catch (err) {
@@ -153,16 +153,16 @@ exports.formatForExport = async function format(comment) {
     copied.userId = await resolveUserIdToName(comment.userId);
     copied.tags = JSON.parse(comment.tags);
 
-    if(comment.referenceAnnotation){
-        copied.referenceAnnotation = comment.referenceAnnotation;
+    if(comment.annotationId){
+        copied.annotationId = comment.annotationId;
     } else {
-        copied.referenceAnnotation = null;
+        copied.annotationId = null;
     }
 
-    if(comment.referenceComment) {
-        copied.referenceComment = comment.referenceComment;
+    if(comment.commentId) {
+        copied.commentId = comment.commentId;
     } else {
-        copied.referenceComment = null;
+        copied.commentId = null;
     }
 
     return copied;

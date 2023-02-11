@@ -6,7 +6,7 @@ Author: Nils Dycke, Dennis Zyska
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError} = require("../utils");
 
 const Collab = require("../models/collab.js")(db.sequelize, DataTypes);
 

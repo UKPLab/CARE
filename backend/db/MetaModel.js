@@ -1,21 +1,33 @@
 const {Model, Op} = require("sequelize");
-const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./methods/utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./utils");
 const {v4: uuidv4} = require("uuid");
 
 module.exports = class MetaModel extends Model {
 
-    static async getById(id) {
-        try {
-            return await this.findOne({
-                where: {'id': id},
-                raw: true
-            });
-        } catch (err) {
-            if (isInternalDatabaseError(err)) {
-                throw InternalDatabaseError(err);
-            } else {
-                throw err;
+    static async getById(id, deleted = false) {
+        return await this.getByKey('id', id, deleted);
+    }
+
+    static async getByHash(hash, deleted = false) {
+        return await this.getByKey('hash', hash, deleted);
+    }
+
+    static async getByKey(key, id, deleted = false) {
+        if (key in this.getAttributes()) {
+            try {
+                return await this.findOne({
+                    where: {[key]: id, 'deleted': deleted},
+                    raw: true
+                });
+            } catch (err) {
+                if (isInternalDatabaseError(err)) {
+                    throw InternalDatabaseError(err);
+                } else {
+                    throw err;
+                }
             }
+        } else {
+            throw InternalDatabaseError("DB MetaModel Class " + key + " not available: " + this.constructor.name)
         }
     }
 
@@ -29,7 +41,7 @@ module.exports = class MetaModel extends Model {
         }
     }
 
-    static async delete(id) {
+    static async deleteById(id) {
         try {
             return await this.update({'deleted': true, 'deletedAt': Date.now()}, {
                     where: {
@@ -75,36 +87,18 @@ module.exports = class MetaModel extends Model {
         }
     }
 
-    static async getByHash(hash, deleted = false) {
 
-        if ("hash" in this.getAttributes()) {
-            try {
-
-                return await this.findOne({
-                    where: {hash: hash, deleted: deleted},
-                    raw: true
-                });
-            } catch (err) {
-                if (isInternalDatabaseError(err)) {
-                    throw InternalDatabaseError(err);
-                }
-            }
-        } else {
-            throw InternalDatabaseError("DB MetaModel Class getAllByUserId not available: " + this.constructor.name)
-        }
-    }
-
-    static async getAllByFK(fk, id, deleted = false, includeDraft = false) {
-        if (fk in this.getAttributes()) {
+    static async getAllByKey(key, id, deleted = false, includeDraft = false) {
+        if (key in this.getAttributes()) {
             try {
                 if (!includeDraft && "draft" in this.getAttributes()) {
                     return await this.findAll({
-                        where: {[fk]: id, deleted: deleted, draft: false},
+                        where: {[key]: id, deleted: deleted, draft: false},
                         raw: true
                     });
                 } else {
                     return await this.findAll({
-                        where: {[fk]: id, deleted: deleted},
+                        where: {[key]: id, deleted: deleted},
                         raw: true
                     });
                 }
@@ -114,7 +108,7 @@ module.exports = class MetaModel extends Model {
                 }
             }
         } else {
-            throw InternalDatabaseError("DB MetaModel Class " + fk + " not available: " + this.constructor.name)
+            throw InternalDatabaseError("DB MetaModel Class " + key + " not available: " + this.constructor.name)
         }
     }
 

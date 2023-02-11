@@ -1,12 +1,7 @@
-const {
-    deleteDoc: dbDeleteDoc, getAll: dbGetAllDocs, update: dbUpdateDoc, dbGetDoc: dbGetDoc
-} = require("../../db/methods/document.js");
 const fs = require("fs");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const Socket = require("../Socket.js");
-const {get: dbGetTagSet, dbPublishTagSet} = require("../../db/methods/tag_set");
-const {getAllBySetId: dbGetAllTagsBySetId, dbPublishTag} = require("../../db/methods/tag");
 
 /**
  * Handle all document through websocket
@@ -24,22 +19,28 @@ module.exports = class DocumentSocket extends Socket {
      *
      * NOTE: currently we accept sharing per link --> returns always true
      *
-     * @param document_id
-     * @param user_id
+     * @param documentId
      * @returns boolean
      */
-    async checkDocumentAccess(document_id) {
-        const doc = await dbGetDoc(document_id);
-
-        return doc !== null;
+    async checkDocumentAccess(documentId) {
+        const doc = await this.models['document'].getById(documentId);
+        if (doc
+            && (this.checkUserAccess(doc.userId)
+                || doc.public
+                || (await this.models['study'].getAllByKey('documentId', documentId)).length > 0)
+        ) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    async updateAllDocuments() {
+    async refreshAllDocuments() {
         try {
             if (this.isAdmin()) {
-                this.socket.emit("documentRefresh", await dbGetAllDocs());
+                this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].getAll()));
             } else {
-                this.socket.emit("documentRefresh", await dbGetAllDocs(this.user_id));
+                this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].getAllByKey("userId", this.userId)));
             }
         } catch (err) {
             this.logger.error(err);
@@ -47,21 +48,24 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
-
     init() {
 
         //Make sure upload directory exists
         fs.mkdirSync(UPLOAD_PATH, {recursive: true});
 
         this.socket.on("documentGetAll", async (data) => {
-            await this.updateAllDocuments();
+            await this.refreshAllDocuments();
         });
 
         this.socket.on("studyGetByHash", async (data) => {
             try {
                 const document = await this.models['document'].getByHash(data.documentHash);
-                //TODO check rights, public or study
-                this.socket.emit("documentRefresh", await this.updateCreatorName(document));
+                if (this.checkDocumentAccess(document.id)) {
+                    this.socket.emit("documentRefresh", await this.updateCreatorName(document));
+                } else {
+                    this.logger.error("Document access error with documentId: " + document.id);
+                    this.sendToast("You don't have access to the document.", "Error loading documents", "Danger");
+                }
             } catch (err) {
                 this.logger.error(err);
             }
@@ -69,9 +73,9 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentDelete", async (data) => {
             try {
-                const currentDocument = await dbGetDoc(data.documentId);
-                if (this.isAdmin() || currentDocument.userId === this.user_id()) {
-                    this.socket.emit("documentRefresh", await dbDeleteDoc(currentDocument.id));
+                const currentDocument = await this.models['document'].getById(data.documentId);
+                if (this.checkUserAccess(currentDocument.userId)) {
+                    this.socket.emit("documentRefresh", await this.models['document'].deleteById(currentDocument.id));
                 } else {
                     this.sendToast("You are not allowed to delete this document", "Error", "Danger");
                 }
@@ -83,9 +87,9 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentUpdate", async (data) => {
             try {
-                const currentDocument = await dbGetDoc(data.documentId);
-                if (this.isAdmin() || currentDocument.userId === this.user_id()) {
-                    this.socket.emit("documentRefresh", await dbUpdateDoc(data.documentId, data.document));
+                const doc = await this.models['document'].getById(data.documentId);
+                if (this.checkUserAccess(doc.userId)) {
+                    this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(data.documentId, data.document)));
                 } else {
                     this.sendToast("You are not allowed to update this document", "Error", "Danger");
                 }
@@ -97,12 +101,13 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentGet", async (data) => {
             try {
-                const doc = await dbGetDoc(data.documentId);
-                this.socket.emit("documentRefresh", await this.updateCreatorName(doc));
-                // TODO access rights?
-                // TODO async file loading?
-                const pdf = fs.readFileSync(`${UPLOAD_PATH}/${doc['hash']}.pdf`);
-                this.socket.emit("documentFile", {document: doc, file: pdf});
+                const doc = await this.models['document'].getById(data.documentId)
+                if (this.checkDocumentAccess(doc.id)) {
+                    this.socket.emit("documentRefresh", await this.updateCreatorName(doc));
+                }
+                fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
+                    this.socket.emit("documentFile", {document: doc, file: data});
+                })
             } catch (e) {
                 this.logger.error(e);
                 this.sendToast("Error while loading pdf file!", "PDF Error", "danger");
@@ -118,30 +123,30 @@ module.exports = class DocumentSocket extends Socket {
                         if (study.collab) {
 
                             // send studySessions
-                            const studySessions = await this.models['study_session'].getAllByFK('studyId', study.id);
+                            const studySessions = await this.models['study_session'].getAllByKey('studyId', study.id);
                             this.socket.emit("studySessionRefresh", await this.updateCreatorName(studySessions));
 
                             // send annotations
-                            const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByFK('studySessionId', s.id)));
+                            const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByKey('studySessionId', s.id)));
                             this.socket.emit("annotationRefresh", await this.updateCreatorName(annotations.flat(1)));
 
                             // send comments
-                            const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].getAllByFK('studySessionId', s.id)));
+                            const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].getAllByKey('studySessionId', s.id)));
                             this.socket.emit("commentRefresh", await this.updateCreatorName(comments.flat(1)));
                         } else {
-                            const annotations = await this.models['annotation'].getAllByFK('studySessionId', data.studySessionId)
+                            const annotations = await this.models['annotation'].getAllByKey('studySessionId', data.studySessionId)
                             this.socket.emit("annotationRefresh", await this.updateCreatorName(annotations));
 
-                            const comments = await this.models['comment'].getAllByFK('studySessionId', data.studySessionId)
+                            const comments = await this.models['comment'].getAllByKey('studySessionId', data.studySessionId)
                             this.socket.emit("commentRefresh", await this.updateCreatorName(comments));
                         }
                     } else {
-                        this.socket.emit("annotationRefresh", await this.updateCreatorName(await this.models['annotation'].getAllByFK('documentId', data.documentId)));
-                        this.socket.emit("commentRefresh", await this.updateCreatorName(await this.models['comment'].getAllByFK('documentId', data.documentId)));
+                        this.socket.emit("annotationRefresh", await this.updateCreatorName(await this.models['annotation'].getAllByKey('documentId', data.documentId)));
+                        this.socket.emit("commentRefresh", await this.updateCreatorName(await this.models['comment'].getAllByKey('documentId', data.documentId)));
                     }
 
                     // send additional data like tags
-                    this.getSocket('TagSocket').sendTags();
+                    await this.getSocket('TagSocket').sendTags();
 
                 } else {
                     this.sendToast("Error accessing document", "Access Error", "danger");
@@ -156,12 +161,11 @@ module.exports = class DocumentSocket extends Socket {
 
             async (data) => {
                 try {
-                    const doc = await dbGetDoc(data.documentId);
+                    const doc = await this.models['document'].getById(data.documentId)
 
                     if (this.checkUserAccess(doc.userId)) {
-                        this.socket.emit("documentRefresh", (await dbUpdateDoc(doc.id, {
-                            public: true
-                        }))[1]);
+                        this.socket.emit("documentRefresh", await this.updateCreatorName(
+                            await this.models['document'].updateById(doc.id, {public: true})));
                         this.socket.emit("documentPublished", {success: true});
                     } else {
                         this.logger.error("No permission to publish document: " + data.documentId);

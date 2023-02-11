@@ -2,10 +2,12 @@
 
 Some helper functions
 
-Author: Nils Dycke (dycke@ukp.informatik...), Dennis Zyska (zyska@ukp.informatik...)
+Author: Nils Dycke, Dennis Zyska
 */
 //create admin + guest user, if not existent
 const crypto = require("crypto");
+const {resolveUserIdToName} = require("./methods/user");
+const {get: getTagById} = require("./methods/tag");
 
 async function createPwd(password, salt) {
     return new Promise((res, rej) => {
@@ -46,6 +48,50 @@ exports.subselectFieldsForDB = function subselectFieldsForDB(obj, relevantFields
 }
 
 // src: https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties
-exports.pickObjectAttributeSubset =  function pickObjectAttributeSubset(obj, keys) {
+exports.pickObjectAttributeSubset = function pickObjectAttributeSubset(obj, keys) {
     return Object.fromEntries(keys.filter(key => key in obj).map(key => [key, obj[key]]));
+}
+
+exports.annotationFormatForExport = async function annotationFormat(annotation) {
+    const copyFields = [
+        "text",
+        "id",
+        "documentId",
+        "createdAt",
+        "updatedAt"
+    ]
+
+    let copied = pickObjectAttributeSubset(annotation, copyFields);
+    copied.userId = await resolveUserIdToName(annotation.userId);
+    copied.tag = (await getTagById(annotation.tagId)).name;
+
+    return copied
+}
+
+exports.commentFormatForExport = async function commentFormat(comment) {
+    const copyFields = [
+        "id",
+        "text",
+        "documentId",
+        "createdAt",
+        "updatedAt",
+    ]
+
+    let copied = pickObjectAttributeSubset(comment, copyFields);
+    copied.userId = await resolveUserIdToName(comment.userId);
+    copied.tags = JSON.parse(comment.tags);
+
+    if(comment.annotationId){
+        copied.annotationId = comment.annotationId;
+    } else {
+        copied.annotationId = null;
+    }
+
+    if(comment.commentId) {
+        copied.commentId = comment.commentId;
+    } else {
+        copied.commentId = null;
+    }
+
+    return copied;
 }

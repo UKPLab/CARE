@@ -103,11 +103,11 @@ export default {
             }
           })
           .sort((a, b) => {
-            if (!a.referenceAnnotation && !b.referenceAnnotation) {
+            if (!a.annotationId && !b.annotationId) {
               return Date.parse(a) - Date.parse(b);
-            } else if (a.referenceAnnotation && b.referenceAnnotation) {
-              const aAnno = this.$store.getters['anno/getAnnotation'](a.referenceAnnotation);
-              const bAnno = this.$store.getters['anno/getAnnotation'](b.referenceAnnotation);
+            } else if (a.annotationId && b.annotationId) {
+              const aAnno = this.$store.getters['anno/getAnnotation'](a.annotationId);
+              const bAnno = this.$store.getters['anno/getAnnotation'](b.annotationId);
 
               if (!aAnno || !bAnno) {
                 return 0;
@@ -115,7 +115,7 @@ export default {
               return (aAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start
                   - bAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start);
             } else {
-              return !a.referenceAnnotation ? 1 : -1;
+              return !a.annotationId ? 1 : -1;
             }
           });
     },
@@ -146,12 +146,12 @@ export default {
       annoUnhover: "anno/UNHOVER"
     }),
     hover(commentId) {
-      const annotationId = this.$store.getters['comment/getComment'](commentId).referenceAnnotation;
+      const annotationId = this.$store.getters['comment/getComment'](commentId).annotationId;
       if (annotationId)
         this.annoHover(annotationId)
     },
     unhover(commentId) {
-      const annotationId = this.$store.getters['comment/getComment'](commentId).referenceAnnotation;
+      const annotationId = this.$store.getters['comment/getComment'](commentId).annotationId;
       if (annotationId)
         this.annoHover(annotationId)
     },
