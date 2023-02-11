@@ -139,6 +139,10 @@ module.exports = class DocumentSocket extends Socket {
                         this.socket.emit("annotationRefresh", await this.updateCreatorName(await this.models['annotation'].getAllByFK('documentId', data.documentId)));
                         this.socket.emit("commentRefresh", await this.updateCreatorName(await this.models['comment'].getAllByFK('documentId', data.documentId)));
                     }
+
+                    // send additional data like tags
+                    this.getSocket('TagSocket').sendTags();
+
                 } else {
                     this.sendToast("Error accessing document", "Access Error", "danger");
                 }

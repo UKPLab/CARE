@@ -128,7 +128,6 @@ export default {
         data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}
       });
     })
-    this.load();
   },
   watch: {
     studySessionId(newVal, oldVal) {
@@ -155,11 +154,6 @@ export default {
       const annotationId = this.$store.getters['comment/getComment'](commentId).referenceAnnotation;
       if (annotationId)
         this.annoHover(annotationId)
-    },
-    load() {
-      if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0)) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
-      }
     },
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;

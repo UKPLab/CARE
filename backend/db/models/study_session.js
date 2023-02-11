@@ -17,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
         hash: DataTypes.STRING,
         studyId: DataTypes.INTEGER,
         userId: DataTypes.INTEGER,
+        reviewUserId: DataTypes.INTEGER,
         studySessionId: DataTypes.INTEGER,
         evaluation: DataTypes.INTEGER,
         comment: DataTypes.TEXT,

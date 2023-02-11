@@ -53,6 +53,12 @@ module.exports = {
                     allowNull: true,
                     type: Sequelize.TEXT
                 },
+                reviewUserId: {
+                    type: Sequelize.INTEGER,
+                    references: {
+                        model: "user", key: "id"
+                    }
+                },
                 comment: {
                     allowNull: true,
                     type: Sequelize.TEXT

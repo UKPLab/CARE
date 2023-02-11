@@ -62,8 +62,8 @@ const copyTagSet = (state, from_id) => {
 
 const getDefaultState = () => {
     return {
-        tags: null,
-        tagSets: null,
+        tags: [],
+        tagSets: [],
     };
 };
 

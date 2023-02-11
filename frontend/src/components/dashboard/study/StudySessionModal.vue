@@ -28,6 +28,7 @@ export default {
   data() {
     return {
       studyId: 0,
+      showFinished: true,
       hash: null,
       options: {
         striped: true,
