@@ -293,6 +293,10 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
+      if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0)) {
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+      }
+
       // Join Room for document updates
       this.$socket.emit("collabSubscribe", {documentId: this.documentId});
 

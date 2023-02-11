@@ -1,35 +1,28 @@
 <template>
-  <Loader v-if="studySessionId === 0 || documentId === 0" :loading="true"></Loader>
-
-  <Annotater v-else :document-id="documentId"
+  <Loader v-if="studySessionId === 0 || documentId === 0" :loading="true"/>
+  <span v-else>
+    <Annotater :document-id="documentId"
              :readonly="true"
              :study-session-id="studySessionId"/>
-  <!--
-    <StudyModal v-if="studySessionId === 0"
-                ref="studyModal"
-                :study-id="studyId"
-                @finish="finish"
-                @start="start"/>
-    <FinishModal ref="studyFinishModal" :closeable="!timeUp" :finished="finished" :study-session-id="studySessionId"
-                 @finish="finalFinish"/>
+    <ReviewModal ref="reviewModal" :study-session-id="studySessionId"/>
+    <ReportModal ref="reportModal" :study-session-id="studySessionId"/>
     <Teleport to="#topbarCustomPlaceholder">
-      <button class="btn btn-outline-secondary" type="button" @click="finish">Finish Study</button>
-      <button v-if="timeLeft > 0" class="btn mb-1" type="button">
-        <LoadIcon :size="21" class="me-1 middle" icon-name="stopwatch"/>
-        <span :class="{'text-danger':timeLeft < (5 * 60)}" class="middle"><b>Time Left:</b> {{ timeLeftHuman }}</span>
-      </button>
-    </Teleport>-->
-
+      <button class="btn btn-outline-secondary me-2" type="button" @click="evaluate">Evaluate</button>
+      <button class="btn btn-outline-secondary" type="button" @click="report">Report</button>
+    </Teleport>
+  </span>
 </template>
 
 <script>
 import Loader from "@/basic/Loader.vue"
 import Annotater from "@/components/Annotater.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
+import ReviewModal from "@/components/study/ReviewModal.vue";
+import ReportModal from "@/components/study/ReportModal.vue";
 
 export default {
   name: "Review",
-  components: {LoadIcon, Loader, Annotater},
+  components: {ReviewModal, LoadIcon, Loader, Annotater, ReportModal},
   data() {
     return {}
   },
@@ -54,8 +47,6 @@ export default {
   mounted() {
     this.load();
   },
-
-
   computed: {
     studySession() {
       return this.$store.getters['study_session/getStudySessionByHash'](this.studySessionHash);
@@ -82,6 +73,12 @@ export default {
   methods: {
     load() {
       this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
+    },
+    evaluate() {
+      this.$refs.reviewModal.open();
+    },
+    report() {
+      this.$refs.reportModal.open();
     }
   }
 }

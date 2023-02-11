@@ -11,7 +11,7 @@
       </div>
       <div v-else>
         <div class="mb-3 text-center h5">Thank you for joining this study!</div>
-        <div class="text-center text-danger h6">The time has expired, no more changes are possible.</div>
+        <div v-if="!closeable" class="text-center text-danger h6">The time has expired, no more changes are possible.</div>
 
         <label class="form-label">Comment</label>
         <textarea v-model="comment" class="form-control"></textarea>

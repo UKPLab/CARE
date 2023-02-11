@@ -192,8 +192,11 @@ export default {
         return this.$store.getters['tag/getColor'](this.annotation.tagId);
     },
     tagName() {
-      if (this.annotation_id)
-        return this.$store.getters['tag/getTag'](this.annotation.tagId).name;
+      if (this.annotation_id) {
+        const tag = this.$store.getters['tag/getTag'](this.annotation.tagId);
+        if (tag)
+          return tag.name;
+      }
     },
     summarizationMinLength() {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.minLength'));

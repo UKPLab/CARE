@@ -183,12 +183,21 @@ module.exports = class StudySocket extends Socket {
         this.socket.on("studySessionUpdate", async (data) => {
             try {
                 if (data.sessionId && data.sessionId !== 0) {
-                    const currentStudySession = await this.models['study_session'].getById(data.sessionId)
-                    const study = await this.models['study'].getById(currentStudySession.studyId);
-                    if (this.isAdmin() || this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
-                        this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].updateById(data.sessionId, data)))
+                    if (data.evaluation) {
+                        const evaluatedStudySession = {
+                            evaluation: data.evaluation,
+                            reviewUserId: this.user_id,
+                            reviewComment: data.reviewComment
+                        }
+                        this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].updateById(data.sessionId, evaluatedStudySession)))
                     } else {
-                        this.sendToast("You are not allowed to update this study session", "Error", "Danger");
+                        const currentStudySession = await this.models['study_session'].getById(data.sessionId)
+                        const study = await this.models['study'].getById(currentStudySession.studyId);
+                        if (this.isAdmin() || this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
+                            this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].updateById(data.sessionId, data)))
+                        } else {
+                            this.sendToast("You are not allowed to update this study session", "Error", "Danger");
+                        }
                     }
                 } else {
                     data.userId = this.user_id;
