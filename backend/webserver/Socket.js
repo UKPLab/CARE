@@ -24,7 +24,8 @@ module.exports = class Socket {
 
         this.socket = socket;
         this.user_id = socket.request.session.passport.user.id;
-        this.logger.defaultMeta = {userId: this.user_id};
+        this.userId = this.user_id;
+        this.logger.defaultMeta = {userId: this.userId};
 
     }
 
@@ -48,20 +49,20 @@ module.exports = class Socket {
         return this.socket.request.session.passport.user.sysrole === "admin";
     }
 
-    checkUserAccess(user_id) {
+    checkUserAccess(userId) {
         if (this.isAdmin()) {
             return true;
         }
-        if (this.user_id !== user_id) {
-            this.logger.warn("User " + this.user_id + " tried to access user " + user_id);
+        if (this.userId !== userId) {
+            this.logger.warn("User " + this.userId + " tried to access user " + userId);
             return false;
         }
         return true;
     }
 
-    checkDocumentAccess(document_id) {
+    checkDocumentAccess(documentId) {
         if ("DocumentSocket" in this.server.sockets) {
-            return this.getSocket("DocumentSocket").checkDocumentAccess(document_id);
+            return this.getSocket("DocumentSocket").checkDocumentAccess(documentId);
         } else {
             return true;
         }

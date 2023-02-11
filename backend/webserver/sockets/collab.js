@@ -1,11 +1,4 @@
 const Socket = require("../Socket.js");
-const {
-    add: dbAdd,
-    update: dbUpdate,
-    get: dbGet,
-    getAll: dbGetAll,
-    delete: dbDelete
-} = require("../../db/methods/collab.js");
 
 /**
  * Handle collaboration through sockets
@@ -17,37 +10,30 @@ module.exports = class CollabSocket extends Socket {
 
     init() {
 
-        this.socket.on("collabAdd", async (data) => {
-
-            try {
-                const newCollab = await dbAdd(Object.assign(data, {userId: this.user_id, timestamp: Date.now()}));
-                this.socket.emit("collabStart", {collabId: newCollab.id, collabHash: newCollab.collabHash});
-
-                this.io.to("doc:" + newCollab.documentId).emit("collabRefresh", newCollab);
-
-            } catch (e) {
-                this.logger.error("Could not add collab to database. Error: " + e);
-                this.sendToast(e.message, "Collaboration Error", "danger");
-            }
-
-        });
-
         this.socket.on("collabUpdate", async (data) => {
-
             try {
-                const collabUpdate = await dbUpdate(data.collabId);
-                this.io.to("doc:" + collabUpdate[1].documentId).emit("collabRefresh", collabUpdate[1]);
-            } catch (e) {
-                this.logger.error("Could not update collab to database. Error: " + e);
-                this.sendToast(e.message, "Collaboration Error", "danger");
-            }
+                if (data.collabId && data.collabId !== 0) {
+                    const collabUpdate = await this.models["collab"].updateById(data.collabId, {timestamp: Date.now()});
+                    this.io.to("doc:" + collabUpdate[1].documentId).emit("collabRefresh", collabUpdate[1]);
+                } else {
+                    const newCollab = await this.models["collab"].add(Object.assign(data, {
+                        userId: this.user_id,
+                        timestamp: Date.now()
+                    }))
+                    this.socket.emit("collabStart", {collabId: newCollab.id, collabHash: newCollab.collabHash});
 
+                    this.io.to("doc:" + newCollab.documentId).emit("collabRefresh", newCollab);
+                }
+            } catch (e) {
+                this.logger.error("Could not update collab table in database. Error: " + e);
+                this.sendToast(e.message, "DB Error", "danger");
+            }
         });
 
         this.socket.on("collabDelete", async (data) => {
 
             try {
-                const collabUpdate = await dbDelete(data.collabId);
+                const collabUpdate = await this.models["collab"].deleteById(data.collabId);
                 this.io.to("doc:" + collabUpdate.documentId).emit("collabRefresh", collabUpdate);
             } catch (e) {
                 this.logger.error("Could not delete collab to database. Error: " + e);

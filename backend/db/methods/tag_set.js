@@ -11,7 +11,7 @@ const db = require("../index.js")
 const TagSet = require("../models/tag_set.js")(db.sequelize, DataTypes);
 const logger = require("../../utils/logger.js")("db/tag_set");
 
-const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("../utils");
 
 
 function InvalidTagParameters(details) {

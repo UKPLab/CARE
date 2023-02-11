@@ -220,7 +220,7 @@ module.exports = class ReviewSocket extends Socket {
                             hash: uuidv4(),
                             userId: comment.userId,
                             text: comment.text,
-                            referenceAnnotation: new_hash,
+                            annotationId: new_hash,
                             deleted: comment.deleted,
                             deletedAt: comment.deletedAt
                         }

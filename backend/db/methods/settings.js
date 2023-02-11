@@ -6,7 +6,7 @@ Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
 */
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError} = require("../utils");
 
 const Setting = require("../models/setting.js")(db.sequelize, DataTypes);
 const UserSetting = require("../models/user_setting.js")(db.sequelize, DataTypes);

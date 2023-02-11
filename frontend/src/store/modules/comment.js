@@ -19,14 +19,14 @@ export default {
             return state.filter(comment => !comment.deleted).find(comm => comm.id === comment_id);
         },
         getCommentsByAnnotation: (state) => (annotation_id) => {
-            return state.filter(comm => comm.referenceAnnotation === annotation_id);
+            return state.filter(comm => comm.annotationId === annotation_id);
         },
         getCommentByAnnotation: (state) => (annotation_id) => {
-            return state.filter(comm => comm.referenceAnnotation === annotation_id)
-                .find(comm => comm.referenceComment === null);
+            return state.filter(comm => comm.annotationId === annotation_id)
+                .find(comm => comm.commentId === null);
         },
         getCommentsByCommentId: (state) => (comment_id) => {
-            return state.filter(comment => !comment.deleted).filter(comm => comm.referenceComment === comment_id).sort(
+            return state.filter(comment => !comment.deleted).filter(comm => comm.commentId === comment_id).sort(
                 function(a, b) {
                     let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
                     if (keyA < keyB) return -1;
@@ -41,7 +41,7 @@ export default {
         },
         getDocumentComments: (state) => (documentId) => {
             return state.filter(comment => !comment.deleted)
-                .filter(comm => comm.documentId === documentId && comm.referenceComment === null);
+                .filter(comm => comm.documentId === documentId && comm.commentId === null);
         }
     },
     mutations: {

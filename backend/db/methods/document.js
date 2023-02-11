@@ -8,7 +8,7 @@ const {v4: uuidv4} = require("uuid");
 
 const {DataTypes, Op} = require("sequelize")
 const db = require("../index.js")
-const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("./utils");
+const {isInternalDatabaseError, InternalDatabaseError, subselectFieldsForDB} = require("../utils");
 const Document = require("../models/document.js")(db.sequelize, DataTypes);
 
 function InvalidDocumentParameters(details) {

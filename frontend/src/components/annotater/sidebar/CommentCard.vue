@@ -18,7 +18,7 @@
     </div>
   </div>
   <div v-if="!collapseComment"
-       :class="{blockquoteMain: comment.referenceAnnotation, blockquoteSub: !comment.referenceAnnotation}"
+       :class="{blockquoteMain: comment.annotationId, blockquoteSub: !comment.referenceAnnotation}"
        class="comment card-text blockquote pb-1">
 
 
@@ -186,7 +186,7 @@ export default {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
     },
     myBotRequest() {
-      if (this.comment.creator_name === "Bot" && this.$store.getters["comment/getComment"](this.comment.referenceComment)["userId"] === this.user_id) {
+      if (this.comment.creator_name === "Bot" && this.$store.getters["comment/getComment"](this.comment.commentId)["userId"] === this.user_id) {
         return true;
       } else {
         return false;

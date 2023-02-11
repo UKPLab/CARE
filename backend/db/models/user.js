@@ -11,6 +11,16 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             // define association here
         }
+
+        static async getUserIdByName(userName) {
+            const user = await this.getByKey('userName', userName);
+            if (user) {
+                return user.id;
+            } else {
+                return 0;
+            }
+        }
+
     }
 
     User.init({

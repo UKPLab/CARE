@@ -171,7 +171,7 @@ export default {
       return this.$store.getters["anno/getAnnotation"](this.annotation_id);
     },
     annotation_id() {
-      const annotationId = this.comment.referenceAnnotation;
+      const annotationId = this.comment.annotationId;
       if (annotationId)
         return annotationId;
     },
