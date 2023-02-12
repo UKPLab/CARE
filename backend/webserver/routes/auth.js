@@ -73,7 +73,7 @@ module.exports = function (server) {
         const data = req.body;
 
         // check if name is defined if it is required
-        if ((await server.db['user'].get("app.register.requestName")) === "true") {
+        if ((await server.db.models['setting'].get("app.register.requestName")) === "true") {
             if (!data.firstName) {
                 return res.status(400).json({message: "Please provide a user name."});
             }
@@ -87,7 +87,7 @@ module.exports = function (server) {
             return res.status(400).json({message: "Please provide a email."});
         } else {
             // check if username is already taken
-            const user = await server.db['user'].getUserIdByEmail(data.email);
+            const user = await server.db.models['user'].getUserIdByEmail(data.email);
             if (user !== 0) {
                 return res.status(400).json({message: "E-Mail already taken."});
             }
@@ -109,7 +109,7 @@ module.exports = function (server) {
             return res.status(400).json({message: "Please provide a user name."});
         } else {
             // check if username is already taken
-            const user = await server.db['user'].getUserIdByName(data.userName);
+            const user = await server.db.models['user'].getUserIdByName(data.userName);
             if (user !== 0) {
                 server.logger.info("Username already taken: " + data.userName)
                 return res.status(400).json({message: "Username already taken."});

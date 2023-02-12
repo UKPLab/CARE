@@ -66,7 +66,7 @@ export default {
     }
   },
   mounted() {
-    this.load();
+    this.$socket.emit("documentGetAll");
   },
   computed: {
     documents() {
@@ -160,9 +160,6 @@ export default {
         this.studyCoordinator(data.params);
       }
     },
-    load() {
-      this.$socket.emit("getReviews");
-    },
     deleteDoc(row) {
       this.$socket.emit("documentDelete", {documentId: row.id});
     },
@@ -174,36 +171,6 @@ export default {
     },
     onAddedDoc() {
       this.load();
-    },
-    startReview(documentId) {
-      //if a review was already started on this document, don't start a new one
-      if (this.reviews.map(r => r.document).includes(documentId)) {
-        const review_i = this.reviews.map(r => r.document).indexOf(documentId);
-
-        this.$router.push(`/review/${this.reviews[review_i].hash}`);
-      } else {
-        this.sockets.subscribe("reviewProcessStarted", (data) => {
-          this.sockets.unsubscribe('reviewProcessStarted');
-          if (data.success) {
-            this.$router.push(`/review/${data.reviewHash}`);
-          } else {
-            this.eventBus.emit('toast', {
-              title: "Review Process",
-              message: "The process cannot be started! Please try it again!",
-              variant: "danger"
-            });
-          }
-        });
-        this.$socket.emit("startReview", {documentId: documentId});
-      }
-    },
-    reviewState(documentId) {
-      const review_i = this.reviews.map(r => r.document).indexOf(documentId); //gets first review matching the document
-      if (review_i === -1) {
-        return "NOT_STARTED";
-      }
-
-      return this.reviews[review_i].submitted ? "SUBMITTED" : "PENDING";
     },
     publishDoc(row) {
       console.log(row);

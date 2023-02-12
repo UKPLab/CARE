@@ -1,5 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class Setting extends MetaModel {
@@ -24,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
                     return setting.value;
                 }
                 return null;
-            } catch(e) {
+            } catch (e) {
                 console.log(e);
             }
         }
@@ -37,8 +38,21 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async set(key, value) {
             try {
-                return await Setting.update({value: value}, {where: {key: key}});
-            } catch(e) {
+                return await Setting.create({
+                    key: key,
+                    value: value,
+                    type: 'string',
+                    description: ''
+                }).then((msg) => {
+                    return msg;
+                }).catch(async (err) => {
+                    return (await Setting.update({value: value}, {
+                        where: {key: key},
+                        returning: true,
+                        plain: true
+                    }))[1].dataValues;
+                });
+            } catch (e) {
                 console.log(e);
             }
         }

@@ -16,7 +16,7 @@ module.exports = class Socket {
      * @param socket - The socket.io socket instance
      */
     constructor(server, io, socket) {
-        this.logger = require("../utils/logger")("Socket/" + this.constructor.name, this.server.db);
+        this.logger = require("../utils/logger")("Socket/" + this.constructor.name, server.db);
 
         this.server = server;
         this.io = io;

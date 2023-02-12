@@ -8,18 +8,22 @@ const Socket = require("../Socket.js");
  */
 module.exports = class SettingSocket extends Socket {
 
-    async sendSettings() {
+    async sendSettings(sendToAll = false) {
         try {
+            let returnSettings = {};
 
             const settings = await this.models['setting'].getAll();
-            const userSettings = await this.models['user_setting'].getAllByKey(userId, this.userId);
-
-            let returnSettings = {};
             settings.forEach(s => returnSettings[s.key] = s.value);
+
+            const userSettings = await this.models['user_setting'].getAllByKey("userId", this.userId);
             userSettings.forEach(s => returnSettings[s.key] = s.value);
 
-            this.socket.emit("settingRefresh", returnSettings);
+            if (sendToAll)
+                this.io.emit("settingRefresh", returnSettings);
+            else
+                this.socket.emit("settingRefresh", returnSettings);
         } catch (err) {
+            console.log(err);
             this.logger.error(err);
         }
     }
@@ -39,6 +43,9 @@ module.exports = class SettingSocket extends Socket {
 
         this.socket.on("settingGetAll", async (data) => {
             await this.sendSettings();
+        });
+
+        this.socket.on("settingGetNavigation", async (data) => {
             await this.sendNavigation();
         });
 
@@ -65,11 +72,13 @@ module.exports = class SettingSocket extends Socket {
             try {
                 if (this.isAdmin()) {
                     await Promise.all(data.map(async setting => await this.models['setting'].set(setting.key, setting.value)));
-                    // send updated settings to all clients
-                    this.io.emit("settingRefresh", await this.models['setting'].getAll());
+                    await this.sendSettings(true);  // Send new settings to all clients
                     this.sendToast("Settings saved", "Success", "success");
+                    this.socket.emit("settingData", await this.models['setting'].getAll());
+
                 }
             } catch (err) {
+                console.log(err);
                 this.sendToast("Settings not saved: " + err, "Error", "danger");
                 this.logger.error(err);
             }

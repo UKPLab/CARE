@@ -20,7 +20,7 @@
 This view shows the dashboard after login and loads the navigation components
 including the sidebar
 
-Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
+Author: Dennis Zyska, Nils Dycke
 Source: -
 */
 import Sidebar from "./navigation/Sidebar.vue";
@@ -65,6 +65,7 @@ export default {
     }
   },
   mounted() {
+    this.$socket.emit("settingGetNavigation");
     this.createNavigation();
   },
   methods: {

@@ -25,7 +25,7 @@ exports.genPwdHash = async function genPwdHash(password, salt) {
 exports.relevantFields = function fields(user) {
     const exclude = ["passwordHash", "salt"]
 
-    const entries = Object.entries(user.dataValues);
+    const entries = Object.entries(user);
     const filtered = entries.filter(([k, v]) => exclude.indexOf(k) === -1);
 
     return Object.fromEntries(filtered);

@@ -63,6 +63,7 @@ export default {
   methods: {
     load() {
       // load all study sessions of the user
+      this.$socket.emit("studyGetAll");
       this.$socket.emit("studySessionGet");
     },
   }

@@ -36,7 +36,7 @@
             <LoadIcon v-if="tagSet.id === selectedTagset" :size="16" iconName="star-fill"
                       style="color:yellowgreen;"/>
 
-            <LoadIcon v-else :size="16" iconName="star" role="button" v-tooltip title="Select tagset as default"
+            <LoadIcon v-else v-tooltip :size="16" iconName="star" role="button" title="Select tagset as default"
                       v-on:click="selectAsDefault(tagSet.id)"/>
 
           </td>
@@ -48,7 +48,7 @@
             <div v-else class="badge bg-danger">No</div>
           </td>
           <td>
-            <div class="badge bg-black">{{ tagSet['username'] }}</div>
+            <div class="badge bg-black">{{ tagSet['creator_name'] }}</div>
           </td>
           <td>
             <div v-tooltip :title="tags.filter(tag => tag.tagSetId === tagSet.id).map(e => e.name).join('<br>')"
@@ -152,6 +152,10 @@ export default {
     selectAsDefault(tagSetId) {
       this.$socket.emit("settingSet", {key: "tags.tagSet.default", value: tagSetId});
     },
+  },
+  mounted() {
+    this.$socket.emit("tagSetGetAll");
+    this.$socket.emit("tagGetAll");
   },
   computed: {
     ...mapGetters({

@@ -15,7 +15,6 @@ Source: -
 */
 import {createStore} from 'vuex';
 import AuthStore from './modules/auth.js';
-import UserStore from './modules/user.js';
 import AnnotationStore from './modules/anno.js';
 import AdminStore from './modules/admin.js';
 import TagStore from './modules/tag.js';
@@ -33,7 +32,6 @@ import createPersistedState from 'vuex-persistedstate';
 export default createStore({
     modules: {
         auth: AuthStore,
-        user: UserStore,
         anno: AnnotationStore,
         document: DocumentStore,
         admin: AdminStore,

@@ -10,7 +10,6 @@ describe("Test Websockets", () => {
     beforeAll(async () => {
         this.server = new Server();
         this.server.start(3010);
-        await new Promise(resolve => setTimeout(() => resolve(), 1000));
     });
 
     beforeEach(async () => {
@@ -39,14 +38,207 @@ describe("Test Websockets", () => {
         }
 
         clientSocket = Client("http://localhost:3010", options);
+        this.server.db.sequelize.sync();
     });
 
     test("Test Settings", (done) => {
         clientSocket.on("settingRefresh", (data) => {
-            expect('tags.tagSet.default' in data).toBe(true);
+            expect(data["tags.tagSet.default"]).toBe(1);
             done();
         })
         clientSocket.emit("settingGetAll")
+    });
+
+    test("Save Setting", (done) => {
+        clientSocket.on("settingData", (data) => {
+            if (data.find(s => s.key === "test")['value'] !== "test") {
+                expect(data.find(s => s.key === "test")['value']).toBe("test2");
+                done();
+            } else {
+                expect(data.find(s => s.key === "test")['value']).toBe("test");
+                clientSocket.emit("settingSave", [{key: "test", value: "test2"}])
+            }
+        })
+        clientSocket.emit("settingSave", [{key: "test", value: "test"}])
+    });
+
+    test("Load Settings", (done) => {
+        clientSocket.on("settingRefresh", (data) => {
+            expect(Object(data).keys().length).toBeGreaterThan(0);
+            done();
+        })
+        clientSocket.emit("settingGetAll")
+    });
+
+    test("Test Navigation", (done) => {
+        clientSocket.on("settingNavigation", (data) => {
+            expect(data.groups.length).toBeGreaterThan(0);
+            expect(data.elements.length).toBeGreaterThan(0);
+            done();
+        })
+        clientSocket.emit("settingGetNavigation")
+    });
+
+    test("Load Documents", (done) => {
+        clientSocket.on("documentRefresh", (data) => {
+            expect(data.length).toBeGreaterThan(0);
+            expect(data[0].name).toBe("Showcase Document");
+            done();
+        })
+        clientSocket.emit("documentGetAll")
+    });
+
+    test("Load document", (done) => {
+        clientSocket.on("documentFile", (data) => {
+            expect("file" in data).toBe(true);
+            expect("document" in data).toBe(true);
+            done();
+        })
+        clientSocket.emit("documentGet", {documentId: 1})
+    });
+
+    test("Upload Document", (done) => {
+        // /TODO implement
+        done();
+    });
+
+    test("Document Handling", (done) => {
+        let checkDeleted = false;
+        clientSocket.on("documentRefresh", (data) => {
+            expect(data.find(doc => doc.id === 1)['name']).toBe("test");
+            clientSocket.emit("documentDelete", {documentId: 1})
+            if (checkDeleted) {
+                expect(data.find(doc => doc.id === 1)['deleted']).toBe(true);
+                done();
+            }
+            checkDeleted = true;
+        })
+        clientSocket.emit("documentUpdate", {documentId: 1, name: "test"})
+    });
+
+    test("Update Document", (done) => {
+        // /TODO implement
+        done();
+    });
+
+    test("Load Logs", (done) => {
+        clientSocket.on("logAll", (data) => {
+            expect(Array.isArray(data)).toBe(true);
+            done();
+        })
+        clientSocket.emit("logGetAll", {limit: 100})
+    });
+
+    test("Studies", (done) => {
+        clientSocket.on("studyPublished", (data) => {
+            console.log("study published", data);
+            console.log("lk")
+            // TODO implement
+            done();
+        })
+        clientSocket.emit("studyPublish", {
+            name: "Test Study",
+            documentId: 1,
+            collab: false,
+            resumable: true,
+            timeLimit: 0,
+            description: "",
+            start: null,
+            end: null,
+        });
+    });
+
+    test("Get Study by Hash", (done) => {
+        clientSocket.on("studyRefresh", (data) => {
+            // TODO implement
+
+        })
+        done();
+        clientSocket.emit("studyGetByHash", {hash: "test"})
+    });
+
+    test("Send Toasts", (done) => {
+        // TODO implement
+        done();
+    });
+
+    test("Collaboration", (done) => {
+        clientSocket.on("collabStart", (data) => {
+            console.log("collabStar", data);
+            console.log("collabStar", data);
+            console.log("collabStar", data);
+            //TODO implement
+            done();
+        });
+        clientSocket.emit("collabSubscribe", {documentId: 1});
+        clientSocket.emit('collabAdd', {
+            targetType: "comment",
+            targetId: 1,
+            documentId: 1,
+            collabHash: "test"
+        });
+    });
+
+
+    test("Service - NLP Service", (done) => {
+        clientSocket.on("serviceRefresh", (data) => {
+            if (data['type'] === 'skillUpdate') {
+                expect(data['type']).toBe("skillUpdate");
+                expect(data['service']).toBe("NLPService");
+                expect(data['data'].length).toBeGreaterThan(0);
+                expect(data['data'].filter(d => d.name === 'sentiment_classification').length).toBeGreaterThan(0);
+                clientSocket.emit("serviceCommand", {
+                    service: "NLPService",
+                    command: "skillGetConfig",
+                    data: {name: "sentiment_classification"}
+                });
+            }
+            if (data['type'] === 'skillConfig') {
+                expect(data['type']).toBe("skillConfig");
+                expect(data['data']['name']).toBe("sentiment_classification");
+                clientSocket.emit("serviceRequest", {
+                    data: {
+                        id: 1,
+                        name: "sentiment_classification",
+                        data: {}
+                    }
+                });
+            }
+            if (data['type'] === 'skillResults') {
+                console.log(data);
+                // TODO implement
+                expect(data['data'].length).toBeGreaterThan(0);
+
+            }
+
+
+        })
+        clientSocket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll", data: {}});
+    });
+
+    test("Load tags", (done) => {
+        clientSocket.on("tagRefresh", (data) => {
+            expect(data.length).toBeGreaterThan(0);
+            done();
+        })
+        clientSocket.emit("tagGetAll")
+    });
+
+    test("Load tagSets", (done) => {
+        clientSocket.on("tagSetRefresh", (data) => {
+            expect(data.length).toBeGreaterThan(0);
+            done();
+        })
+        clientSocket.emit("tagSetGetAll")
+    });
+
+    test("Get User Data", (done) => {
+        clientSocket.on("userData", (data) => {
+            expect(data.success).toBe(true);
+            expect(data.users.length).toBeGreaterThan(0);
+            done();
+        })
+        clientSocket.emit("userGetData")
     });
 
     afterEach(() => {
@@ -55,7 +247,6 @@ describe("Test Websockets", () => {
 
     afterAll(async () => {
         this.server.stop();
-        await new Promise(resolve => setTimeout(() => resolve(), 1000)); // avoid jest open handle error
     });
 
 });
