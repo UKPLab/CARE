@@ -40,11 +40,6 @@ module.exports = {
                     type: Sequelize.BOOLEAN,
                     default: false,
                 },
-                levels: {
-                    type: Sequelize.INTEGER,
-                    allowNull: false,
-                    default: 1,
-                },
                 timeLimit: {
                     type: Sequelize.INTEGER,
                     allowNull: true,

@@ -34,7 +34,7 @@ module.exports = class UserSocket extends Socket {
     minimalFields(user) {
         const include = ["id", "userName"]
 
-        const entries = Object.entries(user.dataValues);
+        const entries = Object.entries(user);
         const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
 
         return Object.fromEntries(filtered);
@@ -47,7 +47,7 @@ module.exports = class UserSocket extends Socket {
             if (this.isAdmin()) {
                 try {
                     const users = await this.models['user'].getAll();
-                    const mappedUsers = users.map(x => minimalFields(x));
+                    const mappedUsers = users.map(x => this.minimalFields(x));
 
                     this.socket.emit("userData", {success: true, users: mappedUsers});
                 } catch (e) {

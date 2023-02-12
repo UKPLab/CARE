@@ -11,7 +11,7 @@ import Table from "@/basic/table/Table.vue";
 import Card from "@/basic/Card.vue";
 
 export default {
-  name: "Log.vue",
+  name: "Log",
   components: {Card, Table},
   data() {
     return {

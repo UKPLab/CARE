@@ -53,8 +53,10 @@ export default {
 
   mounted() {
     this.studySessionId = this.initStudySessionId;
-    this.load();
-    console.log("StudySessionID", this.studySessionId);
+    this.$refs.studyModal.open();
+    if (this.studySessionId === 0) {
+      this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
+    }
   },
   sockets: {
     studyError: function (data) {
@@ -132,11 +134,6 @@ export default {
     },
   },
   methods: {
-    load() {
-      this.$refs.studyModal.open();
-      if (this.studySessionId === 0)
-        this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
-    },
     start(data) {
       this.studySessionId = data.studySessionId;
     },

@@ -76,28 +76,13 @@ export default {
             if (id === undefined || id === null || isNaN(id)) {
                 return []
             }
-
-            if (state["tags"] != null) {
-                return state["tags"].filter(tag => tag.tagSetId === id && (!hideDeleted || !tag.deleted));
-            } else {
-                return []
-            }
-
+            return state["tags"].filter(tag => tag.tagSetId === id && (!hideDeleted || !tag.deleted));
         },
         getAllTags: (state) => (hideDeleted = true) => {
-
-            if (state["tags"] == null) {
-                return []
-            }
             return state["tags"].filter(tag => (!hideDeleted || !tag.deleted));
-
         },
         getTagSets: state => {
-            if (state["tagSets"] != null) {
-                return state["tagSets"].filter(tagSet => !tagSet.deleted && tagSet.id !== 0);
-            } else {
-                return {}
-            }
+            return state["tagSets"].filter(tagSet => !tagSet.deleted && tagSet.id !== 0);
         },
         getTagSet: (state) => (id) => {
             if (state["tagSets"] == null) {
@@ -114,7 +99,7 @@ export default {
             }
         },
         getTag: (state) => (id) => {
-          return state["tags"].find(t => t.id === id);
+            return state["tags"].find(t => t.id === id);
         },
         getColor: (state) => (id) => {
             const t = state["tags"].find(t => t.id === id);
@@ -140,7 +125,8 @@ export default {
                     return "4c86f7";
             }
         },
-    },
+    }
+    ,
     mutations: {
         // updates the local store to the given documents
         SET_TAGS: (state, tags) => {
@@ -163,32 +149,34 @@ export default {
             state.tagSets = data;
         },
         SOCKET_tagSetRefresh: (state, data) => {
-            // remove old tagset instance first if available
-            if (state["tagSets"] !== null) {
-                const oldTagSet = state["tagSets"].find(s => s.id === data.id);
-                if (oldTagSet !== undefined) {
-                    state["tagSets"].splice(state["tagSets"].indexOf(oldTagSet), 1);
-                }
-                state["tagSets"].push(data);
-            } else {
-                state["tagSets"] = data;
+            if (!Array.isArray(data)) {
+                data = [data];
             }
+            data.forEach((entry) => {
+                const old = state["tagSets"].find(c => c.id === entry.id);
+                if (old !== undefined) {
+                    state["tagSets"].splice(state.indexOf(old), 1);
+                }
+                if (!entry.deleted) {
+                    state["tagSets"].push(entry);
+                }
+            });
         },
-        SOCKET_tagRefresh: (state, data) => {
-            if (state["tags"] === null) {
-                state["tags"] = data;
-            } else {
-
-                data.forEach(tag => {
-                    // remove old tags instances first if available
-                    const oldTag = state["tags"].find(s => s.id === tag.id);
-                    if (oldTag !== undefined) {
-                        state["tags"].splice(state["tags"].indexOf(oldTag), 1);
+        SOCKET_tagRefresh:
+            (state, data) => {
+                if (!Array.isArray(data)) {
+                    data = [data];
+                }
+                data.forEach((entry) => {
+                    const old = state["tags"].find(c => c.id === entry.id);
+                    if (old !== undefined) {
+                        state["tags"].splice(state.indexOf(old), 1);
                     }
-                    state["tags"].push(tag);
+                    if (!entry.deleted) {
+                        state["tags"].push(entry);
+                    }
                 });
             }
-        }
     },
     actions: {}
 };

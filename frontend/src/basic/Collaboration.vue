@@ -9,7 +9,7 @@ import {v4 as uuidv4} from "uuid";
 import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
-  name: "Collaboration.vue",
+  name: "Collaboration",
   components: {LoadIcon},
   emits: ["collabStatus"],
   props: {
@@ -81,7 +81,7 @@ export default {
     },
     startCollab() {
       this.collabHash = uuidv4();
-      this.$socket.emit("collabAdd",
+      this.$socket.emit("collabUpdate",
           {
             targetType: this.targetType,
             targetId: this.targetId,

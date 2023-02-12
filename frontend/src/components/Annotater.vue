@@ -60,11 +60,6 @@
       </form>
     </Teleport>
 
-    <ReviewSubmit v-if="review" ref="reviewSubmit" :documentId="documentId" :review_id="review_id"></ReviewSubmit>
-    <Report v-if="approve" ref="report" :documentId="documentId" :review_id="review_id"
-            @decisionSubmit="decisionSubmit"></Report>
-    <DecisionSubmit v-if="approve" ref="decisionSubmit" :documentId="documentId"
-                    :review_id="review_id"></DecisionSubmit>
     <ExportAnnos ref="export"></ExportAnnos>
   </span>
 </template>
@@ -80,10 +75,7 @@ Source: -
 */
 import PDFViewer from "./annotater/pdfViewer/PDFViewer.vue";
 import Sidebar from "./annotater/sidebar/Sidebar.vue";
-import ReviewSubmit from "./annotater/modals/ReviewSubmit.vue"
-import Report from "./annotater/modals/Report.vue"
 import Loader from "@/basic/Loader.vue";
-import DecisionSubmit from "./annotater/modals/DecisionSubmit.vue"
 import ExportAnnos from "@/basic/download/ExportAnnos.vue"
 import IconBoostrap from "../icons/IconBootstrap.vue";
 import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
@@ -102,9 +94,6 @@ export default {
     PDFViewer,
     ExpandMenu,
     Sidebar,
-    ReviewSubmit,
-    Report,
-    DecisionSubmit,
     Loader,
     ExportAnnos,
     IconBoostrap
@@ -184,6 +173,8 @@ export default {
         data: {review_id: this.review_id, documentId: this.documentId, anno_id: anno_id}
       });
     });
+    this.$socket.emit("tagSetGetAll");
+    this.$socket.emit("tagGetAll");
     this.load();
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
 

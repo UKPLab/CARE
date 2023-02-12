@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<array>} Logs
          */
         static async getLogs(limit = 100) {
-            return await this.findAll({
+            return await Log.findAll({
                 order: [
                     ['timestamp', 'DESC']
                 ],

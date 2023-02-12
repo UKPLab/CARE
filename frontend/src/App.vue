@@ -21,20 +21,9 @@ export default {
     hideTopbar() {
       return this.$route.meta.hideTopbar !== undefined && this.$route.meta.hideTopbar;
     },
-    authenticated() {
-      return this.$store.getters['auth/isAuthenticated'];
-    }
   },
   mounted() {
-    // Load application data on startup
-    if (this.authenticated) {
-      this.$socket.emit("tagSetGetAll");
-      this.$socket.emit("tagGetAll");
-      this.$socket.emit("settingGetAll");
-      this.$socket.emit("documentGetAll");
-    }
-    // TODO: wait for all data to be loaded before rendering the page
-    // show loading screen until all data is loaded
+    this.$socket.emit("settingGetAll");
   },
   sockets: {
     logout: function (data) {

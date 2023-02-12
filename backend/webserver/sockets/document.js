@@ -75,7 +75,7 @@ module.exports = class DocumentSocket extends Socket {
             try {
                 const currentDocument = await this.models['document'].getById(data.documentId);
                 if (this.checkUserAccess(currentDocument.userId)) {
-                    this.socket.emit("documentRefresh", await this.models['document'].deleteById(currentDocument.id));
+                    this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].deleteById(currentDocument.id)));
                 } else {
                     this.sendToast("You are not allowed to delete this document", "Error", "Danger");
                 }
@@ -89,7 +89,7 @@ module.exports = class DocumentSocket extends Socket {
             try {
                 const doc = await this.models['document'].getById(data.documentId);
                 if (this.checkUserAccess(doc.userId)) {
-                    this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(data.documentId, data.document)));
+                    this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(doc.id, data)));
                 } else {
                     this.sendToast("You are not allowed to update this document", "Error", "Danger");
                 }

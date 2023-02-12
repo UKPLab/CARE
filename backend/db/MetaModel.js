@@ -132,14 +132,21 @@ module.exports = class MetaModel extends Model {
         }
 
         try {
-            return (await this.update(this.subselectFields(data, possibleFields), {
+            const updatedObject = await this.update(this.subselectFields(data, possibleFields), {
                     where: {
                         id: id
                     },
                     returning: true,
                     plain: true
                 }
-            ))[1].dataValues;
+            );
+            if (updatedObject) {
+                if (updatedObject[1]) {
+                    return updatedObject[1].dataValues;
+                } else {
+                    return updatedObject;
+                }
+            }
         } catch (err) {
             console.log(err);
         }

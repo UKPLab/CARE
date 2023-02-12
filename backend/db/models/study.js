@@ -21,7 +21,6 @@ module.exports = (sequelize, DataTypes) => {
         collab: DataTypes.BOOLEAN,
         resumable: DataTypes.BOOLEAN,
         description: DataTypes.TEXT,
-        levels: DataTypes.INTEGER,
         timeLimit: DataTypes.INTEGER,
         start: DataTypes.DATE,
         end: DataTypes.DATE,

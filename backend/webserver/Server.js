@@ -15,7 +15,8 @@ const LocalStrategy = require("passport-local");
 const {relevantFields} = require("../utils/auth");
 const crypto = require("crypto");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
-
+const Socket = require(path.resolve(__dirname, "./Socket.js"));
+const Service = require(path.resolve(__dirname, "./Service.js"));
 /**
  * Defines Express Webserver of Content Server
  *
@@ -87,7 +88,7 @@ module.exports = class Server {
         this.logger.debug("Initialize Routes for auth...");
         require('./routes/auth')(this);
 
-        passport.use(new LocalStrategy(async function verify(username, password, cb) {
+        passport.use(new LocalStrategy(async (username, password, cb) => {
 
             const user = await this.db.models['user'].find(username);
             if (!user) {
@@ -256,7 +257,7 @@ module.exports = class Server {
             files.forEach(file => {
                 if (file.endsWith(".js")) {
                     const newSocket = require(path.resolve(__dirname, "./sockets") + "/" + file);
-                    if (newSocket.prototype instanceof require(path.resolve(__dirname, "./Socket.js"))) {
+                    if (newSocket.prototype instanceof Socket) {
                         this.addSocket(newSocket);
                     }
                 }
@@ -288,7 +289,7 @@ module.exports = class Server {
             files.forEach(file => {
                 if (file.endsWith(".js")) {
                     const newService = require(path.resolve(__dirname, "./services") + "/" + file);
-                    if (newService.prototype instanceof require(path.resolve(__dirname, "./Service.js"))) {
+                    if (newService.prototype instanceof Service) {
                         this.addService(newService);
                     }
                 }

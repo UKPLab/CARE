@@ -239,7 +239,7 @@ module.exports = class NLPService extends Service {
         if (this.nlpSocket && this.nlpSocket.connected) {
             data["clientId"] = client.socket.id;
             this.nlpSocket.emit("skillRequest", data);
-        } else if (this.skills && this.skills.includes(data.name)) {
+        } else if (this.skills && this.skills.find(s => s.name === data.name)) {
 
             await this.send(client, "skillResults", {
                 id: data.id,

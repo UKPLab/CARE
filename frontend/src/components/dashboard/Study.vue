@@ -222,7 +222,7 @@ export default {
       this.$refs.studyCoordinator.open(0);
     },
     load() {
-      this.$socket.emit("studyGet");
+      this.$socket.emit("studyGetAll");
       this.$socket.emit("studySessionGetAll");
     },
     studyCoordinator(row, linkOnly=false) {

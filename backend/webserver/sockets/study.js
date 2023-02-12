@@ -35,7 +35,7 @@ module.exports = class StudySocket extends Socket {
 
 
     async init() {
-        this.socket.on("studyGet", async (data) => {
+        this.socket.on("studyGetAll", async (data) => {
             try {
                 this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getAllByKey('userId', this.userId)));
             } catch (err) {

@@ -2,8 +2,8 @@
   <Loader v-if="studySessionId === 0 || documentId === 0" :loading="true"/>
   <span v-else>
     <Annotater :document-id="documentId"
-             :readonly="true"
-             :study-session-id="studySessionId"/>
+               :readonly="true"
+               :study-session-id="studySessionId"/>
     <ReviewModal ref="reviewModal" :study-session-id="studySessionId"/>
     <ReportModal ref="reportModal" :study-session-id="studySessionId"/>
     <Teleport to="#topbarCustomPlaceholder">
@@ -45,7 +45,7 @@ export default {
     }
   },
   mounted() {
-    this.load();
+    this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
   },
   computed: {
     studySession() {
@@ -71,9 +71,6 @@ export default {
   },
 
   methods: {
-    load() {
-      this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
-    },
     evaluate() {
       this.$refs.reviewModal.open();
     },
