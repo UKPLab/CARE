@@ -6,7 +6,7 @@
  */
 module.exports = class Service {
     constructor(server) {
-        this.logger = require("../utils/logger")("Service/" + this.constructor.name, this.server.db);
+        this.logger = require("../utils/logger")("Service/" + this.constructor.name, server.db);
 
         this.server = server;
         this.clients = {}
@@ -16,13 +16,17 @@ module.exports = class Service {
      * This method should be overwritten if the service needs to initialize any resources
      * when the app is started
      */
-    async init();
+    async init() {
+        this.logger.info("Service initialized");
+    }
 
      /**
      * This method should be overwritten if the service needs to close any resources
      * when the app is closed
      */
-    async close();
+    async close() {
+        this.logger.info("Service closed");
+    }
 
     /**
      * This method is called when a client connects to the service
