@@ -33,7 +33,7 @@
     </tr>
     <tr>
       <td colspan="4" style="text-align-last: end">
-        <button class="btn btn-primary" type="button" @click="addTag(setId)">Add Tag</button>
+        <button class="btn btn-primary" type="button" @click="addTag(tagSetId)">Add Tag</button>
       </td>
     </tr>
     </tbody>
@@ -52,7 +52,7 @@ import {mapMutations} from "vuex";
 export default {
   name: "TagsTable",
   props: {
-    setId: {
+    tagSetId: {
       required: false,
       type: Number,
       default: null,
@@ -63,7 +63,7 @@ export default {
   },
   computed: {
     tags() {
-      return this.$store.getters['tag/getTags'](this.setId);
+      return this.$store.getters['tag/getTags'](this.tagSetId);
     },
   }
 }

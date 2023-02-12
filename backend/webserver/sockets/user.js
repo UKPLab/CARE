@@ -1,8 +1,3 @@
-const {
-    getAll: dbGetAllUser,
-    getUsername: dbGetUsername,
-    minimalFields
-} = require("../../db/methods/user.js");
 const Socket = require("../Socket.js");
 
 /**
@@ -13,23 +8,36 @@ const Socket = require("../Socket.js");
  */
 module.exports = class UserSocket extends Socket {
 
+    function
+
     /**
      * Add username as creator_name of an database entry with column creator
      *
      * Accept data as list of objects or single object
      * Note: returns always list of objects!
      *
-     * @param data
+     * @param data {object|object[]} data to update
+     * @param key {string} key of the user id field
+     * @param targetName {string} name of the target field
      * @returns {Promise<Awaited<*&{creator_name: string|*|undefined}>[]>}
      */
-    async updateCreatorName(data) {
+    async updateCreatorName(data, key = 'userId', targetName = 'creator_name') {
         if (!Array.isArray(data)) {
             data = [data];
         }
 
         return Promise.all(data.map(async x => {
-            return {...x, creator_name: await dbGetUsername(x.userId)};
+            return {...x, [targetName]: await this.models['user'].getUserName(x[key])};
         }));
+    }
+
+    minimalFields(user) {
+        const include = ["id", "userName"]
+
+        const entries = Object.entries(user.dataValues);
+        const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
+
+        return Object.fromEntries(filtered);
     }
 
     init() {
@@ -38,7 +46,7 @@ module.exports = class UserSocket extends Socket {
 
             if (this.isAdmin()) {
                 try {
-                    const users = await dbGetAllUser();
+                    const users = await this.models['user'].getAll();
                     const mappedUsers = users.map(x => minimalFields(x));
 
                     this.socket.emit("userData", {success: true, users: mappedUsers});

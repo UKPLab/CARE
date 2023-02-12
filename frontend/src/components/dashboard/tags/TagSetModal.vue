@@ -20,7 +20,7 @@
       <div class="mb-3">
         <label class="form-label" for="tagset_tags">Tags
         </label>
-        <TagsTable :setId="id"></TagsTable>
+        <TagsTable :tagSetId="id"></TagsTable>
 
       </div>
 

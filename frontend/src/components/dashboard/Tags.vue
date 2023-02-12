@@ -51,10 +51,10 @@
             <div class="badge bg-black">{{ tagSet['username'] }}</div>
           </td>
           <td>
-            <div v-tooltip :title="tags.filter(tag => tag.setId === tagSet.id).map(e => e.name).join('<br>')"
+            <div v-tooltip :title="tags.filter(tag => tag.tagSetId === tagSet.id).map(e => e.name).join('<br>')"
                  class="badge bg-primary" data-bs-html="true" data-bs-placement="top" data-bs-toggle="tooltip"
                  role="button">
-              {{ tags.filter(tag => tag.setId === tagSet.id).length }}
+              {{ tags.filter(tag => tag.tagSetId === tagSet.id).length }}
             </div>
           </td>
           <td>

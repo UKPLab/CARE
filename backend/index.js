@@ -1,10 +1,10 @@
-/* Entry Point of the Backend
+/**
+ * @fileoverview Entry Point of the Backend
+ * @author Dennis Zyska
+ */
 
-Author: Dennis Zyska (zyska@ukp.informatik....)
-Source: --
-*/
 const serverPort = process.env.CONTENT_SERVER_PORT || 3001;
-const Server = require("./webserver/Server.js");
+const Server = require("./webserver/Server");
 
 // check logging dir exists
 const fs = require("fs");

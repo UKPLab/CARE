@@ -1,8 +1,10 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class User extends MetaModel {
+
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -12,8 +14,37 @@ module.exports = (sequelize, DataTypes) => {
             // define association here
         }
 
-        static async getUserIdByName(userName) {
-            const user = await this.getByKey('userName', userName);
+        /**
+         * Find a user by username or email
+         * @param {string} userName username or email
+         * @returns {Promise<object>} user
+         */
+        static async find(userName) {
+            try {
+                return await User.findOne({
+                    where: {
+                        [Op.or]: [{
+                            userName: userName
+                        }, {
+                            email: userName
+                        }],
+                        [Op.not]: {
+                            sysrole: "system"
+                        }
+                    }, raw: true
+                });
+            } catch (err) {
+                console.log("Error in User.find: " + err);
+            }
+        }
+
+        /**
+         * Get user id by username or email
+         * @param {string} userName username or email
+         * @returns {Promise<integer>} user id
+         */
+        async getUserIdByName(userName) {
+            const user = await User.find(userName);
             if (user) {
                 return user.id;
             } else {
@@ -21,6 +52,37 @@ module.exports = (sequelize, DataTypes) => {
             }
         }
 
+        /**
+         * Get user name by id
+         * @param {number} userId user id
+         * @returns {Promise<string>} user name
+         */
+        async getUserName(userId) {
+            try {
+                const user = await User.getById(userId);
+                if (user) {
+                    return user.userName;
+                } else {
+                    return "System";
+                }
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        /**
+         * Get user id by email
+         * @param {string} email email
+         * @returns {Promise<integer>}} user id
+         */
+        async getUserIdByEmail(email) {
+            const user = await User.getByKey('email', email);
+            if (user) {
+                return user.id;
+            } else {
+                return 0;
+            }
+        }
     }
 
     User.init({
@@ -43,5 +105,4 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'user',
         tableName: 'user'
     });
-    return User;
 };

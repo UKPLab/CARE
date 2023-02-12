@@ -1,6 +1,6 @@
 {
-  "name": "PEERBackend",
-  "version": "0.0.1",
+  "name": "CAREBackend",
+  "version": "1.0.0",
   "scripts": {
     "start": "node index.js",
     "db_create": "cd db && npx sequelize-cli db:create",

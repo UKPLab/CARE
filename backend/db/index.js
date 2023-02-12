@@ -1,17 +1,16 @@
-/* Entry Point for sequelize models
+/**
+ * Declare all necessary dependencies to work with the database models
+ *
+ * @fileoverview Entry point for db models
+ * @author Nils Dycke, Dennis Zyska
+ */
 
-Declare all necessary dependencies to work with the database models
-
-Author: Nils Dycke, Dennis Zyska
-*/
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
-const {DataTypes, Model} = require("sequelize");
-const yaml = require("js-yaml");
-const basename = path.basename(__filename);
+const {DataTypes} = require("sequelize");
 const env = process.env.NODE_ENV || 'development';
 const config = require(__dirname + '/config/config.js')[env];
 const db = {};
@@ -22,18 +21,6 @@ if (config.use_env_variable) {
 } else {
     sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
-
-/*
-fs
-    .readdirSync(__dirname)
-    .filter(file => {
-        return (file.indexOf('.') !== 0) && (file !== basename) && (file.slice(-3) === '.js');
-    })
-    .forEach(file => {
-        const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
-        db[model.name] = model;
-    });
-*/
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;

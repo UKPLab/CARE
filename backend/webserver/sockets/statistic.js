@@ -1,7 +1,4 @@
-const {add: dbAddStat, getByUser: getByUser, getAll: getAll} = require("../../db/methods/statistic.js");
-
 const Socket = require("../Socket.js");
-const {getAll: dbGetAllUser, adminFields} = require("../../db/methods/user");
 
 /**
  * Add statistics about the website usage
@@ -19,8 +16,13 @@ module.exports = class StatisticSocket extends Socket {
     init() {
         this.socket.on("stats", async (data) => {
             try {
-                if(this.socket.request.session.passport.user.acceptStats) {
-                    await dbAddStat(data.action, data.data, this.user_id);
+                if (this.user.acceptStats) {
+                    await this.models["statistic"].add({
+                        action: data.action,
+                        data: JSON.stringify(data.data),
+                        userId: this.userId,
+                        timestamp: new Date(),
+                    })
                 }
             } catch (e) {
                 this.logger.error("Can't add statistics: " + JSON.stringify(data) + " due to error " + e.toString());
@@ -28,33 +30,42 @@ module.exports = class StatisticSocket extends Socket {
         });
 
         this.socket.on("statsGetByUser", async (data) => {
-             if (this.isAdmin()) {
+            if (this.isAdmin()) {
                 try {
-                    //TODO load only for those users with the stats flag set
-                    const stats = await getByUser(data.userId);
-                    this.socket.emit("statsByUser", {success: true, userId: data.userId, statistics: stats});
+                    if (this.models["user"].getById(data.userId).acceptStats) {
+                        const stats = await this.models['statistic'].getAllByKey('userId', data.userId);
+                        this.socket.emit("statsDataByUser", {success: true, userId: data.userId, statistics: stats});
+                    }
                 } catch (e) {
-                    this.socket.emit("statsByUser", {success: false, userId: data.userId, message: "Failed to retrieve stats for users"});
+                    this.socket.emit("statsDataByUser", {
+                        success: false,
+                        userId: data.userId,
+                        message: "Failed to retrieve stats for users"
+                    });
                     this.logger.error("Can't load statistics due to error " + e.toString());
                 }
             } else {
-                this.socket.emit("statsByUser", {success: false, userId: data.userId, message: "User rights and argument mismatch"});
+                this.socket.emit("statsDataByUser", {
+                    success: false,
+                    userId: data.userId,
+                    message: "User rights and argument mismatch"
+                });
                 this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
             }
         });
 
         this.socket.on("statsGetAll", async (data) => {
-             if (this.isAdmin()) {
+            if (this.isAdmin()) {
                 try {
-                    //TODO load only for those users with the stats flag set
-                    const stats = await getAll();
-                    this.socket.emit("statsAll", {success: true, statistics: stats});
+                    const stats = await this.models['statistic'].getAll();
+                    const filteredStats = stats.filter(stat => this.models["user"].getById(stat.userId).acceptStats);
+                    this.socket.emit("statsData", {success: true, statistics: filteredStats});
                 } catch (e) {
-                    this.socket.emit("statsAll", {success: false, message: "Failed to retrieve stats for all"});
+                    this.socket.emit("statsData", {success: false, message: "Failed to retrieve stats for all"});
                     this.logger.error("Can't load statistics due to error " + e.toString());
                 }
             } else {
-                this.socket.emit("statsAll", {success: false, message: "User rights and argument mismatch"});
+                this.socket.emit("statsData", {success: false, message: "User rights and argument mismatch"});
                 this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
             }
         });

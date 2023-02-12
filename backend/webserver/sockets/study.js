@@ -1,5 +1,5 @@
 const Socket = require("../Socket.js");
-const {dbGetDoc, dbUpdateDoc} = require("../../db/methods/document");
+
 /**
  * Handle all studies through websocket
  *
@@ -14,7 +14,7 @@ module.exports = class StudySocket extends Socket {
         try {
             if (data.id && data.id !== 0) {
                 const currentStudy = await this.models['study'].getById(data.id);
-                if (this.isAdmin() || currentStudy.userId === this.user_id) {
+                if (this.checkUserAccess(currentStudy.userId)) {
                     const study = await this.updateCreatorName(await this.models['study'].updateById(data.id, data));
                     this.socket.emit("studyRefresh", study)
                     return study;
@@ -22,7 +22,7 @@ module.exports = class StudySocket extends Socket {
                     this.sendToast("You are not allowed to update this study", "Error", "Danger");
                 }
             } else {
-                data.userId = this.user_id;
+                data.userId = this.userId;
                 const study = await this.updateCreatorName(await this.models['study'].add(data));
                 this.socket.emit("studyRefresh", study);
                 return study;
@@ -37,7 +37,7 @@ module.exports = class StudySocket extends Socket {
     async init() {
         this.socket.on("studyGet", async (data) => {
             try {
-                this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getAllByUserId(this.user_id)));
+                this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].getAllByKey('userId', this.userId)));
             } catch (err) {
                 this.logger.error(err);
             }
@@ -45,10 +45,18 @@ module.exports = class StudySocket extends Socket {
 
         this.socket.on("studyDelete", async (data) => {
             try {
-                //todo delete existing sessions beforehand
-                this.socket.emit("studyRefresh", await this.updateCreatorName(await this.updateStudy(
-                    {id: data.studyId, deleted: true, deletedAt: new Date()}
-                )));
+                const study = await this.models['study'].getById(data.studyId);
+                if (this.checkUserAccess(study.userId)) {
+                    const sessions = await this.models['study_session'].getAllByKey('studyId', study.id);
+                    for (const session of sessions) {
+                        await this.models['study_session'].deleteById(session.id);
+                    }
+
+                    this.socket.emit("studyRefresh", await this.updateCreatorName(await this.models['study'].deleteById(data.studyId)));
+                } else {
+                    this.sendToast("You are not allowed to delete this study", "Error", "Danger");
+                }
+
             } catch (err) {
                 this.logger.error(err);
             }
@@ -59,13 +67,12 @@ module.exports = class StudySocket extends Socket {
             try {
                 const study = await this.models['study'].getByHash(data.studyHash);
                 if (study) {
-                    const sessions = await this.models['study_session'].getAllByUserId(this.user_id)
+                    const sessions = await this.models['study_session'].getAllByKey('userId', this.userId)
                     this.socket.emit("studySessionRefresh", sessions.filter(s => s.studyId === study.id))
                     this.socket.emit("studyRefresh", await this.updateCreatorName(study));
                 } else {
                     this.socket.emit("studyError", {
-                        studyHash: data.studyHash,
-                        message: "Not found!"
+                        studyHash: data.studyHash, message: "Not found!"
                     });
                 }
             } catch (err) {
@@ -80,8 +87,7 @@ module.exports = class StudySocket extends Socket {
                     this.socket.emit("studyRefresh", await this.updateCreatorName(study));
                 } else {
                     this.socket.emit("studyError", {
-                        studyHash: data.studyHash,
-                        message: "Not found!"
+                        studyHash: data.studyHash, message: "Not found!"
                     });
                 }
             } catch (err) {
@@ -114,9 +120,7 @@ module.exports = class StudySocket extends Socket {
                 }
 
                 const studySession = await this.models["study_session"].add({
-                    studyId: study.id,
-                    userId: this.user_id,
-                    start: new Date().toISOString()
+                    studyId: study.id, userId: this.userId, start: Date.now()
                 });
 
                 this.socket.emit("studySessionRefresh", await this.updateCreatorName(studySession));
@@ -129,30 +133,26 @@ module.exports = class StudySocket extends Socket {
 
         this.socket.on("studyPublish", async (data) => {
             try {
-                const doc = await dbGetDoc(data.documentId);
+                const doc = await this.models['document'].getById(data.documentId);
                 if (this.checkUserAccess(doc.userId)) {
                     const study = await this.updateStudy(data);
-                    console.log("Updated study------", study);
                     if (study) {
                         this.socket.emit("studyPublished", {success: true, hash: study[0].hash});
                     } else {
                         this.socket.emit("studyPublished", {
-                            success: false,
-                            message: "Error publishing study."
+                            success: false, message: "Error publishing study."
                         });
                     }
                 } else {
                     this.logger.error("No permission to publish document: " + data.documentId);
                     this.socket.emit("studyPublished", {
-                        success: false,
-                        message: "No permission to publish study"
+                        success: false, message: "No permission to publish study"
                     });
                 }
             } catch (e) {
                 this.logger.error(e);
                 this.socket.emit("documentPublished", {
-                    success: false,
-                    message: "Error while publishing document"
+                    success: false, message: "Error while publishing document"
                 });
 
             }
@@ -160,7 +160,7 @@ module.exports = class StudySocket extends Socket {
 
         this.socket.on("studySessionGet", async (data) => {
             try {
-                this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].getAllByUserId(this.user_id)));
+                this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].getAllByKey('userId', this.userId)));
             } catch (err) {
                 this.logger.error(err);
             }
@@ -171,8 +171,8 @@ module.exports = class StudySocket extends Socket {
                 if (this.isAdmin()) {
                     this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].getAll()));
                 } else {
-                    const studies = await this.models['study'].getAllByUserId(this.user_id);
-                    const sessionsPerStudy = await Promise.all(studies.map(async s => await this.models['study_session'].getAllByFK("studyId", s.id)))
+                    const studies = await this.models['study'].getAllByUserId(this.userId);
+                    const sessionsPerStudy = await Promise.all(studies.map(async s => await this.models['study_session'].getAllByKey("studyId", s.id)))
                     this.socket.emit("studySessionRefresh", await this.updateCreatorName(sessionsPerStudy.flat(1)));
                 }
             } catch (err) {
@@ -185,22 +185,20 @@ module.exports = class StudySocket extends Socket {
                 if (data.sessionId && data.sessionId !== 0) {
                     if (data.evaluation) {
                         const evaluatedStudySession = {
-                            evaluation: data.evaluation,
-                            reviewUserId: this.user_id,
-                            reviewComment: data.reviewComment
+                            evaluation: data.evaluation, reviewUserId: this.userId, reviewComment: data.reviewComment
                         }
                         this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].updateById(data.sessionId, evaluatedStudySession)))
                     } else {
                         const currentStudySession = await this.models['study_session'].getById(data.sessionId)
                         const study = await this.models['study'].getById(currentStudySession.studyId);
-                        if (this.isAdmin() || this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
+                        if (this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
                             this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].updateById(data.sessionId, data)))
                         } else {
                             this.sendToast("You are not allowed to update this study session", "Error", "Danger");
                         }
                     }
                 } else {
-                    data.userId = this.user_id;
+                    data.userId = this.userId;
                     this.socket.emit("studySessionRefresh", await this.updateCreatorName(await this.models['study_session'].add(data)))
                 }
             } catch (err) {
@@ -214,19 +212,17 @@ module.exports = class StudySocket extends Socket {
                 const session = await this.models['study_session'].getByHash(data.studySessionHash);
                 if (session) {
                     const study = await this.models['study'].getById(session.studyId);
-                    if (this.user_id === session.userId || this.user_id === study.userId || this.isAdmin()) {
+                    if (this.checkUserAccess(session.userId) || this.checkUserAccess(study.userId)) {
                         this.socket.emit("studyRefresh", study);
                         this.socket.emit("studySessionRefresh", session);
                     } else {
                         this.socket.emit("studySessionError", {
-                            studySessionHash: data.studySessionHash,
-                            message: "No access rights"
+                            studySessionHash: data.studySessionHash, message: "No access rights"
                         });
                     }
                 } else {
                     this.socket.emit("studySessionError", {
-                        studySessionHash: data.studySessionHash,
-                        message: "Not found"
+                        studySessionHash: data.studySessionHash, message: "Not found"
                     });
                 }
             } catch (err) {

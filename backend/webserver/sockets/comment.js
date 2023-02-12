@@ -1,4 +1,3 @@
-const {commentFormatForExport: dbFormatForExport} = require("../../db/utils");
 const Socket = require("../Socket.js");
 
 /**
@@ -8,6 +7,35 @@ const Socket = require("../Socket.js");
  * @type {CommentSocket}
  */
 module.exports = class CommentSocket extends Socket {
+
+    async commentFormat(comment) {
+        const copyFields = [
+            "id",
+            "text",
+            "documentId",
+            "createdAt",
+            "updatedAt",
+        ]
+
+        let copied = pickObjectAttributeSubset(comment, copyFields);
+        copied.userId = await this.models['user'].getUserName(comment.userId);
+
+        copied.tags = JSON.parse(comment.tags);
+
+        if (comment.annotationId) {
+            copied.annotationId = comment.annotationId;
+        } else {
+            copied.annotationId = null;
+        }
+
+        if (comment.commentId) {
+            copied.commentId = comment.commentId;
+        } else {
+            copied.commentId = null;
+        }
+
+        return copied;
+    }
 
     async loadCommentsByAnnotation(annotationId) {
         try {
@@ -165,7 +193,7 @@ module.exports = class CommentSocket extends Socket {
                 this.socket.emit("commentExport", {
                     "success": true,
                     "documentId": data.documentId,
-                    "objs": await Promise.all(comments.map(async (c) => await dbFormatForExport(c)))
+                    "objs": await Promise.all(comments.map(async (c) => await this.commentFormat(c)))
                 });
 
             } catch (e) {
