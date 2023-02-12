@@ -33,7 +33,9 @@ module.exports = class Socket {
      * Initializes the socket connection
      * Note: Please overwrite with your sockets!
      */
-    async init();
+    async init() {
+        this.logger.info("Socket initialized");
+    }
 
     /**
      * Get initialized socket class object by class name

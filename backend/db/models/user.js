@@ -43,7 +43,7 @@ module.exports = (sequelize, DataTypes) => {
          * @param {string} userName username or email
          * @returns {Promise<integer>} user id
          */
-        async getUserIdByName(userName) {
+        static async getUserIdByName(userName) {
             const user = await User.find(userName);
             if (user) {
                 return user.id;
@@ -57,7 +57,7 @@ module.exports = (sequelize, DataTypes) => {
          * @param {number} userId user id
          * @returns {Promise<string>} user name
          */
-        async getUserName(userId) {
+        static async getUserName(userId) {
             try {
                 const user = await User.getById(userId);
                 if (user) {
@@ -75,7 +75,7 @@ module.exports = (sequelize, DataTypes) => {
          * @param {string} email email
          * @returns {Promise<integer>}} user id
          */
-        async getUserIdByEmail(email) {
+        static async getUserIdByEmail(email) {
             const user = await User.getByKey('email', email);
             if (user) {
                 return user.id;
@@ -105,4 +105,6 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'user',
         tableName: 'user'
     });
+
+    return User;
 };
