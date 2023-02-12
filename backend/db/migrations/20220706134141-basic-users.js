@@ -1,5 +1,5 @@
 'use strict';
-const {genSalt, genPwdHash} = require("../methods/utils.js");
+const {genSalt, genPwdHash} = require("../../utils/auth");
 
 module.exports = {
     async up(queryInterface, Sequelize) {

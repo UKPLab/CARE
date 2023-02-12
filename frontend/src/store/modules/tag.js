@@ -20,7 +20,7 @@ const emptyTagSet = () => {
     };
 };
 
-const emptyTag = (setId) => {
+const emptyTag = (tagSetId) => {
     return {
         "id": 0,
         "name": "",
@@ -29,7 +29,7 @@ const emptyTag = (setId) => {
         "userId": null,
         "public": false,
         "updatedAt": null,
-        "setId": setId,
+        "tagSetId": tagSetId,
         "deleted": false,
         "deletedAt": null,
         "createdAt": null
@@ -40,7 +40,7 @@ const cleanEmptyTagSet = (state) => {
     const emptyTagSet = state["tagSets"].find(tagSet => tagSet.id === 0);
     if (emptyTagSet !== undefined) {
         state["tagSets"].splice(state["tagSets"].indexOf(emptyTagSet), 1);
-        state["tags"].filter(tag => tag.setId === 0).forEach(tag => {
+        state["tags"].filter(tag => tag.tagSetId === 0).forEach(tag => {
             state["tags"].splice(state["tags"].indexOf(tag), 1);
         });
     }
@@ -52,10 +52,10 @@ const copyTagSet = (state, from_id) => {
     newTagSet.id = 0; // set id to 0
     newTagSet.name = "Copy of " + newTagSet.name;
     state["tagSets"].push(newTagSet);
-    state["tags"].filter(tag => tag.setId === from_id).forEach(tag => { // copy tags
+    state["tags"].filter(tag => tag.tagSetId === from_id).forEach(tag => { // copy tags
         const newTag = {...tag}; // copy object
         newTag.id = 0; // set id to 0
-        newTag.setId = 0;
+        newTag.tagSetId = 0;
         state["tags"].push(newTag);
     });
 }
@@ -78,7 +78,7 @@ export default {
             }
 
             if (state["tags"] != null) {
-                return state["tags"].filter(tag => tag.setId === id && (!hideDeleted || !tag.deleted));
+                return state["tags"].filter(tag => tag.tagSetId === id && (!hideDeleted || !tag.deleted));
             } else {
                 return []
             }

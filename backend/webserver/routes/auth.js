@@ -1,111 +1,30 @@
-/* auth.js - Routes for login
-
-Here the routes for login into the content server are provided. This includes checking of tokens and
-register, login and logout.
-
-Author: Nils Dycke (dycke@ukp.informatik...), Dennis Zyska (zyska@ukp.informatik....)
-Co-Author: -
-Source: Inspired by https://heynode.com/tutorial/authenticate-users-node-expressjs-and-passportjs/
-*/
-
+/**
+ * Here the routes for login into the content server are provided.
+ * This includes checking of tokens and register, login and logout.
+ *
+ * @fileoverview Routes for login
+ * @author Nils Dycke, Dennis Zyska
+ */
 const passport = require('passport');
-const LocalStrategy = require('passport-local');
-const crypto = require('crypto');
-const {add: addUser, find: findUser, relevantFields: getUserFields} = require('../../db/methods/user.js')
-const {getSetting} = require("../../db/methods/settings");
-const logger = require("../../utils/logger.js")("routes/auth");
+const {genSalt, genPwdHash} = require("../../utils/auth");
 
-const {
-    update: updateUser
-} = require("../../db/methods/user.js");
+/**
+ * Route for user management
+ * @param {Server} server main server instance
+ */
+module.exports = function (server) {
 
-// internal login procedure using passport and postgres
-passport.use(new LocalStrategy(function verify(username, password, cb) {
-    findUser(username, password)
-        .then(rows => {
-            if (!rows || rows.length !== 1) {
-                return cb(null, false, {message: 'Incorrect username or password.'});
-            }
-
-            crypto.pbkdf2(password, rows[0].salt, 310000, 32, 'sha256', function (err, hashedPassword) {
-                if (err) {
-                    return cb(err);
-                }
-
-                if (!crypto.timingSafeEqual(Buffer.from(rows[0].passwordHash, 'hex'), hashedPassword)) {
-                    return cb(null, false, {message: 'Incorrect username or password.'});
-                }
-
-                // filter row object, because not everything is the right information for website
-                return cb(null, getUserFields(rows[0]));
-            });
-        })
-        .catch(err => {
-            return cb(err);
-        });
-}));
-
-// required to work -- defines strategy for storing user information
-passport.serializeUser(function (user, done) {
-    done(null, user);
-});
-
-// required to work -- defines strategy for loading user information
-passport.deserializeUser(function (user, done) {
-    done(null, user);
-});
-
-// register
-async function register(user_credentials, res) {
-    const user_name = user_credentials["user_name"];
-    const email = user_credentials["email"];
-    const first_name = user_credentials["first_name"];
-    const last_name = user_credentials["last_name"];
-    const pwd = user_credentials["password"];
-    const agree = user_credentials["terms"];
-    const stats = user_credentials["stats"];
-
-    if (await getSetting("app.register.requestName") === "true") {
-        if (!first_name) {
-            return res.status(400).json({message: "Please provide a user name."});
-        }
-        if (!last_name) {
-            return res.status(400).json({message: "Please provide a user name."});
-        }
-    }
-
-
-    if (!user_name || !email || !pwd || !agree) {
-        res.status(400).send("All credential fields need to be provided");
-    } else {
-        addUser(user_name, first_name, last_name, email, pwd, "regular", agree, stats)
-            .then((success) => {
-                res.status(201).send("User was successfully created");
-            })
-            .catch((err) => {
-                logger.info("Cannot create user: " + err);
-
-                if (err.name === "DuplicateUserException") {
-                    res.status(400).send("User already exists");
-                } else if (err.name === "InvalidPasswordException") {
-                    res.status(400).send(err.message);
-                } else {
-                    res.status(400).send("Unknown error occurred. Consult admins");
-                }
-            });
-    }
-}
-
-module.exports = function (app) {
-    // user login
-    app.post('/auth/login', function (req, res, next) {
+    /**
+     * Login Procedure
+     */
+    server.app.post('/auth/login', function (req, res, next) {
         passport.authenticate('local', function (err, user, info) {
             if (err) {
-                logger.info("Login failed: " + err);
-                console.log("Login failed: " + err);
+                server.logger.error("Login failed: " + err);
                 return res.status(500).send("Failed to login");
             }
             if (!user) {
+                server.logger.info("User not found: " + info);
                 return res.status(401).send(info);
             }
             req.logIn(user, async function (err) {
@@ -113,15 +32,16 @@ module.exports = function (app) {
                     return next(err);
                 }
 
-                await updateUser(user.id, {lastLoginAt: new Date()});
-
+                await server.db.models['user'].updateById(user.id, {lastLoginAt: new Date()});
                 res.status(200).send({user: user});
             });
         })(req, res, next);
     });
 
-    // Logout Procedure, no feedback needed since vuex also deletes the session
-    app.get('/auth/logout', function (req, res) {
+    /**
+     * Logout Procedure, no feedback needed since vuex also deletes the session
+     */
+    server.app.get('/auth/logout', function (req, res) {
         req.logout(function (err) {
             if (err) {
                 return next(err);
@@ -132,19 +52,88 @@ module.exports = function (app) {
         });
     })
 
-    // check whether user is logged in
-    app.get('/auth/check', function (req, res) {
+    /**
+     * Check whether user is logged in
+     */
+    server.app.get('/auth/check', function (req, res) {
         if (req.user) {
             res.status(200).send({user: req.user});
         } else {
             res.status(401);
         }
-        logger.debug(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
-        logger.debug(`req.user: ${JSON.stringify(req.user)}`);
+        server.logger.debug(`req.session.passport: ${JSON.stringify(req.session.passport)}`);
+        server.logger.debug(`req.user: ${JSON.stringify(req.user)}`);
     });
 
-    // register a user
-    app.post('/auth/register', function (req, res) {
-        register(req.body, res);
+    /**
+     * Register Procedure
+     */
+    server.app.post('/auth/register', async function (req, res) {
+
+        const data = req.body;
+
+        // check if name is defined if it is required
+        if ((await server.db['user'].get("app.register.requestName")) === "true") {
+            if (!data.firstName) {
+                return res.status(400).json({message: "Please provide a user name."});
+            }
+            if (!data.lastName) {
+                return res.status(400).json({message: "Please provide a user name."});
+            }
+        }
+
+        // check if other fields are defined
+        if (!data.email) {
+            return res.status(400).json({message: "Please provide a email."});
+        } else {
+            // check if username is already taken
+            const user = await server.db['user'].getUserIdByEmail(data.email);
+            if (user !== 0) {
+                return res.status(400).json({message: "E-Mail already taken."});
+            }
+        }
+
+        if (!data.password) {
+            return res.status(400).json({message: "Please provide a password."});
+        } else {
+            if (data.password.length < 8) {
+                return res.status(400).json({message: "Password does not meet requirements."});
+            }
+        }
+
+        if (!data.acceptTerms) {
+            return res.status(400).json({message: "Please agree to the terms of use."});
+        }
+
+        if (!data.userName) {
+            return res.status(400).json({message: "Please provide a user name."});
+        } else {
+            // check if username is already taken
+            const user = await server.db['user'].getUserIdByName(data.userName);
+            if (user !== 0) {
+                server.logger.info("Username already taken: " + data.userName)
+                return res.status(400).json({message: "Username already taken."});
+            }
+        }
+
+        // create user if all checks passed
+        const salt = genSalt();
+        let pwdHash = await genPwdHash(data.password, salt);
+        server.db.models['user'].add({
+            sysrole: "regular",
+            firstName: data.firstName,
+            lastName: data.lastName,
+            userName: data.userName,
+            email: data.email,
+            passwordHash: pwdHash,
+            salt: salt,
+            acceptTerms: data.acceptTerms,
+            acceptStats: data.acceptStats,
+        }).then((user) => {
+            res.status(201).send("User was successfully created");
+        }).catch((err) => {
+            server.logger.info("Cannot create user: " + err);
+            res.status(400).send("Unknown error occurred. Consult admins");
+        });
     });
 };

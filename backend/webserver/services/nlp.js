@@ -1,6 +1,5 @@
 const {io: io_client} = require("socket.io-client");
 const Service = require("../Service.js");
-const {getSetting} = require("../../db/methods/settings");
 const fs = require("fs");
 const path = require("path");
 const yaml = require('js-yaml')
@@ -10,7 +9,7 @@ const yaml = require('js-yaml')
  * Hold connection and data for external NLP service
  *
  * @class
- * @author Dennis Zyska
+ * @author Dennis Zyska, Nils Dycke
  * @classdesc A service that connects to an external NLP service via socket.io.
  * @extends Service
  */
@@ -18,65 +17,40 @@ module.exports = class NLPService extends Service {
     constructor(server) {
         super(server);
 
-        this.retryDelay = 10000;
+        this.retryDelay = 10000; //default delay between connection attempts
 
         this.skills = null;
         this.configs = null;
         this.timer = null;
 
-        this.toNlpSocket = null;
-        this.fallbacks = null;
+        this.nlpSocket = null;
     }
 
-    loadFallbacks() {
-
-        this.logger.info("Loading skill fallbacks");
-        const skills = fs.readdirSync(path.resolve(__dirname, "../../../files/sdf"))
-            .filter(file => file.endsWith(".yaml")).map((file) => {
-                return yaml.load(fs.readFileSync(path.join(path.resolve(__dirname, "../../../files/sdf"), file), "utf8"));
-            });
-        this.skills = skills.map(skill => {
-            return {name: skill.name, nodes: 1, "fallback": true};
-        });
-        this.configs = skills.reduce(function (map, obj) {
-            map[obj.name] = obj;
-            return map;
-        }, {});
-        this.logger.info("Loaded fallbacks for skills: " + this.skills.map(skill => skill.name).join(", "));
-        return skills;
-    }
-
-    fallbackResponse(skill, reqId) {
-        const skillConfig = this.fallbackConfig(skill)
-        if (skillConfig) return {id: reqId, data: skillConfig.output.example};
-    }
-
-    fallbackConfig(skill) {
-        if (this.fallbacks !== null && this.fallbacks.length > 0) {
-            return this.fallbacks.find((fallback) => fallback.name === skill)
-        }
-    }
-
+    /**
+     * Overwrite the init method to connect to the NLP service
+     */
     async init() {
-        if (await getSetting("service.nlp.enabled") === "false") {
+        if (await this.server.db.models['setting'].get("service.nlp.enabled") === "false") {
             this.logger.info("NLP is deactivated! Change service.nlp.enabled setting in the DB.");
-            if (await getSetting("service.nlp.test.fallback") === "true") {
-                this.fallbacks = this.loadFallbacks();
+            if (await this.server.db.models['setting'].get("service.nlp.test.fallback") === "true") {
+                await this.loadFallbacks();
             }
             return;
         }
-        this.retryDelay = await getSetting("service.nlp.retryDelay");
 
+        // load settings from db
+        this.retryDelay = await this.server.db.models['setting'].get("service.nlp.retryDelay");
+        this.url = await this.server.db.models['setting'].get("service.nlp.url");
+        this.token = await this.server.db.models['setting'].get("service.nlp.token");
+        this.timeout = await this.server.db.models['setting'].get("service.nlp.timeout");
+        this.fallback = await this.server.db.models['setting'].get("service.nlp.test.fallback");
 
-        //connect to nlp broker
-        await this.connect();
 
         // reset
-        this.skills = null;
-        this.configs = null;
-        if (this.timer) {
-            this.cancelTimer();
-        }
+        await this.reset();
+
+        // connect to nlp broker
+        this.nlpSocket = await this.connect();
 
         //setup timer to periodically clean the info cache
         const self = this;
@@ -85,88 +59,87 @@ module.exports = class NLPService extends Service {
         }, 300 * 1000);
     }
 
-    isConnected() {
-        return this.toNlpSocket !== null && this.toNlpSocket.connected;
-    }
-
-    async connectClient(client, data) {
-        if (!this.isConnected()) {
-            await this.init();
+    /**
+     * Overwrite the destroy method to disconnect from the NLP service
+     */
+    async reset() {
+        if (this.timer) {
+            clearInterval(this.timer);
         }
-        // TODO Check socket io nlp service url is the same like in the db (if not, reconnect)
+        if (this.nlpSocket) {
+            this.nlpSocket.disconnect();
+            this.nlpSocket = null;
+        }
+        this.skills = null;
+        this.configs = null;
 
-
-        // send current set of skills to client
-        this.send(client, "skillUpdate", this.skills !== null ? this.skills : []);
     }
 
+    /**
+     * Connect to the NLP service
+     */
     async connect() {
         const self = this;
 
-        self.toNlpSocket = io_client(await getSetting("service.nlp.url"),
+        const nlpSocket = io_client(this.url,
             {
-                auth: {token: await getSetting("service.nlp.token")},
+                auth: {token: this.token},
                 reconnection: true,
-                timeout: await getSetting("service.nlp.timeout"), //timeout between connection attempts
+                timeout: this.timeout,
             }
         );
 
         // Handle connection errors
-        self.toNlpSocket.on("connect_error", async () => {
-            if (await getSetting("service.nlp.test.fallback") === "true") {
-                if (this.fallbacks === null) {
-                    this.fallbacks = this.loadFallbacks();
-                }
+        nlpSocket.on("connect_error", async () => {
+            if (this.fallback === "true") {
+                await self.loadFallbacks();
             }
             setTimeout(() => {
-                if (self.toNlpSocket) {
-                    self.toNlpSocket.connect();
+                if (nlpSocket) {
+                    nlpSocket.connect();
                 }
             }, self.retryDelay);
 
         });
 
         // Handle reconnection attempts
-        self.toNlpSocket.on("reconnection_attempt", () => {
-            self.logger.error("Reconnection attempt...");
+        nlpSocket.on("reconnection_attempt", () => {
+            self.logger.error("Broker Reconnection attempt...");
         });
 
         // establishing a connection
-        self.toNlpSocket.on("connect", function () {
-            self.logger.info(`Connection to NLP server established: ${self.toNlpSocket.connected}`);
+        nlpSocket.on("connect", function () {
+            self.logger.info(`Connection to NLP server established: ${self.nlpSocket.connected}`);
 
             // if connection established, get information about the NLP Service
-            this.fallbacks = null;
             this.skills = null;
-            self.toNlpSocket.emit("skillGetAll");
+            self.nlpSocket.emit("skillGetAll");
         });
 
         // deal with broken connection
-        self.toNlpSocket.on("disconnect", function () {
-            self.logger.info(`Connection to NLP server disrupted: ${!self.toNlpSocket.connected}`);
+        nlpSocket.on("disconnect", function () {
+            self.logger.error(`Connection to NLP server disrupted: ${!self.nlpSocket.connected}`);
         });
 
-        // forwarding NLP server messages to frontend
-        self.toNlpSocket.on("skillConfig", (data) => {
-            //deep copy (otherwise we may get an undefined)
-            const up = JSON.parse(JSON.stringify(data));
-
-            self.#updateConfigCache(up);
+        nlpSocket.on("skillConfig", (data) => {
+            // deep copy (otherwise we may get an undefined object)
+            const config = JSON.parse(JSON.stringify(data));
+            self.#updateConfigCache(config);
         });
 
-        self.toNlpSocket.on("skillUpdate", (data) => {
+        nlpSocket.on("skillUpdate", (data) => {
             // update cache with deep copy of data
-            const up = JSON.parse(JSON.stringify(data));
-            this.#updateSkillCache(up);
+            const skills = JSON.parse(JSON.stringify(data));
+            this.#updateSkillCache(skills);
 
             // delete configs of removed skills and request configs for changed services (that were not deleted)
-            up.filter(s => s.nodes === 0 && s.name in self.configs).forEach(s => delete self.configs[s.name]);
-            up.filter(s => s.nodes > 0).forEach(s => self.toNlpSocket.emit("skillGetConfig", {name: s.name}));
+            skills.filter(s => s.nodes === 0 && s.name in self.configs).forEach(s => delete self.configs[s.name]);
+            skills.filter(s => s.nodes > 0).forEach(s => nlpSocket.emit("skillGetConfig", {name: s.name}));
 
             self.sendAll("skillUpdate", self.skills);
         });
 
-        self.toNlpSocket.on("skillResults", (data) => {
+        nlpSocket.on("skillResults", (data) => {
             const client = self.#getClient(data.clientId)
             delete data.clientId;
             if (client) {
@@ -174,9 +147,23 @@ module.exports = class NLPService extends Service {
             }
         });
 
-        self.toNlpSocket.connect();
+        nlpSocket.connect();
+        return nlpSocket;
     }
 
+    /**
+     * Send client the current skill list
+     * @param client
+     * @param data
+     */
+    async connectClient(client, data) {
+        this.send(client, "skillUpdate", this.skills !== null ? this.skills : []);
+    }
+
+    /**
+     * Update the skill cache
+     * @param updatedSkills
+     */
     #updateSkillCache(updatedSkills) {
         if (this.skills !== null) {
             const upSkills = updatedSkills.map(s => s.name);
@@ -188,6 +175,10 @@ module.exports = class NLPService extends Service {
         }
     }
 
+    /**
+     * Update the config cache
+     * @param updatedConfig
+     */
     #updateConfigCache(updatedConfig) {
         if (this.configs === null) {
             this.configs = {};
@@ -195,6 +186,11 @@ module.exports = class NLPService extends Service {
         this.configs[updatedConfig.name] = updatedConfig;
     }
 
+    /**
+     * Get the client socket from id
+     * @param {string} clientId
+     * @return {*}
+     */
     #getClient(clientId) {
         if (clientId in this.server.availSockets) {
             return this.server.availSockets[clientId]["ServiceSocket"];
@@ -203,43 +199,79 @@ module.exports = class NLPService extends Service {
         }
     }
 
-    command(client, command, data) {
+    /**
+     * Overwrite the destroy method to disconnect from the NLP service
+     */
+    async close() {
+        await this.reset();
+    }
+
+    /**
+     * Overwrite method to handle incoming commands
+     * @param client
+     * @param {string} command
+     * @param {object} data
+     */
+    async command(client, command, data) {
         if (command === "skillGetAll") {
             if (!this.skills) {
-                this.send(client, "skillUpdate", [])
+                await this.send(client, "skillUpdate", [])
             } else {
-                this.send(client, "skillUpdate", this.skills);
+                await this.send(client, "skillUpdate", this.skills);
             }
         } else if (command === "skillGetConfig") {
             if (this.configs && data.name in this.configs) {
-                this.send(client, "skillConfig", this.configs[data.name]);
+                await this.send(client, "skillConfig", this.configs[data.name]);
             } else {
-                this.send(client, "skillConfig", null);
+                await this.send(client, "skillConfig", null);
             }
         }
     }
 
+    /**
+     * Overwrite method to handle incoming requests
+     * @param client
+     * @param data
+     * @return {Promise<void>}
+     */
     async request(client, data) {
-        data["clientId"] = client.socket.id;
 
-        if (this.isConnected()) {
-            this.toNlpSocket.emit("skillRequest", data);
-        } else if (this.fallbacks !== null && this.fallbacks.length > 0) {
-            this.send(client, "skillResults", this.fallbackResponse(data.name, data.id));
+        if (this.nlpSocket && this.nlpSocket.connected) {
+            data["clientId"] = client.socket.id;
+            this.nlpSocket.emit("skillRequest", data);
+        } else if (this.skills && this.skills.includes(data.name)) {
+
+            await this.send(client, "skillResults", {
+                id: data.id,
+                data: this.configs[data.name].output.example,
+                fallback: true
+            });
         }
+
     }
 
-    cancelTimer() {
-        if (this.timer) {
-            clearInterval(this.timer);
-        }
+    /**
+     * Load fallbacks for skills if service is not available
+     * @return {Promise<*>}
+     */
+    async loadFallbacks() {
+        this.skills = [];
+        this.configs = {};
+        await fs.readdir(path.resolve(__dirname, "../../../files/sdf"), async (err, files) => {
+            await Promise.all(files.filter(file => file.endsWith(".yaml")).map(async file => {
+                if (file.endsWith(".yaml")) {
+                    fs.readFile(path.join(path.resolve(__dirname, "../../../files/sdf"), file), "utf8", (err, data) => {
+                        if (err) {
+                            this.logger.error(err)
+                            return null;
+                        }
+                        const skill = yaml.load(data);
+                        this.skills.push({name: skill.name, nodes: 1, "fallback": true});
+                        this.configs[skill.name] = skill;
+                    });
+                }
+            }));
+        });
     }
 
-    close() {
-        this.cancelTimer();
-        if (this.toNlpSocket) {
-            this.toNlpSocket.disconnect();
-            this.toNlpSocket = null;
-        }
-    }
 }

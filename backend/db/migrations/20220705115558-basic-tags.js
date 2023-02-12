@@ -29,7 +29,7 @@ module.exports = {
                     name: t[1],
                     description: t[1],
                     colorCode: t[2],
-                    setId: groups.find(g => g.name === t[0]).id,
+                    tagSetId: groups.find(g => g.name === t[0]).id,
                     updatedAt: new Date(),
                     createdAt: new Date(),
                     deleted: false

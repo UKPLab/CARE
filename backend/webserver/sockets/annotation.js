@@ -1,4 +1,3 @@
-const {annotationFormatForExport: dbFormatForExport} = require("../../db/utils");
 const Socket = require("../Socket.js");
 
 /**
@@ -8,6 +7,28 @@ const Socket = require("../Socket.js");
  * @type {CollabSocket}
  */
 module.exports = class AnnotationSocket extends Socket {
+
+    /**
+     * Change the creator name of an annotation to the username for export
+     * @param annotation
+     * @return {Promise<*>}
+     */
+    async annotationFormat(annotation) {
+        const copyFields = [
+            "text",
+            "id",
+            "documentId",
+            "createdAt",
+            "updatedAt"
+        ]
+
+        let copied = pickObjectAttributeSubset(annotation, copyFields);
+        copied.userId = await this.models['user'].getUserName(annotation.userId);
+        copied.tag = (await this.models['tag_set'].getById(annotation.tagId)).name;
+
+        return copied
+    }
+
 
     init() {
 
@@ -94,7 +115,7 @@ module.exports = class AnnotationSocket extends Socket {
                 this.socket.emit("annotationExport", {
                     "success": true,
                     "documentId": data.documentId,
-                    "objs": await Promise.all(annotations.map(async (a) => await dbFormatForExport(a)))
+                    "objs": await Promise.all(annotations.map(async (a) => await this.annotationFormat(a)))
                 });
             } catch (e) {
                 this.logger.info("Error during loading of annotations: " + e);

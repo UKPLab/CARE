@@ -1,6 +1,4 @@
 const Socket = require("../Socket.js");
-const {getAll:dbGetAll} = require("../../db/methods/log.js");
-
 
 /**
  * Handle logs through websocket
@@ -29,13 +27,12 @@ module.exports = class LoggerSocket extends Socket {
         this.socket.on("logGetAll", async (data) => {
             try {
                 if (this.isAdmin()) {
-                    this.socket.emit("logAll", await dbGetAll(data['limit']));
+                    this.socket.emit("logAll", await this.models['log'].getLogs(data['limit']));
                 }
-            } catch(err) {
+            } catch (err) {
                 this.logger.error(err);
             }
         });
-
 
 
     }

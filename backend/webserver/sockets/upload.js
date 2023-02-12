@@ -4,7 +4,6 @@ const path = require("path");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const Socket = require("../Socket.js");
-const {add: dbAddDoc, dbUpdateDoc} = require("../../db/methods/document");
 
 /**
  * Handle all uploads through websocket
@@ -24,9 +23,11 @@ module.exports = class UploadSocket extends Socket {
         this.socket.on("uploadFile", async (data) => {
 
             if (data.type === "document") {
-                const name = data.file.name.replace(/.pdf$/, '');
                 try {
-                    const doc = await dbAddDoc(name, this.user_id);
+                    const doc = await this.models['document'].add({
+                        name: data.file.name.replace(/.pdf$/, ''),
+                        userId: this.userId
+                    });
                     const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
 
                     fs.writeFile(target, data.file, (err) => {

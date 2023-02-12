@@ -1,11 +1,9 @@
-/* Configuration File for Sequelize
-
-Configuration File to define the database used for Sequelize
-
-Author: Nils Dycke (dycke@ukp.informatik...)
-*/
-const path = require('path');
-//require('dotenv').config({path: path.resolve(__dirname, "../../../.env")});
+/**
+ * Configuration File to define the database used for Sequelize
+ *
+ * @fileoverview Configuration File for Sequelize
+ * @author Nils Dycke (
+ */
 
 module.exports = {
     development: {

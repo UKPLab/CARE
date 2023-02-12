@@ -14,10 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     Sysrole.init({
-        name: {
-            type: DataTypes.STRING,
-            primaryKey: true
-        },
+        name: DataTypes.STRING,
         description: DataTypes.STRING,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,

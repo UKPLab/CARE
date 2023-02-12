@@ -16,58 +16,45 @@ module.exports = class Socket {
      * @param socket - The socket.io socket instance
      */
     constructor(server, io, socket) {
-        this.logger = require("../utils/logger.js")("Socket/" + this.constructor.name);
+        this.logger = require("../utils/logger")("Socket/" + this.constructor.name, this.server.db);
 
         this.server = server;
-        this.models = this.server.db.models;
         this.io = io;
-
         this.socket = socket;
-        this.user_id = socket.request.session.passport.user.id;
-        this.userId = this.user_id;
+
+        this.models = this.server.db.models;
+        this.user = this.socket.request.session.passport.user;
+        this.userId = this.user.id;
         this.logger.defaultMeta = {userId: this.userId};
 
-    }
-
-    /**
-     * Get initialized socket class object by class name
-     * @param name
-     * @returns {*}
-     */
-    getSocket(name) {
-        return this.server.availSockets[this.socket.id][name];
     }
 
     /**
      * Initializes the socket connection
      * Note: Please overwrite with your sockets!
      */
-    init() {
-    }
+    async init();
 
-    isAdmin() {
-        return this.socket.request.session.passport.user.sysrole === "admin";
-    }
-
-    checkUserAccess(userId) {
-        if (this.isAdmin()) {
-            return true;
-        }
-        if (this.userId !== userId) {
-            this.logger.warn("User " + this.userId + " tried to access user " + userId);
-            return false;
-        }
-        return true;
-    }
-
-    checkDocumentAccess(documentId) {
-        if ("DocumentSocket" in this.server.sockets) {
-            return this.getSocket("DocumentSocket").checkDocumentAccess(documentId);
+    /**
+     * Get initialized socket class object by class name
+     * @param {string} name The name of the socket class
+     * @returns {Socket} The socket class object
+     */
+    getSocket(name) {
+        if (name in this.server.availSockets[this.socket.id]) {
+            return this.server.availSockets[this.socket.id][name];
         } else {
-            return true;
+            this.logger.error("Socket " + name + " not found!");
+            return null;
         }
     }
 
+    /**
+     * Send a toast to the client
+     * @param {string} message The message to send
+     * @param {string} title The title of the toast
+     * @param {string} variant The variant of the toast
+     */
     sendToast(message, title, variant = "success") {
         this.socket.emit("toast", {
             message: message,
@@ -88,4 +75,43 @@ module.exports = class Socket {
             return data;
         }
     }
+
+    /**
+     * Check if the user is an admin
+     * @returns {boolean}
+     */
+    isAdmin() {
+        return this.user.sysrole === "admin";
+    }
+
+    /**
+     * Check if the user has access
+     * @param {number} userId The userId to check
+     * @return {boolean}
+     */
+    checkUserAccess(userId) {
+        if (this.isAdmin()) {
+            return true;
+        }
+        if (this.userId !== userId) {
+            this.logger.warn("User " + this.userId + " tried to access user " + userId);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Check if the user has access to a document
+     * @param {number} documentId The documentId to check
+     * @return {boolean}
+     */
+    checkDocumentAccess(documentId) {
+        if ("DocumentSocket" in this.server.sockets) {
+            return this.getSocket("DocumentSocket").checkDocumentAccess(documentId);
+        } else {
+            return true;
+        }
+    }
+
+
 }

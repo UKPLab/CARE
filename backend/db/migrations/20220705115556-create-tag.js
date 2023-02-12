@@ -24,7 +24,7 @@ module.exports = {
                 allowNull: false,
                 defaultValue: false
             },
-            setId: {
+            tagSetId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "tag_set",

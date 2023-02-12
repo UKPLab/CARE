@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         public: DataTypes.BOOLEAN,
         updatedAt: DataTypes.DATE,
-        setId: DataTypes.INTEGER,
+        tagSetId: DataTypes.INTEGER,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE

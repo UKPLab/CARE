@@ -5,14 +5,15 @@ const express = require('express');
 const {Server: WebSocketServer} = require("socket.io");
 const http = require('http');
 const cors = require('cors');
-
 const fs = require('fs');
 const path = require('path');
 const passport = require("passport");
 const session = require('express-session');
 const bodyParser = require('body-parser');
-const Socket = require('./Socket.js');
 const Sequelize = require('sequelize');
+const LocalStrategy = require("passport-local");
+const {relevantFields} = require("../utils/auth");
+const crypto = require("crypto");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
 /**
@@ -28,8 +29,9 @@ const SequelizeStore = require('connect-session-sequelize')(session.Store);
  */
 module.exports = class Server {
     constructor() {
-        this.logger = require("../utils/logger.js")("webServer");
         this.db = require("../db");
+        this.logger = require("../utils/logger")("webServer", this.db);
+
         this.app = express();
 
         this.sockets = {};
@@ -40,6 +42,7 @@ module.exports = class Server {
         // No Caching
         this.app.disable('etag');
         this.#setCors()
+
         // Make all static files public available
         this.app.use(express.static(`${__dirname}/../../dist/`));
 
@@ -53,7 +56,7 @@ module.exports = class Server {
 
         // Routes for config
         this.logger.debug("Initializing Routes for config...");
-        require("./routes/config.js")(this.app);
+        require("./routes/config")(this);
 
         this.logger.info("Initializing Session management...");
         this.session = this.#initSessionManagement();
@@ -65,11 +68,8 @@ module.exports = class Server {
         this.app.use(passport.initialize());
         this.app.use(passport.session());
 
-
-        // Routes for login management
-        this.logger.debug("Initialize Routes for auth...");
-        const auth = require('./routes/auth.js');
-        auth(this.app);
+        // Set login management
+        this.#loginManagement();
 
         // all further urls reference to frontend
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
@@ -80,15 +80,64 @@ module.exports = class Server {
         this.#addServices();
     }
 
+    /**
+     * Set the login management (routes and passport)
+     */
+    #loginManagement() {
+        this.logger.debug("Initialize Routes for auth...");
+        require('./routes/auth')(this);
 
+        passport.use(new LocalStrategy(async function verify(username, password, cb) {
+
+            const user = await this.db.models['user'].find(username);
+            if (!user) {
+                return cb(null, false, {message: 'Incorrect username or password.'});
+            }
+
+            crypto.pbkdf2(password, user.salt, 310000, 32, 'sha256', (err, hashedPassword) => {
+                if (err) {
+                    return cb(err);
+                }
+
+                if (!crypto.timingSafeEqual(Buffer.from(user.passwordHash, 'hex'), hashedPassword)) {
+                    return cb(null, false, {message: 'Incorrect username or password.'});
+                }
+
+                // filter row object, because not everything is the right information for website
+                return cb(null, relevantFields(user));
+            });
+        }));
+
+
+        // required to work -- defines strategy for storing user information
+        passport.serializeUser(function (user, done) {
+            done(null, user);
+        });
+
+        // required to work -- defines strategy for loading user information
+        passport.deserializeUser(function (user, done) {
+            done(null, user);
+        });
+    }
+
+    /**
+     * Set Cors restrictions
+     */
     #setCors() {
-        this.logger.debug("Use CORS Restriction");
+        this.logger.debug("Set CORS Restriction");
         this.app.use(cors({
-            origin: ['http://localhost:3000', "http://localhost:8080", 'https://peer.ukp.informatik.tu-darmstadt.de'],
+            origin: [
+                'http://localhost:3000',
+                "http://localhost:8080",
+                process.env.ADDITIONAL_CORS_ORIGINS ?
+                    process.env.ADDITIONAL_CORS_ORIGINS.split(",") : []].flat(),
             credentials: true
         }));
     }
 
+    /**
+     * Initialize the session management
+     */
     #initSessionManagement() {
 
         // Define Session Model Table
@@ -132,11 +181,19 @@ module.exports = class Server {
         this.logger.debug("Initialize Websockets...");
         const socketIoOptions = {
             cors: {
-                origin: ["http://localhost:3000", 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'],
+                origin: [
+                    'http://localhost:3000',
+                    "http://localhost:8080",
+                    process.env.ADDITIONAL_CORS_ORIGINS ?
+                        process.env.ADDITIONAL_CORS_ORIGINS.split(",") : []].flat(),
                 methods: ["GET", "POST"],
                 credentials: true,
             },
-            origins: ['http://localhost:3000', 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'],
+            origins: [
+                'http://localhost:3000',
+                "http://localhost:8080",
+                process.env.ADDITIONAL_CORS_ORIGINS ?
+                    process.env.ADDITIONAL_CORS_ORIGINS.split(",") : []].flat(),
             handlePreflightRequest: (req, res) => {
                 const headers = {
                     "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -172,9 +229,10 @@ module.exports = class Server {
             this.availSockets[socket.id] = {};
             this.logger.debug("Socket connect: " + socket.id);
 
-            Object.entries(this.sockets).map(([socketName, socketClass]) => {
+            Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
                 this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
-                this.availSockets[socket.id][socketName].init();
+
+                await this.availSockets[socket.id][socketName].init();
             });
 
             socket.on("disconnect", (reason) => {
@@ -186,7 +244,7 @@ module.exports = class Server {
     }
 
     /**
-     * Find and add sockets to the server
+     * Find all sockets and add sockets to the server
      */
     #addSockets() {
         this.logger.info("Adding sockets: ");
@@ -218,7 +276,7 @@ module.exports = class Server {
     }
 
     /**
-     * Find and add services to the server
+     * Find and add all services and add to the server
      */
     #addServices() {
         this.logger.info("Adding services: ");
@@ -248,6 +306,10 @@ module.exports = class Server {
         this.services[serviceClass.name].init();
     }
 
+    /**
+     * Start the webserver
+     * @param port
+     */
     start(port) {
         this.logger.debug("Start Webserver...");
         this.http = this.httpServer.listen(port, () => {
@@ -255,6 +317,9 @@ module.exports = class Server {
         });
     }
 
+    /**
+     * Stop the webserver
+     */
     stop() {
         Object.entries(this.services).forEach(([name, service]) => {
             service.close();
