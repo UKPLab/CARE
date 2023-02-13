@@ -11,67 +11,174 @@ servers:
     description: Backend websocket server
 
 channels:
-  /:
+  annotation:
     publish:
       message:
         oneOf:
-          - $ref: '#/components/messages/annotationAdd'
           - $ref: '#/components/messages/annotationGet'
           - $ref: '#/components/messages/annotationUpdate'
           - $ref: '#/components/messages/annotationGetByDocument'
           - $ref: '#/components/messages/annotationExportByDocument'
-          - $ref: '#/components/messages/collabAdd'
-          - $ref: '#/components/messages/collabUpdate'
-          - $ref: '#/components/messages/collabDelete'
-          - $ref: '#/components/messages/commentAdd'
-          - $ref: '#/components/messages/commentGet'
-          - $ref: '#/components/messages/commentUpdate'
-          - $ref: '#/components/messages/commentGetByDocument'
-          - $ref: '#/components/messages/commentExportByDocument'
-          - $ref: '#/components/messages/documentGetAll'
-          - $ref: '#/components/messages/logGetAll'
-          - $ref: '#/components/messages/logAdd'
-          - $ref: '#/components/messages/userGetData'
-          - $ref: '#/components/messages/tagGet'
-          - $ref: '#/components/messages/tagSetGet'
-          - $ref: '#/components/messages/tagSetGetAll'
-          - $ref: '#/components/messages/tagGetAll'
-          - $ref: '#/components/messages/tagSetUpdate'
-          - $ref: '#/components/messages/tagSetPublish'
-          - $ref: '#/components/messages/tagSetDelete'
-          - $ref: '#/components/messages/collabSubscribe'
-          - $ref: '#/components/messages/collabUnsubscribe'
-          - $ref: '#/components/messages/stats'
-          - $ref: '#/components/messages/settingGetAll'
-          - $ref: '#/components/messages/settingSet'
-          - $ref: '#/components/messages/settingGetData'
-          - $ref: '#/components/messages/settingSave'
-          - $ref: '#/components/messages/serviceConnect'
-          - $ref: '#/components/messages/serviceDisconnect'
-          - $ref: '#/components/messages/uploadFile'
-          - $ref: '#/components/messages/documentDelete'
-          - $ref: '#/components/messages/documentUpdate'
-          - $ref: '#/components/messages/documentGetByHash'
     subscribe:
       message:
         oneOf:
           - $ref: '#/components/messages/annotationRefresh'
           - $ref: '#/components/messages/annotationExport'
+  collab:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/collabUpdate'
+          - $ref: '#/components/messages/collabSubscribe'
+    subscribe:
+      message:
+        oneOf:
           - $ref: '#/components/messages/collabRefresh'
           - $ref: '#/components/messages/collabStart'
+  comment:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/commentGet'
+          - $ref: '#/components/messages/commentUpdate'
+          - $ref: '#/components/messages/commentGetByDocument'
+          - $ref: '#/components/messages/commentExportByDocument'
+    subscribe:
+      message:
+        oneOf:
           - $ref: '#/components/messages/commentRefresh'
           - $ref: '#/components/messages/commentExport'
-          - $ref: '#/components/messages/userData'
-          - $ref: '#/components/messages/tagSetRefresh'
-          - $ref: '#/components/messages/tagRefresh'
-          - $ref: '#/components/messages/tagSetPublished'
-          - $ref: '#/components/messages/tagSetUpdated'
+  document:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/documentGet'
+          - $ref: '#/components/messages/documentGetAll'
+          - $ref: '#/components/messages/documentUpdate'
+          - $ref: '#/components/messages/documentGetByHash'
+          - $ref: '#/components/messages/documentGetData'
+          - $ref: '#/components/messages/documentPublish'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/documentRefresh'
+          - $ref: '#/components/messages/documentFile'
+          - $ref: '#/components/messages/documentPublished'
+  log:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/log'
+          - $ref: '#/components/messages/logGetAll'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/logAll'
+  service:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/serviceConnect'
+          - $ref: '#/components/messages/serviceDisconnect'
+          - $ref: '#/components/messages/serviceRequest'
+          - $ref: '#/components/messages/serviceCommand'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/serviceRefresh'
+  setting:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/settingGetAll'
+          - $ref: '#/components/messages/settingGetNavigation'
+          - $ref: '#/components/messages/settingSet'
+          - $ref: '#/components/messages/settingGetData'
+          - $ref: '#/components/messages/settingSave'
+    subscribe:
+      message:
+        oneOf:
           - $ref: '#/components/messages/settingRefresh'
           - $ref: '#/components/messages/settingNavigation'
           - $ref: '#/components/messages/settingData'
+  statistic:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/stats'
+          - $ref: '#/components/messages/statsGetByUser'
+          - $ref: '#/components/messages/statsGetAll'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/statsDataByUser'
+          - $ref: '#/components/messages/statsData'
+ study:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/studyGet'
+          - $ref: '#/components/messages/studyGetAll'
+          - $ref: '#/components/messages/studyGetByHash'
+          - $ref: '#/components/messages/studyUpdate'
+          - $ref: '#/components/messages/studyStart'
+          - $ref: '#/components/messages/studyPublish'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/studyStarted'
+          - $ref: '#/components/messages/studyError'
+          - $ref: '#/components/messages/studyRefresh'
+          - $ref: '#/components/messages/studyPublished'
+ studySession:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/studySessionGet'
+          - $ref: '#/components/messages/studySessionGetAll'
+          - $ref: '#/components/messages/studySessionGetByHash'
+          - $ref: '#/components/messages/studySessionUpdate'
+          - $ref: '#/components/messages/studyStart'
+          - $ref: '#/components/messages/studyPublish'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/studySessionError'
+          - $ref: '#/components/messages/studySessionRefresh'
+ tag:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/tagGet'
+          - $ref: '#/components/messages/tagGetAll'
+          - $ref: '#/components/messages/tagSetGet'
+          - $ref: '#/components/messages/tagSetGetAll'
+          - $ref: '#/components/messages/tagSetUpdate'
+          - $ref: '#/components/messages/tagSetPublish'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/tagSetPublished'
+          - $ref: '#/components/messages/tagRefresh'
+          - $ref: '#/components/messages/tagSetRefresh'
+ upload:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/uploadFile'
+    subscribe:
+      message:
+        oneOf:
           - $ref: '#/components/messages/uploadResult'
-          - $ref: '#/components/messages/documentRefresh'
-          - $ref: '#/components/messages/documentError'
+ user:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/userGetData'
+    subscribe:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/userData'
 
 components:
   messages:

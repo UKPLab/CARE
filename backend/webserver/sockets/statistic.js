@@ -13,7 +13,46 @@ const Socket = require("../Socket.js");
  * @type {StatisticSocket}
  */
 module.exports = class StatisticSocket extends Socket {
+
+    /**
+     * Send statistics to the user
+     * @param {number} userId
+     * @returns {Promise<void>}
+     */
+    async sendStatsByUser(userId) {
+        if (this.isAdmin()) {
+            if (this.models["user"].getById(userId).acceptStats) {
+                const stats = await this.models['statistic'].getAllByKey('userId', userId);
+                this.socket.emit("statsDataByUser", {success: true, userId: userId, statistics: stats});
+            } else {
+                this.socket.emit("statsDataByUser", {
+                    success: false,
+                    userId: userId,
+                    message: "User rights and argument mismatch"
+                });
+                this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
+            }
+
+        }
+    }
+
+    /**
+     * Send statistics to the user
+     * @returns {Promise<void>}
+     */
+    async sendStats() {
+        if (this.isAdmin()) {
+            const stats = await this.models['statistic'].getAll();
+            const filteredStats = stats.filter(stat => this.models["user"].getById(stat.userId).acceptStats);
+            this.socket.emit("statsData", {success: true, statistics: filteredStats});
+        } else {
+            this.socket.emit("statsData", {success: false, message: "User rights and argument mismatch"});
+            this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
+        }
+    }
+
     init() {
+
         this.socket.on("stats", async (data) => {
             try {
                 if (this.user.acceptStats) {
@@ -30,44 +69,29 @@ module.exports = class StatisticSocket extends Socket {
         });
 
         this.socket.on("statsGetByUser", async (data) => {
-            if (this.isAdmin()) {
-                try {
-                    if (this.models["user"].getById(data.userId).acceptStats) {
-                        const stats = await this.models['statistic'].getAllByKey('userId', data.userId);
-                        this.socket.emit("statsDataByUser", {success: true, userId: data.userId, statistics: stats});
-                    }
-                } catch (e) {
-                    this.socket.emit("statsDataByUser", {
-                        success: false,
-                        userId: data.userId,
-                        message: "Failed to retrieve stats for users"
-                    });
-                    this.logger.error("Can't load statistics due to error " + e.toString());
-                }
-            } else {
-                this.socket.emit("statsDataByUser", {
+            try {
+                await this.sendStatsByUser(data.userId);
+            } catch (e) {
+                this.socket.emit("statsData", {
                     success: false,
                     userId: data.userId,
-                    message: "User rights and argument mismatch"
+                    message: "Failed to retrieve stats for users"
                 });
-                this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
+                this.logger.error("Can't load statistics due to error " + e.toString());
             }
+
         });
 
         this.socket.on("statsGetAll", async (data) => {
-            if (this.isAdmin()) {
-                try {
-                    const stats = await this.models['statistic'].getAll();
-                    const filteredStats = stats.filter(stat => this.models["user"].getById(stat.userId).acceptStats);
-                    this.socket.emit("statsData", {success: true, statistics: filteredStats});
-                } catch (e) {
-                    this.socket.emit("statsData", {success: false, message: "Failed to retrieve stats for all"});
-                    this.logger.error("Can't load statistics due to error " + e.toString());
-                }
-            } else {
-                this.socket.emit("statsData", {success: false, message: "User rights and argument mismatch"});
-                this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
+            try {
+                await this.sendStats();
+            } catch (e) {
+                this.socket.emit("statsData", {success: false, message: "Failed to retrieve stats for all"});
+                this.logger.error("Can't load statistics due to error " + e.toString());
             }
+
         });
     }
+
+
 }
