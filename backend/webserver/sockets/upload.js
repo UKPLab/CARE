@@ -22,10 +22,11 @@ module.exports = class UploadSocket extends Socket {
 
         this.socket.on("uploadFile", async (data) => {
 
+            console.log(data);
             if (data.type === "document") {
                 try {
                     const doc = await this.models['document'].add({
-                        name: data.file.name.replace(/.pdf$/, ''),
+                        name: data.name.replace(/.pdf$/, ''),
                         userId: this.userId
                     });
                     const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
