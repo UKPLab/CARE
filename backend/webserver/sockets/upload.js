@@ -22,7 +22,6 @@ module.exports = class UploadSocket extends Socket {
 
         this.socket.on("uploadFile", async (data) => {
 
-            console.log(data);
             if (data.type === "document") {
                 try {
                     const doc = await this.models['document'].add({

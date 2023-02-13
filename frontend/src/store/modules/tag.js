@@ -155,7 +155,7 @@ export default {
             data.forEach((entry) => {
                 const old = state["tagSets"].find(c => c.id === entry.id);
                 if (old !== undefined) {
-                    state["tagSets"].splice(state.indexOf(old), 1);
+                    state["tagSets"].splice(state["tagSets"].indexOf(old), 1);
                 }
                 if (!entry.deleted) {
                     state["tagSets"].push(entry);
@@ -170,7 +170,7 @@ export default {
                 data.forEach((entry) => {
                     const old = state["tags"].find(c => c.id === entry.id);
                     if (old !== undefined) {
-                        state["tags"].splice(state.indexOf(old), 1);
+                        state["tags"].splice(state["tags"].indexOf(old), 1);
                     }
                     if (!entry.deleted) {
                         state["tags"].push(entry);

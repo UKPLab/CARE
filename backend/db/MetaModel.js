@@ -99,11 +99,15 @@ module.exports = class MetaModel extends Model {
      */
     static async add(data) {
         try {
+            const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt'].includes(key));
+
+
             if ("hash" in this.getAttributes()) {
                 data.hash = uuidv4();
             }
 
-            return (await this.create(data)).get({plain: true});
+
+            return (await this.create(this.subselectFields(data, possibleFields))).get({plain: true});
         } catch (err) {
             console.log(err);
         }

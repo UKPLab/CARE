@@ -26,7 +26,8 @@ module.exports = class TagSocket extends Socket {
 
     async sendTagsByUser() {
         try {
-            await this.sendTagsUpdate(await this.models['tag'].getAllByKey('userId', this.userId));
+            const tags = await this.models['tag'].getAll();
+            await this.sendTagsUpdate(tags.filter(t => t.public || t.userId === this.userId || t.userId === null));
         } catch (err) {
             this.logger.error(err);
         }
@@ -42,7 +43,8 @@ module.exports = class TagSocket extends Socket {
 
     async sendTagSetsByUser() {
         try {
-            await this.sendTagSetsUpdate(await this.models['tag_set'].getAllByKey('userId', this.userId));
+            const tagSets = await this.models['tag_set'].getAll();
+            await this.sendTagSetsUpdate(tagSets.filter(t => t.public || t.userId === this.userId || t.userId === null));
         } catch (err) {
             this.logger.error(err);
         }
@@ -115,6 +117,9 @@ module.exports = class TagSocket extends Socket {
             let tagSetObj;
             if (!data.tagSetId || data.tagSetId === 0) {
                 data.tagSet.userId = this.userId;
+                data.tagSet.public = false;
+                data.tags.forEach(t => t.userId = this.userId);
+                data.tags.forEach(t => t.public = false);
                 tagSetObj = await this.models['tag_set'].add(data.tagSet);
             } else {
                 // security check
@@ -125,7 +130,6 @@ module.exports = class TagSocket extends Socket {
                 }
 
                 tagSetObj = await this.models['tag_set'].updateById(data.tagSetId, data.tagSet);
-                tagSetObj = tagSetObj[1];
             }
 
             const tagObjs = await Promise.all(data.tags.map(async (t) => {
@@ -168,8 +172,8 @@ module.exports = class TagSocket extends Socket {
             const tags = await this.models['tag'].getAllByKey('tagSetId', data.tagSetId);
             const newTags = await Promise.all(tags.map(async t => await this.models['tag'].updateById(t.id, {public: true})));
 
-            await this.sendTagSetsUpdate(newTagSet[1]);
-            await this.sendTagsUpdate(newTags.map(t => t[1]));
+            await this.sendTagSetsUpdate(newTagSet);
+            await this.sendTagsUpdate(newTags);
             this.socket.emit("tagSetPublished", {success: true});
 
         });

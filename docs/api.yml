@@ -36,7 +36,6 @@ channels:
           - $ref: '#/components/messages/tagSetGet'
           - $ref: '#/components/messages/tagSetGetAll'
           - $ref: '#/components/messages/tagGetAll'
-          - $ref: '#/components/messages/tagGetAll'
           - $ref: '#/components/messages/tagSetUpdate'
           - $ref: '#/components/messages/tagSetPublish'
           - $ref: '#/components/messages/tagSetDelete'

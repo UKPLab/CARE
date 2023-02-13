@@ -85,8 +85,67 @@ describe("Test Websockets", () => {
         clientSocket.emit("documentUpdate", {documentId: 1, name: "test"})
     });
 
+    test("Load tags", (done) => {
+        clientSocket.on("tagRefresh", (data) => {
+            expect(data.length).toBeGreaterThan(0);
+            expect(data.filter((t) => t.tagSetId === 1).length).toBeGreaterThan(0);
+            done();
+        })
+        clientSocket.emit("tagGetAll")
+    });
 
+    test("Load tags by User", (done) => {
+        // TODO implement, login with guest user and check if tags are loaded
+        done();
+    })
 
+    test("Load tagSets", (done) => {
+        clientSocket.on("tagSetRefresh", (data) => {
+            expect(data.length).toBeGreaterThan(0);
+            expect(data.find((t) => t.id === 1)['creator_name']).toBe("System");
+            done();
+        })
+        clientSocket.emit("tagSetGetAll")
+    });
+
+    test("Load tagSets by User", (done) => {
+        // TODO implement, login with guest user and check if tagSets are loaded
+        done();
+    })
+
+    test("TagSet Add / Publish", (done) => {
+        clientSocket.on("tagSetPublished", (data) => {
+            expect(data.success).toBe(true);
+            done();
+        });
+        clientSocket.on("tagSetRefresh", (data) => {
+            expect(data.find((t) => t.name === 'TestTagSet')['id']).toBeGreaterThan(0);
+            clientSocket.emit("tagSetPublish", {tagSetId: data.find((t) => t.name === 'TestTagSet')['id']})
+        });
+        clientSocket.emit("tagSetUpdate", {
+            "tagSetId": 0,
+            "tagSet": {
+                "id": 0,
+                "name": "TestTagSet",
+                "description": "",
+            },
+            "tags": []
+        })
+    });
+
+    test("TagSet Update", (done) => {
+        clientSocket.on("tagSetRefresh", (data) => {
+            expect(data.find((t) => t.name === 'ChangeName')['id']).toBe(1);
+            done();
+        });
+        clientSocket.emit("tagSetUpdate", {
+            "tagSetId": 1,
+            "tagSet": {
+                "name": "ChangeName",
+            },
+            "tags": []
+        })
+    });
 
 
 
@@ -94,7 +153,7 @@ describe("Test Websockets", () => {
 
     test("Test Settings", (done) => {
         clientSocket.on("settingRefresh", (data) => {
-            expect(data["tags.tagSet.default"]).toBe(1);
+            expect(data["tags.tagSet.default"]).toBe("1");
             done();
         })
         clientSocket.emit("settingGetAll")
@@ -225,21 +284,6 @@ describe("Test Websockets", () => {
         clientSocket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll", data: {}});
     });
 
-    test("Load tags", (done) => {
-        clientSocket.on("tagRefresh", (data) => {
-            expect(data.length).toBeGreaterThan(0);
-            done();
-        })
-        clientSocket.emit("tagGetAll")
-    });
-
-    test("Load tagSets", (done) => {
-        clientSocket.on("tagSetRefresh", (data) => {
-            expect(data.length).toBeGreaterThan(0);
-            done();
-        })
-        clientSocket.emit("tagSetGetAll")
-    });
 
     test("Get User Data", (done) => {
         clientSocket.on("userData", (data) => {
