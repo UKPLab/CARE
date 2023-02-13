@@ -62,6 +62,19 @@ describe("Test Websockets", () => {
         });
     });
 
+    test("Document by Hash Failure", (done) => {
+        clientSocket.on("documentError", (data) => {
+            expect(data.documentHash).toBe("test");
+            done();
+        })
+        clientSocket.emit("documentGetByHash", {documentHash: "test"})
+    })
+
+    test("Document get by Hash", (done) => {
+        // TODO implement, document get by hash
+        done();
+    })
+
     test("Document File Load", (done) => {
         clientSocket.on("documentFile", (data) => {
             expect("file" in data).toBe(true);
@@ -147,8 +160,24 @@ describe("Test Websockets", () => {
         })
     });
 
+    test("Add and update annotation", (done) => {
+        clientSocket.on("annotationRefresh", (data) => {
+            console.log("annotaiton", data);
+            expect(data.length).toBeGreaterThan(0);
+            expect(data.find((t) => t.documentId === 1)['tagId']).toBe(1);
+            clientSocket.emit("annotationUpdate", {annotationId: 1, tagId: 2})
+            // TODO implement, check if annotation is updated
+            // TODO add delete annotation
+            // TODO think to subscribe document
+            done();
+        })
+        clientSocket.emit("annotationUpdate", {documentId: 1, tagId: 1}) // add annotation
+    })
 
-
+    test("Add Page Note", (done) => {
+        // TODO implement, add page note
+        done();
+    });
 
 
     test("Test Settings", (done) => {

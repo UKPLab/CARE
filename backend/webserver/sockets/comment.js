@@ -64,18 +64,14 @@ module.exports = class CommentSocket extends Socket {
                 return;
             }
 
-            const newComment = await this.models['comment'].updateById('commentId', Object.assign(data, {draft: false}));
-            this.io.to("doc:" + newComment[1].documentId).emit("commentRefresh", await this.updateCreatorName(newComment[1].get({plain: true})));
+            const newComment = await this.models['comment'].updateById(data.commentId, Object.assign(data, {draft: false}));
+            this.io.to("doc:" + newComment.documentId).emit("commentRefresh", await this.updateCreatorName(newComment));
 
         } catch
             (e) {
             this.logger.error("Could not update comment in database. Error: " + e);
+            this.sendToast("Internal server error. Failed to update comment.", "Internal server error", "danger");
 
-            if (e.name === "InvalidCommentParameters") {
-                this.sendToast(e.message, "Invalid comment parameters.", "danger");
-            } else {
-                this.sendToast("Internal server error. Failed to update comment.", "Internal server error", "danger");
-            }
         }
     }
 
@@ -120,7 +116,7 @@ module.exports = class CommentSocket extends Socket {
                 return;
             }
         } else {
-            data.userId = this.user_id;
+            data.userId = this.userId;
         }
 
         try {
@@ -132,7 +128,7 @@ module.exports = class CommentSocket extends Socket {
                 documentId: data.documentId,
                 studySessionId: data.studySessionId,
                 annotationId: data.annotationId !== undefined ? data.annotationId : null,
-                commentId: data.commentId !== undefined ? data.commentId : null
+                parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null
             }
 
             this.socket.emit("commentRefresh", await this.updateCreatorName(await this.models['comment'].add(newComment)))

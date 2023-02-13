@@ -96,7 +96,7 @@ export default {
         selector: selectors,
       }));
 
-      this.$socket.emit('annotationAdd', {
+      this.$socket.emit('annotationUpdate', {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
         selectors: {target},

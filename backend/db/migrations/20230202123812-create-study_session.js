@@ -30,7 +30,7 @@ module.exports = {
                     allowNull: false,
                     defaultValue: false
                 },
-                studySessionId: {
+                parentStudySessionId: {
                     type: Sequelize.INTEGER,
                     references: {
                         model: "study_session", key: "id"

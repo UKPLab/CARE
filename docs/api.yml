@@ -51,6 +51,7 @@ channels:
           - $ref: '#/components/messages/uploadFile'
           - $ref: '#/components/messages/documentDelete'
           - $ref: '#/components/messages/documentUpdate'
+          - $ref: '#/components/messages/documentGetByHash'
     subscribe:
       message:
         oneOf:
@@ -70,6 +71,7 @@ channels:
           - $ref: '#/components/messages/settingData'
           - $ref: '#/components/messages/uploadResult'
           - $ref: '#/components/messages/documentRefresh'
+          - $ref: '#/components/messages/documentError'
 
 components:
   messages:

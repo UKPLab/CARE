@@ -59,12 +59,15 @@ module.exports = class AnnotationSocket extends Socket {
                         return;
                     }
 
+                    data.draft = false;
                     const newAnno = await this.models['annotation'].updateById(data.annotationId, data)
 
-                    if (newAnno[1].deleted) {
-                        await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno[1].id);
+
+                    console.log(newAnno);
+                    if (newAnno.deleted) {
+                        await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno.id);
                     }
-                    this.io.to("doc:" + newAnno[1].documentId).emit("annotationRefresh", await this.updateCreatorName(newAnno[1].get({plain: true})));
+                    this.io.to("doc:" + newAnno.documentId).emit("annotationRefresh", await this.updateCreatorName(newAnno));
                 } else {
                     const newAnnotation = {
                         documentId: data.documentId,
@@ -88,12 +91,7 @@ module.exports = class AnnotationSocket extends Socket {
                 }
             } catch (e) {
                 this.logger.error("Could not update annotation and/or comment in database. Error: " + e);
-
-                if (e.name === "InvalidAnnotationParameters" || e.name === "InvalidCommentParameters") {
-                    this.sendToast("Annotation was not saved", e.message, "danger");
-                } else {
-                    this.sendToast("Internal server error. Failed to save annotation.", "Internal server error", "danger");
-                }
+                this.sendToast("Internal server error. Failed to save annotation.", "Internal server error", "danger");
             }
         });
 

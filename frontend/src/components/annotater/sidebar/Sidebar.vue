@@ -160,7 +160,7 @@ export default {
       await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
     },
     createDocumentComment() {
-      this.$socket.emit('commentAdd', {
+      this.$socket.emit('commentUpdate', {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
         annotationId: null,
