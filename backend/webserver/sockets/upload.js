@@ -15,33 +15,33 @@ const Socket = require("../Socket.js");
  */
 module.exports = class UploadSocket extends Socket {
 
+    async uploadDocument(data) {
+        const doc = await this.models['document'].add({
+            name: data.name.replace(/.pdf$/, ''),
+            userId: this.userId
+        });
+        const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+
+        fs.writeFile(target, data.file, (err) => {
+            this.socket.emit("uploadResult", {success: !err, documentId: doc.id})
+        });
+
+        this.emit("documentRefresh", doc);
+    }
+
     init() {
 
         //Make sure upload directory exists
         fs.mkdirSync(UPLOAD_PATH, {recursive: true});
 
         this.socket.on("uploadFile", async (data) => {
-
-            if (data.type === "document") {
-                try {
-                    const doc = await this.models['document'].add({
-                        name: data.name.replace(/.pdf$/, ''),
-                        userId: this.userId
-                    });
-                    const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
-
-                    fs.writeFile(target, data.file, (err) => {
-                        this.socket.emit("uploadResult", {success: !err, documentId: doc.id})
-                    });
-
-                    this.socket.emit("documentRefresh", await this.updateCreatorName(doc));
-
-                } catch (err) {
-                    this.logger.error("Upload error: " + err);
-                    this.socket.emit("uploadResult", {success: false});
+            try {
+                if (data.type === "document") {
+                    await this.uploadDocument(data);
                 }
-
-
+            } catch (err) {
+                this.logger.error("Upload error: " + err);
+                this.socket.emit("uploadResult", {success: false});
             }
 
         });

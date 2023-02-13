@@ -8,8 +8,6 @@ const Socket = require("../Socket.js");
  */
 module.exports = class UserSocket extends Socket {
 
-    function
-
     /**
      * Add username as creator_name of an database entry with column creator
      *
@@ -31,6 +29,11 @@ module.exports = class UserSocket extends Socket {
         }));
     }
 
+    /**
+     * show only specific fields of a user
+     * @param user
+     * @return {{[p: string]: any}}
+     */
     minimalFields(user) {
         const include = ["id", "userName"]
 
@@ -40,23 +43,30 @@ module.exports = class UserSocket extends Socket {
         return Object.fromEntries(filtered);
     }
 
+    /**
+     * Send all user data to the client (only for admins)
+     * @return {Promise<void>}
+     */
+    async sendUserData() {
+        if (this.isAdmin()) {
+            const users = await this.models['user'].getAll();
+            const mappedUsers = users.map(x => this.minimalFields(x));
+
+            this.socket.emit("userData", {success: true, users: mappedUsers});
+        } else {
+            this.socket.emit("userData", {success: false, message: "User rights and argument mismatch"});
+            this.logger.error("User right and request parameter mismatch");
+        }
+    }
+
     init() {
 
         this.socket.on("userGetData", async (data) => {
-
-            if (this.isAdmin()) {
-                try {
-                    const users = await this.models['user'].getAll();
-                    const mappedUsers = users.map(x => this.minimalFields(x));
-
-                    this.socket.emit("userData", {success: true, users: mappedUsers});
-                } catch (e) {
-                    this.socket.emit("userData", {success: false, message: "Failed to retrieve all users"});
-                    this.logger.error("DB error while loading all users from database" + JSON.stringify(e));
-                }
-            } else {
-                this.socket.emit("userData", {success: false, message: "User rights and argument mismatch"});
-                this.logger.error("User right and request parameter mismatch");
+            try {
+                await this.sendUserData();
+            } catch (e) {
+                this.socket.emit("userData", {success: false, message: "Failed to retrieve all users"});
+                this.logger.error("DB error while loading all users from database" + JSON.stringify(e));
             }
         });
 

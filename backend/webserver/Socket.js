@@ -40,7 +40,7 @@ module.exports = class Socket {
     /**
      * Get initialized socket class object by class name
      * @param {string} name The name of the socket class
-     * @returns {Socket} The socket class object
+     * @returns {Socket<>|null} The socket class object
      */
     getSocket(name) {
         if (name in this.server.availSockets[this.socket.id]) {
@@ -113,6 +113,35 @@ module.exports = class Socket {
         } else {
             return true;
         }
+    }
+
+    /**
+     * Emit to the client and add the creator_name to the data where userId exists
+     * @param {string} event The event to emit
+     * @param {dict|[dict]} data The data to send
+     * @param {boolean} updateCreatorName If the creator_name should be updated
+     * @return {void}
+     */
+    async emit(event, data, updateCreatorName = true) {
+        if (updateCreatorName) {
+            data = await this.updateCreatorName(data);
+        }
+        this.socket.emit(event, data);
+    }
+
+    /**
+     * Emit to all clients on document and update the creator_name
+     * @param {string} documentId The documentId to emit to
+     * @param {string} event The event to emit
+     * @param {dict|[dict]} data The data to send
+     * @param {boolean} updateCreatorName If the creator_name should be updated
+     * @return {void}
+     */
+    async emitDoc(documentId, event, data, updateCreatorName = true) {
+        if (updateCreatorName) {
+            data = await this.updateCreatorName(data);
+        }
+        this.io.to("doc:" + documentId).emit(event, data);
     }
 
 
