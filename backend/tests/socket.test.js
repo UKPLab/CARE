@@ -2,6 +2,7 @@ const request = require('supertest')
 const Init = require("../index.js");
 const {io: Client} = require("socket.io-client");
 const Server = require("../webserver/Server.js");
+const fs = require("fs");
 
 const COOKIE_NAME = "connect.sid";
 
@@ -40,6 +41,7 @@ describe("Test Websockets", () => {
         clientSocket = Client("http://localhost:3010", options);
         this.server.db.sequelize.sync();
     });
+
 
     test("Test Settings", (done) => {
         clientSocket.on("settingRefresh", (data) => {
@@ -88,6 +90,23 @@ describe("Test Websockets", () => {
         clientSocket.emit("documentGetAll")
     });
 
+    test("Document Upload", (done) => {
+        const FILE = `${__dirname}/../../resources/showcase.pdf`;
+        console.log(FILE);
+        clientSocket.on("documentRefresh", (data) => {
+            console.log(data);
+            expect(data.find(doc => doc.id === 2)['name']).toBe("testfile");
+            done();
+        })
+        fs.readFile(FILE, (err, data) => {
+            if (err) {
+                throw err;
+            }
+            console.log(data);
+            clientSocket.emit("documentUpload", {type: 'document', file: data, name: "testfile"})
+        });
+    });
+
     test("Load document", (done) => {
         clientSocket.on("documentFile", (data) => {
             expect("file" in data).toBe(true);
@@ -95,11 +114,6 @@ describe("Test Websockets", () => {
             done();
         })
         clientSocket.emit("documentGet", {documentId: 1})
-    });
-
-    test("Upload Document", (done) => {
-        // /TODO implement
-        done();
     });
 
     test("Document Handling", (done) => {
