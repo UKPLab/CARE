@@ -49,6 +49,9 @@ channels:
           - $ref: '#/components/messages/settingSave'
           - $ref: '#/components/messages/serviceConnect'
           - $ref: '#/components/messages/serviceDisconnect'
+          - $ref: '#/components/messages/uploadFile'
+          - $ref: '#/components/messages/documentDelete'
+          - $ref: '#/components/messages/documentUpdate'
     subscribe:
       message:
         oneOf:
@@ -66,6 +69,8 @@ channels:
           - $ref: '#/components/messages/settingRefresh'
           - $ref: '#/components/messages/settingNavigation'
           - $ref: '#/components/messages/settingData'
+          - $ref: '#/components/messages/uploadResult'
+          - $ref: '#/components/messages/documentRefresh'
 
 components:
   messages:
