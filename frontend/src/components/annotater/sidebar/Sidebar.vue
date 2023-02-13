@@ -129,16 +129,6 @@ export default {
       });
     })
   },
-  watch: {
-    studySessionId(newVal, oldVal) {
-      if (oldVal !== newVal) {
-        console.log(oldVal);
-        console.log(newVal);
-        console.log(this.studySessionId);
-        this.load();
-      }
-    }
-  },
   methods: {
     ...mapMutations({
       toggleSidebar: "anno/TOGGLE_SIDEBAR",

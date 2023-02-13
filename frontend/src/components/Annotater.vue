@@ -138,9 +138,8 @@ export default {
   watch: {
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        console.log(oldVal);
-        console.log(newVal);
-        console.log(this.studySessionId);
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+
       }
     }
   },
