@@ -35,7 +35,7 @@ module.exports = class UploadSocket extends Socket {
                         this.socket.emit("uploadResult", {success: !err, documentId: doc.id})
                     });
 
-                    this.socket.emit("documentRefresh", doc);
+                    this.socket.emit("documentRefresh", await this.updateCreatorName(doc));
 
                 } catch (err) {
                     this.logger.error("Upload error: " + err);

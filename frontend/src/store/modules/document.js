@@ -16,7 +16,7 @@ export default {
     state: getDefaultState(),
     getters: {
         getDocuments: state => {
-            return state;
+            return state.filter(doc => !doc.deleted);
         },
         getDocument: state => id => {
             return state.find(doc => doc.id === id);

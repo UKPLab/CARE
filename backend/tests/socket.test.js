@@ -42,6 +42,55 @@ describe("Test Websockets", () => {
         this.server.db.sequelize.sync();
     });
 
+    test("Load Documents", (done) => {
+        clientSocket.on("documentRefresh", (data) => {
+            expect(data.length).toBeGreaterThan(0);
+            expect(data[0].name).toBe("Showcase Document");
+            done();
+        })
+        clientSocket.emit("documentGetAll")
+    });
+
+    test("Document Upload", (done) => {
+        const FILE = `${__dirname}/../../resources/showcase.pdf`;
+        clientSocket.on("uploadResult", (data) => {
+            expect(data.success).toBe(true);
+            done();
+        })
+        fs.readFile(FILE, (err, data) => {
+            clientSocket.emit("uploadFile", {type: 'document', file: data, name: "testfile"})
+        });
+    });
+
+    test("Document File Load", (done) => {
+        clientSocket.on("documentFile", (data) => {
+            expect("file" in data).toBe(true);
+            expect("document" in data).toBe(true);
+            done();
+        })
+        clientSocket.emit("documentGet", {documentId: 1})
+    });
+
+    test("Document Handling", (done) => {
+        let checkDeleted = false;
+        clientSocket.on("documentRefresh", (data) => {
+            expect(data.find(doc => doc.id === 1)['name']).toBe("test");
+            clientSocket.emit("documentDelete", {documentId: 1})
+            if (checkDeleted) {
+                expect(data.find(doc => doc.id === 1)['deleted']).toBe(true);
+                done();
+            }
+            checkDeleted = true;
+        })
+        clientSocket.emit("documentUpdate", {documentId: 1, name: "test"})
+    });
+
+
+
+
+
+
+
 
     test("Test Settings", (done) => {
         clientSocket.on("settingRefresh", (data) => {
@@ -79,60 +128,6 @@ describe("Test Websockets", () => {
             done();
         })
         clientSocket.emit("settingGetNavigation")
-    });
-
-    test("Load Documents", (done) => {
-        clientSocket.on("documentRefresh", (data) => {
-            expect(data.length).toBeGreaterThan(0);
-            expect(data[0].name).toBe("Showcase Document");
-            done();
-        })
-        clientSocket.emit("documentGetAll")
-    });
-
-    test("Document Upload", (done) => {
-        const FILE = `${__dirname}/../../resources/showcase.pdf`;
-        console.log(FILE);
-        clientSocket.on("documentRefresh", (data) => {
-            console.log(data);
-            expect(data.find(doc => doc.id === 2)['name']).toBe("testfile");
-            done();
-        })
-        fs.readFile(FILE, (err, data) => {
-            if (err) {
-                throw err;
-            }
-            console.log(data);
-            clientSocket.emit("documentUpload", {type: 'document', file: data, name: "testfile"})
-        });
-    });
-
-    test("Load document", (done) => {
-        clientSocket.on("documentFile", (data) => {
-            expect("file" in data).toBe(true);
-            expect("document" in data).toBe(true);
-            done();
-        })
-        clientSocket.emit("documentGet", {documentId: 1})
-    });
-
-    test("Document Handling", (done) => {
-        let checkDeleted = false;
-        clientSocket.on("documentRefresh", (data) => {
-            expect(data.find(doc => doc.id === 1)['name']).toBe("test");
-            clientSocket.emit("documentDelete", {documentId: 1})
-            if (checkDeleted) {
-                expect(data.find(doc => doc.id === 1)['deleted']).toBe(true);
-                done();
-            }
-            checkDeleted = true;
-        })
-        clientSocket.emit("documentUpdate", {documentId: 1, name: "test"})
-    });
-
-    test("Update Document", (done) => {
-        // /TODO implement
-        done();
     });
 
     test("Load Logs", (done) => {
