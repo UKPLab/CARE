@@ -249,9 +249,9 @@ export default {
       this.$refs.collab.startCollab();
     },
     reply() {
-      this.$socket.emit('commentAdd', {
+      this.$socket.emit('commentUpdate', {
         "documentId": this.documentId,
-        "commentId": this.commentId,
+        "parentCommentId": this.commentId,
         "studySessionId": this.studySessionId,
       });
     },

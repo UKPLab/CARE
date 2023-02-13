@@ -14,10 +14,10 @@ module.exports = class CollabSocket extends Socket {
             try {
                 if (data.collabId && data.collabId !== 0) {
                     const collabUpdate = await this.models["collab"].updateById(data.collabId, {timestamp: Date.now()});
-                    this.io.to("doc:" + collabUpdate[1].documentId).emit("collabRefresh", collabUpdate[1]);
+                    this.io.to("doc:" + collabUpdate.documentId).emit("collabRefresh", collabUpdate);
                 } else {
                     const newCollab = await this.models["collab"].add(Object.assign(data, {
-                        userId: this.user_id,
+                        userId: this.userId,
                         timestamp: Date.now()
                     }))
                     this.socket.emit("collabStart", {collabId: newCollab.id, collabHash: newCollab.collabHash});

@@ -99,6 +99,18 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
+        this.socket.on("documentGetByHash", async (data) => {
+            try {
+                const doc = await this.models['document'].getByHash(data.documentHash)
+                if (this.checkDocumentAccess(doc.id)) {
+                    this.socket.emit("documentRefresh", await this.updateCreatorName(doc));
+                }
+            } catch (e) {
+                this.logger.error(e);
+                this.socket.emit("documentError", {message: "Document not found!", documentHash: data.documentHash});
+            }
+        });
+
         this.socket.on("documentGet", async (data) => {
             try {
                 const doc = await this.models['document'].getById(data.documentId)

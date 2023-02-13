@@ -26,7 +26,7 @@ export default {
                 .find(comm => comm.commentId === null);
         },
         getCommentsByCommentId: (state) => (comment_id) => {
-            return state.filter(comment => !comment.deleted).filter(comm => comm.commentId === comment_id).sort(
+            return state.filter(comment => !comment.deleted).filter(comm => comm.parentCommentId === comment_id).sort(
                 function(a, b) {
                     let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
                     if (keyA < keyB) return -1;
@@ -41,7 +41,7 @@ export default {
         },
         getDocumentComments: (state) => (documentId) => {
             return state.filter(comment => !comment.deleted)
-                .filter(comm => comm.documentId === documentId && comm.commentId === null);
+                .filter(comm => comm.documentId === documentId && comm.parentCommentId === null);
         }
     },
     mutations: {

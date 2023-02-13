@@ -16,6 +16,9 @@ export default {
       required: true,
     },
   },
+  mounted() {
+    this.$socket.emit("documentGetByHash", {documentHash: this.documentHash})
+  },
   sockets: {
     documentError: function (data) {
       if (data.documentHash === this.documentHash) {
@@ -39,11 +42,6 @@ export default {
       return 0;
     }
   },
-  methods: {
-    load() {
-      this.$socket.emit("documentGetByHash", {documentHash: this.documentHash})
-    },
-  }
 }
 </script>
 

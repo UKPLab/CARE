@@ -17,14 +17,15 @@
 
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
-        <button v-if="studySessionId === null" class="btn rounded-circle"
-                :title="showAll ?  'Hide study comments' : 'Show study comments'" type="button"
+        <button v-if="studySessionId === null" :title="showAll ?  'Hide study comments' : 'Show study comments'"
+                class="btn rounded-circle" type="button"
                 @click="setSetting({key: 'annotator.showAllComments', value: !showAll})">
-          <LoadIcon :size="18" :icon-name="showAll ?  'eye-slash-fill' : 'eye-fill'"></LoadIcon>
+          <LoadIcon :icon-name="showAll ?  'eye-slash-fill' : 'eye-fill'" :size="18"></LoadIcon>
         </button>
       </li>
       <li class="nav-item">
-        <button v-if="nlpEnabled" class="btn rounded-circle" :title="nlpActive ?  'Deactivate NLP support' : 'Activate NLP support'" type="button"
+        <button v-if="nlpEnabled" :title="nlpActive ?  'Deactivate NLP support' : 'Activate NLP support'"
+                class="btn rounded-circle" type="button"
                 @click="toggleNlp">
           <LoadIcon :color="(!nlpActive) ?'#777777':'#097969'" :size="18"
                     icon-name="robot"></LoadIcon>
