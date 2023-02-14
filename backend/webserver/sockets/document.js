@@ -193,7 +193,7 @@ module.exports = class DocumentSocket extends Socket {
         });
 
         this.socket.on("documentGetAll", async (data) => {
-            await this.refreshAllDocuments((data.userId) ? data.userId : null);
+            await this.refreshAllDocuments((data && data.userId) ? data.userId : null);
         });
 
         this.socket.on("documentUpdate", async (data) => {

@@ -1,0 +1,63 @@
+const Server = require("../webserver/Server.js");
+const {getSocketClient} = require("./utils.js");
+
+describe("Test Websockets - Service - NLP", () => {
+    let clientSocket;
+
+    beforeAll(async () => {
+        this.server = new Server();
+        this.server.start(3010);
+    });
+
+    beforeEach(async () => {
+        clientSocket = await getSocketClient(this.server, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
+        this.server.db.sequelize.sync();
+    });
+
+    test("Service - NLP Service", (done) => {
+        clientSocket.on("serviceRefresh", (data) => {
+            if (data['type'] === 'skillUpdate') {
+                expect(data['type']).toBe("skillUpdate");
+                expect(data['service']).toBe("NLPService");
+                expect(data['data'].length).toBeGreaterThan(0);
+                expect(data['data'].filter(d => d.name === 'sentiment_classification').length).toBeGreaterThan(0);
+                clientSocket.emit("serviceCommand", {
+                    service: "NLPService",
+                    command: "skillGetConfig",
+                    data: {name: "sentiment_classification"}
+                });
+            }
+            if (data['type'] === 'skillConfig') {
+                expect(data['type']).toBe("skillConfig");
+                expect(data['data']['name']).toBe("sentiment_classification");
+                clientSocket.emit("serviceRequest", {
+                    data: {
+                        id: 1,
+                        name: "sentiment_classification",
+                        data: {}
+                    }
+                });
+            }
+            if (data['type'] === 'skillResults') {
+                console.log(data);
+                // TODO implement
+                expect(data['data'].length).toBeGreaterThan(0);
+
+            }
+
+
+        })
+        clientSocket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll", data: {}});
+    });
+
+    afterEach(() => {
+        if (clientSocket.connected) {
+            clientSocket.disconnect();
+        }
+    });
+
+    afterAll(async () => {
+        this.server.stop();
+    });
+
+});
