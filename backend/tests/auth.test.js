@@ -5,17 +5,23 @@ describe('Test Login', () => {
 
     beforeAll(async () => {
         this.server = new Server();
-        this.server.start(3020);
-    });
-
-    beforeEach(async () => {
-        await this.server.db.sequelize.sync();
+        this.http = this.server.start(3020);
     });
 
     /**
      * Test the /POST login route with valid credentials
      */
     test('Admin Login', async () => {
+        return request(this.server.http)
+            .post('/auth/login')
+            .send({
+                username: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PWD,
+            }).expect(200);
+        //expect(res.statusCode).toEqual(200)
+    })
+
+    test('Admin Login2', async () => {
         return request(this.server.http)
             .post('/auth/login')
             .send({

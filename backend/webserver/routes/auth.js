@@ -24,7 +24,8 @@ module.exports = function (server) {
                 return res.status(500).send("Failed to login");
             }
             if (!user) {
-                server.logger.info("User not found: " + info);
+                server.logger.info("User not found: " +
+                    JSON.stringify(info));
                 return res.status(401).send(info);
             }
             req.logIn(user, async function (err) {

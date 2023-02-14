@@ -36,7 +36,7 @@ module.exports = {
             },
             selectors: {
                 type: Sequelize.JSONB,
-                allowNull: false,
+                allowNull: true,
             },
             draft: {
                 type: Sequelize.BOOLEAN,
