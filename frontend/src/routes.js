@@ -1,27 +1,15 @@
-/* routes.js - Front-end vue routes
-
-Specifies all Vue routes in one file. Add new routes here to the "routes" attribute.
-Additionally, the vue router is configured and basic user authentication to routes
-that require a login is realized.
-
-Author: Dennis Zyska (zyska@ukp...)
-Co-Author: Nils Dycke (dycke@ukp...)
-Source: -
-*/
-import * as VueRouter from 'vue-router'
-import store from "./store";
-
-
-/*
- * Defines the routes for Vue. Each route links to a specific route and by passing
- * meta-data on the type of the route.
- *
- * Add a new route by specifying a path, a component and (if authentication is required) adding suitable metadata.
+/**
+ * Specifies all Vue routes in one file. Add new routes here to the "routes" attribute.
+ * Additionally, the vue router is configured and basic user authentication to routes
+ * that require a login is realized.
  *
  * Pass metadata via the meta attribute. Current supported fields:
  * > requiresAuth: true/false <=> true, iff a login is required
- */
-
+ *
+ * @author: Dennis Zyska, Nils Dycke
+**/
+import * as VueRouter from 'vue-router'
+import store from "./store";
 
 const routes = [
     {path: "/", redirect: "/dashboard"},
