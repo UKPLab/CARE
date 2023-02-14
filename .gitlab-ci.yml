@@ -53,7 +53,7 @@ test:
   script:
     - docker-compose -f docker-dev.yml --env-file ".env.test" up -d postgres
     - docker-compose ps
-    - make ENV=test test-backend
+    - make ENV=test test
 
 # https://stackoverflow.com/questions/36399848/install-node-in-dockerfile
 

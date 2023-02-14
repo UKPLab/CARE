@@ -16,8 +16,7 @@ help:
 	@echo "make dev-build       		  		Run the app with a build version of the frontend"
 	@echo "make dev-backend      		 		Run only the backend with already builded frontend"
 	@echo "make dev-build-frontend   		 	Only build frontend for backend-dev development"
-	@echo "make test-backend					Run backend tests"
-	@echo "make test-fronted					Run frontend tests"
+	@echo "make test							Run backend tests"
 	@echo "make init             		 		Initializes command"
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
 	@echo "make build-frontend                  Build frontend in production mode"
@@ -67,12 +66,8 @@ build:
 build-frontend: frontend/node_modules/.uptodate
 	cd frontend && npm run frontend-build
 
-.PHONE: test-frontend
-test-frontend: frontend/node_modules/.uptodate
-	cd frontend && npm run test
-
-.PHONY: test-backend
-test-backend: backend/node_modules/.uptodate
+.PHONY: test
+test: backend/node_modules/.uptodate
 	cd backend && npm run test
 
 .PHONY: build-dev
