@@ -140,14 +140,14 @@ module.exports = class StudySocket extends Socket {
         const doc = await this.models['document'].getById(data.documentId);
         if (this.checkUserAccess(doc.userId)) {
             let study;
-            if(data.studyId){
-                study = await this.updateStudy(null, data);
+            if(data.id){
+                study = await this.updateStudy(data.id, data);
             } else {
                 study = await this.addStudy(data);
             }
 
             if (study) {
-                this.socket.emit("studyPublished", {success: true, studyHash: study[0].hash});
+                this.socket.emit("studyPublished", {success: true, studyHash: study.hash});
             } else {
                 this.socket.emit("studyPublished", {
                     success: false, message: "Error publishing study."
@@ -173,7 +173,7 @@ module.exports = class StudySocket extends Socket {
 
         this.socket.on("studyGetAll", async (data) => {
             try {
-                await this.sendStudies((data.userId) ? data.userId : null);
+                await this.sendStudies((data && data.userId) ? data.userId : null);
             } catch (err) {
                 this.logger.error(err);
             }

@@ -79,7 +79,8 @@ export default {
     },
     docs() {
       return this.documents.filter(doc => doc.userId === this.userId).map(d => {
-        d.manage = [
+        let newD = {... d};
+        newD.manage = [
           {
             icon: "box-arrow-in-right",
             options: {
@@ -127,7 +128,7 @@ export default {
         },  */
         ];
         if (this.studiesEnabled) {
-          d.manage.push({
+          newD.manage.push({
             icon: "person-workspace",
             options: {
               iconOnly: true,
@@ -139,7 +140,7 @@ export default {
             action: "studyCoordinator",
           });
         }
-        return d;
+        return newD;
       });
     },
     studiesEnabled() {
