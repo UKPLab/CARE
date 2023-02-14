@@ -1,18 +1,18 @@
-/* Store for navigation elements
-
-Defines the store for navigation elements
-Author: Nils Dycke, Dennis Zyska
-Source: -
-*/
-
-const getDefaultState = () => {
-    return {};
-};
+/**
+ * Store for settings
+ *
+ * Defines the store for all settings of the application
+ *
+ * @module store/settings
+ * @author Nils Dycke, Dennis Zyska
+ */
 
 export default {
     namespaced: true,
     strict: true,
-    state: getDefaultState(),
+    state: () => {
+        return {};
+    },
     getters: {
         getSettings: state => {
             return state
@@ -38,7 +38,5 @@ export default {
             state[key] = value;
         },
     },
-    actions: {
-
-    }
+    actions: {}
 };

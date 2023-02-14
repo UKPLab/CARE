@@ -30,7 +30,7 @@ app.use(BToastPlugin);
 // Socket IO
 // https://www.npmjs.com/package/vue-3-socket.io
 // Server URL for hot reload
-import getServerURL from './assets/serverUrl.js';
+import getServerURL from '@/assets/serverUrl.js';
 app.use(new VueSocketIO({
     debug: (process.env.NODE_ENV !== 'production'),
     connection: SocketIO(getServerURL(),

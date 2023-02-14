@@ -1,10 +1,12 @@
-/* tag.js - Store for tags
-
-Defines the store module responsible for tags assignable to annotations.
-
-Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
-Source: -
-*/
+/**
+ * Store for tags
+ *
+ * Defines the store module responsible for tags assignable to annotations.
+ *
+ * @module store/tags
+ * @author Dennis Zyska, Nils Dycke
+ */
+import refreshState from "../utils";
 
 const emptyTagSet = () => {
     return {
@@ -72,17 +74,17 @@ export default {
     strict: true,
     state: getDefaultState(),
     getters: {
-        getTags: (state) => (id, hideDeleted = true) => {
+        getTags: (state) => (id) => {
             if (id === undefined || id === null || isNaN(id)) {
                 return []
             }
-            return state["tags"].filter(tag => tag.tagSetId === id && (!hideDeleted || !tag.deleted));
+            return state["tags"].filter(tag => tag.tagSetId === id);
         },
-        getAllTags: (state) => (hideDeleted = true) => {
-            return state["tags"].filter(tag => (!hideDeleted || !tag.deleted));
+        getAllTags: (state) => {
+            return state["tags"];
         },
         getTagSets: state => {
-            return state["tagSets"].filter(tagSet => !tagSet.deleted && tagSet.id !== 0);
+            return state["tagSets"].filter(tagSet => tagSet.id !== 0);
         },
         getTagSet: (state) => (id) => {
             if (state["tagSets"] == null) {
@@ -149,34 +151,11 @@ export default {
             state.tagSets = data;
         },
         SOCKET_tagSetRefresh: (state, data) => {
-            if (!Array.isArray(data)) {
-                data = [data];
-            }
-            data.forEach((entry) => {
-                const old = state["tagSets"].find(c => c.id === entry.id);
-                if (old !== undefined) {
-                    state["tagSets"].splice(state["tagSets"].indexOf(old), 1);
-                }
-                if (!entry.deleted) {
-                    state["tagSets"].push(entry);
-                }
-            });
+            refreshState(state["tagSets"], data);
         },
-        SOCKET_tagRefresh:
-            (state, data) => {
-                if (!Array.isArray(data)) {
-                    data = [data];
-                }
-                data.forEach((entry) => {
-                    const old = state["tags"].find(c => c.id === entry.id);
-                    if (old !== undefined) {
-                        state["tags"].splice(state["tags"].indexOf(old), 1);
-                    }
-                    if (!entry.deleted) {
-                        state["tags"].push(entry);
-                    }
-                });
-            }
+        SOCKET_tagRefresh: (state, data) => {
+            refreshState(state["tags"], data);
+        }
     },
     actions: {}
 };
