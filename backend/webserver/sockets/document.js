@@ -92,7 +92,7 @@ module.exports = class DocumentSocket extends Socket {
      * @return {Promise<void>}
      */
     async sendDocument(documentId) {
-        const doc = await this.models['document'].getById(data.documentId)
+        const doc = await this.models['document'].getById(documentId)
         if (this.checkDocumentAccess(doc.id)) {
             this.emit("documentRefresh", doc);
         }

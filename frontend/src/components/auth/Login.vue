@@ -2,6 +2,10 @@
   <form class="row g-3 needs-validation" novalidate>
     <div class="col-md-8 mx-auto my-4">
       <div class="col-md-8 mx-auto">
+        <div class="text-center" style="margin-bottom: 20px">
+          <IconAsset name="logo" height=200></IconAsset>
+        </div>
+
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             Login
@@ -62,9 +66,11 @@ Co-Author:  Nils Dycke (dycke@ukp...), Carly Gettinger (cjgettinger@gmail.com)
 Source: -
 */
 import {mapActions} from "vuex";
+import IconAsset from "@/icons/IconAsset.vue";
 
 export default {
   name: "Login",
+  components: {IconAsset},
   data() {
     return {
       showError: false,

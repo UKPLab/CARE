@@ -27,6 +27,9 @@ services:
       context: .
       args:
         ENV: ${ENV}
+    volumes:
+      - ./docs/build:/content-server/docs/build
+      - ./docs/api:/content-server/docs/api
     deploy:
       restart_policy:
         condition: on-failure

@@ -1,6 +1,5 @@
 <template>
   <LoadIcon :iconName="value"></LoadIcon>
-
 </template>
 
 <script>
