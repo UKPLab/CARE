@@ -55,9 +55,6 @@ module.exports = class Server {
             this.app.use("/api", express.static(`${__dirname}/../../docs/api/`));
         }
 
-        // Routes for config
-        this.logger.debug("Initializing Routes for config...");
-        require("./routes/config")(this);
 
         this.logger.info("Initializing Session management...");
         this.session = this.#initSessionManagement();
@@ -66,11 +63,14 @@ module.exports = class Server {
         this.logger.info("Initializing Passport...");
         this.app.use(bodyParser.urlencoded({extended: false}));
         this.app.use(bodyParser.json());
+        this.#loginManagement();
         this.app.use(passport.initialize());
         this.app.use(passport.session());
 
-        // Set login management
-        this.#loginManagement();
+        // Routes for config
+        this.logger.debug("Initializing Routes for config...");
+        require("./routes/config")(this);
+        require('./routes/auth')(this);
 
         // all further urls reference to frontend
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
@@ -86,7 +86,6 @@ module.exports = class Server {
      */
     #loginManagement() {
         this.logger.debug("Initialize Routes for auth...");
-        require('./routes/auth')(this);
 
         passport.use(new LocalStrategy(async (username, password, cb) => {
 
@@ -119,6 +118,8 @@ module.exports = class Server {
         passport.deserializeUser(function (user, done) {
             done(null, user);
         });
+
+
     }
 
     /**
@@ -316,6 +317,7 @@ module.exports = class Server {
         this.http = this.httpServer.listen(port, () => {
             this.logger.info("Server started on port " + port);
         });
+        return this.http;
     }
 
     /**

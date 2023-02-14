@@ -65,6 +65,7 @@ describe("Test Websocket - Tags", () => {
 
     test("TagSet Update", (done) => {
         clientSocket.on("tagSetRefresh", (data) => {
+            console.log("tagSetRefresh", data);
             expect(data.find((t) => t.name === 'ChangeName')['id']).toBe(1);
             done();
         });
