@@ -1,17 +1,17 @@
-/* auth.js - Store for user authentication
-
-Defines the store module responsible for the user authentication.
-The module provides the essential authentication states, actions
-and state changes (mutations).
-
-To login, register or check validity of a user login use this module.
-
-Author: Dennis Zyska (zyska@ukp...)
-Co-Author: Nils Dycke (dycke@ukp...)
-Source: -
+/**
+ * Store for user authentication
+ *
+ * Defines the store module responsible for the user authentication.
+ * The module provides the essential authentication states, actions
+ * and state changes (mutations).
+ *
+ * To login, register or check validity of a user login use this module.
+ *
+ * @module store/auth
+ * @author Dennis Zyska, Nils Dycke
 */
 import axios from 'axios';
-import getServerURL from '../../assets/serverUrl.js';
+import getServerURL from '@/assets/serverUrl.js';
 
 const getDefaultState = () => {
     return {
@@ -49,7 +49,6 @@ export default {
     mutations: {
         // updates the user information to the given parameters
         SET_USER: (state, user) => {
-            //todo doesn't update the state (even if I pass any arbitrary object) remains empty object
             state.user = user;
         },
         // resets the user information to default
@@ -79,7 +78,6 @@ export default {
                 });
             if (response.status === 401) throw response.data.message
 
-            console.log("Calling set user");
             commit('SET_USER', response.data.user);
         },
         // registers a user with the given credentials and user information

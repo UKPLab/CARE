@@ -1,22 +1,22 @@
-/* anno.js - Store for annotation-related data
-
-Defines the store module responsible for storing annotations.
-
-Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
-Source: -
-*/
-
-const getDefaultState = () => {
-    return [];
-};
+/**
+ * Store for annotation-related data
+ *
+ * Defines the store module responsible for storing annotations.
+ *
+ * @module store/annotations
+ * @author Nils Dycke, Dennis Zyska
+ */
+import refreshState from "../utils";
 
 export default {
     namespaced: true,
     strict: true,
-    state: getDefaultState(),
+    state: () => {
+        return [];
+    },
     getters: {
         getComment: (state) => (comment_id) => {
-            return state.filter(comment => !comment.deleted).find(comm => comm.id === comment_id);
+            return state.find(comm => comm.id === comment_id);
         },
         getCommentsByAnnotation: (state) => (annotation_id) => {
             return state.filter(comm => comm.annotationId === annotation_id);
@@ -26,8 +26,8 @@ export default {
                 .find(comm => comm.commentId === null);
         },
         getCommentsByCommentId: (state) => (comment_id) => {
-            return state.filter(comment => !comment.deleted).filter(comm => comm.parentCommentId === comment_id).sort(
-                function(a, b) {
+            return state.filter(comm => comm.parentCommentId === comment_id).sort(
+                function (a, b) {
                     let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
                     if (keyA < keyB) return -1;
                     if (keyA > keyB) return 1;
@@ -36,30 +36,20 @@ export default {
             );
         },
         getNumberOfChildrenByComment: (state, getters) => (comment_id) => {
-          const comments = getters.getCommentsByCommentId(comment_id);
-          return comments.length + comments.map(c => getters.getNumberOfChildrenByComment(c.id)).reduce((pv, cv) => pv + cv, 0);
+            const comments = getters.getCommentsByCommentId(comment_id);
+            return comments.length + comments.map(c => getters.getNumberOfChildrenByComment(c.id)).reduce((pv, cv) => pv + cv, 0);
         },
         getDocumentComments: (state) => (documentId) => {
-            return state.filter(comment => !comment.deleted)
+            return state
                 .filter(comm => comm.documentId === documentId && comm.parentCommentId === null);
         }
     },
     mutations: {
         SOCKET_commentRefresh: (state, data) => {
-            if (!Array.isArray(data)) {
-                data = [data];
-            }
-
-            data.forEach((comm) => {
-                const oldComm = state.find(s => s.id === comm.id);
-                if (oldComm !== undefined) {
-                    state.splice(state.indexOf(oldComm), 1);
-                }
-
-                comm.tags = JSON.parse(comm.tags);
-
-                state.push(comm);
-            });
+            refreshState(state, data.map(d => {
+                d.tags = JSON.parse(d.tags);
+                return d;
+            }));
         }
     },
     actions: {}
