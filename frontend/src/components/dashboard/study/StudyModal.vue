@@ -53,16 +53,7 @@ export default {
           start: null,
           end: null,
         },
-      dynamicFields: [{
-        name: "documentId",
-        label: "Selected document for the study:",
-        type: "select",
-        options: this.$store.getters["document/getDocuments"].map(document => {
-          return {"value": document.id, "name": document.name}
-        }),
-        icon: "file-earmark",
-        required: true,
-      }],
+      dynamicFields: [],
       staticFields: [
         {
           name: "name",
@@ -134,20 +125,6 @@ export default {
     // make sure the document list is up-to-date
     this.$socket.emit("documentGetAll");
   },
-  watch: {
-    docs(newVal){
-      this.dynamicFields = [{
-        name: "documentId",
-        label: "Selected document for the study:",
-        type: "select",
-        options: newVal.map(document => {
-          return {"value": document.id, "name": document.name}
-        }),
-        icon: "file-earmark",
-        required: true,
-      }]
-    }
-  },
   computed: {
     docs() {
       return this.$store.getters['document/getDocuments'];
@@ -174,6 +151,19 @@ export default {
       this.studyId = studyId;
       this.hash = this.studyId !== 0 ? this.study.hash : this.hash;
       this.success = loadInitialized;
+
+      //load dynamic fields on opening
+      this.dynamicFields = [{
+        name: "documentId",
+        label: "Selected document for the study:",
+        type: "select",
+        options: this.$store.getters["document/getDocuments"].map(document => {
+          return {"value": document.id, "name": document.name}
+        }),
+        icon: "file-earmark",
+        required: true,
+      }];
+
       this.$refs.studyCoordinatorModal.openModal();
     },
     publish() {
@@ -181,13 +171,13 @@ export default {
         this.sockets.unsubscribe('studyPublished');
         if (data.success) {
           this.success = true;
-          this.studyId = data.id;
-          this.hash = data.hash;
+          this.hash = data.studyHash;
+
           this.$refs.studyCoordinatorModal.waiting = false;
 
           this.eventBus.emit('toast', {
             title: "Study published",
-            message: "Successful started study!",
+            message: "Successfully started study!",
             variant: "success"
           });
         } else {
