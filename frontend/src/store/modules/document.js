@@ -1,22 +1,22 @@
-/* document.js - Store for documents
-
-Defines the store module responsible for storing documents.
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
-
-const getDefaultState = () => {
-    return [];
-};
+/**
+ * Store for documents
+ *
+ * Defines the store module responsible for storing documents.
+ *
+ * @module store/documents
+ * @author Dennis Zyska
+ */
+import refreshState from "../utils";
 
 export default {
     namespaced: true,
     strict: true,
-    state: getDefaultState(),
+    state: () => {
+        return [];
+    },
     getters: {
         getDocuments: state => {
-            return state.filter(doc => !doc.deleted);
+            return state;
         },
         getDocument: state => id => {
             return state.find(doc => doc.id === id);
@@ -27,17 +27,7 @@ export default {
     },
     mutations: {
         SOCKET_documentRefresh: (state, data) => {
-            if (!Array.isArray(data)) {
-                data = [data];
-            }
-
-            data.forEach((doc) => {
-                const oldDoc = state.find(s => s.id === doc.id);
-                if (oldDoc !== undefined) {
-                    state.splice(state.indexOf(oldDoc), 1);
-                }
-                state.push(doc);
-            });
+            refreshState(state, data);
         },
     },
     actions: {}

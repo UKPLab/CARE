@@ -164,7 +164,7 @@ export default {
       isAdmin: 'auth/isAdmin',
     }),
     tags() {
-      return this.$store.getters["tag/getAllTags"]();
+      return this.$store.getters["tag/getAllTags"];
     },
     selectedTagset() {
       return this.$store.getters['settings/getValueAsInt']("tags.tagSet.default");

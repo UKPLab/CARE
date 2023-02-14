@@ -93,7 +93,7 @@ export default {
           });
     },
     tags() {
-      return this.$store.getters["tag/getAllTags"]();
+      return this.$store.getters["tag/getAllTags"];
     },
     tagIds() {
       if (this.annotations && this.tags) {

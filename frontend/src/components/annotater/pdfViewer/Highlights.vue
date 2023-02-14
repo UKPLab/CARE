@@ -70,7 +70,7 @@ export default {
           .filter(anno => anno.anchors !== null)
     },
     tags() {
-      return this.$store.getters['tag/getAllTags'](false);
+      return this.$store.getters['tag/getAllTags'];
     },
   },
   watch: {
