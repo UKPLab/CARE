@@ -45,7 +45,11 @@ module.exports = class StudySocket extends Socket {
      */
     async addStudy(study) {
         study.userId = this.userId;
-        this.emit("studyRefresh", await this.models['study'].add(study));
+
+        const newStudy = await this.models['study'].add(study);
+        this.emit("studyRefresh", newStudy);
+
+        return newStudy;
     }
 
     /**
@@ -130,7 +134,13 @@ module.exports = class StudySocket extends Socket {
     async publishStudy(data) {
         const doc = await this.models['document'].getById(data.documentId);
         if (this.checkUserAccess(doc.userId)) {
-            const study = await this.updateStudy(data);
+            let study;
+            if(data.studyId){
+                study = await this.updateStudy(null, data);
+            } else {
+                study = await this.addStudy(data);
+            }
+
             if (study) {
                 this.socket.emit("studyPublished", {success: true, hash: study[0].hash});
             } else {
@@ -139,7 +149,7 @@ module.exports = class StudySocket extends Socket {
                 });
             }
         } else {
-            this.logger.error("No permission to publish document: " + data.documentId);
+            this.logger.error("No permission to publish study: " + data.documentId);
             this.socket.emit("studyPublished", {
                 success: false, message: "No permission to publish study"
             });
@@ -200,7 +210,7 @@ module.exports = class StudySocket extends Socket {
             } catch (e) {
                 this.logger.error(e);
                 this.socket.emit("studyPublished", {
-                    success: false, message: "Error while publishing document"
+                    success: false, message: "Error while publishing study"
                 });
 
             }

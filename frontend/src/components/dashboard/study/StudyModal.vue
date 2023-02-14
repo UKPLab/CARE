@@ -13,7 +13,7 @@
           <a :href="link" target="_blank">{{ link }}</a>
       </span>
       <span v-else>
-        <Form v-model="study" :fields="fields"></Form>
+        <Form v-model="study" :fields="dynamicFields.concat(staticFields)"></Form>
       </span>
     </template>
     <template v-slot:footer>
@@ -53,17 +53,17 @@ export default {
           start: null,
           end: null,
         },
-      fields: [
-        {
-          name: "documentId",
-          label: "Selected document for the study:",
-          type: "select",
-          options: this.$store.getters["document/getDocuments"].map(document => {
-            return {"value": document.id, "name": document.name}
-          }),
-          icon: "file-earmark",
-          required: true,
-        },
+      dynamicFields: [{
+        name: "documentId",
+        label: "Selected document for the study:",
+        type: "select",
+        options: this.$store.getters["document/getDocuments"].map(document => {
+          return {"value": document.id, "name": document.name}
+        }),
+        icon: "file-earmark",
+        required: true,
+      }],
+      staticFields: [
         {
           name: "name",
           label: "Name of the study:",
@@ -130,7 +130,28 @@ export default {
       resets: 0,
     }
   },
+  mounted(){
+    // make sure the document list is up-to-date
+    this.$socket.emit("documentGetAll");
+  },
+  watch: {
+    docs(newVal){
+      this.dynamicFields = [{
+        name: "documentId",
+        label: "Selected document for the study:",
+        type: "select",
+        options: newVal.map(document => {
+          return {"value": document.id, "name": document.name}
+        }),
+        icon: "file-earmark",
+        required: true,
+      }]
+    }
+  },
   computed: {
+    docs() {
+      return this.$store.getters['document/getDocuments'];
+    },
     study() {
       const resetCounter = this.resets; //do not remove; need for refreshing study object on modal hide!
       if (this.studyId === 0) {
