@@ -67,6 +67,8 @@ export default {
   mounted() {
     this.$socket.emit("settingGetNavigation");
     this.createNavigation();
+
+    console.log("CURRENT ROUTE === ", this.$route);
   },
   methods: {
 
@@ -114,6 +116,10 @@ export default {
 <style scoped>
 .dashboard-wrapper {
   margin-top: -52.5px;
+}
+
+#viewerContainer::-webkit-scrollbar {
+  display:none;
 }
 
 </style>

@@ -2,6 +2,10 @@
   <form class="row g-3 needs-validation" novalidate>
     <div class="col-md-8 mx-auto my-4">
       <div class="col-md-8 mx-auto">
+        <div class="text-center" style="margin-bottom: 20px">
+          <IconAsset name="logo" height=200></IconAsset>
+        </div>
+
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             Register
@@ -104,10 +108,11 @@ Source: -
 */
 import {mapActions} from "vuex";
 import TermsModal from "./TermsModal.vue";
+import IconAsset from "@/icons/IconAsset.vue";
 
 export default {
   name: "Register",
-  components: {TermsModal},
+  components: {TermsModal, IconAsset},
   computed: {
     requestName() {
       return window.config['app.register.requestName'] === 'true';

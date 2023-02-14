@@ -12,7 +12,6 @@ export default {
   props: {
     name: {
       type: String,
-      default: "IconQuestionCircle",
       required: true,
     },
     size: {

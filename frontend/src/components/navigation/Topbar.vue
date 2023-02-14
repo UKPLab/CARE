@@ -2,7 +2,7 @@
   <div id="wrapper" class="nav-container">
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
       <div class="container-fluid">
-        <button id='backButton' class="btn" href title="Go back..." @click="this.$router.push('/')">
+        <button id='backButton' class="btn" title="Go back..." @click="toHome()">
           <svg class="bi bi-arrow-left" fill="currentColor" height="16" viewBox="0 0 16 16" width="16"
                xmlns="http://www.w3.org/2000/svg">
             <path
@@ -10,12 +10,8 @@
                 fill-rule="evenodd"/>
           </svg>
         </button>
-        <a class="navbar-brand" href @click="this.$router.push('/')">
-          <b>C</b><span class="small">ollaborative </span>
-          AI<span class="small">-</span>
-          <b>A</b><span class="small">ssisted </span>
-          <b>R</b><span class="small">eading </span>
-          <b>E</b><span class="small">nironment</span>
+        <a class="navbar-brand" @click="toHome()">
+          <IconAsset name="logo" height=30></IconAsset>
         </a>
         <div id="topbarCustomPlaceholder">
 
@@ -56,10 +52,11 @@ Source:
 */
 
 import LoadIcon from "@/icons/LoadIcon.vue";
+import IconAsset from "@/icons/IconAsset.vue";
 
 export default {
   name: "Topbar",
-  components: {LoadIcon},
+  components: {LoadIcon, IconAsset},
   computed: {
     username() {
       return this.$store.getters['auth/getUsername'];
@@ -75,6 +72,9 @@ export default {
     async logout() {
       await this.$store.dispatch('auth/logout');
       await this.$router.push("/login");
+    },
+    async toHome() {
+      await this.$router.push('/dashboard');
     },
     toggleProfileDropdown() {
       const dropdown = document.getElementById('dropdown-show');

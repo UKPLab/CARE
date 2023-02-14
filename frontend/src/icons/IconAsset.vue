@@ -1,34 +1,35 @@
 <template>
-  <svg class="bi" fill="currentColor" :height="size" :width="size" :style="(color)?'color:'+color:''">
-    <use :xlink:href="`${iconUrl}`" />
-  </svg>
+  <img class="bi"
+       fill="currentColor"
+       :height="height ? height : ''"
+       :width="width ? width : ''"
+       :style="(color)?'color:'+color:''"
+       :src="`/icons/${this.name}.svg`" />
 </template>
 
 <script>
-import iconPath from 'bootstrap-icons/bootstrap-icons.svg';
 
 export default {
-  name: "IconBootstrap.vue",
+  name: "IconAsset",
   props: {
     name: {
       type: String,
-      default: "IconQuestionCircle",
       required: true,
     },
-    size: {
+    height: {
       type: Number,
-      default: 16,
+      default: null,
+      required: false,
+    },
+    width: {
+      type: Number,
+      default: null,
       required: false,
     },
      color: {
       type: String,
       default: null,
       required: false
-    }
-  },
-  computed: {
-    iconUrl() {
-      return iconPath + "#" + this.name;
     }
   },
 }

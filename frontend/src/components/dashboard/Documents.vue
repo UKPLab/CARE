@@ -14,6 +14,7 @@
     </template>
   </Card>
   <ExportAnnos ref="export"></ExportAnnos>
+  <ConfirmModal ref="deleteConf"></ConfirmModal>
 </template>
 
 <script>
@@ -35,10 +36,11 @@ import Card from "@/basic/Card.vue";
 import Table from "@/basic/table/Table.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 import StudyModal from "./study/StudyModal.vue";
+import ConfirmModal from "@/basic/ConfirmModal.vue";
 
 export default {
   name: "Document",
-  components: {StudyModal, Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal},
+  components: {StudyModal, Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal, ConfirmModal},
   data() {
     return {
       options: {
@@ -147,21 +149,30 @@ export default {
   },
   methods: {
     action(data) {
-      if (data.action === "accessDoc") {
-        this.accessDoc(data.params);
-      }
-      if (data.action === "deleteDoc") {
-        this.deleteDoc(data.params);
-      }
-      if (data.action === "publicDoc") {
-        this.$refs.publishModal.open(data.params.id);
-      }
-      if (data.action === "studyCoordinator") {
-        this.studyCoordinator(data.params);
+      switch(data.action){
+        case "accessDoc":
+          this.accessDoc(data.params);
+          break;
+        case "deleteDoc":
+          this.deleteDoc(data.params);
+          break;
+        case "publicDoc":
+          this.$refs.publishModal.open(data.params.id);
+          break;
+        case "studyCoordinator":
+          this.studyCoordinator(data.params);
+          break;
       }
     },
-    deleteDoc(row) {
-      this.$socket.emit("documentDelete", {documentId: row.id});
+    async deleteDoc(row) {
+      this.$refs.deleteConf.open(
+          "Delete Document",
+          "Are you sure you want to delete the document?",
+          function(val) {
+            if(val){
+              this.$socket.emit("documentUpdate", {documentId: row.id, deleted: true, deletedAt: Date.now()});
+            }
+      });
     },
     renameDoc(row) {
       this.$socket.emit("documentUpdate", {documentId: row.id, document: {name: "default_name"}});

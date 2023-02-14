@@ -75,7 +75,7 @@ export default {
 
 #wrapper {
   height: 100%;
-  background-color: #e7eeff;
+  background-color: #f2f2f2;
 }
 
 #sidebar-wrapper {
@@ -90,6 +90,10 @@ export default {
   justify-content: space-between;
   height: 100%;
   width: 13rem;
+}
+
+#sidebar-wrapper::-webkit-scrollbar {
+  display:none;
 }
 
 .collapse-sidebar-container {
@@ -120,7 +124,7 @@ body.sb-sidenav-toggled .list-group-item-text {
   text-overflow: ellipsis;
   overflow: hidden;
   border: none;
-  background-color: #e7eeff;
+  background-color: #f2f2f2;
 }
 
 .list-group-item:hover {
