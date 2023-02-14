@@ -1,45 +1,36 @@
-/* main.js - Main entry point for the vue app
-
-This is the main entry point to start the Vue app. Here
-the app is configured with:
-* vuex store
-* boostrap vue3
-* router
-
-Load this script in your webpage HTML to create and mount the Vue app.
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
+/**
+ * This is the main entry point to start the Vue app.
+ * @author: Dennis Zyska
 */
 import * as Vue from 'vue'
 import App from './App.vue'
-import BootstrapVue3 from "bootstrap-vue-3";
-import {BToastPlugin} from 'bootstrap-vue-3'
 import SocketIO from 'socket.io-client';
 import VueSocketIO from 'vue-3-socket.io';
 import store from "./store";
-import router from './routes.js';
-import mitt from 'mitt';
-//Bootstrap v5
-import 'bootstrap/dist/css/bootstrap.css'
-import 'bootstrap/dist/js/bootstrap.bundle.js'
-import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
-import getServerURL from './assets/serverUrl.js';
+import router from './routes';
 
 const app = Vue.createApp({
     render: () => Vue.h(App)
 });
 
-// devtools
+// activate devtools in development mode
 if (process.env.NODE_ENV !== 'production') {
     app.config.devtools = true;
 }
 
+// Bootstrap
+import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap/dist/js/bootstrap.bundle.js'
+import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
+import BootstrapVue3 from "bootstrap-vue-3";
+import {BToastPlugin} from 'bootstrap-vue-3'
 app.use(BootstrapVue3);
 app.use(BToastPlugin);
 
 // Socket IO
 // https://www.npmjs.com/package/vue-3-socket.io
+// Server URL for hot reload
+import getServerURL from '@/assets/serverUrl.js';
 app.use(new VueSocketIO({
     debug: (process.env.NODE_ENV !== 'production'),
     connection: SocketIO(getServerURL(),
@@ -55,6 +46,7 @@ app.use(new VueSocketIO({
 }));
 
 //EventBus
+import mitt from 'mitt';
 const eventBus = mitt()
 app.config.globalProperties.eventBus = eventBus;
 

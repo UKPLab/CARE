@@ -40,10 +40,14 @@ module.exports = class DocumentSocket extends Socket {
      *
      * @return {Promise<void>}
      */
-    async refreshAllDocuments() {
+    async refreshAllDocuments(userId = null) {
         try {
             if (this.isAdmin()) {
-                this.emit("documentRefresh", await this.models['document'].getAll());
+                if (userId) {
+                    this.emit("documentRefresh", await this.models['document'].getAllByKey("userId", userId));
+                } else {
+                    this.emit("documentRefresh", await this.models['document'].getAll());
+                }
             } else {
                 this.emit("documentRefresh", await this.models['document'].getAllByKey("userId", this.userId));
             }
@@ -117,7 +121,7 @@ module.exports = class DocumentSocket extends Socket {
 
                     // send studySessions
                     const studySessions = await this.models['study_session'].getAllByKey('studyId', study.id);
-                    this.emit("studySessionRefresh",studySessions);
+                    this.emit("studySessionRefresh", studySessions);
 
                     // send annotations
                     const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByKey('studySessionId', s.id)));
@@ -189,7 +193,7 @@ module.exports = class DocumentSocket extends Socket {
         });
 
         this.socket.on("documentGetAll", async (data) => {
-            await this.refreshAllDocuments();
+            await this.refreshAllDocuments((data && data.userId) ? data.userId : null);
         });
 
         this.socket.on("documentUpdate", async (data) => {
@@ -228,5 +232,16 @@ module.exports = class DocumentSocket extends Socket {
                 this.sendToast("Error while publishing document", "Error", "danger");
             }
         });
+
+        this.socket.on("documentSubscribe", (data) => {
+            this.socket.join("doc:" + data.documentId);
+            this.logger.debug("Subscribe document " + data.documentId);
+        });
+
+        this.socket.on("documentUnsubscribe", (data) => {
+            this.socket.leave("doc:" + data.documentId);
+            this.logger.debug("Unsubscribe document " + data.documentId);
+        });
+
     }
 }

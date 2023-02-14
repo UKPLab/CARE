@@ -1,18 +1,17 @@
-/* admin.js - Store for admin-realted data
-
-Defines the store module responsible for storing all admin-related data.
-Currently, this includes storage of review processes and reviews.
-
-Author: Dennis Zyska (zyska@ukp...)
-Co-Author: Nils Dycke (dycke@ukp...)
-Source: -
-*/
+/**
+ * Store for admin-related data
+ *
+ * Defines the store module responsible for storing all admin-related data.
+ * Currently, this includes storage of review processes and reviews.
+ *
+ * @module store/admin
+ * @author Dennis Zyska, Nils Dycke
+ */
 import createPersistedState from 'vuex-persistedstate';
 
 const getDefaultState = () => {
     return {
         docs: [],
-        reviews: [],
         users: [],
         user_stats: {}
     };
@@ -24,15 +23,11 @@ export default {
     plugins: [createPersistedState()],
     state: getDefaultState(),
     getters: {
-        //returns documents from the store (local)
-        getReviews: state => {
-            return state["reviews"]
-        },
         getUsers: state => {
             return state["users"]
         },
         getStatsByUser: state => (userId) => {
-            if(userId in state["user_stats"]){
+            if (userId in state["user_stats"]) {
                 return state["user_stats"][userId];
             } else {
                 return null;
@@ -40,19 +35,6 @@ export default {
         },
     },
     mutations: {
-        // updates the local store to the given documents
-        SET_REVIEWS: (state, docs) => {
-            state.docs = docs;
-        },
-        // resets the local document store to the default state
-        RESET: state => {
-            Object.assign(state, getDefaultState());
-        },
-        SOCKET_reviewDataAll: (state, message) => {
-            if (message.success) {
-                state.reviews = message.reviews;
-            }
-        },
         SOCKET_userData: (state, message) => {
             if (message.success) {
                 state.users = message.users;
@@ -64,6 +46,5 @@ export default {
             }
         },
     },
-    actions: {
-    }
+    actions: {}
 };

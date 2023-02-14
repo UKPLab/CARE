@@ -1,13 +1,13 @@
-/* nlp.js - Store for NLP related interaction
-
-Defines the store module responsible for storing all NLP-related data.
-In the first place, this module is responsible for dealing with socket
-messages.
-
-Author: Nils Dycke (dycke@ukp...)
-Co-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
+/**
+ * Store for NLP related interaction
+ *
+ * Defines the store module responsible for storing all NLP-related data.
+ * In the first place, this module is responsible for dealing with socket
+ * messages.
+ *
+ * @module store/service
+ * @author Nils Dycke, Dennis Zyska
+ */
 
 const getDefaultState = () => {
     return {

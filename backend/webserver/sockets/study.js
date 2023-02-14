@@ -54,12 +54,17 @@ module.exports = class StudySocket extends Socket {
 
     /**
      * Send all studies to the client
+     * @param {number|null} userId if null, all studies will be sent (admin only)
      * @returns {Promise<*>}
      */
-    async sendStudies() {
+    async sendStudies(userId = null) {
         try {
             if (this.isAdmin()) {
-                this.emit("studyRefresh", await this.models['study'].getAll());
+                if (userId) {
+                    this.emit("studyRefresh", await this.models['study'].getAllByKey('userId', userId));
+                } else {
+                    this.emit("studyRefresh", await this.models['study'].getAll());
+                }
             } else {
                 this.emit("studyRefresh", await this.models['study'].getAllByKey('userId', this.userId));
             }
@@ -142,7 +147,7 @@ module.exports = class StudySocket extends Socket {
             }
 
             if (study) {
-                this.socket.emit("studyPublished", {success: true, hash: study[0].hash});
+                this.socket.emit("studyPublished", {success: true, studyHash: study[0].hash});
             } else {
                 this.socket.emit("studyPublished", {
                     success: false, message: "Error publishing study."
@@ -158,9 +163,25 @@ module.exports = class StudySocket extends Socket {
 
     async init() {
 
+        this.socket.on("studyGet", async (data) => {
+            try {
+                await this.sendStudy(data.studyId);
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+
         this.socket.on("studyGetAll", async (data) => {
             try {
-                await this.sendStudies();
+                await this.sendStudies((data.userId) ? data.userId : null);
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+
+        this.socket.on("studyGetByHash", async (data) => {
+            try {
+                await this.sendStudyByHash(data.studyHash);
             } catch (err) {
                 this.logger.error(err);
             }
@@ -179,21 +200,6 @@ module.exports = class StudySocket extends Socket {
             }
         });
 
-        this.socket.on("studyGetByHash", async (data) => {
-            try {
-                await this.sendStudyByHash(data.studyHash);
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
-
-        this.socket.on("studyGet", async (data) => {
-            try {
-                await this.sendStudy(data.studyId);
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
 
         this.socket.on("studyStart", async (data) => {
             try {

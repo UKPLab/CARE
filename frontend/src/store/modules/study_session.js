@@ -1,19 +1,20 @@
-/* Store for collaboration and sharing of synchronization information
-
-Defines the store for collaboration.
-
-Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
-Source: -
-*/
-
-const getDefaultState = () => {
-    return [];
-};
+/**
+ * Store for study sessions
+ *
+ * Defines the store for study sessions
+ *
+ * @module store/studySessions
+ * @author Dennis Zyska
+ *
+ */
+import refreshState from "../utils";
 
 export default {
     namespaced: true,
     strict: true,
-    state: getDefaultState(),
+    state: () => {
+        return [];
+    },
     getters: {
         getStudySessionsByStudyId: state => (studyId) => {
             return state.filter(session => session.studyId === studyId);
@@ -30,18 +31,7 @@ export default {
     },
     mutations: {
         SOCKET_studySessionRefresh: (state, data) => {
-            if (!Array.isArray(data)) {
-                data = [data];
-            }
-            data.forEach((entry) => {
-                const old = state.find(c => c.id === entry.id);
-                if (old !== undefined) {
-                    state.splice(state.indexOf(old), 1);
-                }
-                if (!entry.deleted) {
-                    state.push(entry);
-                }
-            });
+            refreshState(state, data);
         },
     },
     actions: {},
