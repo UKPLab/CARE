@@ -1,13 +1,11 @@
 {
-  "name": "PeerFrontend",
-  "version": "0.1.0",
+  "name": "CAREFrontend",
+  "version": "1.0.0",
   "scripts": {
     "frontend-dev": "vite",
     "frontend-preview": "vite preview --port 5050",
     "frontend-dev-build": "vite build --mode development",
     "frontend-build": "vite build",
-    "test": "vitest",
-    "test-run": "vitest --run"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.5",
@@ -48,7 +46,6 @@
   "devDependencies": {
     "@testing-library/vue": "^6.6.1",
     "happy-dom": "^6.0.4",
-    "vitest": "^0.22.1",
     "prosemirror-commands": "^1.3.1",
     "prosemirror-dropcursor": "1.5.0",
     "prosemirror-gapcursor": "^1.3.1",
