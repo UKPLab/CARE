@@ -12,11 +12,18 @@ module.exports = class StudySessionSocket extends Socket {
 
     /**
      * Send all study sessions to the client
+     * @param {number} userId
      * @returns {Promise<void>}
      */
-    async sendSessions() {
+    async sendSessions(userId = null) {
         if (this.isAdmin()) {
-            this.emit("studySessionRefresh", await this.models['study_session'].getAll());
+            if (userId) {
+                const studies = await this.models['study'].getAllByKey('userId', userId);
+                const sessionsPerStudy = await Promise.all(studies.map(async s => await this.models['study_session'].getAllByKey("studyId", s.id)))
+                this.emit("studySessionRefresh", sessionsPerStudy.flat(1));
+            } else {
+                this.emit("studySessionRefresh", await this.models['study_session'].getAll());
+            }
         } else {
             const studies = await this.models['study'].getAllByKey('userId', this.userId);
             const sessionsPerStudy = await Promise.all(studies.map(async s => await this.models['study_session'].getAllByKey("studyId", s.id)))
@@ -83,7 +90,16 @@ module.exports = class StudySessionSocket extends Socket {
 
         this.socket.on("studySessionGet", async (data) => {
             try {
-                this.emit("studySessionRefresh", await this.models['study_session'].getAllByKey('userId', this.userId));
+                if (data.studyId) {
+                    const study = await this.models['study'].getById(data.studyId);
+                    if (this.checkUserAccess(study.userId)) {
+                        this.emit("studySessionRefresh", await this.models['study_session'].getAllByKey("studyId", data.studyId));
+                    } else {
+                        this.sendToast("You are not allowed to see this study", "Error", "Danger");
+                    }
+                } else {
+                    this.emit("studySessionRefresh", await this.models['study_session'].getById(data.studySessionId));
+                }
             } catch (err) {
                 this.logger.error(err);
             }
@@ -91,7 +107,7 @@ module.exports = class StudySessionSocket extends Socket {
 
         this.socket.on("studySessionGetAll", async (data) => {
             try {
-                await this.sendSessions();
+                await this.sendSessions((data.userId) ? data.userId : null);
             } catch (err) {
                 this.logger.error(err);
             }
