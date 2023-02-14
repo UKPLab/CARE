@@ -8,6 +8,11 @@ const Socket = require("../Socket.js");
  */
 module.exports = class CommentSocket extends Socket {
 
+    /**
+     * Format comments for export in frontend
+     * @param comment
+     * @return {Promise<*>}
+     */
     async commentFormat(comment) {
         const copyFields = [
             "id",
@@ -37,21 +42,15 @@ module.exports = class CommentSocket extends Socket {
         return copied;
     }
 
-    async loadCommentsByAnnotation(annotationId) {
+    /**
+     * Update comments
+     * @param {number} commentId
+     * @param {object} comment
+     * @return {Promise<void>}
+     */
+    async updateComment(commentId, comment) {
         try {
-
-            const comment = await this.updateCreatorName(await this.models['comment'].getByKey("annotationId", annotationId));
-
-            this.io.to("doc:" + comment.documentId).emit("commentRefresh", comment);
-        } catch (e) {
-            this.logger.info("Error during loading of comments: " + e);
-            this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
-        }
-    }
-
-    async updateComment(data) {
-        try {
-            const origComment = await this.models['comment'].getById(data.commentId);
+            const origComment = await this.models['comment'].getById(commentId);
 
             if (origComment.userId === await this.models['user'].getUserIdByName("Bot")) {
                 const parentComment = await this.models['comment'].getById(origComment.commentId);
@@ -64,42 +63,50 @@ module.exports = class CommentSocket extends Socket {
                 return;
             }
 
-            const newComment = await this.models['comment'].updateById(data.commentId, Object.assign(data, {draft: false}));
-            this.io.to("doc:" + newComment.documentId).emit("commentRefresh", await this.updateCreatorName(newComment));
+            if (comment.deleted) {
+                await this.deleteChildComments(commentId);
+            }
 
-        } catch
-            (e) {
+            const newComment = await this.models['comment'].updateById(commentId, Object.assign(comment, {draft: false}));
+            this.emitDoc(newComment.documentId, "commentRefresh", newComment);
+        } catch (e) {
             this.logger.error("Could not update comment in database. Error: " + e);
             this.sendToast("Internal server error. Failed to update comment.", "Internal server error", "danger");
-
         }
     }
 
-    async deleteComment(comment) {
-        comment.deleted = true;
-        comment.commentId = comment.id;
-        await this.updateComment(comment);
-    }
-
-    async deleteChildCommentsByComment(commentId) {
-        const comments = await this.models["comment"].getAllByKey("commentId", commentId);
-
-        comments.forEach(comment => {
-            this.deleteComment(comment);
-            this.deleteChildCommentsByComment(comment.id);
+    /**
+     * Delete all child comments
+     * @param {number} parentCommentId
+     * @return {Promise<void>}
+     */
+    async deleteChildComments(parentCommentId) {
+        const comments = await this.models["comment"].getAllByKey("parentCommentId", parentCommentId);
+        comments.map(async comment => {
+            await this.updateComment(comment.id, Object.assign(comment, {deleted: true}));
         })
     }
 
+    /**
+     * Delete all child comments of an annotation
+     * Note: Used in AnnotationSocket
+     * @param {number} annotationId
+     * @return {Promise<void>}
+     */
     async deleteChildCommentsByAnnotation(annotationId) {
         try {
             const comment = this.models['comment'].getByKey("annotationId", annotationId);
-            await this.deleteComment(comment);
-            await this.deleteChildCommentsByComment(comment.id);
+            await this.updateComment(comment.id, Object.assign(comment, {deleted: true}));
         } catch (e) {
             this.logger.info("Error during deletion of comments: " + e);
         }
     }
 
+    /**
+     * Add a comment
+     * @param {object} data comment object
+     * @return {Promise<void>}
+     */
     async addComment(data) {
         if (data.userId !== undefined) {
             if (data.userId === 'Bot') {
@@ -131,35 +138,35 @@ module.exports = class CommentSocket extends Socket {
                 parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null
             }
 
-            this.socket.emit("commentRefresh", await this.updateCreatorName(await this.models['comment'].add(newComment)))
+            this.emit("commentRefresh", await this.models['comment'].add(newComment))
         } catch (e) {
             this.logger.error("Could not add comment and/or comment to database. Error: " + e);
-
-            if (e.name === "InvalidCommentParameters") {
-                this.sendToast(e.message, "Invalid comment parameters.", "danger");
-
-            } else {
-                this.sendToast("Internal server error. Failed to add comment.", "Internal server error", "danger");
-
-            }
+            this.sendToast("Internal server error. Failed to add comment.", "Internal server error", "danger");
         }
+    }
+
+    /**
+     * Send a comment to the client
+     * @param {number} commentId
+     * @return {Promise<void>}
+     */
+    async sendComment(commentId) {
+        const comment = await this.models['comment'].getById(commentId);
+        if (!this.checkDocumentAccess(comment.documentId)) {
+            this.sendToast("You don't have access to this comment", "Error", "danger");
+            return;
+        }
+        this.emit("commentRefresh", comment);
     }
 
     init() {
 
         this.socket.on("commentGet", async (data) => {
             try {
-                const comment = await this.models['comment'].getById(data.commentId);
-                if (!this.checkUserAccess(comment.userId) && !this.checkDocumentAccess(comment.documentId)) {
-                    this.sendToast("You don't have access to this comment", "Error", "danger");
-                    return;
-                }
-                this.socket.emit("commentRefresh", await this.updateCreatorName(comment));
+                await this.sendComment(data.commentId);
             } catch (e) {
                 this.logger.error("Could not get comment and/or comment in database. Error: " + e);
-
                 this.sendToast("Internal Server Error: Could not get comment", "Internal server error", "danger");
-
             }
         });
 
@@ -169,13 +176,12 @@ module.exports = class CommentSocket extends Socket {
             } else {
                 await this.addComment(data);
             }
-
         });
 
         this.socket.on("commentGetByDocument", async (data) => {
             try {
                 const comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
-                this.socket.emit("commentRefresh", await this.updateCreatorName(comments));
+                this.emit("commentRefresh", comments);
             } catch (e) {
                 this.logger.info("Error during loading of comments: " + e);
                 this.sendToast("Internal Server Error: Could not load comments by document", "Internal server error", "danger");

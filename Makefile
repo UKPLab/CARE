@@ -117,6 +117,7 @@ clean: check_clean
 	rm -f frontend/node_modules/.uptodate
 	rm -f backend/node_modules/.uptodate
 	rm -rf dist
+	find files -maxdepth 1 -type f ! -name "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" -exec rm {} \;
 	docker-compose rm -f -s -v
 	docker network rm peer_default || echo "IGNORING ERROR"
 

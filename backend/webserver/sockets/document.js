@@ -1,7 +1,7 @@
 const fs = require("fs");
-const UPLOAD_PATH = `${__dirname}/../../../files`;
-
 const Socket = require("../Socket.js");
+
+const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 /**
  * Handle all document through websocket
@@ -35,16 +35,142 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    /**
+     * Refresh all documents
+     *
+     * @return {Promise<void>}
+     */
     async refreshAllDocuments() {
         try {
             if (this.isAdmin()) {
-                this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].getAll()));
+                this.emit("documentRefresh", await this.models['document'].getAll());
             } else {
-                this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].getAllByKey("userId", this.userId)));
+                this.emit("documentRefresh", await this.models['document'].getAllByKey("userId", this.userId));
             }
         } catch (err) {
             this.logger.error(err);
             this.sendToast(err, "Error loading documents", "Danger");
+        }
+    }
+
+    /**
+     * Send document by hash
+     *
+     * @param documentHash
+     * @return {Promise<void>}
+     */
+    async sendByHash(documentHash) {
+        const document = await this.models['document'].getByHash(documentHash);
+        if (this.checkDocumentAccess(document.id)) {
+            this.emit("documentRefresh", document);
+        } else {
+            this.logger.error("Document access error with documentId: " + document.id);
+            this.sendToast("You don't have access to the document.", "Error loading documents", "Danger");
+        }
+    }
+
+    /**
+     * Update document
+     *
+     * @param {number} documentId
+     * @param {Object} document
+     * @return {Promise<void>}
+     */
+    async updateDocument(documentId, document) {
+        const doc = await this.models['document'].getById(documentId);
+        if (this.checkUserAccess(doc.userId)) {
+            this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(doc.id, document)));
+        } else {
+            this.sendToast("You are not allowed to update this document", "Error", "Danger");
+        }
+    }
+
+    /**
+     * Send document to client
+     *
+     * @param {number} documentId
+     * @return {Promise<void>}
+     */
+    async sendDocument(documentId) {
+        const doc = await this.models['document'].getById(data.documentId)
+        if (this.checkDocumentAccess(doc.id)) {
+            this.emit("documentRefresh", doc);
+        }
+        fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
+            this.socket.emit("documentFile", {document: doc, file: data});
+        })
+    }
+
+    /**
+     * Send document data to client
+     * And send additional data like annotations, comments, tags
+     *
+     * @param {object} data {documentId: number, studySessionId: number}
+     * @return {Promise<void>}
+     */
+    async getData(data) {
+        if (this.checkDocumentAccess(data.documentId)) {
+            if (data.studySessionId && data.studySessionId !== 0) {
+                const studySession = await this.models['study_session'].getById(data.studySessionId);
+                const study = await this.models['study'].getById(studySession.studyId);
+                if (study.collab) {
+
+                    // send studySessions
+                    const studySessions = await this.models['study_session'].getAllByKey('studyId', study.id);
+                    this.emit("studySessionRefresh",studySessions);
+
+                    // send annotations
+                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByKey('studySessionId', s.id)));
+                    this.emit("annotationRefresh", annotations.flat(1));
+
+                    // send comments
+                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].getAllByKey('studySessionId', s.id)));
+                    this.emit("commentRefresh", comments.flat(1));
+                } else {
+                    const annotations = await this.models['annotation'].getAllByKey('studySessionId', data.studySessionId)
+                    this.emit("annotationRefresh", annotations);
+
+                    const comments = await this.models['comment'].getAllByKey('studySessionId', data.studySessionId)
+                    this.emit("commentRefresh", comments);
+                }
+            } else {
+                this.emit("annotationRefresh", await this.models['annotation'].getAllByKey('documentId', data.documentId));
+                this.emit("commentRefresh", await this.models['comment'].getAllByKey('documentId', data.documentId));
+            }
+
+            // send additional data like tags
+            await this.getSocket('TagSocket').sendTags();
+
+        } else {
+            this.sendToast("Error accessing document", "Access Error", "danger");
+        }
+    }
+
+    /**
+     * Publish document
+     * @param {number} documentId
+     * @return {Promise<void>}
+     */
+    async publishDocument(documentId) {
+        try {
+            const doc = await this.models['document'].getById(documentId)
+
+            if (this.checkUserAccess(doc.userId)) {
+                this.socket.emit("documentRefresh", await this.updateCreatorName(
+                    await this.models['document'].updateById(doc.id, {public: true})));
+                this.socket.emit("documentPublished", {success: true});
+            } else {
+                this.logger.error("No permission to publish document: " + documentId);
+                this.socket.emit("documentPublished", {
+                    success: false, message: "No permission to publish document"
+                });
+            }
+        } catch (e) {
+            this.logger.error(e);
+            this.socket.emit("documentPublished", {
+                success: false, message: "Error while publishing document"
+            });
+
         }
     }
 
@@ -53,46 +179,22 @@ module.exports = class DocumentSocket extends Socket {
         //Make sure upload directory exists
         fs.mkdirSync(UPLOAD_PATH, {recursive: true});
 
+        this.socket.on("documentGet", async (data) => {
+            try {
+                await this.sendDocument(data.documentId);
+            } catch (e) {
+                this.logger.error(e);
+                this.sendToast("Error while loading pdf file!", "PDF Error", "danger");
+            }
+        });
+
         this.socket.on("documentGetAll", async (data) => {
             await this.refreshAllDocuments();
         });
 
-        this.socket.on("studyGetByHash", async (data) => {
-            try {
-                const document = await this.models['document'].getByHash(data.documentHash);
-                if (this.checkDocumentAccess(document.id)) {
-                    this.socket.emit("documentRefresh", await this.updateCreatorName(document));
-                } else {
-                    this.logger.error("Document access error with documentId: " + document.id);
-                    this.sendToast("You don't have access to the document.", "Error loading documents", "Danger");
-                }
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
-
-        this.socket.on("documentDelete", async (data) => {
-            try {
-                const currentDocument = await this.models['document'].getById(data.documentId);
-                if (this.checkUserAccess(currentDocument.userId)) {
-                    this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].deleteById(currentDocument.id)));
-                } else {
-                    this.sendToast("You are not allowed to delete this document", "Error", "Danger");
-                }
-            } catch (err) {
-                this.logger.error(err);
-                this.sendToast(err, "Error deleting document", "Danger");
-            }
-        });
-
         this.socket.on("documentUpdate", async (data) => {
             try {
-                const doc = await this.models['document'].getById(data.documentId);
-                if (this.checkUserAccess(doc.userId)) {
-                    this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(doc.id, data)));
-                } else {
-                    this.sendToast("You are not allowed to update this document", "Error", "Danger");
-                }
+                await this.updateDocument(data.documentId, data);
             } catch (err) {
                 this.logger.error(err);
                 this.sendToast(err, "Error updating document", "Danger");
@@ -101,97 +203,30 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentGetByHash", async (data) => {
             try {
-                const doc = await this.models['document'].getByHash(data.documentHash)
-                if (this.checkDocumentAccess(doc.id)) {
-                    this.socket.emit("documentRefresh", await this.updateCreatorName(doc));
-                }
+                await this.sendByHash(data.documentHash);
             } catch (e) {
                 this.logger.error(e);
                 this.socket.emit("documentError", {message: "Document not found!", documentHash: data.documentHash});
             }
         });
 
-        this.socket.on("documentGet", async (data) => {
-            try {
-                const doc = await this.models['document'].getById(data.documentId)
-                if (this.checkDocumentAccess(doc.id)) {
-                    this.socket.emit("documentRefresh", await this.updateCreatorName(doc));
-                }
-                fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
-                    this.socket.emit("documentFile", {document: doc, file: data});
-                })
-            } catch (e) {
-                this.logger.error(e);
-                this.sendToast("Error while loading pdf file!", "PDF Error", "danger");
-            }
-        });
 
         this.socket.on("documentGetData", async (data) => {
             try {
-                if (this.checkDocumentAccess(data.documentId)) {
-                    if (data.studySessionId && data.studySessionId !== 0) {
-                        const studySession = await this.models['study_session'].getById(data.studySessionId);
-                        const study = await this.models['study'].getById(studySession.studyId);
-                        if (study.collab) {
-
-                            // send studySessions
-                            const studySessions = await this.models['study_session'].getAllByKey('studyId', study.id);
-                            this.socket.emit("studySessionRefresh", await this.updateCreatorName(studySessions));
-
-                            // send annotations
-                            const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByKey('studySessionId', s.id)));
-                            this.socket.emit("annotationRefresh", await this.updateCreatorName(annotations.flat(1)));
-
-                            // send comments
-                            const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].getAllByKey('studySessionId', s.id)));
-                            this.socket.emit("commentRefresh", await this.updateCreatorName(comments.flat(1)));
-                        } else {
-                            const annotations = await this.models['annotation'].getAllByKey('studySessionId', data.studySessionId)
-                            this.socket.emit("annotationRefresh", await this.updateCreatorName(annotations));
-
-                            const comments = await this.models['comment'].getAllByKey('studySessionId', data.studySessionId)
-                            this.socket.emit("commentRefresh", await this.updateCreatorName(comments));
-                        }
-                    } else {
-                        this.socket.emit("annotationRefresh", await this.updateCreatorName(await this.models['annotation'].getAllByKey('documentId', data.documentId)));
-                        this.socket.emit("commentRefresh", await this.updateCreatorName(await this.models['comment'].getAllByKey('documentId', data.documentId)));
-                    }
-
-                    // send additional data like tags
-                    await this.getSocket('TagSocket').sendTags();
-
-                } else {
-                    this.sendToast("Error accessing document", "Access Error", "danger");
-                }
+                await this.getData(data);
             } catch (e) {
                 this.logger.info("Error loading document data: " + e);
                 this.sendToast("Internal server error. Error loading document data.", "Internal server error", "danger");
             }
         });
 
-        this.socket.on("documentPublish",
-
-            async (data) => {
-                try {
-                    const doc = await this.models['document'].getById(data.documentId)
-
-                    if (this.checkUserAccess(doc.userId)) {
-                        this.socket.emit("documentRefresh", await this.updateCreatorName(
-                            await this.models['document'].updateById(doc.id, {public: true})));
-                        this.socket.emit("documentPublished", {success: true});
-                    } else {
-                        this.logger.error("No permission to publish document: " + data.documentId);
-                        this.socket.emit("documentPublished", {
-                            success: false, message: "No permission to publish document"
-                        });
-                    }
-                } catch (e) {
-                    this.logger.error(e);
-                    this.socket.emit("documentPublished", {
-                        success: false, message: "Error while publishing document"
-                    });
-
-                }
-            });
+        this.socket.on("documentPublish", async (data) => {
+            try {
+                await this.publishDocument(data.documentId);
+            } catch (e) {
+                this.logger.error(e);
+                this.sendToast("Error while publishing document", "Error", "danger");
+            }
+        });
     }
 }
