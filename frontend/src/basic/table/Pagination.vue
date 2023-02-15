@@ -4,7 +4,7 @@
 
     <ul class="pagination justify-content-end">
       <li :class="{'disabled':(currentPage ===1)}" class="page-item">
-        <button class="page-link" @click="currentPage -= 1">
+        <button class="page-link" @click="changePage(currentPage - 1)">
           <span aria-hidden="true">&laquo;</span>
         </button>
       </li>
@@ -13,14 +13,14 @@
           class="page-item">
 
         <button v-if="p === currentPage - 3" class="page-link">...</button>
-        <button v-if="p < currentPage + 3 && p > currentPage - 3" class="page-link" @click="currentPage = p">
+        <button v-if="p < currentPage + 3 && p > currentPage - 3" class="page-link" @click="changePage(p)">
           {{ p }}
         </button>
         <button v-if="p === currentPage + 3" class="page-link">...</button>
 
       </li>
       <li :class="{'disabled':(currentPage === pages)}" class="page-item">
-        <button class="page-link" @click="currentPage += 1">
+        <button class="page-link" @click="changePage(currentPage + 1)">
           <span aria-hidden="true">&raquo;</span>
         </button>
       </li>
@@ -33,7 +33,7 @@ export default {
   name: "Pagination.vue",
   data() {
     return {
-      currentPage: null
+      page: 1
     }
   },
   emits: ["pageChange"],
@@ -42,16 +42,13 @@ export default {
       type: Number,
       required: true
     },
-    startPage: {
+    currentPage: {
       type: Number,
       required: true
     },
   },
-  mounted() {
-    this.currentPage = this.startPage;
-  },
-  watch:{
-    currentPage(newVal){
+  methods: {
+    changePage(newVal) {
       this.$emit("pageChange", newVal);
     }
   }

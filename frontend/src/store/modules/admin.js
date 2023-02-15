@@ -40,7 +40,7 @@ export default {
                 state.users = message.users;
             }
         },
-        SOCKET_statsByUser: (state, message) => {
+        SOCKET_statsDataByUser: (state, message) => {
             if (message.success) {
                 state.user_stats[message.userId] = message.statistics;
             }

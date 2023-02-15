@@ -21,7 +21,7 @@ module.exports = class StatisticSocket extends Socket {
      */
     async sendStatsByUser(userId) {
         if (this.isAdmin()) {
-            if (this.models["user"].getById(userId).acceptStats) {
+            if ((await this.models["user"].getById(userId)).acceptStats) {
                 const stats = await this.models['statistic'].getAllByKey('userId', userId);
                 this.socket.emit("statsDataByUser", {success: true, userId: userId, statistics: stats});
             } else {
@@ -30,7 +30,7 @@ module.exports = class StatisticSocket extends Socket {
                     userId: userId,
                     message: "User rights and argument mismatch"
                 });
-                this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
+                this.logger.error("User right and request parameter mismatch. User did not agree to stats collection.");
             }
 
         }
@@ -43,11 +43,15 @@ module.exports = class StatisticSocket extends Socket {
     async sendStats() {
         if (this.isAdmin()) {
             const stats = await this.models['statistic'].getAll();
-            const filteredStats = stats.filter(stat => this.models["user"].getById(stat.userId).acceptStats);
+            const users = [...new Set(stats.map(stat => stat.userId))];
+
+            const agreeingUsers = await Promise.all(users.filter(async u => (await this.models["user"].getById(u)).acceptStats));
+            const filteredStats = stats.filter(stat => agreeingUsers.includes(stat.userId));
+
             this.socket.emit("statsData", {success: true, statistics: filteredStats});
         } else {
             this.socket.emit("statsData", {success: false, message: "User rights and argument mismatch"});
-            this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
+            this.logger.error("User right and request parameter mismatch. Admin rights required.");
         }
     }
 
@@ -82,7 +86,7 @@ module.exports = class StatisticSocket extends Socket {
 
         });
 
-        this.socket.on("statsGetAll", async (data) => {
+        this.socket.on("statsGetAll", async () => {
             try {
                 await this.sendStats();
             } catch (e) {

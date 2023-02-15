@@ -35,7 +35,10 @@ module.exports = class UserSocket extends Socket {
      * @return {{[p: string]: any}}
      */
     minimalFields(user) {
-        const include = ["id", "userName"]
+        let include = ["id", "userName"];
+        if(this.isAdmin()){
+            include.push("lastLoginAt", "sysrole", "acceptStats");
+        }
 
         const entries = Object.entries(user);
         const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);

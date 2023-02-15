@@ -116,10 +116,13 @@ export default {
       }
     },
     action(data){
-      if (data.action === "finishSession") {
-        //todo
-      } else if (data.action === "resumeSession") {
-        //todo
+      switch(data.action){
+        case "resumeSession":
+          this.$router.push("/session/" + data.params.hash);
+          break;
+        case "finishSession":
+          this.$socket.emit("studySessionUpdate", {sessionId: data.params.id, deleted:true});
+          break;
       }
     }
   }

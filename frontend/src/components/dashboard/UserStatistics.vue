@@ -1,8 +1,5 @@
 <template>
-  <div class="container">
-    <div class="row gy-2">
-      <div class="col">
-        <Card title="Users">
+   <Card title="Users">
           <template v-slot:headerElements>
             <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAllStats()" title="Export">
               <LoadIcon iconName="cloud-arrow-down"></LoadIcon>
@@ -20,11 +17,8 @@
                    @rowSelection="e => loadUserStats(e)"></Table>
           </template>
         </Card>
-      </div>
-    </div>
-    <div class="row gy-2">
-      <div class="col">
-        <Card title="User Log">
+    <hr>
+    <Card :title="`Stats for ${this.selectedUsers ? this.selectedUsers.length : 0} User${this.selectedUsers && this.selectedUsers.length !== 1 ? 's': ''}`">
           <template v-slot:body>
             <Table :columns="stats_table.columns"
                    :data="stats"
@@ -33,10 +27,7 @@
             ></Table>
           </template>
         </Card>
-      </div>
-    </div>
-  </div>
-  <ExportSingle name="stats" req-msg="statsGetAll" res-msg="statsAll" ref="export" :post-process="x => x.statistics">
+  <ExportSingle name="stats" req-msg="statsGetAll" res-msg="statsData" ref="export" :post-process="x => x.statistics">
   </ExportSingle>
 </template>
 
@@ -110,7 +101,11 @@ export default {
   },
   computed: {
     users() {
-      return this.$store.getters["admin/getUsers"];
+      return this.$store.getters["admin/getUsers"].map(u => {
+        let uNew = {...u};
+        uNew.lastLoginAt = u.lastLoginAt ? (new Date(u.lastLoginAt)).toLocaleDateString() : "-";
+        return uNew;
+      });
     },
     stats() {
       return this.selectedUsers.reduce((acc, user) => acc.concat(this.$store.getters["admin/getStatsByUser"](user.id)), []).filter(s => s !== null);
