@@ -289,7 +289,7 @@ export default {
       }
 
       // Join Room for document updates
-      this.$socket.emit("collabSubscribe", {documentId: this.documentId});
+      this.$socket.emit("documentSubscribe", {documentId: this.documentId});
 
       // check for available nlp support (for now hard-coded sentiment analysis)
       if (!this.nlp_available) {

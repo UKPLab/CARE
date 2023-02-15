@@ -3,7 +3,7 @@
     <div class="col-md-8 mx-auto my-4">
       <div class="col-md-8 mx-auto">
         <div class="text-center" style="margin-bottom: 20px">
-          <IconAsset name="logo" height=200></IconAsset>
+          <IconAsset name="logo" :height="200"></IconAsset>
         </div>
 
         <div class="card">
