@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async find(userName) {
             try {
-                return await User.findOne({
+                return await this.findOne({
                     where: {
                         [Op.or]: [{
                             userName: userName

@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async get(key) {
             try {
-                let setting = await Setting.findOne({where: {key: key, deleted: false}, raw: true});
+                let setting = await Setting.findOne({where: {key: key}, raw: true});
                 if (setting) {
                     return setting.value;
                 }

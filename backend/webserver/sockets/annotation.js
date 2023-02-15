@@ -74,10 +74,10 @@ module.exports = class AnnotationSocket extends Socket {
             return;
         }
 
-        data.draft = false;
-        const newAnno = await this.models['annotation'].updateById(annotationId, data)
+        annotation.draft = false;
+        const newAnno = await this.models['annotation'].updateById(annotationId, annotation)
 
-        if (newAnno.deleted) {
+        if (annotation.deleted) {
             await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno.id);
         }
         this.emitDoc(newAnno.documentId, "annotationRefresh", newAnno);
@@ -95,7 +95,7 @@ module.exports = class AnnotationSocket extends Socket {
             selectors: data.selectors,
             tagId: data.tagId,
             studySessionId: data.studySessionId,
-            text: data.selectors.target === undefined ? null : data.selectors.target[0].selector[1].exact,
+            text: (data.selectors && data.selectors.target) ? data.selectors.target[0].selector[1].exact : null,
             draft: true,
             userId: this.userId
         };
