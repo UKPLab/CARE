@@ -1,4 +1,4 @@
-import {omitObjectAttributeSubset, pickObjectAttributeSubset} from "./utils";
+import {omitObjectAttributeSubset} from "./utils";
 
 function getCommentThread(root, comms){
     const children = comms.filter(c => c.commentId === root.id);

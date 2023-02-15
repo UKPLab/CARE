@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+import {pickObjectAttributeSubset} from "../../utils/generic";
 
 /**
  * Loading the comments through websocket
@@ -172,7 +173,7 @@ module.exports = class CommentSocket extends Socket {
 
         this.socket.on("commentUpdate", async (data) => {
             if (data.commentId && data.commentId !== 0) {
-                await this.updateComment(data);
+                await this.updateComment(data.commentId, data);
             } else {
                 await this.addComment(data);
             }

@@ -115,7 +115,7 @@ export default {
         data: {
           documentId: this.documentId,
           readonly: this.readonly,
-          "visibility": page,
+          visibility: page,
           studySessionId: this.studySessionId
         }
       })

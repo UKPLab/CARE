@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="terms" lg>
+  <Modal name="terms" ref="terms" lg>
     <template v-slot:title>Terms</template>
     <template v-slot:body>
       <div v-html="terms"></div>
