@@ -222,8 +222,8 @@ export default {
       this.$refs.studyCoordinator.open(0);
     },
     load() {
-      this.$socket.emit("studyGetAll");
-      this.$socket.emit("studySessionGetAll");
+      this.$socket.emit("studyGetAll", {userId: this.$store.getters["auth/getUserId"]});
+      this.$socket.emit("studySessionGetAll", {userId: this.$store.getters["auth/getUserId"]});
     },
     studyCoordinator(row, linkOnly=false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
