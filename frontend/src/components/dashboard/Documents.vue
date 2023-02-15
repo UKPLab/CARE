@@ -171,7 +171,7 @@ export default {
           "Are you sure you want to delete the document?",
           function(val) {
             if(val){
-              this.$socket.emit("documentUpdate", {documentId: row.id, deleted: true, deletedAt: Date.now()});
+              this.$socket.emit("documentUpdate", {documentId: row.id, deleted: true});
             }
       });
     },

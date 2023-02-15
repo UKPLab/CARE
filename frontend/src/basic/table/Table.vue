@@ -48,7 +48,7 @@
     </tr>
     </tbody>
   </table>
-  <Pagination v-if="options && options.pagination" :pages="pages" :start-page="currentPage" @pageChange="(x) => this.currentPage = x"/>
+  <Pagination ref="pagination" v-if="options && options.pagination" :pages="pages" :current-page="currentPage" @pageChange="(x) => this.currentPage = x"/>
 </template>
 
 <script>
@@ -118,6 +118,15 @@ export default {
           this.selectedRows = this.selectedRows.filter(r => r !== row);
         }
         this.$emit("rowSelection", this.selectedRows);
+      }
+    }
+  },
+  watch: {
+    pages(val) {
+      if(val === 0){
+        this.currentPage = 1;
+      } else if(this.currentPage > val){
+          this.currentPage = val;
       }
     }
   },

@@ -33,7 +33,8 @@ module.exports = function (server) {
                     return next(err);
                 }
 
-                await server.db.models['user'].updateById(user.id, {lastLoginAt: new Date()});
+                await server.db.models['user'].registerUserLogin(user.id);
+
                 res.status(200).send({user: user});
             });
         })(req, res, next);

@@ -2,7 +2,7 @@
   <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center"
          :style="{cursor: collapsable ? 'pointer' : 'auto'}"
-         @click="collapsed = !collapsed">
+         @click="toggleCollabs()">
       <h5 class="card-title">{{ title }}</h5>
       <div>
         <slot name="headerElements"></slot>
@@ -48,6 +48,11 @@ export default {
   methods: {
     setCollapseState(collapse){
       this.collapsed = collapse;
+    },
+    toggleCollabs(){
+      if(this.collapsable){
+        this.collapsed = !this.collapsed;
+      }
     }
   }
 }

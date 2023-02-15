@@ -83,6 +83,27 @@ module.exports = (sequelize, DataTypes) => {
                 return 0;
             }
         }
+
+        /**
+         * Register a new login
+         * @param {string} userId user id
+         * @returns {Promise<boolean>}} true if successufl
+         */
+        static async registerUserLogin(userId) {
+            try {
+                const updatedObject = await this.update({lastLoginAt: Date.now()}, {
+                        where: {
+                            id: userId
+                        },
+                        returning: true,
+                        plain: true
+                    }
+                );
+                return updatedObject !== null && updatedObject !== undefined;
+            } catch (e) {
+                console.log(e);
+            }
+        }
     }
 
     User.init({

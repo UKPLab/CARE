@@ -47,7 +47,6 @@ export default {
         {name: "Start", key: "start", sortable: true},
         {name: "End", key: "end", sortable: true},
         {name: "Created", key: "createdAt", sortable: true},
-        {name: "Levels", key: "levels"},
           {name: "Sessions", key: "sessions"},
         {name: "Time Limit", key: "timeLimit", sortable: true},
         {
