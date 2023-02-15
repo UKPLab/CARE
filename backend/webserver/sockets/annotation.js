@@ -1,5 +1,5 @@
 const Socket = require("../Socket.js");
-import {pickObjectAttributeSubset} from "../../utils/generic";
+const {pickObjectAttributeSubset} = require("../../utils/generic");
 
 /**
  * Handle all annotation through websocket
