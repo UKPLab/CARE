@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="tagSetModal" lg>
+  <Modal name="tagsetModal" :props="{tagsetId: id}" ref="tagSetModal" lg>
     <template v-slot:title>
       <span v-if="id === 0">New</span>
       <span v-else>Edit</span>
@@ -56,7 +56,6 @@ export default {
   mounted() {
     Tags.init(`#tagset_tags`);
   },
-
   computed: {
     tagSet() {
       return this.$store.getters['tag/getTagSet'](this.id);
@@ -78,20 +77,12 @@ export default {
     open(id) {
       this.id = id;
       this.$refs.tagSetModal.openModal();
-      this.$socket.emit("stats", {
-        action: "openModalTagSet",
-        data: {id: this.id}
-      });
     },
     save() {
-      this.sockets.subscribe("tagSetUpdated", (data) => {
+      this.sockets.subscribe("tagSetRefresh", (data) => {
         this.$refs.tagSetModal.closeModal();
-        this.sockets.unsubscribe('tagSetUpdated');
-        if (data.success) {
-          this.eventBus.emit('toast', {title: "Tagset saved", message: "Successful saved tagset!", variant: "success"});
-        } else {
-          this.eventBus.emit('toast', {title: "Tagset not saved", message: data.message, variant: "danger"});
-        }
+        this.sockets.unsubscribe('tagSetRefresh');
+        this.eventBus.emit('toast', {title: "Tagset saved", message: "Successful saved tagset!", variant: "success"});
       });
       this.$socket.emit("tagSetUpdate", {
         "tagSetId": this.id,
@@ -106,10 +97,6 @@ export default {
     },
     back() {
       this.$refs.tagSetModal.closeModal();
-      this.$socket.emit("stats", {
-        action: "cancelModalTagSet",
-        data: {id: this.id}
-      });
     },
   },
 
