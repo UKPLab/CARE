@@ -17,9 +17,10 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Find a user by username or email
          * @param {string} userName username or email
+         * @param {boolean} includeSystem include system user
          * @returns {Promise<object>} user
          */
-        static async find(userName) {
+        static async find(userName, includeSystem = false) {
             try {
                 return await this.findOne({
                     where: {
@@ -28,8 +29,10 @@ module.exports = (sequelize, DataTypes) => {
                         }, {
                             email: userName
                         }],
-                        [Op.not]: {
+                        [Op.not]: (!includeSystem) ? {
                             sysrole: "system"
+                        } : {
+                            sysrole: ""
                         }
                     }, raw: true
                 });
@@ -44,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<integer>} user id
          */
         static async getUserIdByName(userName) {
-            const user = await User.find(userName);
+            const user = await User.find(userName, true);
             if (user) {
                 return user.id;
             } else {

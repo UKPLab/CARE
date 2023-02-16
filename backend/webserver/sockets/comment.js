@@ -111,7 +111,7 @@ module.exports = class CommentSocket extends Socket {
     async addComment(data) {
         if (data.userId !== undefined) {
             if (data.userId === 'Bot') {
-                const parentComment = await this.models['comment'].getById(data.commentId);
+                const parentComment = await this.models['comment'].getById(data.parentCommentId);
                 if (!this.checkUserAccess(parentComment.userId)) {
                     this.sendToast("You are not allowed to add a comment.", "Access denied", "danger");
                     return;
@@ -172,10 +172,15 @@ module.exports = class CommentSocket extends Socket {
         });
 
         this.socket.on("commentUpdate", async (data) => {
-            if (data.commentId && data.commentId !== 0) {
-                await this.updateComment(data.commentId, data);
-            } else {
-                await this.addComment(data);
+            try {
+                if (data.commentId && data.commentId !== 0) {
+                    await this.updateComment(data.commentId, data);
+                } else {
+                    await this.addComment(data);
+                }
+            } catch (e) {
+                this.logger.error("Could not update comment and/or comment in database. Error: " + e);
+                this.sendToast("Internal Server Error: Could not update comment", "Internal server error", "danger");
             }
         });
 
