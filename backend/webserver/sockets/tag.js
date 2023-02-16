@@ -32,19 +32,20 @@ module.exports = class TagSocket extends Socket {
      */
     async updateTagSet(tagSetId, tagSet, tags) {
         const currentTagSet = await this.models['tag_set'].getById(tagSetId);
+
         if (!this.checkUserAccess(currentTagSet.userId)) {
             this.sendToast("You have no permission to edit this tagSet", "Permission Error", "danger");
             return;
         }
 
         if (tagSet.deleted) {
-            const tags = await this.models['tag'].getAllByKey('tagSetId', currentTagSet.id);
-            const newTags = await Promise.all(tags.map(async t => await this.models['tag'].deleteById(t.id)));
+            const eTags = await this.models['tag'].getAllByKey('tagSetId', currentTagSet.id);
+            const newTags = await Promise.all(eTags.map(async t => await this.models['tag'].deleteById(t.id)));
             await this.sendTagsUpdate(newTags);
         }
 
         const tagSetObj = await this.models['tag_set'].updateById(tagSetId, tagSet);
-        await this.handleTags(tagSetObj);
+        await this.handleTags(tagSetObj, tags);
     }
 
     /**
@@ -59,16 +60,17 @@ module.exports = class TagSocket extends Socket {
         tags.forEach(t => t.userId = this.userId);
         tags.forEach(t => t.public = false);
         const tagSetObj = await this.models['tag_set'].add(tagSet);
-        await this.handleTags(tagSetObj);
+        await this.handleTags(tagSetObj, tags);
     }
 
     /**
      * Send all tags to the client after tagSet update
      * @param {object} tagSetObj
+     * @param {array} tags the tags
      * @return {Promise<void>}
      */
-    async handleTags(tagSetObj) {
-        const tagObjs = await Promise.all(data.tags.map(async (t) => {
+    async handleTags(tagSetObj, tags) {
+        const tagObjs = await Promise.all(tags.map(async (t) => {
             t.tagSetId = tagSetObj.id;
             if (t.id === 0) {
                 t.userId = this.userId;
@@ -87,7 +89,7 @@ module.exports = class TagSocket extends Socket {
         }
 
         await this.sendTagSetsUpdate(tagSetObj);
-        await this.sendTagsUpdate(await Promise.all(tagObjs));
+        await this.sendTagsUpdate(tagObjs);
     }
 
     /**
@@ -109,8 +111,8 @@ module.exports = class TagSocket extends Socket {
 
         await this.sendTagSetsUpdate(newTagSet);
         await this.sendTagsUpdate(newTags);
-        this.socket.emit("tagSetPublished", {success: true});
 
+        this.socket.emit("tagSetPublished", {success: true});
     }
 
 

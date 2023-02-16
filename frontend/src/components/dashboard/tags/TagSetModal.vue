@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="tagSetModal" lg>
+  <Modal ref="tagSetModal" :props="{tagsetId: id}" lg name="tagsetModal">
     <template v-slot:title>
       <span v-if="id === 0">New</span>
       <span v-else>Edit</span>
@@ -56,14 +56,13 @@ export default {
   mounted() {
     Tags.init(`#tagset_tags`);
   },
-
   computed: {
     tagSet() {
       return this.$store.getters['tag/getTagSet'](this.id);
     },
   },
   methods: {
-    ...mapMutations({cleanEmptyTagSet: "tag/CLEAN_EMPTY_TAG_SET", copyTagSet: "tag/COPY_TAG_SET"}),
+    ...mapMutations({cleanEmptyTagSet: "tag/CLEAN_EMPTY_TAG_SET", cleanEmptyTags: "tag/CLEAN_EMPTY_TAGS", copyTagSet: "tag/COPY_TAG_SET"}),
     new() {
       this.cleanEmptyTagSet();
       this.open(0);
@@ -78,26 +77,19 @@ export default {
     open(id) {
       this.id = id;
       this.$refs.tagSetModal.openModal();
-      this.$socket.emit("stats", {
-        action: "openModalTagSet",
-        data: {id: this.id}
-      });
     },
     save() {
-      this.sockets.subscribe("tagSetUpdated", (data) => {
+      this.sockets.subscribe("tagSetRefresh", (data) => {
         this.$refs.tagSetModal.closeModal();
-        this.sockets.unsubscribe('tagSetUpdated');
-        if (data.success) {
-          this.eventBus.emit('toast', {title: "Tagset saved", message: "Successful saved tagset!", variant: "success"});
-        } else {
-          this.eventBus.emit('toast', {title: "Tagset not saved", message: data.message, variant: "danger"});
-        }
+        this.sockets.unsubscribe('tagSetRefresh');
+        this.eventBus.emit('toast', {title: "Tagset saved", message: "Successful saved tagset!", variant: "success"});
       });
       this.$socket.emit("tagSetUpdate", {
         "tagSetId": this.id,
         "tagSet": this.$store.getters["tag/getTagSet"](this.id),
         "tags": this.$store.getters["tag/getTags"](this.id, false)
       });
+      this.cleanEmptyTags(this.id);
       this.$refs.tagSetModal.waiting = true;
     },
     cancel() {
@@ -106,10 +98,6 @@ export default {
     },
     back() {
       this.$refs.tagSetModal.closeModal();
-      this.$socket.emit("stats", {
-        action: "cancelModalTagSet",
-        data: {id: this.id}
-      });
     },
   },
 

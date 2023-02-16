@@ -1,9 +1,4 @@
 <template>
-
-  <TagSetModal id="0" ref="tagSetModal"></TagSetModal>
-  <TagSetDeleteModal ref="tagSetDeleteModal"></TagSetDeleteModal>
-  <TagSetPublishModal ref="tagSetPublishModal"></TagSetPublishModal>
-
   <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
       Tag Sets
@@ -109,6 +104,9 @@
     </div>
   </div>
 
+  <TagSetModal id="0" ref="tagSetModal"></TagSetModal>
+  <TagSetDeleteModal ref="tagSetDeleteModal"></TagSetDeleteModal>
+  <TagSetPublishModal ref="tagSetPublishModal"></TagSetPublishModal>
 
 </template>
 
@@ -164,7 +162,7 @@ export default {
       isAdmin: 'auth/isAdmin',
     }),
     tags() {
-      return this.$store.getters["tag/getAllTags"];
+      return this.$store.getters["tag/getAllTags"]();
     },
     selectedTagset() {
       return this.$store.getters['settings/getValueAsInt']("tags.tagSet.default");

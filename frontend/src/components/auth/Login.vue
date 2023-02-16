@@ -30,7 +30,7 @@
               <div class="col-md-6">
                 <input id="password" v-model="password" autocomplete="current-password" class="form-control"
                        name="password"
-                       pattern=".{8,}" placeholder="Password" required type="password" @blur="setValidity"
+                       placeholder="Password" required type="password" @blur="setValidity"
                        @input="setValidity">
                 <div class="feedback-invalid">Please provide your password.</div>
               </div>
@@ -38,7 +38,7 @@
 
             <div class="col-md-6 offset-md-4 my-4">
               <button class="btn btn-primary btn-block" type="submit" @click="trySubmit">Login</button>
-              <a v-if="showGuestLogin" class="btn btn-link" href="#" @click="login_guest()">Login as Guest</a>
+              <a v-if="showGuestLogin" class="btn btn-link" @click="login_guest()">Login as Guest</a>
             </div>
           </div>
         </div>
@@ -126,16 +126,16 @@ export default {
       var valid;
       const feedbackDiv = this.findNextSiblingWithClass(evtTarget, "feedback-invalid");
 
-      if (targetID == "username") {
-        valid = (evtTarget.value != "");
-      } else if (targetID == "password") {
+      if (targetID === "username") {
+        valid = (evtTarget.value !== "");
+      } else if (targetID === "password") {
         valid = (evtTarget.value.length >= 8);
       }
       if (valid) {
         evtTarget.classList.remove("custom-invalid");
         feedbackDiv.classList.remove("invalid");
       } else {
-        if (event.type == 'input') {
+        if (event.type === 'input') {
           return;
         }
         evtTarget.classList.add("custom-invalid");
