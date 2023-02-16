@@ -7,19 +7,18 @@ on prerequisites and your building options.
 .. note::
     If you just want to get started *real quick*, check out the `Development Build`_ section below.
 
-
-
 Software Prerequisites
 ----------------------
 
-CARE's backend is built in Node.js and npm. You will need to install them before you can
-start coding. While CARE is deployed in a docker container, for development you
-should run the dev build locally.
+CARE's backend is running with Node.js and is built with npm.
+You will need to install them before you can start coding.
+While CARE is deployed in a docker container, for development you should run the dev build locally.
 
-You can download Node.js from https://nodejs.org/en/download/. This will also install npm.
+You can download Node.js from https://nodejs.org/en/download/.
+This will also install npm.
 
-You also need Docker and docker-compose for building the various containers -- both in dev
-and deployment mode. Please install them according to the official documentation:
+You also need Docker and docker-compose for building the various containers -- both in dev and deployment mode.
+Please install them according to the official documentation:
 
 * `Docker <https://docs.docker.com/engine/installation/>`_
 * `Docker Compose <https://docs.docker.com/compose/install/>`_
@@ -29,25 +28,32 @@ to be able to use the below commands for convenience.
 
 Customizing Builds
 ------------------
-Any commands for building components of CARE can be found in the top-most ``Makefile`` of the project. To see a full
-list of available commands run:
+Any commands for building components of CARE can be found in the top-most ``Makefile`` of the project.
+To see a full list of available commands run:
 
 .. code-block:: bash
 
     make help
 
 Before running your first build commands, you may want to customize the environment variables for your specific needs.
-The environment variables are completely managed in the ``.env`` files at the top-most directory. For most parts, the
-default settings should work for you, but if you want to adapt ports and hosts these are the files to change. Also note
-that the admin account and password are stored here in cleartext.
+The environment variables are completely managed in the ``.env`` files at the top-most directory.
+For most parts, the default settings should work for you, but if you want to adapt ports and hosts these are the files to change.
+Also note that the admin account and password are stored here in cleartext.
 
 .env-files
 ~~~~~~~~~~~~~~
 
 You need to adapt different env-files depending on whether you build for development (``.env.dev``), for deployment
-(``.env.main``), or for testing (``.env.test``). The ``.env`` file is always used, but overridden by the respectively
-loaded environment file. If you make changes to these files, please restart your service, so that they
-can take effect. To avoid manual sourcing of the environment files, e.g. for continuous development setups,
+(``.env.main``), or for testing (``.env.test``).
+
+.. warning::
+
+    If you make changes to these files, keep in mind that some parameters are written directly to the database
+    and may need a reinitialization of the database (e.g., admin password). The database therefore loses all data!
+    To reinitialize the database, run ``make clean`` followed by ``make init``.
+
+
+To avoid manual sourcing of the environment files, e.g. for continuous development setups,
 you can pass the ``ENV=...`` before a call to make. E.g.:
 
 .. code-block:: bash
@@ -56,8 +62,8 @@ you can pass the ``ENV=...`` before a call to make. E.g.:
 
 .. note::
 
-    You should always change the password of the admin account, especially for deployment. Only run the service in a
-    secure environment to avoid leakage of the password information from the environment files.
+    You should always change the password of the admin account, especially for deployment.
+    Only run the service in a secure environment to avoid leakage of the password information from the environment files.
 
 Special Flags
 ~~~~~~~~~~~~~~
@@ -115,7 +121,7 @@ a database in a docker container and populates it with the necessary schemas.
 .. note::
 
     When starting the application for the first time, you need to initialize the database!
-    Please make sure you run `make init` before and also after cleaning the environment (`make clean`)!
+    Please make sure you run `make init` before and also after cleaning the environment with `make clean`!
 
 
 Frontend
@@ -182,7 +188,7 @@ start it and detach it from your terminal.
     backend.
 
 You can check the status and logs of the docker containers using the standard docker CLI or
-`Portainer <https://www.portainer.io/>`_. The container with the name ending in ``_content_server`` hosts the actual
+`Portainer <https://www.portainer.io/>`_. The container with the name ending in ``_server`` hosts the actual
 backend.
 
 |
@@ -198,10 +204,8 @@ More Commands
      - Purpose
    * - ``make doc``
      - Compile the documentation.
-   * - ``make test-frontend``
-     - Running the frontend tests.
-   * - ``make test-backend``
-     - Running the backend tests.
+   * - ``make test``
+     - Running the backend api tests.
    * - ``make backup_db CONTAINER=<name>``
      - Creates a database dump from the given postgres container and stores it in the db_dumps folder.
    * - ``make recover_db CONTAINER=<name> DUMP=<path>``
