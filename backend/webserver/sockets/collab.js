@@ -15,7 +15,7 @@ module.exports = class CollabSocket extends Socket {
      */
     async refreshCollab(collabId) {
         const collabUpdate = await this.models["collab"].updateById(collabId, {timestamp: Date.now()});
-        this.emitDoc(collabUpdate.documentId, "collabRefresh", collabUpdate, false);
+        this.emitDoc(collabUpdate.documentId, "collabRefresh", collabUpdate);
     }
 
     /**
