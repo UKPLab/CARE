@@ -14,6 +14,24 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Get all settings and overwrite to be sure no admin settings are returned to user
+         * @param {boolean} includeAdmin include admin settings
+         * @returns {Promise<object[]>} setting objects
+         */
+        static async getAll(includeAdmin = false) {
+            try {
+                if (includeAdmin) {
+                    return await super.getAll();
+                } else {
+                    return (await super.getAll()).filter((item) => item.onlyAdmin !== true)
+                }
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+
+        /**
          * Get setting value by key
          * @param {string} key setting key
          * @returns {Promise<object|null>} setting object
@@ -65,6 +83,9 @@ module.exports = (sequelize, DataTypes) => {
         value: DataTypes.TEXT,
         type: DataTypes.STRING,
         description: DataTypes.STRING,
+        onlyAdmin: DataTypes.BOOLEAN,
+        deleted: DataTypes.BOOLEAN,
+        deletedAt: DataTypes.DATE
 
     }, {
         sequelize,
