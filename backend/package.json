@@ -7,7 +7,7 @@
     "db_migrate": "cd db && npx sequelize-cli db:migrate",
     "db_migrate:reset": "cd db && npx sequelize-cli db:drop && npm run db_create && npm run db_migrate",
     "db_migrate:reset2": "cd db && npm run db_create || echo \"IGNORING ERROR\" && npx sequelize-cli db:migrate:undo:all && npm run db_migrate",
-    "test": "cross-env NODE_ENV=test DISABLE_LOGGING=false jest --silent=false --forceExit --testTimeout=10000 -- comment.test.js",
+    "test": "cross-env NODE_ENV=test DISABLE_LOGGING=false jest --silent=false --forceExit --testTimeout=10000 --collect-coverage -- document.test.js",
     "test_doh": "cross-env NODE_ENV=test jest  --detectOpenHandles --testTimeout=10000",
     "pretest": "cross-env NODE_ENV=test npm run db_migrate:reset"
   },
