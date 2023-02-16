@@ -47,7 +47,6 @@ export default {
           documentId: 0,
           collab: false,
           resumable: true,
-          levels: 1,
           timeLimit: 0,
           description: "",
           start: null,
@@ -90,15 +89,6 @@ export default {
           name: "resumable",
           label: "Should the study be resumable?",
           type: "switch",
-          required: true,
-        },
-        {
-          name: "levels",
-          label: "How many reviews are possible for each session?",
-          type: "slider",
-          min: 1,
-          step: 1,
-          max: 5,
           required: true,
         },
         {

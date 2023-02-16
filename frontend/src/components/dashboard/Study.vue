@@ -25,7 +25,7 @@ Source: -
 import Card from "@/basic/Card.vue";
 import Table from "@/basic/table/Table.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
-import StudyModal from "./study/StudyModal.vue";
+import StudyModal from "@/components/dashboard/study/StudyModal.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 
 export default {

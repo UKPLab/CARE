@@ -25,7 +25,7 @@ module.exports = class AnnotationSocket extends Socket {
 
         let copied = pickObjectAttributeSubset(annotation, copyFields);
         copied.userId = await this.models['user'].getUserName(annotation.userId);
-        copied.tag = (await this.models['tag_set'].getById(annotation.tagId)).name;
+        copied.tag = (await this.models['tag'].getById(annotation.tagId)).name;
 
         return copied
     }
@@ -148,7 +148,6 @@ module.exports = class AnnotationSocket extends Socket {
 
         this.socket.on("annotationExportByDocument", async (data) => {
             try {
-
                 const annotations = await this.updateCreatorName(await this.models['annotation'].getAllByKey("documentId", data.documentId));
 
                 this.socket.emit("annotationExport", {

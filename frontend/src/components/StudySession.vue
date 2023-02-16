@@ -1,6 +1,6 @@
 <template>
   <Loader v-if="studySessionId === 0" :loading="true"></Loader>
-  <Study v-else :init-study-session-id="studySessionId" :readonly="readonly" ></Study>
+  <Study v-else :init-study-session-id="studySessionId" :study-hash="studySessionHash" :readonly="readonly" ></Study>
 </template>
 
 <script>

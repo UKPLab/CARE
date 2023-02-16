@@ -28,17 +28,8 @@ module.exports = class CommentSocket extends Socket {
 
         copied.tags = JSON.parse(comment.tags);
 
-        if (comment.annotationId) {
-            copied.annotationId = comment.annotationId;
-        } else {
-            copied.annotationId = null;
-        }
-
-        if (comment.commentId) {
-            copied.commentId = comment.commentId;
-        } else {
-            copied.commentId = null;
-        }
+        copied.annotationId = comment.annotationId ? comment.annotationId : null;
+        copied.parentCommentId = comment.parentCommentId ? comment.parentCommentId : null;
 
         return copied;
     }
