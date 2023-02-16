@@ -3,7 +3,9 @@
     <div id="sidebar-wrapper">
       <div class="list-group-test">
         <span v-for="group in sidebarGroups">
-          <h5 class="mb-1 sidebar-heading">{{ group.name }}</h5>
+          <div v-if="group.name !== 'Default'" class="sidebar-heading">
+            <h5 class="mb-1">{{ group.name }}</h5>
+          </div>
           <router-link :to="'/dashboard/' + element.path" v-for="element in sidebarElements[group.id]"
                        class="list-group-item list-group-item-action p-3">
             <span class="sidebar-icon" :title="element.name">
@@ -11,18 +13,13 @@
             </span>
           <div class="list-group-item-text">{{ element.name }}</div>
           </router-link>
-
         </span>
       </div>
-
 
       <div class="collapse-sidebar-container list-group-item-action list-group-item"
            @click="toggleSidebar()" title="Toggle sidebar">
         <span class="arrow-toggle sidebar-icon">
-<svg fill="currentColor" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path class="cls-1"
-                                                                                      d="M16.88,15.53,7,5.66A1,1,0,0,0,5.59,7.07l9.06,9.06-8.8,8.8a1,1,0,0,0,0,1.41h0a1,1,0,0,0,1.42,0l9.61-9.61A.85.85,0,0,0,16.88,15.53Z"/><path
-    class="cls-1"
-    d="M26.46,15.53,16.58,5.66a1,1,0,0,0-1.41,1.41l9.06,9.06-8.8,8.8a1,1,0,0,0,0,1.41h0a1,1,0,0,0,1.41,0l9.62-9.61A.85.85,0,0,0,26.46,15.53Z"/></svg>
+        <LoadIcon name="chevron-double-right"></LoadIcon>
         </span>
         <div class="list-group-item-text">Collapse sidebar</div>
       </div>
@@ -37,6 +34,7 @@ This component provides both a topbar and left toggleable side toolbar.
 
 Author: Carly Gettinger (cjgettinger@gmail.com)
 Co-Author: Dennis Zyska (zyska@ukp...)
+
 Source: left toggleable toolbar - adapted simple sidebar found at https://github.com/StartBootstrap/startbootstrap-simple-sidebar
 */
 
@@ -145,6 +143,7 @@ body.sb-sidenav-toggled .list-group-item-text {
   padding-bottom: 10px;
   border-bottom: 1.5px solid rgba(0, 0, 0, 0.125);
 }
+
 
 .arrow-toggle {
   transform: rotate(180deg);

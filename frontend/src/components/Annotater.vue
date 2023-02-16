@@ -41,10 +41,6 @@
     </Teleport>
 
     <Teleport to="#topbarCustomPlaceholder">
-      <span v-if="studySessionId !== 0 && false"
-            class="text-center">User Study Collab: {{ study.collab }} TimeLimit: {{
-          study.timeLimit
-        }} Sessions: {{ studySessions.length }} Online: TODO, Finish Button Modal</span>
       <form class="hstack gap-3 container-fluid justify-content-center">
         <button v-if="review" class="btn btn-outline-success me-2" type="button"
                 v-on:click="this.$refs.reviewSubmit.open()">Submit Review

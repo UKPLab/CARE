@@ -2,7 +2,7 @@
   <div id="wrapper" class="nav-container">
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
       <div class="container-fluid">
-        <button id='backButton' class="btn" title="Go back..." @click="toHome()">
+        <button id='backButton' class="btn" title="Go back..." @click="this.$router.go(-1)">
           <svg class="bi bi-arrow-left" fill="currentColor" height="16" viewBox="0 0 16 16" width="16"
                xmlns="http://www.w3.org/2000/svg">
             <path

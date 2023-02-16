@@ -40,7 +40,8 @@
     <template v-slot:footer>
       <div v-if="showSessions" class="btn-group">
         <button class="btn btn-primary" type="button" @click="showSessions=!showSessions">
-          <span>New Study</span>
+          <span v-if="studyId !== 0 && study.collab">Join Study Again</span>
+          <span v-else>Start Study Again</span>
         </button>
       </div>
       <div v-else class="btn-group">
@@ -53,8 +54,8 @@
           <span>Open Sessions</span>
         </button>
         <button :disabled="studyId === 0 && available" class="btn btn-primary" type="button" @click="start">
-          <span v-if="studyId !== 0 && study.collab">Join User Study</span>
-          <span v-else>Start User Study</span>
+          <span v-if="studyId !== 0 && study.collab">Join Study</span>
+          <span v-else>Start Study</span>
         </button>
       </div>
     </template>
@@ -121,7 +122,7 @@ export default {
         return this.$store.getters['study/getStudyById'](this.studyId)
       }
     },
-    studySessions() { //todo use the studysessiontable
+    studySessions() {
       if (this.studyId) {
         return this.$store.getters['study_session/getStudySessionsByStudyId'](this.studyId)
             .filter(s => s.end === null)
@@ -201,10 +202,10 @@ export default {
         if (data.success) {
           this.$emit("start", {studySessionId: data.studySessionId});
           this.$refs.modal.waiting = false;
-          this.$refs.modal.close();
+          this.close();
           this.eventBus.emit('toast', {
             title: "Study started",
-            message: "Enjoy your time :-)",
+            message: "Enjoy!",
             variant: "success"
           });
         } else {

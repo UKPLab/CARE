@@ -25,8 +25,14 @@ module.exports = class StudySessionSocket extends Socket {
                 this.emit("studySessionRefresh", await this.models['study_session'].getAll());
             }
         } else {
-            const studies = await this.models['study'].getAllByKey('userId', this.userId);
-            const sessionsPerStudy = await Promise.all(studies.map(async s => await this.models['study_session'].getAllByKey("studyId", s.id)))
+            const userStudySessions = await this.models["study_session"].getAllByKey("userId", this.userId);
+            const studyIds = [...new Set(userStudySessions.map(s => s.studyId))];
+
+            // get studies (to verify they exist still)
+            let studies = await Promise.all(studyIds.map(async sid => await this.models["study"].getById(sid)));
+            studies = studies.filter(s => s !== null && s!== undefined)
+
+            const sessionsPerStudy = studies.map(study => userStudySessions.filter(session => session.studyId === study.id));
             this.emit("studySessionRefresh", sessionsPerStudy.flat(1));
         }
     }

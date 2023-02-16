@@ -15,7 +15,7 @@
           </template>
           <template v-slot:footer>
             <LoadIcon iconName="stopwatch" style="margin-right:0.5rem"></LoadIcon>
-            <span>{{s.end !== null ? studyTimes[s.id] : 'unlimited'}}</span>
+            <span>{{s.end !== null ? studyTimes[s.id] : 'no due date'}}</span>
           </template>
         </Card>
         <hr>
@@ -53,7 +53,7 @@ export default {
     "studySessionRefresh": function (data) {
       data.forEach(s => {
         if (this.$store.getters["study/getStudyById"](s.studyId) === undefined) {
-          this.$socket.emit("studyGetById", {studyId: s.studyId});
+          this.$socket.emit("studyGet", {studyId: s.studyId});
         }
       });
     }
@@ -63,9 +63,9 @@ export default {
   },
   computed: {
     studies() {
-      return this.$store.getters["study/getStudies"].filter(s => this.sessions.includes(s.id));
+      return this.$store.getters["study/getStudies"].filter(s => this.sessionStudyIds.includes(s.id));
     },
-    sessions() {
+    sessionStudyIds() {
       return this.$store.getters["study_session/getStudySessionsByUser"](this.$store.getters["auth/getUserId"]).map(s => s.studyId);
     },
     studyTimes() {

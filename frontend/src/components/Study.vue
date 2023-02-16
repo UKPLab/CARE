@@ -19,7 +19,7 @@
 </template>
 
 <script>
-import StudyModal from "./study/StudyModal.vue";
+import StudyModal from "@/components/study/StudyModal.vue";
 import Annotater from "./Annotater.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
@@ -53,8 +53,8 @@ export default {
 
   mounted() {
     this.studySessionId = this.initStudySessionId;
-    this.$refs.studyModal.open();
     if (this.studySessionId === 0) {
+      this.$refs.studyModal.open();
       this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
     }
   },

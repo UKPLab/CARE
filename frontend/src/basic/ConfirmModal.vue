@@ -43,7 +43,11 @@ export default {
     abort() {
       this.$refs.confirmation.close();
       this.$emit("response", false);
-      this.cb(false);
+
+      const cb = this.cb;
+      this.cb = null;
+
+      cb(false);
     },
     open(name, message, cb) {
       this.cb = cb;
