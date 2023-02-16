@@ -11,19 +11,30 @@ describe("Test Websockets - Collaboration", () => {
 
     beforeEach(async () => {
         clientSocket = await getSocketClient(this.server, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
-        this.server.db.sequelize.sync();
     });
 
-    test("Collaboration", (done) => {
+    test("Collaboration - Start", (done) => {
         clientSocket.on("collabStart", (data) => {
-            console.log("collabStar", data);
-            console.log("collabStar", data);
-            console.log("collabStar", data);
-            //TODO implement
+            expect(data).toHaveProperty("collabHash");
+            expect(data).toHaveProperty("collabId");
             done();
         });
-        clientSocket.emit("collabSubscribe", {documentId: 1});
-        clientSocket.emit('collabAdd', {
+        clientSocket.emit("documentSubscribe", {documentId: 1});
+        clientSocket.emit('collabUpdate', {
+            targetType: "comment",
+            targetId: 1,
+            documentId: 1,
+            collabHash: "test"
+        });
+    });
+
+    test("Collaboration - User", (done) => {
+        clientSocket.on("collabRefresh", (data) => {
+            expect(data.collabHash).toBe("test");
+            done();
+        });
+        clientSocket.emit("documentSubscribe", {documentId: 1});
+        clientSocket.emit('collabUpdate', {
             targetType: "comment",
             targetId: 1,
             documentId: 1,
