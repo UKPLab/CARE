@@ -30,6 +30,7 @@ import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 
 import Adder from "./Adder.vue";
 import {mapMutations} from "vuex";
+import {scrollElement} from "@/assets/anchoring/scroll";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 

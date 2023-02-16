@@ -101,7 +101,8 @@ export default {
 
                 study.createdAt = new Date(study.createdAt).toLocaleString()
 
-                study.documentName = this.$store.getters["document/getDocument"](study.documentId)['name'];
+                const doc = this.$store.getters["document/getDocument"](study.documentId)
+                study.documentName = doc ? doc.name : "-";
 
                 study.sessions = this.$store.getters["study_session/getStudySessionsByStudyId"](study.id).length;
 

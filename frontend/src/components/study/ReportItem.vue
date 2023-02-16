@@ -22,10 +22,10 @@ export default {
   emits: ["showReportAnnotation"],
   computed: {
     comment() {
-      this.$store.getters["comment/getCommentByAnnotation"](this.annotationId);
+      return this.$store.getters["comment/getCommentByAnnotation"](this.annotationId);
     },
     annotation() {
-      this.$store.getters["anno/getAnnotation"](this.annotationId);
+      return this.$store.getters["anno/getAnnotation"](this.annotationId);
     },
     citation() {
       if (this.annotation) {

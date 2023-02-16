@@ -63,10 +63,14 @@ export default {
   },
   computed: {
     studies() {
-      return this.$store.getters["study/getStudies"].filter(s => this.sessionStudyIds.includes(s.id));
+      return this.$store.getters["study/getStudies"]
+          .filter(s => this.sessionStudyIds.includes(s.id))
+          .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)));
     },
     sessionStudyIds() {
-      return this.$store.getters["study_session/getStudySessionsByUser"](this.$store.getters["auth/getUserId"]).map(s => s.studyId);
+      return this.$store.getters["study_session/getStudySessionsByUser"](this.$store.getters["auth/getUserId"])
+          .filter(s => !s.end)
+          .map(s => s.studyId);
     },
     studyTimes() {
       this.trigger; // leave here to force recompute
