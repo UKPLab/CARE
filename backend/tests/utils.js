@@ -16,6 +16,7 @@ exports.getSocketClient = async function (server, username, password) {
             password: password,
         })
     const cookie = res.header['set-cookie'][0];
+    //console.log("Cookie: " + cookie)
     if (res.statusCode !== 200) {
         throw new Error("Could not login");
     }
