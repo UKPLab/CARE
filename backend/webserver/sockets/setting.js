@@ -82,8 +82,9 @@ module.exports = class SettingSocket extends Socket {
 
         this.socket.on("settingGetData", async (data) => {
             if (this.isAdmin()) {
+                this.socket.emit("settingData", await this.models['setting'].getAll(true));
                 try {
-                    this.socket.emit("settingData", await this.models['setting'].getAll());
+                    this.socket.emit("settingData", await this.models['setting'].getAll(true));
                 } catch (err) {
                     this.logger.error(err);
                 }

@@ -18,7 +18,10 @@ module.exports = {
             description: {
                 type: Sequelize.STRING(512)
             },
-
+            onlyAdmin: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false
+            },
             deleted: {
                 type: Sequelize.BOOLEAN,
                 defaultValue: false
