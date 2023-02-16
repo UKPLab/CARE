@@ -57,7 +57,9 @@ export default {
     annotations() {
       return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageId)
           .filter(anno => {
-            if (this.studySessionIds) {
+            if (this.studySessionId !== null) {
+              return anno.studySessionId === this.studySessionId;
+            } else if(this.studySessionIds) {
               return this.studySessionIds.includes(anno.studySessionId);
             } else {
               if (this.showAll) {
@@ -70,7 +72,7 @@ export default {
           .filter(anno => anno.anchors !== null)
     },
     tags() {
-      return this.$store.getters['tag/getAllTags'];
+      return this.$store.getters['tag/getAllTags'](false);
     },
   },
   watch: {

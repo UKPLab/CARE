@@ -93,7 +93,7 @@ export default {
           });
     },
     tags() {
-      return this.$store.getters["tag/getAllTags"];
+      return this.$store.getters["tag/getAllTags"]();
     },
     tagIds() {
       if (this.annotations && this.tags) {
@@ -114,7 +114,6 @@ export default {
       if (this.reportSections) {
         this.reportSections.forEach(r => {
           const annos = this.annotations.filter(a => a.tagId === r.id);
-
           reportItems.push(annos);
         });
 

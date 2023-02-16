@@ -113,7 +113,11 @@ export default {
   },
   methods: {
     visibilityChanged(isVisible, entry) {
-      this.$emit('updateVisibility', {pageNumber: this.pageNumber, isVisible: isVisible});
+      this.$emit('updateVisibility', {
+        pageNumber: this.pageNumber,
+        isVisible: isVisible,
+        offset: document.getElementById('page-container-' + this.pageNumber).offsetTop - 52.5
+      });
     },
     setA4() {
       const canvas = document.getElementById('placeholder-canvas-' + this.pageNumber);

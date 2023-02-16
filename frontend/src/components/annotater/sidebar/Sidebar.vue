@@ -92,13 +92,16 @@ export default {
     documentComments() {
       return this.$store.getters['comment/getDocumentComments'](this.documentId)
           .filter(comment => {
-            if (this.studySessionIds) {
+            // if the studySessionId is set, we are in study session mode
+            if (this.studySessionId !== null) {
+              return comment.studySessionId === this.studySessionId;
+            } else if(this.studySessionIds) {
               return this.studySessionIds.includes(comment.studySessionId);
             } else {
               if (this.showAll) {
                 return true;
               } else {
-                return comment.studySessionId === null
+                return comment.studySessionId === null;
               }
             }
           })
@@ -122,7 +125,13 @@ export default {
   },
   mounted() {
     this.eventBus.on('sidebarScroll', (anno_id) => {
-      this.sidebarScrollTo(this.$store.getters["comment/getCommentByAnnotation"](anno_id).id);
+      const comment = this.$store.getters["comment/getCommentByAnnotation"](anno_id);
+      // in case the comment might not be loaded yet
+      if(!comment){
+        return;
+      }
+
+      this.sidebarScrollTo(comment.id);
       this.$socket.emit("stats", {
         action: "sidebarScroll",
         data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}

@@ -1,5 +1,5 @@
 <template>
-  <Modal name="tagsetModal" :props="{tagsetId: id}" ref="tagSetModal" lg>
+  <Modal ref="tagSetModal" :props="{tagsetId: id}" lg name="tagsetModal">
     <template v-slot:title>
       <span v-if="id === 0">New</span>
       <span v-else>Edit</span>
@@ -62,7 +62,7 @@ export default {
     },
   },
   methods: {
-    ...mapMutations({cleanEmptyTagSet: "tag/CLEAN_EMPTY_TAG_SET", copyTagSet: "tag/COPY_TAG_SET"}),
+    ...mapMutations({cleanEmptyTagSet: "tag/CLEAN_EMPTY_TAG_SET", cleanEmptyTags: "tag/CLEAN_EMPTY_TAGS", copyTagSet: "tag/COPY_TAG_SET"}),
     new() {
       this.cleanEmptyTagSet();
       this.open(0);
@@ -89,6 +89,7 @@ export default {
         "tagSet": this.$store.getters["tag/getTagSet"](this.id),
         "tags": this.$store.getters["tag/getTags"](this.id, false)
       });
+      this.cleanEmptyTags(this.id);
       this.$refs.tagSetModal.waiting = true;
     },
     cancel() {

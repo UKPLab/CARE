@@ -23,7 +23,7 @@ export default {
         },
         getCommentByAnnotation: (state) => (annotation_id) => {
             return state.filter(comm => comm.annotationId === annotation_id)
-                .find(comm => comm.commentId === null);
+                .find(comm => comm.parentCommentId === null);
         },
         getCommentsByCommentId: (state) => (comment_id) => {
             return state.filter(comm => comm.parentCommentId === comment_id).sort(

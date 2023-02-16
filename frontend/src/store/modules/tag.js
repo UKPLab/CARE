@@ -42,10 +42,14 @@ const cleanEmptyTagSet = (state) => {
     const emptyTagSet = state["tagSets"].find(tagSet => tagSet.id === 0);
     if (emptyTagSet !== undefined) {
         state["tagSets"].splice(state["tagSets"].indexOf(emptyTagSet), 1);
-        state["tags"].filter(tag => tag.tagSetId === 0).forEach(tag => {
-            state["tags"].splice(state["tags"].indexOf(tag), 1);
-        });
+        cleanEmptyTags(state);
     }
+}
+
+const cleanEmptyTags = (state, tagSetId = 0) => {
+    state["tags"].filter(tag => tag.tagSetId === tagSetId).forEach(tag => {
+        state["tags"].splice(state["tags"].indexOf(tag), 1);
+    });
 }
 
 const copyTagSet = (state, from_id) => {
@@ -74,17 +78,19 @@ export default {
     strict: true,
     state: getDefaultState(),
     getters: {
-        getTags: (state) => (id) => {
+        getTags: (state) => (id, hideDeleted = true) => {
             if (id === undefined || id === null || isNaN(id)) {
                 return []
             }
-            return state["tags"].filter(tag => tag.tagSetId === id);
+            return state["tags"].filter(tag => tag.tagSetId === id && (!hideDeleted || !tag.deleted));
         },
-        getAllTags: (state) => {
-            return state["tags"];
+        getAllTags: (state) => (hideDeleted = true) => {
+            return state["tags"].filter(tag => (!hideDeleted || !tag.deleted));
         },
         getTagSets: state => {
-            return state["tagSets"].filter(tagSet => tagSet.id !== 0);
+            return state["tagSets"]
+                .filter(tagSet => !tagSet.deleted && tagSet.id !== 0)
+                .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)));
         },
         getTagSet: (state) => (id) => {
             if (state["tagSets"] == null) {
@@ -140,6 +146,9 @@ export default {
         CLEAN_EMPTY_TAG_SET: (state) => {
             cleanEmptyTagSet(state);
         },
+        CLEAN_EMPTY_TAGS: (state, tagSetId) => {
+            cleanEmptyTags(state, tagSetId);
+        },
         COPY_TAG_SET: (state, from_id) => {
             console.log(from_id);
             copyTagSet(state, from_id);
@@ -154,7 +163,7 @@ export default {
             refreshState(state["tagSets"], data);
         },
         SOCKET_tagRefresh: (state, data) => {
-            refreshState(state["tags"], data);
+            refreshState(state["tags"], data, false);
         }
     },
     actions: {}

@@ -17,10 +17,15 @@
 
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
-        <button v-if="studySessionId === null" :title="showAll ?  'Hide study comments' : 'Show study comments'"
+        <button v-if="studySessionId === null && numStudyComments > 0" :title="showAll ?  'Hide study comments' : 'Show study comments'"
                 class="btn rounded-circle" type="button"
                 @click="setSetting({key: 'annotator.showAllComments', value: !showAll})">
-          <LoadIcon :icon-name="showAll ?  'eye-slash-fill' : 'eye-fill'" :size="18"></LoadIcon>
+          <span class="position-relative translate-middle top-100 start-100 fs-10 fw-light">
+            {{ numStudyComments}}
+          </span>
+          <span>
+            <LoadIcon :icon-name="showAll ?  'eye-slash-fill' : 'eye-fill'" :size="18"></LoadIcon>
+          </span>
         </button>
       </li>
       <li class="nav-item">
@@ -135,7 +140,6 @@ export default {
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
         this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
-
       }
     }
   },
@@ -160,6 +164,9 @@ export default {
     nlpEnabled() {
       return this.$store.getters["settings/getValue"]('service.nlp.enabled') === "true";
     },
+    numStudyComments() {
+      return this.comments.filter(c => c.studySessionId).length;
+    }
   },
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {
@@ -169,11 +176,16 @@ export default {
         data: {review_id: this.review_id, documentId: this.documentId, anno_id: anno_id}
       });
     });
+
+    // get tagsets
     this.$socket.emit("tagSetGetAll");
     this.$socket.emit("tagGetAll");
-    this.load();
-    this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
 
+    // init component
+    this.load();
+
+    // scrolling
+    this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
   },
   beforeUnmount() {
     // Leave the room for document updates
@@ -288,7 +300,7 @@ export default {
       this.$socket.emit("documentSubscribe", {documentId: this.documentId});
 
       // check for available nlp support (for now hard-coded sentiment analysis)
-      if (!this.nlp_available) {
+      if (this.nlpEnabled) {
         this.$socket.emit("serviceCommand", {
           service: "NLPService",
           command: "skillGetConfig",
