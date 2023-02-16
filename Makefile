@@ -39,8 +39,14 @@ doc_asyncapi:
 .PHONY: doc_sphinx
 doc_sphinx:
 	@echo "Building sphinx documentation"
-	@docker-compose -f docker-compose.yml build docs_sphinx
+	@docker-compose -f docker-compose.yml --env-file ".env" build docs_sphinx
 	@docker run --rm -v ${PWD}/docs:/docs docs_sphinx make html
+
+.PHONY: doc_clean
+doc_clean:
+	@echo "Clean sphinx documentation"
+	@docker-compose -f docker-compose.yml --env-file ".env" build docs_sphinx
+	@docker run --rm -v ${PWD}/docs:/docs docs_sphinx make clean
 
 .PHONY: dev
 dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate
