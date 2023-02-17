@@ -6,11 +6,11 @@ describe("Test Websockets - Settings as User", () => {
 
     beforeAll(async () => {
         this.server = new Server();
-        this.server.start(3010);
+        this.server.start(3108);
     });
 
     beforeEach(async () => {
-        clientSocket = await getSocketClient(this.server, process.env.GUEST_EMAIL, process.env.GUEST_PWD);
+        clientSocket = await getSocketClient(this.server,3108, process.env.GUEST_EMAIL, process.env.GUEST_PWD);
     });
 
     test("Admin Settings not accessible by user", (done) => {

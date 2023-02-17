@@ -43,10 +43,15 @@ module.exports = class Socket {
      * @returns {Socket<>|null} The socket class object
      */
     getSocket(name) {
-        if (name in this.server.availSockets[this.socket.id]) {
-            return this.server.availSockets[this.socket.id][name];
+        if (this.socket.id in this.server.availSockets) {
+            if (name in this.server.availSockets[this.socket.id]) {
+                return this.server.availSockets[this.socket.id][name];
+            } else {
+                this.logger.error("Socket " + name + " not found!");
+                return null;
+            }
         } else {
-            this.logger.error("Socket " + name + " not found!");
+            this.logger.error("Socket ID " + this.socket.id + " not available!")
             return null;
         }
     }
@@ -71,9 +76,11 @@ module.exports = class Socket {
      * @param data
      */
     updateCreatorName(data) {
-        if ("UserSocket" in this.server.sockets) {
-            return this.getSocket("UserSocket").updateCreatorName(data);
+        const socket = this.getSocket("UserSocket");
+        if (socket) {
+            return socket.updateCreatorName(data);
         } else {
+            this.logger.error("UserSocket not found!")
             return data;
         }
     }

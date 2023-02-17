@@ -4,11 +4,12 @@ const {io: Client} = require("socket.io-client");
 /**
  * Get a socket client that is logged in
  * @param server server with http and io
+ * @param {number} port
  * @param {string} username
  * @param {password} password
  * @return {Promise<Socket>}
  */
-exports.getSocketClient = async function (server, username, password) {
+exports.getSocketClient = async function (server, port, username, password) {
     const res = await request(server.http)
         .post('/auth/login')
         .send({
@@ -33,6 +34,6 @@ exports.getSocketClient = async function (server, username, password) {
         autoConnect: true,
         timeout: 1000,
     };
-    return Client("http://localhost:3010", options);
+    return Client("http://localhost:" + port, options);
 
 }
