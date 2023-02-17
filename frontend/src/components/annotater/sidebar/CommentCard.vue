@@ -293,8 +293,8 @@ export default {
   margin-left: 4px;
 }
 
-.blockquoteMain:hover {
-  color: #000000;
+.blockquoteMain {
+  margin-left: 0
 }
 
 </style>

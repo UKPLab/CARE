@@ -146,13 +146,15 @@ export default {
     }),
     hover(commentId) {
       const annotationId = this.$store.getters['comment/getComment'](commentId).annotationId;
+
       if (annotationId)
         this.annoHover(annotationId)
     },
     unhover(commentId) {
       const annotationId = this.$store.getters['comment/getComment'](commentId).annotationId;
+
       if (annotationId)
-        this.annoHover(annotationId)
+        this.annoUnhover(annotationId)
     },
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;

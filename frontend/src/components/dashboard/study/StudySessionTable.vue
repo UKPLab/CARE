@@ -1,13 +1,15 @@
 <template>
     <Table :columns="columns" :data="studySessions" :options="options" @action="action"></Table>
+    <ConfirmModal ref="confirmModal" ></ConfirmModal>
 </template>
 
 <script>
 import Table from "@/basic/table/Table.vue";
+import ConfirmModal from "@/basic/ConfirmModal.vue";
 
 export default {
   name: "StudySessionTable.vue",
-  components: {Table},
+  components: {Table, ConfirmModal},
   props: {
     studyId: {
       type: Number,
@@ -92,7 +94,7 @@ export default {
               }
               session.manage.push(
                   {
-                    icon: "x-octagon",
+                    icon: "trash",
                     options: {
                       iconOnly: true,
                       specifiers: {
@@ -100,8 +102,8 @@ export default {
                         "btn-sm": true,
                       }
                     },
-                    title: "Finish session",
-                    action: "finishSession",
+                    title: "Delete session",
+                    action: "deleteSession",
                   });
             }
 
@@ -120,8 +122,17 @@ export default {
         case "resumeSession":
           this.$router.push("/session/" + data.params.hash);
           break;
-        case "finishSession":
-          this.$socket.emit("studySessionUpdate", {sessionId: data.params.id, deleted:true});
+        case "deleteSession":
+          this.$refs["confirmModal"].open(
+              "Delete Session",
+              "You are about to delete a session; if you just want to finish the session, please access the session and abort the delete.",
+              null,
+              function (res) {
+                if(res){
+                  this.$socket.emit("studySessionUpdate", {sessionId: data.params.id, deleted:true});
+                }
+              }
+          );
           break;
       }
     }

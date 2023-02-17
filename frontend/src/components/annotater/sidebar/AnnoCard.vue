@@ -1,6 +1,5 @@
 <template>
   <SideCard :loading="loading()" :shake="shake">
-
     <template v-slot:header>
       <div class="row">
         <div class="col">
@@ -24,7 +23,7 @@
     </template>
 
     <template v-slot:body>
-      <div v-if="annotation_id" :style="'border-color:#' + color" :title="tagName" class="blockquote card-text"
+      <div v-if="annotation_id" :style="'border-color:#' + color" :title="tagName" class="blockquote card-text annoBlockquote"
            data-placement="top"
            data-toogle="tooltip" @click="scrollTo(annotation_id)">
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
@@ -399,5 +398,9 @@ export default {
   -moz-animation: flickerAnimation 2s infinite;
   -o-animation: flickerAnimation 2s infinite;
   animation: flickerAnimation 2s infinite;
+}
+
+.annoBlockquote:hover {
+  color: #000000;
 }
 </style>

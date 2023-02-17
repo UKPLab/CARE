@@ -4,9 +4,17 @@
       Review Report
     </template>
     <template v-slot:body>
-      <p v-if="reportItems.length == 0">
-        Report could not be generated.
+      <p v-if="reportItems.length + noteItems.length === 0">
+        Empty report -- no annotations or comments found.
       </p>
+      <div v-else>
+        <h2>General Comments</h2>
+        <ul>
+          <li v-for="n in noteItems" :key="n.id">
+            <ReportItem :comment-id="n.id" @showReportComment="showComment"/>
+          </li>
+        </ul>
+      </div>
       <div v-for="s in reportSections" :key="s.id">
         <h2>
           <span :class="`badge bg-${s.colorCode}`">
@@ -116,9 +124,12 @@ export default {
           const annos = this.annotations.filter(a => a.tagId === r.id);
           reportItems.push(annos);
         });
-
       }
+
       return reportItems;
+    },
+    noteItems() {
+      return this.comments.filter(c => c.annotationId === null);
     }
   },
   methods: {
@@ -128,6 +139,11 @@ export default {
     showAnnotation(annoID) {
       this.eventBus.emit("sidebarScroll", annoID);
       this.eventBus.emit('pdfScroll', annoID);
+      this.$refs.modal.close();
+    },
+    showComment(commId) {
+      this.eventBus.emit("sidebarScroll", commId);
+      this.eventBus.emit('pdfScroll', commId);
       this.$refs.modal.close();
     },
     decisionSubmit(decision) {

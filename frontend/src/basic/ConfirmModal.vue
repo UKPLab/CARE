@@ -1,8 +1,9 @@
 <template>
-  <Modal ref="confirmation" lg @close="abort()">
+  <Modal ref="confirmation" @close="abort()" :name="'confirm'+name">
     <template v-slot:title>Confirm {{name}}</template>
     <template v-slot:body>
       <div>{{message}}</div>
+      <div class="text-danger fw-bold" v-if="warning">{{warning}}</div>
     </template>
     <template v-slot:footer>
       <button class="btn btn-primary" type="button" @click="abort()">Abort</button>
@@ -31,7 +32,8 @@ export default {
     return {
       cb: null,
       name: "",
-      message: "Please confirm"
+      message: "Please confirm",
+      warning: null
     }
   },
   methods: {
@@ -49,10 +51,11 @@ export default {
 
       cb(false);
     },
-    open(name, message, cb) {
+    open(name, message, warning = null, cb) {
       this.cb = cb;
       this.name = name;
       this.message = message;
+      this.warning = warning;
 
       this.$refs.confirmation.openModal();
     }

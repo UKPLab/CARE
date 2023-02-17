@@ -69,6 +69,7 @@ export default {
   },
   mounted() {
     this.$socket.emit("documentGetAll");
+    this.$socket.emit("studyGetAll", {userId: this.$store.getters["auth/getUserId"]});
   },
   computed: {
     documents() {
@@ -166,9 +167,19 @@ export default {
       }
     },
     async deleteDoc(row) {
+      const studies = this.$store.getters["study/getStudiesByDocument"](row.id);
+      let warning;
+      if(studies && studies.length > 0){
+        warning = ` There ${studies.length !== 1 ? 'are' : 'is'} currently ${studies.length} ${studies.length !== 1 ? 'studies' : 'study'}
+         running on this document. Deleting it will delete the ${studies.length !== 1 ? 'studies' : 'study'}!`
+      } else {
+        warning = "";
+      }
+
       this.$refs.deleteConf.open(
           "Delete Document",
           "Are you sure you want to delete the document?",
+          warning,
           function(val) {
             if(val){
               this.$socket.emit("documentUpdate", {documentId: row.id, deleted: true});
