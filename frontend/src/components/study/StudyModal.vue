@@ -38,6 +38,10 @@
       </span>
     </template>
     <template v-slot:footer>
+      <button class="btn btn-outline-secondary" type="button" @click="$router.go(-1)">
+        <span>Return to dashboard</span>
+      </button>
+      <vr></vr>
       <div v-if="showSessions" class="btn-group">
         <button class="btn btn-primary" type="button" @click="showSessions=!showSessions">
           <span v-if="studyId !== 0 && study.collab">Join Study Again</span>

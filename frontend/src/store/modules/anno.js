@@ -67,26 +67,27 @@ export default {
         },
         HOVER: (state, id) => {
             let annotation = state.find(x => x.id === id);
-            annotation.hover = true;
             if ("anchors" in annotation && annotation.anchors != null) {
                 annotation.anchors
                     .filter(anchor => "highlights" in anchor)
                     .forEach(anchor => anchor.highlights.map((highlight) => {
-                        if ("svgHighlight" in highlight)
+                        if ("svgHighlight" in highlight) {
                             highlight.svgHighlight.classList.add("is-focused");
+                        }
                         highlight.classList.add("highlight-focus");
                     }))
             }
         },
         UNHOVER: (state, id) => {
             let annotation = state.find(x => x.id === id);
-            annotation.hover = false;
             if ("anchors" in annotation && annotation.anchors != null) {
                 annotation.anchors
                     .filter(anchor => "highlights" in anchor)
                     .forEach(anchor => anchor.highlights.map((highlight) => {
-                        if ("svgHighlight" in highlight)
+                        console.log("Changing highlight color", highlight);
+                        if ("svgHighlight" in highlight) {
                             highlight.svgHighlight.classList.remove("is-focused");
+                        }
                         highlight.classList.remove("highlight-focus");
                     }))
             }

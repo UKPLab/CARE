@@ -19,8 +19,10 @@ export default {
             return state;
         },
         getStudyById: state => studyId => {
-            console.log("getting study by id", state, studyId);
             return state.find(study => study.id === studyId);
+        },
+        getStudiesByDocument: state => documentId => {
+            return state.filter(study => study.documentId === documentId);
         },
         getStudyByHash: state => studyHash => {
             return state.find(study => study.hash === studyHash);

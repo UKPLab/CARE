@@ -34,8 +34,6 @@ module.exports = class StudySocket extends Socket {
         } else {
             this.sendToast("You are not allowed to update this study", "Error", "Danger");
         }
-
-
     }
 
     /**

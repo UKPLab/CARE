@@ -67,7 +67,7 @@ module.exports = class MetaModel extends Model {
     /**
      * Get all db entries by key
      * @param {string} key column name
-     * @param {string} value column value
+     * @param {any} value column value
      * @param {boolean} includeDraft include draft entries
      */
     static async getAllByKey(key, value, includeDraft = false) {

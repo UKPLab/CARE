@@ -82,11 +82,34 @@ module.exports = class DocumentSocket extends Socket {
      */
     async updateDocument(documentId, document) {
         const doc = await this.models['document'].getById(documentId);
+
         if (this.checkUserAccess(doc.userId)) {
             this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(doc.id, document)));
+            if (document.deleted && !doc.deleted) {
+                await this.cascadeDelete(documentId);
+            }
         } else {
             this.sendToast("You are not allowed to update this document", "Error", "Danger");
         }
+    }
+
+    /**
+     * Cascading the delete of a document (by ID) to all tables with FK. This information is only pushed
+     * to the deleting client and not any others.
+     *
+     * @param {number} documentId
+     * @return {Promise<void>}
+     */
+    async cascadeDelete(documentId) {
+        (await this.models['study'].getAllByKey("documentId", documentId))
+            .filter(s => this.checkUserAccess(s.userId))
+            .forEach(s => {
+                try {
+                    this.getSocket("StudySocket").updateStudy(s.id, {deleted: true})
+                } catch (e) {
+                    this.logger.error("Failed to delete study " + s.id + " for doc " + documentId);
+                }
+            });
     }
 
     /**

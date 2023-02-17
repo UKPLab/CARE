@@ -133,7 +133,17 @@ export default {
   },
   data() {
     return {
-      downloading: false
+      downloading: false,
+      logScroll: debounce(function () {
+        this.$socket.emit("stats", {
+          action: "annotatorScrollActivity",
+          data: {
+            documentId: this.documentId,
+            scrollTop: this.$refs.viewer.scrollTop,
+            scrollHeight: this.$refs.viewer.scrollHeight
+          }
+        })
+      }, 500)
     }
   },
   watch: {
@@ -205,16 +215,7 @@ export default {
       this.$socket.emit("settingSet", {key: "annotator.nlp.activated", value: newNlpActive});
     },
     scrollActivity() {
-      debounce(() => {
-        this.$socket.emit("stats", {
-          action: "annotatorScrollActivity",
-          data: {
-            documentId: this.documentId,
-            scrollTop: this.$refs.viewer.scrollTop,
-            scrollHeight: this.$refs.viewer.scrollHeight
-          }
-        })
-      }, 500);
+      this.logScroll();
     },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
