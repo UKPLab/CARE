@@ -6,11 +6,11 @@ describe("Test Websockets - Annotations", () => {
 
     beforeAll(async () => {
         this.server = new Server();
-        this.server.start(3010);
+        this.server.start(3101);
     });
 
     beforeEach(async () => {
-        clientSocket = await getSocketClient(this.server, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
+        clientSocket = await getSocketClient(this.server, 3101, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
     });
 
     test("Add and update annotation", (done) => {

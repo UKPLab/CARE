@@ -6,20 +6,11 @@ describe("Test Websockets - Settings", () => {
 
     beforeAll(async () => {
         this.server = new Server();
-        this.server.start(3010);
+        this.server.start(3107);
     });
 
     beforeEach(async () => {
-        clientSocket = await getSocketClient(this.server, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
-        this.server.db.sequelize.sync();
-    });
-
-    test("Test Settings", (done) => {
-        clientSocket.on("settingRefresh", (data) => {
-            expect(data["tags.tagSet.default"]).toBe("1");
-            done();
-        })
-        clientSocket.emit("settingGetAll")
+        clientSocket = await getSocketClient(this.server,3107, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
     });
 
     test("Save Setting", (done) => {
@@ -37,10 +28,27 @@ describe("Test Websockets - Settings", () => {
 
     test("Load Settings", (done) => {
         clientSocket.on("settingRefresh", (data) => {
-            expect(Object(data).keys().length).toBeGreaterThan(0);
+            expect('app.study.enabled' in data).toBe(true);
+            expect(data["service.nlp.token"]).toBe(undefined);
             done();
         })
         clientSocket.emit("settingGetAll")
+    });
+
+    test("Load All Settings", (done) => {
+        clientSocket.on("settingRefresh", (data) => {
+            expect('app.study.enabled' in data).toBe(true);
+            done();
+        })
+        clientSocket.emit("settingGetAll", true)
+    });
+
+    test("Setting Configuration", (done) => {
+        clientSocket.on("settingData", (data) => {
+            expect(data.find(s => s.key  === "service.nlp.token").value).toBe(process.env.SERVICE_NLP_TOKEN);
+            done();
+        })
+        clientSocket.emit("settingGetData")
     });
 
     test("Test Navigation", (done) => {
@@ -51,6 +59,7 @@ describe("Test Websockets - Settings", () => {
         })
         clientSocket.emit("settingGetNavigation")
     });
+
 
     afterEach(() => {
         if (clientSocket.connected) {

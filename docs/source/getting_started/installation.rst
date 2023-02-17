@@ -1,9 +1,10 @@
 Installation
 ============
 
-To get started quickly, follow the below instructions. For a complete overview on you building, development and
-deployment options checkout the :doc:`Before You Start <for_developers/before_you_start>` option. If you simply
-want to run a user or annotation study, follow this guide.
+To get started quickly, follow the below instructions.
+For a complete overview on building, development and deployment options
+checkout the :doc:`Before You Start <for_developers/before_you_start>` option.
+If you simply want to run a user or annotation study, follow this guide.
 
 Prerequisites
 -------------

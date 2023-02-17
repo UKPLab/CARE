@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'CARE'
-copyright = '2022, Dennis Zyska, Nils Dycke'
+copyright = '2023, Dennis Zyska, Nils Dycke'
 author = 'Dennis Zyska, Nils Dycke'
 
 # -- General configuration ---------------------------------------------------
@@ -25,6 +25,7 @@ extensions = [
     'sphinx.ext.intersphinx',  # Link to other projects' documentation.
     'sphinx.ext.viewcode',  # Add a link to the Python source code of documented object.
     'sphinx.ext.todo',  # Support for todo items.
+    'sphinx.ext.extlinks', # Support for external links.
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 
@@ -53,3 +54,4 @@ rst_epilog = """
 .. |SERVICE_NLP_URL| replace:: {nlpurl}
 .. |This message should not appear| replace:: {test}
 """.format(test="", nlpurl=os.environ.get("SERVICE_NLP_URL"))
+extlinks = {'broker_docs': ("{}/docs".format(os.environ.get("SERVICE_NLP_URL")), "Broker Documentation")}
