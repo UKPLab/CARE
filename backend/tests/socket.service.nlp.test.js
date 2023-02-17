@@ -11,11 +11,11 @@ describe("Test Websockets - Service - NLP", () => {
 
     beforeEach(async () => {
         clientSocket = await getSocketClient(this.server, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
-        this.server.db.sequelize.sync();
     });
 
     test("Service - NLP Service", (done) => {
         clientSocket.on("serviceRefresh", (data) => {
+            console.log(data);
             if (data['type'] === 'skillUpdate') {
                 expect(data['type']).toBe("skillUpdate");
                 expect(data['service']).toBe("NLPService");
@@ -31,6 +31,7 @@ describe("Test Websockets - Service - NLP", () => {
                 expect(data['type']).toBe("skillConfig");
                 expect(data['data']['name']).toBe("sentiment_classification");
                 clientSocket.emit("serviceRequest", {
+                    service: "NLPService",
                     data: {
                         id: 1,
                         name: "sentiment_classification",
@@ -40,14 +41,13 @@ describe("Test Websockets - Service - NLP", () => {
             }
             if (data['type'] === 'skillResults') {
                 console.log(data);
-                // TODO implement
-                expect(data['data'].length).toBeGreaterThan(0);
-
+                expect(data['data']['id']).toBe(1);
+                expect(data['data']['fallback']).toBe(true);
+                done();
             }
-
-
         })
-        clientSocket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll", data: {}});
+        // It is auto called when client connects to server
+        // clientSocket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll", data: {}});
     });
 
     afterEach(() => {

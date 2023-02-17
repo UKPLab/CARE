@@ -11,7 +11,6 @@ describe("Test Websockets - Log", () => {
 
     beforeEach(async () => {
         clientSocket = await getSocketClient(this.server, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
-        this.server.db.sequelize.sync();
     });
 
 
