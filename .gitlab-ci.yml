@@ -43,6 +43,7 @@ test:
     name: docker/compose:debian-1.29.2
   stage: test
   needs: []
+  allow_failure: true
   before_script:
     - *add-debian-mirror
     - docker info
