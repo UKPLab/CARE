@@ -56,11 +56,11 @@ module.exports = class Server {
         }
 
 
-        this.logger.info("Initializing Session management...");
+        this.logger.debug("Initializing Session management...");
         this.session = this.#initSessionManagement();
         this.app.use(this.session);
 
-        this.logger.info("Initializing Passport...");
+        this.logger.debug("Initializing Passport...");
         this.app.use(bodyParser.urlencoded({extended: false}));
         this.app.use(bodyParser.json());
         this.#loginManagement();
@@ -157,7 +157,7 @@ module.exports = class Server {
         this.db.sequelize.sync();
 
         // Sequelize Session Store
-        this.logger.info("Initializing Sequelize Session Store...");
+        this.logger.debug("Initializing Sequelize Session Store...");
         const dbStore = new SequelizeStore({
             db: this.db.sequelize,
             checkExpirationInterval: 15 * 60 * 1000, // The interval at which to cleanup expired sessions in milliseconds.
@@ -249,7 +249,7 @@ module.exports = class Server {
      * Find all sockets and add sockets to the server
      */
     #addSockets() {
-        this.logger.info("Adding sockets: ");
+        this.logger.debug("Adding sockets: ");
         fs.readdir(path.resolve(__dirname, "./sockets"), (err, files) => {
             if (err) {
                 this.logger.error("Error while reading sockets directory: " + err);
@@ -273,7 +273,7 @@ module.exports = class Server {
      * @param socketClass - class of the socket
      */
     addSocket(socketClass) {
-        this.logger.info("Add socket " + socketClass.name + " to webserver...");
+        this.logger.debug("Add socket " + socketClass.name + " to webserver...");
         this.sockets[socketClass.name] = socketClass;
     }
 
@@ -281,7 +281,7 @@ module.exports = class Server {
      * Find and add all services and add to the server
      */
     #addServices() {
-        this.logger.info("Adding services: ");
+        this.logger.debug("Adding services: ");
         fs.readdir(path.resolve(__dirname, "./services"), (err, files) => {
             if (err) {
                 this.logger.error("Error while reading services directory: " + err);
@@ -302,7 +302,7 @@ module.exports = class Server {
      * Add external services to the server
      */
     addService(serviceClass) {
-        this.logger.info("Add service " + serviceClass.name + " to webserver...");
+        this.logger.debug("Add service " + serviceClass.name + " to webserver...");
 
         this.services[serviceClass.name] = new serviceClass(this);
         this.services[serviceClass.name].init();

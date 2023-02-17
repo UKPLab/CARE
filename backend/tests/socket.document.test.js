@@ -7,12 +7,11 @@ describe("Test Websocket - Documents", () => {
 
     beforeAll(async () => {
         this.server = new Server();
-        this.server.start(3010);
+        this.server.start(3104);
     });
 
     beforeEach(async () => {
-        clientSocket = await getSocketClient(this.server, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
-        this.server.db.sequelize.sync();
+        clientSocket = await getSocketClient(this.server,3104, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
     });
 
 
@@ -45,8 +44,12 @@ describe("Test Websocket - Documents", () => {
     })
 
     test("Document get by Hash", (done) => {
-        // TODO implement, document get by hash
-        done();
+        clientSocket.on("documentRefresh", (data) => {
+            expect(data.length).toBeGreaterThan(0);
+            done();
+        })
+        clientSocket.emit("documentGetByHash", {documentHash: "8852a746-360e-4c31-add2-4d1c75bfb96d"})
+
     })
 
     test("Document File Load", (done) => {
@@ -59,15 +62,14 @@ describe("Test Websocket - Documents", () => {
     });
 
     test("Document Handling", (done) => {
-        let checkDeleted = false;
         clientSocket.on("documentRefresh", (data) => {
             expect(data.find(doc => doc.id === 1)['name']).toBe("test");
-            clientSocket.emit("documentDelete", {documentId: 1})
-            if (checkDeleted) {
+            if (data.find(doc => doc.id === 1)['deleted']) {
                 expect(data.find(doc => doc.id === 1)['deleted']).toBe(true);
                 done();
+            } else {
+                clientSocket.emit("documentUpdate", {documentId: 1, deleted: true});
             }
-            checkDeleted = true;
         })
         clientSocket.emit("documentUpdate", {documentId: 1, name: "test"})
     });

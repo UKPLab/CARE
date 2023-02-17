@@ -13,7 +13,7 @@ module.exports = {
                 collabHash: {
                     type: Sequelize.STRING,
                     allowNull: false,
-                    unique: true
+                    unique: false
                 },
                 userId: {
                     type: Sequelize.INTEGER,

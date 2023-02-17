@@ -6,42 +6,50 @@ describe("Test Websockets - Studies", () => {
 
     beforeAll(async () => {
         this.server = new Server();
-        this.server.start(3010);
+        this.server.start(3109);
     });
 
     beforeEach(async () => {
-        clientSocket = await getSocketClient(this.server, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
-        this.server.db.sequelize.sync();
+        clientSocket = await getSocketClient(this.server,3109, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
     });
 
 
-    test("Studies", (done) => {
-        clientSocket.on("studyPublished", (data) => {
-            console.log("study published", data);
-            console.log("lk")
-            // TODO implement
+    test("Add Study - Get study by Hash", (done) => {
+        clientSocket.on("studyRefresh", (data) => {
+            expect(data.find(study => study.name === "Test Study")).toBeTruthy();
             done();
+        })
+        clientSocket.on("studyPublished", (data) => {
+            expect(data).toHaveProperty("success", true);
+            clientSocket.emit("studyGetByHash", {studyHash: data['studyHash']})
         })
         clientSocket.emit("studyPublish", {
             name: "Test Study",
             documentId: 1,
-            collab: false,
-            resumable: true,
-            timeLimit: 0,
-            description: "",
-            start: null,
-            end: null,
         });
     });
 
-    test("Get Study by Hash", (done) => {
-        clientSocket.on("studyRefresh", (data) => {
-            // TODO implement
-
+    test("Add Session to study", (done) => {
+        clientSocket.on("studySessionRefresh", (data) => {
+            expect(data.length).toBeGreaterThan(0);
+            done();
         })
-        done();
-        clientSocket.emit("studyGetByHash", {hash: "test"})
-    });
+        clientSocket.on("studyRefresh", (data) => {
+            expect(data.find(study => study.name === "Test Study 2")).toBeTruthy();
+            const studyId = data.find(study => study.name === "Test Study 2")['id']
+            clientSocket.emit("studySessionUpdate", {
+                studyId: studyId,
+            })
+        })
+        clientSocket.on("studyPublished", (data) => {
+            expect(data).toHaveProperty("success", true);
+            clientSocket.emit("studyGetAll")
+        })
+        clientSocket.emit("studyPublish", {
+            name: "Test Study 2",
+            documentId: 1,
+        });
+    })
 
     afterEach(() => {
         if (clientSocket.connected) {
