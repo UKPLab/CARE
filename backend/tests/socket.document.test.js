@@ -7,11 +7,11 @@ describe("Test Websocket - Documents", () => {
 
     beforeAll(async () => {
         this.server = new Server();
-        this.server.start(3010);
+        this.server.start(3104);
     });
 
     beforeEach(async () => {
-        clientSocket = await getSocketClient(this.server, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
+        clientSocket = await getSocketClient(this.server,3104, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
     });
 
 

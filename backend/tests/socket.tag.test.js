@@ -6,12 +6,11 @@ describe("Test Websocket - Tags", () => {
 
     beforeAll(async () => {
         this.server = new Server();
-        this.server.start(3010);
+        this.server.start(3110);
     });
 
     beforeEach(async () => {
-        clientSocket = await getSocketClient(this.server, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
-        this.server.db.sequelize.sync();
+        clientSocket = await getSocketClient(this.server,3110, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
     });
 
 
@@ -24,11 +23,6 @@ describe("Test Websocket - Tags", () => {
         clientSocket.emit("tagGetAll")
     });
 
-    test("Load tags by User", (done) => {
-        // TODO implement, login with guest user and check if tags are loaded
-        done();
-    })
-
     test("Load tagSets", (done) => {
         clientSocket.on("tagSetRefresh", (data) => {
             expect(data.length).toBeGreaterThan(0);
@@ -37,11 +31,6 @@ describe("Test Websocket - Tags", () => {
         })
         clientSocket.emit("tagSetGetAll")
     });
-
-    test("Load tagSets by User", (done) => {
-        // TODO implement, login with guest user and check if tagSets are loaded
-        done();
-    })
 
     test("TagSet Add / Publish", (done) => {
         clientSocket.on("tagSetPublished", (data) => {
@@ -65,7 +54,6 @@ describe("Test Websocket - Tags", () => {
 
     test("TagSet Update", (done) => {
         clientSocket.on("tagSetRefresh", (data) => {
-            console.log("tagSetRefresh", data);
             expect(data.find((t) => t.name === 'ChangeName')['id']).toBe(1);
             done();
         });

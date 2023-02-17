@@ -82,7 +82,7 @@ module.exports = class StudySocket extends Socket {
         const study = await this.models['study'].getByHash(studyHash);
         if (study) {
             const sessions = await this.models['study_session'].getAllByKey('userId', this.userId);
-            this.emit("studySessionRefresh", sessions.filter(s => s.studyId === study.id), false);
+            this.emit("studySessionRefresh", sessions.filter(s => s.studyId === study.id));
             this.emit("studyRefresh", study);
         } else {
             this.socket.emit("studyError", {
