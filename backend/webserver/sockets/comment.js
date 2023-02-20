@@ -45,7 +45,7 @@ module.exports = class CommentSocket extends Socket {
             const origComment = await this.models['comment'].getById(commentId);
 
             if (origComment.userId === await this.models['user'].getUserIdByName("Bot")) {
-                const parentComment = await this.models['comment'].getById(origComment.commentId);
+                const parentComment = await this.models['comment'].getById(origComment.parentCommentId);
                 if (!this.checkUserAccess(parentComment.userId)) {
                     this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
                     return;
@@ -87,7 +87,7 @@ module.exports = class CommentSocket extends Socket {
      */
     async deleteChildCommentsByAnnotation(annotationId) {
         try {
-            const comment = this.models['comment'].getByKey("annotationId", annotationId);
+            const comment = await this.models['comment'].getByKey("annotationId", annotationId);
             await this.updateComment(comment.id, Object.assign(comment, {deleted: true}));
         } catch (e) {
             this.logger.info("Error during deletion of comments: " + e);

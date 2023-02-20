@@ -94,17 +94,18 @@ export default {
     },
   },
   methods: {
-    request() {
+    async request() {
       this.requestId = uuid();
-      this.$socket.emit("serviceRequest",
-          {
-            service: "NLPService",
-            data: {
-              id: this.requestId,
-              name: this.skill,
-              data: this.data
+
+      await this.$socket.emit("serviceRequest",
+            {
+              service: "NLPService",
+              data: {
+                id: this.requestId,
+                name: this.skill,
+                data: this.data
+              }
             }
-          }
       );
 
       setTimeout(() => {

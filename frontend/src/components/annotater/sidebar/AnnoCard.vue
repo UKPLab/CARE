@@ -244,7 +244,7 @@ export default {
       }
     },
     loading() {
-      if (this.annotation_id && !this.annotation) {
+      if(this.annotation_id && !this.annotation) {
         return true;
       }
       return false;
@@ -309,9 +309,9 @@ export default {
       this.edit_mode = status;
     },
     summarizeResponse(data) {
-      this.$socket.emit('commentAdd', {
+      this.$socket.emit('commentUpdate', {
         "documentId": this.documentId,
-        "commentId": this.commentId,
+        "parentCommentId": this.commentId,
         "studySessionId": this.studySessionId,
         "text": "Summarization: " + data[0]['summary_text'],
         "userId": "Bot"
