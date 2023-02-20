@@ -56,7 +56,7 @@
     </div>
 
     <TagSelector v-if="comment" v-model="comment.tags" :disabled="!edit"
-                 :isEditor="comment.userId === user_id"></TagSelector>
+                 :isEditor="comment.userId === userId"></TagSelector>
     <div v-if="level >= 1">
       <div class="ms-auto">
         <div v-if="editedByMyself" class="row">
@@ -83,13 +83,13 @@
                            icon="reply-fill"
                            title="Reply"
                            @click="reply"/>
-            <SidebarButton v-if="comment.userId === user_id"
+            <SidebarButton v-if="comment.userId === userId"
                            :loading="false"
                            :props="this.$props"
                            icon="pencil-square"
                            title="Edit"
                            @click="editComment"/>
-            <SidebarButton v-if="comment.userId === user_id || myBotRequest"
+            <SidebarButton v-if="comment.userId === userId || myBotRequest"
                            :loading="false"
                            :props="this.$props"
                            icon="trash3"
@@ -186,13 +186,10 @@ export default {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
     },
     myBotRequest() {
-      if (this.comment.creator_name === "Bot" && this.$store.getters["comment/getComment"](this.comment.commentId)["userId"] === this.user_id) {
-        return true;
-      } else {
-        return false;
-      }
+      return this.comment.creator_name === "Bot"
+          && this.$store.getters["comment/getComment"](this.comment.parentCommentId).userId === this.userId;
     },
-    user_id() {
+    userId() {
       return this.$store.getters["auth/getUserId"];
     },
     editedByMyself() {

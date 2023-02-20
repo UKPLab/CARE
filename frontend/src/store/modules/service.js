@@ -67,12 +67,16 @@ export default {
                         state.services[service][serviceType][data.data.name] = data.data;
                     }
                 } else if (serviceType === "skillResults") {
+                    let cur;
                     if (!(serviceType in state.services[service])) {
-                        state.services[service][serviceType] = {};
+                        cur = {};
+                    } else {
+                        cur = {... state.services[service][serviceType]};
                     }
                     if (!data.data.error) {
-                        state.services[service][serviceType][data.data.id] = data.data.data;
+                        cur[data.data.id] = data.data.data;
                     }
+                    state.services[service][serviceType] = cur;
                 }
             }
         },
