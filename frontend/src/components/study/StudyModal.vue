@@ -32,7 +32,7 @@
             Please note that there is a time limitation of {{ study.timeLimit }} min for this study!
           </div>
           <div v-if="study.collab" class="mt-1">
-            This is a <b>collaborative</b> user study, so everyone can join and proceed with this study simultaneous!
+            This is a <b>collaborative</b> user study, so everyone can join and proceed with this study simultaneously!
           </div>
         </span>
       </span>
@@ -202,23 +202,28 @@ export default {
       this.$refs.modal.close();
     },
     start() {
+      // needed, otherwise the ref in the callback can become null
+      const modal = this.$refs.modal;
+
       this.sockets.subscribe("studyStarted", (data) => {
+        console.log("Can start the study!", this, this.$refs);
         if (data.success) {
           this.$emit("start", {studySessionId: data.studySessionId});
-          this.$refs.modal.waiting = false;
-          this.close();
+          modal.waiting = false;
+          modal.close();
           this.eventBus.emit('toast', {
             title: "Study started",
             message: "Enjoy!",
             variant: "success"
           });
         } else {
-          this.$refs.modal.waiting = false;
+          modal.waiting = false;
           this.eventBus.emit('toast', {title: "Study cannot be started!", message: data.message, variant: "danger"});
         }
       });
+
       this.$socket.emit("studyStart", {studyId: this.studyId});
-      this.$refs.modal.waiting = true;
+      modal.waiting = true;
     },
     sessionAction(data) {
       if (data.action === "finishSession") {

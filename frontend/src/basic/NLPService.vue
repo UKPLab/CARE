@@ -1,10 +1,14 @@
 <template>
-  <span v-if="nlpAvailable">
+  <span v-if="nlpEnabled && nlpActivated">
     <span v-if="type === 'button'">
-      <button v-if="requestId === null" :title="title"
+      <button v-if="requestId === null"
+              :title="nlpAvailable ? title : `${title} not available`"
               class="btn btn-sm"
-              data-placement="top" data-toggle="tooltip"
-              type="button" v-on:click="request()">
+              data-placement="top"
+              data-toggle="tooltip"
+              type="button"
+              v-on:click="request()"
+              :disabled="!nlpAvailable">
       <LoadIcon :iconName="iconName" :size="iconSize"></LoadIcon>
       <span class="visually-hidden">{{ skill }}</span>
       </button>
@@ -125,5 +129,8 @@ export default {
 </script>
 
 <style scoped>
-
+.btn[disabled] {
+    pointer-events: auto;
+    cursor: auto;
+}
 </style>

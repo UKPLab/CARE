@@ -20,12 +20,15 @@ module.exports = class AnnotationSocket extends Socket {
             "id",
             "documentId",
             "createdAt",
-            "updatedAt"
+            "updatedAt",
+            "studySessionId"
         ]
 
         let copied = pickObjectAttributeSubset(annotation, copyFields);
         copied.userId = await this.models['user'].getUserName(annotation.userId);
         copied.tag = (await this.models['tag'].getById(annotation.tagId)).name;
+
+        copied.studyId = annotation.studySessionId ? (await this.models["study_session"].getById(annotation.studySessionId)).studyId : null
 
         return copied
     }

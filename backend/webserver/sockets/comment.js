@@ -21,6 +21,7 @@ module.exports = class CommentSocket extends Socket {
             "documentId",
             "createdAt",
             "updatedAt",
+            "studySessionId"
         ]
 
         let copied = pickObjectAttributeSubset(comment, copyFields);
@@ -30,6 +31,7 @@ module.exports = class CommentSocket extends Socket {
 
         copied.annotationId = comment.annotationId ? comment.annotationId : null;
         copied.parentCommentId = comment.parentCommentId ? comment.parentCommentId : null;
+        copied.studyId = comment.studySessionId ? (await this.models["study_session"].getById(comment.studySessionId)).studyId : null
 
         return copied;
     }
