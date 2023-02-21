@@ -115,6 +115,9 @@ export default {
         return;
       }
 
+      const doc = this.$store.getters["document/getDocument"](annoExport.documentId);
+      const docHash = doc ? doc.hash : null;
+
       let [merged, docComments] = mergeAnnotationsAndComments(
             annoExport.objs,
             commExport.objs
@@ -125,14 +128,14 @@ export default {
         docComments = docComments.map(i => this._simple(i));
       }
 
-      downloadObjectsAs(merged, `doc${annoExport.documentId}_annotations`, this.outputType);
+      downloadObjectsAs(merged, `doc_${docHash ? docHash : annoExport.documentId}_annotations`, this.outputType);
       if(docComments.length > 0){
-        downloadObjectsAs(docComments, `doc${annoExport.documentId}_notes`, this.outputType);
+        downloadObjectsAs(docComments, `doc_${docHash ? docHash : annoExport.documentId}_notes`, this.outputType);
       }
 
       this.eventBus.emit('toast', {
           title: "Export Success",
-          message: `Exported annotations for document ${annoExport.documentId}`,
+          message: `Exported annotations for document ${docHash ? docHash : annoExport.documentId}`,
           variant: "success"
         });
     },
