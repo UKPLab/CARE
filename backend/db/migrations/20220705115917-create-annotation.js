@@ -17,7 +17,7 @@ module.exports = {
                 allowNull: false
             },
             text: {
-                type: Sequelize.STRING(1024)
+                type: Sequelize.STRING(2048)
             },
             tagId: {
                 type: Sequelize.INTEGER,
