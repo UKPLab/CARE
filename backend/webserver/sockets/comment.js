@@ -31,7 +31,7 @@ module.exports = class CommentSocket extends Socket {
 
         copied.annotationId = comment.annotationId ? comment.annotationId : null;
         copied.parentCommentId = comment.parentCommentId ? comment.parentCommentId : null;
-        copied.studyId = comment.studySessionId ? (await this.models["study_session"].getById(comment.studySessionId)).studyId : null
+        copied.studyId = comment.studySessionId !== null ? (await this.models["study_session"].getById(comment.studySessionId)).studyId : null;
 
         return copied;
     }
@@ -76,9 +76,11 @@ module.exports = class CommentSocket extends Socket {
      */
     async deleteChildComments(parentCommentId) {
         const comments = await this.models["comment"].getAllByKey("parentCommentId", parentCommentId);
-        comments.map(async comment => {
-            await this.updateComment(comment.id, Object.assign(comment, {deleted: true}));
-        })
+        await Promise.all(comments
+            .filter(c => this.checkUserAccess(c.userId))
+            .map(async comment => {
+                await this.updateComment(comment.id, Object.assign(comment, {deleted: true}));
+            }));
     }
 
     /**
