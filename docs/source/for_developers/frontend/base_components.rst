@@ -18,6 +18,32 @@ Card
 The card component offers a simple boostrap card with a title, body and footer. This is the go-to component
 if you want to add information to dashboard components or in the annotator's sidebar.
 
+You can use it by simply importing it and insert the headerElements, body and footer as template slots.
+
+.. code-block:: javascript
+
+    <template>
+        <Card title='Example'>
+            <template #headerElements>
+            </template>
+            <template #body>
+            </template>
+            <template #footer>
+            </template>
+        </card>
+    </template>
+
+    <script>
+        import Card from '@/basic/Card.vue';
+
+        export default {
+            name: 'CardExample',
+            components: {
+                Card,
+            },
+        };
+    </script>
+
 
 Collaboration
 -------------
@@ -30,11 +56,56 @@ Modal
 -----
 Import this component if you need a modal prompted to the user. You can customize the header, body and footer.
 
+.. tip::
+
+    Opening and closing of modals triggers statistics events. Additional data can be passed to the event by adding a
+    ``props`` attribute to the modal. This data will be passed to the event.
+
+.. code-block:: javascript
+
+        <template>
+            <Modal
+                name="Example"
+                :props="{ 'example': 'data' }"
+                @hide="closeModal">
+                <template #body>
+                    <p>Example body</p>
+                </template>
+                <template #footer>
+                    <button class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                </template>
+            </Modal>
+        </template>
+
+        <script>
+            import Modal from '@/basic/Modal.vue';
+
+            export default {
+                name: 'ModalExample',
+                components: {
+                    Modal,
+                },
+                methods: {
+                    closeModal() {
+                        console.log('close');
+                    },
+                },
+            };
+        </script>
+
 Table
 -----
 The table is the best way to visualize many rows of data. Simply pass the data rows to the table and specify the header.
 Optionally, you may add button groups or selection boxes to each row. The table by default comes with a (frontend)
 pagination feature and simple sorting for each column.
+
+Form
+----
+To build forms, you can use the form component. It offers a simple way to build forms in a consistent way only by passing a dictionary.
+
+Editor
+------
+The editor component is a wrapper around the `TipTap editor <https://tiptap.dev/>`_. It offers a simple way to build a rich text editor.
 
 Downloading
 -----------
