@@ -1,12 +1,12 @@
 <template>
-  <LoadIcon :iconName="value"></LoadIcon>
+  <LoadIcon :icon-name="value" />
 </template>
 
 <script>
 import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
-  name: "Icon.vue",
+  name: "Icon",
   components: {LoadIcon},
   props: {
     value: {

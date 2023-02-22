@@ -1,29 +1,44 @@
 <template>
   <div class="input-group">
-    <input v-model="date" class="form-control " type="date">
-    <input v-model="time" class="form-control" type="time">
-    <button class="btn btn-outline-secondary" type="button" @click="date = null">Reset</button>
+    <input
+      v-model="date"
+      class="form-control "
+      type="date"
+    >
+    <input
+      v-model="time"
+      class="form-control"
+      type="time"
+    >
+    <button
+      class="btn btn-outline-secondary"
+      type="button"
+      @click="date = null"
+    >
+      Reset
+    </button>
   </div>
 </template>
 
 <script>
 export default {
   name: "DatetimePicker",
-  emits: ["update:modelValue"],
-  data() {
-    return {
-      currentDate: null,
-      date: null,
-      time: null,
-    }
-  },
   props: {
     options: {
       type: Object,
       required: true
     },
     modelValue: {
-      type: String
+      type: String,
+      required: true
+    }
+  },
+  emits: ["update:modelValue"],
+  data() {
+    return {
+      currentDate: null,
+      date: null,
+      time: null,
     }
   },
   watch: {

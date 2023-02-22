@@ -1,6 +1,14 @@
 <template>
-  <svg class="bi" fill="currentColor" :height="size" :width="size" :style="(color)?'color:'+color:''">
-    <use :xlink:href="`${iconUrl}`" />
+  <svg
+    class="bi"
+    fill="currentColor"
+    :height="size"
+    :width="size"
+    :style="(color)?'color:'+color:''"
+  >
+    <use
+      :xlink:href="`${iconUrl}`"
+    />
   </svg>
 </template>
 
@@ -8,7 +16,7 @@
 import iconPath from 'bootstrap-icons/bootstrap-icons.svg';
 
 export default {
-  name: "IconBootstrap.vue",
+  name: "IconBootstrap",
   props: {
     name: {
       type: String,

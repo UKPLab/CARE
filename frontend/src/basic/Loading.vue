@@ -1,6 +1,9 @@
 <template>
   <div class="text-center mt-5">
-    <div class="spinner-border" role="status">
+    <div
+      class="spinner-border"
+      role="status"
+    >
       <span class="visually-hidden">{{ text }}</span>
     </div>
     <div>{{ text }}</div>
@@ -10,13 +13,18 @@
 <script>
 /* Loading.vue - default loading component
 
-Loading component to show a loading spinner
+Loading component to show a loading spinner.
+
+Include e.g.:
+  <Loading v-if="isLoading" />
+  ...
+  isLoading = false;
 
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
 export default {
-  name: "Loading.vue",
+  name: "Loading",
   props: {
     text: {
       type: String,

@@ -1,7 +1,16 @@
 <template>
-  <button class="btn" :class="buttonClass.specifiers" type="button" @click="actionEmitter" :title="this.title">
-    <LoadIcon v-if="this.icon !== null" :iconName="this.icon"></LoadIcon>
-    <span v-if="this.icon === null || !this.buttonClass.iconOnly">{{this.title}}</span>
+  <button
+    class="btn"
+    :class="buttonClass.specifiers"
+    type="button"
+    :title="title"
+    @click="actionEmitter"
+  >
+    <LoadIcon
+      v-if="icon !== null"
+      :icon-name="icon"
+    />
+    <span v-if="icon === null || !buttonClass.iconOnly">{{ title }}</span>
   </button>
 </template>
 
@@ -9,9 +18,8 @@
 import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
-  name: "TableButton.vue",
+  name: "TableButton",
   components: {LoadIcon},
-  emits: ['action'],
   props: {
     action: {
       type: String,
@@ -36,6 +44,7 @@ export default {
       default: []
     }
   },
+  emits: ['action'],
   data: function () {
     return {
       buttonClass: {

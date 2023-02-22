@@ -1,28 +1,51 @@
 <template>
-  <div ref="Modal" aria-hidden="true" aria-labelledby="ModalLabel" class="modal fade"
-       data-bs-backdrop="static" :data-bs-keyboard="!disableKeyboard"
-       role="dialog" tabindex="-1">
-    <div class="modal-dialog" :class="xl && 'modal-xl' || lg && 'modal-lg'" role="document">
+  <div
+    ref="Modal"
+    aria-hidden="true"
+    aria-labelledby="ModalLabel"
+    class="modal fade"
+    data-bs-backdrop="static"
+    :data-bs-keyboard="!disableKeyboard"
+    role="dialog"
+    tabindex="-1"
+  >
+    <div
+      class="modal-dialog"
+      :class="xl && 'modal-xl' || lg && 'modal-lg'"
+      role="document"
+    >
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            <slot name="title"></slot>
+            <slot name="title" />
           </h5>
-          <button v-if="!removeClose" type="button" class="btn-close" data-bs-dismiss="modal"
-                  aria-label="Close"></button>
+          <button
+            v-if="!removeClose"
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          />
         </div>
         <div class="modal-body">
-          <div v-if="waiting" class="justify-content-center flex-grow-1 d-flex" role="status">
+          <div
+            v-if="waiting"
+            class="justify-content-center flex-grow-1 d-flex"
+            role="status"
+          >
             <div class="spinner-border m-5">
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
           <div v-else>
-            <slot name="body"></slot>
+            <slot name="body" />
           </div>
         </div>
-        <div v-if="!waiting" class="modal-footer">
-          <slot name="footer"></slot>
+        <div
+          v-if="!waiting"
+          class="modal-footer"
+        >
+          <slot name="footer" />
         </div>
       </div>
     </div>
@@ -32,18 +55,22 @@
 <script>
 /* Modal.vue - default modal component
 
-Provide a default modal component to include modals into other components
+Provide a default modal component to include modals into other components.
+
+Include, e.g. as:
+
+  <Modal ref="testModal" name="test" lg />
+  ...
+  this.$refs.testModal.open();
 
 Author: Dennis Zyska
+Co-author: Nils Dycke
 Source: -
 */
 import {Modal} from 'bootstrap';
-import LoadIcon from "@/icons/LoadIcon.vue"
 
 export default {
   name: "Modal",
-  components: {LoadIcon},
-  emits: ['show', 'hide'],
   props: {
     xl: {
       type: Boolean,
@@ -79,6 +106,7 @@ export default {
       required: true
     }
   },
+  emits: ['show', 'hide'],
   data() {
     return {
       modal: null,

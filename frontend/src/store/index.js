@@ -6,7 +6,7 @@
  * in the ./modules sub-directory.
  *
  * @author: Dennis Zyska, Nils Dycke
-*/
+ */
 import {createStore} from 'vuex';
 import AuthStore from './modules/auth.js';
 import AnnotationStore from './modules/anno.js';

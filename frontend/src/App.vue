@@ -1,7 +1,7 @@
 <template>
-  <Topbar v-if="!hideTopbar"></Topbar>
-  <Toast></Toast>
-  <router-view class="top-padding"></router-view>
+  <Topbar v-if="!hideTopbar" />
+  <Toast />
+  <router-view class="top-padding" />
 </template>
 
 <script>
@@ -22,7 +22,7 @@ export default {
     },
   },
   watch: {
-    '$route'(to, from) {
+    $route(to, from) {
       if (to.fullPath !== from.fullPath) {
         this.$socket.emit("stats", {action: "routeStep", data: {from: from.fullPath, to: to.fullPath}});
       }

@@ -1,5 +1,13 @@
 import {omitObjectAttributeSubset} from "./utils";
 
+/**
+ * Returns an object with nested objects representing the thread of comments drawn from the provided list of
+ * comments starting with the provided root comment.
+ *
+ * @param root the root comment
+ * @param comms the list of comments, where the children are drawn from
+ * @returns {Object}
+ */
 function getCommentThread(root, comms){
     const children = comms.filter(c => c.parentCommentId === root.id);
 
@@ -10,6 +18,14 @@ function getCommentThread(root, comms){
     return Object.fromEntries(Object.entries(root).concat([["replies", children.map(c => getCommentThread(c, comms))]]));
 }
 
+/**
+ * Merges a list of annotations and comments, such that the result is a pair of arrays, where the first
+ * contains a list of annotations with associated comments and the second is a list of document comments.
+ *
+ * @param annos annotations to consider
+ * @param comms comments to consider
+ * @returns {[Array, Array]}
+ */
 export function mergeAnnotationsAndComments(annos, comms) {
     const mapped = annos.map(anno => {
        let res = Object.fromEntries(Object.entries(anno));

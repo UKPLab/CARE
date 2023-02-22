@@ -1,5 +1,10 @@
 <template>
-  <component :is="icon" :size="size" :color="color" :name="iconName"/>
+  <component
+    :is="icon"
+    :size="size"
+    :color="color"
+    :name="iconName"
+  />
 </template>
 
 <script>
@@ -31,11 +36,11 @@ export default {
     }
   },
   computed: {
+    trueIconName(){
+      return this.iconName ? this.iconName : "question-circle";
+    },
     icon() {
-      if (this.iconName === undefined || this.iconName === null) {
-        this.iconName = "question-circle";
-      }
-      if (this.iconName === "loading") {
+      if (this.trueIconName === "loading") {
         return IconLoading;
       }
       return defineAsyncComponent(

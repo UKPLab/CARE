@@ -178,7 +178,7 @@ export default {
       return this.comment.draft || this.edit_mode;
     },
     numberReplies() {
-      return this.$store.getters["comment/getNumberOfChildrenByComment"](this.commentId);
+      return this.$store.getters["comment/getNumberOfDescendentsByComment"](this.commentId);
     },
     childComments() {
       return this.$store.getters["comment/getCommentsByCommentId"](this.commentId);
