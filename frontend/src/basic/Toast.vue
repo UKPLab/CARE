@@ -1,7 +1,10 @@
 <template>
-  <b-container :toast="{root: true}" fluid="sm" position="position-fixed"
-               style="top:50px; left : -200px; z-index: 1100">
-  </b-container>
+  <b-container
+    :toast="{root: true}"
+    fluid="sm"
+    position="position-fixed"
+    style="top:50px; left : -200px; z-index: 1100"
+  />
 </template>
 
 <script>

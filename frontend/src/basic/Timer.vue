@@ -1,15 +1,26 @@
 <template>
   <div v-if="show">
-    {{state}}
+    {{ state }}
   </div>
 </template>
 
 <script>
+/* Timer.vue - timing utilities
 
+This module provides timing utilities for countdowns. Provides emit events. Supports different granualrities.
+
+Include, for instance as:
+
+  <Timer autostart show :resolution="1*1000" @timeStep="doSmth()" />
+  ...
+  doSmth(){console.log("yeay");
+
+Author: Nils Dycke
+Source: -
+*/
 export default {
-  name: "Timer.vue",
+  name: "Timer",
   components: {},
-  emits: ["timeStep"],
   props: {
     show: {
       type: Boolean,
@@ -24,24 +35,20 @@ export default {
     resolution: {
       type: Number,
       required: false,
-      default: 60*1000
+      default: 60 * 1000
     }
   },
+  emits: ["timeStep"],
   data() {
     return {
-      state : -1,
+      state: -1,
       timer: null,
-    }
-  },
-  mounted(){
-    if(this.autostart){
-      this.start();
     }
   },
   watch: {
     state: {
-      handler(val){
-        if(this.timer){
+      handler(val) {
+        if (this.timer) {
           this.$emit("timeStep");
           this.setTimer();
         }
@@ -49,20 +56,27 @@ export default {
       immediate: true
     }
   },
+  mounted() {
+    if (this.autostart) {
+      this.start();
+    }
+  },
   methods: {
-    start(){
+    start() {
       this.state = 0;
       this.setTimer();
     },
     stop() {
       this.clearTimer();
     },
-    setTimer(){
+    setTimer() {
       this.clearTimer();
-      this.timer = setTimeout(() => {this.state++}, this.resolution);
+      this.timer = setTimeout(() => {
+        this.state++
+      }, this.resolution);
     },
     clearTimer() {
-      if(this.timer){
+      if (this.timer) {
         clearTimeout(this.timer);
       }
       this.timer = null;

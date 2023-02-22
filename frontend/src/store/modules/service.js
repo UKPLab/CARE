@@ -20,14 +20,34 @@ export default {
     strict: true,
     state: getDefaultState(),
     getters: {
+        /**
+         * Returns the service information for the given service and service type.
+         *
+         * @param state
+         * @returns {function(String, String): Object|null}
+         */
         get: (state) => (service, serviceType) => {
             return service in state.services && serviceType in state.services[service] ?
                 state.services[service][serviceType] : null;
         },
+
+        /**
+         * Returns the skills stored for the NLPService. Equivalent to calling get("NLPService", "skillUpdate").
+         *
+         * @param state
+         * @returns {Array|[]}
+         */
         getNLPSkills: (state) => {
             return "NLPService" in state.services && 'skillUpdate' in state.services["NLPService"] ?
                 state.services["NLPService"]['skillUpdate'].map(skill => skill.name) : [];
         },
+
+        /**
+         * Returns the results stored for the NLPService. Equivalent to calling get("NLPService", "skillResults").
+         *
+         * @param state
+         * @returns {Object|{}}
+         */
         getNLPResults: (state) => {
             return "NLPService" in state.services && 'skillResults' in state.services["NLPService"] ?
                 state.services["NLPService"]['skillResults'] : {};
@@ -35,6 +55,16 @@ export default {
 
     },
     mutations: {
+        /**
+         * On "serviceRefresh", adds the message of the given data.service under the data.type. If the service has
+         * not communicated with the frontend yet, it is added to the map of services. This method currently supports
+         * the following services for syncrhonization (ands needs extension when adding new services):
+         *
+         * * NLPService
+         *
+         * @param state
+         * @param data
+         */
         SOCKET_serviceRefresh: (state, data) => {
             const service = data.service;
             const serviceType = data.type;
@@ -71,7 +101,7 @@ export default {
                     if (!(serviceType in state.services[service])) {
                         cur = {};
                     } else {
-                        cur = {... state.services[service][serviceType]};
+                        cur = {...state.services[service][serviceType]};
                     }
                     if (!data.data.error) {
                         cur[data.data.id] = data.data.data;
@@ -80,15 +110,18 @@ export default {
                 }
             }
         },
+
+        /**
+         * Removes an NLP result by the given requestID from the store.
+         *
+         * @param state
+         * @param requestId
+         */
         removeNLPResults: (state, requestId) => {
             if ("NLPService" in state.services && 'skillResults' in state.services["NLPService"]) {
                 delete state.services["NLPService"]['skillResults'][requestId];
             }
         },
     },
-    actions: {
-        removeNLPResults: (context, requestId) => {
-            context.commit('removeNLPResults', requestId);
-        }
-    }
+    actions: {}
 };

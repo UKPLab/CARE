@@ -1,10 +1,13 @@
 <template>
-  <img class="bi"
-       fill="currentColor"
-       :height="height ? height : ''"
-       :width="width ? width : ''"
-       :style="(color)?'color:'+color:''"
-       :src="`/icons/${this.name}.svg`" />
+  <img
+    class="bi"
+    fill="currentColor"
+    :height="height ? height : ''"
+    :width="width ? width : ''"
+    :style="(color)?'color:'+color:''"
+    :src="`/icons/${name}.svg`"
+    alt="CARE"
+  >
 </template>
 
 <script>

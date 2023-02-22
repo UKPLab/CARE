@@ -1,7 +1,13 @@
 <template>
-  <div v-if="loading" class="d-flex flex-column align-items-center justify-content-center">
+  <div
+    v-if="loading"
+    class="d-flex flex-column align-items-center justify-content-center"
+  >
     <div class="row">
-      <div class="spinner-border text-dark" role="status">
+      <div
+        class="spinner-border text-dark"
+        role="status"
+      >
         <span class="visually-hidden">{{ text }}</span>
       </div>
     </div>
@@ -12,11 +18,17 @@
 </template>
 
 <script>
-/* Loading.vue - default loading component
+/* Loader.vue - default component showing a loading spinner before showing the actual contents
 
-Loading component to show a loading spinner
+Loading component to show a loading spinner before showing an actual component.
 
-Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
+Include e.g.:
+
+   <Loader :loading="isLoading" />
+   ...
+   isLoading = false;
+
+Author: Dennis Zyska, Nils Dycke
 Source: -
 */
 export default {

@@ -8,7 +8,7 @@
  * @param {array|object} data new data to refresh the store with
  * @param {boolean} removeDeleted if true, deleted entries will be removed from the store
  */
-export default function refreshState (state, data, removeDeleted = true) {
+export default function refreshState(state, data, removeDeleted = true) {
     if (!Array.isArray(data)) {
         data = [data];
     }
@@ -21,6 +21,5 @@ export default function refreshState (state, data, removeDeleted = true) {
         if (!removeDeleted || !entry.deleted) {
             state.push(entry);
         }
-
     });
 }

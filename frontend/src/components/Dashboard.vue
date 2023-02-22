@@ -36,7 +36,7 @@ export default {
   props: ["catchAll"],
   computed: {
     navElements() {
-      return this.$store.getters['navigation/getNavElements'];
+      return this.$store.getters['navigation/getSidebarElementsFlat'];
     },
     settings() {
       return this.$store.getters['settings/getSettings'];

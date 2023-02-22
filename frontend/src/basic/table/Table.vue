@@ -1,54 +1,101 @@
 <template>
-  <table :class="tableClass" class="table">
+  <table
+    :class="tableClass"
+    class="table"
+  >
     <thead>
-    <tr>
-      <th v-if="selectableRows"></th>
-      <th v-for="c in columns">
-        {{ c.name }}
-        <LoadIcon v-if="c.sortable"
-                  :class="{'bg-success':(sortColumn === c.key),
-                  'bg-opacity-50':(sortColumn === c.key),
-                  'bg-opacity-10':(sortColumn !== c.key),
-                  'bg-black':(sortColumn !== c.key)}"
-                  :iconName="(sortColumn === c.key)?sortIcon:'sort-down'"
-                  class="me-1"
-                  style="cursor: pointer" @click="sort(c.key)"></LoadIcon>
-      </th>
-    </tr>
+      <tr>
+        <th v-if="selectableRows" />
+        <th
+          v-for="c in columns"
+          :key="c"
+        >
+          {{ c.name }}
+          <LoadIcon
+            v-if="c.sortable"
+            :class="{'bg-success':(sortColumn === c.key),
+                     'bg-opacity-50':(sortColumn === c.key),
+                     'bg-opacity-10':(sortColumn !== c.key),
+                     'bg-black':(sortColumn !== c.key)}"
+            :icon-name="(sortColumn === c.key)?sortIcon:'sort-down'"
+            class="me-1"
+            style="cursor: pointer"
+            @click="sort(c.key)"
+          />
+        </th>
+      </tr>
     </thead>
     <tbody>
-    <tr v-if="!data || data.length === 0">
-      <td :colspan="columns.length" class="text-center">
-        No data
-      </td>
-    </tr>
-    <tr v-for="r in tableData" v-else>
-      <td v-if="selectableRows">
+      <tr v-if="!data || data.length === 0">
+        <td
+          :colspan="columns.length"
+          class="text-center"
+        >
+          No data
+        </td>
+      </tr>
+      <tr
+        v-for="r in tableData"
+        v-else
+        :key="r"
+      >
+        <td v-if="selectableRows">
           <div class="form-check">
-            <input class="form-check-input" type="checkbox" @input="e => selectRow(e.target.checked, r)">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              @input="e => selectRow(e.target.checked, r)"
+            >
           </div>
-      </td>
-      <td v-for="c in columns">
-        <span v-if="c.key in r">
-          <TIcon v-if="c.type === 'icon'" :value="r[c.key]" />
-          <TBadge v-else-if="c.type === 'badge'" :options="c.typeOptions" :value="r[c.key]" />
-          <TButton v-else-if="c.type === 'button'" :icon="r[c.key].icon" :action="r[c.key].action" @action="actionEmitter" :options="r[c.key].options" :params="r" :title="r[c.key].title" />
-          <TButtonGroup v-else-if="c.type === 'button-group'" @action="actionEmitter"
-                            :buttons="r[c.key]"
-                            :params="r" />
+        </td>
+        <td
+          v-for="c in columns"
+          :key="c"
+        >
+          <span v-if="c.key in r">
+            <TIcon
+              v-if="c.type === 'icon'"
+              :value="r[c.key]"
+            />
+            <TBadge
+              v-else-if="c.type === 'badge'"
+              :options="c.typeOptions"
+              :value="r[c.key]"
+            />
+            <TButton
+              v-else-if="c.type === 'button'"
+              :icon="r[c.key].icon"
+              :action="r[c.key].action"
+              :options="r[c.key].options"
+              :params="r"
+              :title="r[c.key].title"
+              @action="actionEmitter"
+            />
+            <TButtonGroup
+              v-else-if="c.type === 'button-group'"
+              :buttons="r[c.key]"
+              :params="r"
+              @action="actionEmitter"
+            />
 
-          <span v-else>
-               {{ r[c.key] }}
+            <span v-else>
+              {{ r[c.key] }}
+            </span>
           </span>
-        </span>
-        <span v-else>
-          -
-        </span>
-      </td>
-    </tr>
+          <span v-else>
+            -
+          </span>
+        </td>
+      </tr>
     </tbody>
   </table>
-  <Pagination ref="pagination" v-if="options && options.pagination" :pages="pages" :current-page="currentPage" @pageChange="(x) => this.currentPage = x"/>
+  <Pagination
+    v-if="options && options.pagination"
+    ref="pagination"
+    :pages="pages"
+    :current-page="currentPage"
+    @page-change="(x) => currentPage = x"
+  />
 </template>
 
 <script>
@@ -59,10 +106,17 @@ import TIcon from "./Icon.vue";
 import Pagination from "./Pagination.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 
+/* Table.vue - generic table with feature-rich API
+
+Use this component for tabulating data with a diverse API for interactions like buttons or row selection.
+
+Author: Dennis Zyska
+Co-author: Nils Dycke
+Source: -
+*/
 export default {
-  name: "Table.vue",
+  name: "Table",
   components: {Pagination, TIcon, TBadge, TButtonGroup, TButton, LoadIcon},
-  emits: ["action", "rowSelection"],
   props: {
     data: {
       type: Array,
@@ -78,6 +132,7 @@ export default {
       default: {}
     }
   },
+  emits: ["action", "rowSelection"],
   data: function () {
     return {
       tableClass: {
@@ -92,42 +147,6 @@ export default {
       currentPage: 1,
       selectableRows: this.options && this.options.selectableRows,
       selectedRows: []
-    }
-  },
-  methods: {
-    sort(column) {
-      if (this.sortColumn && this.sortColumn === column) {
-        this.sortDirection = this.sortDirection === "asc" ? "desc" : "asc";
-      } else {
-        this.sortDirection = "asc";
-      }
-      this.sortColumn = column;
-    },
-    actionEmitter(data){
-      this.$emit("action", data);
-      this.$socket.emit("stats", {
-        action: "actionClick",
-        data: data
-      });
-    },
-    selectRow(action, row){
-      if(this.selectableRows) {
-        if (action) {
-          this.selectedRows.push(row);
-        } else {
-          this.selectedRows = this.selectedRows.filter(r => r !== row);
-        }
-        this.$emit("rowSelection", this.selectedRows);
-      }
-    }
-  },
-  watch: {
-    pages(val) {
-      if(val === 0){
-        this.currentPage = 1;
-      } else if(this.currentPage > val){
-          this.currentPage = val;
-      }
     }
   },
   computed: {
@@ -158,6 +177,42 @@ export default {
       }
       return data;
     },
+  },
+  watch: {
+    pages(val) {
+      if(val === 0){
+        this.currentPage = 1;
+      } else if(this.currentPage > val){
+          this.currentPage = val;
+      }
+    }
+  },
+  methods: {
+    sort(column) {
+      if (this.sortColumn && this.sortColumn === column) {
+        this.sortDirection = this.sortDirection === "asc" ? "desc" : "asc";
+      } else {
+        this.sortDirection = "asc";
+      }
+      this.sortColumn = column;
+    },
+    actionEmitter(data){
+      this.$emit("action", data);
+      this.$socket.emit("stats", {
+        action: "actionClick",
+        data: data
+      });
+    },
+    selectRow(action, row){
+      if(this.selectableRows) {
+        if (action) {
+          this.selectedRows.push(row);
+        } else {
+          this.selectedRows = this.selectedRows.filter(r => r !== row);
+        }
+        this.$emit("rowSelection", this.selectedRows);
+      }
+    }
   },
 }
 </script>

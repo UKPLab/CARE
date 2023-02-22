@@ -1,12 +1,15 @@
 <template>
-  <span :class="badgeClass" class="badge">
+  <span
+    :class="badgeClass"
+    class="badge"
+  >
     {{ displayValue }}
   </span>
 </template>
 
 <script>
 export default {
-  name: "Badge.vue",
+  name: "Badge",
   props: {
     value: {
       type: String,

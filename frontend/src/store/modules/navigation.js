@@ -20,9 +20,22 @@ export default {
     strict: true,
     state: getDefaultState(),
     getters: {
-        getNavElements: state => {
+        /**
+         * Returns the sidebar element objects of the store as a flat list. Null if there are none.
+         *
+         * @param state
+         * @returns {Array|null}
+         */
+        getSidebarElementsFlat: state => {
             return state["elements"]
         },
+
+        /**
+         * Returns the sidebar elements of the store. The result is a list of lists, for each navigation element
+         * the list of associated sidebar elements. Returns an empty list, if there are none.
+         * @param state
+         * @returns {Array}
+         */
         getSidebarElements: state => {
             const groups = state["elements"].reduce((acc, cur) => {
                 if (cur.groupId === 0 || cur.groupId === undefined) {
@@ -35,10 +48,18 @@ export default {
                 }
                 return acc
             }, [])
+
             return groups.map(e => e.sort(function (a, b) {
                 return a["order"] - b["order"];
             }))
         },
+
+        /**
+         *  Returns the groups of the navigation sidebar.
+         *
+         * @param state
+         * @returns {Array}
+         */
         getSidebarGroups: state => {
             return state["groups"].sort(function (a, b) {
                 return a["order"] - b["order"];
@@ -47,6 +68,12 @@ export default {
 
     },
     mutations: {
+        /**
+         * On "settingNavigation", updates the navigation groups and elements of the store.
+         *
+         * @param state
+         * @param message
+         */
         SOCKET_settingNavigation: (state, message) => {
             state['groups'] = message.groups;
             state['elements'] = message.elements;

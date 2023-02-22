@@ -12,8 +12,14 @@ import * as VueRouter from 'vue-router'
 import store from "./store";
 
 const routes = [
-    {path: "/", redirect: "/dashboard"},
-    {path: "/index.html", redirect: "/dashboard"},
+    {
+        path: "/",
+        redirect: "/dashboard"
+    },
+    {
+        path: "/index.html",
+        redirect: "/dashboard"
+    },
     {
         path: "/dashboard/:catchAll(.*)",
         name: "Dashboard",

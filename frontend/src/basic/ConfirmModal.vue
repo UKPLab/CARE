@@ -1,13 +1,36 @@
 <template>
-  <Modal ref="confirmation" @close="abort()" :name="'confirm'+name">
-    <template v-slot:title>Confirm {{name}}</template>
-    <template v-slot:body>
-      <div>{{message}}</div>
-      <div class="text-danger fw-bold" v-if="warning">{{warning}}</div>
+  <Modal
+    ref="confirmation"
+    :name="'confirm'+name"
+    @close="abort()"
+  >
+    <template #title>
+      Confirm {{ name }}
     </template>
-    <template v-slot:footer>
-      <button class="btn btn-primary" type="button" @click="abort()">Abort</button>
-      <button class="btn btn-secondary" type="button" @click="confirm()">Confirm</button>
+    <template #body>
+      <div>{{ message }}</div>
+      <div
+        v-if="warning"
+        class="text-danger fw-bold"
+      >
+        {{ warning }}
+      </div>
+    </template>
+    <template #footer>
+      <button
+        class="btn btn-primary"
+        type="button"
+        @click="abort()"
+      >
+        Abort
+      </button>
+      <button
+        class="btn btn-secondary"
+        type="button"
+        @click="confirm()"
+      >
+        Confirm
+      </button>
     </template>
   </Modal>
 </template>
@@ -17,6 +40,15 @@
 
 Provide a default modal component for confirming actions.
 
+Include e.g.:
+
+  <ConfirmModal ref="confirmModal" />
+  ...
+  this.$refs.confirmModal.open("title", "message", null, (res) => console.log(res))
+
+If you prefer to wait for a confirmation response, consider wrapping the call to open with the callback
+function inside a Promise.
+
 Author: Nils Dycke
 Source: -
 */
@@ -25,9 +57,9 @@ import Modal from "./Modal.vue";
 export default {
   name: "ConfirmModal",
   components: {Modal},
-  emits: ['response'],
   props: {
   },
+  emits: ['response'],
   data() {
     return {
       cb: null,

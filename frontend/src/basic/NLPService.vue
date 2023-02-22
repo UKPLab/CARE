@@ -1,19 +1,32 @@
 <template>
   <span v-if="nlpEnabled && nlpActivated">
     <span v-if="type === 'button'">
-      <button v-if="requestId === null"
-              :title="nlpAvailable ? title : `${title} not available`"
-              class="btn btn-sm"
-              data-placement="top"
-              data-toggle="tooltip"
-              type="button"
-              v-on:click="request()"
-              :disabled="!nlpAvailable">
-      <LoadIcon :iconName="iconName" :size="iconSize"></LoadIcon>
-      <span class="visually-hidden">{{ skill }}</span>
+      <button
+        v-if="requestId === null"
+        :title="nlpAvailable ? title : `${title} not available`"
+        class="btn btn-sm"
+        data-placement="top"
+        data-toggle="tooltip"
+        type="button"
+        :disabled="!nlpAvailable"
+        @click="request()"
+      >
+        <LoadIcon
+          :icon-name="iconName"
+          :size="iconSize"
+        />
+        <span class="visually-hidden">{{ skill }}</span>
       </button>
-      <button v-else :disabled="true" class="btn btn-sm" type="button">
-        <IconLoading :loading="true" size="12"></IconLoading>
+      <button
+        v-else
+        :disabled="true"
+        class="btn btn-sm"
+        type="button"
+      >
+        <IconLoading
+          :loading="true"
+          size="12"
+        />
       </button>
     </span>
   </span>
@@ -24,12 +37,25 @@ import LoadIcon from "@/icons/LoadIcon.vue";
 import IconLoading from "@/icons/IconLoading.vue";
 import {v4 as uuid} from "uuid";
 
+
+/* NLPService.vue - nlp utilities
+
+This module provides utilities for requesting, waiting and representing NLP results.
+
+Include, for instance as:
+
+  <NLPService ref="nlp" :data="Test string" skill="summarization"/>
+  ...
+  this.$refs.nlp.request();
+
+Author: Dennis Zyska, Nils Dycke
+Source: -
+*/
 export default {
-  name: "NLPService.vue",
+  name: "NLPService",
   components: {
     LoadIcon, IconLoading
   },
-  emits: ["response"],
   props: {
     type: {
       type: String,
@@ -60,19 +86,11 @@ export default {
       default: 16
     },
   },
+  emits: ["response"],
   data: function () {
     return {
       requestId: null,
     }
-  },
-  watch: {
-    nlpResults: function (results) {
-      if (this.requestId && this.requestId in results) {
-        this.$emit("response", this.nlpResults[this.requestId]);
-        this.$store.commit("removeNLPResults", this.requestId);
-        this.requestId = null;
-      }
-    },
   },
   computed: {
     nlpRequestTimeout() {
@@ -95,6 +113,15 @@ export default {
     },
     nlpAvailable() {
       return this.nlpEnabled && this.nlpActivated && this.nlpSkills.includes(this.skill);
+    },
+  },
+  watch: {
+    nlpResults: function (results) {
+      if (this.requestId && this.requestId in results) {
+        this.$emit("response", this.nlpResults[this.requestId]);
+        this.$store.commit("removeNLPResults", this.requestId);
+        this.requestId = null;
+      }
     },
   },
   methods: {

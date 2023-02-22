@@ -5,7 +5,8 @@
     "frontend-dev": "vite",
     "frontend-preview": "vite preview --port 5050",
     "frontend-dev-build": "vite build --mode development",
-    "frontend-build": "vite build"
+    "frontend-build": "vite build",
+    "frontend-lint": "eslint --ext .js,.vue src"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.5",
@@ -18,6 +19,8 @@
     "bootstrap-icons": "^1.10.3",
     "bootstrap-vue-3": "^0.1.10",
     "bootstrap5-tags": "^1.4.35",
+    "eslint": "^8.34.0",
+    "eslint-plugin-vue": "^9.9.0",
     "file-saver": "^2.0.5",
     "intersection-observer": "^0.12.2",
     "lodash": "^4.17.21",

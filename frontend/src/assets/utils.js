@@ -1,28 +1,70 @@
 import {FileSaver} from "file-saver"; //required for window.saveAs to work
 import Papa from "papaparse";
 
-// src: https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties
+
+/**
+ * Returns a copy of the object, for which only the provided attributes by keys are included (whitelisting).
+ * src: https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties
+ *
+ * @param obj the object to be reduced (remains unchanged)
+ * @param keys the keys to be included
+ * @returns {Object}
+ */
 export function pickObjectAttributeSubset(obj, keys) {
     return Object.fromEntries(keys.filter(key => key in obj).map(key => [key, obj[key]]));
 }
 
-// src: https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties
+/**
+ * Returns a copy of the object, for which only the attributes are included, which do not match any of the keys
+ * (blacklisting).
+ * src: https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties
+ *
+ * @param obj the object to be reduced (remains unchagned)
+ * @param keys the keys to NOT be included
+ * @returns {Object}
+ */
 export function omitObjectAttributeSubset(obj, keys) {
     return Object.fromEntries(Object.entries(obj).filter(([key]) => !keys.includes(key)));
 }
 
+/**
+ * Returns a copy of the first argument object, where the attributes are replaced by the contents of the second
+ * argument object, iff the attribute is present in the latter.
+ *
+ * @param obj_orig object to be copied
+ * @param obj_over object to override attributes of the first object
+ * @returns {Object}
+ */
 export function overrideObjectAttributes(obj_orig, obj_over) {
     return Object.fromEntries(Object.entries(obj_orig).map(([key, value]) => [key, key in obj_over ? obj_over[key] : value]));
 }
 
+/**
+ * Returns a CSV version of the provided object. Requires Papa parse formatting.
+ *
+ * @param objs
+ * @returns {*}
+ */
 export function objectsToCSV(objs) {
     return Papa.unparse(objs);
 }
 
+/**
+ * Returns a JSON string of the provided objects (including pretty printing).
+ *
+ * @param objs
+ * @returns {string}
+ */
 export function objectsToJSON(objs) {
     return JSON.stringify(objs, null, 2);
 }
 
+/**
+ * Exports a list of objects into a single string, where nested objects are visualized by indentation.
+ *
+ * @param objs
+ * @returns {String}
+ */
 export function objectsToTXT(objs) {
     return objs.map(o => Object.entries(o).map(([k, v]) => {
         if(typeof v === "object" && v !== null){
@@ -36,6 +78,13 @@ export function objectsToTXT(objs) {
     ).join("\n\n");
 }
 
+/**
+ * Downloads the provided objects by the given file type under the given file name.
+ *
+ * @param objs objects to be downloaded in the browser
+ * @param name name of the resulting file
+ * @param file_type the type of the file, either {"csv" | "json" | "txt"}
+ */
 export function downloadObjectsAs(objs, name, file_type) {
     let data;
     let httpType;
@@ -55,7 +104,14 @@ export function downloadObjectsAs(objs, name, file_type) {
     window.saveAs(new Blob([data], {type: `${httpType};charset=utf-8`}), `${name}.${file_type}`)
 }
 
-// src: https://stackoverflow.com/questions/6229197/how-to-know-if-two-arrays-have-the-same-values/55614659#55614659
+/**
+ * Checks whether two arrays are identical.
+ * src: https://stackoverflow.com/questions/6229197/how-to-know-if-two-arrays-have-the-same-values/55614659#55614659
+ *
+ * @param a1
+ * @param a2
+ * @returns {boolean}
+ */
 export function arraysContainSameElements(a1, a2) {
   const superSet = {};
   for (const i of a1) {
@@ -80,6 +136,14 @@ export function arraysContainSameElements(a1, a2) {
   return true;
 }
 
+/**
+ * Returns a human readable time string representing the time difference between two timestamps. The  string
+ * adapts to the magnitude of the difference.
+ *
+ * @param start
+ * @param end
+ * @returns {string}
+ */
 export function getTimeDiffString(start, end) {
   let delta = Math.abs(end - start) / 1000;
 
