@@ -10,7 +10,7 @@
                      style="margin:auto"></PDFViewer>
         </div>
         <div id="sidebarContainer" class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;">
-          <Sidebar :document-id="documentId" :readonly="readonly" :study-session-id="studySessionId"/>
+          <Sidebar ref="sidebar" :document-id="documentId" :readonly="readonly" :study-session-id="studySessionId"/>
         </div>
       </div>
     </div>
@@ -309,6 +309,9 @@ export default {
         });
       }
     },
+    async leave(){
+      return await this.$refs.sidebar.leave();
+    },
     downloadAnnotations(outputType) {
       this.$refs.export.requestExport([this.documentId], outputType, true);
     }
@@ -327,6 +330,10 @@ export default {
 
 IconBoostrap[disabled] {
   background-color: darkgrey;
+}
+
+#sidebarContainer::-webkit-scrollbar {
+  display:none;
 }
 
 </style>

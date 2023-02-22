@@ -37,7 +37,6 @@ export default {
             return state.user;
         },
         getUsername: state => {
-            console.log(state);
             return (state.user !== null) ? state.user.userName : "No user logged in";
         },
         getUserId: state => {

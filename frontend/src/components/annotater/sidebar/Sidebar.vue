@@ -12,7 +12,8 @@
             class="list-group-i"
             v-on:mouseleave="unhover(comment.id)"
             v-on:mouseover='hover(comment.id)'>
-          <AnnoCard v-bind:id="comment.id" :documentId="documentId" :readonly="readonly" :study-session-id="studySessionId"
+          <AnnoCard v-bind:id="comment.id" :documentId="documentId" :readonly="readonly"
+                    :study-session-id="studySessionId"
                     @focus="sidebarScrollTo" :comment-id="comment.id"></AnnoCard>
         </li>
 
@@ -30,6 +31,7 @@
       </ul>
     </div>
   </div>
+  <ConfirmModal ref="leavePageConf"></ConfirmModal>
 </template>
 
 <script>
@@ -42,11 +44,12 @@ Source: -
 */
 import {mapMutations} from "vuex";
 import AnnoCard from "./AnnoCard.vue";
+import ConfirmModal from "@/basic/ConfirmModal.vue"
 import {scrollElement} from "@/assets/anchoring/scroll";
 
 export default {
   name: "Sidebar",
-  components: {AnnoCard},
+  components: {AnnoCard, ConfirmModal},
   props: {
     'documentId': {
       type: Number,
@@ -95,7 +98,7 @@ export default {
             // if the studySessionId is set, we are in study session mode
             if (this.studySessionId !== null) {
               return comment.studySessionId === this.studySessionId;
-            } else if(this.studySessionIds) {
+            } else if (this.studySessionIds) {
               return this.studySessionIds.includes(comment.studySessionId);
             } else {
               if (this.showAll) {
@@ -127,7 +130,7 @@ export default {
     this.eventBus.on('sidebarScroll', (anno_id) => {
       const comment = this.$store.getters["comment/getCommentByAnnotation"](anno_id);
       // in case the comment might not be loaded yet
-      if(!comment){
+      if (!comment) {
         return;
       }
 
@@ -167,9 +170,24 @@ export default {
         annotationId: null,
         commentId: null
       });
+    },
+    async leave() {
+      if (this.documentComments.filter(c => c.draft).length > 0) {
+        return new Promise((resolve, reject) => {
+          this.$refs.leavePageConf.open(
+              "Unsaved Annotations",
+              "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",
+              null,
+              function (val) {
+                return resolve(val);
+              });
+        });
+      } else {
+        return true;
+      }
+    }
     }
   }
-}
 </script>
 
 <style scoped>
@@ -211,5 +229,9 @@ export default {
 #addPageNote .btn {
   border: none;
   color: #575757;
+}
+
+#sidepane::-webkit-scrollbar {
+  display: none;
 }
 </style>

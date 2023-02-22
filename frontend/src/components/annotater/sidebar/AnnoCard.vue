@@ -63,7 +63,7 @@
                            :props="this.$props"
                            icon="reply-fill"
                            title="Reply"
-                           @click="$refs.main_comment.reply();showReplies = !showReplies" />
+                           @click="$refs.main_comment.reply();showReplies = true" />
             <NLPService
                 v-if="summarizationAvailable && comment.userId === user_id"
                 :data="summarizationRequestData"
@@ -316,7 +316,7 @@ export default {
         "text": "Summarization: " + data[0]['summary_text'],
         "userId": "Bot"
       });
-      this.showReplies = !this.showReplies;
+      this.showReplies = true;
     }
   }
 }
