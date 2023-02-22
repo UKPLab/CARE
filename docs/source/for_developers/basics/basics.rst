@@ -1,7 +1,7 @@
 Basics
 ========
 
-In this chapter we introduce you to the fundamental architecture and structure of CARE.
+In this chapter we introduce the basic concepts of the framework.
 Read this chapter if you want to get an overview on the different components and frameworks involved.
 
 

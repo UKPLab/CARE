@@ -27,5 +27,5 @@ request, you can also use the ``Socket`` class' ``sendToast`` method:
 
 .. code-block:: javascript
 
-    this.sendToast("Error Title", e.message, "danger");
+    this.sendToast("Example Error Title", "Example Error Message", "danger");
 
