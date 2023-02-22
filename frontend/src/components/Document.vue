@@ -1,6 +1,6 @@
 <template>
   <Loader v-if="documentId === 0" :loading="true" class="pageLoader"/>
-  <Annotater v-else :document-id="documentId"/>
+  <Annotater ref="annotator" v-else :document-id="documentId"/>
 </template>
 
 <script>
@@ -18,6 +18,9 @@ export default {
   },
   mounted() {
     this.$socket.emit("documentGetByHash", {documentHash: this.documentHash})
+  },
+  async beforeRouteLeave(to, from){
+    return await this.confirmLeave();
   },
   sockets: {
     documentError: function (data) {
@@ -42,6 +45,11 @@ export default {
       return 0;
     }
   },
+  methods: {
+    async confirmLeave(){
+      return await this.$refs.annotator.leave();
+    }
+  }
 }
 </script>
 
