@@ -6,9 +6,11 @@ The tests are located in the ``backend/tests`` directory.
 
 You can run the tests with the following command:
 
-    $ make test
+.. code-block:: bash
 
-The tests are using the [Jest](https://jestjs.io/) testing framework.
+    make test
+
+The tests are using the `Jest <https://jestjs.io/>`_ testing framework.
 
 Structure
 ---------
