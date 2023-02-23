@@ -3,7 +3,7 @@ Database
 
 The underlying data store of CARE is a relational database. The `PostgresSQL <https://www.postgresql.org/>`_ database is
 managed and accessed via `Sequelize <https://sequelize.org/>`_. The backend services and sockets of CARE access the
-database via methods provided in the ``backend/db/methods`` directory, which in turn utilize Sequelize as an layer
+database via predefined methods provided in with the MetaModel class in ``backend/db`` directory, which in turn utilize Sequelize as an layer
 of abstraction to query and update the database.
 
 The database schema is modified via `Sequelize's migration system <https://sequelize.org/docs/v6/other-topics/migrations/>`_.
@@ -61,7 +61,7 @@ Adding a New Model
 
 .. code-block:: javascript
     'use strict';
-    const MetaModel = require("@/backend/db/MetaModel.js");
+    const MetaModel = require("../MetaModel.js");
 
     module.exports = (sequelize, DataTypes) => {
         class SimpleTable extends MetaModel {
@@ -124,8 +124,8 @@ these default functions is as simple as accessing the table model and executing 
 .. code-block:: javascript
     // usually, you just access the models loaded in the web server; for completeness we provide the imports here:
     const {DataTypes} = require("sequelize")
-    const db = require("@/backend/db/index.js")
-    const SimpleTable = require("../models/simpletable.js")(db.sequelize, DataTypes);
+    const db = require("./db/index.js")
+    const SimpleTable = require("./db/models/simpletable.js")(db.sequelize, DataTypes);
 
     SimpleTable.getById("x");
 
@@ -138,7 +138,7 @@ In case you need more specific functions, you may simply add static access metho
 
 .. code-block:: javascript
     'use strict';
-    const MetaModel = require("@/backend/db/MetaModel.js");
+    const MetaModel = require("../MetaModel.js");
 
     module.exports = (sequelize, DataTypes) => {
         class SimpleTable extends MetaModel {
