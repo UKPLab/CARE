@@ -34,19 +34,19 @@ doc: doc_asyncapi doc_sphinx
 .PHONY: doc_asyncapi
 doc_asyncapi:
 	@echo "Building asyncapi documentation"
-	@docker run --rm -v ${PWD}/docs/api.yml:/app/api.yml -v ${PWD}/docs/api:/app/output asyncapi/generator --force-write -o ./output api.yml @asyncapi/html-template
+	@docker run --rm -v ${CURDIR}/docs/api.yml:/app/api.yml -v ${CURDIR}/docs/api:/app/output asyncapi/generator --force-write -o ./output api.yml @asyncapi/html-template
 
 .PHONY: doc_sphinx
 doc_sphinx:
 	@echo "Building sphinx documentation"
 	@docker-compose -f docker-compose.yml --env-file ".env" build docs_sphinx
-	@docker run --rm -v ${PWD}/docs:/docs docs_sphinx make html
+	@docker run --rm -v ${CURDIR}/docs:/docs docs_sphinx make html
 
 .PHONY: doc_clean
 doc_clean:
 	@echo "Clean sphinx documentation"
 	@docker-compose -f docker-compose.yml --env-file ".env" build docs_sphinx
-	@docker run --rm -v ${PWD}/docs:/docs docs_sphinx make clean
+	@docker run --rm -v ${CURDIR}/docs:/docs docs_sphinx make clean
 
 .PHONY: dev
 dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate
