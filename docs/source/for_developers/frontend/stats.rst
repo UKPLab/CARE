@@ -22,7 +22,7 @@ Send these information over the websocket on the ``stats`` message type, to log 
       data: {}                      //add any data information into the object
     })
 
-Each logged user interaction is assigned a timestamp (according to the time of storing in the backend) allowing to
+Each logged user interaction is assigned a timestamp (according to the time of storing in the backend) and the user id allowing to
 generate trace data from all logged interactions.
 
 Logging a New Interaction

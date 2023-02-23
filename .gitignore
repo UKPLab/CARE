@@ -10,6 +10,7 @@ db_dumps/
 backend/sessions
 backend/node_modules
 backend/logs
+backend/coverage
 
 # ignore build files
 dist/
