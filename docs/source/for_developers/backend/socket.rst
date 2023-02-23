@@ -220,3 +220,9 @@ To multicast a message to a room, you need to access the io object of the base c
 .. code-block:: javascript
 
     this.io.to("roomName").emit("msg", data);
+
+Testing
+~~~~~~~
+
+Please think about how to test your socket. In general, you should test the functionality in isolation.
+We refer to the section on :doc:`./testing` for more information on how to test your code.
