@@ -1,7 +1,11 @@
 <template>
   <Card title="Logs">
-    <template v-slot:body>
-      <Table :columns="columns" :data="data" :options="options"></Table>
+    <template #body>
+      <Table
+        :columns="columns"
+        :data="data"
+        :options="options"
+      />
     </template>
   </Card>
 </template>
@@ -10,6 +14,13 @@
 import Table from "@/basic/table/Table.vue";
 import Card from "@/basic/Card.vue";
 
+/* Log.vue - shows the table of logs stored in the DB
+
+This component loads the logs stored in the DB to present them to admin users.
+
+Author: Dennis Zyska
+Source: -
+*/
 export default {
   name: "Log",
   components: {Card, Table},

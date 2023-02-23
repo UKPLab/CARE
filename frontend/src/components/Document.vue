@@ -1,26 +1,55 @@
 <template>
-  <Loader v-if="documentId === 0" :loading="true" class="pageLoader"/>
-  <Annotater ref="annotator" v-else :document-id="documentId"/>
+  <Loader
+    v-if="documentId === 0"
+    :loading="true"
+    class="pageLoader"
+  />
+  <Annotater
+    v-else
+    ref="annotator"
+    :document-id="documentId"
+  />
 </template>
 
 <script>
 import Annotater from "./Annotater.vue";
 import Loader from "@/basic/Loader.vue";
 
+/* Document.vue - standard document view without sessions, studies or reviews
+
+Loads a document, allows the user to annotate the document. The annotations are not associated with a study or
+session. The users may simply share the link to this view after publication, to allow other users to
+collaboratively work on a paper.
+
+Author: Dennis Zyska
+Co-author: Nils Dycke
+Source: -
+*/
 export default {
   name: "Document",
   components: {Annotater, Loader},
+  async beforeRouteLeave(to, from){
+    return await this.confirmLeave();
+  },
   props: {
     'documentHash': {
       type: String,
       required: true,
     },
   },
+  computed: {
+    document() {
+      return this.$store.getters["document/getDocumentByHash"](this.documentHash);
+    },
+    documentId() {
+      if (this.document) {
+        return this.document.id;
+      }
+      return 0;
+    }
+  },
   mounted() {
     this.$socket.emit("documentGetByHash", {documentHash: this.documentHash})
-  },
-  async beforeRouteLeave(to, from){
-    return await this.confirmLeave();
   },
   sockets: {
     documentError: function (data) {
@@ -32,17 +61,6 @@ export default {
         });
         this.$router.push("/");
       }
-    }
-  },
-  computed: {
-    document() {
-      return this.$store.getters["document/getDocumentByHash"](this.documentHash);
-    },
-    documentId() {
-      if (this.document) {
-        return this.document.id;
-      }
-      return 0;
     }
   },
   methods: {

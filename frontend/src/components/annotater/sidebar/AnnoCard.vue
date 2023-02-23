@@ -1,15 +1,19 @@
 <template>
-  <SideCard :loading="loading()" :shake="shake">
-    <template v-slot:header>
+  <SideCard
+    :loading="loading()"
+    :shake="shake"
+  >
+    <template #header>
       <div class="row">
         <div class="col">
           {{ comment.creator_name }}
-          <Collaboration ref="collab"
-                         :document-id="documentId"
-                         :target-id="commentId"
-                         target-type="comment"
-                         @collabStatus="toEditMode"></Collaboration>
-
+          <Collaboration
+            ref="collab"
+            :document-id="documentId"
+            :target-id="commentId"
+            target-type="comment"
+            @collab-status="toEditMode"
+          />
         </div>
         <div class="col text-end">
           <span v-if="annotation">
@@ -22,107 +26,153 @@
       </div>
     </template>
 
-    <template v-slot:body>
-      <div v-if="annotation_id" :style="'border-color:#' + color" :title="tagName" class="blockquote card-text annoBlockquote"
-           data-placement="top"
-           data-toogle="tooltip" @click="scrollTo(annotation_id)">
+    <template #body>
+      <div
+        v-if="annotation_id"
+        :style="'border-color:#' + color"
+        :title="tagName"
+        class="blockquote card-text annoBlockquote"
+        data-placement="top"
+        data-toogle="tooltip"
+        @click="scrollTo(annotation_id)"
+      >
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
-      <CommentCard ref="main_comment" :commentId="commentId" :documentId="documentId" :edit="editedByMyself" :study-session-id="studySessionId" :readonly="readonly"
-                   :level=0
-                   @saveCard="save()"/>
+      <CommentCard
+        ref="main_comment"
+        :comment-id="commentId"
+        :document-id="documentId"
+        :edit="editedByMyself"
+        :study-session-id="studySessionId"
+        :readonly="readonly"
+        :level="0"
+        @save-card="save()"
+      />
     </template>
 
-    <template v-slot:footer>
+    <template #footer>
       <div class="ms-auto">
-        <div v-if="editedByMyself" class="row">
+        <div
+          v-if="editedByMyself"
+          class="row"
+        >
           <div class="col text-end">
-            <SidebarButton :loading="false"
-                           :props="this.$props"
-                           icon="save-fill"
-                           title="Save"
-                           @click="save" />
-            <SidebarButton :loading="false"
-                           :props="this.$props"
-                           icon="x-square-fill"
-                           title="Cancel"
-                           @click="cancel" />
+            <SidebarButton
+              :loading="false"
+              :props="$props"
+              icon="save-fill"
+              title="Save"
+              @click="save"
+            />
+            <SidebarButton
+              :loading="false"
+              :props="$props"
+              icon="x-square-fill"
+              title="Cancel"
+              @click="cancel"
+            />
           </div>
         </div>
-        <div v-else class="row">
+        <div
+          v-else
+          class="row"
+        >
           <div class="col">
-            <button v-if="numberReplies > 0" class="btn btn-sm" data-placement="top" data-toggle="tooltip" title="Reply"
-                    type="button" v-on:click="showReplies = !showReplies">
+            <button
+              v-if="numberReplies > 0"
+              class="btn btn-sm"
+              data-placement="top"
+              data-toggle="tooltip"
+              title="Reply"
+              type="button"
+              @click="showReplies = !showReplies"
+            >
               <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
               <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
             </button>
           </div>
-          <div v-if="!readonly" class="col text-end">
-            <SidebarButton v-if="settingResponse"
-                           :loading="false"
-                           :props="this.$props"
-                           icon="reply-fill"
-                           title="Reply"
-                           @click="$refs.main_comment.reply();showReplies = true" />
+          <div
+            v-if="!readonly"
+            class="col text-end"
+          >
+            <SidebarButton
+              v-if="settingResponse"
+              :loading="false"
+              :props="$props"
+              icon="reply-fill"
+              title="Reply"
+              @click="$refs.main_comment.reply();showReplies = true"
+            />
             <NLPService
-                v-if="summarizationAvailable && comment.userId === user_id"
-                :data="summarizationRequestData"
-                :skill="summarizationSkillName"
-                icon-name="file-text"
-                title="Summarize"
-                type="button"
-                @response="summarizeResponse"
-            ></NLPService>
-            <SidebarButton v-if="comment.userId === user_id"
-                           :loading="false"
-                           :props="this.$props"
-                           icon="pencil-square"
-                           title="Edit"
-                           @click="edit" />
-            <SidebarButton v-if="comment.userId === user_id"
-                           :loading="false"
-                           :props="this.$props"
-                           icon="trash3"
-                           title="Delete"
-                           @click="remove" />
+              v-if="summarizationAvailable && comment.userId === user_id"
+              :data="summarizationRequestData"
+              :skill="summarizationSkillName"
+              icon-name="file-text"
+              title="Summarize"
+              type="button"
+              @response="summarizeResponse"
+            />
+            <SidebarButton
+              v-if="comment.userId === user_id"
+              :loading="false"
+              :props="$props"
+              icon="pencil-square"
+              title="Edit"
+              @click="edit"
+            />
+            <SidebarButton
+              v-if="comment.userId === user_id"
+              :loading="false"
+              :props="$props"
+              icon="trash3"
+              title="Delete"
+              @click="remove"
+            />
           </div>
         </div>
       </div>
     </template>
 
-    <template v-slot:thread>
-      <div v-if="showReplies" class="d-grid gap-1 my-2">
-        <span v-for="c in childComments" :key="c.id">
-          <CommentCard :readonly="readonly" :study-session-id="studySessionId" :commentId="c.id" :documentId="documentId" :level=1>
-        </CommentCard>
+    <template #thread>
+      <div
+        v-if="showReplies"
+        class="d-grid gap-1 my-2"
+      >
+        <span
+          v-for="c in childComments"
+          :key="c.id"
+        >
+          <CommentCard
+            :readonly="readonly"
+            :study-session-id="studySessionId"
+            :comment-id="c.id"
+            :document-id="documentId"
+            :level="1"
+          />
         </span>
       </div>
     </template>
-
   </SideCard>
 </template>
 
 <script>
-/* AnnoCard.vue - annotation elements
-
-This component holds the current data of each annotation and handles the annotation functionality itself
-
-Author: Nils Dycke (dycke@ukp...)
-Source: -
-*/
-
 import SideCard from "./SideCard.vue";
 import CommentCard from "./CommentCard.vue";
-import LoadIcon from "@/icons/LoadIcon.vue";
 import Collaboration from "@/basic/Collaboration.vue"
-import IconLoading from "@/icons/IconLoading.vue"
 import SidebarButton from "./SidebarButton.vue"
 
 import NLPService from "@/basic/NLPService.vue";
 
+/* AnnoCard.vue - annotation elements
+
+This component holds the current data of each annotation with a comment (and its children).
+
+Author: Nils Dycke, Dennis Zyska
+Source: -
+*/
 export default {
   name: "AnnoCard",
-  components: {NLPService, Collaboration, SideCard, CommentCard, LoadIcon, IconLoading, SidebarButton},
+  components: {NLPService, Collaboration, SideCard, CommentCard, SidebarButton},
   props: {
     'studySessionId': {
       type: Number,
@@ -143,20 +193,13 @@ export default {
       required: true
     },
   },
+emits: ['focus'],
   data: function () {
     return {
       shake: false,
       showReplies: false,
       showEditTimeout: null,
       edit_mode: false,
-    }
-  },
-  mounted() {
-    if (this.comment.draft) {
-      //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
-      setTimeout(() => this.$emit("focus", this.commentId), 100);
-      this.shake = true;
-      setTimeout(() => this.shake = false, 1500);
     }
   },
   computed: {
@@ -173,6 +216,7 @@ export default {
       const annotationId = this.comment.annotationId;
       if (annotationId)
         return annotationId;
+      return null;
     },
     editedByMyself() {
       return this.comment.draft || this.edit_mode;
@@ -189,6 +233,7 @@ export default {
     color() {
       if (this.annotation_id)
         return this.$store.getters['tag/getColor'](this.annotation.tagId);
+      return null;
     },
     tagName() {
       if (this.annotation_id) {
@@ -196,6 +241,7 @@ export default {
         if (tag)
           return tag.name;
       }
+      return null;
     },
     summarizationMinLength() {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.minLength'));
@@ -223,9 +269,18 @@ export default {
     },
     summarizationAvailable() {
       if (this.annotation)
-      return this.annotation.text !== null && this.annotation.text.length >= this.summarizationMinAnnoLength
+        return this.annotation.text !== null && this.annotation.text.length >= this.summarizationMinAnnoLength
           && this.summarizationActivated;
+      return null;
     },
+  },
+  mounted() {
+    if (this.comment.draft) {
+      //focus (delay necessary, because the sidepane first needs to update the scrollable area before focusing)
+      setTimeout(() => this.$emit("focus", this.commentId), 100);
+      this.shake = true;
+      setTimeout(() => this.shake = false, 1500);
+    }
   },
   methods: {
     truncatedText(text) {
@@ -291,7 +346,6 @@ export default {
       if (this.annotation_id) {
         this.$socket.emit('annotationUpdate', {
           "annotationId": this.annotation.id,
-          //TODO tags is not existing anymore in annotation table
           "tagId": JSON.stringify(this.annotation.tagId),
           "deleted": true
         });

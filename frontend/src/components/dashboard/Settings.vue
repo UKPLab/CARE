@@ -67,12 +67,16 @@
 <script>
 import Loading from "@/basic/Loading.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
-import Modal from "@/basic/Modal.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 
+/* Settings.vue - dashboard component for handling settings by admins
+
+Author: Dennis Zyska
+Source: -
+*/
 export default {
   name: "Settings",
-  components: {EditorModal, LoadIcon, Loading, Modal},
+  components: {EditorModal, LoadIcon, Loading},
   data: function () {
     return {
       settings: null,

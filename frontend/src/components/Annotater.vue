@@ -1,68 +1,127 @@
 <template>
-  <Loader v-if="documentId === 0" :loading="true" class="pageLoader"/>
+  <Loader
+    v-if="documentId === 0"
+    :loading="true"
+    class="pageLoader"
+  />
   <span v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
-        <div id="viewerContainer" ref="viewer" class="col border mh-100 justify-content-center p-3"
-             style="overflow-y: scroll;">
-          <PDFViewer ref="pdfViewer" :document-id="documentId" :readonly="readonly" :study-session-id="studySessionId"
-                     class="rounded border border-1 shadow-sm"
-                     style="margin:auto"></PDFViewer>
+        <div
+          id="viewerContainer"
+          ref="viewer"
+          class="col border mh-100 justify-content-center p-3"
+          style="overflow-y: scroll;"
+        >
+          <PDFViewer
+            ref="pdfViewer"
+            :document-id="documentId"
+            :readonly="readonly"
+            :study-session-id="studySessionId"
+            class="rounded border border-1 shadow-sm"
+            style="margin:auto"
+          />
         </div>
-        <div id="sidebarContainer" class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;">
-          <Sidebar ref="sidebar" :document-id="documentId" :readonly="readonly" :study-session-id="studySessionId"/>
+        <div
+          id="sidebarContainer"
+          class="col border mh-100  col-sm-auto g-0"
+          style="overflow-y: scroll;"
+        >
+          <Sidebar
+            ref="sidebar"
+            :document-id="documentId"
+            :readonly="readonly"
+            :study-session-id="studySessionId"
+          />
         </div>
       </div>
     </div>
 
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
-        <button v-if="studySessionId === null && numStudyComments > 0" :title="showAll ?  'Hide study comments' : 'Show study comments'"
-                class="btn rounded-circle" type="button"
-                @click="setSetting({key: 'annotator.showAllComments', value: !showAll})">
+        <button
+          v-if="studySessionId === null && numStudyComments > 0"
+          :title="showAll ? 'Hide study comments' : 'Show study comments'"
+          class="btn rounded-circle"
+          type="button"
+          @click="setSetting({key: 'annotator.showAllComments', value: !showAll})"
+        >
           <span class="position-relative translate-middle top-100 start-100 fs-10 fw-light">
-            {{ numStudyComments}}
+            {{ numStudyComments }}
           </span>
           <span>
-            <LoadIcon :icon-name="showAll ?  'eye-slash-fill' : 'eye-fill'" :size="18"></LoadIcon>
+            <LoadIcon
+              :icon-name="showAll ? 'eye-slash-fill' : 'eye-fill'"
+              :size="18"
+            />
           </span>
         </button>
       </li>
       <li class="nav-item">
-        <button v-if="nlpEnabled" :title="nlpActive ?  'Deactivate NLP support' : 'Activate NLP support'"
-                class="btn rounded-circle" type="button"
-                @click="toggleNlp">
-          <LoadIcon :color="(!nlpActive) ?'#777777':'#097969'" :size="18"
-                    icon-name="robot"></LoadIcon>
+        <button
+          v-if="nlpEnabled"
+          :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
+          class="btn rounded-circle"
+          type="button"
+          @click="toggleNlp"
+        >
+          <LoadIcon
+            :color="(!nlpActive) ?'#777777':'#097969'"
+            :size="18"
+            icon-name="robot"
+          />
         </button>
       </li>
-      <ExpandMenu class="nav-item"></ExpandMenu>
+      <ExpandMenu class="nav-item" />
     </Teleport>
 
     <Teleport to="#topBarExtendMenuItems">
-      <li><a :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
-             class="dropdown-item" href="#" @click="downloadAnnotations('json')">Download
+      <li><a
+        :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
+        class="dropdown-item"
+        href="#"
+        @click="downloadAnnotations('json')"
+      >Download
         Annotations</a></li>
     </Teleport>
 
     <Teleport to="#topbarCustomPlaceholder">
       <form class="hstack gap-3 container-fluid justify-content-center">
-        <button v-if="review" class="btn btn-outline-success me-2" type="button"
-                v-on:click="this.$refs.reviewSubmit.open()">Submit Review
+        <button
+          v-if="review"
+          class="btn btn-outline-success me-2"
+          type="button"
+          @click="$refs.reviewSubmit.open()"
+        >Submit Review
         </button>
-        <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">
+        <button
+          v-if="approve"
+          class="btn btn-outline-dark me-2"
+          type="button"
+          @click="$refs.report.open()"
+        >
           Report
         </button>
-        <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">
+        <button
+          v-if="approve"
+          class="btn btn-outline-success me-2"
+          type="button"
+          @click="decisionSubmit(true)"
+        >
           Accept
         </button>
-        <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">
+        <button
+          v-if="approve"
+          class="btn btn-outline-danger me-2"
+          type="button"
+          @click="decisionSubmit(false)"
+        >
           Reject
         </button>
       </form>
     </Teleport>
 
-    <ExportAnnos ref="export"></ExportAnnos>
+    <ExportAnnos ref="export" />
   </span>
 </template>
 
@@ -79,7 +138,6 @@ import PDFViewer from "./annotater/pdfViewer/PDFViewer.vue";
 import Sidebar from "./annotater/sidebar/Sidebar.vue";
 import Loader from "@/basic/Loader.vue";
 import ExportAnnos from "@/basic/download/ExportAnnos.vue"
-import IconBoostrap from "../icons/IconBootstrap.vue";
 import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
@@ -97,15 +155,14 @@ export default {
     ExpandMenu,
     Sidebar,
     Loader,
-    ExportAnnos,
-    IconBoostrap
+    ExportAnnos
   },
   props: {
     'documentId': {
       type: Number,
       required: true
     },
-    'review_id': {
+    'reviewId': {
       type: String,
       required: false,
       default: null
@@ -146,13 +203,6 @@ export default {
       }, 500)
     }
   },
-  watch: {
-    studySessionId(newVal, oldVal) {
-      if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
-      }
-    }
-  },
   computed: {
     anchors() {
       return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId))
@@ -178,12 +228,19 @@ export default {
       return this.comments.filter(c => c.studySessionId).length;
     }
   },
+  watch: {
+    studySessionId(newVal, oldVal) {
+      if (oldVal !== newVal) {
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+      }
+    }
+  },
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {
       this.scrollTo(anno_id);
       this.$socket.emit("stats", {
         action: "pdfScroll",
-        data: {review_id: this.review_id, documentId: this.documentId, anno_id: anno_id}
+        data: {review_id: this.reviewId, documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
       });
     });
 

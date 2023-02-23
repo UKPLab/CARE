@@ -1,21 +1,27 @@
 <template>
-  <DownloadSet req-msg="annotationExportByDocument"
-               res-msg="annotationExport"
-               index="document"
-               ref="annotations"
-              @result="r => this.result[0] = r"
-              @progress="p => this.progress[0] = p">
-  </DownloadSet>
-  <DownloadSet req-msg="commentExportByDocument"
-               res-msg="commentExport"
-               index="document"
-               ref="comments"
-               @result="r => this.result[1] = r"
-               @progress="p => this.progress[1] = p">
-  </DownloadSet>
+  <DownloadSet
+    ref="annotations"
+    req-msg="annotationExportByDocument"
+    res-msg="annotationExport"
+    index="document"
+    @result="r => result[0] = r"
+    @progress="p => progress[0] = p"
+  />
+  <DownloadSet
+    ref="comments"
+    req-msg="commentExportByDocument"
+    res-msg="commentExport"
+    index="document"
+    @result="r => result[1] = r"
+    @progress="p => progress[1] = p"
+  />
 </template>
 
 <script>
+import {mergeAnnotationsAndComments} from "@/assets/data";
+import {downloadObjectsAs, omitObjectAttributeSubset} from "@/assets/utils";
+import DownloadSet from "./DownloadSet.vue";
+
 /* ExportAnnos.vue - default anno and comment export component
 
 Export logic for annos and comments
@@ -23,12 +29,8 @@ Export logic for annos and comments
 Author: Nils Dycke
 Source: -
 */
-import {mergeAnnotationsAndComments} from "@/assets/data";
-import {downloadObjectsAs, omitObjectAttributeSubset} from "@/assets/utils";
-import DownloadSet from "./DownloadSet.vue";
-
 export default {
-  name: "ExportAnnos.vue",
+  name: "ExportAnnos",
   components: {DownloadSet},
   props: [],
   data() {

@@ -8,47 +8,56 @@
     </div>
     <div v-else>
       <hr>
-      <div v-for="s in studies" :key="s.id">
-        <Card :title="s.name ? `Study: ${s.name}` : '<no name>'" collapsable>
-          <template v-slot:body>
-            <StudySessionTable :study-id="s.id"></StudySessionTable>
+      <div
+        v-for="s in studies"
+        :key="s.id"
+      >
+        <Card
+          :title="s.name ? `Study: ${s.name}` : '<no name>'"
+          collapsable
+        >
+          <template #body>
+            <StudySessionTable :study-id="s.id" />
           </template>
-          <template v-slot:footer>
-            <LoadIcon iconName="stopwatch" style="margin-right:0.5rem"></LoadIcon>
-            <span>{{s.end !== null ? studyTimes[s.id] : 'no due date'}}</span>
+          <template #footer>
+            <LoadIcon
+              icon-name="stopwatch"
+              style="margin-right:0.5rem"
+            />
+            <span>{{ s.end !== null ? studyTimes[s.id] : 'no due date' }}</span>
           </template>
         </Card>
         <hr>
       </div>
     </div>
   </div>
-  <Timer autostart @timeStep="trigger++"></Timer>
+  <Timer
+    autostart
+    @timeStep="trigger++"
+  />
 </template>
 
 <script>
-/* StudySession.vue - dashboard component for handling study sessions
-
-Author: Nils Dycke, Dennis Zyska
-Source: -
-*/
-
 import Card from "@/basic/Card.vue";
-import Table from "@/basic/table/Table.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
-import StudyModal from "@/components/dashboard/study/StudyModal.vue";
 import StudySessionTable from "@/components/dashboard/study/StudySessionTable.vue";
 import Timer from "@/basic/Timer.vue";
 import {getTimeDiffString} from "@/assets/utils";
 
+/* StudySession.vue - dashboard component for handling study sessions
+
+Author: Nils Dycke
+Source: -
+*/
 export default {
   name: "StudySession",
-  components: {Card, Table, LoadIcon, StudyModal, StudySessionTable, Timer},
+  components: {Card, LoadIcon, StudySessionTable, Timer},
+  props: {},
   data() {
     return {
       trigger: 0
     }
   },
-  props: {},
   sockets: {
     "studySessionRefresh": function (data) {
       data.forEach(s => {
@@ -57,9 +66,6 @@ export default {
         }
       });
     }
-  },
-  mounted() {
-    this.load();
   },
   computed: {
     studies() {
@@ -76,6 +82,9 @@ export default {
       this.trigger; // leave here to force recompute
       return Object.fromEntries(this.studies.map(s => [s.id, s.end ? getTimeDiffString(Date.now(), new Date(s.end)) : null]));
     }
+  },
+  mounted() {
+    this.load();
   },
   methods: {
     load() {

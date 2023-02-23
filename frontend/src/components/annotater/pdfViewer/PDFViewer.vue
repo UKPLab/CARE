@@ -1,28 +1,30 @@
 <template>
-  <div id="pdfContainer" class="has-transparent-text-layer">
+  <div
+    id="pdfContainer"
+    class="has-transparent-text-layer"
+  >
     <PDFPage
-        v-for="page in pdf.pageCount"
-        :key="'PDFPageKey' + page"
-        :documentId="documentId"
-        :pageNumber="page"
-        :study-session-id="studySessionId"
-        :pdf="pdf"
-        :render="renderCheck[page - 1]"
-        class="scrolling-page"
-        @updateVisibility="updateVisibility"
+      v-for="page in pdf.pageCount"
+      :key="'PDFPageKey' + page"
+      :document-id="documentId"
+      :page-number="page"
+      :study-session-id="studySessionId"
+      :pdf="pdf"
+      :render="renderCheck[page - 1]"
+      class="scrolling-page"
+      @updateVisibility="updateVisibility"
     />
-    <Adder v-if="!readonly" :documentId="documentId" :pdf="pdf" :study-session-id="studySessionId" ></Adder>
+    <Adder
+      v-if="!readonly"
+      :document-id="documentId"
+      :pdf="pdf"
+      :study-session-id="studySessionId"
+    />
   </div>
 </template>
 
 <script>
-/* PDF Viewer
 
-This component holds the PDF Pages and the all interacting vue components.
-Central PDF View component.
-
-Author: Dennis Zyska
-*/
 import PDFPage from "./PDFPage.vue";
 import {PDF} from './pdfStore.js';
 import * as pdfjsLib from "pdfjs-dist/build/pdf.js"
@@ -30,10 +32,16 @@ import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 
 import Adder from "./Adder.vue";
 import {mapMutations} from "vuex";
-import {scrollElement} from "@/assets/anchoring/scroll";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
+/* PDF Viewer
+
+This component holds the PDF Pages and the all interacting vue components.
+Central PDF View component.
+
+Author: Dennis Zyska
+*/
 export default {
   name: "PDFViewer",
   components: {PDFPage, Adder},
@@ -61,19 +69,19 @@ export default {
       visiblePages: [1],
     }
   },
-  watch: {
-    scrollTo() {
-      if (this.scrollTo !== null) {
-        this.scrollTo = null;
-      }
-    },
-  },
   computed: {
     renderCheck() {
       let minPage = Math.max(Math.min(...this.visiblePages) - 3, 1);
       let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
 
       return [...Array(this.pdf.pageCount).keys()].map((page) => (page + 1 >= minPage && page + 1 <= maxPage));
+    },
+  },
+  watch: {
+    scrollTo() {
+      if (this.scrollTo !== null) {
+        this.scrollTo = null;
+      }
     },
   },
   sockets: {

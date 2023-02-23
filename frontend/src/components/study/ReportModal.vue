@@ -1,29 +1,51 @@
 <template>
-  <Modal ref="modal" :props="this.$props" lg name="studyReport" xl>
-    <template v-slot:title>
+  <Modal
+    ref="modal"
+    :props="$props"
+    lg
+    name="studyReport"
+    xl
+  >
+    <template #title>
       Review Report
     </template>
-    <template v-slot:body>
+    <template #body>
       <p v-if="reportItems.length + noteItems.length === 0">
         Empty report -- no annotations or comments found.
       </p>
       <div v-else>
         <h2>General Comments</h2>
         <ul>
-          <li v-for="n in noteItems" :key="n.id">
-            <ReportItem :comment-id="n.id" @showReportComment="showComment"/>
+          <li
+            v-for="n in noteItems"
+            :key="n.id"
+          >
+            <ReportItem
+              :comment-id="n.id"
+              @show-report-comment="showComment"
+            />
           </li>
         </ul>
       </div>
-      <div v-for="s in reportSections" :key="s.id">
+      <div
+        v-for="s in reportSections"
+        :key="s.id"
+      >
         <h2>
           <span :class="`badge bg-${s.colorCode}`">
-             {{ s.name }}
+            {{ s.name }}
           </span>
         </h2>
         <ul>
-          <li v-if="annotations.filter(a => a.tagId === s.id).length > 0" v-for="r in annotations.filter(a => a.tagId === s.id)" :key="r.id">
-            <ReportItem :annotation-id="r.id" @showReportAnnotation="showAnnotation" />
+          <li
+            v-for="r in annotations.filter(a => a.tagId === s.id)"
+            v-if="annotations.filter(a => a.tagId === s.id).length > 0"
+            :key="r.id"
+          >
+            <ReportItem
+              :annotation-id="r.id"
+              @show-report-annotation="showAnnotation"
+            />
           </li>
           <li v-else>
             No comments.
@@ -31,11 +53,18 @@
         </ul>
         <!-- Add page notes -->
       </div>
-      <p id="footnote">*Tip: Hover over a reference to see the referenced text or click to view the annotation in the
-        PDF.</p>
+      <p id="footnote">
+        *Tip: Hover over a reference to see the referenced text or click to view the annotation in the
+        PDF.
+      </p>
     </template>
-    <template v-slot:footer>
-      <button class="btn btn-primary" data-bs-dismiss="modal" type="button">Close
+    <template #footer>
+      <button
+        class="btn btn-primary"
+        data-bs-dismiss="modal"
+        type="button"
+      >
+        Close
       </button>
     </template>
   </Modal>

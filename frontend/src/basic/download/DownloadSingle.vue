@@ -1,7 +1,9 @@
 <template>
+
 </template>
 
 <script>
+
 /* DownloadSingle.vue - generic downloading component for a sequence of items
 
 Generic download logic for a single message
@@ -9,10 +11,8 @@ Generic download logic for a single message
 Author: Nils Dycke
 Source: -
 */
-import {arraysContainSameElements} from "@/assets/utils";
-
 export default {
-  name: "DownloadSingle.vue",
+  name: "DownloadSingle",
   props: {
     name: {
       type: String,

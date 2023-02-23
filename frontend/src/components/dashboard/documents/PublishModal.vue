@@ -1,14 +1,20 @@
 <template>
   <Modal ref="publishModal">
-    <template v-slot:title>
+    <template #title>
       Publish Document
     </template>
-    <template v-slot:body>
+    <template #body>
       <div v-if="success">
-        <div class="alert alert-success" role="alert">
+        <div
+          class="alert alert-success"
+          role="alert"
+        >
           Document successfully published!<br>
           The document is available under the following link:<br><br>
-          <a :href="link" target="_blank">{{ link }}</a>
+          <a
+            :href="link"
+            target="_blank"
+          >{{ link }}</a>
         </div>
       </div>
       <div v-else>
@@ -17,14 +23,34 @@
       </div>
     </template>
 
-    <template v-slot:footer>
-      <span v-if="success" class="btn-group">
-        <button class="btn btn-secondary" @click="close">Close</button>
-        <button class="btn btn-primary" @click="copyURL">Copy Link</button>
+    <template #footer>
+      <span
+        v-if="success"
+        class="btn-group"
+      >
+        <button
+          class="btn btn-secondary"
+          @click="close"
+        >Close</button>
+        <button
+          class="btn btn-primary"
+          @click="copyURL"
+        >Copy Link</button>
       </span>
-      <span v-else class="btn-group">
-        <button class="btn btn-secondary" type="button" @click="close">Abort</button>
-        <button class="btn btn-danger me-2" type="button" @click="publish">Yes, publish it!</button>
+      <span
+        v-else
+        class="btn-group"
+      >
+        <button
+          class="btn btn-secondary"
+          type="button"
+          @click="close"
+        >Abort</button>
+        <button
+          class="btn btn-danger me-2"
+          type="button"
+          @click="publish"
+        >Yes, publish it!</button>
       </span>
     </template>
   </Modal>
@@ -33,8 +59,15 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 
+/* PublishModal.vue - modal for publishing a document
+
+The modal for publishing a document.
+
+Author: Dennis Zyska
+Source: -
+*/
 export default {
-  name: "PublishModal.vue",
+  name: "PublishModal",
   components: {Modal},
   data() {
     return {

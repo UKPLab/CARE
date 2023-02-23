@@ -1,23 +1,40 @@
 <template>
-  <Modal ref="tagSetPublishModal">
-    <template v-slot:title>
+  <Modal
+    ref="tagSetPublishModal"
+    name="tagSetPublishModal"
+  >
+    <template #title>
       Publish Tagset
     </template>
-    <template v-slot:body>
+    <template #body>
       Do you really want to publish the tagset? <br>
       Note: Once you published it, you can't unpublish the tagset! If you want to unpublish it, you have to delete it
       and create a new one.
       If published the tagset will be available for all users.
     </template>
 
-    <template v-slot:footer>
-      <button class="btn btn-secondary" type="button" @click="cancel">Abort</button>
-      <button class="btn btn-danger me-2" type="button" @click="publish">Yes, publish it!</button>
+    <template #footer>
+      <button
+        class="btn btn-secondary"
+        type="button"
+        @click="cancel"
+      >
+        Abort
+      </button>
+      <button
+        class="btn btn-danger me-2"
+        type="button"
+        @click="publish"
+      >
+        Yes, publish it!
+      </button>
     </template>
   </Modal>
 </template>
 
 <script>
+import Modal from "@/basic/Modal.vue";
+
 /* TagSetPublishModal.vue - modal component for publish a tagset
 
 To get a confirmation before publish the tagset
@@ -25,8 +42,6 @@ To get a confirmation before publish the tagset
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import Modal from "@/basic/Modal.vue";
-
 export default {
   name: "TagSetPublishModal",
   components: {Modal},

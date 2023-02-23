@@ -1,17 +1,30 @@
 <template>
-  <Modal ref="studySessionModal" lg remove-close name="studySessionModal"
-         :props="{studyId: studyId}">
-    <template v-slot:title>
+  <Modal
+    ref="studySessionModal"
+    lg
+    remove-close
+    name="studySessionModal"
+    :props="{studyId: studyId}"
+  >
+    <template #title>
       <span>
         Study Sessions of {{ study ? study.name : "unknown" }}
       </span>
     </template>
-    <template v-slot:body>
-      <Table :columns="columns" :data="studySessions" :options="options" @action="action"></Table>
+    <template #body>
+      <Table
+        :columns="columns"
+        :data="studySessions"
+        :options="options"
+        @action="action"
+      />
     </template>
-    <template v-slot:footer>
+    <template #footer>
       <span class="btn-group">
-        <button class="btn btn-secondary" @click="close">Close</button>
+        <button
+          class="btn btn-secondary"
+          @click="close"
+        >Close</button>
       </span>
     </template>
   </Modal>
@@ -22,8 +35,15 @@ import Modal from "@/basic/Modal.vue";
 import Form from "@/basic/form/Form.vue";
 import Table from "@/basic/table/Table.vue";
 
+/* StudySessionModal.vue - details of study session for a given study in a modal
+
+Modal including the details of existing study sessions for a study.
+
+Author: Nils Dycke
+Source: -
+*/
 export default {
-  name: "StudySessionModal.vue",
+  name: "StudySessionModal",
   components: {Modal, Form, Table},
   data() {
     return {

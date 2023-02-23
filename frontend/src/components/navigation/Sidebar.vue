@@ -1,27 +1,47 @@
 <template>
-  <div id="wrapper" class="nav-container">
+  <div
+    id="wrapper"
+    class="nav-container"
+  >
     <div id="sidebar-wrapper">
       <div class="list-group-test">
         <span v-for="group in sidebarGroups">
-          <div v-if="group.name !== 'Default'" class="sidebar-heading">
+          <div
+            v-if="group.name !== 'Default'"
+            class="sidebar-heading"
+          >
             <h5 class="mb-1">{{ group.name }}</h5>
           </div>
-          <router-link :to="'/dashboard/' + element.path" v-for="element in sidebarElements[group.id]"
-                       class="list-group-item list-group-item-action p-3">
-            <span class="sidebar-icon" :title="element.name">
-              <LoadIcon :iconName="element.icon" :size="24"/>
+          <router-link
+            v-for="element in sidebarElements[group.id]"
+            :to="'/dashboard/' + element.path"
+            class="list-group-item list-group-item-action p-3"
+          >
+            <span
+              class="sidebar-icon"
+              :title="element.name"
+            >
+              <LoadIcon
+                :icon-name="element.icon"
+                :size="24"
+              />
             </span>
-          <div class="list-group-item-text">{{ element.name }}</div>
+            <div class="list-group-item-text">{{ element.name }}</div>
           </router-link>
         </span>
       </div>
 
-      <div class="collapse-sidebar-container list-group-item-action list-group-item"
-           @click="toggleSidebar()" title="Toggle sidebar">
+      <div
+        class="collapse-sidebar-container list-group-item-action list-group-item"
+        title="Toggle sidebar"
+        @click="toggleSidebar()"
+      >
         <span class="arrow-toggle sidebar-icon">
-        <LoadIcon name="chevron-double-right"></LoadIcon>
+          <LoadIcon name="chevron-double-right" />
         </span>
-        <div class="list-group-item-text">Collapse sidebar</div>
+        <div class="list-group-item-text">
+          Collapse sidebar
+        </div>
       </div>
     </div>
   </div>
@@ -32,8 +52,8 @@
 
 This component provides both a topbar and left toggleable side toolbar.
 
-Author: Carly Gettinger (cjgettinger@gmail.com)
-Co-Author: Dennis Zyska (zyska@ukp...)
+Author: Carly Gettinger
+Co-Author: Dennis Zyska, Nils Dycke
 
 Source: left toggleable toolbar - adapted simple sidebar found at https://github.com/StartBootstrap/startbootstrap-simple-sidebar
 */
@@ -54,16 +74,16 @@ export default {
       return this.$store.getters['auth/isAdmin'];
     }
   },
-  methods: {
-    toggleSidebar() {
-      document.body.classList.toggle('sb-sidenav-toggled');
-    },
-  },
   mounted() {
     document.body.classList.add('sidebar-exists');
   },
   beforeUnmount() {
     document.body.classList.remove('sidebar-exists');
+  },
+  methods: {
+    toggleSidebar() {
+      document.body.classList.toggle('sb-sidenav-toggled');
+    },
   }
 }
 

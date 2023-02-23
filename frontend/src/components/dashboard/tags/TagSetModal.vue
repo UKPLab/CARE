@@ -1,50 +1,92 @@
 <template>
-  <Modal ref="tagSetModal" :props="{tagsetId: id}" lg name="tagsetModal">
-    <template v-slot:title>
+  <Modal
+    ref="tagSetModal"
+    :props="{tagsetId: id}"
+    lg
+    name="tagsetModal"
+  >
+    <template #title>
       <span v-if="id === 0">New</span>
       <span v-else>Edit</span>
       Tagset
     </template>
-    <template v-slot:body>
+    <template #body>
       <div class="mb-3">
-        <label class="form-label" for="tagset_name">Name</label>
-        <input id="tagset_name" v-model="tagSet.name" class="form-control" placeholder="Name of the tagset" type="text">
+        <label
+          class="form-label"
+          for="tagset_name"
+        >Name</label>
+        <input
+          id="tagset_name"
+          v-model="tagSet.name"
+          class="form-control"
+          placeholder="Name of the tagset"
+          type="text"
+        >
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="tagset_description">Description</label>
-        <input id="tagset_description" v-model="tagSet.description" class="form-control"
-               placeholder="Description of the tagset" type="text">
+        <label
+          class="form-label"
+          for="tagset_description"
+        >Description</label>
+        <input
+          id="tagset_description"
+          v-model="tagSet.description"
+          class="form-control"
+          placeholder="Description of the tagset"
+          type="text"
+        >
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="tagset_tags">Tags
+        <label
+          class="form-label"
+          for="tagset_tags"
+        >Tags
         </label>
-        <TagsTable :tagSetId="id"></TagsTable>
-
+        <TagsTable :tag-set-id="id" />
       </div>
-
     </template>
-    <template v-slot:footer>
-      <button v-if="id === 0" class="btn btn-secondary" type="button" @click="back">Back</button>
-      <button v-else class="btn btn-secondary" type="button" @click="cancel">Cancel</button>
-      <button class="btn btn-primary me-2" type="button" @click="save">Save</button>
-
+    <template #footer>
+      <button
+        v-if="id === 0"
+        class="btn btn-secondary"
+        type="button"
+        @click="back"
+      >
+        Back
+      </button>
+      <button
+        v-else
+        class="btn btn-secondary"
+        type="button"
+        @click="cancel"
+      >
+        Cancel
+      </button>
+      <button
+        class="btn btn-primary me-2"
+        type="button"
+        @click="save"
+      >
+        Save
+      </button>
     </template>
   </Modal>
 </template>
 
 <script>
-/* TagSetModal.vue - modal component for adding and editing tagssets
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
 import Tags from "bootstrap5-tags/tags.js";
 import Modal from "@/basic/Modal.vue";
 import TagsTable from "./TagsTable.vue";
 import {mapMutations} from "vuex";
 
+/* TagSetModal.vue - modal component for adding and editing tagssets
+
+Author: Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 export default {
   name: "TagSetModal",
   components: {TagsTable, Modal},
@@ -53,13 +95,13 @@ export default {
       id: 0,
     }
   },
-  mounted() {
-    Tags.init(`#tagset_tags`);
-  },
   computed: {
     tagSet() {
       return this.$store.getters['tag/getTagSet'](this.id);
     },
+  },
+  mounted() {
+    Tags.init(`#tagset_tags`);
   },
   methods: {
     ...mapMutations({cleanEmptyTagSet: "tag/CLEAN_EMPTY_TAG_SET", cleanEmptyTags: "tag/CLEAN_EMPTY_TAGS", copyTagSet: "tag/COPY_TAG_SET"}),

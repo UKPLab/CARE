@@ -1,18 +1,18 @@
-/* PDF Store
-
-All information about the PDF are stored in this class.
-The class holds the pdf.js object and it is the central entry point for all components that
-interact with the pdf.js object.
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
 import _ from 'lodash';
 
 // make sure, it's not been reactive!
 const state = {pdf: undefined};
 const pages = {};
 
+/* PDF Store
+
+All information about the PDF are stored in this class.
+The class holds the pdf.js object and it is the central entry point for all components that
+interact with the pdf.js object.
+
+Author: Dennis Zyska
+Source: -
+*/
 export class PDF {
 
     constructor(SIZE = 10) {

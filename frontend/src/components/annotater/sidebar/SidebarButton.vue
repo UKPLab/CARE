@@ -1,10 +1,29 @@
 <template>
-  <button v-if="loading" :disabled="true" class="btn btn-sm" type="button">
-    <IconLoading :loading="true" size="12"></IconLoading>
+  <button
+    v-if="loading"
+    :disabled="true"
+    class="btn btn-sm"
+    type="button"
+  >
+    <IconLoading
+      :loading="true"
+      size="12"
+    />
   </button>
-  <button v-else class="btn btn-sm" data-placement="top" data-toggle="tooltip"
-          title="Edit" type="button" v-on:click="action" :disabled="disabled">
-    <LoadIcon :iconName="icon" :size="16"></LoadIcon>
+  <button
+    v-else
+    class="btn btn-sm"
+    data-placement="top"
+    data-toggle="tooltip"
+    title="Edit"
+    type="button"
+    :disabled="disabled"
+    @click="action"
+  >
+    <LoadIcon
+      :icon-name="icon"
+      :size="16"
+    />
     <span class="visually-hidden">{{ title }}</span>
   </button>
 </template>
@@ -13,10 +32,16 @@
 import LoadIcon from "@/icons/LoadIcon.vue";
 import IconLoading from "@/icons/IconLoading.vue";
 
+/* SidebarButton.vue - generic button for the sidebar
+
+Generic component providing a standardized button for the sidebar card footers.
+
+Author:  Nils Dycke, Dennis Zyska
+Source: -
+*/
 export default {
   name: "SidebarButton",
   components: {LoadIcon, IconLoading},
-  emits: ["click"],
   props: {
     "icon": {
       type: String,
@@ -28,7 +53,8 @@ export default {
     },
     "props": {
       type: Object,
-      required: false
+      required: false,
+      default: null
     },
     "loading": {
       type: Boolean,
@@ -42,6 +68,7 @@ export default {
     }
 
   },
+  emits: ["click"],
   methods: {
     action() {
       this.$emit("click")

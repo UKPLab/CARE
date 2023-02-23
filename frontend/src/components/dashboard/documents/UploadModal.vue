@@ -1,36 +1,62 @@
 <template>
-  <Modal ref="uploadModal" lg>
-    <template v-slot:title>
+  <Modal
+    ref="uploadModal"
+    lg
+  >
+    <template #title>
       Upload new document
     </template>
-    <template v-slot:body>
+    <template #body>
       <div class="modal-body justify-content-center flex-grow-1 d-flex">
-        <div v-if="uploading" class="spinner-border m-5 " role="status">
+        <div
+          v-if="uploading"
+          class="spinner-border m-5 "
+          role="status"
+        >
           <span class="visually-hidden">Loading...</span>
         </div>
-        <div v-else class="flex-grow-1">
-          <input id="fileInput" class="form-control" name="file" type="file">
+        <div
+          v-else
+          class="flex-grow-1"
+        >
+          <input
+            id="fileInput"
+            class="form-control"
+            name="file"
+            type="file"
+          >
         </div>
       </div>
     </template>
-    <template v-slot:footer>
+    <template #footer>
       <div v-if="!uploading">
-        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
-        <button class="btn btn-primary" type="button" @click="upload">Upload</button>
+        <button
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+          type="button"
+        >
+          Close
+        </button>
+        <button
+          class="btn btn-primary"
+          type="button"
+          @click="upload"
+        >
+          Upload
+        </button>
       </div>
     </template>
   </Modal>
 </template>
 
 <script>
+import Modal from "@/basic/Modal.vue";
+
 /* Upload.vue - modal for document upload component
 
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import Modal from "@/basic/Modal.vue";
-import {mapMutations} from "vuex";
-
 export default {
   name: "UploadModal",
   components: {Modal},
@@ -40,6 +66,7 @@ export default {
       show: false
     }
   },
+  computed: {},
   mounted() {
   },
   sockets: {
@@ -53,7 +80,6 @@ export default {
       }
     }
   },
-  computed: {},
   methods: {
     openModal() {
       console.log("OPENINGMODAKL");
