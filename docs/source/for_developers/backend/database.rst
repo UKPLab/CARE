@@ -135,7 +135,7 @@ these default functions is as simple as accessing the table model and executing 
 .. note::
     Generally you should *not* import the db object yourself and load a model as in the provided example. Instead,
     the web server object already holds the respective models in a class attribute. Please check out the
-    :doc:`guide on how to extend a socket <./socket>`_ for the details.
+    :doc:`./socket` for the details.
 
 In case you need more specific functions, you may simply add static access methods to the new model class. For instance:
 
