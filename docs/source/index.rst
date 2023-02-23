@@ -15,8 +15,7 @@ developer contributing to the extension of CARE or as a researcher using it for 
 
 .. note::
 
-   Check out the `Socket API documentation </api>`_ of the backend, as well the
-   :broker_docs:`\ `.
+   Check out the `Socket API documentation </api>`_ of the backend.
 
 
 .. toctree::

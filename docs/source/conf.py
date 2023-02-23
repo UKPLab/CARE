@@ -47,11 +47,3 @@ exclude_patterns = []
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-
-# Replacements
-
-rst_epilog = """
-.. |SERVICE_NLP_URL| replace:: {nlpurl}
-.. |This message should not appear| replace:: {test}
-""".format(test="", nlpurl=os.environ.get("SERVICE_NLP_URL"))
-extlinks = {'broker_docs': ("{}/docs".format(os.environ.get("SERVICE_NLP_URL")), "Broker Documentation")}
