@@ -1,23 +1,47 @@
 <template>
   <div>
-    <div :id="'page-container-' + pageNumber"
-         v-observe-visibility="{
-      callback: visibilityChanged,
-      throttle: 300,
-      throttleOptions: {
-        leading: 'visible',
-      },
-    }" class="pageContainer">
-      <canvas v-show="!isRendered" :id="'placeholder-canvas-' + pageNumber"></canvas>
-      <div :id="'canvas-wrapper-' + pageNumber" class="canvasWrapper">
-        <Loader :loading="!isRendered" class="pageLoader" :text="'Loading Page ' + pageNumber"></Loader>
+    <div
+      :id="'page-container-' + pageNumber"
+      v-observe-visibility="{
+        callback: visibilityChanged,
+        throttle: 300,
+        throttleOptions: {
+          leading: 'visible',
+        },
+      }"
+      class="pageContainer"
+    >
+      <canvas
+        v-show="!isRendered"
+        :id="'placeholder-canvas-' + pageNumber"
+      />
+      <div
+        :id="'canvas-wrapper-' + pageNumber"
+        class="canvasWrapper"
+      >
+        <Loader
+          :loading="!isRendered"
+          class="pageLoader"
+          :text="'Loading Page ' + pageNumber"
+        />
 
-        <canvas :style="{'visibility':(isRendered)?'visible':'hidden'}" :id="'pdf-canvas-' + pageNumber"
-                class="pdf-page"></canvas>
+        <canvas
+          :id="'pdf-canvas-' + pageNumber"
+          :style="{'visibility':(isRendered)?'visible':'hidden'}"
+          class="pdf-page"
+        />
       </div>
-      <div :id="'text-layer-' + pageNumber" class="textLayer"></div>
+      <div
+        :id="'text-layer-' + pageNumber"
+        class="textLayer"
+      />
     </div>
-    <Highlights :page-id="pageNumber" ref="highlights" :documentId="documentId" :study-session-id="studySessionId" />
+    <Highlights
+      ref="highlights"
+      :page-id="pageNumber"
+      :document-id="documentId"
+      :study-session-id="studySessionId"
+    />
   </div>
 </template>
 
@@ -37,10 +61,20 @@ import Highlights from "./Highlights.vue";
 import {Anchoring} from "@/assets/pdfViewer/anchor.js";
 import Loader from "@/basic/Loader.vue";
 
+/* PDFPage.vue -- an actual pdf page shown ion the viewer
 
+Showing a PDF page as loaded from the store. Rendered using pdfjs.
+
+Author: Dennis Zyska
+Co-author: Nils Dycke
+Source: -
+*/
 export default {
   name: 'PDFPage',
   components: {Loader, Highlights},
+  directives: {
+    ObserveVisibility,
+  },
   props: {
     pdf: {
       type: Object
@@ -64,18 +98,6 @@ export default {
     }
   },
   emits: ["updateVisibility", "destroyPage"],
-  directives: {
-    ObserveVisibility,
-  },
-  watch: {
-    render() {
-      this.init();
-    },
-    annotations(newVal, oldVal) {
-      if (this.isRendered)
-        this.add_anchors();
-    },
-  },
   data() {
     return {
       renderTask: undefined,
@@ -85,6 +107,23 @@ export default {
       currentWidth: 0,
       anchor: null
     };
+  },
+  computed: {
+    annotations() {
+      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageNumber);
+    },
+    anchors() {
+      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId, this.pageNumber))
+    },
+  },
+  watch: {
+    render() {
+      this.init();
+    },
+    annotations(newVal, oldVal) {
+      if (this.isRendered)
+        this.add_anchors();
+    },
   },
   mounted() {
     this.setA4();
@@ -102,14 +141,6 @@ export default {
   },
   unmounted() {
     this.remove_anchors();
-  },
-  computed: {
-    annotations() {
-      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageNumber);
-    },
-    anchors() {
-      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId, this.pageNumber))
-    },
   },
   methods: {
     visibilityChanged(isVisible, entry) {

@@ -1,35 +1,74 @@
 <template>
-  <Modal ref="modal" :props="this.$props" lg name="studyReview">
-    <template v-slot:title>
+  <Modal
+    ref="modal"
+    :props="$props"
+    lg
+    name="studyReview"
+  >
+    <template #title>
       Evaluate this session
     </template>
-    <template v-slot:body>
+    <template #body>
       <div v-if="studySession.end === null">
-        <div class="mb-3 text-center h5">This session is not finished yet, please wait until the session is closed!
+        <div class="mb-3 text-center h5">
+          This session is not finished yet, please wait until the session is closed!
         </div>
       </div>
       <div v-else>
         <div v-if="evaluated">
-          <div v-if="studySession.reviewUserId === userId" class="mb-3 text-center h5">
+          <div
+            v-if="studySession.reviewUserId === userId"
+            class="mb-3 text-center h5"
+          >
             <div>Thank you for evaluating this session!</div>
           </div>
-          <div v-else class="mb-3 text-center h5">This session is already evaluated.</div>
+          <div
+            v-else
+            class="mb-3 text-center h5"
+          >
+            This session is already evaluated.
+          </div>
         </div>
         <div v-else>
-          <div class="mb-3 text-center h5">Make a decision based on this study session.</div>
+          <div class="mb-3 text-center h5">
+            Make a decision based on this study session.
+          </div>
           <label class="form-label">Comment</label>
-          <textarea v-model="comment" class="form-control"></textarea>
+          <textarea
+            v-model="comment"
+            class="form-control"
+          />
         </div>
       </div>
     </template>
-    <template v-slot:footer>
+    <template #footer>
       <div v-if="evaluated">
-        <button class="btn btn-primary" data-bs-dismiss="modal" type="button">Close
+        <button
+          class="btn btn-primary"
+          data-bs-dismiss="modal"
+          type="button"
+        >
+          Close
         </button>
       </div>
-      <div v-else class="btn-group">
-        <button class="btn btn-danger" type="button" @click="evaluate(0)">Decline</button>
-        <button class="btn btn-success" type="button" @click="evaluate(1)">Acceptance</button>
+      <div
+        v-else
+        class="btn-group"
+      >
+        <button
+          class="btn btn-danger"
+          type="button"
+          @click="evaluate(0)"
+        >
+          Decline
+        </button>
+        <button
+          class="btn btn-success"
+          type="button"
+          @click="evaluate(1)"
+        >
+          Acceptance
+        </button>
       </div>
     </template>
   </Modal>
@@ -38,7 +77,13 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 
+/* ReviewModal.vue - Modal for providing a review outcome
 
+This modal provides the option to a reviewer (of a session) to submit their judgement.
+
+Author: Dennis Zyska
+Source: -
+*/
 export default {
   name: "ReviewModal",
   components: {Modal},

@@ -1,14 +1,26 @@
 <template>
-    <Table :columns="columns" :data="studySessions" :options="options" @action="action"></Table>
-    <ConfirmModal ref="confirmModal" ></ConfirmModal>
+  <Table
+    :columns="columns"
+    :data="studySessions"
+    :options="options"
+    @action="action"
+  />
+  <ConfirmModal ref="confirmModal" />
 </template>
 
 <script>
 import Table from "@/basic/table/Table.vue";
 import ConfirmModal from "@/basic/ConfirmModal.vue";
 
+/* StudySessionTable.vue - table of study session with management buttons
+
+Table of study sessions included in the studysession dashboard component.
+
+Author: Nils Dycke
+Source: -
+*/
 export default {
-  name: "StudySessionTable.vue",
+  name: "StudySessionTable",
   components: {Table, ConfirmModal},
   props: {
     studyId: {
@@ -54,9 +66,6 @@ export default {
         {name: "Manage", key: "manage", type: "button-group"},
       ]
     }
-  },
-  mounted() {
-    this.load();
   },
   computed: {
     study() {
@@ -110,6 +119,9 @@ export default {
             return session;
           });
     }
+  },
+  mounted() {
+    this.load();
   },
   methods: {
     load(){

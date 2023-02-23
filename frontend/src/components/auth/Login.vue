@@ -1,55 +1,129 @@
 <template>
-  <form class="row g-3 needs-validation" novalidate>
+  <form
+    class="row g-3 needs-validation"
+    novalidate
+  >
     <div class="col-md-8 mx-auto my-4">
       <div class="col-md-8 mx-auto">
-        <div class="text-center" style="margin-bottom: 20px">
-          <IconAsset name="logo" :height="200"></IconAsset>
+        <div
+          class="text-center"
+          style="margin-bottom: 20px"
+        >
+          <IconAsset
+            name="logo"
+            :height="200"
+          />
         </div>
 
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             Login
-            <a class="btn btn-sm btn-primary" @click="this.$router.push('/register')">Register</a>
+            <a
+              class="btn btn-sm btn-primary"
+              @click="$router.push('/register')"
+            >Register</a>
           </div>
 
           <div class="card-body mx-4 my-4">
-
-            <p v-if="showError" class="text-danger text-center">{{ this.errorMessage }}</p>
+            <p
+              v-if="showError"
+              class="text-danger text-center"
+            >
+              {{ errorMessage }}
+            </p>
             <div class="form-group row my-2">
-              <label class="col-md-4 col-form-label text-md-right" for="username">Username</label>
+              <label
+                class="col-md-4 col-form-label text-md-right"
+                for="username"
+              >Username</label>
               <div class="col-md-6">
-                <input id="username" v-model="username" autocomplete="username" autofocus class="form-control"
-                       placeholder="Username or email" required type="text" @blur="setValidity" @input="setValidity">
-                <div class="feedback-invalid">Please provide your username or email.</div>
+                <input
+                  id="username"
+                  v-model="username"
+                  autocomplete="username"
+                  autofocus
+                  class="form-control"
+                  placeholder="Username or email"
+                  required
+                  type="text"
+                  @blur="setValidity"
+                  @input="setValidity"
+                >
+                <div class="feedback-invalid">
+                  Please provide your username or email.
+                </div>
               </div>
             </div>
 
 
             <div class="form-group row my-2">
-              <label class="col-md-4 col-form-label text-md-right" for="password">Password</label>
+              <label
+                class="col-md-4 col-form-label text-md-right"
+                for="password"
+              >Password</label>
               <div class="col-md-6">
-                <input id="password" v-model="password" autocomplete="current-password" class="form-control"
-                       name="password"
-                       placeholder="Password" required type="password" @blur="setValidity"
-                       @input="setValidity">
-                <div class="feedback-invalid">Please provide your password.</div>
+                <input
+                  id="password"
+                  v-model="password"
+                  autocomplete="current-password"
+                  class="form-control"
+                  name="password"
+                  placeholder="Password"
+                  required
+                  type="password"
+                  @blur="setValidity"
+                  @input="setValidity"
+                >
+                <div class="feedback-invalid">
+                  Please provide your password.
+                </div>
               </div>
             </div>
 
             <div class="col-md-6 offset-md-4 my-4">
-              <button class="btn btn-primary btn-block" type="submit" @click="trySubmit">Login</button>
-              <a v-if="showGuestLogin" class="btn btn-link" @click="login_guest()">Login as Guest</a>
+              <button
+                class="btn btn-primary btn-block"
+                type="submit"
+                @click="trySubmit"
+              >
+                Login
+              </button>
+              <a
+                v-if="showGuestLogin"
+                class="btn btn-link"
+                @click="login_guest()"
+              >Login as Guest</a>
             </div>
           </div>
         </div>
-        <div v-if="showDocs || showFeedback || showProject" class="text-center">
-          <span v-if="showDocs"><a :href="linkDocs" target="_blank">Documentation</a></span>
-          <span v-if="showFeedback && showDocs" class="mx-1">&#x2022;</span>
-          <span v-if="showFeedback"><a :href="linkFeedback" target="_blank">Feedback</a></span>
-          <span v-if="showProject && (showDocs || showFeedback)" class="mx-1">&#x2022;</span>
-          <span v-if="showProject"><a :href="linkProject" target="_blank">Project Page</a></span>
+        <div
+          v-if="showDocs || showFeedback || showProject"
+          class="text-center"
+        >
+          <span v-if="showDocs"><a
+            :href="linkDocs"
+            target="_blank"
+          >Documentation</a></span>
+          <span
+            v-if="showFeedback && showDocs"
+            class="mx-1"
+          >&#x2022;</span>
+          <span v-if="showFeedback"><a
+            :href="linkFeedback"
+            target="_blank"
+          >Feedback</a></span>
+          <span
+            v-if="showProject && (showDocs || showFeedback)"
+            class="mx-1"
+          >&#x2022;</span>
+          <span v-if="showProject"><a
+            :href="linkProject"
+            target="_blank"
+          >Project Page</a></span>
         </div>
-        <div class="text-center text-secondary">{{ copyright }}</div>
+        <div class="text-center text-secondary">
+          {{ copyright }}
+        </div>
       </div>
     </div>
   </form>
@@ -61,8 +135,8 @@
 This component provides a form to enter user credentials and hereby
 login on the server. It links to the registration component.
 
-Author: Dennis Zyska (zyska@ukp...)
-Co-Author:  Nils Dycke (dycke@ukp...), Carly Gettinger (cjgettinger@gmail.com)
+Author: Dennis Zyska
+Co-Author:  Nils Dycke, Carly Gettinger
 Source: -
 */
 import {mapActions} from "vuex";
@@ -78,9 +152,6 @@ export default {
       username: "",
       password: ""
     }
-  },
-  mounted() {
-    this.check();
   },
   computed: {
     copyright() {
@@ -107,6 +178,9 @@ export default {
     showProject() {
       return window.config['app.landing.showProject'] === 'true' && this.linkProject !== '';
     }
+  },
+  mounted() {
+    this.check();
   },
   methods: {
     ...mapActions({login: "auth/login", check: "auth/check"}),

@@ -1,21 +1,48 @@
 <template>
-  <StudyModal v-if="studySessionId === 0"
-              ref="studyModal"
-              :study-id="studyId"
-              @finish="finish"
-              @start="start"/>
-  <FinishModal ref="studyFinishModal" :closeable="!timeUp" :finished="finished" :study-session-id="studySessionId"
-               @finish="finalFinish"/>
+  <StudyModal
+    v-if="studySessionId === 0"
+    ref="studyModal"
+    :study-id="studyId"
+    @finish="finish"
+    @start="start"
+  />
+  <FinishModal
+    ref="studyFinishModal"
+    :closeable="!timeUp"
+    :finished="finished"
+    :study-session-id="studySessionId"
+    @finish="finalFinish"
+  />
   <Teleport to="#topbarCustomPlaceholder">
-    <button class="btn btn-outline-secondary" type="button" @click="finish">Finish Study</button>
-    <button v-if="timeLeft > 0" class="btn mb-1" type="button">
-      <LoadIcon :size="21" class="me-1 middle" icon-name="stopwatch"/>
-      <span :class="{'text-danger':timeLeft < (5 * 60)}" class="middle"><b>Time Left:</b> {{ timeLeftHuman }}</span>
+    <button
+      class="btn btn-outline-secondary"
+      type="button"
+      @click="finish"
+    >
+      Finish Study
+    </button>
+    <button
+      v-if="timeLeft > 0"
+      class="btn mb-1"
+      type="button"
+    >
+      <LoadIcon
+        :size="21"
+        class="me-1 middle"
+        icon-name="stopwatch"
+      />
+      <span
+        :class="{'text-danger':timeLeft < (5 * 60)}"
+        class="middle"
+      ><b>Time Left:</b> {{ timeLeftHuman }}</span>
     </button>
   </Teleport>
-  <Annotater v-if="documentId !== 0" :document-id="documentId"
-             :readonly="readonly"
-             :study-session-id="studySessionId"/>
+  <Annotater
+    v-if="documentId !== 0"
+    :document-id="documentId"
+    :readonly="readonly"
+    :study-session-id="studySessionId"
+  />
 </template>
 
 <script>
@@ -24,20 +51,22 @@ import Annotater from "./Annotater.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 
+/* Study.vue - document view in study mode
+
+Loads a document in study mode; if a study session is provided, the session is loaded instead. Otherwise,
+the user is prompted to start a study (or resume an existing session).
+
+Author: Dennis Zyska
+Source: -
+*/
 export default {
   name: "Study",
   components: {LoadIcon, FinishModal, StudyModal, Annotater},
-  data() {
-    return {
-      studySessionId: 0,
-      timeLeft: 0,
-      timerInterval: null,
-    }
-  },
   props: {
     'studyHash': {
       type: String,
       required: false,
+      default: null
     },
     'initStudySessionId': {
       type: Number,
@@ -50,24 +79,11 @@ export default {
       default: false,
     }
   },
-
-  mounted() {
-    this.studySessionId = this.initStudySessionId;
-    if (this.studySessionId === 0) {
-      this.$refs.studyModal.open();
-      this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
-    }
-  },
-  sockets: {
-    studyError: function (data) {
-      if (data.studyHash === this.studyHash) {
-        this.eventBus.emit('toast', {
-          title: "Study Error",
-          message: data.message,
-          variant: "danger"
-        });
-        this.$router.push("/");
-      }
+  data() {
+    return {
+      studySessionId: 0,
+      timeLeft: 0,
+      timerInterval: null,
     }
   },
   computed: {
@@ -75,6 +91,7 @@ export default {
       if (this.studySessionId !== 0) {
         return this.$store.getters['study_session/getStudySessionById'](this.studySessionId);
       }
+      return null;
     },
     study() {
       if (this.studySession) {
@@ -83,6 +100,7 @@ export default {
       if (this.studyHash) {
         return this.$store.getters['study/getStudyByHash'](this.studyHash);
       }
+      return null;
     },
     studyId() {
       if (this.study) {
@@ -133,6 +151,26 @@ export default {
       }
     },
   },
+
+  mounted() {
+    this.studySessionId = this.initStudySessionId;
+    if (this.studySessionId === 0) {
+      this.$refs.studyModal.open();
+      this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
+    }
+  },
+  sockets: {
+    studyError: function (data) {
+      if (data.studyHash === this.studyHash) {
+        this.eventBus.emit('toast', {
+          title: "Study Error",
+          message: data.message,
+          variant: "danger"
+        });
+        this.$router.push("/");
+      }
+    }
+  },
   methods: {
     start(data) {
       this.studySessionId = data.studySessionId;
@@ -164,10 +202,4 @@ export default {
 </script>
 
 <style scoped>
-.pageLoader {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%)
-}
 </style>

@@ -1,25 +1,42 @@
 <template>
-  <Loader v-if="studySessionId === 0" :loading="true"></Loader>
-  <Study v-else :init-study-session-id="studySessionId" :study-hash="studySessionHash" :readonly="readonly" ></Study>
+  <Loader
+    v-if="studySessionId === 0"
+    :loading="true"
+  />
+  <Study
+    v-else
+    :init-study-session-id="studySessionId"
+    :study-hash="studySessionHash"
+    :readonly="readonly"
+  />
 </template>
 
 <script>
 import Study from "./Study.vue";
 import Loader from "@/basic/Loader.vue"
 
+/* StudySession.vue - document view in study session mode
+
+Loads an existing study session, allows to resume session (if resumable) and manages timing etc.
+Uses the study component, but overlays the information that there is already a session existing.
+
+Author: Dennis Zyska
+Co-author: Nils Dycke
+Source: -
+*/
 export default {
   name: "StudySession",
   components: {Study, Loader},
-  data() {
-    return {
-      readonly: false,
-    }
-  },
   props: {
     'studySessionHash': {
       type: String,
       required: true,
     },
+  },
+  data() {
+    return {
+      readonly: false,
+    }
   },
   sockets: {
     studySessionError: function (data) {
@@ -33,16 +50,6 @@ export default {
       }
     }
   },
-  mounted() {
-    this.load();
-  },
-  watch: {
-    studySession(newVal) {
-      if (newVal && newVal.end) {
-        this.readonly = true;
-      }
-    },
-  },
   computed: {
     studySession() {
       return this.$store.getters['study_session/getStudySessionByHash'](this.studySessionHash);
@@ -53,6 +60,16 @@ export default {
       } else
         return 0;
     },
+  },
+  watch: {
+    studySession(newVal) {
+      if (newVal && newVal.end) {
+        this.readonly = true;
+      }
+    },
+  },
+  mounted() {
+    this.load();
   },
   methods: {
     load() {

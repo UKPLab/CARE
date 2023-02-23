@@ -1,32 +1,66 @@
 <template>
-  <div id="wrapper" class="nav-container">
+  <div
+    id="wrapper"
+    class="nav-container"
+  >
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
       <div class="container-fluid">
-        <button id='backButton' class="btn" title="Go back..." @click="this.$router.go(-1)">
-          <LoadIcon name="arrow-left" :size="16"></LoadIcon>
+        <button
+          id="backButton"
+          class="btn"
+          title="Go back..."
+          @click="$router.go(-1)"
+        >
+          <LoadIcon
+            name="arrow-left"
+            :size="16"
+          />
         </button>
-        <a class="navbar-brand" @click="toHome()">
-          <IconAsset name="logo" height=30 :style="{cursor: 'pointer'}"></IconAsset>
+        <a
+          class="navbar-brand"
+          @click="toHome()"
+        >
+          <IconAsset
+            name="logo"
+            height="30"
+            :style="{cursor: 'pointer'}"
+          />
         </a>
-        <div id="topbarCustomPlaceholder">
-
-        </div>
-        <ul class="navbar-nav ms-auto mt-2 mt-lg-0" id="topBarNavItems">
-        </ul>
+        <div id="topbarCustomPlaceholder" />
+        <ul
+          id="topBarNavItems"
+          class="navbar-nav ms-auto mt-2 mt-lg-0"
+        />
         <ul class="navbar-nav">
           <li class="nav-item dropdown">
-            <div class="dropdown" @click="toggleProfileDropdown()" @focusout="toggleProfileDropdown()">
-              <button id="dropdownMenuButton" aria-expanded="false" aria-haspopup="true"
-                      class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" type="button">
+            <div
+              class="dropdown"
+              @click="toggleProfileDropdown()"
+              @focusout="toggleProfileDropdown()"
+            >
+              <button
+                id="dropdownMenuButton"
+                aria-expanded="false"
+                aria-haspopup="true"
+                class="btn btn-secondary dropdown-toggle"
+                data-toggle="dropdown"
+                type="button"
+              >
                 {{ firstLetterUsername }}
               </button>
-              <div id="dropdown-show" aria-labelledby="dropdownMenuButton" class="dropdown-menu dropdown-menu-right">
-                <a class="dropdown-item display-username">Signed in as {{ username }} </a>
-                <!--<a class="dropdown-item" href="#">Profile</a>
-                <a class="dropdown-item" href="#">Settings</a>
-                <hr class="dropdown-divider">
-                <a class="dropdown-item" href="#">Privacy Policy</a>-->
-                <a class="dropdown-item" href="#" @click="logout()">Logout</a>
+              <div
+                id="dropdown-show"
+                aria-labelledby="dropdownMenuButton"
+                class="dropdown-menu dropdown-menu-right"
+              >
+                <a class="dropdown-item display-username">
+                  Signed in as {{ username }}
+                </a>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  @click="logout()"
+                >Logout</a>
               </div>
             </div>
           </li>
@@ -37,11 +71,13 @@
 </template>
 
 <script>
-/* Sidebar.vue - topbar and side toolbar
+/* Topbar.vue - topbar shown everywhere throughout the app
 
-This component provides both a topbar and left toggleable side toolbar.
+This component provides both a topbar that is visible at any point in the app
+after logging in. It includes standard utilities and navigation elements
+appropriate for the context.
 
-Author: Carly Gettinger (cjgettinger@gmail.com), Dennis Zyska, Nils Dycke
+Author: Carly Gettinger, Dennis Zyska, Nils Dycke
 Co-Author: 
 Source:  
 */
@@ -74,7 +110,7 @@ export default {
     toggleProfileDropdown() {
       const dropdown = document.getElementById('dropdown-show');
       var close = false;
-      if (event.type == 'focusout') {
+      if (event.type === 'focusout') {
         if (event.relatedTarget != null && event.relatedTarget.classList.contains("dropdown-item")) {
           return;
         }

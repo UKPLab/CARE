@@ -1,36 +1,46 @@
 <template>
   <span>
-  <StudyModal ref="studyCoordinator"></StudyModal>
-  <Card title="Studies">
-    <template v-slot:headerElements>
-      <button class="btn btn-sm me-1 btn-primary" title="Export" type="button" @click="add()">
-        Add
-      </button>
-    </template>
-    <template v-slot:body>
-      <Table :columns="columns" :data="studies" :options="options" @action="action"></Table>
-    </template>
-  </Card>
+    <StudyModal ref="studyCoordinator" />
+    <Card title="Studies">
+      <template #headerElements>
+        <button
+          class="btn btn-sm me-1 btn-primary"
+          title="Export"
+          type="button"
+          @click="add()"
+        >
+          Add
+        </button>
+      </template>
+      <template #body>
+        <Table
+          :columns="columns"
+          :data="studies"
+          :options="options"
+          @action="action"
+        />
+      </template>
+    </Card>
   </span>
-  <StudySessionModal ref="studySessionModal"></StudySessionModal>
+  <StudySessionModal ref="studySessionModal" />
 </template>
 
 <script>
-/* Study.vue - dashboard component for handling studies
-
-Author: Dennis Zyska
-Source: -
-*/
-
 import Card from "@/basic/Card.vue";
 import Table from "@/basic/table/Table.vue";
-import LoadIcon from "@/icons/LoadIcon.vue";
 import StudyModal from "@/components/dashboard/study/StudyModal.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 
+/* Study.vue - dashboard component for handling studies
+
+Author: Dennis Zyska
+Co-author: Nils Dycke
+Source: -
+*/
 export default {
-  name: "Study.vue",
-  components: {Card, Table, LoadIcon, StudyModal, StudySessionModal},
+  name: "Study",
+  components: {Card, Table, StudyModal, StudySessionModal},
+  props: {},
   data() {
     return {
       options: {
@@ -71,10 +81,6 @@ export default {
       ]
 
     }
-  },
-  props: {},
-  mounted() {
-    this.load();
   },
   computed: {
     userId() {
@@ -168,6 +174,9 @@ export default {
               }
           );
     },
+  },
+  mounted() {
+    this.load();
   },
   methods: {
     action(data) {

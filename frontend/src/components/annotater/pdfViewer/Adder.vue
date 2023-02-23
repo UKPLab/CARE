@@ -1,14 +1,19 @@
 <template>
-  <div id="adder" :style="{visibility: isVisible ? 'visible':'hidden'}">
+  <div
+    id="adder"
+    :style="{visibility: isVisible ? 'visible':'hidden'}"
+  >
     <div class="btn-group">
-      <button v-for="t in assignableTags"
-              :key="t.name"
-              class="btn"
-              data-placement="top"
-              data-toggle="tooltip"
-              v-bind:title="t.description"
-              v-bind:class="`btn-${t.colorCode}`"
-              @click="annotate(t)">
+      <button
+        v-for="t in assignableTags"
+        :key="t.name"
+        class="btn"
+        data-placement="top"
+        data-toggle="tooltip"
+        :title="t.description"
+        :class="`btn-${t.colorCode}`"
+        @click="annotate(t)"
+      >
         {{ t.name }}
       </button>
     </div>
@@ -20,8 +25,8 @@
 
 This components handles the range selector and the button to add new annotations.
 
-Author: Dennis Zyska (zyska@ukp...)
-Co-author: Nils Dycke (dycke@ukp...)
+Author: Dennis Zyska
+Co-author: Nils Dycke
 Source: -
 */
 import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
@@ -53,12 +58,6 @@ export default {
       _pendingCallback: null,
     }
   },
-  created() {
-    document.body.addEventListener('mouseup', this.checkSelection);
-  },
-  beforeUnmount() {
-    document.body.removeEventListener('mouseup', this.checkSelection);
-  },
   computed: {
     defaultTagSet() {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
@@ -67,6 +66,12 @@ export default {
       return this.$store.getters["tag/getTags"](this.defaultTagSet);
     },
 
+  },
+  created() {
+    document.body.addEventListener('mouseup', this.checkSelection);
+  },
+  beforeUnmount() {
+    document.body.removeEventListener('mouseup', this.checkSelection);
   },
   methods: {
     ...mapMutations({addAnnotation: "anno/ADD_ANNOTATION"}),

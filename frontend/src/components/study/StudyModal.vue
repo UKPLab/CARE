@@ -1,6 +1,13 @@
 <template>
-  <Modal ref="modal" :props="this.$props" disable-keyboard lg name="studyStart" remove-close>
-    <template v-slot:title>
+  <Modal
+    ref="modal"
+    :props="$props"
+    disable-keyboard
+    lg
+    name="studyStart"
+    remove-close
+  >
+    <template #title>
       <span v-if="showSessions">
         Open Sessions for study: {{ study.name }}
       </span>
@@ -8,56 +15,100 @@
         <span>Study:</span> {{ study.name }}
       </span>
     </template>
-    <template v-slot:body>
-      <Loader v-if="studyId === 0" :loading="true"></Loader>
+    <template #body>
+      <Loader
+        v-if="studyId === 0"
+        :loading="true"
+      />
       <span v-else-if="showSessions">
-        <Table :columns="sessionTableColumns" :data="studySessions" :options="sessionTableOptions"
-               @action="sessionAction">
-        </Table>
+        <Table
+          :columns="sessionTableColumns"
+          :data="studySessions"
+          :options="sessionTableOptions"
+          @action="sessionAction"
+        />
       </span>
       <span v-else>
-        <div v-if="!started" class="text-xxl-center text-secondary fs-5">The study has not started yet! <br>
+        <div
+          v-if="!started"
+          class="text-xxl-center text-secondary fs-5"
+        >The study has not started yet! <br>
           Start: {{ new Date(study.start).toLocaleString() }}</div>
-        <div v-else-if="ended" class="text-xxl-center text-danger fs-5">This study has finished on
-         {{ new Date(study.end).toLocaleString() }}</div>
+        <div
+          v-else-if="ended"
+          class="text-xxl-center text-danger fs-5"
+        >This study has finished on
+          {{ new Date(study.end).toLocaleString() }}</div>
         <span v-else>
-          <div v-if="study.description" v-html="study.description"></div>
+          <div
+            v-if="study.description"
+            v-html="study.description"
+          />
           <div v-else>
             Click "Start User Study" to start the user study.
           </div>
           <div v-if="study.timeLimit > 0 || study.collab">
             <hr>
           </div>
-          <div v-if="study.timeLimit > 0" class="mt-1">
+          <div
+            v-if="study.timeLimit > 0"
+            class="mt-1"
+          >
             Please note that there is a time limitation of {{ study.timeLimit }} min for this study!
           </div>
-          <div v-if="study.collab" class="mt-1">
+          <div
+            v-if="study.collab"
+            class="mt-1"
+          >
             This is a <b>collaborative</b> user study, so everyone can join and proceed with this study simultaneously!
           </div>
         </span>
       </span>
     </template>
-    <template v-slot:footer>
-      <button class="btn btn-outline-secondary" type="button" @click="$router.go(-1)">
+    <template #footer>
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        @click="$router.go(-1)"
+      >
         <span>Return to dashboard</span>
       </button>
-      <vr></vr>
-      <div v-if="showSessions" class="btn-group">
-        <button class="btn btn-primary" type="button" @click="showSessions=!showSessions">
+      <vr />
+      <div
+        v-if="showSessions"
+        class="btn-group"
+      >
+        <button
+          class="btn btn-primary"
+          type="button"
+          @click="showSessions=!showSessions"
+        >
           <span v-if="studyId !== 0 && study.collab">Join Study Again</span>
           <span v-else>Start Study Again</span>
         </button>
       </div>
-      <div v-else class="btn-group">
-        <button v-if="studySessions.length > 0" class="btn btn-secondary" type="button"
-                @click="showSessions=!showSessions">
+      <div
+        v-else
+        class="btn-group"
+      >
+        <button
+          v-if="studySessions.length > 0"
+          class="btn btn-secondary"
+          type="button"
+          @click="showSessions=!showSessions"
+        >
           <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-dark">
             {{ studySessions.length }}
             <span class="visually-hidden">open sessions</span>
           </span>
           <span>Open Sessions</span>
         </button>
-        <button :disabled="studyId === 0 && available" class="btn btn-primary" type="button" @click="start">
+        <button
+          :disabled="studyId === 0 && available"
+          class="btn btn-primary"
+          type="button"
+          @click="start"
+        >
           <span v-if="studyId !== 0 && study.collab">Join Study</span>
           <span v-else>Start Study</span>
         </button>
@@ -68,14 +119,19 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
-import Form from "@/basic/form/Form.vue";
 import Loader from "@/basic/Loader.vue"
-import Table from "@/basic/table/Table.vue";
 
+/* StudyModal.vue - modal for accessing a study
+
+This modal provides the option to either start a study or load an existing session.
+
+Author: Dennis Zyska
+Co-author: Nils Dycke
+Source: -
+*/
 export default {
   name: "StudyModal",
-  components: {Loader, Modal, Form, Table},
-  emits: ["start", "finish"],
+  components: {Loader, Modal},
   props: {
     studyId: {
       type: Number,
@@ -83,6 +139,7 @@ export default {
       default: 0,
     }
   },
+  emits: ["start", "finish"],
   data() {
     return {
       hash: null,
@@ -125,6 +182,7 @@ export default {
       if (this.studyId !== 0) {
         return this.$store.getters['study/getStudyById'](this.studyId)
       }
+      return null;
     },
     studySessions() {
       if (this.studyId) {

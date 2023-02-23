@@ -1,38 +1,61 @@
 <template>
-   <Card title="Users">
-          <template v-slot:headerElements>
-            <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAllStats()" title="Export">
-              <LoadIcon iconName="cloud-arrow-down"></LoadIcon>
-              Export all statistics
-            </button>
-            <button class="btn btn-sm me-1" type="button" @click="loadUserData()" title="Refresh">
-              <LoadIcon iconName="arrow-clockwise"></LoadIcon>
-            </button>
-          </template>
-          <template v-slot:body>
-            <Table :columns="user_table.columns"
-                   :data="users"
-                   :options="user_table.options"
-                   ref="user_table"
-                   @rowSelection="e => loadUserStats(e)"></Table>
-          </template>
-        </Card>
-    <hr>
-    <Card :title="`Stats for ${this.selectedUsers ? this.selectedUsers.length : 0} User${this.selectedUsers && this.selectedUsers.length !== 1 ? 's': ''}`">
-          <template v-slot:body>
-            <Table :columns="stats_table.columns"
-                   :data="stats"
-                   :options="stats_table.options"
-                   ref="stats_table"
-            ></Table>
-          </template>
-        </Card>
-  <ExportSingle name="stats" req-msg="statsGetAll" res-msg="statsData" ref="export" :post-process="x => x.statistics">
-  </ExportSingle>
+  <Card title="Users">
+    <template #headerElements>
+      <button
+        class="btn btn-sm me-1 btn-secondary"
+        type="button"
+        title="Export"
+        @click="exportAllStats()"
+      >
+        <LoadIcon icon-name="cloud-arrow-down" />
+        Export all statistics
+      </button>
+      <button
+        class="btn btn-sm me-1"
+        type="button"
+        title="Refresh"
+        @click="loadUserData()"
+      >
+        <LoadIcon icon-name="arrow-clockwise" />
+      </button>
+    </template>
+    <template #body>
+      <Table
+        ref="user_table"
+        :columns="user_table.columns"
+        :data="users"
+        :options="user_table.options"
+        @rowSelection="e => loadUserStats(e)"
+      />
+    </template>
+  </Card>
+  <hr>
+  <Card :title="`Stats for ${selectedUsers ? selectedUsers.length : 0} User${selectedUsers && selectedUsers.length !== 1 ? 's': ''}`">
+    <template #body>
+      <Table
+        ref="stats_table"
+        :columns="stats_table.columns"
+        :data="stats"
+        :options="stats_table.options"
+      />
+    </template>
+  </Card>
+  <ExportSingle
+    ref="export"
+    name="stats"
+    req-msg="statsGetAll"
+    res-msg="statsData"
+    :post-process="x => x.statistics"
+  />
 </template>
 
 <script>
-/* BehaviorDashboard.vue - shows various user behavior stats
+import LoadIcon from "../../icons/LoadIcon.vue";
+import Table from "@/basic/table/Table.vue";
+import Card from "@/basic/Card.vue";
+import ExportSingle from "@/basic/download/ExportSingle.vue";
+
+/* UserStatistics.vue - shows various user behavior stats
 
 This component shows several information related to user behavior useful for admins. This includes:
 1. a list of users
@@ -44,14 +67,15 @@ of them.
 Author: Nils Dycke (dycke@ukp...)
 Source: -
 */
-import LoadIcon from "../../icons/LoadIcon.vue";
-import Table from "@/basic/table/Table.vue";
-import Card from "@/basic/Card.vue";
-import ExportSingle from "@/basic/download/ExportSingle.vue";
-
 export default {
   name: "UserStatistics",
   components: {LoadIcon, Table, Card, ExportSingle},
+  props: {
+    'admin': {
+      required: false,
+      default: false
+    },
+  },
   data() {
     return {
       user_table: {
@@ -90,15 +114,6 @@ export default {
       selectedUsers: []
     }
   },
-  props: {
-    'admin': {
-      required: false,
-      default: false
-    },
-  },
-  mounted() {
-    this.loadUserData();
-  },
   computed: {
     users() {
       return this.$store.getters["admin/getUsers"].map(u => {
@@ -110,6 +125,9 @@ export default {
     stats() {
       return this.selectedUsers.reduce((acc, user) => acc.concat(this.$store.getters["admin/getStatsByUser"](user.id)), []).filter(s => s !== null);
     }
+  },
+  mounted() {
+    this.loadUserData();
   },
   methods: {
     loadUserData() {

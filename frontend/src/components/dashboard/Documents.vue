@@ -1,33 +1,35 @@
 <template>
-  <PublishModal ref="publishModal"></PublishModal>
-  <StudyModal ref="studyCoordinator"></StudyModal>
+  <PublishModal ref="publishModal" />
+  <StudyModal ref="studyCoordinator" />
   <Card title="Documents">
-    <template v-slot:headerElements>
-      <button class="btn btn-sm me-1 btn-secondary" type="button" @click="exportAll()" title="Export">
-        <LoadIcon iconName="cloud-arrow-down" @click=""></LoadIcon>
+    <template #headerElements>
+      <button
+        class="btn btn-sm me-1 btn-secondary"
+        type="button"
+        title="Export"
+        @click="exportAll()"
+      >
+        <LoadIcon
+          icon-name="cloud-arrow-down"
+        />
         Export all
       </button>
-      <Upload @addedDoc="onAddedDoc"></Upload>
+      <Upload @addedDoc="onAddedDoc" />
     </template>
-    <template v-slot:body>
-      <Table :columns="columns" :data="docs" :options="options" @action="action"></Table>
+    <template #body>
+      <Table
+        :columns="columns"
+        :data="docs"
+        :options="options"
+        @action="action"
+      />
     </template>
   </Card>
-  <ExportAnnos ref="export"></ExportAnnos>
-  <ConfirmModal ref="deleteConf"></ConfirmModal>
+  <ExportAnnos ref="export" />
+  <ConfirmModal ref="deleteConf" />
 </template>
 
 <script>
-/* Documents.vue - document list component
-
-This component loads the user-specific documents from the server
-and allows to interact with them. The user can delete existing
-documents or access the annotator view for the respective pdf.
-
-Author: Nils Dycke (dycke@ukp...)
-Co-Author:  Dennis Zyska (zyska@ukp...)
-Source: -
-*/
 import {mapGetters} from "vuex";
 import Upload from "./documents/Upload.vue";
 import PublishModal from "./documents/PublishModal.vue";
@@ -38,6 +40,16 @@ import LoadIcon from "@/icons/LoadIcon.vue";
 import StudyModal from "./study/StudyModal.vue";
 import ConfirmModal from "@/basic/ConfirmModal.vue";
 
+/* Documents.vue - document list component
+
+This component loads the user-specific documents from the server
+and allows to interact with them. The user can delete existing
+documents or access the annotator view for the respective pdf.
+
+Author: Nils Dycke (dycke@ukp...)
+Co-Author:  Dennis Zyska (zyska@ukp...)
+Source: -
+*/
 export default {
   name: "Document",
   components: {StudyModal, Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal, ConfirmModal},

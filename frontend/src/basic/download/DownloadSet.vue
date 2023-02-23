@@ -3,6 +3,8 @@
 </template>
 
 <script>
+import {arraysContainSameElements} from "@/assets/utils";
+
 /* DownloadSet.vue - generic downloading component for a sequence of items
 
 Generic download logic for a single stream of items with ids
@@ -10,10 +12,8 @@ Generic download logic for a single stream of items with ids
 Author: Nils Dycke
 Source: -
 */
-import {arraysContainSameElements} from "@/assets/utils";
-
 export default {
-  name: "DownloadSet.vue",
+  name: "DownloadSet",
   props: {
     index: {
       type: String,

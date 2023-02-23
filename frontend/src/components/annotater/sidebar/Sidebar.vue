@@ -1,29 +1,62 @@
 <template>
-  <div id="sidebar-container" :class="(show ? 'show' : 'collapsing')"
-       class="collapse collapse-horizontal border-end d-flex flex-column">
-    <div id="sidepane" ref="sidepane">
-      <div id="spacer"></div>
-      <ul id="anno-list" class="list-group">
+  <div
+    id="sidebar-container"
+    :class="(show ? 'show' : 'collapsing')"
+    class="collapse collapse-horizontal border-end d-flex flex-column"
+  >
+    <div
+      id="sidepane"
+      ref="sidepane"
+    >
+      <div id="spacer" />
+      <ul
+        id="anno-list"
+        class="list-group"
+      >
         <li v-if="documentComments.length === 0">
-          <p class="text-center"> No elements </p>
+          <p class="text-center">
+            No elements
+          </p>
         </li>
-        <li v-for="comment in documentComments" v-bind:id="'comment-' + comment.id"
-            :key="'documentComment-' + comment.id"
-            class="list-group-i"
-            v-on:mouseleave="unhover(comment.id)"
-            v-on:mouseover='hover(comment.id)'>
-          <AnnoCard v-bind:id="comment.id" :documentId="documentId" :readonly="readonly"
-                    :study-session-id="studySessionId"
-                    @focus="sidebarScrollTo" :comment-id="comment.id"></AnnoCard>
+        <li
+          v-for="comment in documentComments"
+          :id="'comment-' + comment.id"
+          :key="'documentComment-' + comment.id"
+          class="list-group-i"
+          @mouseleave="unhover(comment.id)"
+          @mouseover="hover(comment.id)"
+        >
+          <AnnoCard
+            :id="comment.id"
+            :document-id="documentId"
+            :readonly="readonly"
+            :study-session-id="studySessionId"
+            :comment-id="comment.id"
+            @focus="sidebarScrollTo"
+          />
         </li>
 
-        <li v-if="!readonly" id="addPageNote">
-          <button class="btn btn-light" type="button" @click="createDocumentComment">
-            <svg class="bi bi-plus-lg" fill="currentColor" height="16" viewBox="0 0 16 16" width="16"
-                 xmlns="http://www.w3.org/2000/svg">
+        <li
+          v-if="!readonly"
+          id="addPageNote"
+        >
+          <button
+            class="btn btn-light"
+            type="button"
+            @click="createDocumentComment"
+          >
+            <svg
+              class="bi bi-plus-lg"
+              fill="currentColor"
+              height="16"
+              viewBox="0 0 16 16"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
               <path
-                  d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
-                  fill-rule="evenodd"></path>
+                d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
+                fill-rule="evenodd"
+              />
             </svg>
             Document Note
           </button>
@@ -31,10 +64,15 @@
       </ul>
     </div>
   </div>
-  <ConfirmModal ref="leavePageConf"></ConfirmModal>
+  <ConfirmModal ref="leavePageConf" />
 </template>
 
 <script>
+import {mapMutations} from "vuex";
+import AnnoCard from "./AnnoCard.vue";
+import ConfirmModal from "@/basic/ConfirmModal.vue"
+import {scrollElement} from "@/assets/anchoring/scroll";
+
 /* Sidebar.vue - sidebar component
 
 Here the annotations are listed and can be modified, also includes scrolling feature.
@@ -42,11 +80,6 @@ Here the annotations are listed and can be modified, also includes scrolling fea
 Author: Nils Dycke, Dennis Zyska
 Source: -
 */
-import {mapMutations} from "vuex";
-import AnnoCard from "./AnnoCard.vue";
-import ConfirmModal from "@/basic/ConfirmModal.vue"
-import {scrollElement} from "@/assets/anchoring/scroll";
-
 export default {
   name: "Sidebar",
   components: {AnnoCard, ConfirmModal},
@@ -76,17 +109,20 @@ export default {
       if (this.studySession) {
         return this.$store.getters["study/getStudyById"](this.studySession.studyId);
       }
+      return null;
     },
     studySession() {
       if (this.studySessionId && this.studySessionId !== 0) {
         return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
       }
+      return null;
     },
     studySessionIds() {
       if (this.study) {
         return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
             .map(s => s.id);
       }
+      return null;
     },
     showAll() {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");

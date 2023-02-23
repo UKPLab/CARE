@@ -1,21 +1,34 @@
 <template>
   <Modal ref="tagSetDeleteModal">
-    <template v-slot:title>
+    <template #title>
       Delete Tagset
     </template>
-    <template v-slot:body>
+    <template #body>
       Do you really want to delete the Tagset?
     </template>
 
-    <template v-slot:footer>
-      <button class="btn btn-secondary" type="button" @click="cancel">Abort</button>
-      <button class="btn btn-danger me-2" type="button" @click="remove">Yes, delete it!</button>
-
+    <template #footer>
+      <button
+        class="btn btn-secondary"
+        type="button"
+        @click="cancel"
+      >
+        Abort
+      </button>
+      <button
+        class="btn btn-danger me-2"
+        type="button"
+        @click="remove"
+      >
+        Yes, delete it!
+      </button>
     </template>
   </Modal>
 </template>
 
 <script>
+import Modal from "@/basic/Modal.vue";
+
 /* TagSetDeleteModal.vue - modal component for deleting a tagset
 
 To get a confirmation before deleting the tagset
@@ -23,8 +36,6 @@ To get a confirmation before deleting the tagset
 Author: Dennis Zyska (zyska@ukp...)
 Source: -
 */
-import Modal from "@/basic/Modal.vue";
-
 export default {
   name: "TagSetDeleteModal",
   components: {Modal},
