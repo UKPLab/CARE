@@ -1,4 +1,4 @@
-vuex Store
+Vuex Store
 ==========
 
 The vuex store is the central memory accessible across all components of the frontend application. Additionally, the
