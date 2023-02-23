@@ -188,7 +188,7 @@ start it and detach it from your terminal.
 
 .. note::
     For actual deployment, we heavily recommend running an `NGINX <https://www.nginx.com/>`_ in front of the actual
-    backend.
+    backend. See :doc:`../getting_started/installation` for more details.
 
 You can check the status and logs of the docker containers using the standard docker CLI or
 `Portainer <https://www.portainer.io/>`_. The container with the name ending in ``_server`` hosts the actual

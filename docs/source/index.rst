@@ -36,6 +36,7 @@ developer contributing to the extension of CARE or as a researcher using it for 
    for_developers/frontend/frontend
    for_developers/backend/backend
    for_developers/examples/examples
+   for_developers/debugging
 
 .. toctree::
    :maxdepth: 1
