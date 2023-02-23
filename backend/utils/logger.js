@@ -34,7 +34,7 @@ class SQLTransport extends Transport {
  * const new_logger = logger.child({user: <uid_from_table_user>});
  * or logger.info(..., {user: <uid_from_table_user>});
  *
- * Author: Dennis Zyska
+ * @author: Dennis Zyska
  *
  * @param {string} service - Name of the service
  * @param {object} db - Database connection

@@ -1,15 +1,13 @@
 /**
  * Configuration File to define the database used for Sequelize
  *
- * @fileoverview Configuration File for Sequelize
- * @author Nils Dycke (
+ * @author Nils Dycke
  */
-
 module.exports = {
     development: {
         username: 'postgres',
         password: null,
-        database: process.env.POSTGRES_PEERDB,
+        database: process.env.POSTGRES_CAREDB,
         host: process.env.POSTGRES_HOST,
         port: process.env.POSTGRES_PORT,
         dialect: 'postgres',
@@ -26,7 +24,7 @@ module.exports = {
     production: {
         username: 'postgres',
         password: null,
-        database: process.env.POSTGRES_PEERDB,
+        database: process.env.POSTGRES_CAREDB,
         host: process.env.POSTGRES_HOST,
         port: process.env.POSTGRES_PORT,
         dialect: 'postgres',

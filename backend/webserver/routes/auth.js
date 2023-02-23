@@ -2,7 +2,8 @@
  * Here the routes for login into the content server are provided.
  * This includes checking of tokens and register, login and logout.
  *
- * @fileoverview Routes for login
+ * Routes for login
+ *
  * @author Nils Dycke, Dennis Zyska
  */
 const passport = require('passport');

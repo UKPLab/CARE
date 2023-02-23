@@ -1,8 +1,8 @@
 /**
- * @fileoverview Entry Point of the Backend
+ * Entry Point of the Backend
+ *
  * @author Dennis Zyska
  */
-
 const serverPort = process.env.CONTENT_SERVER_PORT || 3001;
 const Server = require("./webserver/Server");
 

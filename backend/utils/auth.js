@@ -1,11 +1,13 @@
 /**
  * Helper functions for authentication.
+ *
  * @author Nils Dycke, Dennis Zyska
  */
 const crypto = require("crypto");
 
 /**
  * Creates a password hash from a password and a salt.
+ *
  * @param {string} password The password to hash.
  * @param {string} salt The salt to use.
  * @returns {Promise<string>} The hashed password.

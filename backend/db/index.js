@@ -1,7 +1,6 @@
 /**
  * Declare all necessary dependencies to work with the database models
  *
- * @fileoverview Entry point for db models
  * @author Nils Dycke, Dennis Zyska
  */
 

@@ -1,7 +1,8 @@
 /**
  * This class is used to create a service object
  *
- * @fileoverview Service.js - Defines as new Service class
+ * Service.js - Defines as new Service class
+ *
  * @author Dennis Zyska
  */
 module.exports = class Service {
