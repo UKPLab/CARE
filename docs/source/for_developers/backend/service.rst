@@ -16,8 +16,8 @@ The Service Architecture in CARE
 The service architecture is realized in the backend; in the following all paths are provided relative to the
 directory ``backend/webserver`` including all relevant components.
 
-During start-up of the webserver all services specified in the ``services`` directory are loaded. Each service is
-specified in an individual ``.js``-file exporting a class that extends the ``Service`` base class. Hence, adding
+During start-up of the webserver all services specified in the ``services`` directory extends the ``Service`` base class are loaded.
+Each service is specified in an individual ``.js``-file exporting a class that extends the ``Service`` base class. Hence, adding
 a service means creating such a new file and overriding the abstract class.
 
 This base class (specified in ``Service.js``) defines the interface methods towards the frontend clients that you can
@@ -38,7 +38,7 @@ Let's say we want to add a new service called ``TestService`` to CARE. First, we
 
 .. code-block:: javascript
 
-    const Service = require("@/Service.js");
+    const Service = require("../Service.js");
     /**
      * <documentation>
      */
