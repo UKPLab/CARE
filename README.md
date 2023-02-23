@@ -25,27 +25,8 @@ https://www.tu-darmstadt.de/
 
 Don't hesitate to send us an e-mail or report an issue, if something is broken (and it shouldn't be) or if you have further questions.
 
-## Citing
-
-Please use the following citation:
-
-``` TODO: Add correct citation
-@InProceedings{zyska:2023:ACL,
-  author    = {Zyska, Dennis and 
-    Dycke, Nils and 
-    Buchmann, Jan and 
-    Kutznetsov, Ilia and 
-    Gurevych, Iryna}
-  title     = {CARE - Collaborative AI-Assisted Reading Environment},
-  booktitle = {Proceedings of the 2023 Conference on Association for Computational Linguistics (ACL)},
-  year      = {2023},
-  address   = {Gotham City, USA},
-  publisher = {Association for Computational Linguistics},
-  pages     = {XXXX--XXXX},
-  url       = {http://xxxx.xxx}
-}
-```
 
 ### Disclaimer
 
-This repository contains experimental software and is published for the sole purpose of giving additional background details on the respective publication. 
+This repository contains experimental software and is published for the sole purpose of giving additional background details on the respective publication.
+The software is only tested on unix systems and is not guaranteed to work on other operating systems.
