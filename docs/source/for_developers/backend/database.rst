@@ -60,6 +60,7 @@ Adding a New Model
    Sequelize object. This looks as follows for a table called ``simpletable`` (the name introduced in 2.):
 
 .. code-block:: javascript
+
     'use strict';
     const MetaModel = require("../MetaModel.js");
 
@@ -87,6 +88,7 @@ Adding a New Model
    the other migrations. For a very simple table ``simpletable`` this would look like this:
 
 .. code-block:: javascript
+
     module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('simpletable', {
@@ -122,6 +124,7 @@ respective table. For instance, getting a single row entry by a provided ID (``g
 these default functions is as simple as accessing the table model and executing the static method.
 
 .. code-block:: javascript
+
     // usually, you just access the models loaded in the web server; for completeness we provide the imports here:
     const {DataTypes} = require("sequelize")
     const db = require("./db/index.js")
@@ -132,11 +135,12 @@ these default functions is as simple as accessing the table model and executing 
 .. note::
     Generally you should *not* import the db object yourself and load a model as in the provided example. Instead,
     the web server object already holds the respective models in a class attribute. Please check out the
-    :doc:`guide on how to extend a socket <for_developers/backend/socket>`_ for the details.
+    :doc:`guide on how to extend a socket <./socket>`_ for the details.
 
 In case you need more specific functions, you may simply add static access methods to the new model class. For instance:
 
 .. code-block:: javascript
+
     'use strict';
     const MetaModel = require("../MetaModel.js");
 
