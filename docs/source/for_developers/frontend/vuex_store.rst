@@ -7,17 +7,21 @@ be covered by the existing store, but in case you add new socket messages you ha
 
 Store Structure
 ---------------
-The store is structured into modules, which are all defined in ``frontend/src/store/modules``. Each defines a default
+The store is structured into modules, which are all defined in the folder ``frontend/src/store/modules``. Each defines a default
 state used upon initialization, provides getters, mutations and actions. To access data from vue components, you will
 use the getters of the respective module providing your read-only access. In the mutations the store may listen to
 socket messages and update the internal state accordingly.
 
 All changes to the store are forwarded to the components that use the respective getters. Store modules cannot access
 the state of other store modules. You may add several different getter functions providing different views on the same
-data. The vuex store is not persistent; i.e. reloading the webpage in the browser discards the store and forces
-reloading of the data from the backend.
+data.
 
 .. note::
+
+    The vuex store is not persistent; i.e. reloading the webpage in the browser discards the store and forces
+    reloading of the data from the backend.
+
+.. tip::
     Checkout the vuex store documentation here: `https://vuex.vuejs.org/guide/`_.
 
 
@@ -71,6 +75,7 @@ In addition, you need to update the store ``index.js`` to import the new module 
         /*...*/
     });
 
+
 Extending a Store Module
 ------------------------
 If you simply want to extend an existing store module by a getter function, add it to the getters attribute.
@@ -79,18 +84,48 @@ state is first initialized by the default state and then updated through mutatio
 
 .. code-block:: javascript
 
-    getTest: state => {
+    export default {
+        //...
+        getters: {
+            getTest: state => {
             return state["test"]
+            }
+        }
     }
+
+
 
 To add a new socket listener, simply add a new method to the ``mutations`` with the prefix ``SOCKET_``. This method
 receives again the store state and the actual socket data received on the respective message type:
 
 .. code-block:: javascript
 
-    SOCKET_refreshTest (state, message) => {
-        state['test'].push(message.test);
+    export default {
+        //...
+        mutations: {
+            SOCKET_testData (state, data) => {
+                state['test'].push(data.test);
+            }
+        }
     }
 
-This code snippet listens on the "refreshTest" event of the socket and pushes the message's test attribute into the
+This code snippet listens on the "testData" event of the socket and pushes the message's test attribute into the
 store.
+
+To provide a unique data format, the refreshed data sent by the backend is standardized.
+The backend sends a JSON array with objects including an id attribute, making sure that old data is replaced by new data.
+The frontend expects the same format for all "refresh" events and will update the store with a predefined function ``refreshState``.
+You can use this function as follows:
+
+.. code-block:: javascript
+
+    import refreshState from "../utils";
+
+    export default {
+        //...
+        mutations: {
+            SOCKET_testRefresh (state, data) => {
+                refreshState(state, data);
+            }
+        }
+    }
