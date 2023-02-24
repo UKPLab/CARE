@@ -76,8 +76,6 @@ export default {
   mounted() {
     this.$socket.emit("settingGetNavigation");
     this.createNavigation();
-
-    console.log("CURRENT ROUTE === ", this.$route);
   },
   methods: {
 

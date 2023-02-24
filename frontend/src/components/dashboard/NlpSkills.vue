@@ -89,7 +89,6 @@ export default {
           title: "Show config...",
           action: "getDetails",
         };
-        console.log("table entry", s);
         return s;
       }) : [];
     },
