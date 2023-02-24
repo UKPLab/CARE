@@ -311,8 +311,6 @@ export default {
     },
 
     requestNlpFeedback() {
-      console.log("REQUESTING NLP!!!", this.comment);
-
       this.$socket.emit("serviceRequest",
           {
             service: "NLPService",

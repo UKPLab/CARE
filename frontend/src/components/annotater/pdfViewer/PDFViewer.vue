@@ -86,7 +86,6 @@ export default {
   },
   sockets: {
     documentFile: function (data) {
-      console.log(data);
       if (data.document.id === this.documentId) {
         const loadingTask = pdfjsLib.getDocument(data.file);
         loadingTask.promise
@@ -94,7 +93,6 @@ export default {
               this.pdf.setPDF(pdf);
             })
             .catch(response => {
-              console.log("Error loading PDF: " + response);
               this.eventBus.emit('toast', {
                 title: "PDF Loading Error",
                 message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",

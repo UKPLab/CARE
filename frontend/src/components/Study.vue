@@ -130,7 +130,6 @@ export default {
     },
     timeLeftHuman() {
       if (this.timeLeft < 60) {
-        console.log(this.timeLeft);
         return Math.round(this.timeLeft) + "s";
       }
       return Math.round(this.timeLeft / 60) + "min";

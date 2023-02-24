@@ -109,7 +109,6 @@ export default {
     settingData: function (data) {
       this.settings = data.sort((a, b) => (a.key > b.key) ? 1 : ((b.key > a.key) ? -1 : 0))
       this.collapseFirst = this.firstKeys.reduce((acc,curr)=> (acc[curr]=true,acc),{});
-      console.log(this.collapseFirst);
     }
   },
   mounted() {

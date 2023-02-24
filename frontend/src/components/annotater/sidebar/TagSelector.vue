@@ -113,7 +113,6 @@ export default {
     this.tags.forEach(v => this.tags_element.addItem(v, v));
     this.tags_element.resetState();
     this.$refs.tags.dispatchEvent(new KeyboardEvent("keydown", {"keyCode": 13}));
-    console.log(this.tags_element);
   }
 }
 </script>

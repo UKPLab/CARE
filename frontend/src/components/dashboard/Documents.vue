@@ -208,7 +208,6 @@ export default {
       this.load();
     },
     publishDoc(row) {
-      console.log(row);
       this.$refs.publishModal.open(row.id);
     },
     exportAll() {
