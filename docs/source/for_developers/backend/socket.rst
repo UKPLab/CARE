@@ -5,14 +5,17 @@ There might be rare occasions where you need to extend the existing socket inter
 table to CARE and you want to make this data available to the frontend. In this chapter we outline the steps necessary
 for either extending an existing socket or creating an entirely new one.
 
+.. note::
+
+    Please also see the code conventions for the socket interface in :doc:`Code Conventions <../basics/conventions>`
 
 Sockets in CARE
 ---------------
 The socket architecture is realized in the backend; in the following all paths are provided relative to the
 directory ``backend/webserver`` including all relevant components.
 
-During start-up of the webserver all sockets specified in the ``sockets`` directory are loaded. Each socket is
-specified in an individual ``.js``-file exporting a class that extends the ``Socket`` base class. Hence, adding
+During start-up of the webserver all sockets specified in the ``sockets`` directory that extends the ``Socket`` base class are loaded.
+Each socket is specified in an individual ``.js``-file exporting a class that extends the ``Socket`` base class. Hence, adding
 a socket means creating such a new file and overriding the abstract class.
 
 This base class (specified in ``Socket.js``) defines several convenience methods to communicate with the frontend, as
@@ -30,11 +33,11 @@ available through the `server` object -- we address these options in the `Extend
 Creating a Socket
 -----------------
 Let's say we want to add a new socket called ``TestSocket`` to CARE. First, we add a new file ``test.js`` to the
-``backend/webserver/sockets`` directory that exports the new socket class :
+``backend/webserver/sockets`` directory that exports the new socket class:
 
 .. code-block:: javascript
 
-    const Socket = require("@/Socket.js");
+    const Socket = require("../Socket.js");
     /**
      * <doc>
      */
@@ -102,12 +105,20 @@ For the sake of brevity we do not interact with the database, but write to a cla
 
             // listen to testIncrement
             this.socket.on("testIncrement", (data) => {
-                this.socket.emit("testResult", {success: true, val: this.updateTestVar(this.testVar + data.inc)});
+                try {
+                    this.socket.emit("testResult", {success: true, val: this.updateTestVar(this.testVar + data.inc)});
+                } catch (e) {
+                    this.logger.error(e);
+                }
             });
 
             // listen to testReset
             this.socket.on("testReset", () => {
-                this.socket.emit("testResult", {success: true, val: this.updateTestVar(0)});
+                try {
+                    this.socket.emit("testResult", {success: true, val: this.updateTestVar(0)});
+                } catch (e) {
+                    this.logger.error(e);
+                }
             });
         }
     }
@@ -128,7 +139,7 @@ Let's also assume that only administrators are allowed to change this value.
 
 .. note::
 
-    Please refer to the guide on how to extend the database and add interface methods in `./database`_.
+    Please refer to the guide on how to extend the database and add interface methods in :doc:`./database`.
 
 
 .. code-block:: javascript
@@ -161,13 +172,21 @@ Let's also assume that only administrators are allowed to change this value.
 
             // listen to testIncrement
             this.socket.on("testIncrement", async (data) => {
-                await this.updateTestVar(data.inc)
+                try {
+                    await this.updateTestVar(this.testVar + data.inc);
+                } catch (e) {
+                    this.logger.error(e);
+                }
             });
 
             // listen to testReset
             this.socket.on("testReset", async () => {
-                await this.updateTestVar(0)
-            });
+                try {
+                    await this.updateTestVar(0);
+                } catch (e) {
+                    this.logger.error(e);
+                }
+            }
         }
     }
 
@@ -201,3 +220,9 @@ To multicast a message to a room, you need to access the io object of the base c
 .. code-block:: javascript
 
     this.io.to("roomName").emit("msg", data);
+
+Testing
+~~~~~~~
+
+Please think about how to test your socket. In general, you should test the functionality in isolation.
+We refer to the section on :doc:`./testing` for more information on how to test your code.

@@ -46,12 +46,6 @@ Also note that the admin account and password are stored here in cleartext.
 You need to adapt different env-files depending on whether you build for development (``.env.dev``), for deployment
 (``.env.main``), or for testing (``.env.test``).
 
-.. warning::
-
-    If you make changes to these files, keep in mind that some parameters are written directly to the database
-    and may need a reinitialization of the database (e.g., admin password). The database therefore loses all data!
-    To reinitialize the database, run ``make clean`` followed by ``make init``.
-
 
 To avoid manual sourcing of the environment files, e.g. for continuous development setups,
 you can pass the ``ENV=...`` before a call to make. E.g.:
@@ -64,6 +58,14 @@ you can pass the ``ENV=...`` before a call to make. E.g.:
 
     You should always change the password of the admin account, especially for deployment.
     Only run the service in a secure environment to avoid leakage of the password information from the environment files.
+
+.. warning::
+
+    If you make changes to these files, keep in mind that some parameters are written directly to the database
+    and may need a reinitialization of the database (e.g., admin password). The database therefore loses all data!
+    To reinitialize the database, run ``make clean`` followed by ``make init``.
+
+
 
 Special Flags
 ~~~~~~~~~~~~~~
@@ -121,7 +123,7 @@ a database in a docker container and populates it with the necessary schemas.
 .. note::
 
     When starting the application for the first time, you need to initialize the database!
-    Please make sure you run `make init` before and also after cleaning the environment with `make clean`!
+    Please make sure you run ``make init`` before and also after cleaning the environment with ``make clean``!
 
 
 Frontend
@@ -129,18 +131,9 @@ Frontend
 
 Since the development of the frontend is not possible without starting the backend,
 the frontend development must always include the backend providing the database and the logic for data processing.
-Therefore, we recommend using `make dev` as described above.
+Therefore, we recommend using ``make dev`` as described above.
 This allows hot-loading of the elements, meaning that elements are replaced without reloading the whole page when they are changed.
 Furthermore, the source code is not compressed, which allows debugging directly in the browser.
-
-.. tip::
-
-    Another very helpful feature is the `Vue Devtools <https://devtools.vuejs.org/>`_ browser plugin supporting extended debugging.
-
-.. note::
-
-    Hot-loading does not apply to the backend.
-    If changes are made in the backend, the service must be stopped and `make dev` executed again.
 
 Anyway, it is possible to build the frontend in a minified code version without hot-loading:
 
@@ -149,6 +142,16 @@ Anyway, it is possible to build the frontend in a minified code version without 
     make dev-build-frontend
 
 For more information about the frontend development, see the section `Frontend Development`_.
+
+.. note::
+
+    Hot-loading does not apply to the backend.
+    If changes are made in the backend, the service must be stopped and ``make dev`` executed again.
+
+.. tip::
+
+    Another very helpful feature is the `Vue Devtools <https://devtools.vuejs.org/>`_ browser plugin supporting extended debugging.
+
 
 Backend
 ~~~~~~~~~
@@ -169,7 +172,7 @@ After that, the backend can be started with:
 
     make dev-backend
 
-To shorten things, both commands can also be executed with `make dev-build` at once.
+To shorten things, both commands can also be executed with ``make dev-build`` at once.
 
 |
 
@@ -200,13 +203,17 @@ More Commands
    :widths: 60 40
    :header-rows: 1
 
-   * - Command
-     - Purpose
-   * - ``make doc``
-     - Compile the documentation.
-   * - ``make test``
-     - Running the backend api tests.
-   * - ``make backup_db CONTAINER=<name>``
-     - Creates a database dump from the given postgres container and stores it in the db_dumps folder.
-   * - ``make recover_db CONTAINER=<name> DUMP=<path>``
-     - Loads a given database dump from <path> into the postgres container <name>.
+    * - Command
+      - Purpose
+    * - ``make doc``
+      - Compile the documentation.
+    * - ``make doc_asyncapi``
+      - Compile the AsyncAPI documentation.
+    * - ``make doc_sphinx``
+      - Compile the Sphinx documentation (this documentation).
+    * - ``make test``
+      - Running the backend api tests.
+    * - ``make backup_db CONTAINER=<name>``
+      - Creates a database dump from the given postgres container and stores it in the db_dumps folder.
+    * - ``make recover_db CONTAINER=<name> DUMP=<path>``
+      - Loads a given database dump from <path> into the postgres container <name>.

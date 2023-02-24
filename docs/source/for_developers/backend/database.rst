@@ -3,7 +3,7 @@ Database
 
 The underlying data store of CARE is a relational database. The `PostgresSQL <https://www.postgresql.org/>`_ database is
 managed and accessed via `Sequelize <https://sequelize.org/>`_. The backend services and sockets of CARE access the
-database via methods provided in the ``backend/db/methods`` directory, which in turn utilize Sequelize as an layer
+database via predefined methods provided in with the MetaModel class in ``backend/db`` directory, which in turn utilize Sequelize as an layer
 of abstraction to query and update the database.
 
 The database schema is modified via `Sequelize's migration system <https://sequelize.org/docs/v6/other-topics/migrations/>`_.
@@ -60,8 +60,9 @@ Adding a New Model
    Sequelize object. This looks as follows for a table called ``simpletable`` (the name introduced in 2.):
 
 .. code-block:: javascript
+
     'use strict';
-    const MetaModel = require("@/backend/db/MetaModel.js");
+    const MetaModel = require("../MetaModel.js");
 
     module.exports = (sequelize, DataTypes) => {
         class SimpleTable extends MetaModel {
@@ -87,6 +88,7 @@ Adding a New Model
    the other migrations. For a very simple table ``simpletable`` this would look like this:
 
 .. code-block:: javascript
+
     module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('simpletable', {
@@ -122,23 +124,25 @@ respective table. For instance, getting a single row entry by a provided ID (``g
 these default functions is as simple as accessing the table model and executing the static method.
 
 .. code-block:: javascript
+
     // usually, you just access the models loaded in the web server; for completeness we provide the imports here:
     const {DataTypes} = require("sequelize")
-    const db = require("@/backend/db/index.js")
-    const SimpleTable = require("../models/simpletable.js")(db.sequelize, DataTypes);
+    const db = require("./db/index.js")
+    const SimpleTable = require("./db/models/simpletable.js")(db.sequelize, DataTypes);
 
     SimpleTable.getById("x");
 
 .. note::
     Generally you should *not* import the db object yourself and load a model as in the provided example. Instead,
     the web server object already holds the respective models in a class attribute. Please check out the
-    :doc:`guide on how to extend a socket <for_developers/backend/socket>`_ for the details.
+    :doc:`./socket` for the details.
 
 In case you need more specific functions, you may simply add static access methods to the new model class. For instance:
 
 .. code-block:: javascript
+
     'use strict';
-    const MetaModel = require("@/backend/db/MetaModel.js");
+    const MetaModel = require("../MetaModel.js");
 
     module.exports = (sequelize, DataTypes) => {
         class SimpleTable extends MetaModel {

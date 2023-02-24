@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 
-const terms = fs.readFileSync('../../terms.txt', 'utf8');
+const terms = fs.readFileSync('../../terms.html', 'utf8');
 
 const settings = [
     {

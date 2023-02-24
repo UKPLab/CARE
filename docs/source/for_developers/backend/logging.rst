@@ -39,7 +39,7 @@ See `Using Logging Levels <https://github.com/winstonjs/winston#using-logging-le
 Where are the logs stored?
 --------------------------
 
-The logs are saved as a file, entered into the database, and also output to the console.
+The logs are saved as a file, entered into the database, and also output to the console (if set in .env).
 For this purpose the environment variables can be adjusted:
 
 .. code-block:: bash
