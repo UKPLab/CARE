@@ -135,4 +135,3 @@ frontend/node_modules/.uptodate: frontend/package.json frontend/package-lock.jso
 backend/node_modules/.uptodate: backend/package.json backend/package-lock.json
 	cd backend && npm install
 	@touch $@
-
