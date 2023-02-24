@@ -156,7 +156,7 @@ import DatetimePicker from "./DatetimePicker.vue";
 import Editor from "@/basic/editor/Editor.vue"
 
 export default {
-  name: "Form",
+  name: "BasicForm",
   components: {LoadIcon, DatetimePicker, Editor},
   props: {
     modelValue: {

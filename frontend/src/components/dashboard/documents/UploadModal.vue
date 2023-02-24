@@ -2,6 +2,7 @@
   <Modal
       ref="uploadModal"
       lg
+      name="documentUpload"
   >
     <template #title>
       Upload new document

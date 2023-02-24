@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="publishModal">
+  <Modal ref="publishModal" name="documentPublish" :props="{documentId: id}">
     <template #title>
       Publish Document
     </template>

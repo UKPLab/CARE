@@ -2,6 +2,7 @@
   <Modal
     ref="nlpSkillModal"
     lg
+    name="nlpSkills"
   >
     <template #title>
       Details on {{ skillName }}

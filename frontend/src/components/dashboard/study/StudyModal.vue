@@ -1,10 +1,10 @@
 <template>
   <Modal
-    ref="studyCoordinatorModal"
-    lg
-    name="studyCoordinatorModal"
-    :props="{studyId: studyId, documentId: documentId}"
-    @hide="reset"
+      ref="studyCoordinatorModal"
+      :props="{studyId: studyId, documentId: documentId}"
+      lg
+      name="studyCoordinatorModal"
+      @hide="reset"
   >
     <template #title>
       <span>
@@ -16,44 +16,44 @@
         The study has been successfully published<br>
         Participants can join the study under the following link:<br><br>
         <a
-          :href="link"
-          target="_blank"
+            :href="link"
+            target="_blank"
         >{{ link }}</a>
       </span>
       <span v-else>
-        <Form
-          v-model="study"
-          :fields="dynamicFields.concat(staticFields)"
+        <BasicForm
+            v-model="study"
+            :fields="dynamicFields.concat(staticFields)"
         />
       </span>
     </template>
     <template #footer>
       <span
-        v-if="success"
-        class="btn-group"
+          v-if="success"
+          class="btn-group"
       >
         <button
-          class="btn btn-secondary"
-          @click="close"
+            class="btn btn-secondary"
+            @click="close"
         >Close</button>
         <button
-          class="btn btn-primary"
-          @click="copyURL"
+            class="btn btn-primary"
+            @click="copyURL"
         >Copy Link</button>
       </span>
       <span
-        v-else
-        class="btn-group"
+          v-else
+          class="btn-group"
       >
         <button
-          class="btn btn-secondary"
-          type="button"
-          @click="close"
+            class="btn btn-secondary"
+            type="button"
+            @click="close"
         >Cancel</button>
         <button
-          class="btn btn-primary me-2"
-          type="button"
-          @click="publish"
+            class="btn btn-primary me-2"
+            type="button"
+            @click="publish"
         >
           {{ studyId === 0 ? "Start User Study" : "Update User Study" }}
         </button>
@@ -64,7 +64,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
-import Form from "@/basic/form/Form.vue";
+import BasicForm from "@/basic/form/Form.vue";
 
 /* StudyModal.vue - modal allowing coordinators to enter details
 
@@ -75,21 +75,22 @@ Source: -
 */
 export default {
   name: "StudyCoordinatorModal",
-  components: {Modal, Form},
+  components: {Modal, BasicForm},
   data() {
     return {
       studyId: 0,
       documentId: 0,
       defaultValue: {
-          name: "",
-          documentId: 0,
-          collab: false,
-          resumable: true,
-          timeLimit: 0,
-          description: "",
-          start: null,
-          end: null,
-        },
+        name: "",
+        documentId: 0,
+        collab: false,
+        resumable: true,
+        timeLimit: 0,
+        description: "",
+        start: null,
+        end: null,
+      },
+      study: {},
       dynamicFields: [],
       staticFields: [
         {
@@ -149,11 +150,16 @@ export default {
       resets: 0,
     }
   },
+  watch: {
+    newStudyData() {
+      this.study = this.newStudyData;
+    },
+  },
   computed: {
     docs() {
       return this.$store.getters['document/getDocuments'];
     },
-    study() {
+    newStudyData() {
       const resetCounter = this.resets; //do not remove; need for refreshing study object on modal hide!
       if (this.studyId === 0) {
         let defaultObject = {...this.defaultValue};
@@ -167,7 +173,10 @@ export default {
       return window.location.origin + "/study/" + this.hash;
     },
   },
-  mounted(){
+  beforeMount() {
+    this.study = this.defaultValue;
+  },
+  mounted() {
     // make sure the document list is up-to-date
     this.$socket.emit("documentGetAll");
   },
