@@ -78,6 +78,14 @@ If you want to extend CARE, you generally don't need to touch the webserver;
 instead, you typically just need to update the database schema (migration),
 extend the socket interface or add an external service.
 
+Architecture Overview
+---------------------
+
+.. image:: ./architecture.png
+    :width: 100%
+    :align: center
+    :alt: CARE architecture overview
+
 Paradigms
 ---------
 Both frontend and backend follow an event-based design principle.
