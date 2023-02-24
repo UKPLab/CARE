@@ -39,9 +39,8 @@ export default {
       required: false
     },
     params: {
-      type: Array,
+      type: Object,
       required: false,
-      default: []
     }
   },
   emits: ['action'],

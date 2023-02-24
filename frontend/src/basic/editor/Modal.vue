@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="editorModal" lg>
+  <Modal ref="editorModal" lg name="editorModal" :props="this.$props">
     <template v-slot:title>
       <h5 class="modal-title">{{ title }}</h5>
     </template>

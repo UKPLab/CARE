@@ -1,5 +1,8 @@
 <template>
-  <Modal ref="tagSetDeleteModal">
+  <Modal
+      ref="tagSetDeleteModal"
+      :props="{tagSetId: id}"
+      name="tagSetDelete">
     <template #title>
       Delete Tagset
     </template>
@@ -9,16 +12,16 @@
 
     <template #footer>
       <button
-        class="btn btn-secondary"
-        type="button"
-        @click="cancel"
+          class="btn btn-secondary"
+          type="button"
+          @click="cancel"
       >
         Abort
       </button>
       <button
-        class="btn btn-danger me-2"
-        type="button"
-        @click="remove"
+          class="btn btn-danger me-2"
+          type="button"
+          @click="remove"
       >
         Yes, delete it!
       </button>
@@ -58,12 +61,16 @@ export default {
         this.$refs.tagSetDeleteModal.closeModal();
         this.sockets.unsubscribe('tagSetDeleted');
         if (data.success) {
-          this.eventBus.emit('toast', {title:"Tagset deleted", message:"Successful deleted tagset!", variant: "success"});
+          this.eventBus.emit('toast', {
+            title: "Tagset deleted",
+            message: "Successful deleted tagset!",
+            variant: "success"
+          });
         } else {
-          this.eventBus.emit('toast', {title:"Tagset not deleted", message: data.message, variant: "danger"});
+          this.eventBus.emit('toast', {title: "Tagset not deleted", message: data.message, variant: "danger"});
         }
       });
-      this.$socket.emit("tagSetDelete", { tagSetId: this.id });
+      this.$socket.emit("tagSetDelete", {tagSetId: this.id});
       this.$refs.tagSetDeleteModal.waiting = true;
     },
     cancel() {

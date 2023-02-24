@@ -10,15 +10,15 @@
         Paragraph
       </button>
       <ul class="dropdown-menu">
-        <li><button
+        <li><button type="button"
           class="dropdown-item"
           @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
         >Heading 1</button></li>
-        <li><button
+        <li><button type="button"
           class="dropdown-item"
           @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
         >Heading 2</button></li>
-        <li><button
+        <li><button type="button"
           class="dropdown-item"
           @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
         >Heading 3</button></li>
@@ -91,7 +91,7 @@ export default {
   },
   props: {
     modelValue: {
-      type: Object,
+      type: String,
       required: true
     },
   },
