@@ -14,9 +14,9 @@ services:
     image: asyncapi/generator
     volumes:
       - ./docs:/docs
-      - ./docs/backend.yml:/app/api.yml
+      - ./docs/api.yml:/app/api.yml
       - ./docs/api:/app/output
-    command: --force-write --output /app/output /app/api.yml
+    command: --force-write --output /app/output /app/api.yml @asyncapi/html-template
   postgres:
     image: postgres:11.5-alpine
     healthcheck:
