@@ -106,7 +106,7 @@ After restarting the server, we could already send service request messages to t
 .. note::
 
     Please refer to the API documentation for the details of the message format of requesting a service. Also
-    checkout the :doc:`examples <examples/examples>` for a reference on how to reach a service from the frontend.
+    checkout the :doc:`examples <../examples/examples>` for a reference on how to reach a service from the frontend.
 
 
 Coupling an External Service (Forwarding)
