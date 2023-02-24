@@ -24,7 +24,6 @@ developer contributing to the extension of CARE or as a researcher using it for 
 
    getting_started/quickstart
    getting_started/installation
-   getting_started/architecture
 
 .. toctree::
    :maxdepth: 1
@@ -43,9 +42,7 @@ developer contributing to the extension of CARE or as a researcher using it for 
    :caption: For Researchers
 
    for_researchers/basics
-   for_researchers/nlp
    for_researchers/exporting
-   for_researchers/user_stats
 
 
 
