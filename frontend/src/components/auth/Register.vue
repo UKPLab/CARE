@@ -240,7 +240,6 @@ export default {
     ...mapActions({register: "auth/register"}),
     trySubmit() {
       const form = document.querySelector('form');
-      console.log(form);
       if (form.checkValidity()) {
         event.preventDefault();
         this.register_user();

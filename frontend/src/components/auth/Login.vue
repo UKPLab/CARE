@@ -233,8 +233,8 @@ export default {
         }
       } catch (error) {
         this.showError = true;
-        console.log(error);
         this.errorMessage = error;
+        console.log(error);
       }
     },
     register() {
