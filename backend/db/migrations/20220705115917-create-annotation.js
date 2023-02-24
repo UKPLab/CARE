@@ -8,12 +8,7 @@ module.exports = {
                 primaryKey: true,
                 type: Sequelize.INTEGER
             },
-            hash: {
-                type: Sequelize.STRING,
-                allowNull: false,
-                unique: true
-            },
-            creator: {
+            userId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "user",
@@ -22,9 +17,9 @@ module.exports = {
                 allowNull: false
             },
             text: {
-                type: Sequelize.STRING(1024)
+                type: Sequelize.STRING(2048)
             },
-            tag: {
+            tagId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "tag",
@@ -32,16 +27,16 @@ module.exports = {
                 },
                 allowNull: false
             },
-            document: {
-                type: Sequelize.STRING,
+            documentId: {
+                type: Sequelize.INTEGER,
                 references: {
                     model: "document",
-                    key: "hash"
+                    key: "id"
                 }
             },
             selectors: {
                 type: Sequelize.JSONB,
-                allowNull: false,
+                allowNull: true,
             },
             draft: {
                 type: Sequelize.BOOLEAN,

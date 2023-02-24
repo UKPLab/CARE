@@ -5,17 +5,18 @@ const express = require('express');
 const {Server: WebSocketServer} = require("socket.io");
 const http = require('http');
 const cors = require('cors');
-
+const fs = require('fs');
+const path = require('path');
 const passport = require("passport");
 const session = require('express-session');
-const FileStore = require('session-file-store')(session);
 const bodyParser = require('body-parser');
-const Socket = require('./Socket.js');
 const Sequelize = require('sequelize');
-const db = require("../db");
-const {DataTypes} = require("sequelize");
+const LocalStrategy = require("passport-local");
+const {relevantFields} = require("../utils/auth");
+const crypto = require("crypto");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
-
+const Socket = require(path.resolve(__dirname, "./Socket.js"));
+const Service = require(path.resolve(__dirname, "./Service.js"));
 /**
  * Defines Express Webserver of Content Server
  *
@@ -29,55 +30,120 @@ const SequelizeStore = require('connect-session-sequelize')(session.Store);
  */
 module.exports = class Server {
     constructor() {
-        this.logger = require("../utils/logger.js")("webServer");
+        this.db = require("../db");
+        this.logger = require("../utils/logger")("webServer", this.db);
+
         this.app = express();
 
         this.sockets = {};
         this.availSockets = {};
         this.services = {};
         this.socket = null;
-        this.collabs = []; //TODO handle collaborations with db
 
         // No Caching
         this.app.disable('etag');
         this.#setCors()
+
         // Make all static files public available
         this.app.use(express.static(`${__dirname}/../../dist/`));
 
-        this.logger.info("Initializing Session management...");
+        // Publish documentation
+        if (fs.existsSync(`${__dirname}/../../docs/build`) && parseInt(process.env.PUBLISH_DOC) === 1) {
+            this.app.use("/docs", express.static(`${__dirname}/../../docs/build/html/`));
+        }
+        if (fs.existsSync(`${__dirname}/../../docs/api`) && parseInt(process.env.PUBLISH_API) === 1) {
+            this.app.use("/api", express.static(`${__dirname}/../../docs/api/`));
+        }
+
+
+        this.logger.debug("Initializing Session management...");
         this.session = this.#initSessionManagement();
         this.app.use(this.session);
 
-        this.logger.info("Initializing Passport...");
+        this.logger.debug("Initializing Passport...");
         this.app.use(bodyParser.urlencoded({extended: false}));
         this.app.use(bodyParser.json());
+        this.#loginManagement();
         this.app.use(passport.initialize());
         this.app.use(passport.session());
 
-        // Routes for login management
-        this.logger.debug("Initialize Routes for auth...");
-        const auth = require('./routes/auth.js');
-        auth(this.app);
+        // Routes for config
+        this.logger.debug("Initializing Routes for config...");
+        require("./routes/config")(this);
+        require('./routes/auth')(this);
 
         // all further urls reference to frontend
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
 
         this.httpServer = http.createServer(this.app);
         this.#initWebsocketServer();
+        this.#addSockets();
+        this.#addServices();
     }
 
+    /**
+     * Set the login management (routes and passport)
+     */
+    #loginManagement() {
+        this.logger.debug("Initialize Routes for auth...");
+
+        passport.use(new LocalStrategy(async (username, password, cb) => {
+
+            const user = await this.db.models['user'].find(username);
+            if (!user) {
+                return cb(null, false, {message: 'Incorrect username or password.'});
+            }
+
+            crypto.pbkdf2(password, user.salt, 310000, 32, 'sha256', (err, hashedPassword) => {
+                if (err) {
+                    return cb(err);
+                }
+
+                if (!crypto.timingSafeEqual(Buffer.from(user.passwordHash, 'hex'), hashedPassword)) {
+                    return cb(null, false, {message: 'Incorrect username or password.'});
+                }
+
+                // filter row object, because not everything is the right information for website
+                return cb(null, relevantFields(user));
+            });
+        }));
+
+
+        // required to work -- defines strategy for storing user information
+        passport.serializeUser(function (user, done) {
+            done(null, user);
+        });
+
+        // required to work -- defines strategy for loading user information
+        passport.deserializeUser(function (user, done) {
+            done(null, user);
+        });
+
+
+    }
+
+    /**
+     * Set Cors restrictions
+     */
     #setCors() {
-        this.logger.debug("Use CORS Restriction");
+        this.logger.debug("Set CORS Restriction");
         this.app.use(cors({
-            origin: ['http://localhost:3000', "http://localhost:8080", 'https://peer.ukp.informatik.tu-darmstadt.de'],
+            origin: [
+                'http://localhost:3000',
+                "http://localhost:8080",
+                process.env.ADDITIONAL_CORS_ORIGINS ?
+                    process.env.ADDITIONAL_CORS_ORIGINS.split(",") : []].flat(),
             credentials: true
         }));
     }
 
+    /**
+     * Initialize the session management
+     */
     #initSessionManagement() {
 
         // Define Session Model Table
-        db.sequelize.define("session", {
+        this.db.sequelize.define("session", {
             sid: {
                 type: Sequelize.STRING,
                 primaryKey: true,
@@ -88,12 +154,12 @@ module.exports = class Server {
         });
 
         // Sync Session Table
-        db.sequelize.sync();
+        this.db.sequelize.sync();
 
         // Sequelize Session Store
-        this.logger.info("Initializing Sequelize Session Store...");
+        this.logger.debug("Initializing Sequelize Session Store...");
         const dbStore = new SequelizeStore({
-            db: db.sequelize,
+            db: this.db.sequelize,
             checkExpirationInterval: 15 * 60 * 1000, // The interval at which to cleanup expired sessions in milliseconds.
             expiration: 24 * 60 * 60 * 1000  // The maximum age (in milliseconds) of a valid session.
         });
@@ -117,11 +183,19 @@ module.exports = class Server {
         this.logger.debug("Initialize Websockets...");
         const socketIoOptions = {
             cors: {
-                origin: ["http://localhost:3000", 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'],
+                origin: [
+                    'http://localhost:3000',
+                    "http://localhost:8080",
+                    process.env.ADDITIONAL_CORS_ORIGINS ?
+                        process.env.ADDITIONAL_CORS_ORIGINS.split(",") : []].flat(),
                 methods: ["GET", "POST"],
                 credentials: true,
             },
-            origins: ['http://localhost:3000', 'http://localhost:8080', 'https://peer.ukp.informatik.tu-darmstadt.de'],
+            origins: [
+                'http://localhost:3000',
+                "http://localhost:8080",
+                process.env.ADDITIONAL_CORS_ORIGINS ?
+                    process.env.ADDITIONAL_CORS_ORIGINS.split(",") : []].flat(),
             handlePreflightRequest: (req, res) => {
                 const headers = {
                     "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -157,18 +231,39 @@ module.exports = class Server {
             this.availSockets[socket.id] = {};
             this.logger.debug("Socket connect: " + socket.id);
 
-            Object.entries(this.sockets).map(([socketName, socketClass]) => {
+            Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
                 this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
-                this.availSockets[socket.id][socketName].init();
+
+                await this.availSockets[socket.id][socketName].init();
             });
 
             socket.on("disconnect", (reason) => {
                 this.logger.debug("Socket disconnected: " + reason);
                 delete this.availSockets[socket.id];
             });
-
         });
 
+    }
+
+    /**
+     * Find all sockets and add sockets to the server
+     */
+    #addSockets() {
+        this.logger.debug("Adding sockets: ");
+        fs.readdir(path.resolve(__dirname, "./sockets"), (err, files) => {
+            if (err) {
+                this.logger.error("Error while reading sockets directory: " + err);
+                return;
+            }
+            files.forEach(file => {
+                if (file.endsWith(".js")) {
+                    const newSocket = require(path.resolve(__dirname, "./sockets") + "/" + file);
+                    if (newSocket.prototype instanceof Socket) {
+                        this.addSocket(newSocket);
+                    }
+                }
+            });
+        });
     }
 
     /**
@@ -178,26 +273,62 @@ module.exports = class Server {
      * @param socketClass - class of the socket
      */
     addSocket(socketClass) {
-        this.logger.info("Add socket " + socketClass.name + " to webserver...");
+        this.logger.debug("Add socket " + socketClass.name + " to webserver...");
         this.sockets[socketClass.name] = socketClass;
+    }
+
+    /**
+     * Find and add all services and add to the server
+     */
+    #addServices() {
+        this.logger.debug("Adding services: ");
+        fs.readdir(path.resolve(__dirname, "./services"), (err, files) => {
+            if (err) {
+                this.logger.error("Error while reading services directory: " + err);
+                return;
+            }
+            files.forEach(file => {
+                if (file.endsWith(".js")) {
+                    const newService = require(path.resolve(__dirname, "./services") + "/" + file);
+                    if (newService.prototype instanceof Service) {
+                        this.addService(newService);
+                    }
+                }
+            });
+        });
     }
 
     /**
      * Add external services to the server
      */
     addService(serviceClass) {
-        this.logger.info("Add service " + serviceClass.name + " to webserver...");
+        this.logger.debug("Add service " + serviceClass.name + " to webserver...");
 
         this.services[serviceClass.name] = new serviceClass(this);
         this.services[serviceClass.name].init();
-
     }
 
+    /**
+     * Start the webserver
+     * @param port
+     */
     start(port) {
         this.logger.debug("Start Webserver...");
-        this.httpServer.listen(port, () => {
+        this.http = this.httpServer.listen(port, () => {
             this.logger.info("Server started on port " + port);
         });
+        return this.http;
+    }
+
+    /**
+     * Stop the webserver
+     */
+    stop() {
+        Object.entries(this.services).forEach(([name, service]) => {
+            service.close();
+        });
+        this.io.close();
+        this.http.close();
     }
 
 }

@@ -1,40 +1,42 @@
-/* Store for collaboration and sharing of synchronization information
-
-Defines the store for collaboration.
-
-Author: Nils Dycke (dycke@ukp...), Dennis Zyska (zyska@ukp...)
-Source: -
-*/
-
-const getDefaultState = () => {
-    return [];
-};
+/**
+ * Store for collaboration and sharing of synchronization information
+ *
+ * Defines the store for collaboration.
+ *
+ * @module store/collab
+ * @author Nils Dycke, Dennis Zyska
+ */
+import refreshState from "../utils";
 
 export default {
     namespaced: true,
     strict: true,
-    state: getDefaultState(),
+    state: () => {
+        return [];
+    },
     getters: {
-        annotations: (state) => (annotation_id) => {
-            console.log(annotation_id);
-            return state.filter(s => s.type === "annotation").filter(s =>   s.annotation_id === annotation_id)
-                .filter(c => (Date.now() - c.timestamp) < 2100)
-        },
-        comment: (state) => (comment_id) => {
-            console.log(comment_id);
-            return state.filter(s => s.type === "comment").filter(s =>   s.comment_id === comment_id)
-                .filter(c => (Date.now() - c.timestamp) < 2100)
-        },
+        /**
+         * For the given target type (e.g. doc) and the given target id (e.g. 1), returns the collaborations
+         * as synchronized by the server.
+         *
+         * @param state
+         * @returns {function(String, Number): Array}
+         */
+        getCollab: (state) => (targetType, targetId) => {
+            return state.filter(s => s.targetType === targetType).filter(s => s.targetId === targetId)
+                .filter(c => (Date.now() - Date.parse(c.timestamp)) < 2100)
+        }
     },
     mutations: {
-        SOCKET_collab: (state, data) => {
-            const old_collab = state.find(c => c.id === data.id);
-            if (old_collab !== undefined) {
-                state.splice(state.indexOf(old_collab), 1);
-            }
-            if (data.timestamp !== -1) {
-                state.push(data);
-            }
+        /**
+         * On "collabRefresh", adds new collaborations by ID to the current store and discards
+         * deleted ones.
+         *
+         * @param state
+         * @param data
+         */
+        SOCKET_collabRefresh: (state, data) => {
+            refreshState(state, data);
         },
     },
     actions: {}

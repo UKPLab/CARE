@@ -16,15 +16,15 @@ module.exports = {
                     key: "name"
                 }
             },
-            first_name: {
+            firstName: {
                 type: Sequelize.STRING,
                 allowNull: false
             },
-            last_name: {
+            lastName: {
                 type: Sequelize.STRING,
                 allowNull: false
             },
-            user_name: {
+            userName: {
                 type: Sequelize.STRING,
                 allowNull: false,
                 unique: true
@@ -34,15 +34,15 @@ module.exports = {
                 allowNull: false,
                 unique: true
             },
-            password_hash: {
+            passwordHash: {
                 type: Sequelize.STRING,
                 allowNull: false
             },
-            accept_terms: {
+            acceptTerms: {
                     type: Sequelize.BOOLEAN,
                     default: true
                 },
-            accept_stats: {
+            acceptStats: {
                     type: Sequelize.BOOLEAN,
                     default: true
                 },
@@ -54,12 +54,21 @@ module.exports = {
                 type: Sequelize.DATE,
                 allowNull: true
             },
+            deleted: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false
+            },
             createdAt: {
                 allowNull: false,
                 type: Sequelize.DATE
             },
             updatedAt: {
                 allowNull: false,
+                type: Sequelize.DATE
+            },
+            deletedAt: {
+                allowNull: true,
+                defaultValue: null,
                 type: Sequelize.DATE
             }
         });

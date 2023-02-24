@@ -10,10 +10,11 @@ db_dumps/
 backend/sessions
 backend/node_modules
 backend/logs
+backend/coverage
 
 # ignore build files
 dist/
-node_modules
+frontend/node_modules
 
 yarn-error.log
 .tox
@@ -23,3 +24,7 @@ nodesource_setup.sh
 
 */__pycache__
 .idea
+
+# docs
+docs/build
+docs/api

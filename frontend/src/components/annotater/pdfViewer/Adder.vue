@@ -1,14 +1,19 @@
 <template>
-  <div id="adder" :style="{visibility: isVisible ? 'visible':'hidden'}">
+  <div
+    id="adder"
+    :style="{visibility: isVisible ? 'visible':'hidden'}"
+  >
     <div class="btn-group">
-      <button v-for="t in assignableTags"
-              :key="t.name"
-              class="btn"
-              data-placement="top"
-              data-toggle="tooltip"
-              v-bind:title="t.description"
-              v-bind:class="`btn-${t.colorCode}`"
-              @click="annotate(t)">
+      <button
+        v-for="t in assignableTags"
+        :key="t.name"
+        class="btn"
+        data-placement="top"
+        data-toggle="tooltip"
+        :title="t.description"
+        :class="`btn-${t.colorCode}`"
+        @click="annotate(t)"
+      >
         {{ t.name }}
       </button>
     </div>
@@ -20,18 +25,31 @@
 
 This components handles the range selector and the button to add new annotations.
 
-Author: Dennis Zyska (zyska@ukp...)
-Co-author: Nils Dycke (dycke@ukp...)
+Author: Dennis Zyska
+Co-author: Nils Dycke
 Source: -
 */
-import {TextPosition, TextRange} from "../../../assets/anchoring/text-range";
-import {TextQuoteAnchor} from '../../../assets/anchoring/types';
+import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
+import {TextQuoteAnchor} from '@/assets/anchoring/types';
 import {mapMutations} from "vuex";
 
 export default {
   name: "Adder",
-  components: {},
-  props: ['document_id', 'pdf'],
+  props: {
+    documentId: {
+      type: Number,
+      required: true
+    },
+    'studySessionId': {
+      type: Number,
+      required: false,
+      default: null
+    },
+    'pdf': {
+      type: Object,
+      required: true,
+    }
+  },
   data() {
     return {
       _fadeOutBox: [],
@@ -40,19 +58,20 @@ export default {
       _pendingCallback: null,
     }
   },
-  created() {
-    document.body.addEventListener('mouseup', this.checkSelection);
-  },
-  beforeUnmount() {
-    document.body.removeEventListener('mouseup', this.checkSelection);
-  },
   computed: {
     defaultTagSet() {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
     },
     assignableTags() {
       return this.$store.getters["tag/getTags"](this.defaultTagSet);
-    }
+    },
+
+  },
+  created() {
+    document.body.addEventListener('mouseup', this.checkSelection);
+  },
+  beforeUnmount() {
+    document.body.removeEventListener('mouseup', this.checkSelection);
   },
   methods: {
     ...mapMutations({addAnnotation: "anno/ADD_ANNOTATION"}),
@@ -82,10 +101,11 @@ export default {
         selector: selectors,
       }));
 
-      this.$socket.emit('addAnnotation', {
-        document: this.document_id,
+      this.$socket.emit('annotationUpdate', {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
         selectors: {target},
-        tag: tag.id
+        tagId: tag.id
       });
 
       this.isVisible = false;
@@ -131,7 +151,10 @@ export default {
       this.show(event.clientX, event.clientY);
       this.$socket.emit("stats", {
         action: "onTextSelect",
-        data: {document_id: this.document_id, eventClientX: event.clientX, eventClientY: event.clientY}
+        data: {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          eventClientX: event.clientX, eventClientY: event.clientY}
       });
 
     },
@@ -260,10 +283,6 @@ export default {
       return [position, quote, pageSelector];
     },
     async getPageOffset(pageIndex) {
-      if (pageIndex > this.pdf.pageCount) {
-        /* istanbul ignore next - This should never be triggered */
-        throw new Error('Invalid page index');
-      }
       let offset = 0;
       for (let i = 0; i < pageIndex; i++) {
         const text = await this.pdf.getPageTextContent(i);

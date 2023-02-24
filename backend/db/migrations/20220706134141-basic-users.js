@@ -1,14 +1,21 @@
 'use strict';
-const {genSalt, genPwdHash} = require("../methods/utils.js");
+const {genSalt, genPwdHash} = require("../../utils/auth");
 
 module.exports = {
     async up(queryInterface, Sequelize) {
-        const users = [{
-            name: "admin",
-            role: "admin",
-            email: process.env.ADMIN_EMAIL,
-            pwd: process.env.ADMIN_PWD
-        },
+        const users = [
+            {
+                name: "admin",
+                role: "admin",
+                email: process.env.ADMIN_EMAIL,
+                pwd: process.env.ADMIN_PWD
+            },
+            {
+                name: "Bot",
+                role: "system",
+                email: "noreply@localhost",
+                pwd: "<nopasswordneed>"
+            },
             {
                 name: "guest",
                 role: "regular",
@@ -25,14 +32,14 @@ module.exports = {
 
                 return {
                     sysrole: user.role,
-                    first_name: user.name,
-                    last_name: "user",
-                    user_name: user.name,
+                    firstName: user.name,
+                    lastName: "user",
+                    userName: user.name,
                     email: user.email,
-                    password_hash: passwordHash,
+                    passwordHash: passwordHash,
                     salt: salt,
-                    accept_stats: true,
-                    accept_terms: true,
+                    acceptStats: true,
+                    acceptTerms: true,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }
@@ -42,7 +49,7 @@ module.exports = {
 
     async down(queryInterface, Sequelize) {
         await queryInterface.bulkDelete("user", {
-            user_name: ['admin', 'guest']
+            userName: ['admin', 'guest']
         }, {})
     }
 };

@@ -1,12 +1,16 @@
 <template>
-  <div class="spinner-grow" :style="'width: ' + size + 'px; height: ' + size + 'px;'" role="status">
+  <div
+    class="spinner-grow"
+    :style="'width: ' + size + 'px; height: ' + size + 'px;'"
+    role="status"
+  >
     <span class="visually-hidden">Loading...</span>
   </div>
 </template>
 
 <script>
 export default {
-  name: "IconLoading.vue",
+  name: "IconLoading",
   props: {
     size: {
       type: Number,
