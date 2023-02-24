@@ -24,7 +24,7 @@ module.exports = {
                 allowNull: false,
                 defaultValue: false
             },
-            setId: {
+            tagSetId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "tag_set",
@@ -33,7 +33,7 @@ module.exports = {
                 allowNull: false
             },
             description: {
-                type: Sequelize.STRING(512)
+                type: Sequelize.STRING
             },
             colorCode: {
                 type: Sequelize.STRING,

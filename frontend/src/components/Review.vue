@@ -1,70 +1,112 @@
 <template>
-  <div v-if="waiting" class="justify-content-center flex-grow-1 d-flex" role="status">
-    <div class="spinner-border m-5">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-  </div>
-  <Annotater v-else :document_id="document_id" :review_id="review_id" :readonly="decision" :review="!decision"
-             :approve="decision"/>
+  <Loader
+    v-if="studySessionId === 0 || documentId === 0"
+    :loading="true"
+  />
+  <span v-else>
+    <Annotater
+      :document-id="documentId"
+      :readonly="true"
+      :study-session-id="studySessionId"
+    />
+    <ReviewModal
+      ref="reviewModal"
+      :study-session-id="studySessionId"
+    />
+    <ReportModal
+      ref="reportModal"
+      :study-session-id="studySessionId"
+    />
+    <Teleport to="#topbarCustomPlaceholder">
+      <button
+        class="btn btn-outline-secondary me-2"
+        type="button"
+        @click="evaluate"
+      >Evaluate</button>
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        @click="report"
+      >Report</button>
+    </Teleport>
+  </span>
 </template>
 
 <script>
-/* Review.vue - Showing Annotator through review id
+import Loader from "@/basic/Loader.vue"
+import Annotater from "@/components/Annotater.vue";
+import ReviewModal from "@/components/study/ReviewModal.vue";
+import ReportModal from "@/components/study/ReportModal.vue";
 
-This parent component provides the annotation view, which
-currently consists of all elements of the annotator.
+/* Review.vue - document view in reviewing mode
 
-Author: Dennis Zyska (zyska@ukp...)
+Loads a document and study session in reviewing mode, i.e. readonly and with the option to assess an existing
+study session.
+
+Author: Dennis Zyska
 Source: -
 */
-import Annotater from "./Annotater.vue";
-
 export default {
   name: "Review",
-  components: {Annotater},
-  data() {
-    return {
-      waiting: true,
-      document_id: null,
-    }
-  },
+  components: {ReviewModal, Loader, Annotater, ReportModal},
   props: {
-    'review_id': {
+    'studySessionHash': {
       type: String,
       required: true,
     },
-    'readonly': {
-      type: Boolean,
-      required: false,
-      default: false,
+  },
+  data() {
+    return {}
+  },
+  sockets: {
+    studySessionError: function (data) {
+      if (data.studySessionHash === this.studySessionHash) {
+        this.eventBus.emit('toast', {
+          title: "Study Session Error",
+          message: data.message,
+          variant: "danger"
+        });
+        this.$router.push("/");
+      }
+    }
+  },
+  computed: {
+    studySession() {
+      return this.$store.getters['study_session/getStudySessionByHash'](this.studySessionHash);
     },
-    decision: {
-      type: Boolean,
-      required: false,
-      default: false,
+    study() {
+      if (this.studySession) {
+        return this.$store.getters['study/getStudyById'](this.studySession.studyId);
+      }
+      return null;
+    },
+    documentId() {
+      if (this.study) {
+        return this.study.documentId;
+      }
+      return 0;
+    },
+    studySessionId() {
+      if (this.studySession) {
+        return this.studySession.id;
+      } else
+        return 0;
     },
   },
-  created() {
-    this.waiting = true;
-    this.sockets.subscribe("reviewData", (data) => {
-      this.sockets.unsubscribe('reviewData');
-      if (data.success) {
-        this.document_id = data.document_id;
-        this.waiting = false;
-      } else {
-        this.$router.push("/");
-        this.eventBus.emit('toast', {title: "Review Process", message: data.message, variant: "danger"});
-      }
-    });
-    this.$socket.emit('getReview',
-        {
-          "review_id": this.review_id,
-          "decision": this.decision,
-        });
+  mounted() {
+    this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
+  },
+
+  methods: {
+    evaluate() {
+      this.$refs.reviewModal.open();
+    },
+    report() {
+      this.$refs.reportModal.open();
+    }
   }
 }
 </script>
 
 <style scoped>
-
 </style>

@@ -10,49 +10,57 @@ const basicElements = [
         name: "Home",
         groupId: basicGroups[0].name,
         order: 1,
-        icon: 'HomeIcon',
+        icon: 'house',
         path: "home",
-        component: 'Home'
+        component: 'Documents'
     },
     {
         name: "Documents",
         groupId: basicGroups[0].name,
-        'icon': 'IconEarmarkText',
+        'icon': 'file-earmark-text',
         "order": 10,
         "path": "documents",
         'component': 'Documents'
     },
-    {
-        name: "Reviews",
-        groupId: basicGroups[0].name,
-        icon: 'ReviewIcon',
-        order: 10,
-        "path": "reviews",
-        'component': 'Reviews'
-    },
-    {
-        name: "Meta Reviews",
-        groupId: basicGroups[0].name,
-        icon: 'MultipleDocumentIcon',
-        order: 10,
-        admin: true,
-        path: "meta_reviews",
-        'component': 'MetaReviews'
-    },
-    {name: "Tags", groupId: basicGroups[0].name, icon: 'TagIcon', path: "tags", order: 10, 'component': 'Tags'},
+    {name: "Tags", groupId: basicGroups[0].name, icon: 'tags-fill', path: "tags", order: 10, 'component': 'Tags'},
     {
         name: "Settings",
         groupId: basicGroups[1].name,
-        icon: 'SettingsIcon',
+        icon: 'gear-fill',
         order: 10,
         admin: true,
         path: "settings",
         'component': 'Settings'
-    }
+    },
+    {
+        name: "Logs",
+        groupId: basicGroups[1].name,
+        icon: 'bug-fill',
+        order: 11,
+        admin: true,
+        path: "logs",
+        'component': 'Log'
+    },
+    {
+        name: "Studies",
+        groupId: basicGroups[0].name,
+        icon: 'clipboard2-pulse',
+        order: 11,
+        admin: false,
+        path: "studies",
+        'component': 'Study'
+    },
+    {
+        name: "Study Sessions",
+        groupId: basicGroups[0].name,
+        icon: 'person-video3',
+        order: 12,
+        admin: false,
+        path: "study_sessions",
+        'component': 'StudySession'
+    },
+
 ];
-
-//TODO add icons in objects
-
 
 module.exports = {
     async up(queryInterface, Sequelize) {

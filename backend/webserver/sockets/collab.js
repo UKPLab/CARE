@@ -8,42 +8,51 @@ const Socket = require("../Socket.js");
  */
 module.exports = class CollabSocket extends Socket {
 
+    /**
+     * Refresh a collab entry with the current timestamp and emit the new collab to all clients
+     * @param {number} collabId
+     * @return {Promise<void>}
+     */
+    async refreshCollab(collabId) {
+        const collabUpdate = await this.models["collab"].updateById(collabId, {timestamp: Date.now()});
+        this.emitDoc(collabUpdate.documentId, "collabRefresh", collabUpdate);
+    }
+
+    /**
+     * Create a new collab entry and emit the new collab to all clients
+     * @param {object} data
+     * @return {Promise<void>}
+     */
+    async createCollab(data) {
+        const newCollab = await this.models["collab"].add(
+            Object.assign(data, {
+                userId: this.userId,
+                timestamp: Date.now()
+            }))
+        this.emit("collabStart", {
+                collabId: newCollab.id,
+                collabHash: newCollab.collabHash
+            },
+            false
+        )
+        this.emitDoc(newCollab.documentId, "collabRefresh", newCollab, false);
+    }
+
+
     init() {
 
-        this.socket.on("add_collab", (data) => {
-            const collab = Object.assign(data, {user_id: this.user_id, timestamp: Date.now()});
-            this.server.collabs.push(collab);
-            this.socket.emit("start_collab", {id: collab.id});
-
-            if (collab.type === "annotation" || collab.type === "comment") {
-                this.io.to("doc:" + collab.doc_id).emit("collab", collab);
-            }
-        });
-
-        this.socket.on("update_collab", (data) => {
-            let collab = this.server.collabs.find(c => c.id === data.id && c.user_id === this.user_id);
-            if (collab !== undefined) {
-                collab["timestamp"] = Date.now();
-
-                if (collab.type === "annotation" || collab.type === "comment") {
-                    this.io.to("doc:" + collab.doc_id).emit("collab", collab);
+        this.socket.on("collabUpdate", async (data) => {
+            try {
+                if (data.collabId && data.collabId !== 0) {
+                    await this.refreshCollab(data.collabId);
+                } else {
+                    await this.createCollab(data);
                 }
+            } catch (e) {
+                this.logger.error("Could not update collab table in database. Error: " + e);
+                this.sendToast(e.message, "DB Error", "danger");
             }
         });
 
-        this.socket.on("remove_collab", (data) => {
-
-            let collab = this.server.collabs.find(c => c.id === data.id && c.user_id === this.user_id);
-            if (collab !== undefined) {
-                collab["timestamp"] = -1;
-
-                if (data.type === "annotation" || data.type === "comment") {
-                    this.io.to("doc:" + data.doc_id).emit("collab", collab);
-                }
-
-                this.server.collabs.splice(this.server.collabs.indexOf(collab), 1);
-            }
-
-        });
     }
 }

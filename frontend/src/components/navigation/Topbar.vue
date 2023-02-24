@@ -1,32 +1,66 @@
 <template>
-  <div class="nav-container" id="wrapper">
+  <div
+    id="wrapper"
+    class="nav-container"
+  >
     <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
       <div class="container-fluid">
-        <button class="btn" id='backButton' href @click="this.$router.back()" title="Go back...">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left"
-               viewBox="0 0 16 16">
-            <path fill-rule="evenodd"
-                  d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
-          </svg>
+        <button
+          id="backButton"
+          class="btn"
+          title="Go back..."
+          @click="$router.go(-1)"
+        >
+          <LoadIcon
+            name="arrow-left"
+            :size="16"
+          />
         </button>
-        <a class="navbar-brand" href @click="this.$router.push('/')">PEER</a>
-        <div id="topbarCustomPlaceholder">
-
-        </div>
-        <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
+        <a
+          class="navbar-brand"
+          @click="toHome()"
+        >
+          <IconAsset
+            name="logo"
+            height="30"
+            :style="{cursor: 'pointer'}"
+          />
+        </a>
+        <div id="topbarCustomPlaceholder" />
+        <ul
+          id="topBarNavItems"
+          class="navbar-nav ms-auto mt-2 mt-lg-0"
+        />
+        <ul class="navbar-nav">
           <li class="nav-item dropdown">
-            <div class="dropdown" @click="toggleProfileDropdown()" @focusout="toggleProfileDropdown()">
-              <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton"
-                      data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <div
+              class="dropdown"
+              @click="toggleProfileDropdown()"
+              @focusout="toggleProfileDropdown()"
+            >
+              <button
+                id="dropdownMenuButton"
+                aria-expanded="false"
+                aria-haspopup="true"
+                class="btn btn-secondary dropdown-toggle"
+                data-toggle="dropdown"
+                type="button"
+              >
                 {{ firstLetterUsername }}
               </button>
-              <div id="dropdown-show" class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
-                <a class="dropdown-item display-username">Signed in as {{ username }} </a>
-                <a class="dropdown-item" href="#">Profile</a>
-                <a class="dropdown-item" href="#">Settings</a>
-                <hr class="dropdown-divider">
-                <a class="dropdown-item" href="#">Privacy Policy</a>
-                <a class="dropdown-item" href="#" @click="logout()">Logout</a>
+              <div
+                id="dropdown-show"
+                aria-labelledby="dropdownMenuButton"
+                class="dropdown-menu dropdown-menu-right"
+              >
+                <a class="dropdown-item display-username">
+                  Signed in as {{ username }}
+                </a>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  @click="logout()"
+                >Logout</a>
               </div>
             </div>
           </li>
@@ -37,17 +71,23 @@
 </template>
 
 <script>
-/* Sidebar.vue - topbar and side toolbar
+/* Topbar.vue - topbar shown everywhere throughout the app
 
-This component provides both a topbar and left toggleable side toolbar.
+This component provides both a topbar that is visible at any point in the app
+after logging in. It includes standard utilities and navigation elements
+appropriate for the context.
 
-Author: Carly Gettinger (cjgettinger@gmail.com)
+Author: Carly Gettinger, Dennis Zyska, Nils Dycke
 Co-Author: 
 Source:  
 */
 
+import LoadIcon from "@/icons/LoadIcon.vue";
+import IconAsset from "@/icons/IconAsset.vue";
+
 export default {
   name: "Topbar",
+  components: {LoadIcon, IconAsset},
   computed: {
     username() {
       return this.$store.getters['auth/getUsername'];
@@ -64,10 +104,13 @@ export default {
       await this.$store.dispatch('auth/logout');
       await this.$router.push("/login");
     },
+    async toHome() {
+      await this.$router.push('/dashboard');
+    },
     toggleProfileDropdown() {
       const dropdown = document.getElementById('dropdown-show');
       var close = false;
-      if (event.type == 'focusout') {
+      if (event.type === 'focusout') {
         if (event.relatedTarget != null && event.relatedTarget.classList.contains("dropdown-item")) {
           return;
         }

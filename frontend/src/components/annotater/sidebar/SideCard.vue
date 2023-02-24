@@ -1,56 +1,81 @@
 <template>
-  <b-card ref="card" :class="{ shake: shake }" class="card">
-    <div class="card-header">
+  <b-card
+    ref="card"
+    :class="{ shake: shake }"
+    class="card"
+  >
+    <div
+      v-if="!loading"
+      class="card-header"
+    >
       <div class="container-fluid">
-        <slot name="header"></slot>
-
+        <slot name="header" />
       </div>
     </div>
     <div class="card-body p-1">
-      <div class="d-grid gap-1 my-2">
-        <slot name="body"></slot>
+      <div
+        v-if="!loading"
+        class="d-grid gap-1 my-2"
+      >
+        <slot name="body" />
+      </div>
+      <div v-else>
+        <Loader :loading="loading" />
       </div>
     </div>
-    <div v-if="hasFooterSlot" class="card-footer">
-      <div id="footer-controls" class="container">
-        <slot name="footer"></slot>
+    <div
+      v-if="!loading && hasFooterSlot"
+      class="card-footer"
+    >
+      <div
+        id="footer-controls"
+        class="container"
+      >
+        <slot name="footer" />
       </div>
+    </div>
+    <div
+      v-if="!loading && hasThreadSlot"
+      class="card-body p-1"
+    >
+      <slot name="thread" />
     </div>
   </b-card>
 </template>
 
 <script>
+import Loader from "@/basic/Loader.vue";
+
 /* SideCard.vue - card template for sidebar
 
-Author: Dennis Zyska (zyska@ukp...)
+Generic component providing a standardized card to be included in the sidebar.
+
+Author:  Nils Dycke, Dennis Zyska
 Source: -
 */
-
 export default {
-  name: "SideCard.vue",
+  name: "SideCard",
+  components: {Loader},
   props: {
     shake: {
       type: Boolean,
       required: false,
       default: false,
     },
-  },
-  watch: {
-    shake: function (val) {
-      if (val) {
-        //TODO: classList is no element in reference
-        this.$refs.card.classList.add("shake");
-        setTimeout(() => this.shake = false, 800);
-      } else {
-        this.$refs.card.classList.remove("shake");
-      }
-    },
+    loading: {
+      type: Boolean,
+      required: false,
+      default: false,
+    }
   },
   computed: {
     hasFooterSlot() {
-      return !!this.$slots.footer
+      return !!this.$slots.footer;
+    },
+    hasThreadSlot() {
+      return !!this.$slots.thread;
     }
-  }
+  },
 }
 </script>
 
@@ -84,7 +109,7 @@ export default {
 }
 
 .card {
-  padding: 0px;
+  padding: 0;
 }
 
 .card-body {

@@ -1,8 +1,3 @@
-const {
-    getAll: dbGetAllUser,
-    getUsername: dbGetUsername,
-    minimalFields
-} = require("../../db/methods/user.js");
 const Socket = require("../Socket.js");
 
 /**
@@ -19,37 +14,64 @@ module.exports = class UserSocket extends Socket {
      * Accept data as list of objects or single object
      * Note: returns always list of objects!
      *
-     * @param data
+     * @param data {object|object[]} data to update
+     * @param key {string} key of the user id field
+     * @param targetName {string} name of the target field
      * @returns {Promise<Awaited<*&{creator_name: string|*|undefined}>[]>}
      */
-    async updateCreatorName(data) {
+    async updateCreatorName(data, key = 'userId', targetName = 'creator_name') {
         if (!Array.isArray(data)) {
             data = [data];
         }
 
         return Promise.all(data.map(async x => {
-            return {...x, creator_name: await dbGetUsername(x.creator)};
+            return {...x, [targetName]: await this.models['user'].getUserName(x[key])};
         }));
     }
 
+    /**
+     * show only specific fields of a user
+     * @param user
+     * @return {{[p: string]: any}}
+     */
+    minimalFields(user) {
+        let include = ["id", "userName"];
+        if(this.isAdmin()){
+            include.push("lastLoginAt", "sysrole", "acceptStats");
+        }
+
+        const entries = Object.entries(user);
+        const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
+
+        return Object.fromEntries(filtered);
+    }
+
+    /**
+     * Send all user data to the client (only for admins)
+     * @return {Promise<void>}
+     */
+    async sendUserData() {
+        if (this.isAdmin()) {
+            const users = await this.models['user'].getAll();
+            const mappedUsers = users.map(x => this.minimalFields(x));
+
+            this.socket.emit("userData", {success: true, users: mappedUsers});
+        } else {
+            this.socket.emit("userData", {success: false, message: "User rights and argument mismatch"});
+            this.logger.error("User right and request parameter mismatch");
+        }
+    }
+
     init() {
-        this.socket.on("getAllUserData", async (data) => {
-            console.log("GETTING ALL USER DATA");
 
-            if (this.isAdmin()) {
-                try {
-                    const users = await dbGetAllUser();
-                    const mappedUsers = users.map(x => minimalFields(x));
-
-                    this.socket.emit("userDataAll", {success: true, users: mappedUsers});
-                } catch (e) {
-                    this.socket.emit("userDataAll", {success: false, message: "Failed to retrieve all users"});
-                    this.logger.error("DB error while loading all users from database" + JSON.stringify(data));
-                }
-            } else {
-                this.socket.emit("userDataAll", {success: false, message: "User rights and argument mismatch"});
-                this.logger.error("User right and request parameter mismatch" + JSON.stringify(data));
+        this.socket.on("userGetData", async (data) => {
+            try {
+                await this.sendUserData();
+            } catch (e) {
+                this.socket.emit("userData", {success: false, message: "Failed to retrieve all users"});
+                this.logger.error("DB error while loading all users from database" + JSON.stringify(e));
             }
         });
+
     }
 }

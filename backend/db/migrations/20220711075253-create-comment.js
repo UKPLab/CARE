@@ -8,12 +8,7 @@ module.exports = {
                 primaryKey: true,
                 type: Sequelize.INTEGER
             },
-            hash: {
-                type: Sequelize.STRING,
-                allowNull: false,
-                unique: true
-            },
-            creator: {
+            userId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "user",
@@ -28,14 +23,14 @@ module.exports = {
                 type: Sequelize.BOOLEAN,
                 defaultVale: true
             },
-            document: {
-                type: Sequelize.STRING,
+            documentId: {
+                type: Sequelize.INTEGER,
                 references: {
                     model: "document",
-                    key: "hash"
+                    key: "id"
                 }
             },
-            referenceAnnotation: {
+            annotationId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "annotation",
@@ -44,7 +39,7 @@ module.exports = {
                 allowNull: true,
                 defaultValue: null
             },
-            referenceComment: {
+            parentCommentId: {
                 type: Sequelize.INTEGER,
                 references: {
                     model: "comment",

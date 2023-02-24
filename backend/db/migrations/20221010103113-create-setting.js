@@ -9,12 +9,19 @@ module.exports = {
                 primaryKey: true,
             },
             value: {
+                type: Sequelize.TEXT,
+            },
+            type: {
                 type: Sequelize.STRING,
+                allowNull: true,
             },
             description: {
                 type: Sequelize.STRING(512)
             },
-
+            onlyAdmin: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false
+            },
             deleted: {
                 type: Sequelize.BOOLEAN,
                 defaultValue: false

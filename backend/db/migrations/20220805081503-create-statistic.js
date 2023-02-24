@@ -15,9 +15,9 @@ module.exports = {
                     allowNull: false
                 },
                 data: {
-                    type: Sequelize.STRING
+                    type: Sequelize.TEXT
                 },
-                user: {
+                userId: {
                     type: Sequelize.INTEGER,
                     allowNull: true,
                     references: {
@@ -27,11 +27,22 @@ module.exports = {
                 timestamp: {
                     type: Sequelize.DATE, allowNull: false
                 },
+                deleted: {
+                    type: Sequelize.BOOLEAN,
+                    defaultValue: false
+                },
                 createdAt: {
-                    allowNull: false, type: Sequelize.DATE
+                    allowNull: false,
+                    type: Sequelize.DATE
                 },
                 updatedAt: {
-                    allowNull: false, type: Sequelize.DATE
+                    allowNull: false,
+                    type: Sequelize.DATE
+                },
+                deletedAt: {
+                    allowNull: true,
+                    defaultValue: null,
+                    type: Sequelize.DATE
                 }
             });
     },

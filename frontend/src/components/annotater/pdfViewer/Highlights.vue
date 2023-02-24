@@ -1,30 +1,72 @@
-<template>
-</template>
+<template />
 
 <script>
-/* Highlights.vue - highlights of the annotation in pdf document
+import {isNodeInRange} from "@/assets/anchoring/range-util";
+import {isInPlaceholder} from "@/assets/anchoring/placeholder";
+import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
+
+/* Highlights handling of annotation in pdf document
 
 This component creates the highlights of all the annotations inside the pdf document
 
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
+Author: Dennis Zyska
+Co-author: Nils Dycke
+Source: inspired by hypothesis
 */
-import {isNodeInRange} from "../../../assets/anchoring/range-util";
-import {isInPlaceholder} from "../../../assets/anchoring/placeholder";
-import {resolveAnchor} from "../../../assets/anchoring/resolveAnchor";
-
 export default {
   name: "Highlights",
-  props: ['document_id', 'page_id'],
-  data: function () {
-    return {}
-  },
-  mounted() {
-    this.annotations.map(this.highlight);
+  props: {
+    documentId: {
+      type: Number,
+      required: true
+    },
+    'studySessionId': {
+      type: Number,
+      required: false,
+      default: null
+    },
+    'pageId': {
+      type: Number,
+      required: true,
+    }
   },
   computed: {
+    study() {
+      if (this.studySession) {
+        return this.$store.getters["study/getStudyById"](this.studySession.studyId);
+      }
+    },
+    studySession() {
+      if (this.studySessionId && this.studySessionId !== 0) {
+        return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
+      }
+    },
+    studySessionIds() {
+      if (this.study) {
+        return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
+            .map(s => s.id);
+      }
+    },
+    showAll() {
+      const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
+      return (showAllComments !== undefined && showAllComments);
+    },
     annotations() {
-      return this.$store.getters['anno/getPageAnnotations'](this.document_id, this.page_id).filter(anno => anno.anchors !== null)
+      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageId)
+          .filter(anno => {
+            if (this.studySessionId !== null) {
+              return anno.studySessionId === this.studySessionId;
+            } else if(this.studySessionIds) {
+              return this.studySessionIds.includes(anno.studySessionId);
+            } else {
+              if (this.showAll) {
+                return true;
+              } else {
+                return anno.studySessionId === null
+              }
+            }
+          })
+          .filter(anno => anno.anchors !== null)
     },
     tags() {
       return this.$store.getters['tag/getAllTags'](false);
@@ -34,8 +76,12 @@ export default {
     annotations(newVal, oldVal) {
       //Remove highlights of deleted anchors
       oldVal.filter(anno => !newVal.includes(anno))
-          .forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor)
-              .forEach(anchor => this.removeHighlights(anchor.highlights)))
+          .forEach(anno => {
+            if (anno.anchors != null) {
+              anno.anchors.filter(anchor => "highlights" in anchor)
+                  .forEach(anchor => this.removeHighlights(anchor.highlights))
+            }
+          });
 
       newVal.filter(anno => !oldVal.includes(anno))
           .map(this.highlight)
@@ -48,6 +94,9 @@ export default {
         );
       }
     }
+  },
+  mounted() {
+    this.annotations.map(this.highlight);
   },
   methods: {
     getColor(tag_id) {
@@ -218,11 +267,11 @@ export default {
       svgHighlightLayer.append(...highlightRects);
     },
     setSVGHighlightColor(annotation, svgHighlightEl) {
-      if (!annotation || !annotation.tag) {
+      if (!annotation || !annotation.tagId) {
         return;
       }
 
-      svgHighlightEl.style.fill = "#" + this.getColor(annotation.tag);
+      svgHighlightEl.style.fill = "#" + this.getColor(annotation.tagId);
       svgHighlightEl.style.opacity = 0.6;
     },
     removeAllHighlights(root) {

@@ -20,6 +20,12 @@ module.exports = {
                 description: "full control",
                 createdAt: new Date(),
                 updatedAt: new Date(),
+            },
+            {
+                name: "system",
+                description: "system user",
+                createdAt: new Date(),
+                updatedAt: new Date(),
             }
         ]);
     },

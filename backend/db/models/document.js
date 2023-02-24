@@ -1,9 +1,8 @@
 'use strict';
-const {
-    Model
-} = require('sequelize');
+const MetaModel = require("../MetaModel.js");
+
 module.exports = (sequelize, DataTypes) => {
-    class document extends Model {
+    class Document extends MetaModel {
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -14,10 +13,11 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
 
-    document.init({
+    Document.init({
         name: DataTypes.STRING,
         hash: DataTypes.STRING,
-        creator: DataTypes.INTEGER,
+        userId: DataTypes.INTEGER,
+        public: DataTypes.BOOLEAN,
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
@@ -27,5 +27,5 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'document',
         tableName: 'document'
     });
-    return document;
+    return Document;
 };

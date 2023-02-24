@@ -1,13 +1,23 @@
 <template>
-  <Loading v-if="navElements === null || settings === null"></Loading>
+  <Loading v-if="navElements === null || settings === null" />
   <div v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column dashboard-wrapper">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
-        <div id="sidebarContainer" class="col border mh-100  col-sm-auto g-0">
-          <Sidebar></Sidebar>
+        <div
+          id="sidebarContainer"
+          class="col border mh-100  col-sm-auto g-0"
+        >
+          <Sidebar />
         </div>
-        <div id="viewerContainer" class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;">
-          <component :is="currentComponent" :key="$route.path"></component>
+        <div
+          id="viewerContainer"
+          class="col border mh-100 justify-content-center p-3"
+          style="overflow-y: scroll;"
+        >
+          <component
+            :is="currentComponent"
+            :key="$route.path"
+          />
         </div>
       </div>
     </div>
@@ -15,28 +25,27 @@
 </template>
 
 <script>
+import Sidebar from "./navigation/Sidebar.vue";
+import {defineAsyncComponent} from "vue";
+import Loading from "@/basic/Loading.vue";
+import Dashboard from "./Dashboard.vue";
+import NotFoundPage from "@/basic/NotFound.vue";
+
 /* Dashboard.vue - Dashboard Handler
 
 This view shows the dashboard after login and loads the navigation components
 including the sidebar
 
-Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
+Author: Dennis Zyska, Nils Dycke
 Source: -
 */
-import Sidebar from "./navigation/Sidebar.vue";
-import {defineAsyncComponent} from "vue";
-import Loading from "./basic/Loading.vue";
-import Dashboard from "./Dashboard.vue";
-import NotFoundPage from "./NotFoundPage.vue";
-
 export default {
-
   name: "Dashboard",
   components: {Loading, Sidebar},
   props: ["catchAll"],
   computed: {
     navElements() {
-      return this.$store.getters['navigation/getNavElements'];
+      return this.$store.getters['navigation/getSidebarElementsFlat'];
     },
     settings() {
       return this.$store.getters['settings/getSettings'];
@@ -48,7 +57,7 @@ export default {
 
         let component = this.navElements.find(element => element.name === this.$route.name);
         if (component === undefined) {
-          component = this.navElements.find(e => e.name === this.settings["navigation.dashboard.component.default"]);
+          component = this.navElements.find(e => e.name === this.settings["dashboard.navigation.component.default"]);
         }
         return defineAsyncComponent(
             {
@@ -65,13 +74,7 @@ export default {
     }
   },
   mounted() {
-    // get settings
-    //TODO implement one websocket emit for getting all necessary data for the system
-    // (basic vuex store data) and should loaded in App.vue not in Dashboard
-    this.$socket.emit("getTagSets");
-    this.$socket.emit("getTags");
-    this.$socket.emit("getSettings");
-
+    this.$socket.emit("settingGetNavigation");
     this.createNavigation();
   },
   methods: {
@@ -86,7 +89,7 @@ export default {
           name: e.name,
           alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
           path: "/dashboard/" + e.path,
-          component: () => import('./basic/Loading.vue'),
+          component: () => import('@/basic/Loading.vue'),
         };
         if ("navigation.dashboard.component.default" in this.settings &&
             child.name === this.settings["navigation.dashboard.component.default"]) {
@@ -120,6 +123,10 @@ export default {
 <style scoped>
 .dashboard-wrapper {
   margin-top: -52.5px;
+}
+
+#viewerContainer::-webkit-scrollbar {
+  display:none;
 }
 
 </style>

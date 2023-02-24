@@ -1,15 +1,35 @@
 version: "3"
 services:
+  docs_sphinx:
+    build:
+      context: .
+      dockerfile: docs/Dockerfile
+      args:
+        ENV: ${ENV}
+    image: docs_sphinx
+    volumes:
+      - ./docs:/docs
+    command: make html
+  docs_asyncapi:
+    image: asyncapi/generator
+    volumes:
+      - ./docs:/docs
+      - ./docs/backend.yml:/app/api.yml
+      - ./docs/api:/app/output
+    command: --force-write --output /app/output /app/api.yml
   postgres:
     image: postgres:11.5-alpine
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 1s
-  content_server:
+  server:
     build:
       context: .
       args:
         ENV: ${ENV}
+    volumes:
+      - ./docs/build:/content-server/docs/build
+      - ./docs/api:/content-server/docs/api
     deploy:
       restart_policy:
         condition: on-failure

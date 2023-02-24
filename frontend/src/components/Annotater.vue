@@ -1,48 +1,128 @@
 <template>
-  <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
-    <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
-      <div class="col border mh-100 justify-content-center p-3" style="overflow-y: scroll;" id="viewerContainer">
-        <PDFViewer :document_id="document_id" :readonly="readonly" ref="pdfViewer" style="margin:auto"
-                   class="rounded border border-1 shadow-sm"></PDFViewer>
-      </div>
-      <div class="col border mh-100  col-sm-auto g-0" style="overflow-y: scroll;" id="sidebarContainer">
-        <Sidebar :document_id="document_id" :readonly="readonly"/>
+  <Loader
+    v-if="documentId === 0"
+    :loading="true"
+    class="pageLoader"
+  />
+  <span v-else>
+    <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
+      <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
+        <div
+          id="viewerContainer"
+          ref="viewer"
+          class="col border mh-100 justify-content-center p-3"
+          style="overflow-y: scroll;"
+        >
+          <PDFViewer
+            ref="pdfViewer"
+            :document-id="documentId"
+            :readonly="readonly"
+            :study-session-id="studySessionId"
+            class="rounded border border-1 shadow-sm"
+            style="margin:auto"
+          />
+        </div>
+        <div
+          id="sidebarContainer"
+          class="col border mh-100  col-sm-auto g-0"
+          style="overflow-y: scroll;"
+        >
+          <Sidebar
+            ref="sidebar"
+            :document-id="documentId"
+            :readonly="readonly"
+            :study-session-id="studySessionId"
+          />
+        </div>
       </div>
     </div>
-  </div>
 
-  <Teleport to="#topbarCustomPlaceholder">
-    <form class="container-fluid justify-content-center">
-      <button v-if="review" class="btn btn-outline-success me-2" type="button"
-              v-on:click="this.$refs.reviewSubmit.open()">Submit Review
-      </button>
-      <button v-if="approve" class="btn btn-outline-dark me-2" type="button" v-on:click="this.$refs.report.open()">
-        Report
-      </button>
-      <button v-if="approve" class="btn btn-outline-success me-2" type="button" v-on:click="decisionSubmit(true)">
-        Accept
-      </button>
-      <button v-if="approve" class="btn btn-outline-danger me-2" type="button" v-on:click="decisionSubmit(false)">
-        Reject
-      </button>
-      <button :class="annotations.length  + comments.length > 0 && !downloading ? '' : 'disabled'"
-                    class="btn btn-outline-secondary"
-                    type="button"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                    @click="downloadAnnotations('txt')"
-                    >
-              Download Annotations
-      </button>
-    </form>
-  </Teleport>
+    <Teleport to="#topBarNavItems">
+      <li class="nav-item">
+        <button
+          v-if="studySessionId === null && numStudyComments > 0"
+          :title="showAll ? 'Hide study comments' : 'Show study comments'"
+          class="btn rounded-circle"
+          type="button"
+          @click="setSetting({key: 'annotator.showAllComments', value: !showAll})"
+        >
+          <span class="position-relative translate-middle top-100 start-100 fs-10 fw-light">
+            {{ numStudyComments }}
+          </span>
+          <span>
+            <LoadIcon
+              :icon-name="showAll ? 'eye-slash-fill' : 'eye-fill'"
+              :size="18"
+            />
+          </span>
+        </button>
+      </li>
+      <li class="nav-item">
+        <button
+          v-if="nlpEnabled"
+          :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
+          class="btn rounded-circle"
+          type="button"
+          @click="toggleNlp"
+        >
+          <LoadIcon
+            :color="(!nlpActive) ?'#777777':'#097969'"
+            :size="18"
+            icon-name="robot"
+          />
+        </button>
+      </li>
+      <ExpandMenu class="nav-item" />
+    </Teleport>
 
-  <ReviewSubmit v-if="review" ref="reviewSubmit" :review_id="review_id" :document_id="document_id"></ReviewSubmit>
-  <Report v-if="approve" ref="report" :review_id="review_id" :document_id="document_id"
-          @decisionSubmit="decisionSubmit"></Report>
-  <DecisionSubmit v-if="approve" ref="decisionSubmit" :review_id="review_id"
-                  :document_id="document_id"></DecisionSubmit>
-  <Export ref="export"></Export>
+    <Teleport to="#topBarExtendMenuItems">
+      <li><a
+        :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
+        class="dropdown-item"
+        href="#"
+        @click="downloadAnnotations('json')"
+      >Download
+        Annotations</a></li>
+    </Teleport>
+
+    <Teleport to="#topbarCustomPlaceholder">
+      <form class="hstack gap-3 container-fluid justify-content-center">
+        <button
+          v-if="review"
+          class="btn btn-outline-success me-2"
+          type="button"
+          @click="$refs.reviewSubmit.open()"
+        >Submit Review
+        </button>
+        <button
+          v-if="approve"
+          class="btn btn-outline-dark me-2"
+          type="button"
+          @click="$refs.report.open()"
+        >
+          Report
+        </button>
+        <button
+          v-if="approve"
+          class="btn btn-outline-success me-2"
+          type="button"
+          @click="decisionSubmit(true)"
+        >
+          Accept
+        </button>
+        <button
+          v-if="approve"
+          class="btn btn-outline-danger me-2"
+          type="button"
+          @click="decisionSubmit(false)"
+        >
+          Reject
+        </button>
+      </form>
+    </Teleport>
+
+    <ExportAnnos ref="export" />
+  </span>
 </template>
 
 <script>
@@ -56,25 +136,39 @@ Source: -
 */
 import PDFViewer from "./annotater/pdfViewer/PDFViewer.vue";
 import Sidebar from "./annotater/sidebar/Sidebar.vue";
-import ReviewSubmit from "./annotater/modals/ReviewSubmit.vue"
-import Report from "./annotater/modals/Report.vue"
-import Loader from "./basic/Loader.vue";
-import DecisionSubmit from "./annotater/modals/DecisionSubmit.vue"
-import Export from "./basic/Export.vue"
-import {offsetRelativeTo, scrollElement} from "../assets/anchoring/scroll";
-import {isInPlaceholder} from "../assets/anchoring/placeholder";
-import {resolveAnchor} from "../assets/anchoring/resolveAnchor";
+import Loader from "@/basic/Loader.vue";
+import ExportAnnos from "@/basic/download/ExportAnnos.vue"
+import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
+import {isInPlaceholder} from "@/assets/anchoring/placeholder";
+import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
+import debounce from 'lodash.debounce';
+import LoadIcon from "@/icons/LoadIcon.vue";
+import ExpandMenu from "./navigation/ExpandMenu.vue";
+import {mapMutations} from "vuex";
+
 
 export default {
   name: "Annotater",
-  components: {PDFViewer, Sidebar, ReviewSubmit, Report, DecisionSubmit, Loader, Export},
+  components: {
+    LoadIcon,
+    PDFViewer,
+    ExpandMenu,
+    Sidebar,
+    Loader,
+    ExportAnnos
+  },
   props: {
-    'document_id': {
-      type: String,
-      required: true,
+    'documentId': {
+      type: Number,
+      required: true
     },
-    'review_id': {
+    'reviewId': {
       type: String,
+      required: false,
+      default: null
+    },
+    'studySessionId': {
+      type: Number,
       required: false,
       default: null
     },
@@ -96,18 +190,49 @@ export default {
   },
   data() {
     return {
-      downloading: false
+      downloading: false,
+      logScroll: debounce(function () {
+        this.$socket.emit("stats", {
+          action: "annotatorScrollActivity",
+          data: {
+            documentId: this.documentId,
+            scrollTop: this.$refs.viewer.scrollTop,
+            scrollHeight: this.$refs.viewer.scrollHeight
+          }
+        })
+      }, 500)
     }
   },
   computed: {
     anchors() {
-      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.document_id))
+      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId))
+    },
+    showAll() {
+      const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
+      return (showAllComments !== undefined && showAllComments);
     },
     annotations() {
-      return this.$store.getters["anno/getAnnotations"](this.document_id);
+      return this.$store.getters["anno/getAnnotations"](this.documentId);
     },
     comments() {
-      return this.$store.getters["comment/getDocumentComments"](this.document_id);
+      return this.$store.getters["comment/getDocumentComments"](this.documentId);
+    },
+    nlpActive() {
+      const nlpActive = this.$store.getters["settings/getValue"]("annotator.nlp.activated");
+      return (nlpActive === true || nlpActive === "true");
+    },
+    nlpEnabled() {
+      return this.$store.getters["settings/getValue"]('service.nlp.enabled') === "true";
+    },
+    numStudyComments() {
+      return this.comments.filter(c => c.studySessionId).length;
+    }
+  },
+  watch: {
+    studySessionId(newVal, oldVal) {
+      if (oldVal !== newVal) {
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+      }
     }
   },
   mounted() {
@@ -115,23 +240,39 @@ export default {
       this.scrollTo(anno_id);
       this.$socket.emit("stats", {
         action: "pdfScroll",
-        data: {review_id: this.review_id, document_id: this.document_id, anno_id: anno_id}
+        data: {review_id: this.reviewId, documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
       });
     });
+
+    // get tagsets
+    this.$socket.emit("tagSetGetAll");
+    this.$socket.emit("tagGetAll");
+
+    // init component
     this.load();
+
+    // scrolling
+    this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
   },
-  unmounted() {
+  beforeUnmount() {
     // Leave the room for document updates
-    this.$socket.emit("unsubscribe:document", {doc: this.document_id});
-  },
-  sockets: {
-    connect: function () {
-      this.load();
-    },
+    this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
+    this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
   },
   methods: {
+    ...mapMutations({
+      setSetting: "settings/set",
+    }),
     decisionSubmit(decision) {
       this.$refs.decisionSubmit.open(decision);
+    },
+    toggleNlp() {
+      const newNlpActive = !this.nlpActive;
+      this.setSetting({key: "annotator.nlp.activated", value: newNlpActive});
+      this.$socket.emit("settingSet", {key: "annotator.nlp.activated", value: newNlpActive});
+    },
+    scrollActivity() {
+      this.logScroll();
     },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
@@ -209,16 +350,27 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      // TODO data should loaded in app for basic settings
-      this.$socket.emit("getTagSets");
-      this.$socket.emit("getTags");
-      this.$socket.emit("getSettings");
+      if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0)) {
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+      }
 
       // Join Room for document updates
-      this.$socket.emit("subscribe:document", {doc: this.document_id});
+      this.$socket.emit("documentSubscribe", {documentId: this.documentId});
+
+      // check for available nlp support (for now hard-coded sentiment analysis)
+      if (this.nlpEnabled) {
+        this.$socket.emit("serviceCommand", {
+          service: "NLPService",
+          command: "skillGetConfig",
+          data: {name: "sentiment_classification"}
+        });
+      }
+    },
+    async leave(){
+      return await this.$refs.sidebar.leave();
     },
     downloadAnnotations(outputType) {
-      this.$refs.export.requestExport([this.document_id], outputType, true);
+      this.$refs.export.requestExport([this.documentId], outputType, true);
     }
   }
 }
@@ -229,8 +381,16 @@ export default {
 #sidebarContainer {
   position: relative;
   padding: 0;
-  max-width: 300px;
-  min-width: 300px;
+  max-width: 400px;
+  min-width: 400px;
+}
+
+IconBoostrap[disabled] {
+  background-color: darkgrey;
+}
+
+#sidebarContainer::-webkit-scrollbar {
+  display:none;
 }
 
 </style>
