@@ -264,7 +264,6 @@ export default {
       const modal = this.$refs.modal;
 
       this.sockets.subscribe("studyStarted", (data) => {
-        console.log("Can start the study!", this, this.$refs);
         if (data.success) {
           this.$emit("start", {studySessionId: data.studySessionId});
           modal.waiting = false;
