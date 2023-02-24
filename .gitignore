@@ -1,0 +1,30 @@
+
+# files dir
+files/*.pdf
+!files/8852a746-360e-4c31-add2-4d1c75bfb96d.pdf
+
+# database dumps
+db_dumps/
+
+# backend
+backend/sessions
+backend/node_modules
+backend/logs
+backend/coverage
+
+# ignore build files
+dist/
+frontend/node_modules
+
+yarn-error.log
+.tox
+
+# building files
+nodesource_setup.sh
+
+*/__pycache__
+.idea
+
+# docs
+docs/build
+docs/api
