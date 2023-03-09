@@ -69,6 +69,7 @@ build:
     - docker version
     - apt-get update -qq && apt-get install -y -qq make
     - docker-compose version
+    - apt update && apt install make -y
   script:
     - make ENV=dev build
     - docker wait care_dev_docs_sphinx_1
