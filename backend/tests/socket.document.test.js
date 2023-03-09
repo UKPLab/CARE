@@ -25,7 +25,7 @@ describe("Test Websocket - Documents", () => {
     });
 
     test("Document Upload", (done) => {
-        const FILE = `${__dirname}/../../resources/showcase.pdf`;
+        const FILE = `${__dirname}/../../files/8852a746-360e-4c31-add2-4d1c75bfb96d.pdf`;
         clientSocket.on("uploadResult", (data) => {
             expect(data.success).toBe(true);
             done();
