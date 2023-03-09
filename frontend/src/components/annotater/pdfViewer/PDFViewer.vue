@@ -1,5 +1,5 @@
 <template>
-  <div
+  <div v-if="pdf"
     id="pdfContainer"
     class="has-transparent-text-layer"
   >
@@ -63,7 +63,7 @@ export default {
   },
   data() {
     return {
-      pdf: new PDF(),
+      pdf: null,
       observer: undefined,
       pdfContainer: null,
       visiblePages: [1],
@@ -90,6 +90,7 @@ export default {
         const loadingTask = pdfjsLib.getDocument(data.file);
         loadingTask.promise
             .then((pdf) => {
+              this.pdf = new PDF();
               this.pdf.setPDF(pdf);
             })
             .catch(response => {
@@ -105,6 +106,9 @@ export default {
   },
   mounted() {
     this.$socket.emit("documentGet", {documentId: this.documentId});
+  },
+  unmounted() {
+    this.pdf = null;
   },
   methods: {
     updateVisibility(page) {

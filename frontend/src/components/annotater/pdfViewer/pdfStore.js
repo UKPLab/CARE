@@ -1,8 +1,5 @@
-import _ from 'lodash';
-
 // make sure, it's not been reactive!
-const state = {pdf: undefined};
-const pages = {};
+const state = {pdf: undefined, pages: {}};
 
 /* PDF Store
 
@@ -15,36 +12,42 @@ Source: -
 */
 export class PDF {
 
-    constructor(SIZE = 10) {
+    constructor(pdf, SIZE = 10) {
+        this.BUFFER_SIZE = SIZE;
+    }
+
+    reset() {
+        state.pdf = {pdf: undefined};
+        state.pages = {};
+
         this.currentBuffer = [];
         this.pageCount = 0;
         this.cursor = 0;
         this.pageTextCache = new Map();
         this.renderingDone = new Map();
-        this.BUFFER_SIZE = SIZE;
-
     }
 
     setPDF(pdf) {
+        this.reset();
         state.pdf = pdf;
         this.pageCount = state.pdf.numPages;
     }
 
     async getPage(pageNumber) {
 
-        if (!(pageNumber in pages)) {
+        if (!(pageNumber in state.pages)) {
 
             //Buffer handling
             if (this.currentBuffer.length > this.BUFFER_SIZE) {
-                delete pages[this.currentBuffer.shift()];
+                delete state.pages[this.currentBuffer.shift()];
             }
             this.currentBuffer.push(pageNumber);
 
             await state.pdf.getPage(pageNumber).then((page) => {
-                pages[pageNumber] = page;
+                state.pages[pageNumber] = page;
             });
         }
-        return pages[pageNumber];
+        return state.pages[pageNumber];
     }
 
     async getPageTextContent(pageIndex) {
