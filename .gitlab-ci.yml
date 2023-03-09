@@ -60,14 +60,14 @@ test:
 
 build:
   image:
-    name: docker/compose:1.29.2
+    name: docker/compose:debian-1.29.2
     entrypoint: [ "/bin/sh", "-c" ]
   stage: build
   #needs: ['test']
   before_script:
+    - *add-debian-mirror
     - docker info
     - docker version
-    - apt-get update -qq && apt-get install -y -qq make
     - docker-compose version
     - apt update && apt install make -y
   script:
