@@ -52,13 +52,13 @@ test:
     - *setup-nvm
     - apt update && apt install make -y
   script:
-    - docker-compose -f docker-dev.yml --env-file ".env.test" up -d postgres
+    - docker-compose -f docker-compose.yml -f docker-dev.yml --env-file ".env.test" up -d postgres
     - docker-compose ps
     - make ENV=test test
 
 # https://stackoverflow.com/questions/36399848/install-node-in-dockerfile
 
-build-dev:
+build:
   image:
     name: docker/compose:1.29.2
     entrypoint: [ "/bin/sh", "-c" ]
@@ -70,33 +70,10 @@ build-dev:
     - apt-get update -qq && apt-get install -y -qq make
     - docker-compose version
   script:
-    - docker-compose -f docker-compose.yml -p "peer_dev" --env-file ".env.dev"  up --build -d
-    - docker wait peer_dev_docs_sphinx_1
-    - docker wait peer_dev_docs_asyncapi_1
-    - docker-compose -p "peer_dev"  rm -f -s -v
-    - tar -czvf ${PWD}/docs.tar.gz ./docs/build
-    - tar -czvf ${PWD}/doc_api.tar.gz ./docs/api
-  artifacts:
-    name: "documentation"
-    paths:
-      - "docs.tar.gz"
-      - "doc_api.tar.gz"
-
-build-main:
-  image:
-    name: docker/compose:1.29.2
-    entrypoint: [ "/bin/sh", "-c" ]
-  stage: build
-  #needs: ['test']
-  before_script:
-    - docker info
-    - docker version
-    - apt-get update -qq && apt-get install -y -qq make
-    - docker-compose version
-  script:
-    - docker-compose -f docker-compose.yml -p "peer_main" --env-file ".env.main"  up --build -d
-    - docker wait peer_main_docs_sphinx_1
-    - docker wait peer_main_docs_asyncapi_1
+    - make ENV=dev build
+    - docker wait care_dev_docs_sphinx_1
+    - docker wait care_dev_docs_asyncapi_1
+    - docker-compose -p "care_dev"  rm -f -s -v
     - tar -czvf ${PWD}/docs.tar.gz ./docs/build
     - tar -czvf ${PWD}/doc_api.tar.gz ./docs/api
   artifacts:
@@ -115,22 +92,22 @@ build-main:
 deploy-dev:
   stage: deploy
   image: alpine:3.16
-  needs: ["build-dev"]
+  needs: ["build"]
   script:
     - chmod og= $PEER_RSAKEY
     - *setup-ssh
     - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
     - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
     - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make build-dev-clean"
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=dev build-dev"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=dev build-clean"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=dev build"
   only:
   - dev
 
 deploy-main:
   stage: deploy
   image: alpine:3.16
-  needs: ["build-main"]
+  needs: ["build"]
   script:
     - chmod og= $PEER_RSAKEY
     - *setup-ssh
