@@ -5,8 +5,7 @@ node_modules
 # exclude files (except showcase doc)
 files
 !files/8852a746-360e-4c31-add2-4d1c75bfb96d.pdf
-!files/sdf/f1000_classification.yaml
-!files/sdf/sentiment_classification.json
+!files/sdf
 
 # exclude documentation
 docs
