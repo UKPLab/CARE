@@ -61,7 +61,6 @@ test:
 build:
   image:
     name: docker/compose:debian-1.29.2
-    entrypoint: [ "/bin/sh", "-c" ]
   stage: build
   #needs: ['test']
   before_script:
