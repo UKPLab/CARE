@@ -46,13 +46,14 @@
 <script>
 import Loader from "@/basic/Loader.vue";
 
-/* SideCard.vue - card template for sidebar
-
-Generic component providing a standardized card to be included in the sidebar.
-
-Author:  Nils Dycke, Dennis Zyska
-Source: -
-*/
+/**
+ * Card template for sidebar
+ *
+ * Generic component providing a standardized card to be included in the sidebar.
+ *
+ * @author: Nils Dycke, Dennis Zyska
+ *
+ */
 export default {
   name: "SideCard",
   components: {Loader},

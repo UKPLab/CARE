@@ -48,20 +48,19 @@
 </template>
 
 <script>
-/* Sidebar.vue - topbar and side toolbar  
-
-This component provides both a topbar and left toggleable side toolbar.
-
-Author: Carly Gettinger
-Co-Author: Dennis Zyska, Nils Dycke
-
-Source: left toggleable toolbar - adapted simple sidebar found at https://github.com/StartBootstrap/startbootstrap-simple-sidebar
-*/
-
+/**
+ * Sidebar for page selection
+ *
+ * This component provides left toggleable side toolbar.
+ *
+ * adapted simple sidebar found at https://github.com/StartBootstrap/startbootstrap-simple-sidebar
+ *
+ * @author Carly Gettinger, Dennis Zyska, Nils Dycke
+ */
 import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
-  name: "Sidebar",
+  name: "SidebarNavigation",
   components: {LoadIcon},
   computed: {
     sidebarElements() {

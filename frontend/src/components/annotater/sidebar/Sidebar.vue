@@ -69,19 +69,18 @@
 
 <script>
 import {mapMutations} from "vuex";
-import AnnoCard from "./AnnoCard.vue";
+import AnnoCard from "./card/AnnoCard.vue";
 import ConfirmModal from "@/basic/ConfirmModal.vue"
 import {scrollElement} from "@/assets/anchoring/scroll";
 
-/* Sidebar.vue - sidebar component
-
-Here the annotations are listed and can be modified, also includes scrolling feature.
-
-Author: Nils Dycke, Dennis Zyska
-Source: -
-*/
+/** Sidebar component of the Annotator
+ *
+ * Here the annotations are listed and can be modified, also includes scrolling feature.
+ *
+ * @author Nils Dycke, Dennis Zyska
+ */
 export default {
-  name: "Sidebar",
+  name: "AnnotationSidebar",
   components: {AnnoCard, ConfirmModal},
   props: {
     'documentId': {

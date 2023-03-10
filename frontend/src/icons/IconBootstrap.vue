@@ -13,6 +13,11 @@
 </template>
 
 <script>
+/**
+ * Display icons from bootstrap folder
+ *
+ * @author: Dennis Zyska
+ */
 import iconPath from 'bootstrap-icons/bootstrap-icons.svg';
 
 export default {

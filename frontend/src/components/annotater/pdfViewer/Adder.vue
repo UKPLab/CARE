@@ -21,20 +21,18 @@
 </template>
 
 <script>
-/* Adder.vue - add new annotations
-
-This components handles the range selector and the button to add new annotations.
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: -
-*/
+/**
+ * Add new annotations
+ *
+ * This components handles the range selector and the button to add new annotations.
+ *
+ * @author Dennis Zyska, Nils Dycke
+ */
 import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
 import {TextQuoteAnchor} from '@/assets/anchoring/types';
-import {mapMutations} from "vuex";
 
 export default {
-  name: "Adder",
+  name: "PDFAdder",
   props: {
     documentId: {
       type: Number,
@@ -52,10 +50,10 @@ export default {
   },
   data() {
     return {
-      _fadeOutBox: [],
+      fadeOutBox: [],
       isVisible: false,
       selectedRanges: [],
-      _pendingCallback: null,
+      pendingCallback: null,
     }
   },
   computed: {
@@ -74,17 +72,15 @@ export default {
     document.body.removeEventListener('mouseup', this.checkSelection);
   },
   methods: {
-    ...mapMutations({addAnnotation: "anno/ADD_ANNOTATION"}),
-
     checkSelection(event) {
       // cancel pending callbacks
-      if (this._pendingCallback) {
-        clearTimeout(this._pendingCallback);
-        this._pendingCallback = null;
+      if (this.pendingCallback) {
+        clearTimeout(this.pendingCallback);
+        this.pendingCallback = null;
       }
 
       // delay for having the right data
-      this._pendingCallback = setTimeout(() => {
+      this.pendingCallback = setTimeout(() => {
         this._onSelection(event);
       }, 10);
     },
@@ -191,7 +187,7 @@ export default {
       // generate fadeOut Box where the adder is faded out when the mouse is outside of the box
       // parameter: min_x, min_y, max_x, max_y
       const additional_size_of_box = 50;
-      this._fadeOutBox = [
+      this.fadeOutBox = [
         x - additional_size_of_box,
         y - additional_size_of_box,
         x + width + additional_size_of_box,
@@ -203,8 +199,8 @@ export default {
       this.isVisible = true;
     },
     fadeOut(event) {
-      if (event.clientX < this._fadeOutBox[0] || event.clientX > this._fadeOutBox[2]
-          || event.clientY < this._fadeOutBox[1] || event.clientY > this._fadeOutBox[3]) {
+      if (event.clientX < this.fadeOutBox[0] || event.clientX > this.fadeOutBox[2]
+          || event.clientY < this.fadeOutBox[1] || event.clientY > this.fadeOutBox[3]) {
         document.body.removeEventListener('mousemove', this.fadeOut);
         this.isVisible = false;
       }

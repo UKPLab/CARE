@@ -5,16 +5,17 @@ import {isNodeInRange} from "@/assets/anchoring/range-util";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 
-/* Highlights handling of annotation in pdf document
-
-This component creates the highlights of all the annotations inside the pdf document
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: inspired by hypothesis
-*/
+/**
+ * Highlights handling of annotation in pdf document
+ *
+ * This component creates the highlights of all the annotations inside the pdf document
+ *
+ * Adapted from Hypothes.is
+ *
+ * @author Dennis Zyska, Nils Dycke
+ */
 export default {
-  name: "Highlights",
+  name: "PDFHighlights",
   props: {
     documentId: {
       type: Number,

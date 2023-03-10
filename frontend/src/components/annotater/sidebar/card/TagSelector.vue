@@ -38,15 +38,14 @@
 <script>
 import Tags from "bootstrap5-tags/tags.js";
 
-/* TagSelector.vue - component for selecting tags in an annotation card
-
-This component provides a basic tag selection editor. Supports entering a text an converting
-them into tag badges.
-
-Author: Nils Dycke
-Co-author: Dennis Zyska
-Source: -
-*/
+/**
+ * Component for selecting tags in an annotation card
+ *
+ * This component provides a basic tag selection editor. Supports entering a text an converting
+ * them into tag badges.
+ *
+ * @author Nils Dycke, Dennis Zyska
+ */
 export default {
   name: "TagSelector",
   props: {
@@ -95,7 +94,7 @@ export default {
     },
   },
   watch: {
-    disabled2(val, value) {
+    disabled2() {
       this.$nextTick(() => {
         this.tags_element.resetState()
       })

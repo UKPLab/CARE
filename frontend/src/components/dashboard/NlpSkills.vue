@@ -14,7 +14,7 @@
       </button>
     </template>
     <template #body>
-      <Table
+      <BasicTable
         :columns="columns"
         :data="data"
         :options="options"
@@ -28,22 +28,23 @@
 <script>
 import LoadIcon from "@/icons/LoadIcon.vue";
 import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
-import Table from "@/basic/table/Table.vue"
+import BasicTable from "@/basic/table/Table.vue"
 import Card from "@/basic/Card.vue"
 
-/* NLPSkills.vue - shows the list of available nlp skills to admins
-
-This component loads all available skills as registered at the NLP broker. Each skill
-is presented in one row and allows to get the details on click in a modal.
-
-Author: Nils Dycke (dycke@ukp...)
-Source: -
-*/
+/**
+ * Shows the list of available nlp skills to admins
+ *
+ * This component loads all available skills as registered at the NLP broker. Each skill
+ * is presented in one row and allows to get the details on click in a modal.
+ *
+ * @author: Nils Dycke
+ */
 export default {
   name: "NlpSkills",
-  components: {Table, Card, NlpSkillModal, LoadIcon},
+  components: {BasicTable, Card, NlpSkillModal, LoadIcon},
   props: {
     'admin': {
+      type: Boolean,
       required: false,
       default: false
     },

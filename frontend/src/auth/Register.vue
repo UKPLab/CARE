@@ -201,21 +201,20 @@
 </template>
 
 <script>
-/* Register.vue - registration component
-
-This component provides a basic mask to enter user information
-and register a user on the server.
-
-Author: Dennis Zyska
-Co-Author: Carly Gettinger 
-Source: -
-*/
+/**
+ *  Registration component
+ *
+ *  This component provides a basic mask to enter user information
+ *  and register a user on the server.
+ *
+ *  @Author: Dennis Zyska, Carly Gettinger
+ */
 import {mapActions} from "vuex";
 import TermsModal from "./TermsModal.vue";
 import IconAsset from "@/icons/IconAsset.vue";
 
 export default {
-  name: "Register",
+  name: "AuthRegister",
   components: {TermsModal, IconAsset},
   data() {
     return {

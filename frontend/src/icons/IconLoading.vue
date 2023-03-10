@@ -9,6 +9,9 @@
 </template>
 
 <script>
+/**
+ * A simple loading icon
+ */
 export default {
   name: "IconLoading",
   props: {

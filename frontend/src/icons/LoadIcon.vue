@@ -8,9 +8,10 @@
 </template>
 
 <script>
-/* Dynamic Load Icons from bootstrap folder
-
-Author: Dennis Zyska (zyska@ukp...), Nils Dycke (dycke@ukp...)
+/**
+ * Dynamically load icons from bootstrap folder
+ *
+ * @author: Dennis Zyska, Nils Dycke
  */
 import {defineAsyncComponent} from "vue";
 import IconLoading from "./IconLoading.vue";

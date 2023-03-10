@@ -32,13 +32,13 @@
 import LoadIcon from "@/icons/LoadIcon.vue";
 import IconLoading from "@/icons/IconLoading.vue";
 
-/* SidebarButton.vue - generic button for the sidebar
-
-Generic component providing a standardized button for the sidebar card footers.
-
-Author:  Nils Dycke, Dennis Zyska
-Source: -
-*/
+/**
+ * Generic button for the sidebar
+ *
+ * Generic component providing a standardized button for the sidebar card footers.
+ *
+ * @author Nils Dycke, Dennis Zyska
+ */
 export default {
   name: "SidebarButton",
   components: {LoadIcon, IconLoading},

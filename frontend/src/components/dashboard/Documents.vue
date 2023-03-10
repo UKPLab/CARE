@@ -1,58 +1,53 @@
 <template>
-  <PublishModal ref="publishModal" />
-  <StudyModal ref="studyCoordinator" />
+  <PublishModal ref="publishModal"/>
+  <StudyModal ref="studyCoordinator"/>
   <Card title="Documents">
     <template #headerElements>
-      <button
-        class="btn btn-sm me-1 btn-secondary"
-        type="button"
-        title="Export"
+      <ButtonHeader
+        icon="cloud-arrow-down"
+        title="Export All"
+        class="btn-secondary"
         @click="exportAll()"
-      >
-        <LoadIcon
-          icon-name="cloud-arrow-down"
-        />
-        Export all
-      </button>
-      <Upload @addedDoc="onAddedDoc" />
+      />
+      <Upload
+          @addedDoc="onAddedDoc"
+      />
     </template>
     <template #body>
-      <Table
-        :columns="columns"
-        :data="docs"
-        :options="options"
-        @action="action"
+      <BasicTable
+          :columns="columns"
+          :data="docs"
+          :options="options"
+          @action="action"
       />
     </template>
   </Card>
-  <ExportAnnos ref="export" />
-  <ConfirmModal ref="deleteConf" />
+  <ExportAnnos ref="export"/>
+  <ConfirmModal ref="deleteConf"/>
 </template>
 
 <script>
-import {mapGetters} from "vuex";
 import Upload from "./documents/Upload.vue";
 import PublishModal from "./documents/PublishModal.vue";
 import ExportAnnos from "@/basic/download/ExportAnnos.vue";
 import Card from "@/basic/Card.vue";
-import Table from "@/basic/table/Table.vue";
-import LoadIcon from "@/icons/LoadIcon.vue";
+import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "./study/StudyModal.vue";
 import ConfirmModal from "@/basic/ConfirmModal.vue";
+import ButtonHeader from "@/basic/card/ButtonHeader.vue";
 
-/* Documents.vue - document list component
-
-This component loads the user-specific documents from the server
-and allows to interact with them. The user can delete existing
-documents or access the annotator view for the respective pdf.
-
-Author: Nils Dycke (dycke@ukp...)
-Co-Author:  Dennis Zyska (zyska@ukp...)
-Source: -
-*/
+/**
+ * Document list component
+ *
+ * This component loads the user-specific documents from the server
+ * and allows to interact with them. The user can delete existing
+ * documents or access the annotator view for the respective pdf.
+ *
+ * @author Nils Dycke, Dennis Zyska
+ */
 export default {
-  name: "Document",
-  components: {StudyModal, Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal, ConfirmModal},
+  name: "DashboardDocument",
+  components: {StudyModal, Upload, ExportAnnos, Card, BasicTable, ButtonHeader, PublishModal, ConfirmModal},
   data() {
     return {
       options: {
@@ -79,10 +74,6 @@ export default {
       ]
     }
   },
-  mounted() {
-    this.$socket.emit("documentGetAll");
-    this.$socket.emit("studyGetAll", {userId: this.$store.getters["auth/getUserId"]});
-  },
   computed: {
     documents() {
       return this.$store.getters["document/getDocuments"];
@@ -92,7 +83,7 @@ export default {
     },
     docs() {
       return this.documents.filter(doc => doc.userId === this.userId).map(d => {
-        let newD = {... d};
+        let newD = {...d};
         newD.manage = [
           {
             icon: "box-arrow-in-right",
@@ -159,11 +150,14 @@ export default {
     studiesEnabled() {
       return this.$store.getters["settings/getValue"]('app.study.enabled') === "true";
     },
-    ...mapGetters({reviews: 'user/getReviews'})
+  },
+  mounted() {
+    this.$socket.emit("documentGetAll");
+    this.$socket.emit("studyGetAll", {userId: this.$store.getters["auth/getUserId"]});
   },
   methods: {
     action(data) {
-      switch(data.action){
+      switch (data.action) {
         case "accessDoc":
           this.accessDoc(data.params);
           break;
@@ -181,7 +175,7 @@ export default {
     async deleteDoc(row) {
       const studies = this.$store.getters["study/getStudiesByDocument"](row.id);
       let warning;
-      if(studies && studies.length > 0){
+      if (studies && studies.length > 0) {
         warning = ` There ${studies.length !== 1 ? 'are' : 'is'} currently ${studies.length} ${studies.length !== 1 ? 'studies' : 'study'}
          running on this document. Deleting it will delete the ${studies.length !== 1 ? 'studies' : 'study'}!`
       } else {
@@ -192,11 +186,11 @@ export default {
           "Delete Document",
           "Are you sure you want to delete the document?",
           warning,
-          function(val) {
-            if(val){
+          function (val) {
+            if (val) {
               this.$socket.emit("documentUpdate", {documentId: row.id, deleted: true});
             }
-      });
+          });
     },
     renameDoc(row) {
       this.$socket.emit("documentUpdate", {documentId: row.id, document: {name: "default_name"}});

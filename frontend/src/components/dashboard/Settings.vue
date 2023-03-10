@@ -42,7 +42,7 @@
                     <p class="card-text">
                       <LoadIcon v-if="s.type === 'html'" class="mx-2" iconName="border-style"
                                 v-on:click="openEditor(s)"></LoadIcon>
-                    <div v-else-if="s.type === 'boolean' || s.type === 'bool'" class="form-check form-switch">
+                      <div v-else-if="s.type === 'boolean' || s.type === 'bool'" class="form-check form-switch">
                       <input ref="nlpSwitch" v-model="s.value" :checked="s.value"
                              class="form-check-input" role="switch" title="Activate/Deactivate NLP support"
                              type="checkbox">
@@ -69,13 +69,13 @@ import Loading from "@/basic/Loading.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 
-/* Settings.vue - dashboard component for handling settings by admins
-
-Author: Dennis Zyska
-Source: -
-*/
+/**
+ * Dashboard component for handling settings by admins
+ *
+ * @author: Dennis Zyska
+ */
 export default {
-  name: "Settings",
+  name: "DashboardSettings",
   components: {EditorModal, LoadIcon, Loading},
   data: function () {
     return {

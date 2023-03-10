@@ -7,13 +7,14 @@ import App from './App.vue'
 import SocketIO from 'socket.io-client';
 import VueSocketIO from 'vue-3-socket.io';
 import store from "./store";
-import router from './routes';
+import router from './router';
 
 const app = Vue.createApp({
     render: () => Vue.h(App)
 });
 
 // activate devtools in development mode
+// eslint-disable-next-line no-undef
 if (process.env.NODE_ENV !== 'production') {
     app.config.devtools = true;
 }
@@ -34,6 +35,7 @@ app.use(BToastPlugin);
 import getServerURL from '@/assets/serverUrl.js';
 
 app.use(new VueSocketIO({
+    // eslint-disable-next-line no-undef
     debug: (process.env.NODE_ENV !== 'production'),
     connection: SocketIO(getServerURL(),
         {
