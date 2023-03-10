@@ -46,21 +46,21 @@
 </template>
 
 <script>
+/**
+ * Document view in study mode
+ *
+ * Loads a document in study mode; if a study session is provided, the session is loaded instead. Otherwise,
+ * the user is prompted to start a study (or resume an existing session).
+ *
+ * @author Dennis Zyska
+ */
 import StudyModal from "@/components/study/StudyModal.vue";
-import Annotater from "./Annotater.vue";
+import Annotater from "./annotater/Annotater.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 
-/* Study.vue - document view in study mode
-
-Loads a document in study mode; if a study session is provided, the session is loaded instead. Otherwise,
-the user is prompted to start a study (or resume an existing session).
-
-Author: Dennis Zyska
-Source: -
-*/
 export default {
-  name: "Study",
+  name: "StudyRoute",
   components: {LoadIcon, FinishModal, StudyModal, Annotater},
   props: {
     'studyHash': {

@@ -30,12 +30,12 @@ const routes = [
     },
     {
         path: "/login",
-        component: () => import("@/components/auth/Login.vue"),
+        component: () => import("@/auth/Login.vue"),
         meta: {requiresAuth: false, hideTopbar: true}
     },
     {
         path: "/register",
-        component: () => import("@/components/auth/Register.vue"),
+        component: () => import("@/auth/Register.vue"),
         meta: {requiresAuth: false, hideTopbar: true}
     },
     {

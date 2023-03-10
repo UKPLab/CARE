@@ -25,24 +25,29 @@
 </template>
 
 <script>
-import Sidebar from "./navigation/Sidebar.vue";
+/**
+ * Dashboard Component
+ *
+ * This view shows the dashboard after login and loads the navigation components
+ * including the sidebar
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ */
+import Sidebar from "./dashboard/navigation/Sidebar.vue";
 import {defineAsyncComponent} from "vue";
 import Loading from "@/basic/Loading.vue";
 import Dashboard from "./Dashboard.vue";
 import NotFoundPage from "@/basic/NotFound.vue";
 
-/* Dashboard.vue - Dashboard Handler
-
-This view shows the dashboard after login and loads the navigation components
-including the sidebar
-
-Author: Dennis Zyska, Nils Dycke
-Source: -
-*/
 export default {
-  name: "Dashboard",
+  name: "DashboardRoute",
   components: {Loading, Sidebar},
-  props: ["catchAll"],
+  props: {
+    "catchAll": {
+      type: String,
+      default: undefined
+    }
+  },
   computed: {
     navElements() {
       return this.$store.getters['navigation/getSidebarElementsFlat'];
@@ -51,10 +56,7 @@ export default {
       return this.$store.getters['settings/getSettings'];
     },
     currentComponent() {
-      if (this.navElements === null || this.settings === null) {
-        return Loading;
-      } else {
-
+      if (this.navElements && this.settings) {
         let component = this.navElements.find(element => element.name === this.$route.name);
         if (component === undefined) {
           component = this.navElements.find(e => e.name === this.settings["dashboard.navigation.component.default"]);
@@ -69,7 +71,7 @@ export default {
     },
   },
   watch: {
-    navElements(newValue, oldValue) {
+    navElements() {
       this.createNavigation();
     }
   },
@@ -78,8 +80,6 @@ export default {
     this.createNavigation();
   },
   methods: {
-
-
     async createNavigation() {
 
       if (this.navElements === null) return;
@@ -126,7 +126,7 @@ export default {
 }
 
 #viewerContainer::-webkit-scrollbar {
-  display:none;
+  display: none;
 }
 
 </style>

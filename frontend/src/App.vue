@@ -1,18 +1,23 @@
 <template>
-  <Topbar v-if="!hideTopbar" />
+  <TopBar v-if="!hideTopbar" />
   <Toast />
   <router-view class="top-padding" />
 </template>
 
 <script>
 import Toast from "@/basic/Toast.vue";
-import Topbar from "@/components/navigation/Topbar.vue";
+import TopBar from "@/basic/Topbar.vue";
 
+/**
+ * Main App Component
+ *
+ * @author Dennis Zyska, Nils Dycke
+ */
 export default {
   name: "App",
-  components: {Topbar, Toast},
+  components: {TopBar, Toast},
   sockets: {
-    logout: function (data) {
+    logout: function () {
       this.$router.push("/login");
     }
   },

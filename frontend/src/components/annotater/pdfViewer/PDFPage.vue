@@ -46,13 +46,14 @@
 </template>
 
 <script>
-/* PDFPage.vue - pdf page
+/**
+ *  Rendering a single pdf page
+ *
+ *  This component holds a single pdf page and includes the rendering itself
+ *
+ *  @author Dennis Zyska, Nils Dycke
+ */
 
-This component holds a single pdf page and includes the rendering itself
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
 import * as pdfjsLib from "pdfjs-dist/build/pdf.js"
 import {ObserveVisibility} from 'vue3-observe-visibility'
 import debounce from 'lodash.debounce';
@@ -61,14 +62,6 @@ import Highlights from "./Highlights.vue";
 import {Anchoring} from "@/assets/pdfViewer/anchor.js";
 import Loader from "@/basic/Loader.vue";
 
-/* PDFPage.vue -- an actual pdf page shown ion the viewer
-
-Showing a PDF page as loaded from the store. Rendered using pdfjs.
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: -
-*/
 export default {
   name: 'PDFPage',
   components: {Loader, Highlights},
@@ -77,7 +70,8 @@ export default {
   },
   props: {
     pdf: {
-      type: Object
+      type: Object,
+      default: null,
     },
     pageNumber: {
       type: Number,
@@ -120,7 +114,7 @@ export default {
     render() {
       this.init();
     },
-    annotations(newVal, oldVal) {
+    annotations() {
       if (this.isRendered)
         this.add_anchors();
     },

@@ -34,20 +34,20 @@
 
 <script>
 import Loader from "@/basic/Loader.vue"
-import Annotater from "@/components/Annotater.vue";
+import Annotater from "@/components/annotater/Annotater.vue";
 import ReviewModal from "@/components/study/ReviewModal.vue";
 import ReportModal from "@/components/study/ReportModal.vue";
 
-/* Review.vue - document view in reviewing mode
-
-Loads a document and study session in reviewing mode, i.e. readonly and with the option to assess an existing
-study session.
-
-Author: Dennis Zyska
-Source: -
-*/
+/**
+ *  Document view in reviewing mode
+ *
+ * Loads a document and study session in reviewing mode, i.e. readonly and with the option to assess an existing
+ * study session.
+ *
+ * @author Dennis Zyska
+ */
 export default {
-  name: "Review",
+  name: "ReviewRoute",
   components: {ReviewModal, Loader, Annotater, ReportModal},
   props: {
     'studySessionHash': {

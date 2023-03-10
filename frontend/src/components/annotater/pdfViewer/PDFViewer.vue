@@ -1,5 +1,6 @@
 <template>
-  <div v-if="pdf"
+  <div
+    v-if="pdf"
     id="pdfContainer"
     class="has-transparent-text-layer"
   >
@@ -31,17 +32,17 @@ import * as pdfjsLib from "pdfjs-dist/build/pdf.js"
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 
 import Adder from "./Adder.vue";
-import {mapMutations} from "vuex";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-/* PDF Viewer
-
-This component holds the PDF Pages and the all interacting vue components.
-Central PDF View component.
-
-Author: Dennis Zyska
-*/
+/**
+ * PDF Viewer
+ *
+ * This component holds the PDF Pages and the all interacting vue components.
+ * Central PDF View component.
+ *
+ * @author Dennis Zyska
+ */
 export default {
   name: "PDFViewer",
   components: {PDFPage, Adder},
@@ -131,9 +132,6 @@ export default {
         }
       })
     },
-    ...mapMutations({
-      toggleSidebar: "anno/TOGGLE_SIDEBAR"
-    }),
   },
 
 }

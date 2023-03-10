@@ -23,15 +23,14 @@
 </template>
 
 <script>
+/** Show terms in a modal
+ *
+ * Shows a modal containing the terms set in the database for users to confirm upon registration.
+ *
+ * @author: Dennis Zyska
+ */
 import Modal from "@/basic/Modal.vue";
 
-/* TermsModal.vue - show terms
-
-Shows a modal containing the terms.txt for users to confirm upon registration.
-
-Author: Dennis Zyska
-Source: -
-*/
 export default {
   name: "TermsModal",
   components: {Modal},

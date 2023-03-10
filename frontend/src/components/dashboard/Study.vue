@@ -13,7 +13,7 @@
         </button>
       </template>
       <template #body>
-        <Table
+        <BasicTable
           :columns="columns"
           :data="studies"
           :options="options"
@@ -27,19 +27,18 @@
 
 <script>
 import Card from "@/basic/Card.vue";
-import Table from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "@/components/dashboard/study/StudyModal.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 
-/* Study.vue - dashboard component for handling studies
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: -
-*/
+/**
+ * Dashboard component for handling studies
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ */
 export default {
-  name: "Study",
-  components: {Card, Table, StudyModal, StudySessionModal},
+  name: "DashboardStudy",
+  components: {Card, BasicTable, StudyModal, StudySessionModal},
   props: {},
   data() {
     return {

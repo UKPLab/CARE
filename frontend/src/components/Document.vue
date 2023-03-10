@@ -12,21 +12,21 @@
 </template>
 
 <script>
-import Annotater from "./Annotater.vue";
+/**
+ * Standard document view without sessions, studies or reviews
+ *
+ * Loads a document, allows the user to annotate the document. The annotations are not associated with a study or
+ * session. The users may simply share the link to this view after publication, to allow other users to
+ * collaboratively work on a paper.
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ */
+
+import Annotater from "./annotater/Annotater.vue";
 import Loader from "@/basic/Loader.vue";
 
-/* Document.vue - standard document view without sessions, studies or reviews
-
-Loads a document, allows the user to annotate the document. The annotations are not associated with a study or
-session. The users may simply share the link to this view after publication, to allow other users to
-collaboratively work on a paper.
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: -
-*/
 export default {
-  name: "Document",
+  name: "DocumentRoute",
   components: {Annotater, Loader},
   async beforeRouteLeave(to, from){
     return await this.confirmLeave();

@@ -15,15 +15,14 @@
 import Study from "./Study.vue";
 import Loader from "@/basic/Loader.vue"
 
-/* StudySession.vue - document view in study session mode
-
-Loads an existing study session, allows to resume session (if resumable) and manages timing etc.
-Uses the study component, but overlays the information that there is already a session existing.
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: -
-*/
+/**
+ * Document view in study session mode
+ *
+ * Loads an existing study session, allows resuming session (if resumable) and manages timing etc.
+ * Uses the study component, but overlays the information that there is already a session existing.
+ *
+ * @author Dennis Zyska
+ */
 export default {
   name: "StudySession",
   components: {Study, Loader},

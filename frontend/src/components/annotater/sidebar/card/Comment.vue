@@ -159,15 +159,15 @@ import TagSelector from "./TagSelector.vue";
 import IconLoading from "@/icons/IconLoading.vue";
 import LoadIcon from "@/icons/LoadIcon.vue"
 import Collaboration from "@/basic/Collaboration.vue"
-import SidebarButton from "./SidebarButton.vue"
+import SidebarButton from "./Button.vue"
 
-/* CommentCard.vue - comment card in the sidebar
-
-SideCard, which contains only a comment, but no annotation.
-
-Author: Nils Dycke, Dennis Zyska
-Source: -
-*/
+/**
+ * Comment card in the sidebar
+ *
+ * SideCard, which contains only a comment, but no annotation.
+ *
+ * @author: Nils Dycke, Dennis Zyska
+ */
 export default {
   name: "CommentCard",
   components: {TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration},

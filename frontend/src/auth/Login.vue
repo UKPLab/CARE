@@ -130,20 +130,18 @@
 </template>
 
 <script>
-/* Login.vue - login component
-
-This component provides a form to enter user credentials and hereby
-login on the server. It links to the registration component.
-
-Author: Dennis Zyska
-Co-Author:  Nils Dycke, Carly Gettinger
-Source: -
-*/
+/** Login component
+ *
+ * This component provides a form to enter user credentials and hereby
+ * login on the server. It links to the registration component.
+ *
+ * @author: Dennis Zyska, Nils Dycke, Carly Gettinger
+ */
 import {mapActions} from "vuex";
 import IconAsset from "@/icons/IconAsset.vue";
 
 export default {
-  name: "Login",
+  name: "AuthLogin",
   components: {IconAsset},
   data() {
     return {

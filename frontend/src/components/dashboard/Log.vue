@@ -1,7 +1,7 @@
 <template>
   <Card title="Logs">
     <template #body>
-      <Table
+      <BasicTable
         :columns="columns"
         :data="data"
         :options="options"
@@ -11,19 +11,18 @@
 </template>
 
 <script>
-import Table from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/table/Table.vue";
 import Card from "@/basic/Card.vue";
 
-/* Log.vue - shows the table of logs stored in the DB
-
-This component loads the logs stored in the DB to present them to admin users.
-
-Author: Dennis Zyska
-Source: -
-*/
+/** Show the logs stored in the DB
+ *
+ * This component loads the logs stored in the DB to present them to admin users.
+ *
+ * @author Dennis Zyska
+ */
 export default {
-  name: "Log",
-  components: {Card, Table},
+  name: "DashboardLog",
+  components: {Card, BasicTable},
   data() {
     return {
       options: {

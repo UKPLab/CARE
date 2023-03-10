@@ -44,13 +44,13 @@ import StudySessionTable from "@/components/dashboard/study/StudySessionTable.vu
 import Timer from "@/basic/Timer.vue";
 import {getTimeDiffString} from "@/assets/utils";
 
-/* StudySession.vue - dashboard component for handling study sessions
-
-Author: Nils Dycke
-Source: -
-*/
+/**
+ * Dashboard component for handling study sessions
+ *
+ * @author: Nils Dycke
+ */
 export default {
-  name: "StudySession",
+  name: "DashboardStudySession",
   components: {Card, LoadIcon, StudySessionTable, Timer},
   props: {},
   data() {

@@ -38,7 +38,7 @@
       >
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
-      <CommentCard
+      <Comment
         ref="main_comment"
         :comment-id="commentId"
         :document-id="documentId"
@@ -142,7 +142,7 @@
           v-for="c in childComments"
           :key="c.id"
         >
-          <CommentCard
+          <Comment
             :readonly="readonly"
             :study-session-id="studySessionId"
             :comment-id="c.id"
@@ -156,23 +156,23 @@
 </template>
 
 <script>
-import SideCard from "./SideCard.vue";
-import CommentCard from "./CommentCard.vue";
+import SideCard from "./Card.vue";
+import Comment from "./Comment.vue";
 import Collaboration from "@/basic/Collaboration.vue"
-import SidebarButton from "./SidebarButton.vue"
+import SidebarButton from "./Button.vue"
 
 import NLPService from "@/basic/NLPService.vue";
 
-/* AnnoCard.vue - annotation elements
-
-This component holds the current data of each annotation with a comment (and its children).
-
-Author: Nils Dycke, Dennis Zyska
-Source: -
-*/
+/** Annotation elements
+ *
+ * This component holds the current data of each annotation with a comment (and its children).
+ *
+ * @author Nils Dycke, Dennis Zyska
+ *
+ */
 export default {
   name: "AnnoCard",
-  components: {NLPService, Collaboration, SideCard, CommentCard, SidebarButton},
+  components: {NLPService, Collaboration, SideCard, Comment, SidebarButton},
   props: {
     'studySessionId': {
       type: Number,

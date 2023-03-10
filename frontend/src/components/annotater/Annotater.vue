@@ -126,16 +126,15 @@
 </template>
 
 <script>
-/* Annotator.vue - annotation view
-
-This parent component provides the annotation view, which
-currently consists of all elements of the annotator.
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
-import PDFViewer from "./annotater/pdfViewer/PDFViewer.vue";
-import Sidebar from "./annotater/sidebar/Sidebar.vue";
+/** Annotator Component
+ *
+ * This parent component provides the annotation view, which
+ * currently consists of all elements of the annotator.
+ *
+ * @author Dennis Zyska
+ */
+import PDFViewer from "./pdfViewer/PDFViewer.vue";
+import Sidebar from "./sidebar/Sidebar.vue";
 import Loader from "@/basic/Loader.vue";
 import ExportAnnos from "@/basic/download/ExportAnnos.vue"
 import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
@@ -143,12 +142,11 @@ import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
 import LoadIcon from "@/icons/LoadIcon.vue";
-import ExpandMenu from "./navigation/ExpandMenu.vue";
+import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 
-
 export default {
-  name: "Annotater",
+  name: "AnnotaterComponent",
   components: {
     LoadIcon,
     PDFViewer,

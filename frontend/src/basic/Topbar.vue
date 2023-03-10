@@ -71,22 +71,21 @@
 </template>
 
 <script>
-/* Topbar.vue - topbar shown everywhere throughout the app
-
-This component provides both a topbar that is visible at any point in the app
-after logging in. It includes standard utilities and navigation elements
-appropriate for the context.
-
-Author: Carly Gettinger, Dennis Zyska, Nils Dycke
-Co-Author: 
-Source:  
+/**
+ *  Topbar shown everywhere throughout the app
+ *
+ * This component provides both a topbar that is visible at any point in the app
+ * after logging in. It includes standard utilities and navigation elements
+ * appropriate for the context.
+ *
+ * @author: Carly Gettinger, Dennis Zyska, Nils Dycke
 */
 
 import LoadIcon from "@/icons/LoadIcon.vue";
 import IconAsset from "@/icons/IconAsset.vue";
 
 export default {
-  name: "Topbar",
+  name: "TopBar",
   components: {LoadIcon, IconAsset},
   computed: {
     username() {
