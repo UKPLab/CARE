@@ -26,6 +26,7 @@ help:
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make clean             				Delete development files"
 	@echo "make lint             				Run linter (only frontend)"
+	@echo "make kill             				Kill all node instances (only unix)"
 
 .PHONY: doc
 doc: doc_asyncapi doc_sphinx
@@ -120,6 +121,14 @@ clean: check_clean
 	find files -maxdepth 1 -type f ! -name "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" -exec rm {} \;
 	docker-compose rm -f -s -v
 	docker network rm care_default || echo "IGNORING ERROR"
+
+.PHONY: check_kill
+check_kill:
+	@echo -n "Are you sure? This will kill node instances running on your system! [y/N] " && read ans && [ $${ans:-N} = y ]
+
+.PHONY: kill
+kill: check_kill
+	killall node
 
 frontend/node_modules/.uptodate: frontend/package.json frontend/package-lock.json
 	cd frontend && npm install
