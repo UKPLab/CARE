@@ -4,6 +4,7 @@ stages:          # List of stages for jobs, and their order of execution
   - test
   - build
   - deploy
+  - lint
 
 variables:
   DOCKER_HOST: tcp://docker:2375
@@ -117,3 +118,19 @@ deploy-main:
     - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=main build"
   only:
     - main
+
+lint:
+  image:
+    name: docker/compose:debian-1.29.2
+  stage: lint
+  needs: []
+  allow_failure: true
+  before_script:
+    - *add-debian-mirror
+    - docker info
+    - docker version
+    - docker-compose version
+    - *setup-nvm
+    - apt update && apt install make -y
+  script:
+    - make lint

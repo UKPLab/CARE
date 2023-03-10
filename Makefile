@@ -25,6 +25,7 @@ help:
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make clean             				Delete development files"
+	@echo "make lint             				Run linter (only frontend)"
 
 .PHONY: doc
 doc: doc_asyncapi doc_sphinx
@@ -49,6 +50,10 @@ doc_clean:
 .PHONY: test
 test: backend/node_modules/.uptodate
 	cd backend && npm run test
+
+.PHONY: lint
+lint: frontend/node_modules/.uptodate
+	cd frontend && npm run frontend-lint
 
 .PHONY: docker
 docker:
