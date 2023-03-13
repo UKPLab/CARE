@@ -1,12 +1,12 @@
 <template>
   <button
-      v-if="icon"
       :title="title"
       class="btn btn-sm me-1"
       type="button"
       @click="action"
   >
     <LoadIcon
+        v-if="icon"
         :icon-name="icon"
     />
     {{ title }}

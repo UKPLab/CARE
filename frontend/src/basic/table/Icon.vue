@@ -6,7 +6,7 @@
 import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
-  name: "Icon",
+  name: "TableIcon",
   components: {LoadIcon},
   props: {
     value: {
