@@ -1,43 +1,36 @@
 <template>
   <span
-    :class="badgeClass"
-    class="badge"
+      v-tooltip="'tooltip' in value"
+      :class="badgeClass"
+      :title="'tooltip' in value ? value.tooltip : ''"
+      class="badge"
+      data-bs-html="true"
+      data-bs-placement="top"
+      data-bs-toggle="tooltip"
   >
-    {{ displayValue }}
+    {{ value.text }}
   </span>
 </template>
 
 <script>
+import {tooltip} from "@/assets/tooltip.js";
+
 export default {
-  name: "Badge",
+  name: "TableColumnBadge",
+  directives: {
+    'tooltip': tooltip
+  },
   props: {
     value: {
-      type: String,
+      type: Object,
       required: true
     },
-    options: {
-      type: Object,
-      required: false,
-      default: null
-    }
   },
   computed: {
     badgeClass() {
-      return (this.options && this.options.classMapping && this.options.classMapping[this.value])
-          ? this.options.classMapping[this.value] : this.defaultBadgeClass();
+      return (this.value && this.value.class)
+          ? this.value.class : 'bg-black';
     },
-    defaultBadgeClass() {
-      return (this.options && this.options.classMapping && this.options.classMapping.default)
-          ? this.options.classMapping.default : 'bg-black';
-    },
-    displayValue() {
-      return (this.options && this.options.keyMapping && this.options.keyMapping[this.value])
-          ? this.options.keyMapping[this.value] : this.defaultDisplayValue;
-    },
-    defaultDisplayValue() {
-      return (this.options && this.options.keyMapping && this.options.keyMapping.default)
-          ? this.options.keyMapping.default : this.value;
-    }
   }
 }
 </script>

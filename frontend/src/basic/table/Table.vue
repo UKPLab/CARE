@@ -1,17 +1,17 @@
 <template>
   <table
-    :class="tableClass"
-    class="table"
+      :class="tableClass"
+      class="table"
   >
     <thead>
-      <tr>
-        <th v-if="selectableRows" />
-        <th
+    <tr>
+      <th v-if="selectableRows"/>
+      <th
           v-for="c in columns"
           :key="c"
-        >
-          {{ c.name }}
-          <LoadIcon
+      >
+        {{ c.name }}
+        <LoadIcon
             v-if="c.sortable"
             :class="{'bg-success':(sortColumn === c.key),
                      'bg-opacity-50':(sortColumn === c.key),
@@ -21,80 +21,94 @@
             class="me-1"
             style="cursor: pointer"
             @click="sort(c.key)"
-          />
-        </th>
-      </tr>
+        />
+      </th>
+    </tr>
     </thead>
     <tbody>
-      <tr v-if="!data || data.length === 0">
-        <td
+    <tr v-if="!data || data.length === 0">
+      <td
           :colspan="columns.length"
           class="text-center"
-        >
-          No data
-        </td>
-      </tr>
-      <tr
+      >
+        No data
+      </td>
+    </tr>
+    <tr
         v-for="r in tableData"
         v-else
         :key="r"
-      >
-        <td v-if="selectableRows">
-          <div class="form-check">
-            <input
+    >
+      <td v-if="selectableRows">
+        <div class="form-check">
+          <input
               class="form-check-input"
               type="checkbox"
               @input="e => selectRow(e.target.checked, r)"
-            >
-          </div>
-        </td>
-        <td
+          >
+        </div>
+      </td>
+      <td
           v-for="c in columns"
           :key="c"
-        >
+      >
           <span v-if="c.key in r">
             <TIcon
-              v-if="c.type === 'icon'"
-              :value="r[c.key]"
+                v-if="c.type === 'icon'"
+                :value="r[c.key]"
             />
             <TBadge
-              v-else-if="c.type === 'badge'"
-              :options="c.typeOptions"
-              :value="r[c.key]"
+                v-else-if="c.type === 'badge'"
+                :value="r[c.key]"
             />
             <TButton
-              v-else-if="c.type === 'button'"
-              :icon="r[c.key].icon"
-              :action="r[c.key].action"
-              :options="r[c.key].options"
-              :params="r"
-              :title="r[c.key].title"
-              @action="actionEmitter"
+                v-else-if="c.type === 'button'"
+                :action="r[c.key].action"
+                :icon="r[c.key].icon"
+                :options="r[c.key].options"
+                :params="r"
+                :title="r[c.key].title"
+                @action="actionEmitter"
             />
             <TButtonGroup
-              v-else-if="c.type === 'button-group'"
-              :buttons="r[c.key]"
-              :params="r"
-              @action="actionEmitter"
+                v-else-if="c.type === 'button-group'"
+                :buttons="r[c.key]"
+                :params="r"
+                @action="actionEmitter"
             />
+            <span v-else-if="c.type === 'datetime'">
+              {{ new Date(r[c.key]).toLocaleString() }}
+            </span>
 
-            <span v-else>
+            <span v-else-if="c.type === 'icon-selector'">
+              <LoadIcon v-if="r[c.key].selected" :icon-name="r[c.key].icon" :size="16" style="color:yellowgreen;" />
+              <LoadIcon v-else
+                  v-tooltip
+                  :icon-name="r[c.key].icon"
+                  :size="16"
+                  :title="r[c.key].title"
+                  role="button"
+                  @click="actionEmitter({action: r[c.key].action, params: r})"
+              />
+            </span>
+
+      <span v-else>
               {{ r[c.key] }}
             </span>
-          </span>
-          <span v-else>
+      </span>
+        <span v-else>
             -
           </span>
-        </td>
-      </tr>
+      </td>
+    </tr>
     </tbody>
   </table>
   <Pagination
-    v-if="options && options.pagination"
-    ref="pagination"
-    :pages="pages"
-    :current-page="currentPage"
-    @page-change="(x) => currentPage = x"
+      v-if="options && options.pagination"
+      ref="pagination"
+      :current-page="currentPage"
+      :pages="pages"
+      @page-change="(x) => currentPage = x"
   />
 </template>
 
@@ -105,22 +119,24 @@ import TBadge from "./Badge.vue";
 import TIcon from "./Icon.vue";
 import Pagination from "./Pagination.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
+import {tooltip} from "@/assets/tooltip.js";
 
-/* Table.vue - generic table with feature-rich API
-
-Use this component for tabulating data with a diverse API for interactions like buttons or row selection.
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: -
-*/
+/**
+ * generic table with feature-rich API
+ *
+ * Use this component for tabulating data with a diverse API for interactions like buttons or row selection.
+ *
+ * @author Dennis Zyska, Nils Dycke
+ */
 export default {
-  name: "Table",
+  name: "BasicTable",
   components: {Pagination, TIcon, TBadge, TButtonGroup, TButton, LoadIcon},
+  directives: {tooltip},
   props: {
     data: {
       type: Array,
-      required: false
+      required: false,
+      default: () => []
     },
     columns: {
       type: Array,
@@ -129,7 +145,8 @@ export default {
     options: {
       type: Object,
       required: false,
-      default: {}
+      default: () => {
+      }
     }
   },
   emits: ["action", "rowSelection"],
@@ -180,10 +197,10 @@ export default {
   },
   watch: {
     pages(val) {
-      if(val === 0){
+      if (val === 0) {
         this.currentPage = 1;
-      } else if(this.currentPage > val){
-          this.currentPage = val;
+      } else if (this.currentPage > val) {
+        this.currentPage = val;
       }
     }
   },
@@ -196,15 +213,15 @@ export default {
       }
       this.sortColumn = column;
     },
-    actionEmitter(data){
+    actionEmitter(data) {
       this.$emit("action", data);
       this.$socket.emit("stats", {
         action: "actionClick",
         data: data
       });
     },
-    selectRow(action, row){
-      if(this.selectableRows) {
+    selectRow(action, row) {
+      if (this.selectableRows) {
         if (action) {
           this.selectedRows.push(row);
         } else {

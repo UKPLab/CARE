@@ -4,10 +4,10 @@
   <Card title="Documents">
     <template #headerElements>
       <ButtonHeader
-        icon="cloud-arrow-down"
-        title="Export All"
-        class="btn-secondary"
-        @click="exportAll()"
+          class="btn-secondary"
+          icon="cloud-arrow-down"
+          title="Export All"
+          @click="exportAll()"
       />
       <Upload
           @addedDoc="onAddedDoc"
@@ -63,12 +63,8 @@ export default {
         {name: "Created At", key: "createdAt"},
         {
           name: "Public",
-          key: "public",
+          key: "publicBadge",
           type: "badge",
-          typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
-            classMapping: {true: "bg-success", false: "bg-danger"}
-          }
         },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
@@ -84,6 +80,10 @@ export default {
     docs() {
       return this.documents.filter(doc => doc.userId === this.userId).map(d => {
         let newD = {...d};
+        newD.publicBadge = {
+          class: newD.public ? "bg-success" : "bg-danger",
+          text: newD.public ? "Yes" : "No"
+        }
         newD.manage = [
           {
             icon: "box-arrow-in-right",
