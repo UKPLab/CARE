@@ -1,6 +1,4 @@
 <template>
-  <PublishModal ref="publishModal"/>
-  <StudyModal ref="studyCoordinator"/>
   <Card title="Documents">
     <template #headerElements>
       <ButtonHeader
@@ -9,8 +7,11 @@
           title="Export All"
           @click="exportAll()"
       />
-      <Upload
-          @addedDoc="onAddedDoc"
+      <ButtonHeader
+          class="btn-primary"
+          title="Add document"
+          text="Add"
+          @click="$refs.uploadModal.open()"
       />
     </template>
     <template #body>
@@ -22,12 +23,14 @@
       />
     </template>
   </Card>
+  <PublishModal ref="publishModal"/>
+  <StudyModal ref="studyCoordinator"/>
   <ExportAnnos ref="export"/>
   <ConfirmModal ref="deleteConf"/>
+  <UploadModal ref="uploadModal"/>
 </template>
 
 <script>
-import Upload from "./documents/Upload.vue";
 import PublishModal from "./documents/PublishModal.vue";
 import ExportAnnos from "@/basic/download/ExportAnnos.vue";
 import Card from "@/basic/Card.vue";
@@ -35,6 +38,7 @@ import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "./study/StudyModal.vue";
 import ConfirmModal from "@/basic/ConfirmModal.vue";
 import ButtonHeader from "@/basic/card/ButtonHeader.vue";
+import UploadModal from "./documents/UploadModal.vue";
 
 /**
  * Document list component
@@ -47,7 +51,16 @@ import ButtonHeader from "@/basic/card/ButtonHeader.vue";
  */
 export default {
   name: "DashboardDocument",
-  components: {StudyModal, Upload, ExportAnnos, Card, BasicTable, ButtonHeader, PublishModal, ConfirmModal},
+  components: {
+    StudyModal,
+    ExportAnnos,
+    UploadModal,
+    Card,
+    BasicTable,
+    ButtonHeader,
+    PublishModal,
+    ConfirmModal
+  },
   data() {
     return {
       options: {

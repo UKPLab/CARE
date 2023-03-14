@@ -9,7 +9,7 @@
         v-if="icon"
         :icon-name="icon"
     />
-    {{ title }}
+    {{ buttonText }}
   </button>
 </template>
 
@@ -27,15 +27,26 @@ export default {
     },
     title: {
       type: String,
-      required: true,
+      required: false,
+      default: null
     },
     "props": {
       type: Object,
       required: false,
       default: null
     },
+    text: {
+      type: String,
+      required: false,
+      default: null
+    },
   },
   emits: ["click"],
+  computed: {
+    buttonText() {
+      return this.text ? this.text : this.title
+    }
+  },
   methods: {
     action() {
       this.$emit("click")
