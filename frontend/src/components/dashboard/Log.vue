@@ -2,9 +2,10 @@
   <Card title="Logs">
     <template #body>
       <BasicTable
-        :columns="columns"
-        :data="data"
-        :options="options"
+          :columns="columns"
+          :data="data"
+          :options="options"
+          @pagination-update="paginationUpdate"
       />
     </template>
   </Card>
@@ -31,13 +32,17 @@ export default {
         bordered: false,
         borderless: false,
         small: false,
-        pagination: 30,
+        pagination: {
+          serverSide: true,
+          total: 0,
+          limit: 10
+        },
       },
       columns: [
         {name: "", key: "icon", type: "icon"},
         {name: "Level", key: "level"},
         {name: "Time", key: "timestamp", sortable: true},
-        {name: "User", key: "userId", sortable: true},
+        {name: "User", key: "creator_name", sortable: true, sortKey: "userId"},
         {name: "Service", key: "service"},
         {name: "Message", key: "message"},
       ],
@@ -46,23 +51,24 @@ export default {
   },
   sockets: {
     logAll: function (data) {
-      this.data = data.map(d => {
+      this.options.pagination.total = data.count;
+      this.data = data.rows.map(d => {
         d.icon = {
           icon: "bug",
           color: this.getBugColor(d.level),
         }
-        if (d.userId === null) {
-          d.userId = "System";
-        }
-
         return d;
       });
     }
   },
   mounted() {
-    this.$socket.emit("logGetAll", {limit: 100});
+    this.$socket.emit("logGetAll", {page: 0, limit: this.options.pagination.limit});
   },
   methods: {
+    paginationUpdate(data) {
+      this.data = [];
+      this.$socket.emit("logGetAll", data);
+    },
     getBugColor(level) {
       if (level === "error") {
         return "#ff0000";

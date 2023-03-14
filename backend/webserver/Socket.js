@@ -75,9 +75,14 @@ module.exports = class Socket {
      *
      * @param data
      */
-    updateCreatorName(data) {
+    async updateCreatorName(data) {
         const socket = this.getSocket("UserSocket");
         if (socket) {
+            // Check if server side pagination is used
+            if ('count' in data) {
+                data.rows = await socket.updateCreatorName(data.rows);
+                return new Promise(resolve => resolve(data));
+            }
             return socket.updateCreatorName(data);
         } else {
             this.logger.error("UserSocket not found!")
