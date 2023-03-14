@@ -55,7 +55,8 @@
           <span v-if="c.key in r">
             <TIcon
                 v-if="c.type === 'icon'"
-                :value="r[c.key]"
+                :value="(typeof r[c.key] === 'object') ? r[c.key].icon : r[c.key]"
+                :color="(typeof r[c.key] === 'object') ? r[c.key].color : null"
             />
             <TBadge
                 v-else-if="c.type === 'badge'"
