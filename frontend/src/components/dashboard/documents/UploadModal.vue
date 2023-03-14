@@ -53,13 +53,17 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 
-/* Upload.vue - modal for document upload component
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
+/**
+ * Document upload component
+ *
+ * This component provides the functionality for uploading a document
+ * to the server. The user is prompted the option to select a PDF from
+ * disk.
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ */
 export default {
-  name: "UploadModal",
+  name: "DocumentUploadModal",
   components: {Modal},
   data() {
     return {
@@ -82,7 +86,7 @@ export default {
     }
   },
   methods: {
-    openModal() {
+    open() {
       let fileElement = document.getElementById('fileInput');
       try {
         fileElement.value = null;

@@ -1,6 +1,6 @@
 <template>
   <button
-    class="btn"
+    class="btn btn-sm"
     :class="buttonClass.specifiers"
     type="button"
     :title="title"
@@ -9,6 +9,7 @@
     <LoadIcon
       v-if="icon !== null"
       :icon-name="icon"
+      size="16"
     />
     <span v-if="icon === null || !buttonClass.iconOnly">{{ title }}</span>
   </button>
