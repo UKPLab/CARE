@@ -47,7 +47,10 @@ export default {
   sockets: {
     logAll: function (data) {
       this.data = data.map(d => {
-        d.icon = "bug";
+        d.icon = {
+          icon: "bug",
+          color: this.getBugColor(d.level),
+        }
         if (d.userId === null) {
           d.userId = "System";
         }
@@ -58,6 +61,19 @@ export default {
   },
   mounted() {
     this.$socket.emit("logGetAll", {limit: 100});
+  },
+  methods: {
+    getBugColor(level) {
+      if (level === "error") {
+        return "#ff0000";
+      } else if (level === "warn") {
+        return "#ff9900";
+      } else if (level === "info") {
+        return "#0000ff";
+      } else {
+        return "#000000";
+      }
+    },
   }
 }
 </script>

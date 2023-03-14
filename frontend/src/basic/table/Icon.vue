@@ -1,5 +1,5 @@
 <template>
-  <LoadIcon :icon-name="value" />
+  <LoadIcon :icon-name="value" :color="color" />
 </template>
 
 <script>
@@ -15,6 +15,11 @@ export default {
     },
     options: {
       type: Object,
+      required: false,
+      default: null
+    },
+    color: {
+      type: String,
       required: false,
       default: null
     }
