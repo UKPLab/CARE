@@ -57,8 +57,15 @@
 </template>
 
 <script>
+/**
+ * Basic Table Pagination Navigation
+ *
+ * This component is used to navigate through the pages of a table.
+ *
+ * @author: Dennis Zyska
+ */
 export default {
-  name: "Pagination",
+  name: "BasicTablePagination",
   props: {
     pages: {
       type: Number,

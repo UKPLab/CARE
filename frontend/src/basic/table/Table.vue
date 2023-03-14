@@ -20,13 +20,21 @@
             :icon-name="(sortColumn === c.key)?sortIcon:'sort-down'"
             class="me-1"
             style="cursor: pointer"
-            @click="sort(c.key)"
+            @click="sort(('sortKey' in c) ? c.sortKey : c.key)"
         />
       </th>
     </tr>
     </thead>
     <tbody>
-    <tr v-if="!data || data.length === 0">
+    <tr v-if="serverSidePagination && total > 0 && data.length === 0">
+      <td
+          :colspan="columns.length"
+          class="text-center"
+      >
+        Loading data from server...
+      </td>
+    </tr>
+    <tr v-else-if="!data || data.length === 0">
       <td
           :colspan="columns.length"
           class="text-center"
@@ -55,8 +63,8 @@
           <span v-if="c.key in r">
             <TIcon
                 v-if="c.type === 'icon'"
-                :value="(typeof r[c.key] === 'object') ? r[c.key].icon : r[c.key]"
                 :color="(typeof r[c.key] === 'object') ? r[c.key].color : null"
+                :value="(typeof r[c.key] === 'object') ? r[c.key].icon : r[c.key]"
             />
             <TBadge
                 v-else-if="c.type === 'badge'"
@@ -82,21 +90,21 @@
             </span>
 
             <span v-else-if="c.type === 'icon-selector'">
-              <LoadIcon v-if="r[c.key].selected" :icon-name="r[c.key].icon" :size="16" style="color:yellowgreen;" />
+              <LoadIcon v-if="r[c.key].selected" :icon-name="r[c.key].icon" :size="16" style="color:yellowgreen;"/>
               <LoadIcon v-else
-                  v-tooltip
-                  :icon-name="r[c.key].icon"
-                  :size="16"
-                  :title="r[c.key].title"
-                  role="button"
-                  @click="actionEmitter({action: r[c.key].action, params: r})"
+                        v-tooltip
+                        :icon-name="r[c.key].icon"
+                        :size="16"
+                        :title="r[c.key].title"
+                        role="button"
+                        @click="actionEmitter({action: r[c.key].action, params: r})"
               />
             </span>
 
-      <span v-else>
-              {{ r[c.key] }}
+            <span v-else>
+                    {{ r[c.key] }}
+                  </span>
             </span>
-      </span>
         <span v-else>
             -
           </span>
@@ -109,7 +117,7 @@
       ref="pagination"
       :current-page="currentPage"
       :pages="pages"
-      @page-change="(x) => currentPage = x"
+      @page-change="paginationPageChange"
   />
 </template>
 
@@ -148,9 +156,14 @@ export default {
       required: false,
       default: () => {
       }
+    },
+    count: {
+      type: Number,
+      required: false,
+      default: 0
     }
   },
-  emits: ["action", "rowSelection"],
+  emits: ["action", "rowSelection", "paginationUpdate"],
   data: function () {
     return {
       tableClass: {
@@ -161,26 +174,48 @@ export default {
         "table-sm": this.options && this.options.small,
       },
       sortColumn: null,
-      sortDirection: "asc",
+      sortDirection: "ASC",
       currentPage: 1,
       selectableRows: this.options && this.options.selectableRows,
       selectedRows: []
     }
   },
   computed: {
-    pages() {
-      if (this.options && this.options.pagination) {
-        return Math.ceil(this.data.length / this.options.pagination);
+    serverSidePagination() {
+      return this.options && this.options.pagination
+          && typeof this.options.pagination === "object"
+          && "serverSide" in this.options.pagination
+          && this.options.pagination.serverSide;
+    },
+    total() {
+      if (this.serverSidePagination) {
+        return this.options.pagination.total;
       }
-      return 0;
+      return this.data.length;
+    },
+    limit() {
+      if (this.options && this.options.pagination) {
+        if (typeof this.options.pagination === "object") {
+          return this.options.pagination.limit;
+        } else {
+          return this.options.pagination;
+        }
+      }
+      return this.total;
+    },
+    pages() {
+      return Math.ceil(this.total / this.limit);
     },
     sortIcon() {
-      return this.sortDirection === "asc" ? "sort-down" : "sort-up";
+      return this.sortDirection === "ASC" ? "sort-down" : "sort-up";
     },
     tableData() {
+      if (this.serverSidePagination) {
+        return this.data;
+      }
       let data = this.data.map(d => d);
       if (this.sortColumn) {
-        if (this.sortDirection === "asc") {
+        if (this.sortDirection === "ASC") {
           data = data.sort(
               (a, b) => (a[this.sortColumn] > b[this.sortColumn])
                   ? 1 : ((b[this.sortColumn] > a[this.sortColumn]) ? -1 : 0))
@@ -191,7 +226,7 @@ export default {
         }
       }
       if (this.options && this.options.pagination) {
-        data = data.slice((this.currentPage - 1) * this.options.pagination, this.currentPage * this.options.pagination);
+        data = data.slice((this.currentPage - 1) * this.limit, this.currentPage * this.limit);
       }
       return data;
     },
@@ -208,11 +243,12 @@ export default {
   methods: {
     sort(column) {
       if (this.sortColumn && this.sortColumn === column) {
-        this.sortDirection = this.sortDirection === "asc" ? "desc" : "asc";
+        this.sortDirection = this.sortDirection === "ASC" ? "DESC" : "ASC";
       } else {
-        this.sortDirection = "asc";
+        this.sortDirection = "ASC";
       }
       this.sortColumn = column;
+      this.paginationUpdate();
     },
     actionEmitter(data) {
       this.$emit("action", data);
@@ -230,6 +266,19 @@ export default {
         }
         this.$emit("rowSelection", this.selectedRows);
       }
+    },
+    paginationPageChange(page) {
+      this.currentPage = page;
+      this.paginationUpdate();
+    },
+    paginationUpdate() {
+      this.$emit("paginationUpdate", {
+        page: this.currentPage - 1,
+        limit: this.limit,
+        order: (this.sortColumn) ? [
+          [this.sortColumn, this.sortDirection]
+        ] : null
+      });
     }
   },
 }
