@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         static async getLogs(data) {
             console.log("Data", data);
             return await Log.findAndCountAll({
-                where: {},
+                where: ("filter" in data) ? data.filter : {},
                 order: ('order' in data && data.order) ? data.order.filter(o => o[0] in this.getAttributes()) : [
                     ['timestamp', 'DESC']
                 ],
