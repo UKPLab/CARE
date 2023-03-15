@@ -1,17 +1,12 @@
 <template>
   <Card title="Skills">
     <template #headerElements>
-      <button
+      <ButtonHeader
         class="btn btn-sm me-1"
         title="Refresh"
-        type="button"
+        icon="arrow-clockwise"
         @click="load()"
-      >
-        <LoadIcon
-          icon-name="arrow-clockwise"
-          @click="load()"
-        />
-      </button>
+      />
     </template>
     <template #body>
       <BasicTable
@@ -26,10 +21,10 @@
 </template>
 
 <script>
-import LoadIcon from "@/icons/LoadIcon.vue";
 import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
 import BasicTable from "@/basic/table/Table.vue"
 import Card from "@/basic/Card.vue"
+import ButtonHeader from "@/basic/card/ButtonHeader.vue"
 
 /**
  * Shows the list of available nlp skills to admins
@@ -41,7 +36,7 @@ import Card from "@/basic/Card.vue"
  */
 export default {
   name: "NlpSkills",
-  components: {BasicTable, Card, NlpSkillModal, LoadIcon},
+  components: {BasicTable, Card, ButtonHeader, NlpSkillModal},
   props: {
     'admin': {
       type: Boolean,
@@ -95,7 +90,7 @@ export default {
     },
   },
   mounted() {
-    this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll", data: {}});
+    this.load();
   },
   methods: {
     action(data) {
@@ -106,6 +101,9 @@ export default {
     getDetails(skill_row) {
       this.$refs["nlpSkillModal"].openModal(skill_row["name"]);
     },
+    load(){
+      this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll", data: {}});
+    }
   }
 }
 </script>
