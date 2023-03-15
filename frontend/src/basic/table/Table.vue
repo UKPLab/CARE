@@ -69,6 +69,7 @@
             <TBadge
                 v-else-if="c.type === 'badge'"
                 :value="r[c.key]"
+                :options="c.typeOptions ? c.typeOptions : null"
             />
             <TButton
                 v-else-if="c.type === 'button'"
