@@ -2,10 +2,10 @@
   <Card title="Logs">
     <template #body>
       <BasicTable
-          :columns="columns"
-          :data="data"
-          :options="options"
-          @pagination-update="paginationUpdate"
+        :columns="columns"
+        :data="data"
+        :options="options"
+        @pagination-update="paginationUpdate"
       />
     </template>
   </Card>
@@ -34,13 +34,23 @@ export default {
         small: false,
         pagination: {
           serverSide: true,
+          itemsPerPage: 10,
+          itemsPerPageList: [10, 25, 50, 100],
           total: 0,
-          limit: 10
+          showPages: 3,
         },
       },
       columns: [
         {name: "", key: "icon", type: "icon"},
-        {name: "Level", key: "level"},
+        {
+          name: "Level",
+          key: "level",
+          filter: [
+            {key: "error", name: "Error"},
+            {key: "warn", name: "Warning"},
+            {key: "info", name: "Info"},
+            {key: "debug", name: "Debug"}]
+        },
         {name: "Time", key: "timestamp", sortable: true},
         {name: "User", key: "creator_name", sortable: true, sortKey: "userId"},
         {name: "Service", key: "service"},

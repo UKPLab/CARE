@@ -5,7 +5,7 @@
     name="nlpSkills"
   >
     <template #title>
-      Details on {{ skillName }}
+      Skill Details
     </template>
     <template #body>
       <div class="modal-body justify-content-center">
@@ -17,15 +17,22 @@
           <span class="visually-hidden">Loading...</span>
         </div>
         <div v-else>
-          <pre>
-            <code>
-            {{ config }}
-            </code>
-          </pre>
+          <SkillListing :config="config" />
         </div>
       </div>
     </template>
     <template #footer>
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        title="Copy skill config"
+        @click="copyConfig"
+      >
+        <LoadIcon
+          icon-name="clipboard"
+          :size="16"
+        />
+      </button>
       <button
         class="btn btn-secondary"
         data-bs-dismiss="modal"
@@ -39,6 +46,8 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
+import SkillListing from "./SkillListing.vue";
 
 /* NlpSkillModal.vue - modal for details on a given NLP Skill
 
@@ -47,10 +56,9 @@ Source: -
 */
 export default {
   name: "NlpSkillModal",
-  components: {Modal},
+  components: {SkillListing, LoadIcon, Modal},
   data() {
     return {
-      loading: true,
       show: false,
       skillName: null
     }
@@ -60,26 +68,26 @@ export default {
      * Returns the associated skill description based on the vuex stored information. The skill
      * description is simply shown as a JSON string.
      *
-     * @returns {string} the JSON string to be shown
+     * @returns {string|null} the JSON string to be shown
      */
-    config(){
-      if(this.skillName !== null){
+    config() {
+      if (this.skillName) {
         const stored = this.$store.getters["service/get"]("NLPService", "skillConfig");
-        if(stored && this.skillName in stored){
-          return JSON.stringify(stored[this.skillName], null, 2);
+
+        if (stored && this.skillName in stored) {
+          return stored[this.skillName];
         }
       }
-      return "";
-    }
-  },
-  watch: {
-    config(newVal, oldVal) {
-      if(newVal.length > 0){
-        this.loading = false;
-      }
-    }
-  },
-  mounted() {
+      return null;
+    },
+    /**
+     * Indicates whether the modal is still loading the config; false if it was loaded successfully.
+     * @returns {boolean}
+     */
+    loading() {
+      return !this.config || this.config.length === 0;
+    },
+
   },
   methods: {
     /**
@@ -92,21 +100,49 @@ export default {
 
       this.$refs.nlpSkillModal.openModal();
 
-      if(this.config.length === 0) {
-        this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetConfig", data: {name: this.skillName}});
+      if (!this.config || this.config.length === 0) {
+        this.$socket.emit("serviceCommand", {
+          service: "NLPService",
+          command: "skillGetConfig",
+          data: {name: this.skillName}
+        });
+      }
+    },
+    async copyConfig() {
+      if (this.config) {
+        try {
+          await navigator.clipboard.writeText(JSON.stringify(this.config, null, 2));
+          this.eventBus.emit('toast', {
+            title: "Config copied",
+            message: "Skill configuration copied to clipboard!",
+            variant: "success"
+          });
+        } catch ($e) {
+          this.eventBus.emit('toast', {
+            title: "Config not copied",
+            message: "Could not copy skill configuration to clipboard!",
+            variant: "danger"
+          });
+        }
+      } else {
+        this.eventBus.emit('toast', {
+          title: "Config not copied",
+          message: "Configuration not loaded or empty, cannot copy.",
+          variant: "danger"
+        });
       }
     }
   },
-
 }
 </script>
 
 <style scoped>
 pre {
-    overflow-x: auto;
+  overflow-x: auto;
 }
+
 pre code {
-    overflow-wrap: normal;
-    white-space: pre;
+  overflow-wrap: normal;
+  white-space: pre;
 }
 </style>
