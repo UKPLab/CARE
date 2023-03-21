@@ -10,26 +10,23 @@
         </div>
       </div>
       <div class="row gy-2">
-        <div class="container">
-          <div class="row mb-2">
-            <div class="col">
-              <span class="fs-6 fw-bold">Example</span>
-            </div>
-          </div>
+        <div class="container py-2">
           <div class="row mb-2 px-2">
             <div class="col">
-              <span class="fs-6 badge bg-success">Input</span>
+              <div class="row mb-2 justify-content-center">
+                <span class="fs-6 badge bg-success w-25">Input</span>
+              </div>
+              <div class="row justify-content-center">
+                <JsonEditor :model-value="config.input.example"/>
+              </div>
             </div>
             <div class="col">
-              <code> {{ config.input.example }} </code>
-            </div>
-          </div>
-          <div class="row mb-2 px-2">
-            <div class="col">
-              <span class="fs-6 badge bg-danger">Output</span>
-            </div>
-            <div class="col">
-              <code> {{ config.output.example}} </code>
+              <div class="row mb-2 justify-content-center">
+                <span class="fs-6 badge bg-danger w-25">Output</span>
+              </div>
+              <div class="row justify-content-center">
+                <JsonEditor :model-value="config.output.example"/>
+              </div>
             </div>
           </div>
         </div>
@@ -37,32 +34,25 @@
     </div>
     <hr>
     <div class="list-group-flush">
-      <div>
-        <Card
-            title="Input"
-        >
-          <template #body>
+      <li class="list-group-item">
+        <span class="fs-6 fw-bold">Input</span>
+        <div class="p-3">
+          <JsonEditor :model-value="config.input"/>
+        </div>
 
-          </template>
-        </Card>
-      </div>
-      <div>
-        <Card
-            title="Output"
-            collapsable
-        />
-      </div>
-      <hr>
-      <div>
-        <Card
-            v-for="field in nonStandardFields"
-            :key="field"
-            :title="field"
-            collapsable
-        >
-          ...
-        </Card>
-      </div>
+      </li>
+      <li class="list-group-item">
+        <span class="fs-6 fw-bold">Output</span>
+        <div class="p-3">
+          <JsonEditor :model-value="config.output"/>
+        </div>
+      </li>
+      <li v-for="f in nonStandardFields" class="list-group-item">
+        <span class="fs-6 fw-bold">{{ f  }}</span>
+        <div class="p-3">
+          <JsonEditor :model-value="config[f]"/>
+        </div>
+      </li>
     </div>
   </div>
   <div v-else>
@@ -74,7 +64,7 @@
 
 <script>
 import {validateServiceConfig} from "@/assets/data";
-import Card from "@/basic/Card.vue";
+import JsonEditor from "@/basic/editor/JsonEditor.vue";
 
 /* SkillListing.vue - characterizing a skill config
 
@@ -83,7 +73,9 @@ Source: -
 */
 export default {
   name: "SkillListing",
-  components: {Card},
+  components: {
+    JsonEditor
+  },
   props: {
     'config': {
       type: Object,
@@ -92,7 +84,7 @@ export default {
   },
   data() {
     return {
-      standardFields: ['name', 'description', 'input', 'output']
+      standardFields: ['name', 'description', 'input', 'output'],
     }
   },
   computed: {
@@ -105,7 +97,7 @@ export default {
     nonStandardFields() {
       return Object.getOwnPropertyNames(this.config).filter(f => !this.standardFields.includes(f));
     }
-  }
+  },
 }
 </script>
 
