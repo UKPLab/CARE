@@ -34,6 +34,17 @@
         />
       </button>
       <button
+        class="btn btn-outline-secondary"
+        type="button"
+        title="Download skill config"
+        @click="downloadConfig"
+      >
+        <LoadIcon
+          icon-name="cloud-arrow-down"
+          :size="16"
+        />
+      </button>
+      <button
         class="btn btn-secondary"
         data-bs-dismiss="modal"
         type="button"
@@ -48,6 +59,7 @@
 import Modal from "@/basic/Modal.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 import SkillListing from "./SkillListing.vue";
+import {downloadObjectsAs} from "@/assets/utils";
 
 /* NlpSkillModal.vue - modal for details on a given NLP Skill
 
@@ -131,6 +143,15 @@ export default {
           variant: "danger"
         });
       }
+    },
+    downloadConfig() {
+      downloadObjectsAs(this.config, `${this.skillName}`, "json");
+
+      this.eventBus.emit('toast', {
+          title: "Download Success",
+          message: `Downloaded ${this.skillName} configuration`,
+          variant: "success"
+        });
     }
   },
 }

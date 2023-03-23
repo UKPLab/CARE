@@ -1,12 +1,31 @@
 <template>
   <blockquote
-    class="blockquote fs-6"
-    v-show="modelValue">
-    <div ref="content"/>
+      v-show="modelValue"
+      class="blockquote fs-6 position-relative"
+      @mouseover="showCopyButton=true"
+      @mouseleave="showCopyButton=false"
+  >
+    <div
+        ref="content"
+        class="bg-light border-start"
+    >
+      <button
+          v-show="showCopyButton"
+          class="btn position-absolute top-0 end-0 opacity-50"
+          @click="copy"
+      >
+        <LoadIcon
+            class="me-1"
+            :size="16"
+            icon-name="clipboard"
+        />
+        <span class="fw-light"> Copy </span>
+      </button>
+    </div>
   </blockquote>
   <Loader
-    v-show="!modelValue"
-    :loading="!modelValue"
+      v-show="!modelValue"
+      :loading="!modelValue"
   />
 </template>
 
@@ -14,6 +33,7 @@
 
 import Loader from "@/basic/Loader.vue";
 import jsonview from "@pgrabovets/json-view";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 /* JsonEditor.vue - default component for a JSON editor
 
@@ -25,7 +45,8 @@ Source: -
 export default {
   name: "JsonEditor",
   components: {
-    Loader
+    Loader,
+    LoadIcon
   },
   props: {
     modelValue: {
@@ -41,7 +62,8 @@ export default {
   emits: ["update:modelValue"],
   data: function () {
     return {
-      jsonTree: null
+      jsonTree: null,
+      showCopyButton: false
     }
   },
   watch: {
@@ -50,11 +72,11 @@ export default {
     }
   },
   beforeUnmount() {
-    if(this.jsonTree)
+    if (this.jsonTree)
       jsonview.destroy(this.jsonTree)
   },
   mounted() {
-   this.updateJson(this.modelValue);
+    this.updateJson(this.modelValue);
   },
   methods: {
     updateJson(data) {
@@ -67,14 +89,35 @@ export default {
       jsonview.render(newTree, this.$refs.content);
       this.jsonTree = newTree;
 
-      console.log(this.jsonTree);
-      if(this.jsonTree.children.length < 3){
-        jsonview.expand(this.jsonTree);
-        this.jsonTree.children.forEach(c => {
-          if(c.children && c.children.length > 1){
-            jsonview.collapse(c);
-          }
-          c.children.forEach(c2 => jsonview.collapse(c2));
+      jsonview.expand(this.jsonTree);
+      this.jsonTree.children.forEach(c => {
+        if (c.children && c.children.length > 1) {
+          jsonview.collapse(c);
+        }
+        c.children.forEach(c2 => jsonview.collapse(c2));
+      });
+    },
+    async copy() {
+      if (this.modelValue) {
+        try {
+          await navigator.clipboard.writeText(JSON.stringify(this.modelValue, null, 2));
+          this.eventBus.emit('toast', {
+            title: "Json copied",
+            message: "Json copied to clipboard!",
+            variant: "success"
+          });
+        } catch ($e) {
+          this.eventBus.emit('toast', {
+            title: "Json not copied",
+            message: "Could not copy json to clipboard!",
+            variant: "danger"
+          });
+        }
+      } else {
+        this.eventBus.emit('toast', {
+          title: "Json not copied",
+          message: "Json not loaded or empty, cannot copy.",
+          variant: "danger"
         });
       }
     }
@@ -84,9 +127,12 @@ export default {
 
 <style>
 blockquote div .json-container {
-  all:inherit;
+  all: inherit;
 }
+
 blockquote {
-  border-width:1px;
+  border-width: 1px;
 }
+
+
 </style>
