@@ -1,7 +1,7 @@
 <template>
   <Modal
       ref="studyCoordinatorModal"
-      :props="{studyId: studyId, documentId: documentId}"
+      :props="{studyId: studyId, documentId: documentId, resets: resets}"
       lg
       name="studyCoordinatorModal"
       @hide="reset"
@@ -160,6 +160,7 @@ export default {
       return this.$store.getters['document/getDocuments'];
     },
     newStudyData() {
+      // eslint-disable-next-line no-unused-vars
       const resetCounter = this.resets; //do not remove; need for refreshing study object on modal hide!
       if (this.studyId === 0) {
         let defaultObject = {...this.defaultValue};

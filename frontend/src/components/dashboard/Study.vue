@@ -28,7 +28,7 @@
 <script>
 import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
-import StudyModal from "@/components/dashboard/study/StudyModal.vue";
+import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 
 /**

@@ -26,10 +26,10 @@
             v-if="'help' in field"
             :title="field.help"
             class="btn btn-sm mt-0 pt-0"
-            disabled
             data-bs-html="true"
             data-bs-placement="top"
             data-bs-toggle="tooltip"
+            disabled
           >
             <LoadIcon
               :size="16"
@@ -84,17 +84,16 @@
               :options="field"
             />
 
-
             <select
               v-else-if="field.type === 'select'"
               v-model="currentData[field.name]"
               class="form-select"
             >
               <option
-                v-for="option in field.options"
-                :key="option"
-                :value="option.value"
-              >{{ option.name }}</option>
+                v-for="option in getOptions(field)"
+                :key="option.id"
+                :value="option[field.options.value]"
+              >{{ option[field.options.name] }}</option>
             </select>
             <input
               v-else-if="field.type === 'slider'"
@@ -152,7 +151,7 @@
 
 <script>
 import LoadIcon from "@/icons/LoadIcon.vue";
-import DatetimePicker from "./DatetimePicker.vue";
+import DatetimePicker from "./form/DatetimePicker.vue";
 import Editor from "@/basic/editor/Editor.vue"
 
 export default {
@@ -188,7 +187,13 @@ export default {
   },
   beforeMount() {
     this.currentData = this.modelValue;
+    console.log("dfdf", this.$props)
   },
+  methods: {
+    getOptions(field) {
+      return this.$store.getters[field.options.table + "/getAll"];
+    }
+  }
 }
 </script>
 
