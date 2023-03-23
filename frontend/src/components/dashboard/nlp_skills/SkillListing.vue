@@ -9,23 +9,31 @@
           <span class="fs-6 fw-light">{{ config.description }}</span>
         </div>
       </div>
-      <div class="row gy-2">
-        <div class="container py-2">
-          <div class="row mb-2 px-2">
-            <div class="col">
-              <div class="row mb-2 justify-content-center">
-                <span class="fs-6 badge bg-success w-25">Input</span>
-              </div>
-              <div class="row justify-content-center">
-                <JsonEditor :model-value="config.input.example"/>
+      <div class="row g-3">
+        <div class="col p-3">
+          <div class="container border border-1 rounded-3 h-100">
+            <div class="row mb-2 py-3">
+              <div class="col justify-content-center">
+                <span class="fs-6 badge bg-success">Input</span>
               </div>
             </div>
-            <div class="col">
-              <div class="row mb-2 justify-content-center">
-                <span class="fs-6 badge bg-danger w-25">Output</span>
+            <div class="row justify-content-center">
+              <div class="col">
+                <JsonEditor :model-value="config.input.example" />
               </div>
-              <div class="row justify-content-center">
-                <JsonEditor :model-value="config.output.example"/>
+            </div>
+          </div>
+        </div>
+        <div class="col p-3">
+          <div class="container border border-1 rounded-3 h-100">
+            <div class="row mb-2 py-3">
+              <div class="col justify-content-center">
+                <span class="fs-6 badge bg-primary">Output</span>
+              </div>
+            </div>
+            <div class="row justify-content-center">
+              <div class="col">
+                <JsonEditor :model-value="config.output.example" />
               </div>
             </div>
           </div>
@@ -33,26 +41,29 @@
       </div>
     </div>
     <hr>
-    <div class="list-group-flush">
-      <li class="list-group-item">
-        <span class="fs-6 fw-bold">Input</span>
-        <div class="p-3">
-          <JsonEditor :model-value="config.input"/>
-        </div>
-
-      </li>
-      <li class="list-group-item">
-        <span class="fs-6 fw-bold">Output</span>
-        <div class="p-3">
-          <JsonEditor :model-value="config.output"/>
-        </div>
-      </li>
-      <li v-for="f in nonStandardFields" class="list-group-item">
-        <span class="fs-6 fw-bold">{{ f  }}</span>
-        <div class="p-3">
-          <JsonEditor :model-value="config[f]"/>
-        </div>
-      </li>
+    <div class="overflow-auto" style="max-height:30vh">
+      <div
+        v-for="[f, i] in [['input','box-arrow-in-right'], ['output', 'box-arrow-right']]"
+        :key="f"
+        class="py-1"
+      >
+        <SkillItem
+          :json-data="config[f]"
+          :name="f"
+          :icon="i"
+        />
+      </div>
+      <div
+        v-for="f in nonStandardFields"
+        :key="f"
+        class="py-1"
+      >
+        <SkillItem
+          :json-data="config[f]"
+          :name="f"
+          :icon="i"
+        />
+      </div>
     </div>
   </div>
   <div v-else>
@@ -65,6 +76,7 @@
 <script>
 import {validateServiceConfig} from "@/assets/data";
 import JsonEditor from "@/basic/editor/JsonEditor.vue";
+import SkillItem from "@/components/dashboard/nlp_skills/SkillItem.vue";
 
 /* SkillListing.vue - characterizing a skill config
 
@@ -74,7 +86,8 @@ Source: -
 export default {
   name: "SkillListing",
   components: {
-    JsonEditor
+    JsonEditor,
+    SkillItem
   },
   props: {
     'config': {
