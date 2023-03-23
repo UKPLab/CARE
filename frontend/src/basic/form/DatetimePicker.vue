@@ -74,7 +74,7 @@ export default {
     }
   },
   mounted() {
-    if (this.modelValue !== null)
+    if (this.modelValue)
       this.currentDate = new Date(this.modelValue);
   },
   methods: {

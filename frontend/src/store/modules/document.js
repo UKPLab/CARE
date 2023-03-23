@@ -21,6 +21,16 @@ export default {
          * @param state
          * @returns {function: Array}
          */
+        getAll: state => {
+            return state;
+        },
+
+        /**
+         * Returns the documents listed in the store.
+         *
+         * @param state
+         * @returns {function: Array}
+         */
         getDocuments: state => {
             return state;
         },

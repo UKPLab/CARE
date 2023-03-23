@@ -4,7 +4,12 @@
       <ButtonHeader
           class="btn-primary"
           title="Add new tag set"
-          @click="$refs.tagSetModal.new()"
+          @click="$refs.tagSetModalOld.new()"
+      />
+      <ButtonHeader
+          class="btn-primary"
+          title="Add new tag set"
+          @click="add()"
       />
     </template>
     <template #body>
@@ -17,8 +22,11 @@
     </template>
   </BasicCard>
   <TagSetModal
-      id="0"
       ref="tagSetModal"
+  />
+  <TagSetModalOld
+      id="0"
+      ref="tagSetModalOld"
   />
   <TagSetDeleteModal ref="tagSetDeleteModal"/>
   <TagSetPublishModal ref="tagSetPublishModal"/>
@@ -35,7 +43,8 @@
 import BasicTable from "@/basic/table/Table.vue";
 import BasicCard from "@/basic/Card.vue";
 import ButtonHeader from "@/basic/card/ButtonHeader.vue";
-import TagSetModal from "./tags/TagSetModal.vue";
+import TagSetModal from "./coordinator/TagSet.vue";
+import TagSetModalOld from "./tags/TagSetModal_old.vue";
 import TagSetPublishModal from "./tags/TagSetPublishModal.vue";
 import TagSetDeleteModal from "./tags/TagSetDeleteModal.vue";
 
@@ -43,7 +52,7 @@ import {mapGetters} from "vuex";
 
 export default {
   name: "DashboardTags",
-  components: {BasicTable, BasicCard, ButtonHeader, TagSetModal, TagSetPublishModal, TagSetDeleteModal},
+  components: {BasicTable, BasicCard, ButtonHeader, TagSetModal,TagSetModalOld, TagSetPublishModal, TagSetDeleteModal},
   props: {
     'admin': {
       type: Boolean,
