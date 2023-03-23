@@ -9,6 +9,7 @@
       <th
         v-for="c in columns"
         :key="c.key"
+        :class="('width' in c) ? 'col-' + c.width : 'col-auto'"
       >
         {{ c.name }}
         <LoadIcon
@@ -23,23 +24,42 @@
           @click="sort(('sortKey' in c) ? c.sortKey : c.key)"
         />
         <span v-if="filter && c.filter">
-        <LoadIcon
-          :id="'filterDropDown_' + c.key"
-          aria-expanded="true"
-          aria-haspopup="true" class="dropdown-toggle" data-bs-toggle="dropdown" icon-name="funnel"
-          style="cursor: pointer"
-        >
-
-        </LoadIcon>
-
-        <ul :aria-labelledby="'filterDropDown_' + c.key" class="dropdown-menu p-1" @click.stop="">
-          <li v-for="f in c.filter" :key="f.key" class="form-check">
-            <input :id="'filterDropDown_' + c.key + '_label_' + f.key" v-model="filter[c.key][f.key]"
-                   class="form-check-input" type="checkbox"/>
-            <label :for="'filterDropDown_' + c.key + '_label_' + f.key" class="form-check-label">{{ f.name }}</label>
-          </li>
-        </ul>
-        </span>
+            <span
+              aria-expanded="true"
+              aria-haspopup="true"
+              data-bs-toggle="dropdown"
+              role="button"
+              style="cursor: pointer"
+            >
+              <LoadIcon
+                :id="'filterDropDown_' + c.key"
+                :color="(c.key in sequelizeFilter) ? 'blue' : ''"
+                :icon-name="(c.key in sequelizeFilter) ? 'funnel-fill' : 'funnel'"
+              />
+            </span>
+            <ul
+              :aria-labelledby="'filterDropDown_' + c.key"
+              class="dropdown-menu p-1"
+              @click.stop=""
+            >
+              <li
+                v-for="f in c.filter"
+                :key="f.key"
+                class="form-check"
+              >
+                <input
+                  :id="'filterDropDown_' + c.key + '_label_' + f.key"
+                  v-model="filter[c.key][f.key]"
+                  class="form-check-input"
+                  type="checkbox"
+                >
+                <label
+                  :for="'filterDropDown_' + c.key + '_label_' + f.key"
+                  class="form-check-label"
+                >{{ f.name }}</label>
+              </li>
+            </ul>
+          </span>
       </th>
     </tr>
     </thead>
@@ -85,9 +105,9 @@
               :value="(typeof r[c.key] === 'object') ? r[c.key].icon : r[c.key]"
             />
             <TBadge
-                v-else-if="c.type === 'badge'"
-                :value="r[c.key]"
-                :options="c.typeOptions ? c.typeOptions : null"
+              v-else-if="c.type === 'badge'"
+              :options="c.typeOptions ? c.typeOptions : null"
+              :value="r[c.key]"
             />
             <TButton
               v-else-if="c.type === 'button'"
@@ -113,7 +133,8 @@
                 v-if="r[c.key].selected"
                 :icon-name="r[c.key].icon"
                 :size="16"
-                style="color:yellowgreen;"/>
+                style="color:yellowgreen;"
+              />
               <LoadIcon
                 v-else
                 v-tooltip
@@ -287,19 +308,11 @@ export default {
       }
       return data;
     },
-    filterSQL() {
-      if (this.filter) {
-        return Object.entries(this.filter).map(([key, va]) => {
-          // only selected filter
-          const filter = Object.entries(va).filter(([k, v]) => v).map(([k, v]) => k)
-          if (filter.length > 0) {
-            return `${key} IN (${filter.map(f => `'${f}'`).join(",")})`;
-          }
-          return null;
-        }).filter(f => f).join(" AND ");
-      }
-      return null;
+    sequelizeFilter() {
+      let sequelizeFilter = Object.assign({}, ...Object.entries(this.filter).map(([k, v]) => ({[k]: Object.entries(v).filter(([k, v]) => v).map(([k, v]) => (k))})));
+      return Object.assign({}, ...Object.entries(sequelizeFilter).filter(([k, v]) => v.length > 0).map(([k, v]) => ({[k]: v})));
     }
+
   },
   watch: {
     pages(val) {
@@ -364,8 +377,6 @@ export default {
     },
     paginationUpdate() {
       if (this.serverSidePagination) {
-        let sequelizeFilter = Object.assign({}, ...Object.entries(this.filter).map(([k, v]) => ({[k]:Object.entries(v).filter(([k, v]) => v).map(([k, v])=>(k))})));
-        sequelizeFilter = Object.assign({}, ...Object.entries(sequelizeFilter).filter(([k, v]) => v.length > 0).map(([k, v]) => ({[k]:v})));
 
         this.$emit("paginationUpdate", {
           page: this.currentPage - 1,
@@ -373,7 +384,7 @@ export default {
           order: (this.sortColumn) ? [
             [this.sortColumn, this.sortDirection]
           ] : null,
-          filter: sequelizeFilter
+          filter: this.sequelizeFilter
         });
       }
     },
