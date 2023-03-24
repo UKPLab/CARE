@@ -2,13 +2,13 @@
   <div class="container border border-1 rounded-3 h-100">
     <div class="row mb-2 py-3">
       <div class="col p-1">
-        <LoadIcon :icon-name="icon" />
+        <LoadIcon :icon-name="iconShown" />
         <span class="px-1 fs-5 fw-light">{{ name }}</span>
       </div>
     </div>
     <div class="row justify-content-center">
       <div class="col">
-        <JsonEditor :model-value="jsonData" />
+        <JsonEditor v-model:content="jsonData" readonly/>
       </div>
     </div>
   </div>
@@ -38,7 +38,7 @@ export default {
   },
   computed: {
     iconShown() {
-      if(this.icon){
+      if(this.icon !== null){
         return this.icon;
       } else {
         return Array.isArray(this.jsonData) ? "list" : "box";
