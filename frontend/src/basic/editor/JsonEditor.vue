@@ -1,6 +1,7 @@
 <template>
   <blockquote
-      v-show="modelValue"
+      ref="top"
+      v-show="content"
       class="blockquote fs-6 position-relative"
       @mouseover="showCopyButton=true"
       @mouseleave="showCopyButton=false"
@@ -8,11 +9,12 @@
     <div
         ref="content"
         class="bg-light border-start"
+        @dblclick="editMode=!readonly"
     >
       <button
-          v-show="showCopyButton"
+          v-show="showCopyButton && !editMode"
           class="btn position-absolute top-0 end-0 opacity-50"
-          @click="copy"
+          @click="(e) => {e.stopPropagation(); copy()}"
       >
         <LoadIcon
             class="me-1"
@@ -21,11 +23,14 @@
         />
         <span class="fw-light"> Copy </span>
       </button>
+      <form v-if="editMode">
+        <textarea :rows="contentText.split('\n').length" v-model="contentText" class="code form-check-input w-100 h-100" title="Edit JSON" type="text"> </textarea>
+      </form>
     </div>
   </blockquote>
   <Loader
-      v-show="!modelValue"
-      :loading="!modelValue"
+      v-show="!content"
+      :loading="!content"
   />
 </template>
 
@@ -49,43 +54,85 @@ export default {
     LoadIcon
   },
   props: {
-    modelValue: {
+    content: {
       type: Object,
       required: true
     },
     readonly: {
       type: Boolean,
       required: false,
-      default: true
+      default: false
+    },
+    startEditMode: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
-  emits: ["update:modelValue"],
+  emits: ["update:content"],
   data: function () {
     return {
       jsonTree: null,
-      showCopyButton: false
+      showCopyButton: false,
+      editMode: false,
+      leaveEditModeListener: null,
+      contentText: null
     }
   },
   watch: {
-    modelValue: function (newContent) {
-      this.updateJson(newContent);
+    content(newVal) {
+      this.contentText = JSON.stringify(newVal, null, 2);
+      this.updateJson(newVal);
+    },
+    editMode(newVal, oldVal) {
+      if (newVal && !oldVal) {
+        this.cleanJson();
+        window.addEventListener("click", this.leaveEditModeListener);
+      } else if (!newVal && oldVal) {
+        window.removeEventListener("click", this.leaveEditModeListener);
+        this.$emit("update:content", JSON.parse(this.contentText));
+      }
+    }
+  },
+  beforeMount() {
+    this.contentText = JSON.stringify(this.content, null, 2);
+
+    const self = this;
+    this.leaveEditModeListener = function (e) {
+      if (self.$refs.top !== e.target && !self.$refs.top.contains(e.target)) {
+        self.editMode = false;
+      }
     }
   },
   beforeUnmount() {
     if (this.jsonTree)
       jsonview.destroy(this.jsonTree)
+
+    try {
+      window.removeEventListener("click", this.leaveEditModeListener);
+    } catch (e) {
+      // do nothing
+    }
   },
   mounted() {
-    this.updateJson(this.modelValue);
+    this.updateJson(this.content);
+    if(this.startEditMode){
+      this.editMode = true;
+    }
   },
   methods: {
+    validContentText(){
+      try {
+        JSON.parse(this.contentText);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
     updateJson(data) {
       const newTree = jsonview.create(data);
 
-      if (this.jsonTree) {
-        jsonview.destroy(this.jsonTree);
-      }
-
+      this.cleanJson();
       jsonview.render(newTree, this.$refs.content);
       this.jsonTree = newTree;
 
@@ -97,10 +144,16 @@ export default {
         c.children.forEach(c2 => jsonview.collapse(c2));
       });
     },
+    cleanJson() {
+      if (this.jsonTree) {
+        jsonview.destroy(this.jsonTree);
+        this.jsonTree = null;
+      }
+    },
     async copy() {
-      if (this.modelValue) {
+      if (this.content) {
         try {
-          await navigator.clipboard.writeText(JSON.stringify(this.modelValue, null, 2));
+          await navigator.clipboard.writeText(JSON.stringify(this.content, null, 2));
           this.eventBus.emit('toast', {
             title: "Json copied",
             message: "Json copied to clipboard!",
