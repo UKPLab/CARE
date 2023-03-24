@@ -32,7 +32,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
-import Form from "@/basic/form/Form.vue";
+import Form from "@/basic/Form.vue";
 import Table from "@/basic/table/Table.vue";
 
 /* StudySessionModal.vue - details of study session for a given study in a modal

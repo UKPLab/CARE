@@ -187,7 +187,6 @@ export default {
   },
   beforeMount() {
     this.currentData = this.modelValue;
-    console.log("dfdf", this.$props)
   },
   methods: {
     getOptions(field) {
