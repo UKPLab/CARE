@@ -50,6 +50,12 @@ export default {
     docs() {
       return this.$store.getters['document/getDocuments'];
     },
+    study() {
+      if (this.studyId !== 0) {
+        return {...this.$store.getters['study/getStudyById'](this.studyId)};
+      }
+      return {};
+    },
     link() {
       return window.location.origin + "/study/" + this.hash;
     },
