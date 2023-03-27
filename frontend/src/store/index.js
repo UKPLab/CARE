@@ -22,13 +22,6 @@ import StudyStore from "./modules/study.js";
 import StudySessionStore from "./modules/study_session.js";
 import createPersistedState from 'vuex-persistedstate';
 
-/*
-* A standard data store should have the following methods:
-* - getAll: Returns all data
-* - get: Returns a single data object
-* - getFields: Returns the fields to edit/create data
- */
-
 export default createStore({
     modules: {
         auth: AuthStore,
