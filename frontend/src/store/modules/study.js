@@ -11,14 +11,15 @@ import refreshState from "../utils";
 const coordinatorFields =
     [
         {
-            name: "name",
+            key: "name",
             label: "Name of the study:",
             placeholder: "My user study",
             type: "text",
             required: true,
+            default: "",
         },
         {
-            name: "documentId",
+            key: "documentId",
             label: "Selected document for the study:",
             type: "select",
             options: {
@@ -28,13 +29,13 @@ const coordinatorFields =
             required: true,
         },
         {
-            name: "description",
+            key: "description",
             label: "Description of the study:",
             help: "This text will be displayed at the beginning of the user study!",
             type: "editor",
         },
         {
-            name: "timeLimit",
+            key: "timeLimit",
             type: "slider",
             label: "How much time does a participant have for the study?",
             help: "0 = disable time limitation",
@@ -44,28 +45,32 @@ const coordinatorFields =
             max: 180,
             step: 1,
             required: false,
+            default: 0,
         },
         {
-            name: "collab",
+            key: "collab",
             label: "Should the study be collaborative?",
             type: "switch",
             required: true,
+            default: false,
         },
         {
-            name: "resumable",
+            key: "resumable",
             label: "Should the study be resumable?",
             type: "switch",
             required: true,
+            default: false,
         },
         {
-            name: "start",
+            key: "start",
             label: "Study sessions can't start before",
             type: "datetime",
             size: 6,
             required: true,
+            default: null,
         },
         {
-            name: "end",
+            key: "end",
             label: "Study sessions can't start after:",
             type: "datetime",
             size: 6,

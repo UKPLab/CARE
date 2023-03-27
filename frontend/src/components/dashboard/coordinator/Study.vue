@@ -27,22 +27,13 @@ import BasicCoordinator from "@/basic/Coordinator.vue";
  *
  */
 export default {
-  name: "StudyCoordinatorModal",
+  name: "CoordinatorStudy",
   components: {BasicCoordinator},
   data() {
     return {
       studyId: 0,
       documentId: 0,
-      defaultValue: {
-        name: "",
-        documentId: 0,
-        collab: false,
-        resumable: true,
-        timeLimit: 0,
-        description: "",
-        start: null,
-        end: null,
-      },
+      defaultValue: {},
       hash: null,
     }
   },

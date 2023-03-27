@@ -152,16 +152,16 @@ export default {
      * @param defaultValues Override default values
      */
     open(id, defaultValues) {
+      this.reset();
       this.id = id;
       this.overrideDefaultValues = defaultValues;
-      this.reset();
       this.$refs.coordinatorModal.open();
     },
     close() {
       this.$refs.coordinatorModal.close();
     },
     submit() {
-      this.$emit('submit', this.data)
+      this.$emit('submit', {...this.data, ...{id: this.id}})
       this.$refs.coordinatorModal.waiting = true;
     },
     showSuccess() {
@@ -170,6 +170,7 @@ export default {
     },
     reset() {
       this.$refs.coordinatorModal.waiting = false;
+      this.id = 0;
       this.success = false;
       this.resets++;
     },

@@ -76,15 +76,15 @@ import {Editor, EditorContent} from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import LoadIcon from "@/icons/LoadIcon.vue";
 
-/* Editor.vue - default component for a markdown text editor
-
-Use this component to show a text editor with basic markdown features.
-
-Author: Dennis Zyska
-Source: -
-*/
+/**
+ * Editor.vue - default component for a markdown text editor
+ *
+ * Use this component to show a text editor with basic markdown features.
+ *
+ * @author: Dennis Zyska
+ */
 export default {
-  name: "Editor",
+  name: "BasicEditor",
   components: {
     LoadIcon,
     EditorContent,

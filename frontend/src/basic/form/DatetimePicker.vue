@@ -1,28 +1,33 @@
 <template>
-  <div class="input-group">
-    <input
-      v-model="date"
-      class="form-control "
-      type="date"
-    >
-    <input
-      v-model="time"
-      class="form-control"
-      type="time"
-    >
-    <button
-      class="btn btn-outline-secondary"
-      type="button"
-      @click="date = null"
-    >
-      Reset
-    </button>
-  </div>
+  <FormElement :options="options">
+    <template #element>
+      <input
+        v-model="date"
+        class="form-control"
+        type="date"
+      >
+      <input
+        v-model="time"
+        class="form-control"
+        type="time"
+      >
+      <button
+        class="btn btn-outline-secondary"
+        type="button"
+        @click="date = null"
+      >
+        Reset
+      </button>
+    </template>
+  </FormElement>
 </template>
 
 <script>
+import FormElement from "@/basic/form/Element.vue"
+
 export default {
   name: "DatetimePicker",
+  components: {FormElement},
   props: {
     options: {
       type: Object,
