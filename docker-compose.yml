@@ -22,6 +22,7 @@ services:
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 1s
+    restart: unless-stopped
   server:
     build:
       context: .
@@ -30,13 +31,8 @@ services:
     volumes:
       - ./docs/build:/content-server/docs/build
       - ./docs/api:/content-server/docs/api
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 10
-        window: 120s
     depends_on:
       - postgres
     ports:
       - ${PUBLISHED_PORT}:${CONTENT_SERVER_PORT}
+    restart: unless-stopped
