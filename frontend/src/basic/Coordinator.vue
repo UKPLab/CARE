@@ -109,7 +109,10 @@ export default {
     },
     defaultValue: {
       type: Object,
-      required: true,
+      required: false,
+      default: () => {
+        return {};
+      },
     },
   },
   emits: ['submit'],
@@ -130,11 +133,11 @@ export default {
       if (this.id === 0) {
         return {...this.defaultValue, ...this.overrideDefaultValues};
       } else {
-        return {...this.$store.getters[this.table + "/get"](this.id)};
+        return {...this.$store.getters["table/" + this.table + "/get"](this.id)};
       }
     },
     fields() {
-      return this.$store.getters[this.table + "/getFields"];
+      return this.$store.getters["table/" + this.table + "/getFields"];
     },
   },
   watch: {

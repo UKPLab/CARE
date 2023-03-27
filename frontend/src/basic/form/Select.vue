@@ -42,7 +42,7 @@ export default {
   },
   computed: {
     selectOptions() {
-      return this.$store.getters[this.options.options.table + "/getAll"];
+      return this.$store.getters["table/" + this.options.options.table + "/getAll"];
     },
   },
   watch: {

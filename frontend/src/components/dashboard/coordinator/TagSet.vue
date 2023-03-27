@@ -1,7 +1,6 @@
 <template>
   <BasicCoordinator
     ref="coordinator"
-    :default-value="defaultValue"
     table="tag_set"
     title="Tag Sets Editor"
     @submit="publish"
@@ -12,7 +11,7 @@
 import BasicCoordinator from "@/basic/Coordinator.vue";
 
 /**
- * TagSetModal - modal component for adding and editing tagssets
+ * TagSetModal - modal component for adding and editing tags sets
  *
  * @author Dennis Zyska
  */
@@ -22,149 +21,61 @@ export default {
   data() {
     return {
       tagSetId: 0,
-      defaultValue: {
-        name: "",
-        documentId: 0,
-        collab: false,
-        resumable: true,
-        timeLimit: 0,
-        description: "",
-        start: null,
-        end: null,
-      },
-
-      studyId: 0,
-      documentId: 0,
-      defaultValue: {
-        name: "",
-        documentId: 0,
-        collab: false,
-        resumable: true,
-        timeLimit: 0,
-        description: "",
-        start: null,
-        end: null,
-      },
-      study: {},
-      dynamicFields: [],
-      staticFields: [
-        {
-          name: "name",
-          label: "Name of the study:",
-          placeholder: "My user study",
-          type: "text",
-          required: true,
-        },
-        {
-          name: "description",
-          label: "Description of the study:",
-          help: "This text will be displayed at the beginning of the user study!",
-          type: "editor",
-        },
-        {
-          name: "timeLimit",
-          type: "slider",
-          label: "How much time does a participant have for the study?",
-          help: "0 = disable time limitation",
-          size: 12,
-          unit: "min",
-          min: 0,
-          max: 180,
-          step: 1,
-          required: false,
-        },
-        {
-          name: "collab",
-          label: "Should the study be collaborative?",
-          type: "switch",
-          required: true,
-        },
-        {
-          name: "resumable",
-          label: "Should the study be resumable?",
-          type: "switch",
-          required: true,
-        },
-        {
-          name: "start",
-          label: "Study sessions can't start before",
-          type: "datetime",
-          size: 6,
-          required: true,
-        },
-        {
-          name: "end",
-          label: "Study sessions can't start after:",
-          type: "datetime",
-          size: 6,
-          required: true,
-        },
-      ],
-      success: false,
-      hash: null,
-      resets: 0,
     }
   },
-  watch: {
-    newTagSetData() {
-      this.tagSet = this.newTagSetData;
-    },
-  },
   computed: {
-    newTagSetData() {
-      // eslint-disable-next-line no-unused-vars
-      const resetCounter = this.resets; //do not remove; need for refreshing study object on modal hide!
-      if (this.tagSetId === 0) {
-        let defaultObject = {...this.defaultValue};
-        return defaultObject;
-      } else {
+    tag_set() {
+      if (this.tagSetId !== 0) {
         return {...this.$store.getters['tag/getTagSet'](this.tagSetId)};
       }
+      return {};
     },
-  },
-  mounted() {
-    Tags.init(`#tagset_tags`);
   },
   methods: {
-    ...mapMutations({cleanEmptyTagSet: "tag/CLEAN_EMPTY_TAG_SET", cleanEmptyTags: "tag/CLEAN_EMPTY_TAGS", copyTagSet: "tag/COPY_TAG_SET"}),
-    new() {
-      this.cleanEmptyTagSet();
-      this.open(0);
+    open(tagSetId) {
+      this.$refs.coordinator.open(tagSetId);
     },
-    edit(id) {
-      this.open(id);
-    },
-    copy(id) {
-      this.copyTagSet(id);
-      this.open(0);
-    },
-    open(id) {
-      this.id = id;
-      this.$refs.tagSetModal.openModal();
-    },
-    save() {
-      this.sockets.subscribe("tagSetRefresh", (data) => {
-        this.$refs.tagSetModal.closeModal();
-        this.sockets.unsubscribe('tagSetRefresh');
-        this.eventBus.emit('toast', {title: "Tagset saved", message: "Successful saved tagset!", variant: "success"});
-      });
-      this.$socket.emit("tagSetUpdate", {
-        "tagSetId": this.id,
-        "tagSet": this.$store.getters["tag/getTagSet"](this.id),
-        "tags": this.$store.getters["tag/getTags"](this.id, false)
-      });
-      this.cleanEmptyTags(this.id);
-      this.$refs.tagSetModal.waiting = true;
-    },
-    cancel() {
-      this.$socket.emit("tagSetGet", {tagSetId: this.id});
-      this.back();
-    },
-    back() {
-      this.$refs.tagSetModal.closeModal();
-    },
-  },
+    publish(data) {
+      this.sockets.subscribe("studyPublished", (data) => {
+        this.sockets.unsubscribe('studyPublished');
+        if (data.success) {
+          this.hash = data.studyHash;
 
+          this.$refs.coordinator.showSuccess();
+
+          this.eventBus.emit('toast', {
+            title: "Study published",
+            message: "Successfully started study!",
+            variant: "success"
+          });
+        } else {
+          this.$refs.coordinator.close();
+
+          this.eventBus.emit('toast', {title: "Study not published", message: data.message, variant: "danger"});
+        }
+      });
+      this.$socket.emit("studyPublish", data);
+    },
+    close() {
+      this.$refs.coordinator.close();
+    },
+    async copyURL() {
+      try {
+        await navigator.clipboard.writeText(this.link);
+        this.eventBus.emit('toast', {
+          title: "Link copied",
+          message: "Document link copied to clipboard!",
+          variant: "success"
+        });
+      } catch ($e) {
+        this.eventBus.emit('toast', {
+          title: "Link not copied",
+          message: "Could not copy document link to clipboard!",
+          variant: "danger"
+        });
+      }
+    }
+  }
 }
 </script>
 

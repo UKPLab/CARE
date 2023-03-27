@@ -1,7 +1,6 @@
 <template>
   <BasicCoordinator
     ref="coordinator"
-    :default-value="defaultValue"
     table="study"
     title="Study Coordinator"
     @submit="publish"
@@ -33,14 +32,10 @@ export default {
     return {
       studyId: 0,
       documentId: 0,
-      defaultValue: {},
       hash: null,
     }
   },
   computed: {
-    docs() {
-      return this.$store.getters['document/getDocuments'];
-    },
     study() {
       if (this.studyId !== 0) {
         return {...this.$store.getters['study/getStudyById'](this.studyId)};
