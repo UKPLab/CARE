@@ -58,4 +58,9 @@ app.config.globalProperties.eventBus = eventBus;
 
 app.use(store);
 app.use(router);
+
+//Add Auto emits for sockets on mounted
+import fetchData from "@/plugins/fetchData";
+app.use(fetchData);
+
 app.mount('#app');

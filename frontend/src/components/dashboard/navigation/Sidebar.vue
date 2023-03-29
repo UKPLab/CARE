@@ -1,5 +1,6 @@
 <template>
-  <div
+  <Loading v-if="sidebarElements > 0 || sidebarGroups > 0 "/>
+  <div v-else
     id="wrapper"
     class="nav-container"
   >
@@ -60,14 +61,32 @@
 import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
+  fetchData: ['nav_group', 'nav_element'],
   name: "SidebarNavigation",
   components: {LoadIcon},
   computed: {
     sidebarElements() {
-      return this.$store.getters['navigation/getSidebarElements'];
+      const groups = this.$store.getters['table/nav_element/getAll'].reduce((acc, cur) => {
+                if (cur.groupId === 0 || cur.groupId === undefined) {
+                    console.error("For navigation element " + cur.name + " the group id " + cur.group + " doesn't exists!");
+                } else {
+                    if (cur["groupId"] !== undefined) {
+                        acc[cur["groupId"]] = acc[cur["groupId"]] || [];
+                        acc[cur['groupId']].push(cur)
+                    }
+                }
+                return acc
+            }, [])
+
+            return groups.map(e => e.sort(function (a, b) {
+                return a["order"] - b["order"];
+            }))
     },
     sidebarGroups() {
-      return this.$store.getters['navigation/getSidebarGroups'].filter(group => !group.admin || this.isAdmin);
+      const groups = this.$store.getters['table/nav_group/getAll'].filter(group => !group.admin || this.isAdmin);
+      return groups.sort(function (a, b) {
+        return a["order"] - b["order"];
+      });
     },
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];

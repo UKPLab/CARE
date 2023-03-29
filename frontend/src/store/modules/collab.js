@@ -6,7 +6,7 @@
  * @module store/collab
  * @author Nils Dycke, Dennis Zyska
  */
-import refreshState from "../utils";
+import {refreshState} from "../utils";
 
 export default {
     namespaced: true,

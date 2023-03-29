@@ -12,7 +12,6 @@ import AuthStore from './modules/auth.js';
 import AnnotationStore from './modules/anno.js';
 import AdminStore from './modules/admin.js';
 import TagStore from './modules/tag.js';
-import NavigationStore from "./modules/navigation.js";
 import SettingsStore from "./modules/settings.js";
 import CollaborationStore from "./modules/collab.js";
 import CommentStore from "./modules/comment.js";
@@ -29,7 +28,6 @@ export default createStore({
         document: DocumentStore,
         admin: AdminStore,
         tag: TagStore,
-        navigation: NavigationStore,
         settings: SettingsStore,
         collab: CollaborationStore,
         comment: CommentStore,

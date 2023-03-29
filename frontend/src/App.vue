@@ -1,13 +1,17 @@
 <template>
-  <TopBar v-if="!hideTopbar" />
-  <Toast />
-  <router-view class="top-padding" />
+  <Loader v-if="!appLoaded" :loading="!appLoaded" :text="appLoadText" class="pageLoader"/>
+  <div v-else>
+    <TopBar v-if="!hideTopbar"/>
+    <Toast/>
+    <router-view class="top-padding"/>
+  </div>
 </template>
 
 <script>
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/Topbar.vue";
-import createTables from "@/store/tables";
+import Loader from "@/basic/Loader.vue";
+import {createTable} from "@/store/utils";
 
 /**
  * Main App Component
@@ -16,86 +20,48 @@ import createTables from "@/store/tables";
  */
 export default {
   name: "App",
-  components: {TopBar, Toast},
+  components: {TopBar, Toast, Loader},
+  data() {
+    return {
+      loaded: {
+        tables: false,
+        settings: true,
+      },
+    }
+  },
   sockets: {
     logout: function () {
       this.$router.push("/login");
     },
-    settingRefresh: function (data) {
-      let tables = [{name: 'study', fields: [
-        {
-            key: "name",
-            label: "Name of the study:",
-            placeholder: "My user study",
-            type: "text",
-            required: true,
-            default: "",
-        },
-        {
-            key: "documentId",
-            label: "Selected document for the study:",
-            type: "select",
-            options: {
-                table: "document", name: "name", value: "id"
-            },
-            icon: "file-earmark",
-            required: true,
-        },
-        {
-            key: "description",
-            label: "Description of the study:",
-            help: "This text will be displayed at the beginning of the user study!",
-            type: "editor",
-        },
-        {
-            key: "timeLimit",
-            type: "slider",
-            label: "How much time does a participant have for the study?",
-            help: "0 = disable time limitation",
-            size: 12,
-            unit: "min",
-            min: 0,
-            max: 180,
-            step: 1,
-            required: false,
-            default: 0,
-        },
-        {
-            key: "collab",
-            label: "Should the study be collaborative?",
-            type: "switch",
-            required: true,
-            default: false,
-        },
-        {
-            key: "resumable",
-            label: "Should the study be resumable?",
-            type: "switch",
-            required: true,
-            default: false,
-        },
-        {
-            key: "start",
-            label: "Study sessions can't start before",
-            type: "datetime",
-            size: 6,
-            required: true,
-            default: null,
-        },
-        {
-            key: "end",
-            label: "Study sessions can't start after:",
-            type: "datetime",
-            size: 6,
-            required: true,
-        },
-    ]}, {name: 'document', fields: []}];
-      createTables(this.$store, tables);
+    appTables: function (data) {
+      data.forEach((table) => {
+        createTable(this.$store, table);
+      });
+      this.loaded.tables = true;
+    },
+    appSettings: function (data) {
+      this.$store.commit("settings/setSettings", data);
+      this.loaded.settings = true;
     },
   },
   computed: {
     hideTopbar() {
       return this.$route.meta.hideTopbar !== undefined && this.$route.meta.hideTopbar;
+    },
+    appLoaded() {
+      return this.appLoadPercent === 100;
+    },
+    appLoadPercent() {
+      return Object.values(this.loaded).filter((v) => v).length / Object.values(this.loaded).length * 100;
+    },
+    appLoadStep() {
+      return Object.keys(this.loaded).find((k) => !this.loaded[k]);
+    },
+    appLoadText() {
+      if (this.appLoadPercent < 100) {
+        return "Load " + this.appLoadStep + " (" + this.appLoadPercent + "%)";
+      }
+      return "Loading...";
     },
   },
   watch: {
@@ -106,7 +72,7 @@ export default {
     }
   },
   mounted() {
-    this.$socket.emit("settingGetAll");
+    this.$socket.emit("appInit");
   },
 }
 </script>
@@ -114,5 +80,12 @@ export default {
 <style>
 .top-padding {
   padding-top: 52.5px;
+}
+
+.pageLoader {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, -50%)
 }
 </style>

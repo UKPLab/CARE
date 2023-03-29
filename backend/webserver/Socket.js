@@ -76,17 +76,21 @@ module.exports = class Socket {
      * @param data
      */
     async updateCreatorName(data) {
-        const socket = this.getSocket("UserSocket");
-        if (socket) {
-            // Check if server side pagination is used
-            if ('count' in data) {
-                data.rows = await socket.updateCreatorName(data.rows);
-                return new Promise(resolve => resolve(data));
+        try {
+            const socket = this.getSocket("UserSocket");
+            if (socket) {
+                // Check if server side pagination is used
+                if (data && 'count' in data) {
+                    data.rows = await socket.updateCreatorName(data.rows);
+                    return new Promise(resolve => resolve(data));
+                }
+                return socket.updateCreatorName(data);
+            } else {
+                this.logger.error("UserSocket not found!")
+                return data;
             }
-            return socket.updateCreatorName(data);
-        } else {
-            this.logger.error("UserSocket not found!")
-            return data;
+        } catch (err) {
+            this.logger.error(err);
         }
     }
 
@@ -154,6 +158,30 @@ module.exports = class Socket {
             data = await this.updateCreatorName(data);
         }
         this.io.to("doc:" + documentId).emit(event, data);
+    }
+
+    /**
+     * Send table data to the clients
+     * @param table
+     * @param userId
+     * @return {Promise<void>}
+     */
+    async sendTableData(table, userId = null) {
+        try {
+            const updateCreatorName = "userId" in this.models[table].getAttributes();
+
+            if (this.isAdmin()) {
+                if (userId) {
+                    this.emit(table + "Refresh", await this.models[table].getAllByKey('userId', userId), updateCreatorName);
+                } else {
+                    this.emit(table + "Refresh", await this.models[table].getAll(), updateCreatorName);
+                }
+            } else {
+                this.emit(table + "Refresh", await this.models[table].getAllByKey('userId', this.userId, false, true), updateCreatorName);
+            }
+        } catch (err) {
+            this.logger.error(err);
+        }
     }
 
 
