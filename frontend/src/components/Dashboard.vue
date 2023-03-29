@@ -57,22 +57,29 @@ export default {
       return this.$store.getters['settings/getSettings'];
     },
     currentComponent() {
-      if (this.navElements > 0 && this.settings) {
-        let component = this.navElements.find(element => element.name === this.$route.name);
+      if (this.navElements.length > 0) {
+        let component = this.navElements.find(element => element.name.toLowerCase() === this.$route.name.toLowerCase());
         if (component === undefined) {
-          if ("dashboard.navigation.component.default" in this.settings) {
-            component = this.navElements.find(e => e.name === this.settings["dashboard.navigation.component.default"]);
-          } else {
-             return Loading;
+          if (this.settings && "dashboard.navigation.component.default" in this.settings) {
+            component = this.navElements.find(e => e.name.toLowerCase() === this.settings["dashboard.navigation.component.default"].toLowerCase());
           }
         }
-        return defineAsyncComponent(
-          {
-            loader: () => import("./dashboard/" + component.component + ".vue"),
-            loadingComponent: Loading,
-            errorComponent: NotFoundPage
-          });
+
+        if (component !== undefined) {
+          return defineAsyncComponent(
+            {
+              loader: () => import("./dashboard/" + component.component + ".vue"),
+              loadingComponent: Loading,
+              errorComponent: NotFoundPage
+            });
+        }
       }
+      return defineAsyncComponent(
+        {
+          loader: () => import('@/basic/Loading.vue'),
+          loadingComponent: Loading,
+          errorComponent: NotFoundPage
+        });
 
     },
   },
@@ -87,7 +94,7 @@ export default {
   methods: {
     async createNavigation() {
 
-      if (this.navElements === null) return;
+      if (this.navElements.length === 0) return;
 
       const children = this.navElements.map(e => {
         const child = {

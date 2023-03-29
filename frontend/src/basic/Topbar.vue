@@ -12,8 +12,8 @@
           @click="$router.go(-1)"
         >
           <LoadIcon
-            name="arrow-left"
             :size="16"
+            name="arrow-left"
           />
         </button>
         <a
@@ -21,12 +21,12 @@
           @click="toHome()"
         >
           <IconAsset
-            name="logo"
-            height="30"
             :style="{cursor: 'pointer'}"
+            height="30"
+            name="logo"
           />
         </a>
-        <div id="topbarCustomPlaceholder" />
+        <div id="topbarCustomPlaceholder"/>
         <ul
           id="topBarNavItems"
           class="navbar-nav ms-auto mt-2 mt-lg-0"
@@ -79,10 +79,12 @@
  * appropriate for the context.
  *
  * @author: Carly Gettinger, Dennis Zyska, Nils Dycke
-*/
+ */
 
 import LoadIcon from "@/icons/LoadIcon.vue";
 import IconAsset from "@/icons/IconAsset.vue";
+import axios from "axios";
+import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "TopBar",
@@ -100,7 +102,7 @@ export default {
       document.body.classList.remove('sidebar-exists');
     },
     async logout() {
-      await this.$store.dispatch('auth/logout');
+      await axios.get(getServerURL() + '/auth/logout', {withCredentials: true})
       await this.$router.push("/login");
     },
     async toHome() {

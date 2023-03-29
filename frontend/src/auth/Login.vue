@@ -10,8 +10,8 @@
           style="margin-bottom: 20px"
         >
           <IconAsset
-            name="logo"
             :height="200"
+            name="logo"
           />
         </div>
 
@@ -137,8 +137,9 @@
  *
  * @author: Dennis Zyska, Nils Dycke, Carly Gettinger
  */
-import {mapActions} from "vuex";
 import IconAsset from "@/icons/IconAsset.vue";
+import axios from "axios";
+import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthLogin",
@@ -177,11 +178,7 @@ export default {
       return window.config['app.landing.showProject'] === 'true' && this.linkProject !== '';
     }
   },
-  mounted() {
-    this.check();
-  },
   methods: {
-    ...mapActions({login: "auth/login", check: "auth/check"}),
     findNextSiblingWithClass(element, className) {
       var nextSibling = element.nextElementSibling;
       while (nextSibling != null) {
@@ -250,8 +247,20 @@ export default {
         console.log(error);
         this.errorMessage = error;
       }
-
     },
+    async login(credentials) {
+      const response = await axios.post(getServerURL() + '/auth/login',
+        credentials,
+        {
+          validateStatus: function (status) {
+            return status === 200 || status === 401;
+          },
+          withCredentials: true
+        });
+      if (response.status === 401) throw response.data.message
+      await this.$router.push("/dashboard");
+    },
+
   }
 }
 </script>

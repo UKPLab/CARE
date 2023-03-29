@@ -41,7 +41,8 @@ app.use(new VueSocketIO({
         {
             path: '',
             withCredentials: true,
-            reconnect: !0
+            reconnect: !0,
+            autoConnect: false
         }),
     vuex: {
         store,

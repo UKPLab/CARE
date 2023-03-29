@@ -9,7 +9,6 @@
  * @author: Dennis Zyska, Nils Dycke
 **/
 import * as VueRouter from 'vue-router'
-import store from "./store";
 
 const routes = [
     {
@@ -77,18 +76,6 @@ const router = VueRouter.createRouter({
     routes: routes,
     mode: 'html5',
     root: "/"
-})
-
-// add basic access management (requiring login)
-router.beforeEach(async (to, from, next) => {
-    await store.restored;
-
-    if (to.meta.requiresAuth && store.getters['auth/isAuthenticated'] === false) {
-        next("/login");
-    } else {
-        if (store.getters['auth/isAuthenticated'] && (to.path === '/register' || to.path === '/login')) next('/');
-        else next();
-    }
 })
 
 export default router;

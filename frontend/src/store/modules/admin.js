@@ -7,7 +7,6 @@
  * @module store/admin
  * @author Dennis Zyska, Nils Dycke
  */
-import createPersistedState from 'vuex-persistedstate';
 
 const getDefaultState = () => {
     return {
@@ -20,7 +19,6 @@ const getDefaultState = () => {
 export default {
     namespaced: true,
     strict: true,
-    plugins: [createPersistedState()],
     state: getDefaultState(),
     getters: {
         /**
