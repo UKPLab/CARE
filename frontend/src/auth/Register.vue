@@ -209,9 +209,10 @@
  *
  *  @Author: Dennis Zyska, Carly Gettinger
  */
-import {mapActions} from "vuex";
 import TermsModal from "./TermsModal.vue";
 import IconAsset from "@/icons/IconAsset.vue";
+import axios from "axios";
+import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthRegister",
@@ -236,7 +237,6 @@ export default {
     },
   },
   methods: {
-    ...mapActions({register: "auth/register"}),
     trySubmit() {
       const form = document.querySelector('form');
       if (form.checkValidity()) {
@@ -285,10 +285,9 @@ export default {
         feedbackDiv.classList.add("invalid");
       }
     },
-
     async register_user() {
       try {
-        let response = await this.register({
+        let response = await axios.post(getServerURL() + '/auth/register',{
           firstName: this.firstName,
           lastName: this.lastName,
           userName: this.userName,

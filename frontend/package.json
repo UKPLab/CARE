@@ -43,8 +43,7 @@
     "vue-tab": "^0.0.0",
     "vue3-observe-visibility": "^0.1.2",
     "vue3-tabs-component": "^1.1.0",
-    "vuex": "^4.0.2",
-    "vuex-persistedstate": "^4.1.0"
+    "vuex": "^4.0.2"
   },
   "devDependencies": {
     "@testing-library/vue": "^6.6.1",

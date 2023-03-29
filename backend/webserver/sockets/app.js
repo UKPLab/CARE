@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const {relevantFields} = require("../../utils/auth");
 
 /**
  * Send data for building the frontend app
@@ -49,12 +50,17 @@ module.exports = class AppSocket extends Socket {
         await this.sendTableData(data.table)
     }
 
+    async sendUser() {
+        this.socket.emit("appUser",  relevantFields(await this.models['user'].getById(this.userId)));
+    }
+
     /**
      * Send all data needed for the frontend app for initialization
      * @param {[object]} data
      * @return {Promise<void>}
      */
     async sendInit(data) {
+        await this.sendUser();
         await this.sendTables();
         await this.sendSettings();
     }
