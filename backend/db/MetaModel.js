@@ -4,6 +4,18 @@ const {v4: uuidv4} = require("uuid");
 module.exports = class MetaModel extends Model {
 
     /**
+     * Make model available for frontend
+     * @type {boolean}
+     */
+    static autoTable = false;
+
+    /**
+     * Fields for frontend
+     * @type {[]}
+     */
+    static fields = [];
+
+    /**
      * Filter object by keys
      * @param {Object} obj
      * @param {Array} relevantFields
@@ -68,9 +80,10 @@ module.exports = class MetaModel extends Model {
      * Get all db entries by key
      * @param {string} key column name
      * @param {any} value column value
-     * @param {boolean} includeDraft include draft entries
+     * @param {boolean} includeDraft include draft
+     * @param {boolean} fallback fallback to getAll if no key is found
      */
-    static async getAllByKey(key, value, includeDraft = false) {
+    static async getAllByKey(key, value, includeDraft = false, fallback= false) {
         if (key in this.getAttributes()) {
             try {
                 if (!includeDraft && "draft" in this.getAttributes()) {
@@ -87,6 +100,8 @@ module.exports = class MetaModel extends Model {
             } catch (err) {
                 console.log(err);
             }
+        } else if (fallback) {
+            return await this.getAll();
         } else {
             console.log("DB MetaModel Class " + key + " not available: " + this.constructor.name)
         }

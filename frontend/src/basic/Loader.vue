@@ -32,7 +32,7 @@ Author: Dennis Zyska, Nils Dycke
 Source: -
 */
 export default {
-  name: "Loader",
+  name: "BasicLoader",
   props: {
     'loading': {
       type: Boolean,

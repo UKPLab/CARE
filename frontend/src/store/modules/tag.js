@@ -6,7 +6,7 @@
  * @module store/tags
  * @author Dennis Zyska, Nils Dycke
  */
-import refreshState from "../utils";
+import {refreshState} from "../utils";
 
 /**
  * Returns the empty tagset recognizable by the id 0. Default value of the store.

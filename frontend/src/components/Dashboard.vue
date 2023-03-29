@@ -1,5 +1,5 @@
 <template>
-  <Loading v-if="navElements === null || settings === null" />
+  <Loading v-if="navElements > 0 || settings === null"/>
   <div v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column dashboard-wrapper">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
@@ -7,7 +7,7 @@
           id="sidebarContainer"
           class="col border mh-100  col-sm-auto g-0"
         >
-          <Sidebar />
+          <Sidebar/>
         </div>
         <div
           id="viewerContainer"
@@ -41,6 +41,7 @@ import NotFoundPage from "@/basic/NotFound.vue";
 
 export default {
   name: "DashboardRoute",
+  fetchData: ['nav_element'],
   components: {Loading, Sidebar},
   props: {
     "catchAll": {
@@ -50,24 +51,29 @@ export default {
   },
   computed: {
     navElements() {
-      return this.$store.getters['navigation/getSidebarElementsFlat'];
+      return this.$store.getters['table/nav_element/getAll'];
     },
     settings() {
       return this.$store.getters['settings/getSettings'];
     },
     currentComponent() {
-      if (this.navElements && this.settings) {
+      if (this.navElements > 0 && this.settings) {
         let component = this.navElements.find(element => element.name === this.$route.name);
         if (component === undefined) {
-          component = this.navElements.find(e => e.name === this.settings["dashboard.navigation.component.default"]);
+          if ("dashboard.navigation.component.default" in this.settings) {
+            component = this.navElements.find(e => e.name === this.settings["dashboard.navigation.component.default"]);
+          } else {
+             return Loading;
+          }
         }
         return defineAsyncComponent(
-            {
-              loader: () => import("./dashboard/" + component.component + ".vue"),
-              loadingComponent: Loading,
-              errorComponent: NotFoundPage
-            });
+          {
+            loader: () => import("./dashboard/" + component.component + ".vue"),
+            loadingComponent: Loading,
+            errorComponent: NotFoundPage
+          });
       }
+
     },
   },
   watch: {
@@ -76,7 +82,6 @@ export default {
     }
   },
   mounted() {
-    this.$socket.emit("settingGetNavigation");
     this.createNavigation();
   },
   methods: {
@@ -92,7 +97,7 @@ export default {
           component: () => import('@/basic/Loading.vue'),
         };
         if ("navigation.dashboard.component.default" in this.settings &&
-            child.name === this.settings["navigation.dashboard.component.default"]) {
+          child.name === this.settings["navigation.dashboard.component.default"]) {
           child.alias.push("/dashboard");
         }
 

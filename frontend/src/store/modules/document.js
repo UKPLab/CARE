@@ -6,7 +6,7 @@
  * @module store/documents
  * @author Dennis Zyska, Nils Dycke
  */
-import refreshState from "../utils";
+import {refreshState} from "../utils";
 
 export default {
     namespaced: true,
