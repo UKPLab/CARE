@@ -99,7 +99,7 @@ export default {
 
     const self = this;
     this.leaveEditModeListener = function (e) {
-      if (self.$refs.top !== e.target && !self.$refs.top.contains(e.target)) {
+      if (self.editMode && self.$refs.top !== e.target && !self.$refs.top.contains(e.target)) {
         self.editMode = false;
       }
     }

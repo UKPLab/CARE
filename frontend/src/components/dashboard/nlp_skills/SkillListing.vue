@@ -44,10 +44,10 @@
           <span class="fs-6 fw-light">{{ config.description }}</span>
         </div>
       </div>
-      <div class="row py-2" v-if="commandEditorActive">
-        <CommandEditor></CommandEditor>
+      <div class="row p-2" v-if="commandEditorActive">
+        <CommandEditor service="NLPService"></CommandEditor>
       </div>
-      <div class="row">
+      <div class="row py-2">
         <span class="fs-5">
           Example
         </span>

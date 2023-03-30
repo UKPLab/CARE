@@ -1,3 +1,5 @@
+import refreshState from "@/store/utils";
+
 /**
  * Store for NLP related interaction
  *
@@ -11,7 +13,8 @@
 
 const getDefaultState = () => {
     return {
-        services: {}
+        services: {},
+        serviceStatus: {}
     };
 };
 
@@ -21,7 +24,7 @@ export default {
     state: getDefaultState(),
     getters: {
         /**
-         * Returns the service information for the given service and service type.
+         * Returns the service data stored for the given service and service type.
          *
          * @param state
          * @returns {function(String, String): Object|null}
@@ -29,6 +32,49 @@ export default {
         get: (state) => (service, serviceType) => {
             return service in state.services && serviceType in state.services[service] ?
                 state.services[service][serviceType] : null;
+        },
+
+        /**
+         * Loads the service config (i.e. metadata) for the given service. If the service
+         * has not connected yet, null will be returned. Likewise, if the server has
+         * not provided any configuration.
+         *
+         * @param state
+         * @returns {function(String): Object|null}
+         */
+        getConfig: (state) => (service) => {
+            return service in state.serviceStatus ? state.serviceStatus[service] : null;
+        },
+
+        /**
+         * Returns the command types provided by the service, if the service already connected.
+         *
+         * @param state
+         * @returns {function(String): Object|null}
+         */
+        getCmdTypes: (state) => (service) => {
+            return service in state.serviceStatus && state.serviceStatus[service].cmdTypes ? state.serviceStatus[service].cmdTypes : null;
+        },
+
+        /**
+         * Returns the services connected to the frontend by name.
+         *
+         * @param state
+         * @returns {function(): string[]}
+         */
+        getServices: (state) => () => {
+            return Object.keys(state.serviceStatus);
+        },
+
+        /**
+         * Returns the last point in time, when a response was sent from the service. Returns null
+         * if the service has not connected yet.
+         *
+         * @param state
+         * @returns {function(String): Date|null}
+         */
+        getStatus: (state) => (service) => {
+            return service in state.serviceStatus && state.serviceStatus.lastUpdate ? state.serviceStatus.lastUpdate : null;
         },
 
         /**
@@ -71,6 +117,16 @@ export default {
 
             if (!(service in state.services)) {
                 state.services[service] = {};
+            }
+            if(!(service in state.serviceStatus)){
+                state.serviceStatus[service] = {};
+            }
+            state.serviceStatus[service].lastUpdate = Date.now();
+
+            if (serviceType === "isAlive") {
+                state.serviceStatus[service].cmdTypes = data.data.cmdTypes ? data.data.cmdTypes : [];
+                state.serviceStatus[service].resTypes = data.data.resTypes ? data.data.resTypes : [];
+                return;
             }
 
             // service dependent update logic
