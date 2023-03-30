@@ -57,6 +57,16 @@ export default {
         },
 
         /**
+         * Returns the command types provided by the service, if the service already connected.
+         *
+         * @param state
+         * @returns {function(String): Object|null}
+         */
+        getResponseTypes: (state) => (service) => {
+            return service in state.serviceStatus && state.serviceStatus[service].resTypes ? state.serviceStatus[service].resTypes : null;
+        },
+
+        /**
          * Returns the services connected to the frontend by name.
          *
          * @param state
