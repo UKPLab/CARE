@@ -177,7 +177,7 @@ module.exports = class Socket {
                     this.emit(table + "Refresh", await this.models[table].getAll(), updateCreatorName);
                 }
             } else {
-                this.emit(table + "Refresh", await this.models[table].getAllByKey('userId', this.userId, false, true), updateCreatorName);
+                this.emit(table + "Refresh", await this.models[table].getAllByKey('userId', this.userId), updateCreatorName);
             }
         } catch (err) {
             this.logger.error(err);

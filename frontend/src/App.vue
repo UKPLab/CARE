@@ -96,22 +96,24 @@ export default {
     },
     "$route.meta.requiresAuth"(newValue, oldValue) {
       if (newValue !== oldValue) {
-        if (newValue) {
+        if (newValue && !this.$socket.connected) {
           this.$socket.connect();
-        } else {
-          this.$socket.disconnect();
         }
       }
     }
   },
   mounted() {
     this.$router.isReady().then(async () => {
-      const response = await axios.get(getServerURL() + '/auth/check',
-        {withCredentials: true});
-      if (response.data.user) {
-        await this.$router.push("/dashboard");
+      if (this.$route.meta.checkLogin) {
+        // Check if user already authenticated, if so, we redirect him to the dashboard.
+        const response = await axios.get(getServerURL() + '/auth/check',
+          {withCredentials: true});
+        if (response.data.user) {
+          await this.$router.push("/dashboard");
+        }
       }
     });
+
   },
 }
 </script>

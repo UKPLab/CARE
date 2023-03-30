@@ -4,6 +4,7 @@ const MetaModel = require("../MetaModel.js");
 module.exports = (sequelize, DataTypes) => {
     class NavElement extends MetaModel {
         static autoTable = true;
+        static publicTable = true;
 
         /**
          * Helper method for defining associations.
