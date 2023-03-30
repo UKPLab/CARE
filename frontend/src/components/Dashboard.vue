@@ -36,7 +36,6 @@
 import Sidebar from "./dashboard/navigation/Sidebar.vue";
 import {defineAsyncComponent} from "vue";
 import Loading from "@/basic/Loading.vue";
-import Dashboard from "./Dashboard.vue";
 import NotFoundPage from "@/basic/NotFound.vue";
 
 export default {
@@ -56,79 +55,33 @@ export default {
     settings() {
       return this.$store.getters['settings/getSettings'];
     },
-    currentComponent() {
-      if (this.navElements.length > 0) {
-        let component = this.navElements.find(element => element.name.toLowerCase() === this.$route.name.toLowerCase());
-        if (component === undefined) {
-          if (this.settings && "dashboard.navigation.component.default" in this.settings) {
-            component = this.navElements.find(e => e.name.toLowerCase() === this.settings["dashboard.navigation.component.default"].toLowerCase());
-          }
-        }
-
-        if (component !== undefined) {
-          return defineAsyncComponent(
-            {
-              loader: () => import("./dashboard/" + component.component + ".vue"),
-              loadingComponent: Loading,
-              errorComponent: NotFoundPage
-            });
-        }
+    defaultComponent() {
+      if (this.settings && "dashboard.navigation.component.default" in this.settings) {
+        return this.navElements.find(e => e.name.toLowerCase() === this.settings["dashboard.navigation.component.default"].toLowerCase());
       }
-      return defineAsyncComponent(
-        {
-          loader: () => import('@/basic/Loading.vue'),
-          loadingComponent: Loading,
-          errorComponent: NotFoundPage
-        });
+      return undefined;
+    },
+    currentComponent() {
+      let component = undefined;
+      if (this.navElements.length > 0 && this.catchAll !== undefined) {
+        component = this.navElements.find(element => element.path.toLowerCase() === this.catchAll.toLowerCase());
+      }
+      if (component === undefined && this.defaultComponent) {
+        component = this.defaultComponent;
+      }
+      if (component !== undefined) {
+        return defineAsyncComponent(
+          {
+            loader: () => import("./dashboard/" + component.component + ".vue"),
+            loadingComponent: Loading,
+            errorComponent: NotFoundPage
+          });
+      } else {
+        return Loading;
+      }
 
     },
   },
-  watch: {
-    navElements() {
-      this.createNavigation();
-    }
-  },
-  mounted() {
-    this.createNavigation();
-  },
-  methods: {
-    async createNavigation() {
-
-      if (this.navElements.length === 0) return;
-
-      const children = this.navElements.map(e => {
-        const child = {
-          name: e.name,
-          alias: (e.alias !== undefined && e.alias !== null) ? e.alias : [],
-          path: "/dashboard/" + e.path,
-          component: () => import('@/basic/Loading.vue'),
-        };
-        if ("navigation.dashboard.component.default" in this.settings &&
-          child.name === this.settings["navigation.dashboard.component.default"]) {
-          child.alias.push("/dashboard");
-        }
-
-        return child;
-      });
-
-      const routes = {
-        path: "/dashboard",
-        name: "Dashboard",
-        component: Dashboard,
-        meta: {requiresAuth: true, toggleSidebar: true},
-      };
-
-      // Add new Routes
-      this.$router.addRoute(routes);
-      children.forEach(child => this.$router.addRoute("Dashboard", child));
-
-      // Push current browser url to route
-      if (this.catchAll !== undefined) {
-        await this.$router.push("/dashboard/" + this.catchAll);
-      }
-
-    }
-  }
 }
 </script>
 

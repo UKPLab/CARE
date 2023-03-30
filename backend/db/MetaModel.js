@@ -8,6 +8,7 @@ module.exports = class MetaModel extends Model {
      * @type {boolean}
      */
     static autoTable = false;
+    static publicTable = false;
 
     /**
      * Fields for frontend
@@ -83,7 +84,7 @@ module.exports = class MetaModel extends Model {
      * @param {boolean} includeDraft include draft
      * @param {boolean} fallback fallback to getAll if no key is found
      */
-    static async getAllByKey(key, value, includeDraft = false, fallback= false) {
+    static async getAllByKey(key, value, includeDraft = false) {
         if (key in this.getAttributes()) {
             try {
                 if (!includeDraft && "draft" in this.getAttributes()) {
@@ -100,7 +101,7 @@ module.exports = class MetaModel extends Model {
             } catch (err) {
                 console.log(err);
             }
-        } else if (fallback) {
+        } else if (this.publicTable) {
             return await this.getAll();
         } else {
             console.log("DB MetaModel Class " + key + " not available: " + this.constructor.name)
