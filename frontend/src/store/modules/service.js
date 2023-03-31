@@ -35,6 +35,16 @@ export default {
         },
 
         /**
+         * Returns the service data stored for the given service sent for any service message type.
+         *
+         * @param state
+         * @returns {function(String): Object|null}
+         */
+        getAll: (state) => (service) => {
+            return service in state.services ?  state.services[service] : [];
+        },
+
+        /**
          * Loads the service config (i.e. metadata) for the given service. If the service
          * has not connected yet, null will be returned. Likewise, if the server has
          * not provided any configuration.
