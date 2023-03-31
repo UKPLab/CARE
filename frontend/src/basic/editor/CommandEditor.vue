@@ -99,32 +99,27 @@
         />
       </button>
     </div>
-    <div class="border px-2 mt-1">
+    <div class="border-start border-end border-bottom px-2">
       <span class="text-secondary fst-italic">Payload</span>
       <JsonEditor
-          v-model:content="content"
+          v-model:content="payload"
           start-edit-mode
       />
     </div>
-    <div class="border mt-1 text-muted px-2" v-if="response">
-      <span class="text-secondary fst-italic">Payload</span>
-      <JsonEditor
-          v-model:content="response"
-          readonly
-      />
-    </div>
     <div class="mt-2 mb-2 border text-muted">
-      <div class="w-100 text-center bg-light" @click="showLog=!showLog" :title="`${showLog ? 'Hide' : 'Show'} history`">
+      <div>
+        <div v-for="i in history.slice(0, showHistory ? history.length : configEditor.defaultShowCount)" :key="i.time">
+          {{ i }}
+        </div>
+      </div>
+      <div class="w-100 text-center bg-light" @click="showHistory=!showHistory"
+           :title="`${showHistory ? 'Hide' : 'Show'} more`"
+           v-if="history.length > configEditor.defaultShowCount">
         <LoadIcon
-            :icon-name="`caret-${showLog ? 'up' : 'down'}`"
+            :icon-name="`caret-${showHistory ? 'up' : 'down'}`"
             :size="12"
         />
       </div>
-      <Transition type="fade">
-        <div v-if="showLog">
-          Log
-        </div>
-      </Transition>
     </div>
   </div>
 </template>
@@ -150,19 +145,29 @@ export default {
   },
   data() {
     return {
-      content: {},
+      payload: {},
       configEditor: {
         action: "REQ",
         allowActionChange: true,
         command: null,
         allowCommandChange: true,
         allowServiceChange: true,
+        defaultShowCount: 5
       },
       sending: false,
-      response: null,
       history: [],
-      showLog: false
+      showHistory: false
     }
+  },
+  sockets: {
+    serviceRefresh: function (data) {
+      if (data && data.service === this.service) {
+        this.history.unshift({time: Date.now(), incoming: true, data: data});
+      }
+
+      // by default deactivate sending state
+      this.sending = false;
+    },
   },
   computed: {
     serviceCmds() {
@@ -173,7 +178,7 @@ export default {
     },
     services() {
       return this.$store.getters["service/getServices"]();
-    }
+    },
   },
   beforeMount() {
     if (this.config) {
@@ -183,12 +188,34 @@ export default {
   methods: {
     send() {
       this.sending = true;
-      //todo update history
-      // ...
+
+      const messageType = this.configEditor.action === "REQ" ? "serviceRequest" : "serviceCommand";
+      let message = {service: this.service, data: this.payload};
+
+      if (messageType === "serviceCommand") {
+        message.command = this.configEditor.command;
+      }
+
+      this.history.unshift({
+        time: Date.now(),
+        incoming: false,
+        data: message
+      });
+
+      this.$socket.emit(messageType, message);
+
+      setTimeout(() => {
+            if (this.sending) {
+              this.eventBus.emit('toast', {
+                message: "Received no message from server within 5s.",
+                variant: "warning",
+                delay: 3000
+              });
+            }
+            this.sending = false
+          }, 5000
+      );
     },
-    changeAction(newAction) {
-      this.configEditor.action = newAction;
-    }
   }
 }
 </script>
