@@ -1,14 +1,27 @@
 <template>
-  <FormElement :options="options">
+  <FormElement :data-table="dataTable" :options="options">
     <template #element>
       <select
+        v-if="Array.isArray(options.options)"
         v-model="currentData"
         class="form-select"
       >
-        <option
-          v-for="option in selectOptions"
-          :key="option.id"
-          :value="option[options.options.value]"
+        <option v-for="option in selectOptions"
+                :key="option.value"
+                :value="option.value"
+                :class="option.class"
+        >
+          {{ option.name }}
+        </option>
+      </select>
+      <select
+        v-else
+        v-model="currentData"
+        class="form-select"
+      >
+        <option v-for="option in selectOptions"
+                :key="option.id"
+                :value="option[options.options.value]"
         >{{ option[options.options.name] }}
         </option>
       </select>
@@ -33,6 +46,11 @@ export default {
       required: false,
       default: -1,
     },
+    dataTable: {
+      type: Boolean,
+      required: false,
+      default: false,
+    }
   },
   emits: ["update:modelValue"],
   data() {
@@ -42,6 +60,9 @@ export default {
   },
   computed: {
     selectOptions() {
+      if (Array.isArray(this.options.options)) {
+        return this.options.options;
+      }
       return this.$store.getters["table/" + this.options.options.table + "/getAll"];
     },
   },

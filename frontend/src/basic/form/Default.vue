@@ -1,5 +1,5 @@
 <template>
-  <FormElement :options="options">
+  <FormElement :data-table="dataTable" :options="options">
     <template #element>
       <input
         v-model="currentData"
@@ -30,6 +30,11 @@ export default {
       required: false,
       default: "",
     },
+    dataTable: {
+      type: Boolean,
+      required: false,
+      default: false,
+    }
   },
   emits: ["update:modelValue"],
   data() {

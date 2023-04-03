@@ -27,6 +27,7 @@ import BasicCoordinator from "@/basic/Coordinator.vue";
  */
 export default {
   name: "CoordinatorStudy",
+  fetchData: ['document'],
   components: {BasicCoordinator},
   data() {
     return {
@@ -38,17 +39,13 @@ export default {
   computed: {
     study() {
       if (this.studyId !== 0) {
-        return {...this.$store.getters['study/getStudyById'](this.studyId)};
+        return {...this.$store.getters['table/study/get'](this.studyId)};
       }
       return {};
     },
     link() {
       return window.location.origin + "/study/" + this.hash;
     },
-  },
-  mounted() {
-    // make sure the document list is up-to-date
-    this.$socket.emit("documentGetAll");
   },
   methods: {
     open(studyId, documentId = null, loadInitialized = false) {

@@ -155,10 +155,20 @@ export default {
      * @param defaultValues Override default values
      */
     open(id, defaultValues) {
-      this.reset();
-      this.id = id;
-      this.overrideDefaultValues = defaultValues;
-      this.$refs.coordinatorModal.open();
+      if (this.fields) {
+        this.reset();
+        this.id = id;
+        this.overrideDefaultValues = defaultValues;
+        this.$refs.coordinatorModal.open();
+      } else {
+        this.eventBus.emit('toast', {
+          title: 'Error',
+          message: 'The table '
+            + this.table
+            + ' has no defined fields!',
+          type: 'error',
+        });
+      }
     },
     close() {
       this.$refs.coordinatorModal.close();

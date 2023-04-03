@@ -52,10 +52,18 @@
             :options="field"
           />
 
+          <FormTable
+            v-else-if="field.type === 'table'"
+            v-model="currentData[field.key]"
+            :defaults="defaults"
+            :options="field"
+          />
+
           <FormDefault
             v-else
             v-model="currentData[field.key]"
             :options="field"
+
           />
         </span>
       </div>
@@ -72,6 +80,7 @@ import FormCheckbox from "@/basic/form/Checkbox.vue"
 import FormDefault from "@/basic/form/Default.vue"
 import FormTextarea from "@/basic/form/Textarea.vue"
 import FormEditor from "@/basic/form/Editor.vue"
+import FormTable from "@/basic/form/DataTable.vue"
 
 /**
  * Basic form component for rendering form fields provided by fields prop
@@ -88,7 +97,8 @@ export default {
     FormCheckbox,
     FormDefault,
     FormTextarea,
-    FormEditor
+    FormEditor,
+    FormTable
   },
   props: {
     modelValue: {
@@ -144,9 +154,12 @@ export default {
      * @return {*}
      */
     getValues(values) {
-      return Object.assign({}, ...this.fields.map(f => ({
-        [f.key]:  (f.key in values) ? values[f.key] : ("default" in f) ? f.default : this.defaults[f.type]
-      })));
+      if (this.fields) {
+        return Object.assign({}, ...this.fields.map(f => ({
+          [f.key]: (f.key in values) ? values[f.key] : ("default" in f) ? f.default : this.defaults[f.type]
+        })));
+      }
+      return {};
     }
   }
 }
