@@ -66,6 +66,29 @@ module.exports = class MetaModel extends Model {
     }
 
     /**
+     * Get all db entries for auto table (filtered)
+     * @param userId
+     * @return {Promise<MetaModel[]|Object|undefined>}
+     */
+    static async getAutoTable(userId = null, includeDraft = false) {
+        if (this.publicTable) {
+            return await this.getAll();
+        } else {
+            let filter = {deleted: false};
+            if (userId && 'userId' in this.getAttributes()) {
+                filter['userId'] = userId;
+            }
+            if ("public" in this.getAttributes()) {
+                filter['public'] = true;
+            }
+            if ("draft" in this.getAttributes()) {
+                filter['draft'] = includeDraft;
+            }
+            return await this.findAll({where: filter, raw: true});
+        }
+    }
+
+    /**
      * Get all db entries
      * @return {Promise<object|undefined>}
      */
