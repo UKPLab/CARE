@@ -75,6 +75,11 @@ module.exports = class AppSocket extends Socket {
             await this.sendData(data);
         });
 
+        this.socket.on("appDataUpdate", async (data) => {
+            //TODO
+            console.log(data);
+        });
+
     }
 
 }

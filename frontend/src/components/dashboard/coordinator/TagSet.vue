@@ -3,7 +3,7 @@
     ref="coordinator"
     table="tag_set"
     title="Tag Sets Editor"
-    @submit="publish"
+    @submit="update"
   />
 </template>
 
@@ -35,26 +35,8 @@ export default {
     open(tagSetId) {
       this.$refs.coordinator.open(tagSetId);
     },
-    publish(data) {
-      this.sockets.subscribe("studyPublished", (data) => {
-        this.sockets.unsubscribe('studyPublished');
-        if (data.success) {
-          this.hash = data.studyHash;
-
-          this.$refs.coordinator.showSuccess();
-
-          this.eventBus.emit('toast', {
-            title: "Study published",
-            message: "Successfully started study!",
-            variant: "success"
-          });
-        } else {
-          this.$refs.coordinator.close();
-
-          this.eventBus.emit('toast', {title: "Study not published", message: data.message, variant: "danger"});
-        }
-      });
-      this.$socket.emit("studyPublish", data);
+    update(data) {
+      this.$socket.emit("appDataUpdate", {table: "tag_set", data: data});
     },
     close() {
       this.$refs.coordinator.close();

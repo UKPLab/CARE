@@ -1,23 +1,28 @@
 <template>
-  <label
-    v-if="'label' in options"
-    :for="options.key"
-    class="form-label"
-  >{{ options.label }}</label>
-  <FormHelp
-    :help="options.help"
-  />
-  <div class="input-group">
-    <div
-      v-if="'icon' in options"
-      class="input-group-text"
-    >
-      <LoadIcon
-        :icon-name="options.icon"
-        :size="16"
-      />
+  <div v-if="dataTable">
+    <slot :id="options.key" name="element"/>
+  </div>
+  <div v-else>
+    <label
+      v-if="'label' in options"
+      :for="options.key"
+      class="form-label"
+    >{{ options.label }}</label>
+    <FormHelp
+      :help="options.help"
+    />
+    <div class="input-group">
+      <div
+        v-if="'icon' in options"
+        class="input-group-text"
+      >
+        <LoadIcon
+          :icon-name="options.icon"
+          :size="16"
+        />
+      </div>
+      <slot :id="options.key" name="element"/>
     </div>
-    <slot :id="options.key" name="element" />
   </div>
 </template>
 
@@ -38,6 +43,11 @@ export default {
       type: Object,
       required: true,
     },
+    dataTable: {
+      type: Boolean,
+      required: false,
+      default: false,
+    }
   },
 }
 </script>

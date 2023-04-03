@@ -9,7 +9,7 @@
       <ButtonHeader
           class="btn-primary"
           title="Add new tag set"
-          @click="add()"
+          @click="$refs.tagSetModal.open(0)"
       />
     </template>
     <template #body>
