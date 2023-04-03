@@ -52,6 +52,7 @@ import {mapGetters} from "vuex";
 
 export default {
   name: "DashboardTags",
+  fetchData: ['tag_set', 'tag'],
   components: {BasicTable, BasicCard, ButtonHeader, TagSetModal,TagSetModalOld, TagSetPublishModal, TagSetDeleteModal},
   props: {
     'admin': {

@@ -82,7 +82,6 @@ module.exports = class MetaModel extends Model {
      * @param {string} key column name
      * @param {any} value column value
      * @param {boolean} includeDraft include draft
-     * @param {boolean} fallback fallback to getAll if no key is found
      */
     static async getAllByKey(key, value, includeDraft = false) {
         if (key in this.getAttributes()) {
