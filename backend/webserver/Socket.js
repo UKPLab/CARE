@@ -26,6 +26,7 @@ module.exports = class Socket {
         this.user = this.socket.request.session.passport.user;
         this.userId = this.user.id;
         this.logger.defaultMeta = {userId: this.userId};
+        this.autoTables = Object.values(this.models).filter(model => model.autoTable).map(model => model.tableName);
 
     }
 
@@ -161,23 +162,40 @@ module.exports = class Socket {
     }
 
     /**
-     * Send table data to the clients
+     * Send auto table data to the clients
      * @param table
      * @param userId
      * @return {Promise<void>}
      */
     async sendTableData(table, userId = null) {
         try {
-            const updateCreatorName = "userId" in this.models[table].getAttributes();
-
-            if (this.isAdmin()) {
-                if (userId) {
-                    this.emit(table + "Refresh", await this.models[table].getAllByKey('userId', userId), updateCreatorName);
-                } else {
-                    this.emit(table + "Refresh", await this.models[table].getAll(), updateCreatorName);
-                }
+            if (!this.autoTables.includes(table)) {
+                this.logger.error("Table " + table + " is not an auto table!");
+                return;
             } else {
-                this.emit(table + "Refresh", await this.models[table].getAllByKey('userId', this.userId), updateCreatorName);
+
+                //check to update creator name
+                const updateCreatorName = "userId" in this.models[table].getAttributes();
+
+                if (this.isAdmin()) {
+                    if (userId && "userId" in this.models[table].getAttributes()) {
+                        this.emit(table + "Refresh", await this.models[table].getAllByKey('userId', userId), updateCreatorName);
+                    } else {
+                        this.emit(table + "Refresh", await this.models[table].getAll(), updateCreatorName);
+                    }
+                } else {
+                    if ("userId" in this.models[table].getAttributes()) {
+                        this.emit(table + "Refresh", await this.models[table].getAllByKey('userId', this.userId), updateCreatorName);
+                    } else {
+                        //TODO send only table data selected by userId or public or table is public
+                        this.emit(table + "Refresh", await this.models[table].getAll(), false);
+
+                        //TODO send all foreign keys of table that are in autoTables
+                        this.server.db.sequelize.getQueryInterface().getForeignKeyReferencesForTable(table).then(foreignKeys => {
+                            console.log("Foreign keys of table " + table + ": ", foreignKeys);
+                        });
+                    }
+                }
             }
         } catch (err) {
             this.logger.error(err);

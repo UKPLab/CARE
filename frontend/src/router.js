@@ -35,7 +35,7 @@ const routes = [
     {
         path: "/register",
         component: () => import("@/auth/Register.vue"),
-        meta: {requiresAuth: false, hideTopbar: true}
+        meta: {requiresAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
         path: "/document/:documentHash",
