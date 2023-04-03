@@ -184,17 +184,21 @@ module.exports = class Socket {
                         this.emit(table + "Refresh", await this.models[table].getAll(), updateCreatorName);
                     }
                 } else {
-                    if ("userId" in this.models[table].getAttributes()) {
-                        this.emit(table + "Refresh", await this.models[table].getAllByKey('userId', this.userId), updateCreatorName);
-                    } else {
-                        //TODO send only table data selected by userId or public or table is public
-                        this.emit(table + "Refresh", await this.models[table].getAll(), false);
 
-                        //TODO send all foreign keys of table that are in autoTables
-                        this.server.db.sequelize.getQueryInterface().getForeignKeyReferencesForTable(table).then(foreignKeys => {
-                            console.log("Foreign keys of table " + table + ": ", foreignKeys);
-                        });
-                    }
+
+                    const data = await this.models[table].getAutoTable(this.userId);
+                    console.log("Data for table " + table);
+                    const foreignKeys = await this.server.db.sequelize.getQueryInterface().getForeignKeyReferencesForTable(table);
+
+                    // send all foreign keys of table that are in autoTables
+                    foreignKeys.filter(fk => this.autoTables.includes(fk.referencedTableName)).map(async fk => {
+                        const uniqueIds = data.map(d => d[fk.columnName]).filter((value, index, array) => array.indexOf(value) === index);
+                        console.log("foreignkeys", table, fk, uniqueIds);
+                        if (uniqueIds.length > 0) {
+                            this.emit(fk.referencedTableName + "Refresh", await this.models[fk.referencedTableName].getAllByKey(fk.referencedColumnName, uniqueIds), "userId" in this.models[fk.referencedTableName].getAttributes());
+                        }
+                    });
+                    this.emit(table + "Refresh", data, updateCreatorName);
                 }
             }
         } catch (err) {
