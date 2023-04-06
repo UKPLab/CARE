@@ -45,7 +45,7 @@
         </div>
       </div>
       <div class="row p-2" v-if="commandEditorActive">
-        <CommandEditor service="NLPService"></CommandEditor>
+        <CommandEditor :config="commandEditorConfig" service="NLPService" :init-payload="exampleRequest"></CommandEditor>
       </div>
       <div class="row py-2">
         <span class="fs-5">
@@ -129,6 +129,7 @@ import SkillItem from "@/components/dashboard/nlp_skills/SkillItem.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 import CommandEditor from "@/basic/editor/CommandEditor.vue";
+import {v4 as uuidv4} from "uuid";
 
 /* SkillListing.vue - characterizing a skill config
 
@@ -152,7 +153,15 @@ export default {
   data() {
     return {
       standardFields: ['name', 'description', 'input', 'output'],
-      commandEditorActive: false
+      commandEditorActive: false,
+      commandEditorConfig: {
+        action: "REQ",
+        allowActionChange: false,
+        command: null,
+        allowCommandChange: false,
+        allowServiceChange: false,
+        defaultShowCount: 5
+      }
     }
   },
   computed: {
@@ -164,6 +173,17 @@ export default {
     },
     nonStandardFields() {
       return Object.getOwnPropertyNames(this.config).filter(f => !this.standardFields.includes(f));
+    },
+    exampleRequest() {
+      if(this.validConfig){
+        return {
+           id: uuidv4(),
+           name: this.config.name,
+           data: this.config.input.example
+        }
+      }
+
+      return {};
     }
   },
   methods: {

@@ -2,122 +2,141 @@
   <div class="border rounded-1">
     <div class="input-group mt-2">
       <button
-          class="btn btn-primary"
-          :class="configEditor.allowActionChange ? 'dropdown-toggle' : ''"
-          type="button"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          :disabled="!configEditor.allowActionChange"
+        class="btn"
+        :class="configEditor.allowActionChange ? 'dropdown-toggle btn-primary' : 'btn-dark'"
+        type="button"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+        :disabled="!configEditor.allowActionChange"
       >
         {{ configEditor.action }}
       </button>
       <ul
-          v-if="configEditor.allowActionChange"
-          class="dropdown-menu"
+        v-if="configEditor.allowActionChange"
+        class="dropdown-menu"
       >
         <li>
           <a
-              class="dropdown-item"
-              title="Send a request"
-              @click="configEditor.action = 'REQ'"
+            class="dropdown-item"
+            title="Send a request"
+            @click="configEditor.action = 'REQ'"
           >REQ</a>
         </li>
         <li>
           <a
-              class="dropdown-item"
-              title="Send a command"
-              @click="configEditor.action = 'CMD'"
+            class="dropdown-item"
+            title="Send a command"
+            @click="configEditor.action = 'CMD'"
           >CMD</a>
         </li>
       </ul>
       <input
-          v-if="configEditor.action === 'CMD'"
-          class="form-control"
-          :class="configEditor.allowCommandChange ? 'dropdown-toggle' : ''"
-          type="text"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          :disabled="!configEditor.allowCommandChange"
-          :value="configEditor.command"
-          title="the command to send"
+        v-if="configEditor.action === 'CMD'"
+        class="form-control"
+        :class="configEditor.allowCommandChange ? 'dropdown-toggle' : ''"
+        type="text"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+        :disabled="!configEditor.allowCommandChange"
+        :value="configEditor.command"
+        title="the command to send"
       >
       <ul
-          v-if="configEditor.action === 'CMD' && configEditor.allowCommandChange"
-          class="dropdown-menu"
+        v-if="configEditor.action === 'CMD' && configEditor.allowCommandChange"
+        class="dropdown-menu"
       >
         <li
-            v-for="c in serviceCmds"
-            :key="c"
+          v-for="c in serviceCmds"
+          :key="c"
         >
           <a
-              class="dropdown-item"
-              :title="c"
-              @click="configEditor.command = c"
+            class="dropdown-item"
+            :title="c"
+            @click="configEditor.command = c"
           > {{ c }} </a>
         </li>
       </ul>
       <input
-          class="form-control"
-          :class="configEditor.allowServiceChange ? 'dropdown-toggle' : ''"
-          type="text"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          :disabled="!configEditor.allowServiceChange"
-          :value="service"
-          title="the service to contact"
+        class="form-control"
+        :class="configEditor.allowServiceChange ? 'dropdown-toggle' : ''"
+        type="text"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+        :disabled="!configEditor.allowServiceChange"
+        :value="service"
+        title="the service to contact"
       >
       <ul
-          v-if="configEditor.allowServiceChange"
-          class="dropdown-menu"
+        v-if="configEditor.allowServiceChange"
+        class="dropdown-menu"
       >
         <li
-            v-for="s in services"
-            :key="s"
+          v-for="s in services"
+          :key="s"
         >
           <a
-              class="dropdown-item"
-              :title="s"
-              @click="service = s"
+            class="dropdown-item"
+            :title="s"
+            @click="service = s"
           > {{ s }} </a>
         </li>
       </ul>
       <button
-          class="btn btn-primary"
-          type="button"
-          :title="sending ? 'Waiting for response' : 'Send'"
-          :disabled="sending"
-          @click="send"
+        class="btn btn-primary"
+        type="button"
+        :title="sending ? 'Waiting for response' : 'Send'"
+        :disabled="sending"
+        @click="send"
       >
         <LoadIcon
-            v-if="!sending"
-            icon-name="send-exclamation"
-            :size="16"
+          v-if="!sending"
+          icon-name="send-exclamation"
+          :size="16"
         />
         <div
-            v-else
-            class="spinner-border spinner-border-sm"
+          v-else
+          class="spinner-border spinner-border-sm"
         />
       </button>
     </div>
     <div class="border-start border-end border-bottom px-2">
       <span class="text-secondary fst-italic">Payload</span>
       <JsonEditor
-          v-model:content="payload"
-          start-edit-mode
+        v-model:content="payload"
+        start-edit-mode
       />
     </div>
     <div class="mt-2 mb-2 border text-muted">
-      <div>
-        <div v-for="i in history.slice(0, showHistory ? history.length : configEditor.defaultShowCount)" :key="i.time">
-          {{ i }}
+      <div v-if="history.length > 0">
+        <div
+          v-for="i in history.slice(0, showHistory ? history.length : configEditor.defaultShowCount)"
+          :key="i.time"
+        >
+          <CommandMessage
+            :time-string="i.time"
+            :incoming="i.incoming"
+            :service="i.data.service"
+            :data="i.data"
+          />
         </div>
       </div>
-      <div class="w-100 text-center bg-light" @click="showHistory=!showHistory"
-           :title="`${showHistory ? 'Hide' : 'Show'} more`"
-           v-if="history.length > configEditor.defaultShowCount">
+      <div
+        v-else
+        class="text-center text-secondary fst-italic"
+      >
+        <span>
+          No messages sent/received
+        </span>
+      </div>
+      <div
+        v-if="history.length > 0 && history.length > configEditor.defaultShowCount"
+        class="w-100 text-center bg-light"
+        :title="`${showHistory ? 'Hide' : 'Show'} more`"
+        @click="showHistory=!showHistory"
+      >
         <LoadIcon
-            :icon-name="`caret-${showHistory ? 'up' : 'down'}`"
-            :size="12"
+          :icon-name="`caret-${showHistory ? 'up' : 'down'}`"
+          :size="12"
         />
       </div>
     </div>
@@ -126,12 +145,13 @@
 
 <script>
 import JsonEditor from "./JsonEditor.vue";
+import CommandMessage from "./CommandMessage.vue"
 import LoadIcon from "@/icons/LoadIcon.vue";
 import {overrideObjectAttributes} from "@/assets/utils";
 
 export default {
   name: "CommandEditor",
-  components: {JsonEditor, LoadIcon},
+  components: {JsonEditor, CommandMessage, LoadIcon},
   props: {
     config: {
       type: Object,
@@ -142,6 +162,11 @@ export default {
       type: String,
       required: true
     },
+    initPayload: {
+      type: Object,
+      required: false,
+      default: null
+    }
   },
   data() {
     return {
@@ -161,6 +186,7 @@ export default {
   },
   sockets: {
     serviceRefresh: function (data) {
+      console.log("SERVICE REFRESH ==", data);
       if (data && data.service === this.service) {
         this.history.unshift({time: Date.now(), incoming: true, data: data});
       }
@@ -184,8 +210,14 @@ export default {
     if (this.config) {
       this.configEditor = overrideObjectAttributes(this.configEditor, this.config);
     }
+    if(this.initPayload){
+      this.payload = this.initPayload;
+    }
   },
   methods: {
+    setPayload(payload){
+      this.payload = payload;
+    },
     send() {
       this.sending = true;
 
