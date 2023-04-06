@@ -3,28 +3,55 @@
       ref="top"
       v-show="content"
       class="blockquote fs-6 position-relative"
-      @mouseover="showCopyButton=true"
-      @mouseleave="showCopyButton=false"
+      @mouseover="showControls=true"
+      @mouseleave="showControls=false"
   >
     <div
         ref="content"
         class="bg-light border-start"
-        @dblclick="editMode=!readonly"
+        @dblclick="toEditMode(true)"
     >
-      <button
-          v-show="showCopyButton && !editMode"
-          class="btn position-absolute top-0 end-0 opacity-50"
-          @click="(e) => {e.stopPropagation(); copy()}"
-      >
-        <LoadIcon
-            class="me-1"
-            :size="16"
-            icon-name="clipboard"
-        />
-        <span class="fw-light"> Copy </span>
-      </button>
+      <div class="button-group position-absolute top-0 end-0 opacity-50 pe-1" v-show="showControls">
+        <button
+            class="btn"
+            @click="(e) => {e.stopPropagation(); copy()}"
+            title="Copy"
+            v-show="!editMode"
+        >
+          <LoadIcon
+              class="me-1"
+              :size="16"
+              icon-name="clipboard"
+          />
+        </button>
+        <button
+            class="btn"
+            @click="(e) => {e.stopPropagation(); toEditMode(true)}"
+            title="Edit"
+            v-show="!editMode && !readonly"
+        >
+          <LoadIcon
+              class="me-1"
+              :size="16"
+              icon-name="pencil-square"
+          />
+        </button>
+        <button
+            class="btn"
+            @click="(e) => {e.stopPropagation(); toEditMode(false)}"
+            title="Edit"
+            v-show="editMode && !readonly"
+        >
+          <LoadIcon
+              class="me-1"
+              :size="16"
+              icon-name="box-arrow-down"
+          />
+        </button>
+      </div>
       <form v-if="editMode">
-        <textarea :rows="contentText.split('\n').length" v-model="contentText" class="code form-check-input w-100 h-100" title="Edit JSON" type="text"> </textarea>
+        <textarea :rows="contentText.split('\n').length" v-model="contentText" class="code form-check-input w-100 h-100"
+                  title="Edit JSON" type="text"> </textarea>
       </form>
     </div>
   </blockquote>
@@ -73,7 +100,7 @@ export default {
   data: function () {
     return {
       jsonTree: null,
-      showCopyButton: false,
+      showControls: false,
       editMode: false,
       leaveEditModeListener: null,
       contentText: null
@@ -116,12 +143,12 @@ export default {
   },
   mounted() {
     this.updateJson(this.content);
-    if(this.startEditMode){
+    if (this.startEditMode) {
       this.editMode = true;
     }
   },
   methods: {
-    validContentText(){
+    validContentText() {
       try {
         JSON.parse(this.contentText);
         return true;
@@ -148,6 +175,13 @@ export default {
       if (this.jsonTree) {
         jsonview.destroy(this.jsonTree);
         this.jsonTree = null;
+      }
+    },
+    toEditMode(activate) {
+      if(activate){
+        this.editMode = !this.readonly;
+      } else {
+        this.editMode = false;
       }
     },
     async copy() {
