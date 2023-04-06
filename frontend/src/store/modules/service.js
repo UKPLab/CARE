@@ -94,7 +94,10 @@ export default {
          * @returns {function(String): Date|null}
          */
         getStatus: (state) => (service) => {
-            return service in state.serviceStatus && state.serviceStatus.lastUpdate ? state.serviceStatus.lastUpdate : null;
+            if(service in state.serviceStatus && "lastUpdate" in state.serviceStatus[service]){
+                return state.serviceStatus[service].lastUpdate;
+            }
+            return null;
         },
 
         /**
