@@ -25,9 +25,11 @@
       </button>
       <button
         class="btn btn-outline-secondary"
+        :class="commandEditorActive ? 'active' : ''"
+        :aria-pressed="commandEditorActive"
         type="button"
         title="Send command"
-        @click="commandEditorActive=true"
+        @click="commandEditorActive=!commandEditorActive"
       >
         <LoadIcon
           icon-name="send"

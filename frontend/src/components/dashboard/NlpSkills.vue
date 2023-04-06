@@ -1,23 +1,29 @@
 <template>
   <Card title="Skills">
     <template #headerElements>
+      <span class="badge" :class="onlineStatus? 'bg-success' : 'bg-danger'" v-if="!waitForStatus">
+        {{ onlineStatus ? "ONLINE" : "OFFLINE" }}
+      </span>
+      <div class="spinner-grow" role="status" style="width:12px; height:12px" v-else>
+        <span class="visually-hidden">Loading...</span>
+      </div>
       <ButtonHeader
-        class="btn btn-sm me-1"
-        title="Refresh"
-        icon="arrow-clockwise"
-        @click="load()"
+          class="btn btn-sm me-1"
+          title="Refresh"
+          icon="arrow-clockwise"
+          @click="load()"
       />
     </template>
     <template #body>
       <BasicTable
-        :columns="columns"
-        :data="data"
-        :options="options"
-        @action="action"
+          :columns="columns"
+          :data="data"
+          :options="options"
+          @action="action"
       />
     </template>
   </Card>
-  <NlpSkillModal ref="nlpSkillModal" />
+  <NlpSkillModal ref="nlpSkillModal"/>
 </template>
 
 <script>
@@ -68,6 +74,8 @@ export default {
         },
         {name: "Details", key: "details", type: "button"},
       ],
+      waitForStatus: true,
+      onlineStatus: false
     }
   },
   computed: {
@@ -88,9 +96,21 @@ export default {
         return s;
       }) : [];
     },
+    lastServiceUpdate() {
+      return this.$store.getters["service/getStatus"]("NLPService");
+    },
+  },
+  watch: {
+    lastServiceUpdate(newVal) {
+      if (newVal) {
+        this.waitForStatus = false;
+        this.onlineStatus = true;
+      }
+    }
   },
   mounted() {
     this.load();
+    this.checkServiceConnection();
   },
   methods: {
     action(data) {
@@ -101,8 +121,20 @@ export default {
     getDetails(skill_row) {
       this.$refs["nlpSkillModal"].openModal(skill_row["name"]);
     },
-    load(){
+    load() {
       this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetAll", data: {}});
+      this.checkServiceConnection();
+    },
+    checkServiceConnection() {
+      this.$socket.emit("serviceCommand", {service: "NLPService", command: "getStatus", data: {}});
+      this.waitForStatus = true;
+
+      setTimeout(() => {
+        if(this.waitForStatus){
+          this.waitForStatus = false;
+          this.onlineStatus = false;
+        }
+      })
     }
   }
 }
