@@ -72,7 +72,7 @@ export default {
             classMapping: {true: "bg-success", default: "bg-danger"}
           },
         },
-        {name: "Details", key: "details", type: "button"},
+        {name: "Actions", key: "actions", type: "button-group"},
       ],
       waitForStatus: true,
       onlineStatus: false
@@ -82,17 +82,17 @@ export default {
     data() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return skills ? skills.map(s => {
-        s.details = {
-          icon: "search-heart",
+        s.actions = [{
+          icon: "gear",
           options: {
             iconOnly: true,
             specifiers: {
               "btn-secondary": true,
             }
           },
-          title: "Show config...",
-          action: "getDetails",
-        };
+          title: "Configure",
+          action: "configure",
+        }];
         return s;
       }) : [];
     },
@@ -114,7 +114,7 @@ export default {
   },
   methods: {
     action(data) {
-      if (data.action === "getDetails") {
+      if (data.action === "configure") {
         this.getDetails(data.params);
       }
     },
@@ -130,7 +130,7 @@ export default {
       this.waitForStatus = true;
 
       setTimeout(() => {
-        if(this.waitForStatus){
+        if (this.waitForStatus) {
           this.waitForStatus = false;
           this.onlineStatus = false;
         }

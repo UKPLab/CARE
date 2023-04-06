@@ -50,7 +50,7 @@ export default {
       buttonClass: {
         iconOnly: this.options && this.options.iconOnly,
         specifiers: this.options && this.options.specifiers
-      }
+      },
     }
   },
   methods: {
