@@ -17,11 +17,12 @@ module.exports = (sequelize, DataTypes) => {
                 key: "color",
                 label: "Color",
                 type: "select",
+                default: "info",
                 options: [
                     {
                         name: "info",
                         value: "info",
-                        class: "text-info"
+                        class: "border border-info"
                     },
                     {
                         name: "warning",

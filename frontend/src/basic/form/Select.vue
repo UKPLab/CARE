@@ -4,12 +4,12 @@
       <select
         v-if="Array.isArray(options.options)"
         v-model="currentData"
-        class="form-select"
+        :class="selectClass" class="form-select"
       >
         <option v-for="option in selectOptions"
                 :key="option.value"
-                :value="option.value"
                 :class="option.class"
+                :value="option.value"
         >
           {{ option.name }}
         </option>
@@ -59,6 +59,12 @@ export default {
     }
   },
   computed: {
+    selectClass() {
+      const option = this.selectOptions.find(c => c.value === this.currentData);
+      if (option) {
+        return option.class;
+      }
+    },
     selectOptions() {
       if (Array.isArray(this.options.options)) {
         return this.options.options;
@@ -80,8 +86,16 @@ export default {
   methods: {
     updateData() {
       if (this.modelValue === -1) {
-        if (this.selectOptions && this.selectOptions.length > 0) {
-          this.currentData = this.selectOptions[0][this.options.options.value];
+        if (this.options.default) {
+          this.currentData = this.options.default;
+        } else {
+          if (this.selectOptions && this.selectOptions.length > 0) {
+            if (this.options.table) { // in case we use a vuex table for the select options
+              this.currentData = this.selectOptions[0][this.options.options.value];
+            } else {
+              this.currentData = this.selectOptions[0].value;
+            }
+          }
         }
       } else {
         this.currentData = this.modelValue;

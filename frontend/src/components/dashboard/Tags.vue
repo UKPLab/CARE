@@ -3,7 +3,7 @@
     <template #headerElements>
       <ButtonHeader
           class="btn-primary"
-          title="Add new tag set"
+          title="Add new tag set (old)"
           @click="$refs.tagSetModalOld.new()"
       />
       <ButtonHeader
@@ -184,10 +184,10 @@ export default {
     action(data) {
       switch (data.action) {
         case "copyTagSet":
-          this.$refs.tagSetModal.copy(data.params.id);
+          this.$refs.tagSetModal.open(0, Object.assign({}, data.params));
           break;
         case "editTagSet":
-          this.$refs.tagSetModal.edit(data.params.id)
+          this.$refs.tagSetModal.open(data.params.id)
           break;
         case "deleteTagSet":
           this.$refs.tagSetDeleteModal.open(data.params.id);

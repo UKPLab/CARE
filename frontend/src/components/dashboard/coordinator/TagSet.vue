@@ -32,8 +32,8 @@ export default {
     },
   },
   methods: {
-    open(tagSetId) {
-      this.$refs.coordinator.open(tagSetId);
+    open(tagSetId, defaultValues = {}) {
+      this.$refs.coordinator.open(tagSetId, defaultValues);
     },
     update(data) {
       this.$socket.emit("appDataUpdate", {table: "tag_set", data: data});

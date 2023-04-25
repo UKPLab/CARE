@@ -121,7 +121,7 @@ export default {
         password: "",
         textarea: "",
         editor: "",
-        select: "",
+        select: -1,
         slider: 0,
         datetime: null,
         checkbox: false,
