@@ -13,17 +13,17 @@
         </tr>
         </thead>
         <tbody>
-        <tr v-for="t in currentData" :key="t.id">
+        <tr v-for="index in tableIndices" :key="index">
           <td v-for="f in fields" :key="f.name">
             <FormSelect
               v-if="f.type === 'select'"
-              v-model="currentData[f.key]"
-              :options="f"
+              v-model="currentData[index][f.key]"
               :data-table="true"
+              :options="f"
             />
             <FormDefault
               v-else
-              v-model="currentData[f.key]"
+              v-model="currentData[index][f.key]"
               :data-table="true"
               :options="f"
             />
@@ -32,7 +32,7 @@
             <button
               class="btn btn-outline-primary"
               type="button"
-              @click="t.deleted = true"
+              @click="currentData[index]['deleted'] = true"
             >
               <svg
                 class="bi bi-trash3"
@@ -57,9 +57,9 @@
             <button
               class="btn btn-primary"
               type="button"
-              @click="addTag()"
+              @click="add()"
             >
-              Add Tag
+              Add
             </button>
           </td>
         </tr>
@@ -104,16 +104,27 @@ export default {
     }
   },
   watch: {
-    currentData() {
-      this.$emit("update:modelValue", this.currentData);
+    currentData: {
+      handler() {
+        this.$emit("update:modelValue", this.currentData);
+        console.log(this.currentData);
+      }, deep: true
     },
-    modelValue() {
-      this.currentData = this.modelValue;
-    },
+    modelValue: {
+      handler() {
+        this.currentData = this.modelValue;
+      }, deep: true
+    }
   },
   computed: {
     fields() {
       return this.$store.getters["table/" + this.options.options.table + "/getFields"];
+    },
+    /**
+     * Get the indices of the current data whereby deleted elements are filtered out
+     */
+    tableIndices() {
+      return this.currentData.map((e, i) => ({index: i, deleted: e.deleted})).filter((e) => !e.deleted).map(e => e.index)
     },
     data() {
       return this.$store.getters["table/" + this.options.options.table + "/getAll"].filter(
@@ -125,13 +136,15 @@ export default {
     this.currentData = this.modelValue;
   },
   methods: {
-    addTag() {
+    add() {
       this.currentData.push(
         Object.assign({}, ...this.fields.map(f => ({
           [f.key]: ("default" in f) ? f.default : this.defaults[f.type]
         })))
       );
     },
+    //TODO: didn't clean up the data on close
+    // TODO: copy not working
   },
 }
 </script>
