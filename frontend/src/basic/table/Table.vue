@@ -188,6 +188,7 @@ import TIcon from "./Icon.vue";
 import Pagination from "./Pagination.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
 import {tooltip} from "@/assets/tooltip.js";
+import deepEqual from 'deep-equal';
 
 /**
  * generic table with feature-rich API
@@ -372,11 +373,17 @@ export default {
       });
     },
     selectRow(action, row) {
+      console.log("Row selection", action, row);
+
       if (this.selectableRows) {
         if (action) {
           this.selectedRows.push(row);
         } else {
-          this.selectedRows = this.selectedRows.filter(r => r !== row);
+          const toRemove = this.selectedRows.findIndex(r => deepEqual(r, row));
+          console.log("REMOVING", toRemove);
+          if(toRemove >= 0) {
+            this.selectedRows.splice(toRemove, 1);
+          }
         }
         this.$emit("rowSelection", this.selectedRows);
       }
