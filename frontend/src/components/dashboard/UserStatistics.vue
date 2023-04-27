@@ -129,13 +129,14 @@ export default {
     loadUserData() {
       this.$socket.emit("userGetData");
     },
-    loadUserStats(userIds, force = false) {
-      userIds.forEach(user => {
+    loadUserStats(rows) {
+      console.log("selected users!", rows);
+      rows.forEach(user => {
         if (this.$store.getters["admin/getStatsByUser"](user.id) == null) {
           this.$socket.emit("statsGetByUser", {userId: user.id})
         }
       });
-      this.selectedUsers = userIds;
+      this.selectedUsers = rows;
     },
     exportAllStats() {
       this.$refs.export.requestExport({}, "json");
