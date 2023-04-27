@@ -32,6 +32,7 @@ export default {
         bordered: false,
         borderless: false,
         small: false,
+        totalWidth: 100,
         pagination: {
           serverSide: true,
           itemsPerPage: 10,
@@ -41,20 +42,21 @@ export default {
         },
       },
       columns: [
-        {name: "", key: "icon", type: "icon"},
+        {name: "", key: "icon", type: "icon", width: "auto"},
         {
           name: "Level",
           key: "level",
+          width: "1",
           filter: [
             {key: "error", name: "Error"},
             {key: "warn", name: "Warning"},
             {key: "info", name: "Info"},
             {key: "debug", name: "Debug"}]
         },
-        {name: "Time", key: "timestamp", sortable: true},
-        {name: "User", key: "creator_name", sortable: true, sortKey: "userId"},
-        {name: "Service", key: "service"},
-        {name: "Message", key: "message"},
+        {name: "Time", key: "timestamp", sortable: true, width: 2},
+        {name: "User", key: "creator_name", sortable: true, sortKey: "userId", width: 1},
+        {name: "Service", key: "service", width: 1},
+        {name: "Message", key: "message", width: 8},
       ],
       data: [],
     }
