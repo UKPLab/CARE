@@ -98,6 +98,15 @@
               :title="r[c.key].title"
               @action="actionEmitter"
             />
+            <TToggle
+              v-else-if="c.type === 'toggle'"
+              :action="r[c.key].action"
+              :value="r[c.key].value"
+              :options="r[c.key].options"
+              :params="r"
+              :title="r[c.key].title"
+              @action="actionEmitter"
+            />
             <TButtonGroup
               v-else-if="c.type === 'button-group'"
               :buttons="r[c.key]"
@@ -152,6 +161,7 @@
 <script>
 import TButton from "./Button.vue";
 import TButtonGroup from "./ButtonGroup.vue"
+import TToggle from "./Toggle.vue"
 import TBadge from "./Badge.vue";
 import TIcon from "./Icon.vue";
 import Pagination from "./Pagination.vue";
@@ -167,7 +177,7 @@ import {tooltip} from "@/assets/tooltip.js";
  */
 export default {
   name: "BasicTable",
-  components: {Pagination, TIcon, TBadge, TButtonGroup, TButton, LoadIcon},
+  components: {Pagination, TIcon, TBadge, TButtonGroup, TButton, TToggle, LoadIcon},
   directives: {tooltip},
   props: {
     data: {

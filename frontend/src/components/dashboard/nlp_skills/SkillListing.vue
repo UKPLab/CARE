@@ -36,19 +36,6 @@
           :size="16"
         />
       </button>
-      <button
-        class="btn"
-        :class="skillEnabled ? 'active btn-outline-success' : 'btn-outline-danger'"
-        :aria-pressed="skillEnabled"
-        type="button"
-        :title="`${!skillEnabled ? 'Activate': 'Deactivate'} the skill`"
-        @click="changeSkillSetting(!skillEnabled)"
-      >
-        <LoadIcon
-          icon-name="x-octagon"
-          :size="16"
-        />
-      </button>
     </div>
     <h3>
       {{ config.name }}
@@ -199,10 +186,6 @@ export default {
       }
 
       return {};
-    },
-    skillEnabled() {
-      //todo load from store
-      return true
     }
   },
   methods: {
