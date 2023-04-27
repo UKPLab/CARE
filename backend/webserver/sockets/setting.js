@@ -62,7 +62,6 @@ module.exports = class SettingSocket extends Socket {
     }
 
     init() {
-
         this.socket.on("settingGetAll", async (data) => {
             await this.sendSettings();
         });
