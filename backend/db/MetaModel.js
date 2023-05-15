@@ -76,14 +76,16 @@ module.exports = class MetaModel extends Model {
         } else {
             let filter = {deleted: false};
             if (userId && 'userId' in this.getAttributes()) {
-                filter['userId'] = userId;
-            }
-            if ("public" in this.getAttributes()) {
-                filter['public'] = true;
+                if ("public" in this.getAttributes()) {
+                    filter[Op.or] = [{userId: userId}, {public: true}];
+                } else {
+                    filter['userId'] = userId;
+                }
             }
             if ("draft" in this.getAttributes()) {
                 filter['draft'] = includeDraft;
             }
+            console.log("FILTER", filter);
             return await this.findAll({where: filter, raw: true});
         }
     }

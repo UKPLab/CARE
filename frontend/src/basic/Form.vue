@@ -55,7 +55,6 @@
           <FormTable
             v-else-if="field.type === 'table'"
             v-model="currentData[field.key]"
-            :defaults="defaults"
             :options="field"
           />
 
@@ -114,18 +113,6 @@ export default {
   data() {
     return {
       currentData: null,
-      defaults: {
-        text: "",
-        number: 0,
-        email: "",
-        password: "",
-        textarea: "",
-        editor: "",
-        select: -1,
-        slider: 0,
-        datetime: null,
-        checkbox: false,
-      }
     }
   },
   watch: {
@@ -146,17 +133,18 @@ export default {
   methods: {
     /**
      * Get data values and set default values if not set
-     * Order of priority:
-     *    modelValue (props),
-     *    field.default (default by fields),
-     *    defaults[field.type] (default by type)
      * @param values
      * @return {*}
      */
     getValues(values) {
       if (this.fields) {
         return Object.assign({}, ...this.fields.map(f => ({
-          [f.key]: (f.key in values) ? values[f.key] : ("default" in f) ? f.default : this.defaults[f.type]
+          // use value if set
+          [f.key]: (f.key in values && values[f.key] !== null) ? values[f.key]
+            // otherwise, you default from fields configuration, if set
+            : ("default" in f) ? f.default
+              // otherwise, use undefined to handle by subcomponent
+              : null
         })));
       }
       return {};

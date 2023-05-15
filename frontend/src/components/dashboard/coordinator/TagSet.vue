@@ -23,19 +23,15 @@ export default {
       tagSetId: 0,
     }
   },
-  computed: {
-    tag_set() {
-      if (this.tagSetId !== 0) {
-        return {...this.$store.getters['tag/getTagSet'](this.tagSetId)};
-      }
-      return {};
-    },
-  },
   methods: {
     open(tagSetId, defaultValues = {}) {
       this.$refs.coordinator.open(tagSetId, defaultValues);
     },
+    copy(tagSetId, defaultValues = {}) {
+      this.$refs.coordinator.copy(tagSetId, defaultValues);
+    },
     update(data) {
+      console.log("appDataUpdate", data);
       this.$socket.emit("appDataUpdate", {table: "tag_set", data: data});
     },
     close() {

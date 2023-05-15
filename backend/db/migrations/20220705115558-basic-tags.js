@@ -19,7 +19,8 @@ module.exports = {
                     name: t[0],
                     description: t[1],
                     createdAt: new Date(),
-                    updatedAt: new Date()
+                    updatedAt: new Date(),
+                    public: true,
                 }
             }), {returning: true});
 
@@ -32,7 +33,8 @@ module.exports = {
                     tagSetId: groups.find(g => g.name === t[0]).id,
                     updatedAt: new Date(),
                     createdAt: new Date(),
-                    deleted: false
+                    deleted: false,
+                    public: true,
                 };
             }),
             {});

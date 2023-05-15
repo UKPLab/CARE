@@ -51,6 +51,7 @@ import UploadModal from "./documents/UploadModal.vue";
  */
 export default {
   name: "DashboardDocument",
+  fetchData: ['document'],
   components: {
     StudyModal,
     ExportAnnos,
@@ -85,7 +86,7 @@ export default {
   },
   computed: {
     documents() {
-      return this.$store.getters["document/getDocuments"];
+      return this.$store.getters["table/document/getAll"];
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -165,7 +166,6 @@ export default {
     },
   },
   mounted() {
-    this.$socket.emit("documentGetAll");
     this.$socket.emit("studyGetAll", {userId: this.$store.getters["auth/getUserId"]});
   },
   methods: {

@@ -9,7 +9,7 @@
     <LoadIcon
       v-if="icon !== null"
       :icon-name="icon"
-      size="16"
+      :size="16"
     />
     <span v-if="icon === null || !buttonClass.iconOnly">{{ title }}</span>
   </button>

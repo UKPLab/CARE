@@ -89,7 +89,7 @@ export default {
       isAdmin: 'auth/isAdmin',
     }),
     tagSets() {
-      return this.$store.getters["tag/getTagSets"].map(d => {
+      return this.$store.getters["table/tag_set/getAll"].map(d => {
             let newD = {...d};
             newD.published = {
               text: newD.public || newD.userId === null ? "Yes" : "No",
@@ -106,8 +106,8 @@ export default {
             },
             newD.tags = {
               class: "bg-primary",
-              tooltip: this.tags.filter(tag => tag.tagSetId === newD.id).map(e => e.name).join('<br>'),
-              text: this.tags.filter(tag => tag.tagSetId === newD.id).length
+              tooltip: this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id).map(e => e.name).join('<br>'),
+              text: this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id).length
             };
             newD.manage = [
               {
@@ -170,24 +170,20 @@ export default {
       );
     },
     tags() {
-      return this.$store.getters["tag/getAllTags"]();
+      return this.$store.getters["table/tag/getAll"];
     },
     selectedTagset() {
       return this.$store.getters['settings/getValueAsInt']("tags.tagSet.default");
     },
   },
-  mounted() {
-    this.$socket.emit("tagSetGetAll");
-    this.$socket.emit("tagGetAll");
-  },
   methods: {
     action(data) {
       switch (data.action) {
         case "copyTagSet":
-          this.$refs.tagSetModal.open(0, Object.assign({}, data.params));
+          this.$refs.tagSetModal.copy(data.params.id);
           break;
         case "editTagSet":
-          this.$refs.tagSetModal.open(data.params.id)
+          this.$refs.tagSetModal.open(data.params.id);
           break;
         case "deleteTagSet":
           this.$refs.tagSetDeleteModal.open(data.params.id);
