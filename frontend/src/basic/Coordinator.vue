@@ -1,7 +1,7 @@
 <template>
   <BasicModal
     ref="coordinatorModal"
-    :props="{id: id, hash: hash, resets: resets}"
+    :props="{id: id, resets: resets}"
     lg
     name="coordinatorModal"
     @hide="reset"
@@ -121,32 +121,13 @@ export default {
       id: 0,
       data: {},
       success: false,
-      hash: null,
-      resets: 0,
       overrideDefaultValues: {},
     };
   },
   computed: {
-    newData() {
-      // eslint-disable-next-line no-unused-vars
-      const resetCounter = this.resets; //do not remove; need for refreshing study object on modal hide!
-      if (this.id === 0) {
-        return {...this.defaultValue, ...this.overrideDefaultValues};
-      } else {
-        return {...this.$store.getters["table/" + this.table + "/get"](this.id)};
-      }
-    },
     fields() {
       return this.$store.getters["table/" + this.table + "/getFields"];
     },
-  },
-  watch: {
-    newData() {
-      this.data = this.newData;
-    },
-  },
-  beforeMount() {
-    this.study = this.defaultValue;
   },
   methods: {
     /**
@@ -157,8 +138,9 @@ export default {
     open(id, defaultValues) {
       if (this.fields) {
         this.reset();
-        this.id = id;
         this.overrideDefaultValues = defaultValues;
+        this.id = id;
+        this.data = this.getData(id);
         this.$refs.coordinatorModal.open();
       } else {
         this.eventBus.emit('toast', {
@@ -169,6 +151,10 @@ export default {
           type: 'error',
         });
       }
+    },
+    copy(id, defaultValues) {
+      this.open(id, defaultValues);
+      this.id = 0;
     },
     close() {
       this.$refs.coordinatorModal.close();
@@ -183,9 +169,37 @@ export default {
     },
     reset() {
       this.$refs.coordinatorModal.waiting = false;
+      this.overrideDefaultValues = {};
       this.id = 0;
+      this.data = this.getData(0);
       this.success = false;
-      this.resets++;
+    },
+    getData(id) {
+      if (id === 0) {
+        return {...this.defaultValue, ...this.overrideDefaultValues};
+      } else {
+        return this.getDataFromStore(id, this.table, this.fields);
+      }
+    },
+    /**
+     * Get the data from the store
+     * @param id Id of the key
+     * @param table from which table the data should be taken
+     * @param fields Fields of the table
+     * @returns {{}}
+     */
+    getDataFromStore(id, table, fields) {
+      const data = this.$store.getters["table/" + table + "/get"](id);
+      return fields.reduce((acc, field) => {
+        // if the key is in the data, use the data value
+        acc[field.key] = (field.key in data) ? data[field.key]
+          // if type is table, get the data from the store
+          : (field.type === "table" && this.$store.getters["table/" + field.options.table + "/hasFields"])
+            ? this.$store.getters["table/" + field.options.table + "/getFiltered"](e => e[field.options.id] === id).map(e => this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"]))
+            // else use the default value
+            : null;
+        return acc;
+      }, {});
     },
   }
 }

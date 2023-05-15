@@ -35,6 +35,26 @@ module.exports = class AppSocket extends Socket {
     }
 
     /**
+     * Updates data in the database
+     * @param {object} data - {table: string, data: object}
+     */
+    async updateData(data) {
+        try {
+            // TODO: check if user is allowed to update data
+            // TODO: check if data is valid - handle fields from fields description
+            if (data.data.id === 0) {
+                await this.models[data.table].insert(data.data);
+                await this.sendTableData(data.table);
+            } else {
+                await this.models[data.table].update(data.data.id, data.data);
+                await this.sendTableData(data.table);
+            }
+        } catch (err) {
+            this.logger.error(err);
+        }
+    }
+
+    /**
      * Send tables data to the client for automatic table generation
      *
      * @return {Promise<void>}
@@ -51,7 +71,7 @@ module.exports = class AppSocket extends Socket {
     }
 
     async sendUser() {
-        this.socket.emit("appUser",  relevantFields(await this.models['user'].getById(this.userId)));
+        this.socket.emit("appUser", relevantFields(await this.models['user'].getById(this.userId)));
     }
 
     /**
@@ -76,8 +96,7 @@ module.exports = class AppSocket extends Socket {
         });
 
         this.socket.on("appDataUpdate", async (data) => {
-            //TODO
-            console.log(data);
+            await this.updateData(data);
         });
 
     }

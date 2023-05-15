@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
                 default: "",
             },
             {
-                key: "color",
+                key: "colorCode",
                 label: "Color",
                 type: "select",
                 default: "info",

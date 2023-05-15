@@ -184,10 +184,10 @@ module.exports = class Socket {
                         this.emit(table + "Refresh", await this.models[table].getAll(), updateCreatorName);
                     }
                 } else {
-
-
+                    console.log(this.userId);
                     const data = await this.models[table].getAutoTable(this.userId);
                     console.log("Data for table " + table);
+                    console.log(data);
                     const foreignKeys = await this.server.db.sequelize.getQueryInterface().getForeignKeyReferencesForTable(table);
 
                     // send all foreign keys of table that are in autoTables

@@ -73,6 +73,13 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
             },
 
             /**
+             * Returns subset of the store by a given filter function.
+             */
+            getFiltered: state => filter => {
+                return state.data.filter(filter);
+            },
+
+            /**
              * Returns the length of the store.
              * @param state
              * @return {*}

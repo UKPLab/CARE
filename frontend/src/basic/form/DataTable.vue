@@ -92,10 +92,7 @@ export default {
       required: false,
       default: () => [],
     },
-    defaults: {
-      type: Object,
-      required: true,
-    }
+
   },
   emits: ["update:modelValue"],
   data() {
@@ -107,12 +104,11 @@ export default {
     currentData: {
       handler() {
         this.$emit("update:modelValue", this.currentData);
-        console.log(this.currentData);
       }, deep: true
     },
     modelValue: {
       handler() {
-        this.currentData = this.modelValue;
+        this.currentData = (this.modelValue) ? this.modelValue : [];
       }, deep: true
     }
   },
@@ -124,7 +120,10 @@ export default {
      * Get the indices of the current data whereby deleted elements are filtered out
      */
     tableIndices() {
-      return this.currentData.map((e, i) => ({index: i, deleted: e.deleted})).filter((e) => !e.deleted).map(e => e.index)
+      return this.currentData.map((e, i) => ({
+        index: i,
+        deleted: e.deleted
+      })).filter((e) => !e.deleted).map(e => e.index)
     },
     data() {
       return this.$store.getters["table/" + this.options.options.table + "/getAll"].filter(
@@ -133,7 +132,8 @@ export default {
     },
   },
   mounted() {
-    this.currentData = this.modelValue;
+    console.log("modelvalue", this.modelValue)
+    this.currentData = (this.modelValue) ? this.modelValue : [];
   },
   methods: {
     add() {
