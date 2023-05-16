@@ -4,7 +4,7 @@
 
 ## Acceptance Criteria
 
-(Example The pen icon appears directly after the respective text has been annotated and disappears upon selection or a mouse click on any other area, as well as upon leaving a defined area around the icon. A mouse click on the icon starts the edit mode for the selected text.)
+(Example: The pen icon appears directly after the respective text has been annotated and disappears upon selection or a mouse click on any other area, as well as upon leaving a defined area around the icon. A mouse click on the icon starts the edit mode for the selected text.)
 
 ## Estimated effort (Story Points)
 
