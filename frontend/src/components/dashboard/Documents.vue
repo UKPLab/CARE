@@ -28,6 +28,7 @@
   <ExportAnnos ref="export"/>
   <ConfirmModal ref="deleteConf"/>
   <UploadModal ref="uploadModal"/>
+  <EditModal ref="editModal"/>
 </template>
 
 <script>
@@ -39,6 +40,7 @@ import StudyModal from "./coordinator/Study.vue";
 import ConfirmModal from "@/basic/ConfirmModal.vue";
 import ButtonHeader from "@/basic/card/ButtonHeader.vue";
 import UploadModal from "./documents/UploadModal.vue";
+import EditModal from "./documents/EditModal.vue";
 
 /**
  * Document list component
@@ -60,7 +62,8 @@ export default {
     BasicTable,
     ButtonHeader,
     PublishModal,
-    ConfirmModal
+    ConfirmModal,
+    EditModal
   },
   data() {
     return {
@@ -131,8 +134,7 @@ export default {
             },
             title: "Publish document...",
             action: "publicDoc",
-          }
-          /*
+          },
         {
           icon: "pencil",
           options: {
@@ -142,8 +144,8 @@ export default {
             }
           },
           title: "Rename document...",
-          onClick: this.renameDoc,
-        },  */
+          action: "renameDoc"
+        },
         ];
         if (this.studiesEnabled) {
           newD.manage.push({
@@ -180,6 +182,9 @@ export default {
         case "publicDoc":
           this.$refs.publishModal.open(data.params.id);
           break;
+        case "renameDoc":
+          this.renameDoc(data.params);
+          break;
         case "studyCoordinator":
           this.studyCoordinator(data.params);
           break;
@@ -206,7 +211,7 @@ export default {
           });
     },
     renameDoc(row) {
-      this.$socket.emit("documentUpdate", {documentId: row.id, document: {name: "default_name"}});
+      this.$refs.editModal.open(row.id);
     },
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);

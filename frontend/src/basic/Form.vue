@@ -107,7 +107,7 @@ export default {
     fields: {
       type: Object,
       required: true
-    },
+    }
   },
   emits: ["update:modelValue"],
   data() {
@@ -137,7 +137,7 @@ export default {
      * @return {*}
      */
     getValues(values) {
-      if (this.fields) {
+      if (this.fields && values && Object.entries(values).length !== 0) {
         return Object.assign({}, ...this.fields.map(f => ({
           // use value if set
           [f.key]: (f.key in values && values[f.key] !== null) ? values[f.key]
@@ -147,7 +147,7 @@ export default {
               : null
         })));
       }
-      return {};
+      return null;
     }
   }
 }

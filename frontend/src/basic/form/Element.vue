@@ -1,29 +1,31 @@
 <template>
-  <div v-if="dataTable">
-    <slot :id="options.key" name="element"/>
-  </div>
-  <div v-else>
-    <label
-      v-if="'label' in options"
-      :for="options.key"
-      class="form-label"
-    >{{ options.label }}</label>
-    <FormHelp
-      :help="options.help"
-    />
-    <div class="input-group">
-      <div
-        v-if="'icon' in options"
-        class="input-group-text"
-      >
-        <LoadIcon
-          :icon-name="options.icon"
-          :size="16"
-        />
-      </div>
+  <fieldset :disabled="options.readOnly !== undefined ? options.readOnly : false">
+    <div v-if="dataTable">
       <slot :id="options.key" name="element"/>
     </div>
-  </div>
+    <div v-else>
+      <label
+          v-if="'label' in options"
+          :for="options.key"
+          class="form-label"
+      >{{ options.label }}</label>
+      <FormHelp
+          :help="options.help"
+      />
+      <div class="input-group">
+        <div
+            v-if="'icon' in options"
+            class="input-group-text"
+        >
+          <LoadIcon
+              :icon-name="options.icon"
+              :size="16"
+          />
+        </div>
+        <slot :id="options.key" name="element"/>
+      </div>
+    </div>
+  </fieldset>
 </template>
 
 <script>

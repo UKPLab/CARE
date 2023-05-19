@@ -114,6 +114,13 @@ export default {
         return {};
       },
     },
+    readOnlyFields: {
+      type: Array,
+      required: false,
+      default: () => {
+        return [];
+      }
+    }
   },
   emits: ['submit'],
   data() {
@@ -126,7 +133,12 @@ export default {
   },
   computed: {
     fields() {
-      return this.$store.getters["table/" + this.table + "/getFields"];
+      return this.$store.getters["table/" + this.table + "/getFields"].map(f => {
+        if(this.readOnlyFields.includes(f.key)){
+          f.readOnly = true;
+        }
+        return f;
+      })
     },
   },
   methods: {
@@ -190,6 +202,7 @@ export default {
      */
     getDataFromStore(id, table, fields) {
       const data = this.$store.getters["table/" + table + "/get"](id);
+
       return fields.reduce((acc, field) => {
         // if the key is in the data, use the data value
         acc[field.key] = (field.key in data) ? data[field.key]
