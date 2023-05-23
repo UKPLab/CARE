@@ -15,7 +15,17 @@ const yaml = require('js-yaml')
  */
 module.exports = class NLPService extends Service {
     constructor(server) {
-        super(server);
+        super(server, {
+            cmdTypes: [
+                "skillGetAll",
+                "skillGetConfig"
+            ],
+            resTypes: [
+                "skillUpdate",
+                "skillConfig",
+                "skillResults"
+            ]
+        });
 
         this.retryDelay = 10000; //default delay between connection attempts
 
@@ -140,7 +150,7 @@ module.exports = class NLPService extends Service {
         });
 
         nlpSocket.on("skillResults", (data) => {
-            const client = self.#getClient(data.clientId)
+            const client = self.getClient(data.clientId)
             delete data.clientId;
             if (client) {
                 self.send(client, "skillResults", data);
@@ -157,7 +167,8 @@ module.exports = class NLPService extends Service {
      * @param data
      */
     async connectClient(client, data) {
-        this.send(client, "skillUpdate", this.skills !== null ? this.skills : []);
+        await this.send(client, "skillUpdate", this.skills !== null ? this.skills : []);
+        await super.connectClient(client, data);
     }
 
     /**
@@ -187,19 +198,6 @@ module.exports = class NLPService extends Service {
     }
 
     /**
-     * Get the client socket from id
-     * @param {string} clientId
-     * @return {*}
-     */
-    #getClient(clientId) {
-        if (clientId in this.server.availSockets) {
-            return this.server.availSockets[clientId]["ServiceSocket"];
-        } else {
-            this.logger.error(`Client ${clientId} not found!`);
-        }
-    }
-
-    /**
      * Overwrite the destroy method to disconnect from the NLP service
      */
     async close() {
@@ -225,6 +223,8 @@ module.exports = class NLPService extends Service {
             } else {
                 await this.send(client, "skillConfig", null);
             }
+        } else {
+            super.command(client, command, data);
         }
     }
 
