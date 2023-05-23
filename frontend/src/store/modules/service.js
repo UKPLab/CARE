@@ -1,4 +1,3 @@
-import refreshState from "@/store/utils";
 
 /**
  * Store for NLP related interaction
