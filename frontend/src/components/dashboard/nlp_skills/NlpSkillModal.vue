@@ -22,29 +22,7 @@
       </div>
     </template>
     <template #footer>
-      <button
-        class="btn btn-outline-secondary"
-        type="button"
-        title="Copy skill config"
-        @click="copyConfig"
-      >
-        <LoadIcon
-          icon-name="clipboard"
-          :size="16"
-        />
-      </button>
-      <button
-        class="btn btn-outline-secondary"
-        type="button"
-        title="Download skill config"
-        @click="downloadConfig"
-      >
-        <LoadIcon
-          icon-name="cloud-arrow-down"
-          :size="16"
-        />
-      </button>
-      <button
+       <button
         class="btn btn-secondary"
         data-bs-dismiss="modal"
         type="button"
@@ -57,9 +35,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
-import LoadIcon from "@/icons/LoadIcon.vue";
 import SkillListing from "./SkillListing.vue";
-import {downloadObjectsAs} from "@/assets/utils";
 
 /* NlpSkillModal.vue - modal for details on a given NLP Skill
 
@@ -68,7 +44,7 @@ Source: -
 */
 export default {
   name: "NlpSkillModal",
-  components: {SkillListing, LoadIcon, Modal},
+  components: {SkillListing, Modal},
   data() {
     return {
       show: false,
@@ -120,39 +96,6 @@ export default {
         });
       }
     },
-    async copyConfig() {
-      if (this.config) {
-        try {
-          await navigator.clipboard.writeText(JSON.stringify(this.config, null, 2));
-          this.eventBus.emit('toast', {
-            title: "Config copied",
-            message: "Skill configuration copied to clipboard!",
-            variant: "success"
-          });
-        } catch ($e) {
-          this.eventBus.emit('toast', {
-            title: "Config not copied",
-            message: "Could not copy skill configuration to clipboard!",
-            variant: "danger"
-          });
-        }
-      } else {
-        this.eventBus.emit('toast', {
-          title: "Config not copied",
-          message: "Configuration not loaded or empty, cannot copy.",
-          variant: "danger"
-        });
-      }
-    },
-    downloadConfig() {
-      downloadObjectsAs(this.config, `${this.skillName}`, "json");
-
-      this.eventBus.emit('toast', {
-          title: "Download Success",
-          message: `Downloaded ${this.skillName} configuration`,
-          variant: "success"
-        });
-    }
   },
 }
 </script>
