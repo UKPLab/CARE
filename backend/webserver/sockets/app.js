@@ -40,15 +40,50 @@ module.exports = class AppSocket extends Socket {
      */
     async updateData(data) {
         try {
-            // TODO: check if user is allowed to update data
-            // TODO: check if data is valid - handle fields from fields description
-            if (data.data.id === 0) {
-                await this.models[data.table].insert(data.data);
-                await this.sendTableData(data.table);
-            } else {
-                await this.models[data.table].update(data.data.id, data.data);
-                await this.sendTableData(data.table);
+            // update only if we have fields defined
+            if ("fields" in this.models[data.table]) {
+
+                // check or set user information
+                if ('userId' in data.data && !this.checkUserAccess(data.data.userId)) {
+                    this.sendToast("error", "User access error", "You are not allowed to update the table " + data.table + " for another user!");
+                    return;
+                } else {
+                    data.data.userId = this.userId;
+                }
+
+                // check data exists for required fields
+                for (let field of this.models[data.table].fields) {
+                    if (field.required && !(field.key in data.data)) {
+                        this.sendToast("error", "Required field missing", field.key);
+                        this.logger.error("Required field missing: " + field.key);
+                        return;
+                    }
+                }
+
+                // update data
+                let newEntry = null;
+                if (!('id' in data.data) || data.data.id === 0) {
+                    newEntry = await this.models[data.table].add(data.data);
+                } else {
+                    newEntry = await this.models[data.table].updateById(data.data.id, data.data);
+                }
+                // check if table has a field with table options
+                if (newEntry) {
+                    this.models[data.table].fields.filter(f => f.type === 'table').map(f => {
+                        if ("table" in f.options) {
+                            data.data[f.key].map(tf => {
+                                tf[f.options.id] = newEntry.id;
+                                this.updateData({
+                                    table: f.options.table,
+                                    data: tf
+                                });
+                            });
+                        }
+                    });
+                }
+
             }
+
         } catch (err) {
             this.logger.error(err);
         }
@@ -97,6 +132,7 @@ module.exports = class AppSocket extends Socket {
 
         this.socket.on("appDataUpdate", async (data) => {
             await this.updateData(data);
+            await this.sendTableData(data.table);
         });
 
     }

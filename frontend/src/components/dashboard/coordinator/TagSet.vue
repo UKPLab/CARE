@@ -3,7 +3,6 @@
     ref="coordinator"
     table="tag_set"
     title="Tag Sets Editor"
-    @submit="update"
   />
 </template>
 
@@ -29,10 +28,6 @@ export default {
     },
     copy(tagSetId, defaultValues = {}) {
       this.$refs.coordinator.copy(tagSetId, defaultValues);
-    },
-    update(data) {
-      console.log("appDataUpdate", data);
-      this.$socket.emit("appDataUpdate", {table: "tag_set", data: data});
     },
     close() {
       this.$refs.coordinator.close();
