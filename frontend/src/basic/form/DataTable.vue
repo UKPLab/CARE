@@ -143,8 +143,6 @@ export default {
         })))
       );
     },
-    //TODO: didn't clean up the data on close
-    // TODO: copy not working
   },
 }
 </script>

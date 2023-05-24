@@ -134,7 +134,7 @@ export default {
   computed: {
     fields() {
       return this.$store.getters["table/" + this.table + "/getFields"].map(f => {
-        if(this.readOnlyFields.includes(f.key)){
+        if (this.readOnlyFields.includes(f.key)) {
           f.readOnly = true;
         }
         return f;
@@ -172,7 +172,11 @@ export default {
       this.$refs.coordinatorModal.close();
     },
     submit() {
-      this.$emit('submit', {...this.data, ...{id: this.id}})
+      const data =  {...this.data, ...{id: this.id}};
+      this.$emit('submit', data)
+      this.$socket.emit("appDataUpdate", {table: this.table, data: data});
+      // TODO: updates are not working correctly if id is not set in subtables
+      // TODO: removing tags is also not working as deleted true is currently not set in basic tables
       this.$refs.coordinatorModal.waiting = true;
     },
     showSuccess() {
