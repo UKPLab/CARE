@@ -32,7 +32,7 @@
             <button
               class="btn btn-outline-primary"
               type="button"
-              @click="currentData[index]['deleted'] = true"
+              @click="deleteEntry(index)"
             >
               <svg
                 class="bi bi-trash3"
@@ -132,7 +132,6 @@ export default {
     },
   },
   mounted() {
-    console.log("modelvalue", this.modelValue)
     this.currentData = (this.modelValue) ? this.modelValue : [];
   },
   methods: {
@@ -142,6 +141,13 @@ export default {
           [f.key]: ("default" in f) ? f.default : this.defaults[f.type]
         })))
       );
+    },
+    deleteEntry(index) {
+      if (this.currentData[index].id) {
+        this.currentData[index].deleted = true;
+      } else {
+        this.currentData.splice(index, 1);
+      }
     },
   },
 }
