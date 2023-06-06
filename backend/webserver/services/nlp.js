@@ -132,6 +132,7 @@ module.exports = class NLPService extends Service {
         });
 
         nlpSocket.on("skillConfig", (data) => {
+            console.log("BROKER configs", data)
             // deep copy (otherwise we may get an undefined object)
             const config = JSON.parse(JSON.stringify(data));
             self.#updateConfigCache(config);

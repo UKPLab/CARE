@@ -50,7 +50,7 @@ export default {
       required: false,
       default: false,
     }
-  },
+  }
 }
 </script>
 
