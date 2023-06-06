@@ -1,11 +1,11 @@
 <template>
+  <Toast/>
   <div v-if="requiresAuth">
     <div v-if="!appLoaded" class="pageLoader">
       <Loader :loading="!appLoaded" :text="appLoadText"/>
     </div>
     <div v-else>
       <TopBar v-if="!hideTopbar"/>
-      <Toast/>
       <router-view class="top-padding"/>
     </div>
   </div>
@@ -107,7 +107,7 @@ export default {
       if (this.$route.meta.checkLogin) {
         // Check if user already authenticated, if so, we redirect him to the dashboard.
         const response = await axios.get(getServerURL() + '/auth/check',
-          {withCredentials: true});
+            {withCredentials: true});
         if (response.data.user) {
           await this.$router.push("/dashboard");
         }

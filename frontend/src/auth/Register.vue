@@ -8,12 +8,12 @@
     <div class="col-md-8 mx-auto my-4">
       <div class="col-md-8 mx-auto">
         <div
-          class="text-center"
-          style="margin-bottom: 20px"
+            class="text-center"
+            style="margin-bottom: 20px"
         >
           <IconAsset
-            name="logo"
-            :height="200"
+              name="logo"
+              :height="200"
           />
         </div>
 
@@ -21,32 +21,30 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             Register
             <a
-              class="btn btn-sm btn-primary"
-              href="#"
-              @click="$router.push('/login')"
+                class="btn btn-sm btn-primary"
+                href="#"
+                @click="$router.push('/login')"
             >Login</a>
           </div>
 
           <div class="card-body mx-4 my-4">
             <div
-              v-if="requestName"
-              class="form-group row my-2"
+                v-if="requestName"
+                class="form-group row my-2"
             >
               <label
-                class="col-md-4 col-form-label text-md-right"
-                for="firstName"
+                  class="col-md-4 col-form-label text-md-right"
+                  for="firstName"
               >First name</label>
               <div class="col-md-6">
                 <input
-                  id="firstName"
-                  v-model="firstName"
-                  autofocus
-                  class="form-control"
-                  name="firstName"
-                  required
-                  type="text"
-                  @blur="setValidity"
-                  @input="setValidity"
+                    id="firstName"
+                    v-model="formData['firstName']"
+                    autofocus
+                    class="form-control"
+                    name="firstName"
+                    required
+                    type="text"
                 >
                 <div class="feedback-invalid">
                   Please provide your first name.
@@ -56,23 +54,21 @@
 
 
             <div
-              v-if="requestName"
-              class="form-group row my-2"
+                v-if="requestName"
+                class="form-group row my-2"
             >
               <label
-                class="col-md-4 col-form-label text-md-right"
-                for="lastName"
+                  class="col-md-4 col-form-label text-md-right"
+                  for="lastName"
               >Last name</label>
               <div class="col-md-6">
                 <input
-                  id="lastName"
-                  v-model="lastName"
-                  class="form-control"
-                  name="lastName"
-                  required
-                  type="text"
-                  @blur="setValidity"
-                  @input="setValidity"
+                    id="lastName"
+                    v-model="formData['lastName']"
+                    class="form-control"
+                    name="lastName"
+                    required
+                    type="text"
                 >
                 <div class="feedback-invalid">
                   Please provide your last name.
@@ -82,20 +78,19 @@
 
             <div class="form-group row my-2">
               <label
-                class="col-md-4 col-form-label text-md-right"
-                for="userName"
+                  class="col-md-4 col-form-label text-md-right"
+                  for="userName"
               >Username</label>
               <div class="col-md-6">
                 <input
-                  id="userName"
-                  v-model="userName"
-                  class="form-control"
-                  name="userName"
-                  pattern="^[a-zA-Z0-9]+$"
-                  required
-                  type="text"
-                  @blur="setValidity"
-                  @input="setValidity"
+                    id="userName"
+                    v-model="formData['userName']"
+                    class="form-control"
+                    name="userName"
+                    pattern="^[a-zA-Z0-9]+$"
+                    required
+                    type="text"
+                    @blur="checkVal('userName')"
                 >
                 <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUsername}">
                   Please provide a valid username - no special characters.
@@ -105,21 +100,20 @@
 
             <div class="form-group row my-2">
               <label
-                class="col-md-4 col-form-label text-md-right"
-                for="email"
+                  class="col-md-4 col-form-label text-md-right"
+                  for="email"
               >E-Mail</label>
               <div class="col-md-6">
                 <input
-                  id="email"
-                  v-model="email"
-                  class="form-control"
-                  name="email"
-                  required
-                  type="email"
-                  @blur="setValidity"
-                  @input="setValidity"
+                    id="email"
+                    v-model="formData['email']"
+                    class="form-control"
+                    name="email"
+                    required
+                    type="email"
+                    @blur="checkVal('email')"
                 >
-                <div class="feedback-invalid">
+                <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
                   Please provide a valid email address.
                 </div>
               </div>
@@ -128,20 +122,19 @@
 
             <div class="form-group row my-2">
               <label
-                class="col-md-4 col-form-label text-md-right"
-                for="password"
+                  class="col-md-4 col-form-label text-md-right"
+                  for="password"
               >Password</label>
               <div class="col-md-6">
                 <input
-                  id="password"
-                  v-model="password"
-                  class="form-control"
-                  name="password"
-                  pattern=".{8,}"
-                  required
-                  type="password"
-                  @blur="setValidity"
-                  @input="setValidity"
+                    id="password"
+                    v-model="formData['password']"
+                    class="form-control"
+                    name="password"
+                    pattern=".{8,}"
+                    required
+                    type="password"
+                    @blur="checkVal('password')"
                 >
                 <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
                   Passwords must be at least 8 characters.
@@ -154,31 +147,32 @@
               <div class="col-md-6 offset-md-4">
                 <label>
                   <input
-                    v-model="acceptTerms"
-                    name="acceptTerms"
-                    type="checkbox"
-                    @input="setValidity"
-                    @blur="setValidity"
+                      v-model="formData['acceptTerms']"
+                      name="acceptTerms"
+                      type="checkbox"
+                      @blur="checkVal('acceptTerms')"
                   > I accept the <a
                     href="#"
                     @click="$refs.terms.open()"
-                  >terms</a>!
-                  <div class="feedback-invalid">Please accept the terms.</div>
+                >terms</a>!
+                  <div class="feedback-invalid" :class="{invalid: validity['acceptTerms'] && !validTerms}">Please accept
+                    the terms.
+                  </div>
 
                 </label>
               </div>
             </div>
 
             <div
-              v-if="requestStats"
-              class="form-group row my-2"
+                v-if="requestStats"
+                class="form-group row my-2"
             >
               <div class="col-md-6 offset-md-4">
                 <label>
                   <input
-                    v-model="acceptStats"
-                    name="acceptStats"
-                    type="checkbox"
+                      v-model="formData['acceptStats']"
+                      name="acceptStats"
+                      type="checkbox"
                   > I allow the collection of anonymous statistics!
                 </label>
               </div>
@@ -186,9 +180,8 @@
 
             <div class="col-md-6 offset-md-4">
               <button
-                class="btn btn-primary"
-                type="submit"
-                @click="trySubmit"
+                  class="btn btn-primary"
+                  type="submit"
               >
                 Register
               </button>
@@ -198,8 +191,7 @@
       </div>
     </div>
   </form>
-
-  <TermsModal ref="terms" />
+  <TermsModal ref="terms"/>
 </template>
 
 <script>
@@ -221,13 +213,16 @@ export default {
   components: {TermsModal, IconAsset},
   data() {
     return {
-      firstName: "",
-      lastName: "",
-      userName: "",
-      email: "",
-      password: "",
-      acceptTerms: false,
-      acceptStats: false,
+      formData: {
+        firstName: "",
+        lastName: "",
+        userName: "",
+        email: "",
+        password: "",
+        acceptTerms: false,
+        acceptStats: false,
+      },
+      validity: null
     }
   },
   computed: {
@@ -259,11 +254,15 @@ export default {
     this.validity = Object.fromEntries(Object.keys(this.formData).map(key => [key, false]));
   },
   methods: {
-    trySubmit() {
-      const form = document.querySelector('form');
-      if (form.checkValidity()) {
-        event.preventDefault();
-        this.register_user();
+    checkVal(key) {
+      this.validity[key] = true;
+    },
+    async checkForm() {
+      Object.keys(this.validity).map(key => {
+        this.validity[key] = true
+      })
+      if (this.validForm) {
+        await this.registerUser();
       }
     },
     async registerUser() {
@@ -303,18 +302,6 @@ export default {
 
 .feedback-invalid.invalid {
   visibility: visible;
-}
-
-input.custom-invalid:not([type='checkbox']) {
-  border:transparent;
-  outline: 1px solid firebrick;
-  border-radius: 1px;
-}
-
-input:focus.custom-invalid:not([type='checkbox']) {
-  outline:none;
-  border: 1px solid #ced4da;
-  border-radius: 0.25rem;
 }
 
 input:focus[type='password'] + .feedback-invalid {
