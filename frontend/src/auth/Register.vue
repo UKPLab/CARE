@@ -1,7 +1,9 @@
 <template>
   <form
-    class="row g-3 needs-validation"
-    novalidate
+      ref="registerForm"
+      class="row g-3 needs-validation"
+      novalidate
+      @submit.prevent="checkForm"
   >
     <div class="col-md-8 mx-auto my-4">
       <div class="col-md-8 mx-auto">
@@ -95,7 +97,7 @@
                   @blur="setValidity"
                   @input="setValidity"
                 >
-                <div class="feedback-invalid">
+                <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUsername}">
                   Please provide a valid username - no special characters.
                 </div>
               </div>
@@ -141,7 +143,7 @@
                   @blur="setValidity"
                   @input="setValidity"
                 >
-                <div class="feedback-invalid">
+                <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
                   Passwords must be at least 8 characters.
                 </div>
               </div>
@@ -235,6 +237,26 @@ export default {
     requestStats() {
       return window.config['app.register.requestStats'] === 'true';
     },
+    validEmail() {
+      const emailRegEx = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+      return emailRegEx.test(this.formData.email);
+    },
+    validUsername() {
+      const usernameRegEx = new RegExp("^[a-zA-Z0-9]+$");
+      return usernameRegEx.test(this.formData.userName);
+    },
+    validPassword() {
+      return this.formData.password.length >= 8;
+    },
+    validTerms() {
+      return this.formData.acceptTerms;
+    },
+    validForm() {
+      return this.validEmail && this.validUsername && this.validPassword && this.validTerms;
+    }
+  },
+  beforeMount() {
+    this.validity = Object.fromEntries(Object.keys(this.formData).map(key => [key, false]));
   },
   methods: {
     trySubmit() {
@@ -244,71 +266,24 @@ export default {
         this.register_user();
       }
     },
-
-    findNextSiblingWithClass(element, className) {
-      var nextSibling = element.nextElementSibling;
-      while(nextSibling != null) {
-        if (nextSibling.classList.contains(className)) {
-          return nextSibling;
-        }
-        nextSibling = nextSibling.nextElementSibling;
-      }
-    },
-
-    setValidity() {
-      const evtTarget = event.target;
-      const targetName = evtTarget.getAttribute('name');
-      var valid;
-      const emailRegEx = new RegExp("^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$");
-      const usernameRegEx = new RegExp("^[a-zA-Z0-9]+$");
-      const feedbackDiv = this.findNextSiblingWithClass(evtTarget, "feedback-invalid");
-
-      if (targetName === "email") {
-        valid = emailRegEx.test(evtTarget.value);
-      } else if (targetName === "password") {
-        valid = (evtTarget.value.length >= 8);
-      } else if (targetName === "acceptTerms") {
-        valid = evtTarget.checked;
-      } else if (targetName === "userName") {
-        valid = (usernameRegEx.test(evtTarget.value) && (evtTarget.value != ""));
-      } else {
-        valid = (evtTarget.value !== "");
-      }
-      if (valid) {
-        evtTarget.classList.remove("custom-invalid");
-        feedbackDiv.classList.remove("invalid");
-      } else {
-        if (event.type === 'input') {
-          return;
-        }
-        evtTarget.classList.add("custom-invalid");
-        feedbackDiv.classList.add("invalid");
-      }
-    },
-    async register_user() {
+    async registerUser() {
       try {
-        let response = await axios.post(getServerURL() + '/auth/register',{
-          firstName: this.firstName,
-          lastName: this.lastName,
-          userName: this.userName,
-          email: this.email,
-          password: this.password,
-          acceptTerms: this.acceptTerms,
-          acceptStats: this.acceptStats,
+        await axios.post(getServerURL() + '/auth/register', this.formData, {
+          validateStatus: function (status) {
+            return status >= 200 && status < 300;
+          }
         });
 
-        if (response.statusText === "Created") {
-          this.eventBus.emit('toast', {
-            message: "The user registration was successful",
-            title: "User Registration Complete",
-            variant: 'success'
-          });
+        this.eventBus.emit('toast', {
+          message: "The user registration was successful",
+          title: "User Registration Complete",
+          variant: 'success'
+        });
 
-          await this.$router.push("/login");
-        }
+        await this.$router.push("/login");
       } catch (err) {
         this.eventBus.emit('toast', {
-          message: err.response.data,
+          message: err.message,
           title: "Invalid User Credentials",
           variant: 'danger'
         });
