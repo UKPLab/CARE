@@ -1,18 +1,18 @@
 <template>
- <BasicCoordinator
-     ref="coord"
-     title="Document"
-     text-add="Add"
-     text-update="Change"
-     text-cancel="Abort"
-     table="document"
-     :read-only-fields="readOnlyFields"
-     @submit="update"
- >
-   <template #success>
+  <BasicCoordinator
+      ref="coord"
+      title="Document"
+      text-add="Add"
+      text-update="Change"
+      text-cancel="Abort"
+      table="document"
+      :read-only-fields="readOnlyFields"
+      @submit="update"
+  >
+    <template #success>
       The document has been successfully edited.
     </template>
- </BasicCoordinator>
+  </BasicCoordinator>
 </template>
 
 <script>
@@ -31,7 +31,8 @@ export default {
   data() {
     return {
       id: 0,
-      data: {}
+      data: {},
+      editTimeout : null
     }
   },
   computed: {
@@ -48,9 +49,39 @@ export default {
       this.$refs.coord.open(id, this.document);
     },
     update(doc) {
+      this.sockets.subscribe("documentRefresh", (data) => {
+        if (data.filter(d => d.id === this.id).length > 0) {
+          if(this.editTimeout){
+            clearTimeout(this.editTimeout);
+          }
+
+          this.sockets.unsubscribe('documentRefresh');
+          this.$refs.coord.waiting = false;
+
+          this.eventBus.emit('toast', {
+            title: "Document edited",
+            message: "Successful edited document!",
+            variant: "success"
+          });
+
+          this.$refs.coord.showSuccess();
+        }
+      });
+
       this.$socket.emit("appDataUpdate", {table: "document", data: {...doc, id: this.id}});
-      //todo add logic for determining success; also not working right now
-      this.$refs.coord.showSuccess();
+
+      this.editTimeout = setTimeout(() => {
+          this.editTimeout = null;
+          this.sockets.unsubscribe('documentRefresh');
+
+          this.eventBus.emit('toast', {
+            title: "Document edit failed",
+            message: "Failed to edited document!",
+            variant: "danger"
+          });
+
+          this.$refs.coord.close();
+        }, 5000);
     }
   }
 }
