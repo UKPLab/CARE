@@ -4,7 +4,7 @@
  * that require a login is realized.
  *
  * Pass metadata via the meta attribute. Current supported fields:
- * > requiresAuth: true/false <=> true, iff a login is required
+ * > requireAuth: true/false <=> true, iff a login is required
  *
  * @author: Dennis Zyska, Nils Dycke
 **/
@@ -25,23 +25,23 @@ const routes = [
         props: true,
         component: () => import('@/components/Dashboard.vue'),
         alias: "/dashboard",
-        meta: {requiresAuth: true, toggleSidebar: true, default: true},
+        meta: {requireAuth: true, toggleSidebar: true, default: true},
     },
     {
         path: "/login",
         component: () => import("@/auth/Login.vue"),
-        meta: {requiresAuth: false, hideTopbar: true, checkLogin: true}
+        meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
         path: "/register",
         component: () => import("@/auth/Register.vue"),
-        meta: {requiresAuth: false, hideTopbar: true, checkLogin: true}
+        meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
         path: "/document/:documentHash",
         component: () => import('@/components/Document.vue'),
         props: true,
-        meta: {requiresAuth: true}
+        meta: {requireAuth: true}
     },
     {
         path: "/review/:studySessionHash",
@@ -65,7 +65,7 @@ const routes = [
         path: "/:catchAll(.*)",
         name: "NotFound",
         component: () => import("@/basic/NotFound.vue"),
-        meta: {requiresAuth: false, hideTopbar: true}
+        meta: {requireAuth: false, hideTopbar: true}
     }
 ]
 

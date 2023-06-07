@@ -1,17 +1,17 @@
 <template>
-  <Toast/>
-  <div v-if="requiresAuth">
+  <div v-if="requireAuth">
+    <TopBar v-if="!hideTopbar"/>
     <div v-if="!appLoaded" class="pageLoader">
       <Loader :loading="!appLoaded" :text="appLoadText"/>
     </div>
     <div v-else>
-      <TopBar v-if="!hideTopbar"/>
       <router-view class="top-padding"/>
     </div>
   </div>
   <div v-else>
     <router-view/>
   </div>
+  <Toast/>
 </template>
 
 <script>
@@ -84,8 +84,8 @@ export default {
       }
       return "Loading...";
     },
-    requiresAuth() {
-      return this.$route.meta.requiresAuth !== undefined && this.$route.meta.requiresAuth;
+    requireAuth() {
+      return this.$route.meta.requireAuth !== undefined && this.$route.meta.requireAuth;
     },
   },
   watch: {
@@ -94,7 +94,7 @@ export default {
         this.$socket.emit("stats", {action: "routeStep", data: {from: from.fullPath, to: to.fullPath}});
       }
     },
-    "$route.meta.requiresAuth"(newValue, oldValue) {
+    "$route.meta.requireAuth"(newValue, oldValue) {
       if (newValue !== oldValue) {
         if (newValue && !this.$socket.connected) {
           this.$socket.connect();

@@ -22,7 +22,7 @@
         >
           <IconAsset
             :style="{cursor: 'pointer'}"
-            height="30"
+            :height="30"
             name="logo"
           />
         </a>
