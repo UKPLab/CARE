@@ -281,8 +281,9 @@ export default {
 
         await this.$router.push("/login");
       } catch (err) {
+        console.log("ERR", err);
         this.eventBus.emit('toast', {
-          message: err.message,
+          message: err.response && err.response.data && err.response.data.message ? err.response.data.message : err.message,
           title: "Invalid User Credentials",
           variant: 'danger'
         });
