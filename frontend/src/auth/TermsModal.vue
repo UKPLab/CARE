@@ -44,7 +44,7 @@ export default {
       this.$refs.terms.openModal();
     },
     cancel() {
-      this.$refs.terms.closeModal();
+      this.$refs.terms.close();
     },
   }
 }

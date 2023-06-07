@@ -147,7 +147,7 @@ export default {
       this.$refs.studySessionModal.openModal();
     },
     close() {
-      this.$refs.studySessionModal.closeModal();
+      this.$refs.studySessionModal.close();
     },
     load() {
       if (!this.study) {

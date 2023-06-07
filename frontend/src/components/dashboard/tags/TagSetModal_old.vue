@@ -122,7 +122,7 @@ export default {
     },
     save() {
       this.sockets.subscribe("tagSetRefresh", (data) => {
-        this.$refs.tagSetModal.closeModal();
+        this.$refs.tagSetModal.close();
         this.sockets.unsubscribe('tagSetRefresh');
         this.eventBus.emit('toast', {title: "Tagset saved", message: "Successful saved tagset!", variant: "success"});
       });
@@ -139,7 +139,7 @@ export default {
       this.back();
     },
     back() {
-      this.$refs.tagSetModal.closeModal();
+      this.$refs.tagSetModal.close();
     },
   },
 

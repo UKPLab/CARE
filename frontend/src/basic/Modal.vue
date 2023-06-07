@@ -121,6 +121,7 @@ export default {
   },
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
+
     this.$refs.Modal.addEventListener('hide.bs.modal', this.hideEvent);
     this.$refs.Modal.addEventListener('show.bs.modal', this.showEvent);
 
@@ -156,9 +157,6 @@ export default {
       this.modal.show();
     },
     close() {
-      this.closeModal();
-    },
-    closeModal() {
       this.modal.hide();
     }
   }

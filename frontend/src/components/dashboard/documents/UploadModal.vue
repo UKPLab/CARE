@@ -76,7 +76,7 @@ export default {
   },
   sockets: {
     uploadResult: function (data) {
-      this.$refs.uploadModal.closeModal();
+      this.$refs.uploadModal.close();
       this.uploading = false;
       if (data.success) {
         this.eventBus.emit('toast', {message: "File successfully uploaded!", variant: "success", delay: 3000});

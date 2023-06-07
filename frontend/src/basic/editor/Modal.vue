@@ -8,7 +8,7 @@
     </template>
     <template v-slot:footer>
       <button class="btn btn-secondary" data-bs-dismiss="modal" type="button"
-              v-on:click="$refs.editorModal.closeModal()">Close
+              v-on:click="$refs.editorModal.close()">Close
       </button>
       <button class="btn btn-primary" data-bs-dismiss="modal" type="button" v-on:click="saveEditor()">Save changes
       </button>
