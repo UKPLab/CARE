@@ -80,6 +80,7 @@ import FormDefault from "@/basic/form/Default.vue"
 import FormTextarea from "@/basic/form/Textarea.vue"
 import FormEditor from "@/basic/form/Editor.vue"
 import FormTable from "@/basic/form/DataTable.vue"
+import deepEqual from "deep-equal";
 
 /**
  * Basic form component for rendering form fields provided by fields prop
@@ -118,7 +119,9 @@ export default {
   watch: {
     currentData: {
       handler() {
-        this.$emit("update:modelValue", this.currentData);
+        if(!deepEqual(this.currentData, this.modelValue)) {
+          this.$emit("update:modelValue", this.currentData);
+        }
       }, deep: true
     },
     modelValue: {

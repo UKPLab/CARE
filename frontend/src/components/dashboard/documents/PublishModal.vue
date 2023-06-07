@@ -105,7 +105,7 @@ export default {
             variant: "success"
           });
         } else {
-          this.$refs.publishModal.closeModal();
+          this.$refs.publishModal.close();
           this.eventBus.emit('toast', {title: "Document not published", message: data.message, variant: "danger"});
         }
       });
@@ -113,7 +113,7 @@ export default {
       this.$refs.publishModal.waiting = true;
     },
     close() {
-      this.$refs.publishModal.closeModal();
+      this.$refs.publishModal.close();
       this.$socket.emit("stats", {
         action: "cancelModalPublishDocument",
         data: {documentId: this.id}

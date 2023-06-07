@@ -219,7 +219,7 @@ export default {
             variant: "success"
           });
         } else {
-          this.$refs.studyCoordinatorModal.closeModal();
+          this.$refs.studyCoordinatorModal.close();
 
           this.eventBus.emit('toast', {title: "Study not published", message: data.message, variant: "danger"});
         }
@@ -228,7 +228,7 @@ export default {
       this.$refs.studyCoordinatorModal.waiting = true;
     },
     close() {
-      this.$refs.studyCoordinatorModal.closeModal();
+      this.$refs.studyCoordinatorModal.close();
     },
     reset() {
       this.resets++;
