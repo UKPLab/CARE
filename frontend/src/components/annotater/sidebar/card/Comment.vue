@@ -233,7 +233,7 @@ export default {
       return this.$store.getters["comment/getCommentsByCommentId"](this.commentId);
     },
     nlp_active() {
-      const conf = this.$store.getters["service/get"]("NLPService", "skillConfig");
+      const conf = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true" && conf && "sentiment_classification" in conf;
     },
     nlp_result() {

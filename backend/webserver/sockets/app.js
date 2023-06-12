@@ -84,8 +84,11 @@ module.exports = class AppSocket extends Socket {
 
             }
 
+            return true;
+
         } catch (err) {
             this.logger.error(err);
+            return false;
         }
     }
 
@@ -131,8 +134,13 @@ module.exports = class AppSocket extends Socket {
         });
 
         this.socket.on("appDataUpdate", async (data) => {
-            await this.updateData(data);
-            await this.sendTableData(data.table);
+            const success = await this.updateData(data);
+            if (success) {
+                await this.sendTableData(data.table);
+                await this.socket.emit("appDataUpdateSuccess", {id: data.id, success: true});
+            } else {
+                await this.socket.emit("appDataUpdateSuccess", {id: data.id, success: false});
+            }
         });
 
     }

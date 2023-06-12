@@ -17,7 +17,7 @@
           <span class="visually-hidden">Loading...</span>
         </div>
         <div v-else>
-          <SkillListing :config="config" />
+          <SkillListing ref="skillListing" :config="config" />
         </div>
       </div>
     </template>
@@ -60,10 +60,10 @@ export default {
      */
     config() {
       if (this.skillName) {
-        const stored = this.$store.getters["service/get"]("NLPService", "skillConfig");
+        const stored = this.$store.getters["service/get"]("NLPService", "skillUpdate");
 
         if (stored && this.skillName in stored) {
-          return stored[this.skillName];
+          return stored[this.skillName].config;
         }
       }
       return null;
@@ -84,6 +84,10 @@ export default {
      * @param skillName, the name of the skill as advertised by a model
      */
     openModal(skillName) {
+      if(this.skillName !== skillName) {
+        this.reset();
+      }
+
       this.skillName = skillName;
 
       this.$refs.nlpSkillModal.openModal();
@@ -96,6 +100,12 @@ export default {
         });
       }
     },
+    reset(){
+      this.skillName = null;
+      if(this.$refs.skillListing){
+        this.$refs.skillListing.reset();
+      }
+    }
   },
 }
 </script>
