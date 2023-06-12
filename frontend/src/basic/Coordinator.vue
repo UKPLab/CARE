@@ -1,7 +1,7 @@
 <template>
   <BasicModal
     ref="coordinatorModal"
-    :props="{id: data.id, resets: resets}"
+    :props="{id: id}"
     lg
     name="coordinatorModal"
     @hide="reset"
