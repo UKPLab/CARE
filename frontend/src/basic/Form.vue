@@ -140,14 +140,19 @@ export default {
      * @return {*}
      */
     getValues(values) {
-        return Object.assign({}, ...this.fields.map(f => ({
-          // use value if set
-          [f.key]: (f.key in values && values[f.key] !== null) ? values[f.key]
-            // otherwise, you default from fields configuration, if set
-            : ("default" in f) ? f.default
-              // otherwise, use undefined to handle by subcomponent
-              : null
-        })));
+      let return_data = Object.assign({}, ...this.fields.map(f => ({
+        // use value if set
+        [f.key]: (f.key in values && values[f.key] !== null) ? values[f.key]
+          // otherwise, you default from fields configuration, if set
+          : ("default" in f) ? f.default
+            // otherwise, use undefined to handle by subcomponent
+            : null
+      })));
+      // also provide id if set
+      if (values.id) {
+        return_data.id = values.id;
+      }
+      return values;
     }
   }
 }
