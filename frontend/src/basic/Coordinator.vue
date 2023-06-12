@@ -8,8 +8,8 @@
   >
     <template #title>
       <slot name="title">
-        <span v-if="id === 0">New</span>
-        <span v-else>Edit</span>
+        <span v-if="data.id">Edit</span>
+        <span v-else>New</span>
         {{ title }}
       </slot>
     </template>
@@ -53,7 +53,7 @@
               type="button"
               @click="submit"
             >
-              {{ id === 0 ? textAdd : textUpdate }}
+              {{ data.id ? textUpdate: textAdd }}
             </button>
           </slot>
       </span>
@@ -64,6 +64,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
+import {v4 as uuid} from "uuid";
 
 /**
  * Basic Coordinator to add or edit database entries
@@ -125,11 +126,20 @@ export default {
   emits: ['submit'],
   data() {
     return {
-      id: 0,
       data: {},
       success: false,
       overrideDefaultValues: {},
+      requestId: null,
     };
+  },
+  sockets: {
+    appDataUpdateSuccess(data) {
+      if (data.id === this.requestId) {
+        if (data.success) {
+          this.showSuccess();
+        }
+      }
+    },
   },
   computed: {
     fields() {
@@ -146,13 +156,14 @@ export default {
      * Open the coordinator with the given id
      * @param id
      * @param defaultValues Override default values
+     * @param copy If the entry should be copied
      */
-    open(id, defaultValues) {
+    open(id = 0, defaultValues = {}, copy = false) {
       if (this.fields) {
         this.reset();
         this.overrideDefaultValues = defaultValues;
-        this.id = id;
-        this.data = this.getData(id);
+        this.requestId = uuid();
+        this.data = this.getData(id, copy);
         this.$refs.coordinatorModal.open();
       } else {
         this.eventBus.emit('toast', {
@@ -164,19 +175,13 @@ export default {
         });
       }
     },
-    copy(id, defaultValues) {
-      this.open(id, defaultValues);
-      this.id = 0;
-    },
     close() {
       this.$refs.coordinatorModal.close();
     },
     submit() {
-      const data =  {...this.data, ...{id: this.id}};
+      const data =  {...this.data};
       this.$emit('submit', data)
-      this.$socket.emit("appDataUpdate", {table: this.table, data: data});
-      // TODO: updates are not working correctly if id is not set in subtables
-      // TODO: removing tags is also not working as deleted true is currently not set in basic tables
+      this.$socket.emit("appDataUpdate", {id: this.requestId, table: this.table, data: data});
       this.$refs.coordinatorModal.waiting = true;
     },
     showSuccess() {
@@ -186,15 +191,14 @@ export default {
     reset() {
       this.$refs.coordinatorModal.waiting = false;
       this.overrideDefaultValues = {};
-      this.id = 0;
       this.data = this.getData(0);
       this.success = false;
     },
-    getData(id) {
+    getData(id, copy = false) {
       if (id === 0) {
         return {...this.defaultValue, ...this.overrideDefaultValues};
       } else {
-        return this.getDataFromStore(id, this.table, this.fields);
+        return this.getDataFromStore(id, this.table, this.fields, copy);
       }
     },
     /**
@@ -202,21 +206,30 @@ export default {
      * @param id Id of the key
      * @param table from which table the data should be taken
      * @param fields Fields of the table
+     * @param copy If the data should be copied (id will not be provided)
      * @returns {{}}
      */
-    getDataFromStore(id, table, fields) {
+    getDataFromStore(id, table, fields, copy = false) {
       const data = this.$store.getters["table/" + table + "/get"](id);
 
-      return fields.reduce((acc, field) => {
+      let return_data = fields.reduce((acc, field) => {
         // if the key is in the data, use the data value
         acc[field.key] = (field.key in data) ? data[field.key]
           // if type is table, get the data from the store
           : (field.type === "table" && this.$store.getters["table/" + field.options.table + "/hasFields"])
-            ? this.$store.getters["table/" + field.options.table + "/getFiltered"](e => e[field.options.id] === id).map(e => this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"]))
+            ? this.$store.getters["table/" + field.options.table + "/getFiltered"](e => e[field.options.id] === id)
+              .map(e =>
+                this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"], copy))
             // else use the default value
             : null;
         return acc;
       }, {});
+
+      if (!copy) {
+        return_data = {...return_data, ...{id: data.id}};
+      }
+
+      return return_data;
     },
   }
 }
