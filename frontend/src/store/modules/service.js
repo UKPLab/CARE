@@ -107,7 +107,7 @@ export default {
          */
         getNLPSkills: (state) => {
             return "NLPService" in state.services && 'skillUpdate' in state.services["NLPService"] ?
-                state.services["NLPService"]['skillUpdate'].map(skill => skill.name) : [];
+                Object.keys(state.services["NLPService"]['skillUpdate']) : [];
         },
 
         /**
@@ -161,18 +161,13 @@ export default {
                     if (data.data.length > 0) {
                         const skillNames = data.data.map(s => s.name);
 
-                        let newSkills = state.services[service][serviceType].filter(s => !skillNames.includes(s.name));
-                        newSkills = newSkills.concat(data.data);
-
-                        state.services[service][serviceType] = newSkills;
-                    }
-                } else if (serviceType === "skillConfig") {
-                    if (!(serviceType in state.services[service])) {
-                        state.services[service][serviceType] = {};
-                    }
-
-                    if (data.data) {
-                        state.services[service][serviceType][data.data.name] = data.data;
+                        skillNames.forEach(n => {
+                            if(state.services[service][serviceType][n]) {
+                                delete state.services[service][serviceType][n]
+                            }
+                        });
+                        state.services[service][serviceType] = {...state.services[service][serviceType],
+                                                                ...Object.fromEntries(data.data.map(s => [s.name, s]))}
                     }
                 } else if (serviceType === "skillResults") {
                     let cur;

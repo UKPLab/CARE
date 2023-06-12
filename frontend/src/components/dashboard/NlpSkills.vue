@@ -1,10 +1,10 @@
 <template>
   <Card title="Skills">
     <template #headerElements>
-      <span class="badge" :class="onlineStatus? 'bg-success' : 'bg-danger'" v-if="!waitForStatus">
+      <span v-if="!waitForStatus" class="badge" :class="onlineStatus? 'bg-success' : 'bg-danger'">
         {{ onlineStatus ? "ONLINE" : "OFFLINE" }}
       </span>
-      <div class="spinner-grow" role="status" style="width:12px; height:12px" v-else>
+      <div v-else class="spinner-grow" role="status" style="width:12px; height:12px">
         <span class="visually-hidden">Loading...</span>
       </div>
       <ButtonHeader
@@ -87,7 +87,7 @@ export default {
     data() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
 
-      return skills ? skills.map(s => {
+      return skills ? Object.values(skills).map(s => {
         s.actions = [{
           icon: "gear",
           options: {

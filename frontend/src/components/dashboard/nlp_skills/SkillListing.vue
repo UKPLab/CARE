@@ -112,7 +112,6 @@
         <SkillItem
             :json-data="config[f]"
             :name="f"
-            :icon="i"
         />
       </div>
     </div>
@@ -233,6 +232,9 @@ export default {
     changeSkillSetting(newVal){
       console.log("deactivating a skill");
       //todo send emit
+    },
+    reset() {
+      this.commandEditorActive = false;
     }
   }
 }

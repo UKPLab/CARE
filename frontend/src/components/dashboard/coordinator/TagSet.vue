@@ -27,7 +27,7 @@ export default {
       this.$refs.coordinator.open(tagSetId, defaultValues);
     },
     copy(tagSetId, defaultValues = {}) {
-      this.$refs.coordinator.copy(tagSetId, defaultValues);
+      this.$refs.coordinator.open(tagSetId, defaultValues, true);
     },
     close() {
       this.$refs.coordinator.close();
