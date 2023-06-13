@@ -39,21 +39,18 @@ module.exports = (sequelize, DataTypes) => {
                 min: 0,
                 max: 180,
                 step: 1,
-                required: false,
                 default: 0,
             },
             {
                 key: "collab",
                 label: "Should the study be collaborative?",
                 type: "switch",
-                required: true,
                 default: false,
             },
             {
                 key: "resumable",
                 label: "Should the study be resumable?",
                 type: "switch",
-                required: true,
                 default: false,
             },
             {
@@ -61,7 +58,6 @@ module.exports = (sequelize, DataTypes) => {
                 label: "Study sessions can't start before",
                 type: "datetime",
                 size: 6,
-                required: true,
                 default: null,
             },
             {
@@ -69,7 +65,7 @@ module.exports = (sequelize, DataTypes) => {
                 label: "Study sessions can't start after:",
                 type: "datetime",
                 size: 6,
-                required: true,
+                default: null,
             },
         ]
 

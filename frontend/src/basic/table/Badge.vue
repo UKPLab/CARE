@@ -49,7 +49,7 @@ export default {
     title() {
       if(this.options && this.options.tooltip){
         return this.options.tooltip;
-      } else if(this.value.tooltip){
+      } else if(this.value && this.value.tooltip){
         return this.value.tooltip;
       } else {
         return "";
