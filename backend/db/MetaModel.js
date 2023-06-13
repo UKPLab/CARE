@@ -68,9 +68,11 @@ module.exports = class MetaModel extends Model {
     /**
      * Get all db entries for auto table (filtered)
      * @param userId
+     * @param filterIds filter IDs in Database
+     * @param includeDraft includes rows with column draft is true
      * @return {Promise<MetaModel[]|Object|undefined>}
      */
-    static async getAutoTable(userId = null, includeDraft = false) {
+    static async getAutoTable(userId = null, filterIds = null, includeDraft = false) {
         if (this.publicTable) {
             return await this.getAll();
         } else {
@@ -82,10 +84,14 @@ module.exports = class MetaModel extends Model {
                     filter['userId'] = userId;
                 }
             }
+            if (filterIds !== null) {
+                filter['id'] = {
+                    [Op.or]: filterIds
+                }
+            }
             if ("draft" in this.getAttributes()) {
                 filter['draft'] = includeDraft;
             }
-            console.log("FILTER", filter);
             return await this.findAll({where: filter, raw: true});
         }
     }

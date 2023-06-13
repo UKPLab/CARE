@@ -53,10 +53,14 @@ module.exports = class AppSocket extends Socket {
 
                 // check data exists for required fields
                 for (let field of this.models[data.table].fields) {
-                    if (field.required && !(field.key in data.data)) {
-                        this.sendToast("error", "Required field missing", field.key);
-                        this.logger.error("Required field missing: " + field.key);
-                        return;
+                    if (field.required) {
+                        if (!(field.key in data.data) || data.data[field.key] === null || data.data[field.key] === "") {
+                            {
+                                this.sendToast("Required field missing", "Error", field.key);
+                                this.logger.error("Required field missing: " + field.key);
+                                return false;
+                            }
+                        }
                     }
                 }
 
@@ -80,13 +84,13 @@ module.exports = class AppSocket extends Socket {
                             });
                         }
                     });
+                    return newEntry.id;
                 }
 
             }
 
-            return true;
-
-        } catch (err) {
+        } catch
+            (err) {
             this.logger.error(err);
             return false;
         }
@@ -134,12 +138,12 @@ module.exports = class AppSocket extends Socket {
         });
 
         this.socket.on("appDataUpdate", async (data) => {
-            const success = await this.updateData(data);
-            if (success) {
-                await this.sendTableData(data.table);
-                await this.socket.emit("appDataUpdateSuccess", {id: data.id, success: true});
+            const id = await this.updateData(data);
+            if (id) {
+                await this.sendTableData(data.table, [id]);
+                await this.socket.emit("appDataUpdateSuccess", {requestId: data.id, id: id, success: true});
             } else {
-                await this.socket.emit("appDataUpdateSuccess", {id: data.id, success: false});
+                await this.socket.emit("appDataUpdateSuccess", {requestId: data.id, success: false});
             }
         });
 

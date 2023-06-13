@@ -1,14 +1,15 @@
 <template>
   <FormElement :data-table="dataTable" :options="options">
-    <template #element>
+    <template #element="{blur}" >
       <input
-        v-model="currentData"
-        :class="options.class"
-        :name="options.key"
-        :placeholder="options.placeholder"
-        :required="options.required"
-        :type="options.type"
-        class="form-control"
+          v-model="currentData"
+          :class="options.class"
+          :name="options.key"
+          :placeholder="options.placeholder"
+          :required="options.required"
+          :type="options.type"
+          class="form-control"
+          @blur="blur"
       >
     </template>
   </FormElement>
@@ -36,7 +37,7 @@ export default {
       default: false,
     }
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", 'blur'],
   data() {
     return {
       currentData: "",

@@ -3,7 +3,7 @@
     ref="coordinator"
     table="study"
     title="Study Coordinator"
-    @submit="publish"
+    @success="success"
   >
     <template #success>
       The study has been successfully published<br>
@@ -33,7 +33,6 @@ export default {
     return {
       studyId: 0,
       documentId: 0,
-      hash: null,
     }
   },
   computed: {
@@ -44,7 +43,7 @@ export default {
       return {};
     },
     link() {
-      return window.location.origin + "/study/" + this.hash;
+      return window.location.origin + "/study/" + this.study.hash;
     },
   },
   methods: {
@@ -60,7 +59,10 @@ export default {
       }
       this.$refs.coordinator.open(studyId, {documentId: this.documentId});
     },
-    publish(data) {
+    success(id) {
+      this.studyId = id;
+    },
+    /*publish(data) {
       this.sockets.subscribe("studyPublished", (data) => {
         this.sockets.unsubscribe('studyPublished');
         if (data.success) {
@@ -80,7 +82,7 @@ export default {
         }
       });
       this.$socket.emit("studyPublish", data);
-    },
+    },*/
     close() {
       this.$refs.coordinator.close();
     },

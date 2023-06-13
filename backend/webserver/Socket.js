@@ -167,10 +167,11 @@ module.exports = class Socket {
     /**
      * Send auto table data to the clients
      * @param table
+     * @param filterIds list of ids to send
      * @param userId
      * @return {Promise<void>}
      */
-    async sendTableData(table, userId = null) {
+    async sendTableData(table, filterIds = null, userId = null) {
         try {
             if (!this.autoTables.includes(table)) {
                 this.logger.error("Table " + table + " is not an auto table!");
@@ -180,29 +181,24 @@ module.exports = class Socket {
                 //check to update creator name
                 const updateCreatorName = "userId" in this.models[table].getAttributes();
 
+                let data = [];
                 if (this.isAdmin()) {
-                    if (userId && "userId" in this.models[table].getAttributes()) {
-                        this.emit(table + "Refresh", await this.models[table].getAllByKey('userId', userId), updateCreatorName);
-                    } else {
-                        this.emit(table + "Refresh", await this.models[table].getAll(), updateCreatorName);
-                    }
+                    data = await this.models[table].getAutoTable(userId, filterIds);
                 } else {
-                    console.log(this.userId);
-                    const data = await this.models[table].getAutoTable(this.userId);
-                    console.log("Data for table " + table);
-                    console.log(data);
-                    const foreignKeys = await this.server.db.sequelize.getQueryInterface().getForeignKeyReferencesForTable(table);
-
-                    // send all foreign keys of table that are in autoTables
-                    foreignKeys.filter(fk => this.autoTables.includes(fk.referencedTableName)).map(async fk => {
-                        const uniqueIds = data.map(d => d[fk.columnName]).filter((value, index, array) => array.indexOf(value) === index);
-                        console.log("foreignkeys", table, fk, uniqueIds);
-                        if (uniqueIds.length > 0) {
-                            this.emit(fk.referencedTableName + "Refresh", await this.models[fk.referencedTableName].getAllByKey(fk.referencedColumnName, uniqueIds), "userId" in this.models[fk.referencedTableName].getAttributes());
-                        }
-                    });
-                    this.emit(table + "Refresh", data, updateCreatorName);
+                    data = await this.models[table].getAutoTable(this.userId, filterIds);
                 }
+
+                const foreignKeys = await this.server.db.sequelize.getQueryInterface().getForeignKeyReferencesForTable(table);
+
+                // send all foreign keys of table that are in autoTables
+                foreignKeys.filter(fk => this.autoTables.includes(fk.referencedTableName)).map(async fk => {
+                    const uniqueIds = data.map(d => d[fk.columnName]).filter((value, index, array) => array.indexOf(value) === index);
+                    if (uniqueIds.length > 0) {
+                        this.emit(fk.referencedTableName + "Refresh", await this.models[fk.referencedTableName].getAllByKey(fk.referencedColumnName, uniqueIds), "userId" in this.models[fk.referencedTableName].getAttributes());
+                    }
+                });
+                this.emit(table + "Refresh", data, updateCreatorName);
+
             }
         } catch (err) {
             this.logger.error(err);

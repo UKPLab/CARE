@@ -22,7 +22,11 @@
               :size="16"
           />
         </div>
-        <slot :id="options.key" name="element"/>
+        <slot :id="options.key" name="element" :blur="validate" />
+
+      </div>
+      <div v-if="options.required" class="feedback-invalid">
+        This field is required.
       </div>
     </div>
   </fieldset>
@@ -50,10 +54,22 @@ export default {
       required: false,
       default: false,
     }
+  },
+  methods: {
+    validate() {
+      console.log("validate");
+      // TODO validation of form fields
+    }
   }
 }
 </script>
 
 <style scoped>
-
+.feedback-invalid {
+  font-size: 0.75em;
+  color: firebrick;
+  display: none; /* TODO remove */
+  padding-top: 4px;
+  padding-left: 5px;
+}
 </style>
