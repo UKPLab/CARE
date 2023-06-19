@@ -215,13 +215,13 @@ export default {
         await navigator.clipboard.writeText(link);
         this.eventBus.emit('toast', {
           title: "Link copied",
-          message: "Document link copied to clipboard!",
+          message: "Study link copied to clipboard!",
           variant: "success"
         });
       } catch ($e) {
         this.eventBus.emit('toast', {
           title: "Link not copied",
-          message: "Could not copy document link to clipboard!",
+          message: "Could not copy study link to clipboard!",
           variant: "danger"
         });
       }
