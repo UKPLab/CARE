@@ -137,7 +137,7 @@ export default {
   },
   watch: {
     studySession(newVal) {
-      if (this.study.timeLimit > 0) {
+      if (this.study.timeLimit > 0 && this.studySession) {  //studySession required, otherwise not all data may be there yet
         if (this.timerInterval) {
           clearInterval(this.timerInterval);
           this.timerInterval = null;
@@ -150,7 +150,6 @@ export default {
       }
     },
   },
-
   mounted() {
     this.studySessionId = this.initStudySessionId;
     if (this.studySessionId === 0) {
@@ -194,7 +193,6 @@ export default {
       if (this.timeLeft < 0) {
         this.finish({studySessionId: this.studySessionId});
       }
-
     }
   }
 }

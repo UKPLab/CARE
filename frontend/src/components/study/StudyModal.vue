@@ -21,7 +21,7 @@
         :loading="true"
       />
       <span v-else-if="showSessions">
-        <Table
+        <DTable
           :columns="sessionTableColumns"
           :data="studySessions"
           :options="sessionTableOptions"
@@ -120,6 +120,7 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import Loader from "@/basic/Loader.vue"
+import DTable from "@/basic/table/Table.vue"
 
 /* StudyModal.vue - modal for accessing a study
 
@@ -131,7 +132,7 @@ Source: -
 */
 export default {
   name: "StudyModal",
-  components: {Loader, Modal},
+  components: {Loader, DTable, Modal},
   props: {
     studyId: {
       type: Number,

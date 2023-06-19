@@ -12,7 +12,7 @@
       </span>
     </template>
     <template #body>
-      <Table
+      <DTable
         :columns="columns"
         :data="studySessions"
         :options="options"
@@ -32,8 +32,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
-import Form from "@/basic/Form.vue";
-import Table from "@/basic/table/Table.vue";
+import DTable from "@/basic/table/Table.vue";
 
 /* StudySessionModal.vue - details of study session for a given study in a modal
 
@@ -44,7 +43,7 @@ Source: -
 */
 export default {
   name: "StudySessionModal",
-  components: {Modal, Form, Table},
+  components: {Modal, DTable},
   data() {
     return {
       studyId: 0,
