@@ -8,8 +8,9 @@
           :placeholder="options.placeholder"
           :required="options.required"
           :type="options.type"
+          :maxlength="options.maxLength"
           class="form-control"
-          @blur="blur"
+          @blur="blur(currentData)"
       >
     </template>
   </FormElement>

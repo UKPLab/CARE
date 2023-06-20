@@ -1,15 +1,17 @@
-<template>
+-<template>
   <FormElement :options="options">
-    <template #element>
+    <template #element="{blur}">
       <input
         v-model="date"
         class="form-control"
         type="date"
+        @blur="blur(currentDate)"
       >
       <input
         v-model="time"
         class="form-control"
         type="time"
+        @blur="blur(currentDate)"
       >
       <button
         class="btn btn-outline-secondary"

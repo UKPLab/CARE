@@ -11,7 +11,11 @@ module.exports = (sequelize, DataTypes) => {
                 placeholder: "My user study",
                 type: "text",
                 required: true,
+                //pattern: "^(\\d+)",
+                //invalidText: "Test invalid text",
                 default: "",
+                minlength: 4,
+                maxlength: 5
             },
             {
                 key: "documentId",
@@ -28,6 +32,7 @@ module.exports = (sequelize, DataTypes) => {
                 label: "Description of the study:",
                 help: "This text will be displayed at the beginning of the user study!",
                 type: "editor",
+                required: true
             },
             {
                 key: "timeLimit",
@@ -59,6 +64,7 @@ module.exports = (sequelize, DataTypes) => {
                 type: "datetime",
                 size: 6,
                 default: null,
+                required: true,
             },
             {
                 key: "end",

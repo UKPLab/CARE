@@ -1,10 +1,12 @@
 <template>
   <FormElement :data-table="dataTable" :options="options">
-    <template #element>
+    <template #element="{blur}" >
       <select
-        v-if="Array.isArray(options.options)"
-        v-model="currentData"
-        :class="selectClass" class="form-select"
+          v-if="Array.isArray(options.options)"
+          v-model="currentData"
+          :class="selectClass" class="form-select"
+          @blur="blur(currentData > -1)"
+
       >
         <option v-for="option in selectOptions"
                 :key="option.value"
@@ -15,9 +17,10 @@
         </option>
       </select>
       <select
-        v-else
-        v-model="currentData"
-        class="form-select"
+          v-else
+          v-model="currentData"
+          class="form-select"
+          @blur="blur(currentData > 0)"
       >
         <option v-for="option in selectOptions"
                 :key="option.id"

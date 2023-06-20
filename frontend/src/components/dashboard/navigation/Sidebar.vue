@@ -40,7 +40,7 @@
         <span class="arrow-toggle sidebar-icon">
           <LoadIcon name="chevron-double-right" />
         </span>
-        <div class="list-group-item-text">
+        <div class="list-group-item-text" style="cursor:pointer">
           Collapse sidebar
         </div>
       </div>

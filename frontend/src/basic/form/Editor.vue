@@ -1,9 +1,11 @@
 <template>
   <FormElement :options="options">
-    <template #element>
+    <template #element="{blur}">
       <Editor
         v-model="currentData"
         class="form-control p-0"
+        @blur="blur(currentData)"
+        :max-length="options.maxLength"
       />
     </template>
   </FormElement>
