@@ -62,6 +62,13 @@ module.exports = class AppSocket extends Socket {
                             }
                         }
                     }
+                    // defaults
+                    if (!(field.key in data.data || data.data[field.key] === null)) {
+                        // only if default is set and we are not updating an existing entry
+                        if (field.default !== null && !('id' in data.data)) {
+                            data.data[field.key] = field.default;
+                        }
+                    }
                 }
 
                 // update data
