@@ -1,11 +1,11 @@
 <template>
-  <FormElement :options="options">
+  <FormElement ref="formElement" :options="options">
     <template #element="{blur}">
       <Editor
-        v-model="currentData"
-        class="form-control p-0"
-        @blur="blur(currentData)"
-        :max-length="options.maxLength"
+          v-model="currentData"
+          class="form-control p-0"
+          @blur="blur(currentData)"
+          :max-length="options.maxLength"
       />
     </template>
   </FormElement>
@@ -46,6 +46,11 @@ export default {
   mounted() {
     this.currentData = this.modelValue;
   },
+  methods: {
+    validate() {
+      return this.$refs.formElement.validate(this.currentData);
+    }
+  }
 }
 </script>
 

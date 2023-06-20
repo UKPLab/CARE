@@ -1,22 +1,23 @@
--<template>
-  <FormElement :options="options">
+-
+<template>
+  <FormElement ref="formElement" :options="options">
     <template #element="{blur}">
       <input
-        v-model="date"
-        class="form-control"
-        type="date"
-        @blur="blur(currentDate)"
+          v-model="date"
+          class="form-control"
+          type="date"
+          @blur="blur(currentDate)"
       >
       <input
-        v-model="time"
-        class="form-control"
-        type="time"
-        @blur="blur(currentDate)"
+          v-model="time"
+          class="form-control"
+          type="time"
+          @blur="blur(currentDate)"
       >
       <button
-        class="btn btn-outline-secondary"
-        type="button"
-        @click="date = null"
+          class="btn btn-outline-secondary"
+          type="button"
+          @click="date = null"
       >
         Reset
       </button>
@@ -102,13 +103,16 @@ export default {
       let newDate = null;
       if (this.date !== null) {
         if (this.time !== null) {
-          newDate = new Date(`${this.date}T${this.time}`).toISOString()
+          newDate = new Date(`${this.date}T${this.time}`).toISOString();
         } else {
           newDate = new Date(`${this.date}T00:00`).toISOString();
         }
       }
       this.$emit("update:modelValue", newDate);
     },
+    validate() {
+      return this.$refs.formElement.validate(this.currentDate);
+    }
   }
 }
 </script>

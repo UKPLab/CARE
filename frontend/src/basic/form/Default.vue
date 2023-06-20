@@ -1,5 +1,5 @@
 <template>
-  <FormElement :data-table="dataTable" :options="options">
+  <FormElement ref="formElement" :data-table="dataTable" :options="options">
     <template #element="{blur}" >
       <input
           v-model="currentData"
@@ -55,6 +55,11 @@ export default {
   mounted() {
     this.currentData = this.modelValue;
   },
+  methods: {
+    validate() {
+      return this.$refs.formElement.validate(this.currentData);
+    }
+  }
 }
 </script>
 

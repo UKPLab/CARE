@@ -1,12 +1,12 @@
 <template>
-  <FormElement :options="options">
+  <FormElement ref="formElement" :options="options">
     <template #element="{blur}">
       <textarea
-        v-model="currentData"
-        :name="options.key"
-        :required="options.required"
-        class="form-control"
-        @blur="blur(currentData)"
+          v-model="currentData"
+          :name="options.key"
+          :required="options.required"
+          class="form-control"
+          @blur="blur(currentData)"
       />
     </template>
   </FormElement>
@@ -46,6 +46,11 @@ export default {
   mounted() {
     this.currentData = this.modelValue;
   },
+  methods: {
+    validate() {
+      return this.$refs.formElement.validate(this.currentData);
+    }
+  }
 }
 </script>
 

@@ -1,6 +1,6 @@
 <template>
-  <FormElement :data-table="dataTable" :options="options">
-    <template #element="{blur}" >
+  <FormElement ref="formElement" :data-table="dataTable" :options="options">
+    <template #element="{blur}">
       <select
           v-if="Array.isArray(options.options)"
           v-model="currentData"
@@ -104,6 +104,9 @@ export default {
         this.currentData = this.modelValue;
       }
     },
+    validate() {
+      return this.$refs.formElement.validate(this.currentData);
+    }
   },
 }
 </script>

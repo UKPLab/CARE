@@ -64,8 +64,7 @@ module.exports = (sequelize, DataTypes) => {
                 type: "datetime",
                 size: 6,
                 default: null,
-                required: true,
-            },
+                },
             {
                 key: "end",
                 label: "Study sessions can't start after:",
