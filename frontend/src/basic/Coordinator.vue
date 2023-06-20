@@ -22,6 +22,7 @@
       </span>
       <span v-else>
         <BasicForm
+            ref="form"
             v-model="data"
             :fields="fields"
         />
@@ -183,10 +184,12 @@ export default {
       this.$refs.coordinatorModal.close();
     },
     submit() {
-      const data = {...this.data};
-      this.$emit('submit', data)
-      this.$socket.emit("appDataUpdate", {id: this.requestId, table: this.table, data: data});
-      this.$refs.coordinatorModal.waiting = true;
+      if (this.$refs.form.validate()) {
+        const data = {...this.data};
+        this.$emit('submit', data)
+        this.$socket.emit("appDataUpdate", {id: this.requestId, table: this.table, data: data});
+        this.$refs.coordinatorModal.waiting = true;
+      }
     },
     showSuccess() {
       this.success = true;

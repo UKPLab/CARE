@@ -73,7 +73,13 @@ export default {
         this.invalidField = false;
         this.emptyField = !(this.options.required && data && data !== "");
       }
+      if (this.invalidField || this.emptyField) {
+        return false;
+      } else {
+        return true;
+      }
     }
+
   }
 }
 </script>
