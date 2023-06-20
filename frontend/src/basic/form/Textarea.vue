@@ -1,11 +1,12 @@
 <template>
   <FormElement :options="options">
-    <template #element>
+    <template #element="{blur}">
       <textarea
         v-model="currentData"
         :name="options.key"
         :required="options.required"
         class="form-control"
+        @blur="blur(currentData)"
       />
     </template>
   </FormElement>

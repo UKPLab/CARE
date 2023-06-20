@@ -22,10 +22,14 @@
               :size="16"
           />
         </div>
-        <slot :id="options.key" name="element" :blur="validate" />
+        <slot :id="options.key" name="element" :blur="validate"/>
 
       </div>
-      <div v-if="options.required" class="feedback-invalid">
+      <div v-if="invalidField" class="feedback-invalid">
+        <span v-if="options.invalidText"> {{ options.invalidText }}</span>
+        <span v-else>The input is invalid.</span>
+      </div>
+      <div v-else-if="options.required && emptyField" class="feedback-invalid">
         This field is required.
       </div>
     </div>
@@ -47,18 +51,28 @@ export default {
   props: {
     options: {
       type: Object,
-      required: true,
+      required: true
     },
     dataTable: {
       type: Boolean,
       required: false,
-      default: false,
+      default: false
+    }
+  },
+  data() {
+    return {
+      invalidField: false,
+      emptyField: false
     }
   },
   methods: {
-    validate() {
-      console.log("validate");
-      // TODO validation of form fields
+    validate(data) {
+      if (this.options.pattern) {
+        this.invalidField = !new RegExp(this.options.pattern).test(data);
+      } else {
+        this.invalidField = false;
+        this.emptyField = !(this.options.required && data && data !== "");
+      }
     }
   }
 }
@@ -68,7 +82,6 @@ export default {
 .feedback-invalid {
   font-size: 0.75em;
   color: firebrick;
-  display: none; /* TODO remove */
   padding-top: 4px;
   padding-left: 5px;
 }
