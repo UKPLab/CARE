@@ -5,24 +5,24 @@
     </div>
     <div v-else>
       <label
-          v-if="'label' in options"
-          :for="options.key"
-          class="form-label"
+        v-if="'label' in options"
+        :for="options.key"
+        class="form-label"
       >{{ options.label }}</label>
       <FormHelp
-          :help="options.help"
+        :help="options.help"
       />
       <div class="input-group">
         <div
-            v-if="'icon' in options"
-            class="input-group-text"
+          v-if="'icon' in options"
+          class="input-group-text"
         >
           <LoadIcon
-              :icon-name="options.icon"
-              :size="16"
+            :icon-name="options.icon"
+            :size="16"
           />
         </div>
-        <slot :id="options.key" name="element" :blur="validate"/>
+        <slot :id="options.key" :blur="validate" name="element"/>
 
       </div>
       <div v-if="invalidField" class="feedback-invalid">
@@ -67,17 +67,32 @@ export default {
   },
   methods: {
     validate(data) {
-      if (this.options.pattern) {
-        this.invalidField = !new RegExp(this.options.pattern).test(data);
-      } else {
+      if (this.options.required) {
+
+        // Check pattern
+        if (this.options.pattern) {
+          if (new RegExp(this.options.pattern).test(data)) {
+            return true;
+          } else {
+            this.invalidField = true;
+            return false;
+          }
+        }
         this.invalidField = false;
-        this.emptyField = !(this.options.required && data && data !== "");
-      }
-      if (this.invalidField || this.emptyField) {
-        return false;
+
+        // Check empty
+        if (data && data !== "") {
+          this.emptyField = false;
+          return true;
+        } else {
+          this.emptyField = true;
+          return false;
+        }
+
       } else {
         return true;
       }
+
     }
 
   }

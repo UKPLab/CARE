@@ -1,68 +1,78 @@
 <template>
   <form v-if="currentData">
     <div
-        v-if="currentData !== null"
-        class="row g-3"
+      v-if="currentData !== null"
+      class="row g-3"
     >
       <div
-          v-for="field in fields"
-          :key="field.key"
-          ref="fieldRefs"
-          :class="('size' in field)?'col-md-' + field.size :'col-12'"
+        v-for="field in fields"
+        :key="field.key"
+        :class="('size' in field)?'col-md-' + field.size :'col-12'"
       >
         <FormSwitch
-            v-if="field.type === 'switch'"
-            v-model="currentData[field.key]"
-            :options="field"
+          v-if="field.type === 'switch'"
+          :ref="'ref_' + field.key"
+          v-model="currentData[field.key]"
+          :options="field"
         />
 
         <span v-else>
           <FormSlider
-              v-if="field.type === 'slider'"
-              v-model="currentData[field.key]"
-              :options="field"
+            v-if="field.type === 'slider'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]"
+            :options="field"
+
           />
 
           <DatetimePicker
-              v-else-if="field.type === 'datetime'"
-              v-model="currentData[field.key]"
-              :options="field"
+            v-else-if="field.type === 'datetime'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]"
+            :options="field"
+
           />
 
           <FormSelect
-              v-else-if="field.type === 'select'"
-              v-model="currentData[field.key]"
-              :options="field"
+            v-else-if="field.type === 'select'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]" :options="field"
+
           />
 
           <FormCheckbox
-              v-else-if="field.type === 'checkbox'"
-              v-model="currentData[field.key]"
-              :options="field"
+            v-else-if="field.type === 'checkbox'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]" :options="field"
+
           />
 
           <FormEditor
-              v-else-if="field.type === 'editor' || field.type === 'html'"
-              v-model="currentData[field.key]"
-              :options="field"
+            v-else-if="field.type === 'editor' || field.type === 'html'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]" :options="field"
+
           />
 
           <FormTextarea
-              v-else-if="field.type === 'textarea'"
-              v-model="currentData[field.key]"
-              :options="field"
+            v-else-if="field.type === 'textarea'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]" :options="field"
+
           />
 
           <FormTable
-              v-else-if="field.type === 'table'"
-              v-model="currentData[field.key]"
-              :options="field"
+            v-else-if="field.type === 'table'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]" :options="field"
+
           />
 
           <FormDefault
-              v-else
-              v-model="currentData[field.key]"
-              :options="field"
+            v-else
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]" :options="field"
+
 
           />
         </span>
@@ -144,10 +154,10 @@ export default {
       let return_data = Object.assign({}, ...this.fields.map(f => ({
         // use value if set
         [f.key]: (f.key in values && values[f.key] !== null) ? values[f.key]
-            // otherwise, you default from fields configuration, if set
-            : ("default" in f) ? f.default
-                // otherwise, use undefined to handle by subcomponent
-                : null
+          // otherwise, you default from fields configuration, if set
+          : ("default" in f) ? f.default
+            // otherwise, use undefined to handle by subcomponent
+            : null
       })));
       // also provide id if set
       if (values.id) {
@@ -156,17 +166,9 @@ export default {
       return values;
     },
     validate() {
-      // TODO check all elements in form for validation
-
-      console.log(this.$refs.fieldRefs.map(field => {
-        if (typeof field.validate === "function") return "yes"; else return "no"
-      }))
-      console.log(this.$refs.fieldRefs.map(field => {
-        field.validate
-      }))
-
-      console.log(this.$refs.fieldRefs)
-      return false;
+      return Object.keys(this.$refs)
+        .filter(child => typeof this.$refs[child][0].validate === 'function')
+        .map(child => this.$refs[child][0].validate()).every(Boolean);
     },
   }
 }
