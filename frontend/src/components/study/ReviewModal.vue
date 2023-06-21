@@ -87,13 +87,7 @@ Source: -
 export default {
   name: "ReviewModal",
   components: {Modal},
-  props: {
-    studySessionId: {
-      type: Number,
-      required: true,
-      default: 0,
-    }
-  },
+  inject: ['studySessionId'],
   data() {
     return {
       comment: "",

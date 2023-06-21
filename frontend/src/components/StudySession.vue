@@ -6,8 +6,8 @@
   <Study
     v-else
     :init-study-session-id="studySessionId"
-    :study-hash="studySessionHash"
     :readonly="readonly"
+    :study-hash="studySessionHash"
   />
 </template>
 
@@ -68,13 +68,8 @@ export default {
     },
   },
   mounted() {
-    this.load();
+    this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
   },
-  methods: {
-    load() {
-      this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
-    },
-  }
 }
 </script>
 

@@ -39,8 +39,6 @@
   </Teleport>
   <Annotater
     v-if="documentId !== 0"
-    :document-id="documentId"
-    :readonly="readonly"
     :study-session-id="studySessionId"
   />
 </template>
@@ -58,10 +56,17 @@ import StudyModal from "@/components/study/StudyModal.vue";
 import Annotater from "./annotater/Annotater.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
+import {computed} from "vue";
 
 export default {
   name: "StudyRoute",
   components: {LoadIcon, FinishModal, StudyModal, Annotater},
+  provide() {
+    return {
+      documentId: computed(() => this.documentId),
+      readonly: this.readonly
+    }
+  },
   props: {
     'studyHash': {
       type: String,
@@ -84,6 +89,7 @@ export default {
       studySessionId: 0,
       timeLeft: 0,
       timerInterval: null,
+      documentId: 0,
     }
   },
   computed: {
@@ -107,12 +113,6 @@ export default {
         return this.study.id;
       } else
         return 0;
-    },
-    documentId() {
-      if (this.study) {
-        return this.study.documentId;
-      }
-      return 0;
     },
     finished() {
       if (this.studySession) {
@@ -149,6 +149,13 @@ export default {
         }
       }
     },
+    study(newVal) {
+      if (newVal) {
+        this.documentId = newVal.documentId;
+      } else {
+        this.documentId = 0
+      }
+    }
   },
   mounted() {
     this.studySessionId = this.initStudySessionId;
