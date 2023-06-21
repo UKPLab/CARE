@@ -21,7 +21,7 @@
             Login
             <a
                 class="btn btn-sm btn-primary"
-                @click="$router.push('/register')"
+                @click="toRegister"
             >Register</a>
           </div>
 
@@ -216,8 +216,8 @@ export default {
         console.log(error);
       }
     },
-    register() {
-      this.$router.push("/register");
+    toRegister() {
+      this.$router.push({name: "register", query: {redirectedFrom: this.$route.query.redirectedFrom}});
     },
     async login_guest() {
       try {
@@ -228,7 +228,6 @@ export default {
         }
       } catch (error) {
         this.showError = true;
-        console.log(error);
         this.errorMessage = error;
       }
     },
