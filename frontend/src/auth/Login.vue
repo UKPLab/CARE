@@ -242,7 +242,7 @@ export default {
             withCredentials: true
           });
       if (response.status === 401) throw response.data.message
-      await this.$router.push("/dashboard");
+      await this.$router.push(this.$route.query.redirectedFrom || '/dashboard')
     },
 
   }

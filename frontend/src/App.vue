@@ -44,8 +44,9 @@ export default {
       this.$socket.emit("appInit");
     },
     logout: function () {
-      this.$router.push("/login");
+      // if not authenticated, backend will always send logout event
       this.$socket.disconnect();
+      this.$router.push({name: "login", query: {redirectedFrom: this.$route.path}});
     },
     appTables: function (data) {
       data.forEach((table) => {

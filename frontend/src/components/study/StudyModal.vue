@@ -69,7 +69,7 @@
       <button
         class="btn btn-outline-secondary"
         type="button"
-        @click="$router.go(-1)"
+        @click="$router.push('/dashboard')"
       >
         <span>Return to dashboard</span>
       </button>
