@@ -23,7 +23,7 @@
             <a
                 class="btn btn-sm btn-primary"
                 href="#"
-                @click="$router.push('/login')"
+                @click="toLogin"
             >Login</a>
           </div>
 
@@ -265,6 +265,9 @@ export default {
         await this.registerUser();
       }
     },
+    toLogin() {
+      this.$router.push({name: "login", query: {redirectedFrom: this.$route.query.redirectedFrom}});
+    },
     async registerUser() {
       try {
         await axios.post(getServerURL() + '/auth/register', this.formData, {
@@ -279,7 +282,7 @@ export default {
           variant: 'success'
         });
 
-        await this.$router.push("/login");
+        this.toLogin();
       } catch (err) {
         console.log("ERR", err);
         this.eventBus.emit('toast', {
