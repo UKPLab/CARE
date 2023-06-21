@@ -21,7 +21,7 @@ const routes = [
     },
     {
         path: "/dashboard/:catchAll(.*)",
-        name: "Dashboard",
+        name: "dashboard",
         props: true,
         component: () => import('@/components/Dashboard.vue'),
         alias: "/dashboard",
@@ -30,6 +30,7 @@ const routes = [
     {
         path: "/login",
         component: () => import("@/auth/Login.vue"),
+        name: "login",
         meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
