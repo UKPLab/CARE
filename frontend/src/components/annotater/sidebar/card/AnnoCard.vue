@@ -9,7 +9,6 @@
           {{ comment.creator_name }}
           <Collaboration
             ref="collab"
-            :document-id="documentId"
             :target-id="commentId"
             target-type="comment"
             @collab-status="toEditMode"
@@ -41,10 +40,7 @@
       <Comment
         ref="main_comment"
         :comment-id="commentId"
-        :document-id="documentId"
         :edit="editedByMyself"
-        :study-session-id="studySessionId"
-        :readonly="readonly"
         :level="0"
         @save-card="save()"
       />
@@ -143,10 +139,7 @@
           :key="c.id"
         >
           <Comment
-            :readonly="readonly"
-            :study-session-id="studySessionId"
             :comment-id="c.id"
-            :document-id="documentId"
             :level="1"
           />
         </span>
@@ -173,24 +166,11 @@ import NLPService from "@/basic/NLPService.vue";
 export default {
   name: "AnnoCard",
   components: {NLPService, Collaboration, SideCard, Comment, SidebarButton},
+  inject: ['readonly', 'documentId', 'studySessionId'],
   props: {
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: null
-    },
     'commentId': {
       type: Number,
       required: true,
-    },
-    readonly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    'documentId': {
-      type: Number,
-      required: true
     },
   },
 emits: ['focus'],

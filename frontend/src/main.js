@@ -56,6 +56,7 @@ import mitt from 'mitt';
 
 const eventBus = mitt()
 app.config.globalProperties.eventBus = eventBus;
+app.config.unwrapInjectedRef = true;
 
 app.use(store);
 app.use(router);

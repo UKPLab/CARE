@@ -21,8 +21,8 @@
       >
         <Loader
           :loading="!isRendered"
-          class="pageLoader"
           :text="'Loading Page ' + pageNumber"
+          class="pageLoader"
         />
 
         <canvas
@@ -38,8 +38,8 @@
     </div>
     <Highlights
       ref="highlights"
-      :page-id="pageNumber"
       :document-id="documentId"
+      :page-id="pageNumber"
       :study-session-id="studySessionId"
     />
   </div>
@@ -69,23 +69,11 @@ export default {
   directives: {
     ObserveVisibility,
   },
+  inject: ['documentId', 'studySessionId', 'pdf'],
   props: {
-    pdf: {
-      type: Object,
-      default: null,
-    },
     pageNumber: {
       type: Number,
       default: 0,
-    },
-    documentId: {
-      type: Number,
-      required: true
-    },
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: null
     },
     render: {
       type: Boolean,
@@ -162,7 +150,7 @@ export default {
           const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
 
           this.scale = wrapper.getBoundingClientRect().width /
-              page.getViewport({scale: 1.0}).width;
+            page.getViewport({scale: 1.0}).width;
 
           const viewport = page.getViewport({scale: this.scale});
           canvas.height = viewport.height;

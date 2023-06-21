@@ -51,7 +51,7 @@
       title="Sentiment Analysis"
     >
       <span v-if="nlp_active && awaitingNlpResult && !edit">
-        <IconLoading />
+        <IconLoading/>
       </span>
       <span v-else-if="nlp_active && nlp_result !== null">
         <span>
@@ -89,7 +89,7 @@
               :loading="false"
               :props="$props"
               icon="save-fill"
-              title="Edit"
+              title="Save"
               @click="save"
             />
             <SidebarButton
@@ -137,19 +137,17 @@
         </div>
       </div>
     </div>
-    <span
-      v-for="c in childComments"
-      v-if="level >= 1"
-      :key="c.id"
-    >
-      <hr class="hr">
-      <CommentCard
-        :comment-id="c.id"
-        :document-id="documentId"
-        :level="level + 1"
-        :readonly="readonly"
-        :study-session-id="studySessionId"
-      />
+    <span v-if="level >= 1">
+      <span
+        v-for="c in childComments"
+        :key="c.id"
+      >
+        <hr class="hr">
+        <CommentCard
+          :comment-id="c.id"
+          :level="level + 1"
+        />
+    </span>
     </span>
   </div>
 </template>
@@ -171,26 +169,13 @@ import SidebarButton from "./Button.vue"
 export default {
   name: "CommentCard",
   components: {TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration},
+  inject: ["documentId", "studySessionId", "readonly"],
   props: {
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: null
-    },
     'commentId': {
       type: Number,
       required: true,
     },
-    readonly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    'documentId': {
-      type: Number,
-      required: true
-    },
-     edit: {
+    edit: {
       type: Boolean,
       required: false,
       default: false,
@@ -221,7 +206,7 @@ export default {
     },
     myBotRequest() {
       return this.comment.creator_name === "Bot"
-          && this.$store.getters["comment/getComment"](this.comment.parentCommentId).userId === this.userId;
+        && this.$store.getters["comment/getComment"](this.comment.parentCommentId).userId === this.userId;
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -242,12 +227,12 @@ export default {
     }
   },
   watch: {
-    nlp_result(newV, oldV) {
+    nlp_result(newV) {
       if (this.nlp_active) {
         this.awaitingNlpResult = newV === null;
       }
     },
-    nlp_active(newV, oldV) {
+    nlp_active() {
       if (this.nlp_active && this.nlp_result === null) {
         this.requestNlpFeedback();
       }
@@ -312,14 +297,14 @@ export default {
 
     requestNlpFeedback() {
       this.$socket.emit("serviceRequest",
-          {
-            service: "NLPService",
-            data: {
-              id: this.commentId,
-              name: "sentiment_classification",
-              data: {text: this.comment.text}
-            }
+        {
+          service: "NLPService",
+          data: {
+            id: this.commentId,
+            name: "sentiment_classification",
+            data: {text: this.comment.text}
           }
+        }
       );
       this.awaitingNlpResult = true;
     }

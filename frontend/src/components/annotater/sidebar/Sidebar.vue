@@ -8,7 +8,7 @@
       id="sidepane"
       ref="sidepane"
     >
-      <div id="spacer" />
+      <div id="spacer"/>
       <ul
         id="anno-list"
         class="list-group"
@@ -28,9 +28,6 @@
         >
           <AnnoCard
             :id="comment.id"
-            :document-id="documentId"
-            :readonly="readonly"
-            :study-session-id="studySessionId"
             :comment-id="comment.id"
             @focus="sidebarScrollTo"
           />
@@ -64,7 +61,7 @@
       </ul>
     </div>
   </div>
-  <ConfirmModal ref="leavePageConf" />
+  <ConfirmModal ref="leavePageConf"/>
 </template>
 
 <script>
@@ -82,21 +79,8 @@ import {scrollElement} from "@/assets/anchoring/scroll";
 export default {
   name: "AnnotationSidebar",
   components: {AnnoCard, ConfirmModal},
+  inject: ['documentId', 'studySessionId', 'readonly'],
   props: {
-    'documentId': {
-      type: Number,
-      required: true
-    },
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: null
-    },
-    readonly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
     show: {
       type: Boolean,
       required: false,
@@ -119,7 +103,7 @@ export default {
     studySessionIds() {
       if (this.study) {
         return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
-            .map(s => s.id);
+          .map(s => s.id);
       }
       return null;
     },
@@ -129,36 +113,36 @@ export default {
     },
     documentComments() {
       return this.$store.getters['comment/getDocumentComments'](this.documentId)
-          .filter(comment => {
-            // if the studySessionId is set, we are in study session mode
-            if (this.studySessionId !== null) {
-              return comment.studySessionId === this.studySessionId;
-            } else if (this.studySessionIds) {
-              return this.studySessionIds.includes(comment.studySessionId);
+        .filter(comment => {
+          // if the studySessionId is set, we are in study session mode
+          if (this.studySessionId) {
+            return comment.studySessionId === this.studySessionId;
+          } else if (this.studySessionIds) {
+            return this.studySessionIds.includes(comment.studySessionId);
+          } else {
+            if (this.showAll) {
+              return true;
             } else {
-              if (this.showAll) {
-                return true;
-              } else {
-                return comment.studySessionId === null;
-              }
+              return comment.studySessionId === null;
             }
-          })
-          .sort((a, b) => {
-            if (!a.annotationId && !b.annotationId) {
-              return Date.parse(a) - Date.parse(b);
-            } else if (a.annotationId && b.annotationId) {
-              const aAnno = this.$store.getters['anno/getAnnotation'](a.annotationId);
-              const bAnno = this.$store.getters['anno/getAnnotation'](b.annotationId);
+          }
+        })
+        .sort((a, b) => {
+          if (!a.annotationId && !b.annotationId) {
+            return Date.parse(a) - Date.parse(b);
+          } else if (a.annotationId && b.annotationId) {
+            const aAnno = this.$store.getters['anno/getAnnotation'](a.annotationId);
+            const bAnno = this.$store.getters['anno/getAnnotation'](b.annotationId);
 
-              if (!aAnno || !bAnno) {
-                return 0;
-              }
-              return (aAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start
-                  - bAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start);
-            } else {
-              return !a.annotationId ? 1 : -1;
+            if (!aAnno || !bAnno) {
+              return 0;
             }
-          });
+            return (aAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start
+              - bAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start);
+          } else {
+            return !a.annotationId ? 1 : -1;
+          }
+        });
     },
   },
   mounted() {
@@ -210,19 +194,19 @@ export default {
       if (this.documentComments.filter(c => c.draft).length > 0) {
         return new Promise((resolve, reject) => {
           this.$refs.leavePageConf.open(
-              "Unsaved Annotations",
-              "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",
-              null,
-              function (val) {
-                return resolve(val);
-              });
+            "Unsaved Annotations",
+            "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",
+            null,
+            function (val) {
+              return resolve(val);
+            });
         });
       } else {
         return true;
       }
     }
-    }
   }
+}
 </script>
 
 <style scoped>
