@@ -15,7 +15,7 @@
     class="btn btn-sm"
     data-placement="top"
     data-toggle="tooltip"
-    title="Edit"
+    :title="title"
     type="button"
     :disabled="disabled"
     @click="action"

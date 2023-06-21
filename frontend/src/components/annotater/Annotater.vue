@@ -1,6 +1,6 @@
 <template>
   <Loader
-    v-if="documentId === 0"
+    v-if="documentId && documentId === 0"
     :loading="true"
     class="pageLoader"
   />
@@ -15,9 +15,6 @@
         >
           <PDFViewer
             ref="pdfViewer"
-            :document-id="documentId"
-            :readonly="readonly"
-            :study-session-id="studySessionId"
             class="rounded border border-1 shadow-sm"
             style="margin:auto"
           />
@@ -27,12 +24,7 @@
           class="col border mh-100  col-sm-auto g-0"
           style="overflow-y: scroll;"
         >
-          <Sidebar
-            ref="sidebar"
-            :document-id="documentId"
-            :readonly="readonly"
-            :study-session-id="studySessionId"
-          />
+          <Sidebar ref="sidebar"/>
         </div>
       </div>
     </div>
@@ -72,7 +64,7 @@
           />
         </button>
       </li>
-      <ExpandMenu class="nav-item" />
+      <ExpandMenu class="nav-item"/>
     </Teleport>
 
     <Teleport to="#topBarExtendMenuItems">
@@ -121,7 +113,7 @@
       </form>
     </Teleport>
 
-    <ExportAnnos ref="export" />
+    <ExportAnnos ref="export"/>
   </span>
 </template>
 
@@ -155,7 +147,14 @@ export default {
     Loader,
     ExportAnnos
   },
-  inject: ['documentId', 'readonly', 'studySessionId'],
+  inject: {
+    documentId: {
+      default: 0
+    },
+    studySessionId: {
+      default: null
+    },
+  },
   props: {
     approve: {
       type: Boolean,
@@ -282,8 +281,8 @@ export default {
 
         if (inPlaceholder) {
           const anchor = await this._waitForAnnotationToBeAnchored(
-              annotation,
-              3000
+            annotation,
+            3000
           );
           if (!anchor) {
             return;
@@ -346,7 +345,7 @@ export default {
         });
       }
     },
-    async leave(){
+    async leave() {
       return await this.$refs.sidebar.leave();
     },
     downloadAnnotations(outputType) {
@@ -370,7 +369,7 @@ IconBoostrap[disabled] {
 }
 
 #sidebarContainer::-webkit-scrollbar {
-  display:none;
+  display: none;
 }
 
 </style>

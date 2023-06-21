@@ -1,4 +1,6 @@
-<template />
+<template>
+  <span></span>
+</template>
 
 <script>
 import {isNodeInRange} from "@/assets/anchoring/range-util";
@@ -16,16 +18,8 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
  */
 export default {
   name: "PDFHighlights",
+  inject: ['documentId', 'studySessionId'],
   props: {
-    documentId: {
-      type: Number,
-      required: true
-    },
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: null
-    },
     'pageId': {
       type: Number,
       required: true,
@@ -35,17 +29,23 @@ export default {
     study() {
       if (this.studySession) {
         return this.$store.getters["study/getStudyById"](this.studySession.studyId);
+      } else {
+        return null;
       }
     },
     studySession() {
       if (this.studySessionId && this.studySessionId !== 0) {
         return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
+      } else {
+        return null;
       }
     },
     studySessionIds() {
       if (this.study) {
         return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
             .map(s => s.id);
+      } else {
+        return null;
       }
     },
     showAll() {
@@ -55,7 +55,7 @@ export default {
     annotations() {
       return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageId)
           .filter(anno => {
-            if (this.studySessionId !== null) {
+            if (this.studySessionId) {
               return anno.studySessionId === this.studySessionId;
             } else if(this.studySessionIds) {
               return this.studySessionIds.includes(anno.studySessionId);
@@ -87,7 +87,7 @@ export default {
       newVal.filter(anno => !oldVal.includes(anno))
           .map(this.highlight)
     },
-    tags(newVal, oldVal) {
+    tags(newVal) {
       if (newVal !== null) {
         this.annotations.forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor).forEach(
                 anchor => anchor.highlights.forEach(highlightsEl => this.setSVGHighlightColor(anno, highlightsEl.svgHighlight))
@@ -109,7 +109,7 @@ export default {
         if (!range) {
           return;
         }
-        anchor.highlights = /** @type {AnnotationHighlight[]} */ (
+        anchor.highlights = (
             this.highlightRange(annotation, anchor, range)
         );
       }
@@ -152,12 +152,11 @@ export default {
       );
 
       // Wrap each text node span with a `<hypothesis-highlight>` element.
-      const highlights = /** @type {HighlightElement[]} */ ([]);
+      const highlights = ([]);
       textNodeSpans.forEach(nodes => {
         // A custom element name is used here rather than `<span>` to reduce the
         // likelihood of highlights being hidden by page styling.
 
-        /** @type {HighlightElement} */
         const highlightEl = document.createElement('highlight');
         highlightEl.className = "highlight";
 

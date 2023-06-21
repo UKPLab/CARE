@@ -7,20 +7,12 @@
     <PDFPage
       v-for="page in pdf.pageCount"
       :key="'PDFPageKey' + page"
-      :document-id="documentId"
       :page-number="page"
-      :study-session-id="studySessionId"
-      :pdf="pdf"
       :render="renderCheck[page - 1]"
       class="scrolling-page"
       @updateVisibility="updateVisibility"
     />
-    <Adder
-      v-if="!readonly"
-      :document-id="documentId"
-      :pdf="pdf"
-      :study-session-id="studySessionId"
-    />
+    <Adder v-if="!readonly"/>
   </div>
 </template>
 
@@ -30,6 +22,7 @@ import PDFPage from "./PDFPage.vue";
 import {PDF} from './pdfStore.js';
 import * as pdfjsLib from "pdfjs-dist/build/pdf.js"
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
+import {computed} from "vue";
 
 import Adder from "./Adder.vue";
 
@@ -46,20 +39,10 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 export default {
   name: "PDFViewer",
   components: {PDFPage, Adder},
-  props: {
-    documentId: {
-      type: Number,
-      required: true
-    },
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: 0
-    },
-    readonly: {
-      type: Boolean,
-      required: false,
-      default: false,
+  inject: ['readonly', 'documentId', 'studySessionId'],
+  provide() {
+    return {
+      pdf: computed(() => this.pdf),
     }
   },
   data() {
@@ -90,18 +73,18 @@ export default {
       if (data.document.id === this.documentId) {
         const loadingTask = pdfjsLib.getDocument(data.file);
         loadingTask.promise
-            .then((pdf) => {
-              this.pdf = new PDF();
-              this.pdf.setPDF(pdf);
-            })
-            .catch(response => {
-              this.eventBus.emit('toast', {
-                title: "PDF Loading Error",
-                message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
-                variant: "danger"
-              });
-              this.$router.push("/");
+          .then((pdf) => {
+            this.pdf = new PDF();
+            this.pdf.setPDF(pdf);
+          })
+          .catch(response => {
+            this.eventBus.emit('toast', {
+              title: "PDF Loading Error",
+              message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
+              variant: "danger"
             });
+            this.$router.push("/");
+          });
       }
     }
   },

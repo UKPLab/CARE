@@ -33,21 +33,7 @@ import {TextQuoteAnchor} from '@/assets/anchoring/types';
 
 export default {
   name: "PDFAdder",
-  props: {
-    documentId: {
-      type: Number,
-      required: true
-    },
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: null
-    },
-    'pdf': {
-      type: Object,
-      required: true,
-    }
-  },
+  inject: ['documentId', 'studySessionId', 'pdf'],
   data() {
     return {
       fadeOutBox: [],
