@@ -155,26 +155,8 @@ export default {
     Loader,
     ExportAnnos
   },
+  inject: ['documentId', 'readonly', 'studySessionId'],
   props: {
-    'documentId': {
-      type: Number,
-      required: true
-    },
-    'reviewId': {
-      type: String,
-      required: false,
-      default: null
-    },
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: null
-    },
-    'readonly': {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
     approve: {
       type: Boolean,
       required: false,
@@ -238,7 +220,7 @@ export default {
       this.scrollTo(anno_id);
       this.$socket.emit("stats", {
         action: "pdfScroll",
-        data: {review_id: this.reviewId, documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
+        data: {documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
       });
     });
 

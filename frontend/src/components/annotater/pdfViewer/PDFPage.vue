@@ -61,6 +61,7 @@ import Highlights from "./Highlights.vue";
 
 import {Anchoring} from "@/assets/pdfViewer/anchor.js";
 import Loader from "@/basic/Loader.vue";
+import {toRaw} from 'vue';
 
 export default {
   name: 'PDFPage',
@@ -203,7 +204,7 @@ export default {
 
       this.renderTask = page.render(renderContext);
 
-      this.renderTask.promise.then(() => {
+      toRaw(this.renderTask).promise.then(() => {
         return page.getTextContent();
       }).then((textContent) => {
 
@@ -238,7 +239,7 @@ export default {
       if (!this.renderTask) return;
       // RenderTask#cancel
       // https://mozilla.github.io/pdf.js/api/draft/RenderTask.html
-      this.renderTask.cancel();
+      toRaw(this.renderTask).cancel();
       this.isRendered = false;
       this.pdf.renderingDone.set(this.pageNumber, false);
       this.renderTask = undefined;

@@ -82,13 +82,7 @@ import ReportItem from "./ReportItem.vue";
 export default {
   name: "ReportModal",
   components: {Modal, ReportItem},
-  props: {
-    studySessionId: {
-      type: Number,
-      required: true,
-      default: 0,
-    }
-  },
+  inject: ['studySessionId'],
   computed: {
     studySession() {
       return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
