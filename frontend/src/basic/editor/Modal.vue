@@ -1,47 +1,61 @@
 <template>
-  <Modal ref="editorModal" lg name="editorModal" :props="this.$props">
-    <template v-slot:title>
+  <Modal ref="editorModal" :props="$props" lg name="editorModal">
+    <template #title>
       <h5 class="modal-title">{{ title }}</h5>
     </template>
-    <template v-slot:body>
-      <Editor ref="editor" v-model="content"></Editor>
+    <template #body>
+      <Editor ref="editor" v-model="currentData"></Editor>
     </template>
-    <template v-slot:footer>
+    <template #footer>
       <button class="btn btn-secondary" data-bs-dismiss="modal" type="button"
-              v-on:click="$refs.editorModal.close()">Close
-      </button>
-      <button class="btn btn-primary" data-bs-dismiss="modal" type="button" v-on:click="saveEditor()">Save changes
+              @click="$refs.editorModal.close()">Close
       </button>
     </template>
   </Modal>
+  <LoadIcon class="mx-2" icon-name="border-style"
+            @click="open()"></LoadIcon>
 </template>
 
 <script>
 import Editor from "./Editor.vue";
 import Modal from "@/basic/Modal.vue";
+import LoadIcon from "@/icons/LoadIcon.vue";
 
 export default {
-  name: "EditorModal.vue",
-  components: {Editor, Modal},
+  name: "EditorModal",
+  components: {Editor, Modal, LoadIcon},
   props: {
     title: {
       type: String,
       required: true
     },
-    content: {
+    modelValue: {
       type: String,
       required: false,
-      default: ""
+      default: "",
+    },
+  },
+  emits: ["update:modelValue"],
+  data() {
+    return {
+      currentData: "",
     }
+  },
+  watch: {
+    currentData() {
+      this.$emit("update:modelValue", this.currentData);
+    },
+    modelValue() {
+      this.currentData = this.modelValue;
+    },
+  },
+  mounted() {
+    this.currentData = this.modelValue;
   },
   methods: {
     open() {
       this.$refs.editorModal.openModal();
     },
-    saveEditor() {
-      this.$emit('save', this.$refs.editor.editor.getHTML());
-      this.$refs.editorModal.closeModal();
-    }
   }
 }
 </script>

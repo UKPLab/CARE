@@ -154,6 +154,15 @@ module.exports = class AppSocket extends Socket {
             }
         });
 
+        this.socket.on("appSettingSet", async (data) => {
+            try {
+                await this.models['user_setting'].set(data.key, data.value, this.userId);
+                await this.sendSettings();
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+
     }
 
 }

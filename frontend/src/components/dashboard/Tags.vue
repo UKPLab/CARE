@@ -2,22 +2,22 @@
   <BasicCard title="Tag Sets">
     <template #headerElements>
       <ButtonHeader
-          class="btn-primary"
-          title="Add new tag set"
-          @click="$refs.tagSetModal.open(0)"
+        class="btn-primary"
+        title="Add new tag set"
+        @click="$refs.tagSetModal.open(0)"
       />
     </template>
     <template #body>
       <BasicTable
-          :columns="columns"
-          :data="tagSets"
-          :options="options"
-          @action="action"
+        :columns="columns"
+        :data="tagSets"
+        :options="options"
+        @action="action"
       />
     </template>
   </BasicCard>
   <TagSetModal
-      ref="tagSetModal"
+    ref="tagSetModal"
   />
   <TagSetDeleteModal ref="tagSetDeleteModal"/>
   <TagSetPublishModal ref="tagSetPublishModal"/>
@@ -80,83 +80,83 @@ export default {
     }),
     tagSets() {
       return this.$store.getters["table/tag_set/getAll"].map(d => {
-            let newD = {...d};
-            newD.published = {
-              text: newD.public || newD.userId === null ? "Yes" : "No",
-              class: newD.public || newD.userId === null ? "bg-success" : "bg-danger",
-            };
-            newD.user = {
-              text: newD.creator_name
-            };
-            newD.select = {
-              icon: (newD.id === this.selectedTagset) ? "star-fill" : "star",
-              title: "Select tag set as default",
-              action: "defaultTagSet",
-              selected: newD.id === this.selectedTagset,
-            },
+          let newD = {...d};
+          newD.published = {
+            text: newD.public || newD.userId === null ? "Yes" : "No",
+            class: newD.public || newD.userId === null ? "bg-success" : "bg-danger",
+          };
+          newD.user = {
+            text: newD.creator_name
+          };
+          newD.select = {
+            icon: (newD.id === this.selectedTagset) ? "star-fill" : "star",
+            title: "Select tag set as default",
+            action: "defaultTagSet",
+            selected: newD.id === this.selectedTagset,
+          },
             newD.tags = {
               class: "bg-primary",
               tooltip: this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id).map(e => e.name).join('<br>'),
               text: this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id).length
             };
-            newD.manage = [
+          newD.manage = [
+            {
+              icon: "clipboard",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                }
+              },
+              title: "Copy tag set",
+              action: "copyTagSet",
+            },
+          ]
+
+          if (newD['userId'] === this.userId || this.isAdmin) {
+            newD.manage.push(
               {
-                icon: "clipboard",
+                icon: "pencil",
                 options: {
                   iconOnly: true,
                   specifiers: {
-                    "btn-outline-secondary": true,
+                    "btn-outline-dark": true,
                   }
                 },
-                title: "Copy tag set",
-                action: "copyTagSet",
-              },
-            ]
-
-            if (newD['userId'] === this.userId || this.isAdmin) {
-              newD.manage.push(
-                  {
-                    icon: "pencil",
-                    options: {
-                      iconOnly: true,
-                      specifiers: {
-                        "btn-outline-dark": true,
-                      }
-                    },
-                    title: "Edit tag set",
-                    action: "editTagSet",
-                  });
-              newD.manage.push(
-                  {
-                    icon: "trash",
-                    options: {
-                      iconOnly: true,
-                      specifiers: {
-                        "btn-outline-dark": true,
-                      }
-                    },
-                    title: "Delete tag set",
-                    action: "deleteTagSet",
-                  });
-            }
-            if (!newD.public && (newD['userId'] === this.userId || this.isAdmin)) {
-              newD.manage.push(
-                  {
-                    icon: "share",
-                    options: {
-                      iconOnly: true,
-                      specifiers: {
-                        "btn-outline-dark": true,
-                      }
-                    },
-                    title: "Share tag set",
-                    action: "publishTagSet",
-                  },
-              );
-            }
-
-            return newD;
+                title: "Edit tag set",
+                action: "editTagSet",
+              });
+            newD.manage.push(
+              {
+                icon: "trash",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-dark": true,
+                  }
+                },
+                title: "Delete tag set",
+                action: "deleteTagSet",
+              });
           }
+          if (!newD.public && (newD['userId'] === this.userId || this.isAdmin)) {
+            newD.manage.push(
+              {
+                icon: "share",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-dark": true,
+                  }
+                },
+                title: "Share tag set",
+                action: "publishTagSet",
+              },
+            );
+          }
+
+          return newD;
+        }
       );
     },
     tags() {
@@ -187,7 +187,16 @@ export default {
       }
     },
     selectAsDefault(tagSetId) {
-      this.$socket.emit("settingSet", {key: "tags.tagSet.default", value: tagSetId});
+      const length = this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === tagSetId).length;
+      if (length > 0) {
+        this.$socket.emit("appSettingSet", {key: "tags.tagSet.default", value: tagSetId});
+      } else {
+        this.eventBus.emit('toast', {
+          variant: "danger",
+          title: "Tag set is empty",
+          message: "You can not select an empty tag set as default.",
+        });
+      }
     },
   },
 }
