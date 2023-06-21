@@ -248,7 +248,7 @@ export default {
     toggleNlp() {
       const newNlpActive = !this.nlpActive;
       this.setSetting({key: "annotator.nlp.activated", value: newNlpActive});
-      this.$socket.emit("settingSet", {key: "annotator.nlp.activated", value: newNlpActive});
+      this.$socket.emit("appSettingSet", {key: "annotator.nlp.activated", value: newNlpActive});
     },
     scrollActivity() {
       this.logScroll();

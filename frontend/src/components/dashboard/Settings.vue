@@ -18,9 +18,9 @@
   <Loading v-if="settings === null"></Loading>
   <div v-else>
     <div v-for="k1 in firstKeys" class="card my-3">
-      <div >
-        <div class="card-header" @click="collapseFirst[k1] = !collapseFirst[k1]" style="cursor: pointer">
-          <LoadIcon class="me-1" :icon-name="(collapseFirst[k1]) ? 'arrow-right-short' : 'arrow-down-short'" ></LoadIcon>
+      <div>
+        <div class="card-header" style="cursor: pointer" @click="collapseFirst[k1] = !collapseFirst[k1]">
+          <LoadIcon :icon-name="(collapseFirst[k1]) ? 'arrow-right-short' : 'arrow-down-short'" class="me-1"></LoadIcon>
 
           {{ k1 }}
           <br>
@@ -40,9 +40,10 @@
                     <h5 class="card-title">{{ s.key }}</h5>
                     <h6 class="card-subtitle mb-2 text-muted">{{ s.description }}</h6>
                     <p class="card-text">
-                      <LoadIcon v-if="s.type === 'html'" class="mx-2" iconName="border-style"
-                                v-on:click="openEditor(s)"></LoadIcon>
-                      <div v-else-if="s.type === 'boolean' || s.type === 'bool'" class="form-check form-switch">
+                    <div v-if="s.type === 'html'">
+                      <EditorModal v-model="s.value" :title="'Edit ' + s.key"></EditorModal>
+                    </div>
+                    <div v-else-if="s.type === 'boolean' || s.type === 'bool'" class="form-check form-switch">
                       <input ref="nlpSwitch" v-model="s.value" :checked="s.value"
                              class="form-check-input" role="switch" title="Activate/Deactivate NLP support"
                              type="checkbox">
@@ -59,8 +60,6 @@
       </div>
     </div>
   </div>
-  <EditorModal ref="editor" :content="editorContent"
-               :title="editorTitle" @save="saveEditor"></EditorModal>
 
 </template>
 
@@ -108,7 +107,7 @@ export default {
   sockets: {
     settingData: function (data) {
       this.settings = data.sort((a, b) => (a.key > b.key) ? 1 : ((b.key > a.key) ? -1 : 0))
-      this.collapseFirst = this.firstKeys.reduce((acc,curr)=> (acc[curr]=true,acc),{});
+      this.collapseFirst = this.firstKeys.reduce((acc, curr) => (acc[curr] = true, acc), {});
     }
   },
   mounted() {
