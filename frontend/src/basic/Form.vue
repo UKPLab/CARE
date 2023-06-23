@@ -142,7 +142,7 @@ export default {
     }
   },
   beforeMount() {
-    this.currentData = this.getValues(this.modelValue);
+    this.currentData = this.modelValue;
   },
   methods: {
     /**

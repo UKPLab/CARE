@@ -60,11 +60,11 @@ export default {
 
           this.eventBus.emit('toast', {
             title: "Document edited",
-            message: "Successful edited document!",
+            message: "Successfully edited document!",
             variant: "success"
           });
 
-          this.$refs.coord.showSuccess();
+          this.$refs.coord.close();
         }
       });
 

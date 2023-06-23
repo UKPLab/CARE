@@ -8,7 +8,7 @@
     </div>
     <div class="row justify-content-center">
       <div class="col">
-        <JsonEditor v-model:content="jsonData" readonly/>
+        <JsonEditor v-model:content="currentData" readonly/>
       </div>
     </div>
   </div>
@@ -17,12 +17,13 @@
 <script>
 import JsonEditor from "@/basic/editor/JsonEditor.vue";
 import LoadIcon from "@/icons/LoadIcon.vue";
+import deepEqual from "deep-equal";
 
 export default {
   name: "SkillItem",
   components: {LoadIcon, JsonEditor},
   props: {
-    jsonData: {
+    modelValue: {
       type: Object,
       required: true
     },
@@ -34,6 +35,29 @@ export default {
       type: String,
       required: false,
       default: null
+    }
+  },
+  emits: ["update:modelValue"],
+  data() {
+    return {
+      currentData: null,
+    }
+  },
+  beforeMount() {
+    this.currentData = this.modelValue;
+  },
+  watch: {
+    currentData: {
+      handler() {
+        if (!deepEqual(this.currentData, this.modelValue)) {
+          this.$emit("update:modelValue", this.currentData);
+        }
+      }, deep: true
+    },
+    modelValue: {
+      handler() {
+        this.currentData = this.modelValue;
+      }, deep: true
     }
   },
   computed: {

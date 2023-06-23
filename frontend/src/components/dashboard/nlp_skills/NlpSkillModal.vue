@@ -17,7 +17,7 @@
           <span class="visually-hidden">Loading...</span>
         </div>
         <div v-else>
-          <SkillListing ref="skillListing" :config="config" />
+          <SkillListing ref="skillListing" v-model="config" />
         </div>
       </div>
     </template>
@@ -48,7 +48,7 @@ export default {
   data() {
     return {
       show: false,
-      skillName: null
+      skillName: null,
     }
   },
   computed: {
@@ -63,7 +63,7 @@ export default {
         const stored = this.$store.getters["service/get"]("NLPService", "skillUpdate");
 
         if (stored && this.skillName in stored) {
-          return stored[this.skillName].config;
+          return stored[this.skillName];
         }
       }
       return null;

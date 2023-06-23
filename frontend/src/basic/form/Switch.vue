@@ -7,6 +7,7 @@
       v-model="currentData"
       class="form-check-input"
       type="checkbox"
+      :disabled="options.readOnly !== undefined ? options.readOnly : false"
     >
     <label
       v-if="'label' in options"

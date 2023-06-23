@@ -38,12 +38,12 @@
       </button>
     </div>
     <h3>
-      {{ config.name }}
+      {{ currentData.name }}
     </h3>
     <div class="container py-1 px-0">
       <div class="row mb-3">
         <div class="col">
-          <span class="fs-6 fw-light">{{ config.description }}</span>
+          <span class="fs-6 fw-light">{{ currentData.description }}</span>
         </div>
       </div>
       <div class="row p-2" v-if="commandEditorActive">
@@ -64,7 +64,7 @@
             </div>
             <div class="row justify-content-center">
               <div class="col">
-                <JsonEditor :content="config.input.example" readonly/>
+                <JsonEditor :content="currentData.input.example" readonly/>
               </div>
             </div>
           </div>
@@ -78,7 +78,7 @@
             </div>
             <div class="row justify-content-center">
               <div class="col">
-                <JsonEditor :content="config.output.example" readonly />
+                <JsonEditor :content="currentData.output.example" readonly />
               </div>
             </div>
           </div>
@@ -99,7 +99,7 @@
           class="py-1"
       >
         <SkillItem
-            :json-data="config[f]"
+            v-model="currentData[f]"
             :name="f"
             :icon="i"
         />
@@ -110,7 +110,7 @@
           class="py-1"
       >
         <SkillItem
-            :json-data="config[f]"
+            v-model="currentData[f]"
             :name="f"
         />
       </div>
@@ -131,6 +131,7 @@ import LoadIcon from "@/icons/LoadIcon.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 import CommandEditor from "@/basic/editor/CommandEditor.vue";
 import {v4 as uuidv4} from "uuid";
+import deepEqual from "deep-equal";
 
 /* SkillListing.vue - characterizing a skill config
 
@@ -146,11 +147,12 @@ export default {
     LoadIcon
   },
   props: {
-    'config': {
+    modelValue: {
       type: Object,
       required: true
     },
   },
+  emits: ["update:modelValue"],
   data() {
     return {
       standardFields: ['name', 'description', 'input', 'output'],
@@ -162,25 +164,45 @@ export default {
         allowCommandChange: false,
         allowServiceChange: false,
         defaultShowCount: 5
-      }
+      },
+      currentData: null
     }
+  },
+   watch: {
+    currentData: {
+      handler() {
+        if (!deepEqual(this.currentData, this.modelValue)) {
+          this.$emit("update:modelValue", this.currentData);
+        }
+      }, deep: true
+    },
+    modelValue: {
+      handler() {
+        this.currentData = this.modelValue;
+      }, deep: true
+    }
+  },
+  beforeMount() {
+    this.currentData = this.modelValue;
+
+    console.log("CURRENT DATA IN LISTING", this.currentData, this.modelValue);
   },
   computed: {
     validConfig() {
-      if (this.config) {
-        return validateServiceConfig(this.config);
+      if (this.currentData) {
+        return validateServiceConfig(this.currentData);
       }
       return true;
     },
     nonStandardFields() {
-      return Object.getOwnPropertyNames(this.config).filter(f => !this.standardFields.includes(f));
+      return Object.getOwnPropertyNames(this.currentData).filter(f => !this.standardFields.includes(f));
     },
     exampleRequest() {
       if(this.validConfig){
         return {
            id: uuidv4(),
-           name: this.config.name,
-           data: this.config.input.example
+           name: this.currentData.name,
+           data: this.currentData.input.example
         }
       }
 
@@ -189,9 +211,9 @@ export default {
   },
   methods: {
     async copyConfig() {
-      if (this.config) {
+      if (this.currentData) {
         try {
-          await navigator.clipboard.writeText(JSON.stringify(this.config, null, 2));
+          await navigator.clipboard.writeText(JSON.stringify(this.currentData, null, 2));
           this.eventBus.emit('toast', {
             title: "Config copied",
             message: "Skill configuration copied to clipboard!",
@@ -213,12 +235,12 @@ export default {
       }
     },
     downloadConfig() {
-      if (this.config && this.config.name) {
-        downloadObjectsAs(this.config, `${this.config.name}`, "json");
+      if (this.currentData && this.currentData.name) {
+        downloadObjectsAs(this.currentData, `${this.currentData.name}`, "json");
 
         this.eventBus.emit('toast', {
           title: "Download Success",
-          message: `Downloaded ${this.config.name} configuration`,
+          message: `Downloaded ${this.currentData.name} configuration`,
           variant: "success"
         });
       } else {

@@ -39,6 +39,7 @@
 <script>
 import FormHelp from "@/basic/form/Help.vue"
 import LoadIcon from "@/icons/LoadIcon.vue";
+import {computed} from "vue";
 
 /**
  * Basic form element with label and help text
