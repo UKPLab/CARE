@@ -34,6 +34,7 @@
   >
     <div v-if="edit || editedByMyself">
       <textarea
+        ref="textarea"
         v-model="comment.text"
         class="form-control"
         placeholder="Enter text..."
@@ -224,6 +225,9 @@ export default {
     nlp_result() {
       const res = this.$store.getters["service/get"]("NLPService", "skillResults");
       return res && this.commentId in res ? res[this.commentId] : null;
+    },
+    openedTextarea() {
+      return !this.collapseComment && (this.edit || this.editedByMyself)
     }
   },
   watch: {
@@ -237,6 +241,11 @@ export default {
         this.requestNlpFeedback();
       }
     },
+    openedTextarea(newVal){
+      if(newVal){
+        this.$nextTick(() => this.$refs.textarea.focus());
+      }
+    }
   },
   mounted() {
     if (this.nlp_active && this.nlp_result === null && this.comment.text !== null) {

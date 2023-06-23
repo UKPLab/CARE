@@ -65,7 +65,7 @@ export default {
       if(this.icon !== null){
         return this.icon;
       } else {
-        return Array.isArray(this.jsonData) ? "list" : "box";
+        return Array.isArray(this.currentData) ? "list" : "box";
       }
     }
   }
