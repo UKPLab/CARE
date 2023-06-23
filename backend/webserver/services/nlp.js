@@ -228,7 +228,7 @@ module.exports = class NLPService extends Service {
         } else if (this.skills && this.skills.find(s => this.#hasConfig(s) && s.name === data.name)) {
             await this.send(client, "skillResults", {
                 id: data.id,
-                data: this.skills.find(s => this.#hasConfig(s) && s.name === data.name).output.example,
+                data: this.skills.find(s => this.#hasConfig(s) && s.name === data.name).config.output.example,
                 fallback: true
             });
         }
@@ -249,7 +249,7 @@ module.exports = class NLPService extends Service {
                             return null;
                         }
                         const skill = yaml.load(data);
-                        this.skills.push({...skill, ...{nodes: 1, "fallback": true}});
+                        this.skills.push({config: skill, nodes: 1, "fallback": true, name:skill.name});
                     });
                 }
             }));

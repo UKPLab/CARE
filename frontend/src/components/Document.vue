@@ -78,7 +78,9 @@ export default {
   },
   methods: {
     async confirmLeave() {
-      return await this.$refs.annotator.leave();
+      if (this.$refs.annotator) {
+        return await this.$refs.annotator.leave();
+      }
     }
   }
 }
