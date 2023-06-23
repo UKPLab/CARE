@@ -31,6 +31,7 @@ import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
 import BasicTable from "@/basic/table/Table.vue"
 import Card from "@/basic/Card.vue"
 import ButtonHeader from "@/basic/card/ButtonHeader.vue"
+import {cloneDeep} from "lodash";
 
 /**
  * Shows the list of available nlp skills to admins
@@ -88,6 +89,8 @@ export default {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
 
       return skills ? Object.values(skills).map(s => {
+        s = cloneDeep(s);
+
         s.actions = [{
           icon: "gear",
           options: {
