@@ -49,6 +49,9 @@ import {getTimeDiffString} from "@/assets/utils";
  *
  * @author: Nils Dycke
  */
+
+// TODO subscribe and unsubscribe from study session when click on the collapse window + default closed (collapsed all)
+
 export default {
   name: "DashboardStudySession",
   components: {Card, LoadIcon, StudySessionTable, Timer},

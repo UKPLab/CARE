@@ -94,6 +94,23 @@ module.exports = class StudySessionSocket extends Socket {
 
     async init() {
 
+        // TODO: if something changed during the sessions, send to client and room...
+
+        this.socket.on("studySessionSubscribe", async (data) => {
+            try {
+                this.socket.join("study:" + data.studyId);
+                // TODO: send all current sessions
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
+        this.socket.on("studySessionUnsubscribe", async (data) => {
+            try {
+                this.socket.leave("study:" + data.studyId);
+            } catch (err) {
+                this.logger.error(err);
+            }
+        });
         this.socket.on("studySessionGet", async (data) => {
             try {
                 if (data.studyId) {

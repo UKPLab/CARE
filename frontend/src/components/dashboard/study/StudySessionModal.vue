@@ -142,10 +142,11 @@ export default {
     open(studyId) {
       this.studyId = studyId;
       this.load();
-
+      // TODO: subscribe to room study
       this.$refs.studySessionModal.openModal();
     },
     close() {
+      // TODO: unsubscribe from room study
       this.$refs.studySessionModal.close();
     },
     load() {
