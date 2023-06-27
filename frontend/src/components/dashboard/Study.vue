@@ -3,14 +3,11 @@
     <StudyModal ref="studyCoordinator" />
     <Card title="Studies">
       <template #headerElements>
-        <button
-          class="btn btn-sm me-1 btn-primary"
-          title="Export"
-          type="button"
+        <ButtonHeader
+          title="Add"
+          class="btn-primary"
           @click="add()"
-        >
-          Add
-        </button>
+      />
       </template>
       <template #body>
         <BasicTable
@@ -30,6 +27,7 @@ import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
+import ButtonHeader from "@/basic/card/ButtonHeader.vue"
 
 /**
  * Dashboard component for handling studies
@@ -38,7 +36,7 @@ import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vu
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, ButtonHeader},
   props: {},
   data() {
     return {
