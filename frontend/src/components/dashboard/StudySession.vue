@@ -17,7 +17,7 @@
           collapsable collapsed @collapse="collapse(s.id, $event)"
         >
           <template #body>
-            <StudySessionTable :study-id="s.id" />
+            <StudySessionTable :study-id="s.id"/>
           </template>
           <template #footer>
             <LoadIcon
@@ -52,44 +52,29 @@ import {getTimeDiffString} from "@/assets/utils";
 export default {
   name: "DashboardStudySession",
   components: {Card, LoadIcon, StudySessionTable, Timer},
-  fetchData: ['study'],
+  fetchData: ['study_session'],
   props: {},
   data() {
     return {
       trigger: 0
     }
   },
-  sockets: {
-    "studySessionRefresh": function (data) {
-      data.forEach(s => {
-        if (this.$store.getters["table/study/get"](s.studyId) === undefined) {
-          this.$socket.emit("studyGet", {studyId: s.studyId});
-        }
-      });
-    }
-  },
   computed: {
     studies() {
       return this.$store.getters["table/study/getFiltered"](s => this.sessionStudyIds.includes(s.id))
-          .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)));
+        .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)));
     },
     sessionStudyIds() {
-      return this.$store.getters["study_session/getStudySessionsByUser"](this.$store.getters["auth/getUserId"])
-          .filter(s => !s.end)
-          .map(s => s.studyId);
+      return this.$store.getters["table/study_session/getByUser"](this.$store.getters["auth/getUserId"])
+        .filter(s => !s.end)
+        .map(s => s.studyId);
     },
     studyTimes() {
       this.trigger; // leave here to force recompute
       return Object.fromEntries(this.studies.map(s => [s.id, s.end ? getTimeDiffString(Date.now(), new Date(s.end)) : null]));
     }
   },
-  mounted() {
-    this.load();
-  },
   methods: {
-    load() {
-      this.$socket.emit("studyGetAll");
-    },
     collapse(studyId, collapsed) {
       if (collapsed) {
         this.$socket.emit("studySessionUnsubscribe", {studyId: studyId});

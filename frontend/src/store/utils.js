@@ -90,6 +90,25 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
             },
 
             /**
+             * Returns elements for user if userId exists.
+             * @param state
+             * @return {function(Number): Array}
+             */
+            getByUser: state => userId => {
+                return state.data.filter(row => 'userId' in row && row.userId === userId);
+            },
+
+            /**
+             * Returns list of elements for a special key if exists.
+             * @param state
+             * @return {function(String, *): Array}
+             */
+            getByKey: state => (key, value) => {
+                return state.data.filter(row => key in row && row[key] === value);
+            },
+
+
+            /**
              * Returns the length of the store.
              * @param state
              * @return {*}

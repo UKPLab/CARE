@@ -186,7 +186,7 @@ export default {
     },
     studySessions() {
       if (this.studyId) {
-        return this.$store.getters['study_session/getStudySessionsByStudyId'](this.studyId)
+        return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
             .filter(s => s.end === null)
             .map(s => {
               let study = {...s}

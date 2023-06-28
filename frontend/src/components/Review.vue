@@ -74,7 +74,7 @@ export default {
   },
   computed: {
     studySession() {
-      return this.$store.getters['study_session/getStudySessionByHash'](this.studySessionHash);
+      return this.$store.getters['table/study_session/getByHash'](this.studySessionHash);
     },
     study() {
       if (this.studySession) {

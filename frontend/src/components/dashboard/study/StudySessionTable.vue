@@ -76,7 +76,7 @@ export default {
         return [];
       }
 
-      return this.$store.getters['study_session/getStudySessionsByStudyId'](this.studyId)
+      return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
           .filter(s => this.showFinished || s.end === null)
           .map(s => {
             let session = {...s};

@@ -146,7 +146,7 @@ module.exports = class DocumentSocket extends Socket {
 
                     // send studySessions
                     const studySessions = await this.models['study_session'].getAllByKey('studyId', study.id);
-                    this.emit("studySessionRefresh", studySessions);
+                    this.emit("study_sessionRefresh", studySessions);
 
                     // send annotations
                     const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByKey('studySessionId', s.id)));

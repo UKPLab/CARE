@@ -95,7 +95,7 @@ export default {
   },
   computed: {
     studySession() {
-      return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
+      return this.$store.getters["table/study_session/get"](this.studySessionId);
     },
     evaluated() {
       if (this.studySession) {
