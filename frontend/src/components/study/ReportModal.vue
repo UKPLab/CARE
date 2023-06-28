@@ -86,7 +86,7 @@ export default {
   emits: ['decisionSubmit'],
   computed: {
     studySession() {
-      return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
+      return this.$store.getters["table/study_session/get"](this.studySessionId);
     },
     study() {
       if (this.studySession) {
@@ -104,7 +104,7 @@ export default {
     },
     studySessionIds() {
       if (this.study) {
-        return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
+        return this.$store.getters["table/study_session/getByKey"]("studyId", this.studySession.studyId)
           .map(s => s.id);
       } else {
         return null;
