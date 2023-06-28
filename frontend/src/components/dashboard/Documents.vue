@@ -53,7 +53,7 @@ import EditModal from "./documents/EditModal.vue";
  */
 export default {
   name: "DashboardDocument",
-  fetchData: ['document'],
+  fetchData: ['document', 'study'],
   components: {
     StudyModal,
     ExportAnnos,
@@ -167,9 +167,6 @@ export default {
       return this.$store.getters["settings/getValue"]('app.study.enabled') === "true";
     },
   },
-  mounted() {
-    this.$socket.emit("studyGetAll", {userId: this.$store.getters["auth/getUserId"]});
-  },
   methods: {
     action(data) {
       switch (data.action) {
@@ -191,7 +188,7 @@ export default {
       }
     },
     async deleteDoc(row) {
-      const studies = this.$store.getters["study/getStudiesByDocument"](row.id);
+      const studies = this.$store.getters["table/study/getFiltered"](e => e.documentId === row.id)
       let warning;
       if (studies && studies.length > 0) {
         warning = ` There ${studies.length !== 1 ? 'are' : 'is'} currently ${studies.length} ${studies.length !== 1 ? 'studies' : 'study'}

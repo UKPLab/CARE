@@ -165,6 +165,25 @@ module.exports = class Socket {
     }
 
     /**
+     * Emit to all clients on document and update the creator_name
+     * @param {string} room Emit to room if available
+     * @param event
+     * @param data
+     * @param includeSender also send data to original sender
+     * @param updateCreatorName
+     * @return {Promise<void>}
+     */
+    async emitRoom(room, event, data, includeSender = true,  updateCreatorName = true) {
+        if (updateCreatorName) {
+            data = await this.updateCreatorName(data);
+        }
+        this.io.to(room).emit(event, data);
+        if (includeSender) {
+            this.socket.emit(event, data);
+        }
+    }
+
+    /**
      * Send auto table data to the clients
      * @param table
      * @param filterIds list of ids to send

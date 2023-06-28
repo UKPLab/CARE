@@ -1,5 +1,5 @@
 <template>
-  <Table
+  <BasicTable
     :columns="columns"
     :data="studySessions"
     :options="options"
@@ -9,19 +9,19 @@
 </template>
 
 <script>
-import Table from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/table/Table.vue";
 import ConfirmModal from "@/basic/ConfirmModal.vue";
 
-/* StudySessionTable.vue - table of study session with management buttons
-
-Table of study sessions included in the studysession dashboard component.
-
-Author: Nils Dycke
-Source: -
-*/
+/**
+ * Table of study session with management buttons
+ *
+ * Table of study sessions included in the studysession dashboard component.
+ *
+ * @author: Nils Dycke
+ */
 export default {
   name: "StudySessionTable",
-  components: {Table, ConfirmModal},
+  components: {BasicTable, ConfirmModal},
   props: {
     studyId: {
       type: Number,
@@ -69,7 +69,7 @@ export default {
   },
   computed: {
     study() {
-      return this.$store.getters["study/getStudyById"](this.studyId);
+      return this.$store.getters["table/study/get"](this.studyId);
     },
     studySessions() {
       if (!this.study) {

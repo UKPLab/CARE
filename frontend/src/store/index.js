@@ -17,7 +17,6 @@ import CollaborationStore from "./modules/collab.js";
 import CommentStore from "./modules/comment.js";
 import ServiceStore from "./modules/service.js";
 import DocumentStore from "./modules/document.js";
-import StudyStore from "./modules/study.js";
 import StudySessionStore from "./modules/study_session.js";
 
 export default createStore({
@@ -31,7 +30,6 @@ export default createStore({
         collab: CollaborationStore,
         comment: CommentStore,
         service: ServiceStore,
-        study: StudyStore,
         study_session: StudySessionStore
     },
 });

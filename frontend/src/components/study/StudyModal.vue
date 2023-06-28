@@ -122,14 +122,13 @@ import Modal from "@/basic/Modal.vue";
 import Loader from "@/basic/Loader.vue"
 import DTable from "@/basic/table/Table.vue"
 
-/* StudyModal.vue - modal for accessing a study
-
-This modal provides the option to either start a study or load an existing session.
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: -
-*/
+/**
+ * Modal for accessing a study
+ *
+ * This modal provides the option to either start a study or load an existing session.
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ */
 export default {
   name: "StudyModal",
   components: {Loader, DTable, Modal},
@@ -181,7 +180,7 @@ export default {
   computed: {
     study() {
       if (this.studyId !== 0) {
-        return this.$store.getters['study/getStudyById'](this.studyId)
+        return this.$store.getters['table/study/get'](this.studyId)
       }
       return null;
     },
@@ -264,7 +263,7 @@ export default {
       // needed, otherwise the ref in the callback can become null
       const modal = this.$refs.modal;
 
-      this.sockets.subscribe("studyStarted", (data) => {
+      this.sockets.subscribe("studySessionStarted", (data) => {
         if (data.success) {
           this.$emit("start", {studySessionId: data.studySessionId});
           modal.waiting = false;
@@ -280,7 +279,7 @@ export default {
         }
       });
 
-      this.$socket.emit("studyStart", {studyId: this.studyId});
+      this.$socket.emit("studySessionStart", {studyId: this.studyId});
       modal.waiting = true;
     },
     sessionAction(data) {

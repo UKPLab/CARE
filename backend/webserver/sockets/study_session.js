@@ -30,10 +30,25 @@ module.exports = class StudySessionSocket extends Socket {
 
             // get studies (to verify they exist still)
             let studies = await Promise.all(studyIds.map(async sid => await this.models["study"].getById(sid)));
-            studies = studies.filter(s => s !== null && s!== undefined)
+            studies = studies.filter(s => s !== null && s !== undefined)
 
             const sessionsPerStudy = studies.map(study => userStudySessions.filter(session => session.studyId === study.id));
             this.emit("studySessionRefresh", sessionsPerStudy.flat(1));
+        }
+    }
+
+    /**
+     * Send all study sessions to the client
+     *
+     * @param studyId
+     * @return {Promise<void>}
+     */
+    async sendSessionsByStudyId(studyId) {
+        const study = await this.models['study'].getById(studyId);
+        if (this.checkUserAccess(study.userId)) {
+            this.emit("studySessionRefresh", await this.models['study_session'].getAllByKey("studyId", studyId));
+        } else {
+            this.sendToast("You are not allowed to see this study", "Error", "Danger");
         }
     }
 
@@ -47,12 +62,14 @@ module.exports = class StudySessionSocket extends Socket {
             const evaluatedStudySession = {
                 evaluation: data.evaluation, reviewUserId: this.userId, reviewComment: data.reviewComment
             }
-            this.emit("studySessionRefresh", await this.models['study_session'].updateById(data.sessionId, evaluatedStudySession))
+            const studySession = await this.models['study_session'].updateById(data.sessionId, evaluatedStudySession)
+            await this.emitRoom("study:" + studySession.studyId, "studySessionRefresh", studySession);
         } else {
             const currentStudySession = await this.models['study_session'].getById(sessionId)
             const study = await this.models['study'].getById(currentStudySession.studyId);
             if (this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
-                this.emit("studySessionRefresh", await this.models['study_session'].updateById(data.sessionId, data))
+                const studySession = await this.models['study_session'].updateById(data.sessionId, data);
+                await this.emitRoom("study:" + studySession.studyId, "studySessionRefresh", studySession);
             } else {
                 this.sendToast("You are not allowed to update this study session", "Error", "Danger");
             }
@@ -84,22 +101,34 @@ module.exports = class StudySessionSocket extends Socket {
     }
 
     /**
-     * Add a study session
-     * @param {object} data
+     * Start a study session
+     * @param {number} studyId
+     * @returns {Promise<void>}
      */
-    async addSession(data) {
-        data.userId = this.userId;
-        this.emit("studySessionRefresh", await this.models['study_session'].add(data));
+    async startStudySession(studyId) {
+        const study = await this.models['study'].getById(studyId);
+        if (study.start !== null && new Date() < new Date(study.start)) {
+            this.sendToast("Failed to start study, the study hasn't started yet.", "Study Failure", "danger");
+            return;
+        }
+        if (study.end !== null && new Date(study.end) < new Date()) {
+            this.sendToast("Failed to start study, the study already finished.", "Study Failure", "danger");
+            return;
+        }
+
+        const studySession = await this.models["study_session"].add({
+            studyId: study.id, userId: this.userId, start: Date.now()
+        });
+
+        await this.emitRoom("study:" + studySession.studyId, "studySessionRefresh", studySession);
+        this.socket.emit("studySessionStarted", {success: true, studySessionId: studySession.id});
     }
 
     async init() {
-
-        // TODO: if something changed during the sessions, send to client and room...
-
         this.socket.on("studySessionSubscribe", async (data) => {
             try {
                 this.socket.join("study:" + data.studyId);
-                // TODO: send all current sessions
+                await this.sendSessionsByStudyId(data.studyId);
             } catch (err) {
                 this.logger.error(err);
             }
@@ -140,12 +169,19 @@ module.exports = class StudySessionSocket extends Socket {
             try {
                 if (data.sessionId && data.sessionId !== 0) {
                     await this.updateSession(data.sessionId, data);
-                } else {
-                    await this.addSession(data);
                 }
             } catch (err) {
                 this.logger.error(err);
                 this.sendToast(err, "Error updating study", "Danger");
+            }
+        });
+
+        this.socket.on("studySessionStart", async (data) => {
+            try {
+                await this.startStudySession(data.studyId);
+            } catch (err) {
+                this.socket.emit("studySessionStarted", {success: false});
+                this.logger.error(err);
             }
         });
 

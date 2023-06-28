@@ -90,7 +90,7 @@ export default {
   computed: {
     study() {
       if (this.studySession) {
-        return this.$store.getters["study/getStudyById"](this.studySession.studyId);
+        return this.$store.getters["table/study/get"](this.studySession.studyId);
       }
       return null;
     },

@@ -27,11 +27,7 @@ export default {
   },
   computed: {
     study() {
-      if (this.studySession) {
-        return this.$store.getters["study/getStudyById"](this.studySession.studyId);
-      } else {
-        return null;
-      }
+      return (this.studySession) ? this.$store.getters["table/study/get"](this.studySession.studyId) : null;
     },
     studySession() {
       if (this.studySessionId && this.studySessionId !== 0) {
@@ -43,7 +39,7 @@ export default {
     studySessionIds() {
       if (this.study) {
         return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
-            .map(s => s.id);
+          .map(s => s.id);
       } else {
         return null;
       }
@@ -54,20 +50,20 @@ export default {
     },
     annotations() {
       return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageId)
-          .filter(anno => {
-            if (this.studySessionId) {
-              return anno.studySessionId === this.studySessionId;
-            } else if(this.studySessionIds) {
-              return this.studySessionIds.includes(anno.studySessionId);
+        .filter(anno => {
+          if (this.studySessionId) {
+            return anno.studySessionId === this.studySessionId;
+          } else if (this.studySessionIds) {
+            return this.studySessionIds.includes(anno.studySessionId);
+          } else {
+            if (this.showAll) {
+              return true;
             } else {
-              if (this.showAll) {
-                return true;
-              } else {
-                return anno.studySessionId === null
-              }
+              return anno.studySessionId === null
             }
-          })
-          .filter(anno => anno.anchors !== null)
+          }
+        })
+        .filter(anno => anno.anchors !== null)
     },
     tags() {
       return this.$store.getters['tag/getAllTags'](false);
@@ -77,21 +73,21 @@ export default {
     annotations(newVal, oldVal) {
       //Remove highlights of deleted anchors
       oldVal.filter(anno => !newVal.includes(anno))
-          .forEach(anno => {
-            if (anno.anchors != null) {
-              anno.anchors.filter(anchor => "highlights" in anchor)
-                  .forEach(anchor => this.removeHighlights(anchor.highlights))
-            }
-          });
+        .forEach(anno => {
+          if (anno.anchors != null) {
+            anno.anchors.filter(anchor => "highlights" in anchor)
+              .forEach(anchor => this.removeHighlights(anchor.highlights))
+          }
+        });
 
       newVal.filter(anno => !oldVal.includes(anno))
-          .map(this.highlight)
+        .map(this.highlight)
     },
     tags(newVal) {
       if (newVal !== null) {
         this.annotations.forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor).forEach(
-                anchor => anchor.highlights.forEach(highlightsEl => this.setSVGHighlightColor(anno, highlightsEl.svgHighlight))
-            )
+            anchor => anchor.highlights.forEach(highlightsEl => this.setSVGHighlightColor(anno, highlightsEl.svgHighlight))
+          )
         );
       }
     }
@@ -110,13 +106,13 @@ export default {
           return;
         }
         anchor.highlights = (
-            this.highlightRange(annotation, anchor, range)
+          this.highlightRange(annotation, anchor, range)
         );
       }
     },
     update_highlights(anchors) {
       anchors.filter(a => a.highlights !== null && a.highlights !== undefined)
-          .forEach(a => this.removeHighlights(a.highlights));
+        .forEach(a => this.removeHighlights(a.highlights));
       this.highlight(anchors);
     },
     highlightRange(annotation, anchor, range) {
@@ -147,8 +143,8 @@ export default {
       // subset of nodes such as table rows and lists.
       const whitespace = /^\s*$/;
       textNodeSpans = textNodeSpans.filter(span =>
-          // Check for at least one text node with non-space content.
-          span.some(node => !whitespace.test(node.data))
+        // Check for at least one text node with non-space content.
+        span.some(node => !whitespace.test(node.data))
       );
 
       // Wrap each text node span with a `<hypothesis-highlight>` element.
@@ -197,7 +193,7 @@ export default {
 
       /** @type {SVGElement|null} */
       let svgHighlightLayer = canvasEl.parentElement.querySelector(
-          '.hypothesis-highlight-layer'
+        '.hypothesis-highlight-layer'
       );
 
       const isCssBlendSupported = CSS.supports('mix-blend-mode', 'multiply');
@@ -327,10 +323,10 @@ export default {
 
       const textNodes = [];
       const nodeIter = /** @type {Document} */ (
-          root.ownerDocument
+        root.ownerDocument
       ).createNodeIterator(
-          root,
-          NodeFilter.SHOW_TEXT // Only return `Text` nodes.
+        root,
+        NodeFilter.SHOW_TEXT // Only return `Text` nodes.
       );
       let node;
       while ((node = nodeIter.nextNode())) {

@@ -1,25 +1,25 @@
 <template>
   <span>
-    <StudyModal ref="studyCoordinator" />
+    <StudyModal ref="studyCoordinator"/>
+    <StudySessionModal ref="studySessionModal"/>
     <Card title="Studies">
       <template #headerElements>
         <ButtonHeader
-          title="Add"
           class="btn-primary"
+          title="Add"
           @click="add()"
-      />
+        />
       </template>
       <template #body>
         <BasicTable
           :columns="columns"
-          :data="studies"
+          :data="studs"
           :options="options"
           @action="action"
         />
       </template>
     </Card>
   </span>
-  <StudySessionModal ref="studySessionModal" />
 </template>
 
 <script>
@@ -38,6 +38,7 @@ export default {
   name: "DashboardStudy",
   components: {Card, BasicTable, StudyModal, StudySessionModal, ButtonHeader},
   props: {},
+  fetchData: ['study'],
   data() {
     return {
       options: {
@@ -54,7 +55,6 @@ export default {
         {name: "Start", key: "start", sortable: true},
         {name: "End", key: "end", sortable: true},
         {name: "Created", key: "createdAt", sortable: true},
-          {name: "Sessions", key: "sessions"},
         {name: "Time Limit", key: "timeLimit", sortable: true},
         {
           name: "Resumable",
@@ -80,100 +80,96 @@ export default {
     }
   },
   computed: {
+    studies() {
+      return this.$store.getters["table/study/getAll"];
+    },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
-    studies() {
-      return this.$store.getters["study/getStudies"]
-          .filter(study => study.userId === this.userId)
-          .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
-          .map(st => {
-                let study = {...st};
-                // dates
-                if (study.start === null) {
-                  study.start = "-"
-                } else {
-                  study.start = new Date(study.start).toLocaleString()
-                }
+    studs() {
+      return this.studies.filter(study => study.userId === this.userId)
+        .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
+        .map(st => {
+            let study = {...st};
+            // dates
+            if (study.start === null) {
+              study.start = "-"
+            } else {
+              study.start = new Date(study.start).toLocaleString()
+            }
 
-                if (study.end === null) {
-                  study.end = "-"
-                } else {
-                  study.end = new Date(study.end).toLocaleString()
-                }
+            if (study.end === null) {
+              study.end = "-"
+            } else {
+              study.end = new Date(study.end).toLocaleString()
+            }
 
-                study.createdAt = new Date(study.createdAt).toLocaleString()
+            study.createdAt = new Date(study.createdAt).toLocaleString()
 
-                const doc = this.$store.getters["document/getDocument"](study.documentId)
-                study.documentName = doc ? doc.name : "-";
+            const doc = this.$store.getters["document/getDocument"](study.documentId)
+            study.documentName = doc ? doc.name : "-";
 
-                study.sessions = this.$store.getters["study_session/getStudySessionsByStudyId"](study.id).length;
-
-
-                study.manage = [
-                  {
-                    icon: "pencil-square",
-                    options: {
-                      iconOnly: true,
-                      specifiers: {
-                        "btn-outline-secondary": true,
-                      }
-                    },
-                    title: "Edit study",
-                    action: "editStudy",
-                  },
-                  {
-                    icon: "trash",
-                    options: {
-                      iconOnly: true,
-                      specifiers: {
-                        "btn-outline-secondary": true,
-                      }
-                    },
-                    title: "Delete study",
-                    action: "deleteStudy",
-                  },
-                  {
-                    icon: "box-arrow-in-right",
-                    options: {
-                      iconOnly: true,
-                      specifiers: {
-                        "btn-outline-secondary": true,
-                      }
-                    },
-                    title: "Open study",
-                    action: "openStudy",
-                  },
-                  {
-                    icon: "link-45deg",
-                    options: {
-                      iconOnly: true,
-                      specifiers: {
-                        "btn-outline-secondary": true,
-                      }
-                    },
-                    title: "Copy link to study",
-                    action: "linkStudy",
-                  },
-                    {
-                    icon: "card-list",
-                    options: {
-                      iconOnly: true,
-                      specifiers: {
-                        "btn-outline-secondary": true,
-                      }
-                    },
-                    title: "Inspect sessions",
-                    action: "inspectSessions",
+            study.manage = [
+              {
+                icon: "pencil-square",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
                   }
-                ];
-                return study
+                },
+                title: "Edit study",
+                action: "editStudy",
+              },
+              {
+                icon: "trash",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  }
+                },
+                title: "Delete study",
+                action: "deleteStudy",
+              },
+              {
+                icon: "box-arrow-in-right",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  }
+                },
+                title: "Open study",
+                action: "openStudy",
+              },
+              {
+                icon: "link-45deg",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  }
+                },
+                title: "Copy link to study",
+                action: "linkStudy",
+              },
+              {
+                icon: "card-list",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  }
+                },
+                title: "Inspect sessions",
+                action: "inspectSessions",
               }
-          );
+            ];
+            return study
+          }
+        );
     },
-  },
-  mounted() {
-    this.load();
   },
   methods: {
     action(data) {
@@ -197,9 +193,9 @@ export default {
         this.$refs.studySessionModal.open(data.params.id);
       }
     },
-    async copyLink(studyId){
-      const study = this.$store.getters["study/getStudyById"](studyId);
-      if(!study){
+    async copyLink(studyId) {
+      const study = this.$store.getters["table/study/get"](studyId);
+      if (!study) {
         this.eventBus.emit('toast', {
           title: "Link not copied",
           message: "Failed to retrieve URL. Try again later.",
@@ -227,11 +223,7 @@ export default {
     add() {
       this.$refs.studyCoordinator.open(0);
     },
-    load() {
-      this.$socket.emit("studyGetAll", {userId: this.$store.getters["auth/getUserId"]});
-      this.$socket.emit("studySessionGetAll", {userId: this.$store.getters["auth/getUserId"]});
-    },
-    studyCoordinator(row, linkOnly=false) {
+    studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
     }
   }
