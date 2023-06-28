@@ -43,7 +43,7 @@ export default {
   provide() {
     return {
       documentId: computed(() => this.documentId),
-      studySessionHash: computed(() => this.studySessionId),
+      studySessionId: computed(() => this.studySessionId),
       readonly: this.readonly
     }
   },

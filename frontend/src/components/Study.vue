@@ -64,7 +64,8 @@ export default {
   provide() {
     return {
       documentId: computed(() => this.documentId),
-      readonly: this.readonly
+      studySessionId: computed(() => this.studySessionId),
+      readonly: this.readonly,
     }
   },
   props: {
