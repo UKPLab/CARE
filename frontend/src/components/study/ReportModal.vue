@@ -71,57 +71,64 @@
 </template>
 
 <script>
-/* Report.vue - modal to show a report over comments/annotations
-
-Author: Nils Dycke, Dennis Zyska
-Source: -
-*/
 import Modal from "@/basic/Modal.vue";
 import ReportItem from "./ReportItem.vue";
 
+/**
+ * Modal to show a report over comments/annotations
+ *
+ * @author: Nils Dycke, Dennis Zyska
+ */
 export default {
   name: "ReportModal",
   components: {Modal, ReportItem},
   inject: ['studySessionId'],
+  emits: ['decisionSubmit'],
   computed: {
     studySession() {
       return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
     },
     study() {
       if (this.studySession) {
-        return this.$store.getters["study/getStudyById"](this.studySession.studyId);
+        return this.$store.getters["table/study/get"](this.studySession.studyId);
+      } else {
+        return null;
       }
     },
     documentId() {
       if (this.study) {
         return this.study.documentId;
+      } else {
+        return null;
       }
     },
     studySessionIds() {
       if (this.study) {
         return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
-            .map(s => s.id);
+          .map(s => s.id);
+      } else {
+        return null;
       }
     },
     annotations() {
       return this.$store.getters['anno/getAnnotations'](this.documentId)
-          .filter(anno => {
-            if (this.studySessionIds) {
-              return this.studySessionIds.includes(anno.studySessionId);
-            } else {
-              return false;
-            }
-          });
+        .filter(anno => {
+          if (this.studySessionIds) {
+            return this.studySessionIds.includes(anno.studySessionId);
+          } else {
+            return false;
+          }
+        });
     },
     comments() {
       return this.$store.getters['comment/getDocumentComments'](this.documentId)
-          .filter(comment => {
-            if (this.studySessionIds) {
-              return this.studySessionIds.includes(comment.studySessionId);
-            } else {
-              return false;
-            }
-          });
+        .filter(comment => {
+          if (this.studySessionIds) {
+            return this.studySessionIds.includes(comment.studySessionId);
+          } else {
+            return false;
+          }
+        });
     },
     tags() {
       return this.$store.getters["tag/getAllTags"]();

@@ -106,30 +106,6 @@ module.exports = class StudySocket extends Socket {
     }
 
     /**
-     * Start a study
-     * @param {number} studyId
-     * @returns {Promise<void>}
-     */
-    async startStudy(studyId) {
-        const study = await this.models['study'].getById(studyId);
-        if (study.start !== null && new Date() < new Date(study.start)) {
-            this.sendToast("Failed to start study, the study hasn't started yet.", "Study Failure", "danger");
-            return;
-        }
-        if (study.end !== null && new Date(study.end) < new Date()) {
-            this.sendToast("Failed to start study, the study already finished.", "Study Failure", "danger");
-            return;
-        }
-
-        const studySession = await this.models["study_session"].add({
-            studyId: study.id, userId: this.userId, start: Date.now()
-        });
-
-        this.emit("studySessionRefresh", studySession);
-        this.socket.emit("studyStarted", {success: true, studySessionId: studySession.id});
-    }
-
-    /**
      * Publish a study
      * @param {object} data
      * @return {Promise<void>}
@@ -195,16 +171,6 @@ module.exports = class StudySocket extends Socket {
             } catch (err) {
                 this.logger.error(err);
                 this.sendToast(err, "Error updating study", "Danger");
-            }
-        });
-
-
-        this.socket.on("studyStart", async (data) => {
-            try {
-                await this.startStudy(data.studyId);
-            } catch (err) {
-                this.socket.emit("studyStarted", {success: false});
-                this.logger.error(err);
             }
         });
 

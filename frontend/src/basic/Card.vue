@@ -14,20 +14,20 @@
           <LoadIcon
             color="grey"
             class="me-1"
-            :icon-name="collapsed ? 'arrow-down-short' : 'arrow-up-short'"
+            :icon-name="isCollapsed ? 'arrow-down-short' : 'arrow-up-short'"
           />
         </span>
       </div>
     </div>
     <TransitionGroup name="fade">
       <div
-        v-if="!collapsed"
+        v-if="!isCollapsed"
         class="card-body"
       >
         <slot name="body" />
       </div>
       <div
-        v-if="!collapsed && $slots.footer"
+        v-if="!isCollapsed && $slots.footer"
         class="card-footer"
       >
         <slot name="footer" />
@@ -39,16 +39,18 @@
 <script>
 import LoadIcon from "@/icons/LoadIcon.vue";
 
-/* Card.vue - default card component for layouting
-
-Use this component to show a card with extra features including e.g. collapsing. Provides slots.
-
-
-Author: Dennis Zyska, Nils Dycke
-Source: -
-*/
+/**
+ * Basic card component for layouting
+ *
+ * Use this component to show a card with extra features including e.g. collapsing. Provides slots.
+ *
+ * @param {String} title - title of the card
+ * @param {Boolean} collapsable - whether the card is collapsable or not
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ */
 export default {
-  name: "Card",
+  name: "BasicCard",
   components: {LoadIcon},
   props: {
     title: {
@@ -60,20 +62,30 @@ export default {
       type: Boolean,
       required: false,
       default: false
+    },
+    collapsed: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
+  emits: ["collapse"],
   data() {
     return {
-      collapsed : false
+      isCollapsed : false
     }
+  },
+  beforeMount() {
+    this.isCollapsed = this.collapsed;
   },
   methods: {
     setCollapseState(collapse){
-      this.collapsed = collapse;
+      this.isCollapsed = collapse;
     },
     toggleCollabs(){
       if(this.collapsable){
-        this.collapsed = !this.collapsed;
+        this.isCollapsed = !this.isCollapsed;
+        this.$emit("collapse", this.isCollapsed);
       }
     }
   }

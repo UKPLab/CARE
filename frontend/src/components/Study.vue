@@ -101,10 +101,10 @@ export default {
     },
     study() {
       if (this.studySession) {
-        return this.$store.getters['study/getStudyById'](this.studySession.studyId);
+        return this.$store.getters['table/study/get'](this.studySession.studyId);
       }
       if (this.studyHash) {
-        return this.$store.getters['study/getStudyByHash'](this.studyHash);
+        return this.$store.getters['table/study/getByHash'](this.studyHash);
       }
       return null;
     },

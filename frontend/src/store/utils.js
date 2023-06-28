@@ -80,6 +80,16 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
             },
 
             /**
+             * Returns the first object that matches the hash.
+             *
+             * @param state
+             * @return {function(String): Object}
+             */
+            getByHash: state => hash => {
+                return state.data.find(row => 'hash' in row && row.hash === hash);
+            },
+
+            /**
              * Returns the length of the store.
              * @param state
              * @return {*}

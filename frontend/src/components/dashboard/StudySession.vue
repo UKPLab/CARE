@@ -14,7 +14,7 @@
       >
         <Card
           :title="s.name ? `Study: ${s.name}` : '<no name>'"
-          collapsable
+          collapsable collapsed @collapse="collapse(s.id, $event)"
         >
           <template #body>
             <StudySessionTable :study-id="s.id" />
@@ -47,14 +47,12 @@ import {getTimeDiffString} from "@/assets/utils";
 /**
  * Dashboard component for handling study sessions
  *
- * @author: Nils Dycke
+ * @author: Nils Dycke, Dennis Zyska
  */
-
-// TODO subscribe and unsubscribe from study session when click on the collapse window + default closed (collapsed all)
-
 export default {
   name: "DashboardStudySession",
   components: {Card, LoadIcon, StudySessionTable, Timer},
+  fetchData: ['study'],
   props: {},
   data() {
     return {
@@ -64,7 +62,7 @@ export default {
   sockets: {
     "studySessionRefresh": function (data) {
       data.forEach(s => {
-        if (this.$store.getters["study/getStudyById"](s.studyId) === undefined) {
+        if (this.$store.getters["table/study/get"](s.studyId) === undefined) {
           this.$socket.emit("studyGet", {studyId: s.studyId});
         }
       });
@@ -72,8 +70,7 @@ export default {
   },
   computed: {
     studies() {
-      return this.$store.getters["study/getStudies"]
-          .filter(s => this.sessionStudyIds.includes(s.id))
+      return this.$store.getters["table/study/getFiltered"](s => this.sessionStudyIds.includes(s.id))
           .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)));
     },
     sessionStudyIds() {
@@ -91,10 +88,15 @@ export default {
   },
   methods: {
     load() {
-      // load all study sessions of the user
       this.$socket.emit("studyGetAll");
-      this.$socket.emit("studySessionGetAll", {userId: this.$store.getters["auth/getUserId"]});
     },
+    collapse(studyId, collapsed) {
+      if (collapsed) {
+        this.$socket.emit("studySessionUnsubscribe", {studyId: studyId});
+      } else {
+        this.$socket.emit("studySessionSubscribe", {studyId: studyId});
+      }
+    }
   }
 }
 </script>
