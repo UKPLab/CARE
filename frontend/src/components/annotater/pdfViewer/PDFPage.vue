@@ -69,7 +69,21 @@ export default {
   directives: {
     ObserveVisibility,
   },
-  inject: ['documentId', 'studySessionId', 'pdf'],
+  inject: {
+    documentId: {
+      type: String,
+      required: true,
+    },
+    studySessionId: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    pdf: {
+      type: Object,
+      required: true,
+    },
+  },
   props: {
     pageNumber: {
       type: Number,
@@ -204,7 +218,7 @@ export default {
 
         pdfjsLib.renderTextLayer({
           textContent: textContent,
-          enhanceTextSelection: true,
+          textLayerMode: 2,
           container: document.getElementById('text-layer-' + page.pageNumber),
           viewport: viewport,
           textDivs: []
