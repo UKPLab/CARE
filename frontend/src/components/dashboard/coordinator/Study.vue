@@ -62,27 +62,6 @@ export default {
     success(id) {
       this.studyId = id;
     },
-    /*publish(data) {
-      this.sockets.subscribe("studyPublished", (data) => {
-        this.sockets.unsubscribe('studyPublished');
-        if (data.success) {
-          this.hash = data.studyHash;
-
-          this.$refs.coordinator.showSuccess();
-
-          this.eventBus.emit('toast', {
-            title: "Study published",
-            message: "Successfully started study!",
-            variant: "success"
-          });
-        } else {
-          this.$refs.coordinator.close();
-
-          this.eventBus.emit('toast', {title: "Study not published", message: data.message, variant: "danger"});
-        }
-      });
-      this.$socket.emit("studyPublish", data);
-    },*/
     close() {
       this.$refs.coordinator.close();
     },
