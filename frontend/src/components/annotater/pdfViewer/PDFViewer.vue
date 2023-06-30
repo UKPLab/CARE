@@ -39,7 +39,22 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 export default {
   name: "PDFViewer",
   components: {PDFPage, Adder},
-  inject: ['readonly', 'documentId', 'studySessionId'],
+  inject: {
+    documentId: {
+      type: String,
+      required: true,
+    },
+    studySessionId: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    readonly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+  },
   provide() {
     return {
       pdf: computed(() => this.pdf),

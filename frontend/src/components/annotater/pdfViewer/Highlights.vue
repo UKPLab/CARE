@@ -18,7 +18,17 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
  */
 export default {
   name: "PDFHighlights",
-  inject: ['documentId', 'studySessionId'],
+  inject: {
+    documentId: {
+      type: String,
+      required: true,
+    },
+    studySessionId: {
+      type: String,
+      required: false,
+      default: null,
+    },
+  },
   props: {
     'pageId': {
       type: Number,

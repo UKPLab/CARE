@@ -1,50 +1,51 @@
 <template>
-  <b-card
-    ref="card"
-    :class="{ shake: shake }"
-    class="card"
+  <div
+      ref="top"
+      :class="{ shake: shake }"
+      class="card p-2"
   >
     <div
-      v-if="!loading"
-      class="card-header"
+        v-if="!loading"
+        class="card-header"
     >
       <div class="container-fluid">
-        <slot name="header" />
+        <slot name="header"/>
       </div>
     </div>
     <div class="card-body p-1">
       <div
-        v-if="!loading"
-        class="d-grid gap-1 my-2"
+          v-if="!loading"
+          class="d-grid gap-1 my-2"
       >
-        <slot name="body" />
+        <slot name="body"/>
       </div>
       <div v-else>
-        <Loader :loading="loading" />
+        <Loader :loading="loading"/>
       </div>
     </div>
     <div
-      v-if="!loading && hasFooterSlot"
-      class="card-footer"
+        v-if="!loading && hasFooterSlot"
+        class="card-footer"
     >
       <div
-        id="footer-controls"
-        class="container"
+          id="footer-controls"
+          class="container"
       >
-        <slot name="footer" />
+        <slot name="footer"/>
       </div>
     </div>
     <div
-      v-if="!loading && hasThreadSlot"
-      class="card-body p-1"
+        v-if="!loading && hasThreadSlot"
+        class="card-body p-1"
     >
-      <slot name="thread" />
+      <slot name="thread"/>
     </div>
-  </b-card>
+  </div>
 </template>
 
 <script>
 import Loader from "@/basic/Loader.vue";
+import {computed} from "vue";
 
 /**
  * Card template for sidebar
@@ -69,6 +70,26 @@ export default {
       default: false,
     }
   },
+  provide() {
+    return {
+      listenOnActive: computed(() => this.checkFocus),
+      unlistenOnActive: computed(() => this.uncheckFocus),
+    }
+  },
+  data() {
+    return {
+      focusListener: null,
+      defFocusListener: function (e) {
+        const active = this.topHtml === e.target || this.topHtml.contains(e.target);
+        console.log("registering click", active, this.actions);
+
+        Object.values(this.actions).map(a => a.action(active));
+      }.bind(this),
+      actions: {},
+      topHtml: null,
+      focused: false
+    }
+  },
   computed: {
     hasFooterSlot() {
       return !!this.$slots.footer;
@@ -77,6 +98,45 @@ export default {
       return !!this.$slots.thread;
     }
   },
+  mounted() {
+    this.topHtml = this.$refs.top;
+  },
+  beforeUnmount() {
+    // just to make sure: cancel possible event listeners, if still attached
+    try {
+      window.removeEventListener("click", this.focusListener);
+    } catch (e) {
+      // do nothing
+    }
+  },
+  methods: {
+    checkFocus(a) {
+      console.log("Adding focus listening!", this.focusListener, a);
+
+      this.actions[a.id] = a;
+
+      if (!this.focusListener) {
+        this.focusListener = this.defFocusListener;
+        window.addEventListener("click", this.focusListener);
+      }
+    },
+    uncheckFocus(a) {
+      console.log("Unhcecking focus listening!", this.focusListener, a, this.actions);
+
+      if(this.actions[a.id]){
+        delete this.actions[a.id];
+      }
+
+      if (Object.keys(this.actions).length === 0) {
+        try {
+          window.removeEventListener("click", this.focusListener);
+        } catch (e) {
+          // do nothing
+        }
+        this.focusListener = null;
+      }
+    }
+  }
 }
 </script>
 
