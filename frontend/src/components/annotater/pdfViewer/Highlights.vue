@@ -59,7 +59,9 @@ export default {
       return (showAllComments !== undefined && showAllComments);
     },
     annotations() {
-      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageId)
+      return this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
+        && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageId
+        && e.anchors !== null)
         .filter(anno => {
           if (this.studySessionId) {
             return anno.studySessionId === this.studySessionId;
@@ -73,7 +75,6 @@ export default {
             }
           }
         })
-        .filter(anno => anno.anchors !== null)
     },
     tags() {
       return this.$store.getters['tag/getAllTags'](false);
