@@ -111,17 +111,28 @@ export default {
       }
     },
     annotations() {
-      return this.$store.getters['anno/getAnnotations'](this.documentId)
+      return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId)
         .filter(anno => {
           if (this.studySessionIds) {
             return this.studySessionIds.includes(anno.studySessionId);
           } else {
             return false;
           }
+        })
+        .sort((a, b) => {
+          const a_noanchor = a.anchors === null || a.anchors.length === 0;
+          const b_noanchor = b.anchors === null || b.anchors.length === 0;
+
+          if (a_noanchor || b_noanchor) {
+            return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+          }
+
+          return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
         });
+
     },
     comments() {
-      return this.$store.getters['comment/getDocumentComments'](this.documentId)
+      return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
           if (this.studySessionIds) {
             return this.studySessionIds.includes(comment.studySessionId);
