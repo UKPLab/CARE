@@ -117,7 +117,7 @@ export default {
         return;
       }
 
-      const doc = this.$store.getters["document/getDocument"](annoExport.documentId);
+      const doc = this.$store.getters["table/document/get"](annoExport.documentId);
       const docHash = doc ? doc.hash : null;
 
       let [merged, docComments] = mergeAnnotationsAndComments(

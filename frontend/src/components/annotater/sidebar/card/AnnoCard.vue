@@ -235,12 +235,12 @@ export default {
     },
     color() {
       if (this.annotationId)
-        return this.$store.getters['tag/getColor'](this.annotation.tagId);
+        return this.getColor(this.annotation.tagId);
       return null;
     },
     tagName() {
       if (this.annotationId) {
-        const tag = this.$store.getters['tag/getTag'](this.annotation.tagId);
+        const tag = this.$store.getters['table/tag/get'](this.annotation.tagId);
         if (tag)
           return tag.name;
       }
@@ -285,6 +285,31 @@ export default {
     }
   },
   methods: {
+    getColor(tagId) {
+      if (tagId) {
+        const tag = this.$store.getters['table/tag/get'](tagId);
+        if (tag) {
+          switch (tag.colorCode) {
+            case "success":
+              return "009933";
+            case "danger":
+              return "e05f5f";
+            case "info":
+              return "5fe0df";
+            case "dark":
+              return "c8c8c8";
+            case "warning":
+              return "eed042";
+            case "secondary":
+              return "4290ee";
+            default:
+              return "4c86f7";
+          }
+        } else {
+          return "efea7b";
+        }
+      }
+    },
     shakeIt(){
       this.shake = true;
       setTimeout(() => this.shake = false, 1500);

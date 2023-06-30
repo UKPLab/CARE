@@ -7,11 +7,11 @@
       <button
         v-for="t in assignableTags"
         :key="t.name"
+        :class="`btn-${t.colorCode}`"
+        :title="t.description"
         class="btn"
         data-placement="top"
         data-toggle="tooltip"
-        :title="t.description"
-        :class="`btn-${t.colorCode}`"
         @click="annotate(t)"
       >
         {{ t.name }}
@@ -61,7 +61,12 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
     },
     assignableTags() {
-      return this.$store.getters["tag/getTags"](this.defaultTagSet);
+      if (this.defaultTagSet) {
+        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.defaultTagSet && !e.deleted);
+      } else {
+        return []
+      }
+
     },
 
   },
@@ -89,7 +94,7 @@ export default {
       this.selectedRanges = [];
 
       const rangeSelectors = await Promise.all(
-          ranges.map(range => this.describe(document.getElementById('pdfContainer'), range))
+        ranges.map(range => this.describe(document.getElementById('pdfContainer'), range))
       );
       const target = rangeSelectors.map(selectors => ({
         // In the Hypothesis API the field containing the selectors is called
@@ -150,7 +155,8 @@ export default {
         data: {
           documentId: this.documentId,
           studySessionId: this.studySessionId,
-          eventClientX: event.clientX, eventClientY: event.clientY}
+          eventClientX: event.clientX, eventClientY: event.clientY
+        }
       });
 
     },
@@ -171,10 +177,10 @@ export default {
 
       // get max z index
       const maxZIndex = Math.max(
-          ...Array.from(document.querySelectorAll('body *'), el =>
-              parseFloat(window.getComputedStyle(el).zIndex),
-          ).filter(zIndex => !Number.isNaN(zIndex)),
-          0,
+        ...Array.from(document.querySelectorAll('body *'), el =>
+          parseFloat(window.getComputedStyle(el).zIndex),
+        ).filter(zIndex => !Number.isNaN(zIndex)),
+        0,
       );
 
       // move to position
@@ -200,7 +206,7 @@ export default {
     },
     fadeOut(event) {
       if (event.clientX < this.fadeOutBox[0] || event.clientX > this.fadeOutBox[2]
-          || event.clientY < this.fadeOutBox[1] || event.clientY > this.fadeOutBox[3]) {
+        || event.clientY < this.fadeOutBox[1] || event.clientY > this.fadeOutBox[3]) {
         document.body.removeEventListener('mousemove', this.fadeOut);
         this.isVisible = false;
       }
@@ -252,16 +258,16 @@ export default {
       const [textRange, textLayer, page] = this.getTextLayerForRange(range);
 
       const startPos = TextPosition.fromPoint(
-          textRange.startContainer,
-          textRange.startOffset
+        textRange.startContainer,
+        textRange.startOffset
       ).relativeTo(textLayer);
 
       const endPos = TextPosition.fromPoint(
-          textRange.endContainer,
-          textRange.endOffset
+        textRange.endContainer,
+        textRange.endOffset
       ).relativeTo(textLayer);
 
-      const pageOffset = await this.getPageOffset(page-1);
+      const pageOffset = await this.getPageOffset(page - 1);
 
       /** @type {TextPositionSelector} */
       const position = {

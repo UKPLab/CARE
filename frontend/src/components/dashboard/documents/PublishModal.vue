@@ -77,7 +77,7 @@ export default {
   },
   computed: {
     document() {
-      return this.$store.getters["document/getDocument"](this.id);
+      return this.$store.getters["table/document/get"](this.id);
     },
     link() {
       return window.location.origin + "/document/" + this.document.hash;
