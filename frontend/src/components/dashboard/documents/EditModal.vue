@@ -37,7 +37,7 @@ export default {
   },
   computed: {
     document() {
-      return this.$store.getters["document/getDocument"](this.id);
+      return this.$store.getters["table/document/get"](this.id);
     },
     readOnlyFields() {
       return this.$store.getters["table/document/getFields"].filter(f => f.key !== "name").map(f => f.key);

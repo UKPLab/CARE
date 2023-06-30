@@ -174,7 +174,8 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
                     });
                 }
 
-                refreshState(state.data, data);
+                // for table tag we wont remove deleted tags - as they are needed for annotations made in documents
+                refreshState(state.data, data, (table.name !== 'tag'));
                 state.refreshCount++;
             },
         },

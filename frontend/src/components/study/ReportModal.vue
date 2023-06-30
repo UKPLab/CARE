@@ -142,7 +142,7 @@ export default {
         });
     },
     tags() {
-      return this.$store.getters["tag/getAllTags"]();
+      return this.$store.getters['table/tag/getAll'];
     },
     tagIds() {
       if (this.annotations && this.tags) {

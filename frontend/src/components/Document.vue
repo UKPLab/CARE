@@ -49,7 +49,7 @@ export default {
   },
   computed: {
     document() {
-      return this.$store.getters["document/getDocumentByHash"](this.documentHash);
+      return this.$store.getters["table/document/getByHash"](this.documentHash);
     },
   },
   watch: {

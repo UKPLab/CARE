@@ -106,7 +106,7 @@ export default {
 
             study.createdAt = new Date(study.createdAt).toLocaleString()
 
-            const doc = this.$store.getters["document/getDocument"](study.documentId)
+            const doc = this.$store.getters["table/document/get"](study.documentId)
             study.documentName = doc ? doc.name : "-";
 
             study.manage = [
