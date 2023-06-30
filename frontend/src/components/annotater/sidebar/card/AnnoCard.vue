@@ -28,13 +28,13 @@
 
     <template #body>
       <div
-          v-if="annotation_id"
-          :style="'border-color:#' + color"
-          :title="tagName"
-          class="blockquote card-text annoBlockquote"
-          data-placement="top"
-          data-toogle="tooltip"
-          @click="scrollTo(annotation_id)"
+        v-if="annotationId"
+        :style="'border-color:#' + color"
+        :title="tagName"
+        class="blockquote card-text annoBlockquote"
+        data-placement="top"
+        data-toogle="tooltip"
+        @click="scrollTo(annotationId)"
       >
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
@@ -206,9 +206,9 @@ export default {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
     },
     annotation() {
-      return this.$store.getters["anno/getAnnotation"](this.annotation_id);
+      return this.$store.getters['table/annotation/get'](this.annotationId);
     },
-    annotation_id() {
+    annotationId() {
       const annotationId = this.comment.annotationId;
       if (annotationId)
         return annotationId;
@@ -218,21 +218,28 @@ export default {
       return this.comment.draft || this.edit_mode;
     },
     numberReplies() {
-      return this.$store.getters["comment/getNumberOfDescendentsByComment"](this.commentId);
+      return this.$store.getters["table/comment/countByKey"]("parentCommentId", this.commentId, true);
     },
     childComments() {
-      return this.$store.getters["comment/getCommentsByCommentId"](this.commentId);
+      return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId).sort(
+        function (a, b) {
+          let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
+          if (keyA < keyB) return -1;
+          if (keyA > keyB) return 1;
+          return 0;
+        }
+      );
     },
     comment() {
-      return this.$store.getters['comment/getComment'](this.commentId);
+      return this.$store.getters['table/comment/get'](this.commentId);
     },
     color() {
-      if (this.annotation_id)
+      if (this.annotationId)
         return this.$store.getters['tag/getColor'](this.annotation.tagId);
       return null;
     },
     tagName() {
-      if (this.annotation_id) {
+      if (this.annotationId) {
         const tag = this.$store.getters['tag/getTag'](this.annotation.tagId);
         if (tag)
           return tag.name;
@@ -298,7 +305,7 @@ export default {
       }
     },
     loading() {
-      if(this.annotation_id && !this.annotation) {
+      if (this.annotationId && !this.annotation) {
         return true;
       }
       return false;
@@ -307,7 +314,7 @@ export default {
       this.eventBus.emit('pdfScroll', anno_id);
     },
     save() {
-      if (this.annotation_id) {
+      if (this.annotationId) {
         this.$socket.emit('annotationUpdate', {
           "annotationId": this.annotation.id,
           "tagId": JSON.stringify(this.annotation.tagId),
@@ -318,7 +325,7 @@ export default {
       this.$refs.collab.removeCollab();
     },
     cancel() {
-      if (this.annotation_id) {
+      if (this.annotationId) {
 
         if (this.annotation.draft) {
           this.remove();
@@ -341,7 +348,7 @@ export default {
       this.edit_mode = null;
     },
     remove() {
-      if (this.annotation_id) {
+      if (this.annotationId) {
         this.$socket.emit('annotationUpdate', {
           "annotationId": this.annotation.id,
           "tagId": JSON.stringify(this.annotation.tagId),

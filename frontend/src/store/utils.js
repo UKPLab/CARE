@@ -118,6 +118,24 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
             },
 
             /**
+             * Count by key
+             *
+             * If hierarchical is true, it will count all elements that have a parent with the given key.
+             *
+             * @param state
+             * @param getters
+             * @return {function(String, *, boolean): function(*): number}
+             */
+            countByKey: (state, getters) => (key, value, hierarchical) => {
+                const data = getters.getByKey(key, value);
+                if (hierarchical) {
+                    return data.length + data.map(e => getters.countByKey(key, e.id, hierarchical)).reduce((pv, cv) => pv + cv, 0);
+                } else {
+                    return data.length;
+                }
+            },
+
+            /**
              * Returns that the table has no fields. (default)
              * @return {boolean}
              */
@@ -140,6 +158,22 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
              * @param data
              */
             [websocketPrefix + table.name + "Refresh"]: (state, data) => {
+
+                // only for annotation table -- TODO: remove this when we have a better solution
+                if (table.name === 'annotation') {
+                    data = data.map(anno => {
+                        return Object.assign(anno, {anchors: null})
+                    })
+                }
+
+                // only for comment table -- TODO: remove this when we have a better solution
+                if (table.name === 'comment') {
+                    data = data.map(d => {
+                        d.tags = JSON.parse(d.tags);
+                        return d;
+                    });
+                }
+
                 refreshState(state.data, data);
                 state.refreshCount++;
             },

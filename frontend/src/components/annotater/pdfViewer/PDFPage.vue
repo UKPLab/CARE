@@ -107,10 +107,15 @@ export default {
   },
   computed: {
     annotations() {
-      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageNumber);
+      return this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
+        && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageNumber);
     },
     anchors() {
-      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId, this.pageNumber))
+      return [].concat(
+        this.annotations.filter(a => a.anchors !== null)
+          .flatMap(a => a.anchors)
+          .filter(a => a !== undefined)
+      )
     },
   },
   watch: {
