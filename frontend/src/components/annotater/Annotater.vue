@@ -184,17 +184,31 @@ export default {
   },
   computed: {
     anchors() {
-      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId))
+      return [].concat(
+        this.annotations.filter(a => a.anchors !== null)
+          .flatMap(a => a.anchors)
+          .filter(a => a !== undefined)
+      )
     },
     showAll() {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
     annotations() {
-      return this.$store.getters["anno/getAnnotations"](this.documentId);
+      return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId)
+        .sort((a, b) => {
+          const a_noanchor = a.anchors === null || a.anchors.length === 0;
+          const b_noanchor = b.anchors === null || b.anchors.length === 0;
+
+          if (a_noanchor || b_noanchor) {
+            return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+          }
+
+          return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+        });
     },
     comments() {
-      return this.$store.getters["comment/getDocumentComments"](this.documentId);
+      return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
     },
     nlpActive() {
       const nlpActive = this.$store.getters["settings/getValue"]("annotator.nlp.activated");
@@ -254,7 +268,7 @@ export default {
       this.logScroll();
     },
     async scrollTo(annotationId) {
-      const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
+      const annotation = this.$store.getters['table/annotation/get'](annotationId)
 
       if ("anchors" in annotation) {
         const anchor = annotation.anchors[0]

@@ -23,8 +23,8 @@
           :id="'comment-' + comment.id"
           :key="'documentComment-' + comment.id"
           class="list-group-i"
-          @mouseleave="unhover(comment.id)"
-          @mouseover="hover(comment.id)"
+          @mouseleave="unhover(comment.annotationId)"
+          @mouseover="hover(comment.annotationId)"
         >
           <AnnoCard
             :id="comment.id"
@@ -112,7 +112,7 @@ export default {
       return (showAllComments !== undefined && showAllComments);
     },
     documentComments() {
-      return this.$store.getters['comment/getDocumentComments'](this.documentId)
+      return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
           // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
@@ -131,8 +131,8 @@ export default {
           if (!a.annotationId && !b.annotationId) {
             return Date.parse(a) - Date.parse(b);
           } else if (a.annotationId && b.annotationId) {
-            const aAnno = this.$store.getters['anno/getAnnotation'](a.annotationId);
-            const bAnno = this.$store.getters['anno/getAnnotation'](b.annotationId);
+            const aAnno = this.$store.getters['table/annotation/get'](a.annotationId);
+            const bAnno = this.$store.getters['table/annotation/get'](b.annotationId);
 
             if (!aAnno || !bAnno) {
               return 0;
@@ -147,7 +147,8 @@ export default {
   },
   mounted() {
     this.eventBus.on('sidebarScroll', (anno_id) => {
-      const comment = this.$store.getters["comment/getCommentByAnnotation"](anno_id);
+      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", anno_id)
+        .find(comm => comm.parentCommentId === null);
       // in case the comment might not be loaded yet
       if (!comment) {
         return;
@@ -161,22 +162,35 @@ export default {
     })
   },
   methods: {
-    ...mapMutations({
-      toggleSidebar: "anno/TOGGLE_SIDEBAR",
-      annoHover: "anno/HOVER",
-      annoUnhover: "anno/UNHOVER"
-    }),
-    hover(commentId) {
-      const annotationId = this.$store.getters['comment/getComment'](commentId).annotationId;
-
-      if (annotationId)
-        this.annoHover(annotationId)
+    hover(annotationId) {
+      if (annotationId) {
+        const annotation = this.$store.getters['table/annotation/get'](annotationId);
+        if ("anchors" in annotation && annotation.anchors != null) {
+          annotation.anchors
+            .filter(anchor => "highlights" in anchor)
+            .forEach(anchor => anchor.highlights.map((highlight) => {
+              if ("svgHighlight" in highlight) {
+                highlight.svgHighlight.classList.add("is-focused");
+              }
+              highlight.classList.add("highlight-focus");
+            }))
+        }
+      }
     },
-    unhover(commentId) {
-      const annotationId = this.$store.getters['comment/getComment'](commentId).annotationId;
-
-      if (annotationId)
-        this.annoUnhover(annotationId)
+    unhover(annotationId) {
+      if (annotationId) {
+        const annotation = this.$store.getters['table/annotation/get'](annotationId);
+        if ("anchors" in annotation && annotation.anchors != null) {
+          annotation.anchors
+            .filter(anchor => "highlights" in anchor)
+            .forEach(anchor => anchor.highlights.map((highlight) => {
+              if ("svgHighlight" in highlight) {
+                highlight.svgHighlight.classList.remove("is-focused");
+              }
+              highlight.classList.remove("highlight-focus");
+            }))
+        }
+      }
     },
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;

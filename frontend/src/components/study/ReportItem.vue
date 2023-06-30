@@ -46,13 +46,14 @@ export default {
   computed: {
     comment() {
       if(this.annotationId)
-        return this.$store.getters["comment/getCommentByAnnotation"](this.annotationId);
+        return this.$store.getters["table/comment/getByKey"]("annotationId", this.annotationId)
+        .find(comm => comm.parentCommentId === null);
       else
-        return this.$store.getters["comment/getComment"](this.commentId);
+        return this.$store.getters["table/comment/get"](this.commentId);
     },
     annotation() {
       if(this.annotationId)
-        return this.$store.getters["anno/getAnnotation"](this.annotationId);
+        return this.$store.getters['table/annotation/get'](this.annotationId);
       else
         return null;
     },

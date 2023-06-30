@@ -197,7 +197,7 @@ export default {
   },
   computed: {
     comment() {
-      return this.$store.getters["comment/getComment"](this.commentId);
+      return this.$store.getters["table/comment/get"](this.commentId);
     },
     skills() {
       return this.$store.getters["service/getNLPSkills"];
@@ -207,7 +207,7 @@ export default {
     },
     myBotRequest() {
       return this.comment.creator_name === "Bot"
-        && this.$store.getters["comment/getComment"](this.comment.parentCommentId).userId === this.userId;
+        && this.$store.getters["table/comment/get"](this.comment.parentCommentId).userId === this.userId;
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -216,7 +216,15 @@ export default {
       return this.comment.draft || this.editMode;
     },
     childComments() {
-      return this.$store.getters["comment/getCommentsByCommentId"](this.commentId);
+      return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId)
+        .sort(
+          function (a, b) {
+            let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
+            if (keyA < keyB) return -1;
+            if (keyA > keyB) return 1;
+            return 0;
+          }
+        );
     },
     nlp_active() {
       const conf = this.$store.getters["service/get"]("NLPService", "skillUpdate");
@@ -241,8 +249,8 @@ export default {
         this.requestNlpFeedback();
       }
     },
-    openedTextarea(newVal){
-      if(newVal){
+    openedTextarea(newVal) {
+      if (newVal) {
         this.$nextTick(() => this.$refs.textarea.focus());
       }
     }
