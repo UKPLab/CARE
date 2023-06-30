@@ -17,7 +17,7 @@
   </div>
   <Loading v-if="settings === null"></Loading>
   <div v-else>
-    <div v-for="k1 in firstKeys" class="card my-3">
+    <div v-for="k1 in firstKeys" :key="k1" class="card my-3">
       <div>
         <div class="card-header" style="cursor: pointer" @click="collapseFirst[k1] = !collapseFirst[k1]">
           <LoadIcon :icon-name="(collapseFirst[k1]) ? 'arrow-right-short' : 'arrow-down-short'" class="me-1"></LoadIcon>
@@ -27,12 +27,12 @@
           <span v-if="k1 === 'app'" class="text-secondary"><small>Main settings of the application <br>Note: Make sure that no sensitive data are present!</small></span>
         </div>
         <div v-if="!(collapseFirst[k1])" class="card-body">
-          <div v-for="k2 in secondKeys.filter(e => e.firstKey === k1)[0].secondKeys" class="mb-3">
+          <div v-for="k2 in secondKeys.filter(e => e.firstKey === k1)[0].secondKeys" :key="k2" class="mb-3">
             <div>
               {{ k2 }}
             </div>
 
-            <div v-for="s in settings.filter(setting => setting['key'].startsWith(k1 + '.' + k2))" class="row">
+            <div v-for="s in settings.filter(setting => setting['key'].startsWith(k1 + '.' + k2))" :key="s" class="row">
 
               <div class="col-12">
                 <div class="card mt-3">
@@ -111,25 +111,13 @@ export default {
     }
   },
   mounted() {
-    this.load();
+    this.settings = null;
+    this.$socket.emit("settingGetData");
   },
   methods: {
     save() {
       this.$socket.emit("settingSave", this.settings);
     },
-    load() {
-      this.settings = null;
-      this.$socket.emit("settingGetData");
-    },
-    openEditor(setting) {
-      this.editorSetting = setting;
-      this.editorTitle = "Edit " + setting.key;
-      this.editorContent = setting['value'];
-      this.$refs.editor.open();
-    },
-    saveEditor(data) {
-      this.editorSetting.value = data;
-    }
   }
 }
 </script>
