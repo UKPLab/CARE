@@ -65,7 +65,7 @@
 
 import Loader from "@/basic/Loader.vue";
 import jsonview from "@pgrabovets/json-view";
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/icons/LoadIcon.vue";
 
 /* JsonEditor.vue - default component for a JSON editor
 

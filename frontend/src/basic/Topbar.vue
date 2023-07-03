@@ -81,8 +81,8 @@
  * @author: Carly Gettinger, Dennis Zyska, Nils Dycke
  */
 
-import LoadIcon from "@/icons/LoadIcon.vue";
-import IconAsset from "@/icons/IconAsset.vue";
+import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import IconAsset from "@/basic/icons/IconAsset.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 

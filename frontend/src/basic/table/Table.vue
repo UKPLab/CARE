@@ -186,7 +186,7 @@ import TToggle from "./Toggle.vue"
 import TBadge from "./Badge.vue";
 import TIcon from "./Icon.vue";
 import Pagination from "./Pagination.vue";
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/icons/LoadIcon.vue";
 import {tooltip} from "@/assets/tooltip.js";
 import deepEqual from 'deep-equal';
 

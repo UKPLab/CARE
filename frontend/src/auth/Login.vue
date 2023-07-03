@@ -135,7 +135,7 @@
  *
  * @author: Dennis Zyska, Nils Dycke, Carly Gettinger
  */
-import IconAsset from "@/icons/IconAsset.vue";
+import IconAsset from "@/basic/icons/IconAsset.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
