@@ -55,7 +55,7 @@
 import StudyModal from "@/components/study/StudyModal.vue";
 import Annotater from "./annotater/Annotater.vue";
 import FinishModal from "./study/FinishModal.vue";
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/icons/LoadIcon.vue";
 import {computed} from "vue";
 
 export default {

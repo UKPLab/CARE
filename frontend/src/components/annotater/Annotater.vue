@@ -133,7 +133,7 @@ import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/icons/LoadIcon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 

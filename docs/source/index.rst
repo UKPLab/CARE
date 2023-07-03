@@ -1,22 +1,12 @@
-.. CARE documentation master file, created by
-   sphinx-quickstart on Mon Dec 19 14:54:30 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-
-
 Welcome to CARE!
 ================================
 
 Welcome to the CARE project -- contribute towards AI-assisted collaborative reading.
 
 This documentation covers many examples to get you started really quick -- both as a
-developer contributing to the extension of CARE or as a researcher using it for their research.
+developer contributing to the extension of CARE or as a researcher using it for your research.
 
-.. note::
-
-   Check out the `Socket API documentation </api>`_ of the backend.
-
+The project is developed at the `UKP Lab <https://www.informatik.tu-darmstadt.de/ukp/ukp_home/index.en.jsp>`_ at the `TU Darmstadt <https://www.tu-darmstadt.de/index.en.jsp>`_ as part of the `Intertext Initiative <https://intertext.ukp-lab.de/>`_.
 
 .. toctree::
    :maxdepth: 1

@@ -33,8 +33,8 @@
 </template>
 
 <script>
-import LoadIcon from "@/icons/LoadIcon.vue";
-import IconLoading from "@/icons/IconLoading.vue";
+import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import IconLoading from "@/basic/icons/IconLoading.vue";
 import {v4 as uuid} from "uuid";
 
 

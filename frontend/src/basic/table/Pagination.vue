@@ -100,7 +100,7 @@
 </template>
 
 <script>
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/icons/LoadIcon.vue";
 
 /**
  * Basic Table Pagination Navigation

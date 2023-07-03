@@ -65,7 +65,7 @@
 
 <script>
 import Loading from "@/basic/Loading.vue";
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/icons/LoadIcon.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 
 /**

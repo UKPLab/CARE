@@ -127,7 +127,7 @@
 import {validateServiceConfig} from "@/assets/data";
 import JsonEditor from "@/basic/editor/JsonEditor.vue";
 import SkillItem from "@/components/dashboard/nlp_skills/SkillItem.vue";
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/icons/LoadIcon.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 import CommandEditor from "@/basic/editor/CommandEditor.vue";
 import {v4 as uuidv4} from "uuid";

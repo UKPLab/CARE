@@ -132,8 +132,16 @@ kill: check_kill
 
 frontend/node_modules/.uptodate: frontend/package.json frontend/package-lock.json
 	cd frontend && npm install
+ifeq ($(OS),Windows_NT)
+	type NUL > $@
+else
 	@touch $@
+endif
 
 backend/node_modules/.uptodate: backend/package.json backend/package-lock.json
 	cd backend && npm install
+ifeq ($(OS),Windows_NT)
+	type NUL > $@
+else
 	@touch $@
+endif

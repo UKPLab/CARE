@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/icons/LoadIcon.vue";
 
 /**
  * Show help icon with tooltip if help is provided.
