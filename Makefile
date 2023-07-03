@@ -15,6 +15,7 @@ help:
 	@echo "make doc 							Build the documentation"
 	@echo "make dev-build       		  		Build the frontend (make dev-build-frontend) and run the backend in development mode"
 	@echo "make dev-backend      		 		Run backend in development mode"
+	@echo "make dev-frontend     		 		Run frontend in development mode"
 	@echo "make dev-build-frontend   		 	Build frontend in development mode"
 	@echo "make build-frontend                  Build frontend in production mode"
 	@echo "make test							Run unit tests (backend only)"
@@ -69,6 +70,10 @@ init: backend/node_modules/.uptodate
 .PHONY: dev
 dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate
 	cd frontend && npm run frontend-dev & cd backend && npm run start
+
+.PHONY: dev-frontend
+dev-frontend: frontend/node_modules/.uptodate
+	cd frontend && npm run frontend-dev
 
 .PHONY: dev-build
 dev-build: backend/node_modules/.uptodate build-frontend

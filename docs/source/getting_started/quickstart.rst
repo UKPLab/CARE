@@ -19,10 +19,6 @@ The frontend is realized as a monolithic Vue3.js application running in the brow
 The backend itself runs as an express server that listens to the clients and forwards data and service requests.
 The last tier consists the database as the key component for persistent data and external services such as the NLP-Service enabling AI-assistance.
 
-.. note::
-    Check out the :doc:`Architecture <../for_developers/basics/architecture>` chapter for all the details on the
-    different components.
-
 The code is structured accordingly:
 
 .. code-block::

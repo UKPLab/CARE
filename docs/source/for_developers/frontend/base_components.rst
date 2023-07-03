@@ -3,15 +3,11 @@ Base Components
 
 CARE comes with a range of easy-to-use and function rich base components that you can find under
 ``frontend/src/basic``. Using these components ensures a consistent design throughout the application
-and makes your live as a developer so much easier.
+and makes your live as a developer much easier.
 
 In this brief chapter we outline the toolbox of basic components in a high-level fashion. For the details
 of each base component, please refer to the documentation within each of them.
 
-.. note::
-    Also checkout the base components that are specifically discussed in this documentation. These comprise
-    of the :doc:`icons <for_developers/frontend/icons>` and :doc:`loading <for_developers/frontend/loading>`
-    components.
 
 Card
 -----
@@ -20,29 +16,51 @@ if you want to add information to dashboard components or in the annotator's sid
 
 You can use it by simply importing it and insert the headerElements, body and footer as template slots.
 
-.. code-block:: javascript
+.. code-block:: xml
 
     <template>
-        <Card title='Example'>
+        <BasicCard title='Example'>
             <template #headerElements>
             </template>
             <template #body>
             </template>
             <template #footer>
             </template>
-        </card>
+        </BasicCard>
     </template>
 
-    <script>
-        import Card from '@/basic/Card.vue';
+.. code-block:: javascript
 
-        export default {
-            name: 'CardExample',
-            components: {
-                Card,
-            },
-        };
-    </script>
+    import BasicCard from '@/basic/Card.vue';
+
+    export default {
+        name: 'CardExample',
+        components: {
+            BasicCard,
+        },
+    };
+
+
+
+.. list-table:: Card properties
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Default
+      - Type
+    * - title
+      - The title of the card
+      - None
+      - String
+    * - collapsable
+      - Whether the card is collapsable
+      - False
+      - Boolean
+    * - collapsed
+      - Whether the card should be collapsed by default
+      - False
+      - Boolean
 
 
 Collaboration
@@ -51,6 +69,63 @@ Collaboration is a component that fully manages the synchronization necessary to
 CARE. Simply import this component by a target type (e.g. a document) and id (e.g. the id of the document) to forward
 a user's interaction to other clients (e.g. while editing an annotation).
 
+.. note::
+
+    Collaborative features are always based on a document.
+
+.. code-block:: xml
+
+    <template>
+        <BasicCollaboration
+            ref="collaboration"
+            :target-id="commentId"
+            target-type="comment"
+            :document-id="documentId"
+            @collab-status="updateCollaboration"
+        />
+    </template>
+
+.. code-block:: javascript
+
+    import BasicCollaboration from "@/basic/Collaboration.vue"
+
+    export default {
+        name: 'CollaborationExample',
+        components: {
+            BasicCollaboration,
+        },
+        data() {
+            return {
+                documentId: 1,
+                collaboration: null,
+            }
+        },
+        methods: {
+            updateCollaboration(collaboration) {
+                this.collaboration = collaboration;
+            },
+        },
+    };
+
+.. list-table:: Collaboration properties (all required!)
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Default
+      - Type
+    * - target-type
+      - The type of the target (e.g. the type of the comment)
+      - None
+      - String
+    * - target-id
+      - The id of the target (e.g. the id of the comment)
+      - None
+      - Number
+    * - document-id
+      - The id of the document
+      - None
+      - Number
 
 Modal
 -----
@@ -61,37 +136,87 @@ Import this component if you need a modal prompted to the user. You can customiz
     Opening and closing of modals triggers statistics events. Additional data can be passed to the event by adding a
     ``props`` attribute to the modal. This data will be passed to the event.
 
-.. code-block:: javascript
+.. code-block:: html
 
         <template>
-            <Modal
+            <BasicModal
                 name="Example"
                 :props="{ 'example': 'data' }"
-                @hide="closeModal">
+                @show="show"
+                @hide="hide">
                 <template #body>
                     <p>Example body</p>
                 </template>
                 <template #footer>
                     <button class="btn btn-primary" data-bs-dismiss="modal">Close</button>
                 </template>
-            </Modal>
+            </BasicModal>
         </template>
 
-        <script>
-            import Modal from '@/basic/Modal.vue';
+.. code-block:: javascript
 
-            export default {
-                name: 'ModalExample',
-                components: {
-                    Modal,
+
+        import BasicModal from '@/basic/Modal.vue';
+
+        export default {
+            name: 'ModalExample',
+            components: {
+                BasicModal,
+            },
+            methods: {
+                show() {
+                    console.log('show modal');
                 },
-                methods: {
-                    closeModal() {
-                        console.log('close');
-                    },
+                hide() {
+                    console.log('hide modal');
                 },
-            };
-        </script>
+            },
+        };
+
+.. list-table:: Modal properties
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Default
+      - Type
+      - Required
+    * - name
+      - The name of the modal
+      - None
+      - String
+      - True
+    * - props
+      - The props to pass for the statistics event
+      - {}
+      - Object
+      - False
+    * - autoOpen
+      - Whether the modal should be opened automatically
+      - False
+      - Boolean
+      - False
+    * - removeClose
+      - Whether the close button should be removed,
+        | modal is only closable by keyboard
+      - False
+      - Boolean
+      - False
+    * - disableKeyboard
+      - Disable the keyboard for closing the modal
+      - False
+      - Boolean
+      - False
+    * - lg
+      - Whether the modal should be large
+      - False
+      - Boolean
+      - False
+    * - xl
+      - Whether the modal should be extra large
+      - False
+      - Boolean
+      - False
 
 Table
 -----
