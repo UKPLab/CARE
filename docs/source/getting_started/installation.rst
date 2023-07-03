@@ -1,10 +1,10 @@
 Installation
 ============
 
-To get started quickly, follow the below instructions.
+To get started quickly, follow the instructions below.
+
 For a complete overview on building, development and deployment options
-checkout the :doc:`Before You Start <for_developers/before_you_start>` option.
-If you simply want to run a user or annotation study, follow this guide.
+checkout the :doc:`Before You Start <../for_developers/before_you_start>` option.
 
 Prerequisites
 -------------
@@ -17,23 +17,28 @@ Please install them according to the official documentation:
 
 Also make sure that you have GNU's ``make`` installed on your system.
 
+.. note::
+
+    On Windows, you can use the ``make`` command with the `GNU Make for Windows <http://gnuwin32.sourceforge.net/packages/make.htm>`_ package.
+    On newer windows systems, simply use ``winget install GnuWin32.Make`` and make it executable with ``set PATH=%PATH%;C:/Program Files (x86)/GnuWin32/bin``.
+
 Build
 -----
 
-Before building the containers, you can change the basic configuration in the ``.env`` file.
+Before building the containers, you can change the basic configuration in the ``.env.main`` file.
 To build the containers, run the following command:
 
 .. code-block:: bash
 
-    $ make build
+    $ make ENV=main build
 
 This command will build the containers.
 
-The application should be available at http://localhost:8080
+The application should be available at http://localhost:9090
 
 .. note::
 
-    The credentials for the admin user can be found in the .env file!
+    The credentials for the admin user can be also found in the .env file!
 
 Nginx / Certbot
 ---------------
@@ -112,7 +117,7 @@ A sample configuration for nginx ``./data/nginx/app.conf`` can look like this:
         }
     }
 
-.. note::
+.. warning::
 
-    The IP-Address can change, if the docker network is newly created, then it must also be adapted.
-    Therefore you should use for reloading the config the command ``sudo docker-compose restart`` instead!
+    The IP-Address can change, if the docker network is newly created! Please adapt the ip address accordingly!
+    A better way is to reload just the config with ``sudo docker-compose restart``.
