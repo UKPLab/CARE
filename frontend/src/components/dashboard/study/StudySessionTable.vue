@@ -10,7 +10,7 @@
 
 <script>
 import BasicTable from "@/basic/table/Table.vue";
-import ConfirmModal from "@/basic/ConfirmModal.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
  * Table of study session with management buttons

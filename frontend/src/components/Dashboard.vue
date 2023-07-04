@@ -1,5 +1,5 @@
 <template>
-  <Loading v-if="navElements > 0 || settings === null"/>
+  <Loading v-if="navElements > 0 || settings === null" />
   <div v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column dashboard-wrapper">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">

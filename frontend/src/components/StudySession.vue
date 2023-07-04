@@ -13,7 +13,7 @@
 
 <script>
 import Study from "./Study.vue";
-import Loader from "@/basic/Loader.vue"
+import Loader from "@/basic/Loading.vue"
 
 /**
  * Document view in study session mode

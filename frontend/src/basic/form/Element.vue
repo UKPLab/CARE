@@ -38,7 +38,7 @@
 
 <script>
 import FormHelp from "@/basic/form/Help.vue"
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
 
 /**

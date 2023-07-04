@@ -33,24 +33,23 @@
 </template>
 
 <script>
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import IconLoading from "@/basic/icons/IconLoading.vue";
 import {v4 as uuid} from "uuid";
 
-
-/* NLPService.vue - nlp utilities
-
-This module provides utilities for requesting, waiting and representing NLP results.
-
-Include, for instance as:
-
-  <NLPService ref="nlp" :data="Test string" skill="summarization"/>
-  ...
-  this.$refs.nlp.request();
-
-Author: Dennis Zyska, Nils Dycke
-Source: -
-*/
+/**
+ * NLP Utilities
+ *
+ * This module provides utilities for requesting, waiting and representing NLP results.
+ *
+ * Include, for instance as:
+ *
+ *   <NLPService ref="nlp" :data="Test string" skill="summarization"/>
+ *   ...
+ *   this.$refs.nlp.request();
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ */
 export default {
   name: "NLPService",
   components: {

@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 export default {
   name: "TableIcon",

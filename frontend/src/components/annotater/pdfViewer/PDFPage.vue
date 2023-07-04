@@ -60,7 +60,7 @@ import debounce from 'lodash.debounce';
 import Highlights from "./Highlights.vue";
 
 import {Anchoring} from "@/assets/pdfViewer/anchor.js";
-import Loader from "@/basic/Loader.vue";
+import Loader from "@/basic/Loading.vue";
 import {toRaw} from 'vue';
 
 export default {

@@ -16,18 +16,17 @@ if you want to add information to dashboard components or in the annotator's sid
 
 You can use it by simply importing it and insert the headerElements, body and footer as template slots.
 
-.. code-block:: xml
+.. code-block:: html
 
-    <template>
-        <BasicCard title='Example'>
-            <template #headerElements>
-            </template>
-            <template #body>
-            </template>
-            <template #footer>
-            </template>
-        </BasicCard>
-    </template>
+    <BasicCard title='Example'>
+        <template #headerElements>
+        </template>
+        <template #body>
+        </template>
+        <template #footer>
+        </template>
+    </BasicCard>
+
 
 .. code-block:: javascript
 
@@ -73,17 +72,15 @@ a user's interaction to other clients (e.g. while editing an annotation).
 
     Collaborative features are always based on a document.
 
-.. code-block:: xml
+.. code-block:: html
 
-    <template>
-        <BasicCollaboration
-            ref="collaboration"
-            :target-id="commentId"
-            target-type="comment"
-            :document-id="documentId"
-            @collab-status="updateCollaboration"
-        />
-    </template>
+    <BasicCollaboration
+        ref="collaboration"
+        :target-id="commentId"
+        target-type="comment"
+        :document-id="documentId"
+        @collab-status="updateCollaboration"
+    />
 
 .. code-block:: javascript
 
@@ -129,6 +126,7 @@ a user's interaction to other clients (e.g. while editing an annotation).
 
 Modal
 -----
+
 Import this component if you need a modal prompted to the user. You can customize the header, body and footer.
 
 .. tip::
@@ -138,20 +136,19 @@ Import this component if you need a modal prompted to the user. You can customiz
 
 .. code-block:: html
 
-        <template>
-            <BasicModal
-                name="Example"
-                :props="{ 'example': 'data' }"
-                @show="show"
-                @hide="hide">
-                <template #body>
-                    <p>Example body</p>
-                </template>
-                <template #footer>
-                    <button class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-                </template>
-            </BasicModal>
-        </template>
+        <BasicModal
+            name="Example"
+            :props="{ 'example': 'data' }"
+            @show="show"
+            @hide="hide">
+            <template #body>
+                <p>Example body</p>
+            </template>
+            <template #footer>
+                <button class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            </template>
+        </BasicModal>
+
 
 .. code-block:: javascript
 
@@ -218,19 +215,108 @@ Import this component if you need a modal prompted to the user. You can customiz
       - Boolean
       - False
 
-Table
------
-The table is the best way to visualize many rows of data. Simply pass the data rows to the table and specify the header.
-Optionally, you may add button groups or selection boxes to each row. The table by default comes with a (frontend)
-pagination feature and simple sorting for each column.
 
-Form
-----
-To build forms, you can use the form component. It offers a simple way to build forms in a consistent way only by passing a dictionary.
-
-Editor
+Loader
 ------
-The editor component is a wrapper around the `TipTap editor <https://tiptap.dev/>`_. It offers a simple way to build a rich text editor.
+
+If you need to fetch resources from the server or do computations that need more than a few milliseconds, you should
+provide visual feedback to the user. The ``Loading`` component offers an easy-to-use standardized way of doing this.
+
+Simply add it to your component template, usually within an if clause conditioned on the data to be loaded.
+
+.. code-block:: html
+
+    <Loading text="<loading_text>"></Loading>
+
+.. code-block:: javascript
+
+    import { Loading } from '@/basic/Loading.vue';
+
+    export default {
+        components: {
+            Loading,
+        },
+    };
+
+.. list-table:: Loading properties
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Default
+      - Type
+      - Required
+    * - text
+      - The text to display
+      - "Loading..."
+      - String
+      - False
+    * - loading
+      - Whether the loading should be displayed
+      - True
+      - Boolean
+      - False
+
+Icons
+-----
+
+All icons are based on `Bootstrap icons <https://icons.getbootstrap.com/>`_.
+
+The icons are included as SVGs through the Icon.vue component. Simply add the component to your
+template to load the respective icon. During actual loading of the icon, a loading symbol shows to ensure
+proper spacing and usability.
+
+.. code-block:: html
+
+    <BasicIcon iconName="<bootstrap_icon_name>" size="<size in px>"/>
+
+.. code-block:: javascript
+
+        import BasicIcon from '@/basic/Icon.vue'
+
+        export default {
+            components: {
+                BasicIcon
+            }
+        }
+
+.. list-table:: Icon properties
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Default
+      - Type
+      - Required
+    * - iconName
+      - The name of the icon
+      - "IconQuestionCircle"
+      - String
+      - False
+    * - size
+      - The size of the icon
+      - 16
+      - Number
+      - False
+    * - color
+      - The color of the icon
+      - null
+      - String
+      - False
+
+.. tip::
+
+    Use 'loading' as the icon name to show a loading spinner.
+
+.. note::
+
+    The list of icons can also be found in /node_modules/bootstrap-icons/icons.
+
+
+NLPService
+----------
+
+The NLPService component is a wrapper around the NLP service. It offers a simple way to use the NLP service.
 
 Downloading
 -----------
@@ -238,3 +324,8 @@ The different downloading components offer an easy way to manage the download of
 suitable download component and provide the socket messages and IDs you want to download; the component takes care
 of acquiring this data and pushing the result to the parent component upon completion. Use the export components if
 the downloaded data should be exported in the browser.
+
+Timer
+-----
+
+TODO

@@ -23,7 +23,7 @@
 </template>
 
 <script>
-import Loader from "@/basic/Loader.vue"
+import Loader from "@/basic/Loading.vue"
 import Annotater from "@/components/annotater/Annotater.vue";
 import ReviewModal from "@/components/study/ReviewModal.vue";
 import ReportModal from "@/components/study/ReportModal.vue";

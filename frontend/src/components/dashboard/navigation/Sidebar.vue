@@ -58,7 +58,7 @@
  *
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke
  */
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 export default {
   fetchData: ['nav_group', 'nav_element'],

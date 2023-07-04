@@ -37,7 +37,7 @@ import ExportAnnos from "@/basic/download/ExportAnnos.vue";
 import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "./coordinator/Study.vue";
-import ConfirmModal from "@/basic/ConfirmModal.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import ButtonHeader from "@/basic/card/ButtonHeader.vue";
 import UploadModal from "./documents/UploadModal.vue";
 import EditModal from "./documents/EditModal.vue";

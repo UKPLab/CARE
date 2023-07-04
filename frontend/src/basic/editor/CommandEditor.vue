@@ -146,7 +146,7 @@
 <script>
 import JsonEditor from "./JsonEditor.vue";
 import CommandMessage from "./CommandMessage.vue"
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import {overrideObjectAttributes} from "@/assets/utils";
 
 export default {
