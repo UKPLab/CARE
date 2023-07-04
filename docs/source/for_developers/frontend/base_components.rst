@@ -272,13 +272,13 @@ proper spacing and usability.
 
 .. code-block:: javascript
 
-        import BasicIcon from '@/basic/Icon.vue'
+    import BasicIcon from '@/basic/Icon.vue'
 
-        export default {
-            components: {
-                BasicIcon
-            }
+    export default {
+        components: {
+            BasicIcon
         }
+    }
 
 .. list-table:: Icon properties
     :header-rows: 1
@@ -312,11 +312,60 @@ proper spacing and usability.
 
     The list of icons can also be found in /node_modules/bootstrap-icons/icons.
 
+Timer
+-----
+
+This module provides timing utilities for countdowns. Provides emit events and supports different granularity.
+
+.. code-block:: html
+
+    <BasicTimer autostart show :resolution="1*1000" @timeStep="doSmth()" />
+
+.. code-block:: javascript
+
+    import BasicTimer from '@/basic/Timer.vue'
+
+    export default {
+        components: {
+            BasicTimer
+        },
+        methods: {
+            doSmth() {
+                console.log('do something');
+            },
+        },
+    }
+
+.. list-table:: Timer properties
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Default
+      - Type
+      - Required
+    * - autostart
+      - Whether the timer should start automatically
+      - False
+      - Boolean
+      - False
+    * - show
+      - Whether the timer should be shown
+      - False
+      - Boolean
+      - False
+    * - resolution
+      - The resolution of the timer in milliseconds
+      - 60 * 1000
+      - Number
+      - False
 
 NLPService
 ----------
 
 The NLPService component is a wrapper around the NLP service. It offers a simple way to use the NLP service.
+
+TODO
 
 Downloading
 -----------
@@ -324,8 +373,5 @@ The different downloading components offer an easy way to manage the download of
 suitable download component and provide the socket messages and IDs you want to download; the component takes care
 of acquiring this data and pushing the result to the parent component upon completion. Use the export components if
 the downloaded data should be exported in the browser.
-
-Timer
------
 
 TODO
