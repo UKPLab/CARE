@@ -73,10 +73,13 @@ module.exports = class MetaModel extends Model {
      * @return {Promise<MetaModel[]|Object|undefined>}
      */
     static async getAutoTable(userId = null, filterIds = null, includeDraft = false) {
-        if (this.publicTable) {
+        if (this.publicTable && !filterIds && !userId) {
             return await this.getAll();
         } else {
-            let filter = {deleted: false};
+            let filter = {}
+            if (!filterIds) {
+                filter['deleted'] = false;
+            }
             if (userId && 'userId' in this.getAttributes()) {
                 if ("public" in this.getAttributes()) {
                     filter[Op.or] = [{userId: userId}, {public: true}];
@@ -98,11 +101,17 @@ module.exports = class MetaModel extends Model {
 
     /**
      * Get all db entries
+     * @param {boolean} includeDeleted also return elements with deleted flag is true
      * @return {Promise<object|undefined>}
      */
-    static async getAll() {
+    static async getAll(includeDeleted = false) {
         try {
-            return await this.findAll({where: {deleted: false}, raw: true});
+            if (includeDeleted) {
+                return await this.findAll({raw: true});
+            } else {
+                return await this.findAll({where: {deleted: false}, raw: true});
+            }
+
         } catch (err) {
             console.log(err);
         }

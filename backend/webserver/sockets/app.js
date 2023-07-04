@@ -80,17 +80,28 @@ module.exports = class AppSocket extends Socket {
                 }
                 // check if table has a field with table options
                 if (newEntry) {
-                    this.models[data.table].fields.filter(f => f.type === 'table').map(f => {
+                    const tableResults = await Promise.all(this.models[data.table].fields.filter(f => f.type === 'table').map(async f => {
                         if ("table" in f.options) {
-                            data.data[f.key].map(tf => {
+                            const ids = await Promise.all(data.data[f.key].map(tf => {
                                 tf[f.options.id] = newEntry.id;
-                                this.updateData({
+                                return this.updateData({
                                     table: f.options.table,
                                     data: tf
                                 });
-                            });
+                            }));
+                            return ids;
                         }
-                    });
+                    }));
+                    if (!tableResults.flat(1).every(e => !!e)) {
+                        newEntry = await this.models[data.table].updateById(newEntry.id, {deleted: true});
+                        this.models[data.table].fields.filter(f => f.type === 'table').map(async (f, i) => {
+                            const newObjects = await Promise.all(tableResults[i].map(id => {
+                                return this.models[f.options.table].updateById(id, {deleted: true});
+                            }))
+                            await this.sendTableData(f.options.table, newObjects.map(e => e.id), null, false);
+                        });
+                    }
+                    await this.sendTableData(data.table, [newEntry.id], null, false);
                     return newEntry.id;
                 }
 
@@ -147,7 +158,6 @@ module.exports = class AppSocket extends Socket {
         this.socket.on("appDataUpdate", async (data) => {
             const id = await this.updateData(data);
             if (id) {
-                await this.sendTableData(data.table, [id]);
                 await this.socket.emit("appDataUpdateSuccess", {requestId: data.id, id: id, success: true});
             } else {
                 await this.socket.emit("appDataUpdateSuccess", {requestId: data.id, success: false});

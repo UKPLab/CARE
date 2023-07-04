@@ -1,7 +1,14 @@
 <template>
   <fieldset :disabled="options.readOnly !== undefined ? options.readOnly : false">
     <div v-if="dataTable">
-      <slot :id="options.key" name="element"/>
+      <slot :id="options.key" :blur="validate" name="element"/>
+      <div v-if="invalidField" class="feedback-invalid">
+        <span v-if="options.invalidText"> {{ options.invalidText }}</span>
+        <span v-else>The input is invalid.</span>
+      </div>
+      <div v-else-if="options.required && emptyField" class="feedback-invalid">
+        This field is required.
+      </div>
     </div>
     <div v-else>
       <label
@@ -39,7 +46,6 @@
 <script>
 import FormHelp from "@/basic/form/Help.vue"
 import LoadIcon from "@/basic/Icon.vue";
-import {computed} from "vue";
 
 /**
  * Basic form element with label and help text

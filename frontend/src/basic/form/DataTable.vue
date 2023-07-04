@@ -17,12 +17,14 @@
           <td v-for="f in fields" :key="f.name">
             <FormSelect
               v-if="f.type === 'select'"
+              :ref="'ref_' + f.key"
               v-model="currentData[index][f.key]"
               :data-table="true"
               :options="f"
             />
             <FormDefault
               v-else
+              :ref="'ref_' + f.key"
               v-model="currentData[index][f.key]"
               :data-table="true"
               :options="f"
@@ -148,6 +150,11 @@ export default {
       } else {
         this.currentData.splice(index, 1);
       }
+    },
+    validate() {
+      return Object.keys(this.$refs)
+        .filter(child => typeof this.$refs[child][0].validate === 'function')
+        .map(child => this.$refs[child][0].validate()).every(Boolean);
     },
   },
 }
