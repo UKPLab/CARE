@@ -2,7 +2,7 @@
   <BasicCoordinator
     ref="coordinator"
     table="tag_set"
-    title="Tag Sets Editor"
+    title="Tag Set"
   />
 </template>
 
