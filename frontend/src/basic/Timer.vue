@@ -5,21 +5,21 @@
 </template>
 
 <script>
-/* Timer.vue - timing utilities
-
-This module provides timing utilities for countdowns. Provides emit events. Supports different granualrities.
-
-Include, for instance as:
-
-  <Timer autostart show :resolution="1*1000" @timeStep="doSmth()" />
-  ...
-  doSmth(){console.log("yeay");
-
-Author: Nils Dycke
-Source: -
-*/
+/**
+ * Timinig utilities
+ *
+ * This module provides timing utilities for countdowns. Provides emit events. Supports different granularity.
+ *
+ * Include, for instance as:
+ *
+ *   <Timer autostart show :resolution="1*1000" @timeStep="doSmth()" />
+ *   ...
+ *   doSmth(){console.log("yeay");
+ *
+ * @author: Nils Dycke
+ */
 export default {
-  name: "Timer",
+  name: "BasicTimer",
   components: {},
   props: {
     show: {
@@ -47,7 +47,7 @@ export default {
   },
   watch: {
     state: {
-      handler(val) {
+      handler() {
         if (this.timer) {
           this.$emit("timeStep");
           this.setTimer();
