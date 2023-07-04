@@ -4,13 +4,13 @@
 
 <script>
 
-/* DownloadSingle.vue - generic downloading component for a sequence of items
-
-Generic download logic for a single message
-
-Author: Nils Dycke
-Source: -
-*/
+/**
+ * Generic downloading component for a sequence of items
+ *
+ * Generic download logic for a single message
+ *
+ * @author: Nils Dycke
+ */
 export default {
   name: "DownloadSingle",
   props: {

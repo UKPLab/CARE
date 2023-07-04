@@ -360,18 +360,64 @@ This module provides timing utilities for countdowns. Provides emit events and s
       - Number
       - False
 
-NLPService
-----------
-
-The NLPService component is a wrapper around the NLP service. It offers a simple way to use the NLP service.
-
-TODO
 
 Downloading
 -----------
+
 The different downloading components offer an easy way to manage the download of individual data points. Import the
 suitable download component and provide the socket messages and IDs you want to download; the component takes care
 of acquiring this data and pushing the result to the parent component upon completion. Use the export components if
 the downloaded data should be exported in the browser.
 
-TODO
+Example for downloading a single data point:
+
+.. code-block:: html
+
+    <ExportSingle
+        ref="export"
+        name="stats"
+        req-msg="statsGetAll"
+        res-msg="statsData"
+        :post-process="x => x.statistics"
+    />
+
+.. code-block:: javascript
+
+    import ExportSingle from "@/basic/download/ExportSingle.vue";
+
+    export default {
+        components: {
+            ExportSingle
+        },
+    }
+
+
+.. list-table:: Export single properties
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Default
+      - Type
+      - Required
+    * - name
+      - The name of the download
+      - None
+      - String
+      - True
+    * - req-msg
+      - The socket message to request the data
+      - None
+      - String
+      - True
+    * - res-msg
+      - The socket message to receive the data
+      - None
+      - String
+      - True
+    * - post-process
+      - A function to post-process the data
+      - None
+      - Function
+      - False
+
