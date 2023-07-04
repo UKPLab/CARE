@@ -34,6 +34,7 @@
           class="btn-group"
       >
         <slot name="success-footer">
+          <slot name="buttons" />
           <button
               class="btn btn-secondary"
               @click="$refs.coordinatorModal.close()"
@@ -45,6 +46,7 @@
           class="btn-group"
       >
         <slot name="footer">
+           <slot name="buttons" />
             <button
                 class="btn btn-secondary"
                 type="button"
@@ -57,6 +59,7 @@
             >
               {{ data.id ? textUpdate : textAdd }}
             </button>
+
           </slot>
       </span>
     </template>

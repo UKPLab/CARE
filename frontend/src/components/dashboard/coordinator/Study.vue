@@ -1,17 +1,24 @@
 <template>
   <BasicCoordinator
-    ref="coordinator"
-    table="study"
-    title="Study Coordinator"
-    @success="success"
+      ref="coordinator"
+      table="study"
+      title="Study"
+      @success="success"
   >
     <template #success>
       The study has been successfully published<br>
       Participants can join the study under the following link:<br><br>
       <a
-        :href="link"
-        target="_blank"
+          :href="link"
+          target="_blank"
       >{{ link }}</a>
+    </template>
+    <template v-if="isSuccess" #buttons>
+      <button
+          class="btn btn-primary"
+          @click="copyURL"
+      >Copy Link
+      </button>
     </template>
   </BasicCoordinator>
 </template>
@@ -33,6 +40,7 @@ export default {
     return {
       studyId: 0,
       documentId: 0,
+      isSuccess: false,
     }
   },
   computed: {
@@ -51,6 +59,7 @@ export default {
       if (documentId !== null) {
         this.documentId = documentId;
       }
+      this.isSuccess = false;
       this.studyId = studyId;
       this.hash = this.studyId !== 0 ? this.study.hash : this.hash;
 
@@ -61,6 +70,7 @@ export default {
     },
     success(id) {
       this.studyId = id;
+      this.isSuccess = true;
     },
     close() {
       this.$refs.coordinator.close();
