@@ -10,6 +10,7 @@
     <input
       :id="options.key"
       v-model="currentData"
+      :class="options.class"
       :max="options.max"
       :min="options.min"
       :step="options.step"

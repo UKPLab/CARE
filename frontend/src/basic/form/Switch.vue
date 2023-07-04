@@ -5,9 +5,10 @@
     <input
       :id="options.key"
       v-model="currentData"
+      :class="options.class"
+      :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
       class="form-check-input"
       type="checkbox"
-      :disabled="options.readOnly !== undefined ? options.readOnly : false"
     >
     <label
       v-if="'label' in options"

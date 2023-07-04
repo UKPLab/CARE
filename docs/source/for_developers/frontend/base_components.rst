@@ -77,7 +77,7 @@ a user's interaction to other clients (e.g. while editing an annotation).
     <BasicCollaboration
         ref="collaboration"
         :target-id="commentId"
-        target-type="comment"
+        target-type="comm(from backeent"
         :document-id="documentId"
         @collab-status="updateCollaboration"
     />
