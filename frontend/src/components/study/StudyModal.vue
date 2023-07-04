@@ -119,7 +119,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
-import Loader from "@/basic/Loader.vue"
+import Loader from "@/basic/Loading.vue"
 import DTable from "@/basic/table/Table.vue"
 
 /**

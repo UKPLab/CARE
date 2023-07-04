@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import Loader from "@/basic/Loader.vue";
+import Loader from "@/basic/Loading.vue";
 import {computed} from "vue";
 
 /**

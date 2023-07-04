@@ -19,7 +19,7 @@
 <script>
 import Editor from "./Editor.vue";
 import Modal from "@/basic/Modal.vue";
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 export default {
   name: "EditorModal",

@@ -127,13 +127,13 @@
  */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
-import Loader from "@/basic/Loader.vue";
+import Loader from "@/basic/Loading.vue";
 import ExportAnnos from "@/basic/download/ExportAnnos.vue"
 import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 

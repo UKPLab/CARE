@@ -66,7 +66,7 @@ const routes = [
     {
         path: "/:catchAll(.*)",
         name: "NotFound",
-        component: () => import("@/basic/NotFound.vue"),
+        component: () => import("@/auth/NotFound.vue"),
         meta: {requireAuth: false, hideTopbar: true}
     }
 ]

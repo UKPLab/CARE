@@ -10,7 +10,7 @@
 
 <script>
 import {v4 as uuidv4} from "uuid";
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 /**
  * Default component managing collaborations

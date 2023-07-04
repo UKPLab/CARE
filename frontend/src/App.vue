@@ -16,8 +16,8 @@
 
 <script>
 import Toast from "@/basic/Toast.vue";
-import TopBar from "@/basic/Topbar.vue";
-import Loader from "@/basic/Loader.vue";
+import TopBar from "@/basic/navigation/Topbar.vue";
+import Loader from "@/basic/Loading.vue";
 import {createTable} from "@/store/utils";
 import axios from 'axios';
 import getServerURL from "@/assets/serverUrl";

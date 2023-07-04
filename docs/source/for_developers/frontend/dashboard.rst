@@ -150,3 +150,9 @@ vue component.
 
 Visualizing and processing this data is up to you. We highly recommend using the predefined base components that provide
 many convenience features and ensure a consistent interface design. Check out the details :doc:`here <for_developers/frontend/base_components>`.
+
+Table
+-----
+The table is the best way to visualize many rows of data. Simply pass the data rows to the table and specify the header.
+Optionally, you may add button groups or selection boxes to each row. The table by default comes with a (frontend)
+pagination feature and simple sorting for each column.

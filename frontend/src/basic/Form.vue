@@ -82,7 +82,7 @@
 </template>
 
 <script>
-import DatetimePicker from "./form/DatetimePicker.vue";
+import DatetimePicker from "@/basic/form/DatetimePicker.vue";
 import FormSwitch from "@/basic/form/Switch.vue"
 import FormSlider from "@/basic/form/Slider.vue"
 import FormSelect from "@/basic/form/Select.vue"

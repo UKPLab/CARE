@@ -22,7 +22,7 @@
  */
 
 import Annotater from "./annotater/Annotater.vue";
-import Loader from "@/basic/Loader.vue";
+import Loader from "@/basic/Loading.vue";
 import {computed} from "vue";
 
 export default {

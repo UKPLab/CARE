@@ -16,7 +16,7 @@
 
 <script>
 import JsonEditor from "@/basic/editor/JsonEditor.vue";
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import deepEqual from "deep-equal";
 
 export default {

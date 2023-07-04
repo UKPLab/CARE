@@ -77,7 +77,7 @@
 <script>
 import {Editor, EditorContent} from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import CharacterCount from "@tiptap/extension-character-count"
 
 /**

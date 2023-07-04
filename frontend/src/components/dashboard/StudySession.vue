@@ -39,7 +39,7 @@
 
 <script>
 import Card from "@/basic/Card.vue";
-import LoadIcon from "@/basic/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import StudySessionTable from "@/components/dashboard/study/StudySessionTable.vue";
 import Timer from "@/basic/Timer.vue";
 import {getTimeDiffString} from "@/assets/utils";
