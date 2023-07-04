@@ -13,7 +13,7 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue"
-import Editor from "@/basic/Editor.vue"
+import Editor from "@/basic/editor/Editor.vue"
 
 export default {
   name: "FormEditor",

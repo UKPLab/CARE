@@ -46,7 +46,7 @@ export default {
       }
       return defineAsyncComponent(
           {
-            loader: () => import("./IconBootstrap.vue"),
+            loader: () => import("./icons/IconBootstrap.vue"),
             loadingComponent: IconLoading,
             errorComponent: IconBootstrap
           });

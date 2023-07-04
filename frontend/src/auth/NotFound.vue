@@ -1,7 +1,7 @@
 <template>
   <div style="text-align: center;">
     <h1>404 not found</h1>
-    <h2>You are wrong, this page doesn't exists!</h2>
+    <h2>This page does not exist!</h2>
   </div>
 </template>
 
