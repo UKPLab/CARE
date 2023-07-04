@@ -52,9 +52,12 @@ export default {
   },
   watch: {
     download_progress(newVal) {
-      if (newVal !== 1) {
+      this.$nextTick(() => {
+        if (newVal !== 1) {
         return;
       }
+
+      console.log("WATCHING PROGERSS", newVal, this.result);
 
       // export for each document
       for (let i = 0; i < this.downloadIds.length; i++) {
@@ -66,6 +69,7 @@ export default {
       }
 
       this.reset();
+      });
     }
   },
   methods: {
