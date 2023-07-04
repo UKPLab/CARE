@@ -36,7 +36,7 @@
 import Sidebar from "./dashboard/navigation/Sidebar.vue";
 import {defineAsyncComponent} from "vue";
 import Loading from "@/basic/Loading.vue";
-import NotFoundPage from "@/basic/NotFound.vue";
+import NotFoundPage from "@/auth/NotFound.vue";
 
 export default {
   name: "DashboardRoute",
