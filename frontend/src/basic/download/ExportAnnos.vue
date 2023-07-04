@@ -22,13 +22,14 @@ import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs, omitObjectAttributeSubset} from "@/assets/utils";
 import DownloadSet from "./DownloadSet.vue";
 
-/* ExportAnnos.vue - default anno and comment export component
-
-Export logic for annos and comments
-
-Author: Nils Dycke
-Source: -
-*/
+/**
+ * Default anno and comment export component
+ *
+ * Export logic for annos and comments
+ *
+ * @author: Nils Dycke
+ *
+ */
 export default {
   name: "ExportAnnos",
   components: {DownloadSet},
