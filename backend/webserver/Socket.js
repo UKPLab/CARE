@@ -188,9 +188,10 @@ module.exports = class Socket {
      * @param table
      * @param filterIds list of ids to send
      * @param userId
+     * @param includeForeignData also includes data from foreign keys tables
      * @return {Promise<void>}
      */
-    async sendTableData(table, filterIds = null, userId = null) {
+    async sendTableData(table, filterIds = null, userId = null, includeForeignData = true) {
         try {
             if (!this.autoTables.includes(table)) {
                 this.logger.error("Table " + table + " is not an auto table!");
@@ -207,15 +208,17 @@ module.exports = class Socket {
                     data = await this.models[table].getAutoTable(this.userId, filterIds);
                 }
 
-                const foreignKeys = await this.server.db.sequelize.getQueryInterface().getForeignKeyReferencesForTable(table);
+                if (includeForeignData) {
+                    const foreignKeys = await this.server.db.sequelize.getQueryInterface().getForeignKeyReferencesForTable(table);
 
-                // send all foreign keys of table that are in autoTables
-                foreignKeys.filter(fk => this.autoTables.includes(fk.referencedTableName)).map(async fk => {
-                    const uniqueIds = data.map(d => d[fk.columnName]).filter((value, index, array) => array.indexOf(value) === index);
-                    if (uniqueIds.length > 0) {
-                        this.emit(fk.referencedTableName + "Refresh", await this.models[fk.referencedTableName].getAllByKey(fk.referencedColumnName, uniqueIds), "userId" in this.models[fk.referencedTableName].getAttributes());
-                    }
-                });
+                    // send all foreign keys of table that are in autoTables
+                    foreignKeys.filter(fk => this.autoTables.includes(fk.referencedTableName)).map(async fk => {
+                        const uniqueIds = data.map(d => d[fk.columnName]).filter((value, index, array) => array.indexOf(value) === index);
+                        if (uniqueIds.length > 0) {
+                            await this.sendTableData(fk.referencedTableName, uniqueIds, userId, includeForeignData);
+                        }
+                    });
+                }
                 this.emit(table + "Refresh", data, updateCreatorName);
 
             }
