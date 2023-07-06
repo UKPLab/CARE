@@ -90,8 +90,24 @@ For testing NLP models and human-in-the-loop scenarios, please consider the exis
 care (highlight summarization and comment sentiment classification) and the extensive guide on
 :doc:`modifying the frontend <../for_developers/frontend/frontend>` to add other models with different UI elements.
 
+NLP Model Debugging
+===================
 As an administrator you can monitor the available NLP models from within the frontend under the "NLP Skills" component
-of the dashboard.
+of the dashboard. Here you can see a list of all connected skills and the status of the NLP broker.
+
+To troubleshoot your model, first check that the broker is online and that the skill is listed as connected in the
+components' table. If this is not the case, you should make sure that the broker is up and running and that you
+connected your model to the right broker instance. You can check which broker instance is used under Settings >
+Broker URL.
+
+For each skill, you can open the details of their configuration (the gear symbol). You will see the input and ouput
+examples and the whole configuration of the skill, as specified in its respective yaml. You can download or copy
+this configuration if you want to use it for developing other skills.
+Additionally, when you hit the arrow button at the top, a message interface towards the skill opens up. You can send
+messages to the model and receive their responses here. Starting off with the example input you can modify the input
+you send to the model. Below the message configuration you see the list of sent and received messages including the
+passed objects. Check that the results match your expectation. By default, a response time of >5s is regarded as
+timed out. If this is the case, your model might not run properly anymore.
 
 .. note::
     An easy-to-use plugin feature for the frontend is currently under development to make modifying the frontend

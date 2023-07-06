@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 /* ExpandMenu.vue - menu shown on click of the options in the topbar
 

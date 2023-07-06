@@ -1,16 +1,17 @@
 <template>
-  <PublishModal ref="publishModal"/>
-  <StudyModal ref="studyCoordinator"/>
   <Card title="Documents">
     <template #headerElements>
       <ButtonHeader
-        icon="cloud-arrow-down"
-        title="Export All"
-        class="btn-secondary"
-        @click="exportAll()"
+          class="btn-secondary"
+          icon="cloud-arrow-down"
+          title="Export All"
+          @click="exportAll()"
       />
-      <Upload
-          @addedDoc="onAddedDoc"
+      <ButtonHeader
+          class="btn-primary"
+          title="Add document"
+          text="Add"
+          @click="$refs.uploadModal.open()"
       />
     </template>
     <template #body>
@@ -22,19 +23,24 @@
       />
     </template>
   </Card>
+  <PublishModal ref="publishModal"/>
+  <StudyModal ref="studyCoordinator"/>
   <ExportAnnos ref="export"/>
   <ConfirmModal ref="deleteConf"/>
+  <UploadModal ref="uploadModal"/>
+  <EditModal ref="editModal"/>
 </template>
 
 <script>
-import Upload from "./documents/Upload.vue";
 import PublishModal from "./documents/PublishModal.vue";
 import ExportAnnos from "@/basic/download/ExportAnnos.vue";
 import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
-import StudyModal from "./study/StudyModal.vue";
-import ConfirmModal from "@/basic/ConfirmModal.vue";
+import StudyModal from "./coordinator/Study.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import ButtonHeader from "@/basic/card/ButtonHeader.vue";
+import UploadModal from "./documents/UploadModal.vue";
+import EditModal from "./documents/EditModal.vue";
 
 /**
  * Document list component
@@ -47,7 +53,18 @@ import ButtonHeader from "@/basic/card/ButtonHeader.vue";
  */
 export default {
   name: "DashboardDocument",
-  components: {StudyModal, Upload, ExportAnnos, Card, BasicTable, ButtonHeader, PublishModal, ConfirmModal},
+  fetchData: ['document', 'study'],
+  components: {
+    StudyModal,
+    ExportAnnos,
+    UploadModal,
+    Card,
+    BasicTable,
+    ButtonHeader,
+    PublishModal,
+    ConfirmModal,
+    EditModal
+  },
   data() {
     return {
       options: {
@@ -63,12 +80,8 @@ export default {
         {name: "Created At", key: "createdAt"},
         {
           name: "Public",
-          key: "public",
+          key: "publicBadge",
           type: "badge",
-          typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
-            classMapping: {true: "bg-success", false: "bg-danger"}
-          }
         },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
@@ -76,7 +89,7 @@ export default {
   },
   computed: {
     documents() {
-      return this.$store.getters["document/getDocuments"];
+      return this.$store.getters["table/document/getAll"];
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -84,6 +97,10 @@ export default {
     docs() {
       return this.documents.filter(doc => doc.userId === this.userId).map(d => {
         let newD = {...d};
+        newD.publicBadge = {
+          class: newD.public ? "bg-success" : "bg-danger",
+          text: newD.public ? "Yes" : "No"
+        }
         newD.manage = [
           {
             icon: "box-arrow-in-right",
@@ -117,8 +134,7 @@ export default {
             },
             title: "Publish document...",
             action: "publicDoc",
-          }
-          /*
+          },
         {
           icon: "pencil",
           options: {
@@ -128,8 +144,8 @@ export default {
             }
           },
           title: "Rename document...",
-          onClick: this.renameDoc,
-        },  */
+          action: "renameDoc"
+        },
         ];
         if (this.studiesEnabled) {
           newD.manage.push({
@@ -151,10 +167,6 @@ export default {
       return this.$store.getters["settings/getValue"]('app.study.enabled') === "true";
     },
   },
-  mounted() {
-    this.$socket.emit("documentGetAll");
-    this.$socket.emit("studyGetAll", {userId: this.$store.getters["auth/getUserId"]});
-  },
   methods: {
     action(data) {
       switch (data.action) {
@@ -167,13 +179,16 @@ export default {
         case "publicDoc":
           this.$refs.publishModal.open(data.params.id);
           break;
+        case "renameDoc":
+          this.renameDoc(data.params);
+          break;
         case "studyCoordinator":
           this.studyCoordinator(data.params);
           break;
       }
     },
     async deleteDoc(row) {
-      const studies = this.$store.getters["study/getStudiesByDocument"](row.id);
+      const studies = this.$store.getters["table/study/getFiltered"](e => e.documentId === row.id)
       let warning;
       if (studies && studies.length > 0) {
         warning = ` There ${studies.length !== 1 ? 'are' : 'is'} currently ${studies.length} ${studies.length !== 1 ? 'studies' : 'study'}
@@ -193,7 +208,7 @@ export default {
           });
     },
     renameDoc(row) {
-      this.$socket.emit("documentUpdate", {documentId: row.id, document: {name: "default_name"}});
+      this.$refs.editModal.open(row.id);
     },
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);

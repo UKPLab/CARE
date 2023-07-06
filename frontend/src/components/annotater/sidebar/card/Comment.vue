@@ -1,24 +1,24 @@
 <template>
   <div
-    v-if="level >= 1"
-    class="mb-1"
+      v-if="level >= 1"
+      class="mb-1"
   >
     <div class="container-fluid">
       <div class="row">
         <div class="col">
           <LoadIcon
-            :icon-name="(collapseComment) ? 'chevron-right' : 'chevron-down'"
-            size="12"
-            @click="collapseComment = !collapseComment"
+              :icon-name="(collapseComment) ? 'chevron-right' : 'chevron-down'"
+              :size="12"
+              @click="collapseComment = !collapseComment"
           />
 
           {{ comment.creator_name }}
           <Collaboration
-            ref="collab"
-            :document-id="documentId"
-            :target-id="commentId"
-            target-type="comment"
-            @collab-status="x => editMode = x"
+              ref="collab"
+              :document-id="documentId"
+              :target-id="commentId"
+              target-type="comment"
+              @collab-status="toEditMode"
           />
         </div>
         <div class="col text-end">
@@ -28,16 +28,17 @@
     </div>
   </div>
   <div
-    v-if="!collapseComment"
-    :class="{blockquoteMain: comment.annotationId, blockquoteSub: !comment.referenceAnnotation}"
-    class="comment card-text blockquote pb-1"
+      v-if="!collapseComment"
+      :class="{blockquoteMain: comment.annotationId, blockquoteSub: !comment.referenceAnnotation}"
+      class="comment card-text blockquote pb-1"
   >
     <div v-if="edit || editedByMyself">
       <textarea
-        v-model="comment.text"
-        class="form-control"
-        placeholder="Enter text..."
-        @keydown.ctrl.enter="saveCard()"
+          ref="textarea"
+          v-model="comment.text"
+          class="form-control"
+          placeholder="Enter text..."
+          @keydown.ctrl.enter="saveOnDeactivated(false)"
       />
     </div>
     <div v-else-if="comment.text != null && comment.text.length > 0">
@@ -47,11 +48,11 @@
       <i>No comment</i>
     </div>
     <div
-      class="text-end fw-light"
-      title="Sentiment Analysis"
+        class="text-end fw-light"
+        title="Sentiment Analysis"
     >
       <span v-if="nlp_active && awaitingNlpResult && !edit">
-        <IconLoading />
+        <IconLoading/>
       </span>
       <span v-else-if="nlp_active && nlp_result !== null">
         <span>
@@ -70,94 +71,92 @@
     </div>
 
     <TagSelector
-      v-if="comment"
-      v-model="comment.tags"
-      :disabled="!edit"
-      :is-editor="comment.userId === userId"
+        v-if="comment"
+        v-model="comment.tags"
+        :disabled="!edit"
+        :is-editor="comment.userId === userId"
     />
     <div v-if="level >= 1">
       <div class="ms-auto">
         <div
-          v-if="editedByMyself"
-          class="row"
+            v-if="editedByMyself"
+            class="row"
         >
           <div
-            v-if="!readonly"
-            class="col text-end"
+              v-if="!readonly"
+              class="col text-end"
           >
             <SidebarButton
-              :loading="false"
-              :props="$props"
-              icon="save-fill"
-              title="Edit"
-              @click="save"
+                :loading="false"
+                :props="$props"
+                icon="save-fill"
+                title="Save (Ctrl+Enter)"
+                @click="save"
             />
             <SidebarButton
-              :loading="false"
-              :props="$props"
-              icon="x-square-fill"
-              title="Cancel"
-              @click="cancel"
+                :loading="false"
+                :props="$props"
+                icon="x-square-fill"
+                title="Cancel"
+                @click="cancel"
             />
           </div>
         </div>
         <div
-          v-else
-          class="row"
+            v-else
+            class="row"
         >
           <div
-            v-if="!readonly"
-            class="col text-end"
+              v-if="!readonly"
+              class="col text-end"
           >
             <SidebarButton
-              v-if="settingResponse"
-              :loading="false"
-              :props="$props"
-              icon="reply-fill"
-              title="Reply"
-              @click="reply"
+                v-if="settingResponse"
+                :loading="false"
+                :props="$props"
+                icon="reply-fill"
+                title="Reply"
+                @click="reply"
             />
             <SidebarButton
-              v-if="comment.userId === userId"
-              :loading="false"
-              :props="$props"
-              icon="pencil-square"
-              title="Edit"
-              @click="editComment"
+                v-if="comment.userId === userId"
+                :loading="false"
+                :props="$props"
+                icon="pencil-square"
+                title="Edit"
+                @click="editComment"
             />
             <SidebarButton
-              v-if="comment.userId === userId || myBotRequest"
-              :loading="false"
-              :props="$props"
-              icon="trash3"
-              title="Delete"
-              @click="remove"
+                v-if="comment.userId === userId || myBotRequest"
+                :loading="false"
+                :props="$props"
+                icon="trash3"
+                title="Delete"
+                @click="remove"
             />
           </div>
         </div>
       </div>
     </div>
-    <span
-      v-for="c in childComments"
-      v-if="level >= 1"
-      :key="c.id"
-    >
-      <hr class="hr">
-      <CommentCard
-        :comment-id="c.id"
-        :document-id="documentId"
-        :level="level + 1"
-        :readonly="readonly"
-        :study-session-id="studySessionId"
-      />
+    <span v-if="level >= 1">
+      <span
+          v-for="c in childComments"
+          :key="c.id"
+      >
+        <hr class="hr">
+        <CommentCard
+            :comment-id="c.id"
+            :level="level + 1"
+        />
+    </span>
     </span>
   </div>
 </template>
 
 <script>
 import TagSelector from "./TagSelector.vue";
-import IconLoading from "@/icons/IconLoading.vue";
-import LoadIcon from "@/icons/LoadIcon.vue"
+import IconLoading from "@/basic/icons/IconLoading.vue";
+import LoadIcon from "@/basic/Icon.vue"
 import Collaboration from "@/basic/Collaboration.vue"
 import SidebarButton from "./Button.vue"
 
@@ -171,26 +170,36 @@ import SidebarButton from "./Button.vue"
 export default {
   name: "CommentCard",
   components: {TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration},
-  props: {
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: null
-    },
-    'commentId': {
-      type: Number,
+  inject: {
+    documentId: {
+      type: String,
       required: true,
+    },
+    studySessionId: {
+      type: String,
+      required: false,
+      default: null,
     },
     readonly: {
       type: Boolean,
       required: false,
       default: false,
     },
-    'documentId': {
-      type: Number,
-      required: true
+    listenOnActive: {
+      type: Function,
+      required: true,
     },
-     edit: {
+    unlistenOnActive: {
+      type: Function,
+      required: true,
+    },
+  },
+  props: {
+    'commentId': {
+      type: Number,
+      required: true,
+    },
+    edit: {
       type: Boolean,
       required: false,
       default: false,
@@ -207,11 +216,12 @@ export default {
       awaitingNlpResult: false,
       editMode: false,
       collapseComment: true,
+      listeningToFocus: false
     }
   },
   computed: {
     comment() {
-      return this.$store.getters["comment/getComment"](this.commentId);
+      return this.$store.getters["table/comment/get"](this.commentId);
     },
     skills() {
       return this.$store.getters["service/getNLPSkills"];
@@ -221,37 +231,62 @@ export default {
     },
     myBotRequest() {
       return this.comment.creator_name === "Bot"
-          && this.$store.getters["comment/getComment"](this.comment.parentCommentId).userId === this.userId;
+        && this.$store.getters["table/comment/get"](this.comment.parentCommentId).userId === this.userId;
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
     editedByMyself() {
-      return this.comment.draft || this.editMode;
+      return (this.comment) ? this.comment.draft || this.editMode || this.edit : false;
     },
     childComments() {
-      return this.$store.getters["comment/getCommentsByCommentId"](this.commentId);
+      return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId)
+        .sort(
+          function (a, b) {
+            let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
+            if (keyA < keyB) return -1;
+            if (keyA > keyB) return 1;
+            return 0;
+          }
+        );
     },
     nlp_active() {
-      const conf = this.$store.getters["service/get"]("NLPService", "skillConfig");
+      const conf = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true" && conf && "sentiment_classification" in conf;
     },
     nlp_result() {
       const res = this.$store.getters["service/get"]("NLPService", "skillResults");
       return res && this.commentId in res ? res[this.commentId] : null;
+    },
+    openedTextarea() {
+      return !this.collapseComment && (this.edit || this.editedByMyself)
     }
   },
   watch: {
-    nlp_result(newV, oldV) {
+    nlp_result(newV) {
       if (this.nlp_active) {
         this.awaitingNlpResult = newV === null;
       }
     },
-    nlp_active(newV, oldV) {
+    nlp_active() {
       if (this.nlp_active && this.nlp_result === null) {
         this.requestNlpFeedback();
       }
     },
+    openedTextarea(newVal) {
+      if (newVal) {
+        this.$nextTick(() => this.$refs.textarea.focus());
+      }
+    },
+    editedByMyself(newVal) {
+      if (newVal && !this.listeningToFocus) {
+        this.listenOnActive({action: this.saveOnDeactivated, id: this.commentId, level: this.level});
+        this.listeningToFocus = true;
+      } else if (this.listeningToFocus) {
+        this.unlistenOnActive({id: this.commentId, level: this.level});
+        this.listeningToFocus = false;
+      }
+    }
   },
   mounted() {
     if (this.nlp_active && this.nlp_result === null && this.comment.text !== null) {
@@ -259,6 +294,24 @@ export default {
     }
     if (this.level <= 1 || this.comment.draft) {
       this.collapseComment = false;
+    }
+
+    if (this.editedByMyself) {
+      this.listenOnActive({action: this.saveOnDeactivated, id: this.commentId, level: this.level});
+      this.listeningToFocus = true;
+    }
+  },
+  unmounted() {
+    if(this.editedByMyself){
+      if(this.level === 0){
+          this.saveCard();
+        } else {
+          this.save();
+        }
+
+      if(this.listeningToFocus){
+        this.unlistenOnActive({id: this.commentId, level: this.level});
+      }
     }
   },
   methods: {
@@ -277,6 +330,15 @@ export default {
         this.requestNlpFeedback()
       }
     },
+    saveOnDeactivated(active) {
+      if (!active) {
+        if(this.level === 0){
+          this.saveCard();
+        } else {
+          this.save();
+        }
+      }
+    },
     cancel() {
       if (this.comment.draft) {
         this.remove();
@@ -288,7 +350,7 @@ export default {
       if (this.$refs.collab) {
         this.$refs.collab.removeCollab();
       }
-      this.edit_mode = null;
+      this.editMode = null;
     },
     remove() {
       this.$socket.emit('commentUpdate', {
@@ -298,6 +360,9 @@ export default {
     },
     editComment() {
       this.$refs.collab.startCollab();
+    },
+    toEditMode(status) {
+      this.editMode = status;
     },
     reply() {
       this.$socket.emit('commentUpdate', {
@@ -309,7 +374,6 @@ export default {
     saveCard() {
       this.$emit("saveCard");
     },
-
     requestNlpFeedback() {
       this.$socket.emit("serviceRequest",
           {

@@ -4,6 +4,19 @@ const {v4: uuidv4} = require("uuid");
 module.exports = class MetaModel extends Model {
 
     /**
+     * Make model available for frontend
+     * @type {boolean}
+     */
+    static autoTable = false;
+    static publicTable = false;
+
+    /**
+     * Fields for frontend
+     * @type {[]}
+     */
+    static fields = [];
+
+    /**
      * Filter object by keys
      * @param {Object} obj
      * @param {Array} relevantFields
@@ -53,12 +66,52 @@ module.exports = class MetaModel extends Model {
     }
 
     /**
+     * Get all db entries for auto table (filtered)
+     * @param userId
+     * @param filterIds filter IDs in Database
+     * @param includeDraft includes rows with column draft is true
+     * @return {Promise<MetaModel[]|Object|undefined>}
+     */
+    static async getAutoTable(userId = null, filterIds = null, includeDraft = false) {
+        if (this.publicTable && !filterIds && !userId) {
+            return await this.getAll();
+        } else {
+            let filter = {}
+            if (!filterIds) {
+                filter['deleted'] = false;
+            }
+            if (userId && 'userId' in this.getAttributes()) {
+                if ("public" in this.getAttributes()) {
+                    filter[Op.or] = [{userId: userId}, {public: true}];
+                } else {
+                    filter['userId'] = userId;
+                }
+            }
+            if (filterIds !== null) {
+                filter['id'] = {
+                    [Op.or]: filterIds
+                }
+            }
+            if ("draft" in this.getAttributes()) {
+                filter['draft'] = includeDraft;
+            }
+            return await this.findAll({where: filter, raw: true});
+        }
+    }
+
+    /**
      * Get all db entries
+     * @param {boolean} includeDeleted also return elements with deleted flag is true
      * @return {Promise<object|undefined>}
      */
-    static async getAll() {
+    static async getAll(includeDeleted = false) {
         try {
-            return await this.findAll({where: {deleted: false}, raw: true});
+            if (includeDeleted) {
+                return await this.findAll({raw: true});
+            } else {
+                return await this.findAll({where: {deleted: false}, raw: true});
+            }
+
         } catch (err) {
             console.log(err);
         }
@@ -68,7 +121,7 @@ module.exports = class MetaModel extends Model {
      * Get all db entries by key
      * @param {string} key column name
      * @param {any} value column value
-     * @param {boolean} includeDraft include draft entries
+     * @param {boolean} includeDraft include draft
      */
     static async getAllByKey(key, value, includeDraft = false) {
         if (key in this.getAttributes()) {
@@ -87,6 +140,8 @@ module.exports = class MetaModel extends Model {
             } catch (err) {
                 console.log(err);
             }
+        } else if (this.publicTable) {
+            return await this.getAll();
         } else {
             console.log("DB MetaModel Class " + key + " not available: " + this.constructor.name)
         }

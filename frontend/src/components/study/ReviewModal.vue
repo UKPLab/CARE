@@ -87,13 +87,7 @@ Source: -
 export default {
   name: "ReviewModal",
   components: {Modal},
-  props: {
-    studySessionId: {
-      type: Number,
-      required: true,
-      default: 0,
-    }
-  },
+  inject: ['studySessionId'],
   data() {
     return {
       comment: "",
@@ -101,7 +95,7 @@ export default {
   },
   computed: {
     studySession() {
-      return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
+      return this.$store.getters["table/study_session/get"](this.studySessionId);
     },
     evaluated() {
       if (this.studySession) {

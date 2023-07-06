@@ -1,17 +1,19 @@
 <template>
   <form
-    class="row g-3 needs-validation"
-    novalidate
+      ref="registerForm"
+      class="row g-3 needs-validation"
+      novalidate
+      @submit.prevent="checkForm"
   >
     <div class="col-md-8 mx-auto my-4">
       <div class="col-md-8 mx-auto">
         <div
-          class="text-center"
-          style="margin-bottom: 20px"
+            class="text-center"
+            style="margin-bottom: 20px"
         >
           <IconAsset
-            name="logo"
-            :height="200"
+              name="logo"
+              :height="200"
           />
         </div>
 
@@ -19,32 +21,30 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             Register
             <a
-              class="btn btn-sm btn-primary"
-              href="#"
-              @click="$router.push('/login')"
+                class="btn btn-sm btn-primary"
+                href="#"
+                @click="toLogin"
             >Login</a>
           </div>
 
           <div class="card-body mx-4 my-4">
             <div
-              v-if="requestName"
-              class="form-group row my-2"
+                v-if="requestName"
+                class="form-group row my-2"
             >
               <label
-                class="col-md-4 col-form-label text-md-right"
-                for="firstName"
+                  class="col-md-4 col-form-label text-md-right"
+                  for="firstName"
               >First name</label>
               <div class="col-md-6">
                 <input
-                  id="firstName"
-                  v-model="firstName"
-                  autofocus
-                  class="form-control"
-                  name="firstName"
-                  required
-                  type="text"
-                  @blur="setValidity"
-                  @input="setValidity"
+                    id="firstName"
+                    v-model="formData['firstName']"
+                    autofocus
+                    class="form-control"
+                    name="firstName"
+                    required
+                    type="text"
                 >
                 <div class="feedback-invalid">
                   Please provide your first name.
@@ -54,23 +54,21 @@
 
 
             <div
-              v-if="requestName"
-              class="form-group row my-2"
+                v-if="requestName"
+                class="form-group row my-2"
             >
               <label
-                class="col-md-4 col-form-label text-md-right"
-                for="lastName"
+                  class="col-md-4 col-form-label text-md-right"
+                  for="lastName"
               >Last name</label>
               <div class="col-md-6">
                 <input
-                  id="lastName"
-                  v-model="lastName"
-                  class="form-control"
-                  name="lastName"
-                  required
-                  type="text"
-                  @blur="setValidity"
-                  @input="setValidity"
+                    id="lastName"
+                    v-model="formData['lastName']"
+                    class="form-control"
+                    name="lastName"
+                    required
+                    type="text"
                 >
                 <div class="feedback-invalid">
                   Please provide your last name.
@@ -80,22 +78,21 @@
 
             <div class="form-group row my-2">
               <label
-                class="col-md-4 col-form-label text-md-right"
-                for="userName"
+                  class="col-md-4 col-form-label text-md-right"
+                  for="userName"
               >Username</label>
               <div class="col-md-6">
                 <input
-                  id="userName"
-                  v-model="userName"
-                  class="form-control"
-                  name="userName"
-                  pattern="^[a-zA-Z0-9]+$"
-                  required
-                  type="text"
-                  @blur="setValidity"
-                  @input="setValidity"
+                    id="userName"
+                    v-model="formData['userName']"
+                    class="form-control"
+                    name="userName"
+                    pattern="^[a-zA-Z0-9]+$"
+                    required
+                    type="text"
+                    @blur="checkVal('userName')"
                 >
-                <div class="feedback-invalid">
+                <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUsername}">
                   Please provide a valid username - no special characters.
                 </div>
               </div>
@@ -103,21 +100,20 @@
 
             <div class="form-group row my-2">
               <label
-                class="col-md-4 col-form-label text-md-right"
-                for="email"
+                  class="col-md-4 col-form-label text-md-right"
+                  for="email"
               >E-Mail</label>
               <div class="col-md-6">
                 <input
-                  id="email"
-                  v-model="email"
-                  class="form-control"
-                  name="email"
-                  required
-                  type="email"
-                  @blur="setValidity"
-                  @input="setValidity"
+                    id="email"
+                    v-model="formData['email']"
+                    class="form-control"
+                    name="email"
+                    required
+                    type="email"
+                    @blur="checkVal('email')"
                 >
-                <div class="feedback-invalid">
+                <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
                   Please provide a valid email address.
                 </div>
               </div>
@@ -126,22 +122,21 @@
 
             <div class="form-group row my-2">
               <label
-                class="col-md-4 col-form-label text-md-right"
-                for="password"
+                  class="col-md-4 col-form-label text-md-right"
+                  for="password"
               >Password</label>
               <div class="col-md-6">
                 <input
-                  id="password"
-                  v-model="password"
-                  class="form-control"
-                  name="password"
-                  pattern=".{8,}"
-                  required
-                  type="password"
-                  @blur="setValidity"
-                  @input="setValidity"
+                    id="password"
+                    v-model="formData['password']"
+                    class="form-control"
+                    name="password"
+                    pattern=".{8,}"
+                    required
+                    type="password"
+                    @blur="checkVal('password')"
                 >
-                <div class="feedback-invalid">
+                <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
                   Passwords must be at least 8 characters.
                 </div>
               </div>
@@ -152,31 +147,32 @@
               <div class="col-md-6 offset-md-4">
                 <label>
                   <input
-                    v-model="acceptTerms"
-                    name="acceptTerms"
-                    type="checkbox"
-                    @input="setValidity"
-                    @blur="setValidity"
+                      v-model="formData['acceptTerms']"
+                      name="acceptTerms"
+                      type="checkbox"
+                      @blur="checkVal('acceptTerms')"
                   > I accept the <a
                     href="#"
                     @click="$refs.terms.open()"
-                  >terms</a>!
-                  <div class="feedback-invalid">Please accept the terms.</div>
+                >terms</a>!
+                  <div class="feedback-invalid" :class="{invalid: validity['acceptTerms'] && !validTerms}">Please accept
+                    the terms.
+                  </div>
 
                 </label>
               </div>
             </div>
 
             <div
-              v-if="requestStats"
-              class="form-group row my-2"
+                v-if="requestStats"
+                class="form-group row my-2"
             >
               <div class="col-md-6 offset-md-4">
                 <label>
                   <input
-                    v-model="acceptStats"
-                    name="acceptStats"
-                    type="checkbox"
+                      v-model="formData['acceptStats']"
+                      name="acceptStats"
+                      type="checkbox"
                   > I allow the collection of anonymous statistics!
                 </label>
               </div>
@@ -184,9 +180,8 @@
 
             <div class="col-md-6 offset-md-4">
               <button
-                class="btn btn-primary"
-                type="submit"
-                @click="trySubmit"
+                  class="btn btn-primary"
+                  type="submit"
               >
                 Register
               </button>
@@ -196,8 +191,7 @@
       </div>
     </div>
   </form>
-
-  <TermsModal ref="terms" />
+  <TermsModal ref="terms"/>
 </template>
 
 <script>
@@ -209,22 +203,26 @@
  *
  *  @Author: Dennis Zyska, Carly Gettinger
  */
-import {mapActions} from "vuex";
 import TermsModal from "./TermsModal.vue";
-import IconAsset from "@/icons/IconAsset.vue";
+import IconAsset from "@/basic/icons/IconAsset.vue";
+import axios from "axios";
+import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "AuthRegister",
   components: {TermsModal, IconAsset},
   data() {
     return {
-      firstName: "",
-      lastName: "",
-      userName: "",
-      email: "",
-      password: "",
-      acceptTerms: false,
-      acceptStats: false,
+      formData: {
+        firstName: "",
+        lastName: "",
+        userName: "",
+        email: "",
+        password: "",
+        acceptTerms: false,
+        acceptStats: false,
+      },
+      validity: null
     }
   },
   computed: {
@@ -234,82 +232,61 @@ export default {
     requestStats() {
       return window.config['app.register.requestStats'] === 'true';
     },
+    validEmail() {
+      const emailRegEx = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+      return emailRegEx.test(this.formData.email);
+    },
+    validUsername() {
+      const usernameRegEx = new RegExp("^[a-zA-Z0-9]+$");
+      return usernameRegEx.test(this.formData.userName);
+    },
+    validPassword() {
+      return this.formData.password.length >= 8;
+    },
+    validTerms() {
+      return this.formData.acceptTerms;
+    },
+    validForm() {
+      return this.validEmail && this.validUsername && this.validPassword && this.validTerms;
+    }
+  },
+  beforeMount() {
+    this.validity = Object.fromEntries(Object.keys(this.formData).map(key => [key, false]));
   },
   methods: {
-    ...mapActions({register: "auth/register"}),
-    trySubmit() {
-      const form = document.querySelector('form');
-      if (form.checkValidity()) {
-        event.preventDefault();
-        this.register_user();
+    checkVal(key) {
+      this.validity[key] = true;
+    },
+    async checkForm() {
+      Object.keys(this.validity).map(key => {
+        this.validity[key] = true
+      })
+      if (this.validForm) {
+        await this.registerUser();
       }
     },
-
-    findNextSiblingWithClass(element, className) {
-      var nextSibling = element.nextElementSibling;
-      while(nextSibling != null) {
-        if (nextSibling.classList.contains(className)) {
-          return nextSibling;
-        }
-        nextSibling = nextSibling.nextElementSibling;
-      }
+    toLogin() {
+      this.$router.push({name: "login", query: {redirectedFrom: this.$route.query.redirectedFrom}});
     },
-
-    setValidity() {
-      const evtTarget = event.target;
-      const targetName = evtTarget.getAttribute('name');
-      var valid;
-      const emailRegEx = new RegExp("^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$");
-      const usernameRegEx = new RegExp("^[a-zA-Z0-9]+$");
-      const feedbackDiv = this.findNextSiblingWithClass(evtTarget, "feedback-invalid");
-
-      if (targetName === "email") {
-        valid = emailRegEx.test(evtTarget.value);
-      } else if (targetName === "password") {
-        valid = (evtTarget.value.length >= 8);
-      } else if (targetName === "acceptTerms") {
-        valid = evtTarget.checked;
-      } else if (targetName === "userName") {
-        valid = (usernameRegEx.test(evtTarget.value) && (evtTarget.value != ""));
-      } else {
-        valid = (evtTarget.value !== "");
-      }
-      if (valid) {
-        evtTarget.classList.remove("custom-invalid");
-        feedbackDiv.classList.remove("invalid");
-      } else {
-        if (event.type === 'input') {
-          return;
-        }
-        evtTarget.classList.add("custom-invalid");
-        feedbackDiv.classList.add("invalid");
-      }
-    },
-
-    async register_user() {
+    async registerUser() {
       try {
-        let response = await this.register({
-          firstName: this.firstName,
-          lastName: this.lastName,
-          userName: this.userName,
-          email: this.email,
-          password: this.password,
-          acceptTerms: this.acceptTerms,
-          acceptStats: this.acceptStats,
+        await axios.post(getServerURL() + '/auth/register', this.formData, {
+          validateStatus: function (status) {
+            return status >= 200 && status < 300;
+          }
         });
 
-        if (response.statusText === "Created") {
-          this.eventBus.emit('toast', {
-            message: "The user registration was successful",
-            title: "User Registration Complete",
-            variant: 'success'
-          });
-
-          await this.$router.push("/login");
-        }
-      } catch (err) {
         this.eventBus.emit('toast', {
-          message: err.response.data,
+          message: "The user registration was successful",
+          title: "User Registration Complete",
+          variant: 'success'
+        });
+
+        this.toLogin();
+      } catch (err) {
+        console.log("ERR", err);
+        this.eventBus.emit('toast', {
+          message: err.response && err.response.data && err.response.data.message ? err.response.data.message : err.message,
           title: "Invalid User Credentials",
           variant: 'danger'
         });
@@ -329,18 +306,6 @@ export default {
 
 .feedback-invalid.invalid {
   visibility: visible;
-}
-
-input.custom-invalid:not([type='checkbox']) {
-  border:transparent;
-  outline: 1px solid firebrick;
-  border-radius: 1px;
-}
-
-input:focus.custom-invalid:not([type='checkbox']) {
-  outline:none;
-  border: 1px solid #ced4da;
-  border-radius: 0.25rem;
 }
 
 input:focus[type='password'] + .feedback-invalid {

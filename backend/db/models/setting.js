@@ -56,20 +56,14 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async set(key, value) {
             try {
-                return await Setting.create({
-                    key: key,
-                    value: value,
-                    type: 'string',
-                    description: ''
-                }).then((msg) => {
-                    return msg;
-                }).catch(async (err) => {
-                    return (await Setting.update({value: value}, {
-                        where: {key: key},
-                        returning: true,
-                        plain: true
-                    }))[1].dataValues;
-                });
+                const [instance, created] =
+                    await Setting.upsert({
+                        key: key,
+                        value: value,
+                    }, {
+                        conflictFields: ['key']
+                    });
+                return instance['dataValues'];
             } catch (e) {
                 console.log(e);
             }
