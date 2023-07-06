@@ -205,8 +205,8 @@ More Commands
 -------------
 
 .. list-table:: Make Commands
-   :widths: 60 40
-   :header-rows: 1
+    :widths: 60 40
+    :header-rows: 1
 
     * - Command
       - Purpose
