@@ -7,14 +7,9 @@ be covered by the existing store, but in case you add new socket messages you ha
 
 Store Structure
 ---------------
-The store is structured into modules, which are all defined in the folder ``frontend/src/store/modules``. Each defines a default
-state used upon initialization, provides getters, mutations and actions. To access data from vue components, you will
-use the getters of the respective module providing your read-only access. In the mutations the store may listen to
-socket messages and update the internal state accordingly.
-
-All changes to the store are forwarded to the components that use the respective getters. Store modules cannot access
-the state of other store modules. You may add several different getter functions providing different views on the same
-data.
+The store is structured into modules and auto tables from backend.
+Modules can be found in the folder ``frontend/src/store/modules`` and are special tables used in the frontend.
+Auto tables are tables that are automatically generated from the backend and offers a standard way to access the data.
 
 .. note::
 
@@ -22,7 +17,7 @@ data.
     reloading of the data from the backend.
 
 .. tip::
-    Checkout the vuex store documentation here: `https://vuex.vuejs.org/guide/`_.
+    Checkout the vuex store documentation here: `Vuex Guide <https://vuex.vuejs.org/guide/>`_.
 
 
 Accessing the Store
@@ -31,101 +26,52 @@ To access the store, you can simply use the following line of code within your c
 
 .. code-block:: javascript
 
-    this.$store.getters["anno/getAnnotations"]("X")
+    this.$store.getters["table/<auto_table_name>/get"](<id>)
 
-Here the getter ``getAnnotations`` of the ``anno`` store module is loaded passing the parameter "X". The resulting
+Here the getter ``get`` of an auto table is loaded passing the id of the data entry. The resulting
 list can be further processed according to the needs of the respective component.
 
+Auto tables
+-----------
+Auto tables are tables that are automatically generated from the backend and offers a standard way to access the data.
+Auto tables are simple copies of the backend tables filtered by the access rights of the respective user.
+To allow a database table to be used as an auto table, the model description ``./backend/db/models/<table>.js`` in the backend has to be extended by the
+key ``static autoTable = true;``. It is also possible to publish a complete table to everyone by setting ``static publicTable = true;``.
 
-Adding a Store Module
----------------------
+.. tip::
 
-If you want to add a new module "test" to the vuex store, you add a new file ``test.js`` to ``frontend/src/store/modules``,
-which exports the store hooks.
+    To edit data for auto tables, we recommend to use the basic :doc:`form component <./coordinator>`.
 
-.. code-block:: javascript
+Loading Data for Auto Tables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    const getDefaultState = () => {
-        return {
-            test: []
-        };
-    };
-
-    export default {
-        namespaced: true,
-        strict: true,
-        state: getDefaultState(),
-        getters: {},
-        mutations: {},
-        actions: {}
-    };
-
-In addition, you need to update the store ``index.js`` to import the new module and add it to the module list.
-
-.. code-block:: javascript
-
-    import TestStore from "./modules/test.js";
-
-
-    export default createStore({
-        modules: {
-            //...
-            test: TestStore,
-        },
-        /*...*/
-    });
-
-
-Extending a Store Module
-------------------------
-If you simply want to extend an existing store module by a getter function, add it to the getters attribute.
-A getter is always a function mapping the ``state`` to a result, where the state is the module's store state. The
-state is first initialized by the default state and then updated through mutations.
+To load data for auto tables, we provide a plugin that automatically loads the data from the backend. To use the plugin,
+you have to add a simple option ``fetchData`` with a list of the tables to the component definition.
 
 .. code-block:: javascript
 
     export default {
-        //...
-        getters: {
-            getTest: state => {
-            return state["test"]
-            }
-        }
+        name: "MyComponent",
+        fetchData: ["<auto_table_name>"],
+        ...
     }
 
+Supported Getters
+~~~~~~~~~~~~~~~~~
+
+The following getters are supported for auto tables:
+
+- ``get``: Returns a object by a given id.
+- ``getAll``: Returns a list of all objects.
+- ``getFiltered``: Returns a list of objects filtered by a given filter function.
+- ``getByHash``: Returns a object by a given hash, if hash column is defined in table.
+- ``getByUser``: Returns a list of objects filtered by a provided user id, if userId column is defined in table.
+- ``getByKey``: Returns a object by a given key, if key column is defined in table.
+- ``length``: Returns the number of objects in the table.
+- ``countByKey``: Returns the number of objects in the table by a given key and value. You can also pass a ``hierarchical`` flag to count all objects with the given key and value or any of its children.
+- ``hasFields``: Returns true if the table has a fields definition defined in the backend (used for forms).
+- ``getFields``: Returns the fields definition defined in the backend (used for forms), if available (check before with hasFields).
+- ``refreshCount``: Returns the count how often the data was refreshed from the backend.
 
 
-To add a new socket listener, simply add a new method to the ``mutations`` with the prefix ``SOCKET_``. This method
-receives again the store state and the actual socket data received on the respective message type:
 
-.. code-block:: javascript
-
-    export default {
-        //...
-        mutations: {
-            SOCKET_testData (state, data) => {
-                state['test'].push(data.test);
-            }
-        }
-    }
-
-This code snippet listens on the "testData" event of the socket and pushes the message's test attribute into the
-store.
-
-To provide a unique data format, the refreshed data sent by the backend is standardized.
-The backend sends a JSON array with objects including an id attribute, making sure that old data is replaced by new data.
-The frontend expects the same format for all "refresh" events and will update the store with a predefined function ``refreshState``.
-You can use this function as follows:
-
-.. code-block:: javascript
-
-    import refreshState from "../utils";
-
-    export default {
-        //...
-        mutations: {
-            SOCKET_testRefresh (state, data) => {
-                refreshState(state, data);
-            }
-        }
-    }
