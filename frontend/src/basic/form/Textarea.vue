@@ -5,7 +5,10 @@
           v-model="currentData"
           :name="options.key"
           :required="options.required"
+          :class="options.class"
           class="form-control"
+          :placeholder="options.placeholder"
+          :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
           @blur="blur(currentData)"
       />
     </template>
