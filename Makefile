@@ -15,6 +15,7 @@ help:
 	@echo "make doc 							Build the documentation"
 	@echo "make dev-build       		  		Build the frontend (make dev-build-frontend) and run the backend in development mode"
 	@echo "make dev-backend      		 		Run backend in development mode"
+	@echo "make dev-frontend     		 		Run frontend in development mode"
 	@echo "make dev-build-frontend   		 	Build frontend in development mode"
 	@echo "make build-frontend                  Build frontend in production mode"
 	@echo "make test							Run unit tests (backend only)"
@@ -25,6 +26,8 @@ help:
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make clean             				Delete development files"
+	@echo "make lint             				Run linter (only frontend)"
+	@echo "make kill             				Kill all node instances (only unix)"
 
 .PHONY: doc
 doc: doc_asyncapi doc_sphinx
@@ -50,6 +53,10 @@ doc_clean:
 test: backend/node_modules/.uptodate
 	cd backend && npm run test
 
+.PHONY: lint
+lint: frontend/node_modules/.uptodate
+	cd frontend && npm run frontend-lint
+
 .PHONY: docker
 docker:
 	docker-compose -f docker-compose.yml -f docker-dev.yml up postgres
@@ -63,6 +70,10 @@ init: backend/node_modules/.uptodate
 .PHONY: dev
 dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate
 	cd frontend && npm run frontend-dev & cd backend && npm run start
+
+.PHONY: dev-frontend
+dev-frontend: frontend/node_modules/.uptodate
+	cd frontend && npm run frontend-dev
 
 .PHONY: dev-build
 dev-build: backend/node_modules/.uptodate build-frontend
@@ -116,10 +127,26 @@ clean: check_clean
 	docker-compose rm -f -s -v
 	docker network rm care_default || echo "IGNORING ERROR"
 
+.PHONY: check_kill
+check_kill:
+	@echo -n "Are you sure? This will kill node instances running on your system! [y/N] " && read ans && [ $${ans:-N} = y ]
+
+.PHONY: kill
+kill: check_kill
+	killall node
+
 frontend/node_modules/.uptodate: frontend/package.json frontend/package-lock.json
 	cd frontend && npm install
+ifeq ($(OS),Windows_NT)
+	type NUL > $@
+else
 	@touch $@
+endif
 
 backend/node_modules/.uptodate: backend/package.json backend/package-lock.json
 	cd backend && npm install
+ifeq ($(OS),Windows_NT)
+	type NUL > $@
+else
 	@touch $@
+endif

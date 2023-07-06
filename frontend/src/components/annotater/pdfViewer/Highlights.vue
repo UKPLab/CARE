@@ -1,30 +1,35 @@
-<template />
+<template>
+  <span></span>
+</template>
 
 <script>
 import {isNodeInRange} from "@/assets/anchoring/range-util";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 
-/* Highlights handling of annotation in pdf document
-
-This component creates the highlights of all the annotations inside the pdf document
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: inspired by hypothesis
-*/
+/**
+ * Highlights handling of annotation in pdf document
+ *
+ * This component creates the highlights of all the annotations inside the pdf document
+ *
+ * Adapted from Hypothes.is
+ *
+ * @author Dennis Zyska, Nils Dycke
+ */
 export default {
-  name: "Highlights",
-  props: {
+  name: "PDFHighlights",
+  inject: {
     documentId: {
-      type: Number,
-      required: true
+      type: String,
+      required: true,
     },
-    'studySessionId': {
-      type: Number,
+    studySessionId: {
+      type: String,
       required: false,
-      default: null
+      default: null,
     },
+  },
+  props: {
     'pageId': {
       type: Number,
       required: true,
@@ -32,19 +37,21 @@ export default {
   },
   computed: {
     study() {
-      if (this.studySession) {
-        return this.$store.getters["study/getStudyById"](this.studySession.studyId);
-      }
+      return (this.studySession) ? this.$store.getters["table/study/get"](this.studySession.studyId) : null;
     },
     studySession() {
       if (this.studySessionId && this.studySessionId !== 0) {
-        return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
+        return this.$store.getters["table/study_session/get"](this.studySessionId);
+      } else {
+        return null;
       }
     },
     studySessionIds() {
       if (this.study) {
-        return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
-            .map(s => s.id);
+        return this.$store.getters["table/study_session/getByKey"]("studyId", this.studySession.studyId)
+          .map(s => s.id);
+      } else {
+        return null;
       }
     },
     showAll() {
@@ -52,45 +59,46 @@ export default {
       return (showAllComments !== undefined && showAllComments);
     },
     annotations() {
-      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageId)
-          .filter(anno => {
-            if (this.studySessionId !== null) {
-              return anno.studySessionId === this.studySessionId;
-            } else if(this.studySessionIds) {
-              return this.studySessionIds.includes(anno.studySessionId);
+      return this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
+        && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageId
+        && e.anchors !== null)
+        .filter(anno => {
+          if (this.studySessionId) {
+            return anno.studySessionId === this.studySessionId;
+          } else if (this.studySessionIds) {
+            return this.studySessionIds.includes(anno.studySessionId);
+          } else {
+            if (this.showAll) {
+              return true;
             } else {
-              if (this.showAll) {
-                return true;
-              } else {
-                return anno.studySessionId === null
-              }
+              return anno.studySessionId === null
             }
-          })
-          .filter(anno => anno.anchors !== null)
+          }
+        })
     },
     tags() {
-      return this.$store.getters['tag/getAllTags'](false);
+      return this.$store.getters['table/tag/getAll'];
     },
   },
   watch: {
     annotations(newVal, oldVal) {
       //Remove highlights of deleted anchors
       oldVal.filter(anno => !newVal.includes(anno))
-          .forEach(anno => {
-            if (anno.anchors != null) {
-              anno.anchors.filter(anchor => "highlights" in anchor)
-                  .forEach(anchor => this.removeHighlights(anchor.highlights))
-            }
-          });
+        .forEach(anno => {
+          if (anno.anchors != null) {
+            anno.anchors.filter(anchor => "highlights" in anchor)
+              .forEach(anchor => this.removeHighlights(anchor.highlights))
+          }
+        });
 
       newVal.filter(anno => !oldVal.includes(anno))
-          .map(this.highlight)
+        .map(this.highlight)
     },
-    tags(newVal, oldVal) {
+    tags(newVal) {
       if (newVal !== null) {
         this.annotations.forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor).forEach(
-                anchor => anchor.highlights.forEach(highlightsEl => this.setSVGHighlightColor(anno, highlightsEl.svgHighlight))
-            )
+            anchor => anchor.highlights.forEach(highlightsEl => this.setSVGHighlightColor(anno, highlightsEl.svgHighlight))
+          )
         );
       }
     }
@@ -99,8 +107,30 @@ export default {
     this.annotations.map(this.highlight);
   },
   methods: {
-    getColor(tag_id) {
-      return this.$store.getters['tag/getColor'](tag_id);
+    getColor(tagId) {
+      if (tagId) {
+        const tag = this.$store.getters['table/tag/get'](tagId);
+        if (tag) {
+          switch (tag.colorCode) {
+            case "success":
+              return "009933";
+            case "danger":
+              return "e05f5f";
+            case "info":
+              return "5fe0df";
+            case "dark":
+              return "c8c8c8";
+            case "warning":
+              return "eed042";
+            case "secondary":
+              return "4290ee";
+            default:
+              return "4c86f7";
+          }
+        } else {
+          return "efea7b";
+        }
+      }
     },
     highlight(annotation) {
       for (let anchor of annotation.anchors) {
@@ -108,14 +138,14 @@ export default {
         if (!range) {
           return;
         }
-        anchor.highlights = /** @type {AnnotationHighlight[]} */ (
-            this.highlightRange(annotation, anchor, range)
+        anchor.highlights = (
+          this.highlightRange(annotation, anchor, range)
         );
       }
     },
     update_highlights(anchors) {
       anchors.filter(a => a.highlights !== null && a.highlights !== undefined)
-          .forEach(a => this.removeHighlights(a.highlights));
+        .forEach(a => this.removeHighlights(a.highlights));
       this.highlight(anchors);
     },
     highlightRange(annotation, anchor, range) {
@@ -146,17 +176,16 @@ export default {
       // subset of nodes such as table rows and lists.
       const whitespace = /^\s*$/;
       textNodeSpans = textNodeSpans.filter(span =>
-          // Check for at least one text node with non-space content.
-          span.some(node => !whitespace.test(node.data))
+        // Check for at least one text node with non-space content.
+        span.some(node => !whitespace.test(node.data))
       );
 
       // Wrap each text node span with a `<hypothesis-highlight>` element.
-      const highlights = /** @type {HighlightElement[]} */ ([]);
+      const highlights = ([]);
       textNodeSpans.forEach(nodes => {
         // A custom element name is used here rather than `<span>` to reduce the
         // likelihood of highlights being hidden by page styling.
 
-        /** @type {HighlightElement} */
         const highlightEl = document.createElement('highlight');
         highlightEl.className = "highlight";
 
@@ -197,7 +226,7 @@ export default {
 
       /** @type {SVGElement|null} */
       let svgHighlightLayer = canvasEl.parentElement.querySelector(
-          '.hypothesis-highlight-layer'
+        '.hypothesis-highlight-layer'
       );
 
       const isCssBlendSupported = CSS.supports('mix-blend-mode', 'multiply');
@@ -327,10 +356,10 @@ export default {
 
       const textNodes = [];
       const nodeIter = /** @type {Document} */ (
-          root.ownerDocument
+        root.ownerDocument
       ).createNodeIterator(
-          root,
-          NodeFilter.SHOW_TEXT // Only return `Text` nodes.
+        root,
+        NodeFilter.SHOW_TEXT // Only return `Text` nodes.
       );
       let node;
       while ((node = nodeIter.nextNode())) {

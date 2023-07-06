@@ -1,25 +1,18 @@
 <template>
-  <div v-if="pdf"
+  <div
+    v-if="pdf"
     id="pdfContainer"
     class="has-transparent-text-layer"
   >
     <PDFPage
       v-for="page in pdf.pageCount"
       :key="'PDFPageKey' + page"
-      :document-id="documentId"
       :page-number="page"
-      :study-session-id="studySessionId"
-      :pdf="pdf"
       :render="renderCheck[page - 1]"
       class="scrolling-page"
-      @updateVisibility="updateVisibility"
+      @update-visibility="updateVisibility"
     />
-    <Adder
-      v-if="!readonly"
-      :document-id="documentId"
-      :pdf="pdf"
-      :study-session-id="studySessionId"
-    />
+    <Adder v-if="!readonly"/>
   </div>
 </template>
 
@@ -29,36 +22,42 @@ import PDFPage from "./PDFPage.vue";
 import {PDF} from './pdfStore.js';
 import * as pdfjsLib from "pdfjs-dist/build/pdf.js"
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
+import {computed} from "vue";
 
 import Adder from "./Adder.vue";
-import {mapMutations} from "vuex";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-/* PDF Viewer
-
-This component holds the PDF Pages and the all interacting vue components.
-Central PDF View component.
-
-Author: Dennis Zyska
-*/
+/**
+ * PDF Viewer
+ *
+ * This component holds the PDF Pages and the all interacting vue components.
+ * Central PDF View component.
+ *
+ * @author Dennis Zyska
+ */
 export default {
   name: "PDFViewer",
   components: {PDFPage, Adder},
-  props: {
+  inject: {
     documentId: {
-      type: Number,
-      required: true
+      type: String,
+      required: true,
     },
-    'studySessionId': {
-      type: Number,
+    studySessionId: {
+      type: String,
       required: false,
-      default: 0
+      default: null,
     },
     readonly: {
       type: Boolean,
       required: false,
       default: false,
+    },
+  },
+  provide() {
+    return {
+      pdf: computed(() => this.pdf),
     }
   },
   data() {
@@ -89,18 +88,18 @@ export default {
       if (data.document.id === this.documentId) {
         const loadingTask = pdfjsLib.getDocument(data.file);
         loadingTask.promise
-            .then((pdf) => {
-              this.pdf = new PDF();
-              this.pdf.setPDF(pdf);
-            })
-            .catch(response => {
-              this.eventBus.emit('toast', {
-                title: "PDF Loading Error",
-                message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
-                variant: "danger"
-              });
-              this.$router.push("/");
+          .then((pdf) => {
+            this.pdf = new PDF();
+            this.pdf.setPDF(pdf);
+          })
+          .catch(response => {
+            this.eventBus.emit('toast', {
+              title: "PDF Loading Error",
+              message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
+              variant: "danger"
             });
+            this.$router.push("/");
+          });
       }
     }
   },
@@ -131,9 +130,6 @@ export default {
         }
       })
     },
-    ...mapMutations({
-      toggleSidebar: "anno/TOGGLE_SIDEBAR"
-    }),
   },
 
 }

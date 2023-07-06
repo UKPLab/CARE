@@ -1,6 +1,6 @@
 {
   "name": "CAREBackend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "scripts": {
     "start": "node index.js",
     "db_create": "cd db && npx sequelize-cli db:create",
@@ -34,7 +34,7 @@
     "passport-local": "^1.0.0",
     "pg-promise": "^10.11.1",
     "request": "^2.88.2",
-    "sequelize": "^6.25.2",
+    "sequelize": "^6.32.1",
     "sequelize-cli": "^6.4.1",
     "sequelize-mock": "^0.10.2",
     "session-file-store": "^1.5.0",

@@ -1,12 +1,12 @@
 <template>
-  <LoadIcon :icon-name="value" />
+  <LoadIcon :icon-name="value" :color="color" />
 </template>
 
 <script>
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 export default {
-  name: "Icon",
+  name: "TableIcon",
   components: {LoadIcon},
   props: {
     value: {
@@ -15,6 +15,11 @@ export default {
     },
     options: {
       type: Object,
+      required: false,
+      default: null
+    },
+    color: {
+      type: String,
       required: false,
       default: null
     }

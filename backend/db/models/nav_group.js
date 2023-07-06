@@ -3,6 +3,9 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     class NavGroup extends MetaModel {
+        static autoTable = true;
+        static publicTable = true;
+
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.

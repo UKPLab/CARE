@@ -26,6 +26,7 @@ extensions = [
     'sphinx.ext.viewcode',  # Add a link to the Python source code of documented object.
     'sphinx.ext.todo',  # Support for todo items.
     'sphinx.ext.extlinks', # Support for external links.
+    'sphinx.ext.autosectionlabel', # Support for autolabeling sections.
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 

@@ -4,6 +4,7 @@ stages:          # List of stages for jobs, and their order of execution
   - test
   - build
   - deploy
+  - lint
 
 variables:
   DOCKER_HOST: tcp://docker:2375
@@ -15,7 +16,6 @@ variables:
   TAG_LATEST: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:latest
   TAG_COMMIT: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_NAME:$CI_COMMIT_SHORT_SHA
   NODE_VERSION: 16.17.0
-  DEBIAN_MIRROR: http://debian.tu-bs.de/debian/
 
 services:
   - docker:dind
@@ -31,12 +31,13 @@ services:
   - npm --version
   - node --version
 
-.debian-mirror-template: &add-debian-mirror
-  - echo "deb ${DEBIAN_MIRROR} stretch-updates main" >> /etc/apt/sources.list
-  - echo "deb-src ${DEBIAN_MIRROR} stretch-updates main" >> /etc/apt/sources.list
-  - echo "deb ${DEBIAN_MIRROR} stretch main" >> /etc/apt/sources.list
-  - echo "deb-src ${DEBIAN_MIRROR} stretch main" >> /etc/apt/sources.list
+.debian-archiv-template: &add-debian-archive
+  - sed -i s/deb.debian.org/archive.debian.org/g /etc/apt/sources.list
+  - sed -i 's|security.debian.org|archive.debian.org/|g' /etc/apt/sources.list
+  - sed -i '/stretch-updates/d' /etc/apt/sources.list
   - cat /etc/apt/sources.list
+  - cat /etc/os-release
+
 
 test:
   image:
@@ -45,7 +46,7 @@ test:
   needs: []
   allow_failure: true
   before_script:
-    - *add-debian-mirror
+    - *add-debian-archive
     - docker info
     - docker version
     - docker-compose version
@@ -64,7 +65,7 @@ build:
   stage: build
   #needs: ['test']
   before_script:
-    - *add-debian-mirror
+    - *add-debian-archive
     - docker info
     - docker version
     - docker-compose version
@@ -117,3 +118,19 @@ deploy-main:
     - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=main build"
   only:
     - main
+
+lint:
+  image:
+    name: docker/compose:debian-1.29.2
+  stage: lint
+  needs: []
+  allow_failure: true
+  before_script:
+    - *add-debian-archive
+    - docker info
+    - docker version
+    - docker-compose version
+    - *setup-nvm
+    - apt update && apt install make -y
+  script:
+    - make lint

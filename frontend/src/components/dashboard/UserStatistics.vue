@@ -1,26 +1,21 @@
 <template>
   <Card title="Users">
     <template #headerElements>
-      <button
+      <ButtonHeader
         class="btn btn-sm me-1 btn-secondary"
-        type="button"
         title="Export"
+        icon="cloud-arrow-down"
         @click="exportAllStats()"
-      >
-        <LoadIcon icon-name="cloud-arrow-down" />
-        Export all statistics
-      </button>
-      <button
+      />
+      <ButtonHeader
         class="btn btn-sm me-1"
-        type="button"
         title="Refresh"
+        icon="arrow-clockwise"
         @click="loadUserData()"
-      >
-        <LoadIcon icon-name="arrow-clockwise" />
-      </button>
+      />
     </template>
     <template #body>
-      <Table
+      <BasicTable
         ref="user_table"
         :columns="user_table.columns"
         :data="users"
@@ -32,7 +27,7 @@
   <hr>
   <Card :title="`Stats for ${selectedUsers ? selectedUsers.length : 0} User${selectedUsers && selectedUsers.length !== 1 ? 's': ''}`">
     <template #body>
-      <Table
+      <BasicTable
         ref="stats_table"
         :columns="stats_table.columns"
         :data="stats"
@@ -50,28 +45,29 @@
 </template>
 
 <script>
-import LoadIcon from "../../icons/LoadIcon.vue";
-import Table from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/table/Table.vue";
+import ButtonHeader from "@/basic/card/ButtonHeader.vue";
 import Card from "@/basic/Card.vue";
 import ExportSingle from "@/basic/download/ExportSingle.vue";
 
-/* UserStatistics.vue - shows various user behavior stats
-
-This component shows several information related to user behavior useful for admins. This includes:
-1. a list of users
-2. basic access stats and an export functionality for them
-
-The sub-components are views on the same dataset, i.e. filtering in one leads to filtering in all
-of them.
-
-Author: Nils Dycke (dycke@ukp...)
-Source: -
-*/
+/**
+ * Shows various user behavior stats
+ *
+ * This component shows several information related to user behavior useful for admins. This includes:
+ * 1. a list of users
+ * 2. basic access stats and an export functionality for them
+ *
+ * The sub-components are views on the same dataset, i.e. filtering in one leads to filtering in all
+ * of them.
+ *
+ * @author: Nils Dycke
+ */
 export default {
   name: "UserStatistics",
-  components: {LoadIcon, Table, Card, ExportSingle},
+  components: {BasicTable, ButtonHeader, Card, ExportSingle},
   props: {
     'admin': {
+      type: Boolean,
       required: false,
       default: false
     },
@@ -133,13 +129,13 @@ export default {
     loadUserData() {
       this.$socket.emit("userGetData");
     },
-    loadUserStats(userIds, force = false) {
-      userIds.forEach(user => {
+    loadUserStats(rows) {
+      rows.forEach(user => {
         if (this.$store.getters["admin/getStatsByUser"](user.id) == null) {
           this.$socket.emit("statsGetByUser", {userId: user.id})
         }
       });
-      this.selectedUsers = userIds;
+      this.selectedUsers = rows;
     },
     exportAllStats() {
       this.$refs.export.requestExport({}, "json");

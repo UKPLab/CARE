@@ -71,66 +71,78 @@
 </template>
 
 <script>
-/* Report.vue - modal to show a report over comments/annotations
-
-Author: Nils Dycke, Dennis Zyska
-Source: -
-*/
 import Modal from "@/basic/Modal.vue";
 import ReportItem from "./ReportItem.vue";
 
+/**
+ * Modal to show a report over comments/annotations
+ *
+ * @author: Nils Dycke, Dennis Zyska
+ */
 export default {
   name: "ReportModal",
   components: {Modal, ReportItem},
-  props: {
-    studySessionId: {
-      type: Number,
-      required: true,
-      default: 0,
-    }
-  },
+  inject: ['studySessionId'],
+  emits: ['decisionSubmit'],
   computed: {
     studySession() {
-      return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
+      return this.$store.getters["table/study_session/get"](this.studySessionId);
     },
     study() {
       if (this.studySession) {
-        return this.$store.getters["study/getStudyById"](this.studySession.studyId);
+        return this.$store.getters["table/study/get"](this.studySession.studyId);
+      } else {
+        return null;
       }
     },
     documentId() {
       if (this.study) {
         return this.study.documentId;
+      } else {
+        return null;
       }
     },
     studySessionIds() {
       if (this.study) {
-        return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
-            .map(s => s.id);
+        return this.$store.getters["table/study_session/getByKey"]("studyId", this.studySession.studyId)
+          .map(s => s.id);
+      } else {
+        return null;
       }
     },
     annotations() {
-      return this.$store.getters['anno/getAnnotations'](this.documentId)
-          .filter(anno => {
-            if (this.studySessionIds) {
-              return this.studySessionIds.includes(anno.studySessionId);
-            } else {
-              return false;
-            }
-          });
+      return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId)
+        .filter(anno => {
+          if (this.studySessionIds) {
+            return this.studySessionIds.includes(anno.studySessionId);
+          } else {
+            return false;
+          }
+        })
+        .sort((a, b) => {
+          const a_noanchor = a.anchors === null || a.anchors.length === 0;
+          const b_noanchor = b.anchors === null || b.anchors.length === 0;
+
+          if (a_noanchor || b_noanchor) {
+            return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+          }
+
+          return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+        });
+
     },
     comments() {
-      return this.$store.getters['comment/getDocumentComments'](this.documentId)
-          .filter(comment => {
-            if (this.studySessionIds) {
-              return this.studySessionIds.includes(comment.studySessionId);
-            } else {
-              return false;
-            }
-          });
+      return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
+        .filter(comment => {
+          if (this.studySessionIds) {
+            return this.studySessionIds.includes(comment.studySessionId);
+          } else {
+            return false;
+          }
+        });
     },
     tags() {
-      return this.$store.getters["tag/getAllTags"]();
+      return this.$store.getters['table/tag/getAll'];
     },
     tagIds() {
       if (this.annotations && this.tags) {

@@ -1,30 +1,30 @@
 <template>
   <div
     ref="Modal"
+    :data-bs-keyboard="!disableKeyboard"
     aria-hidden="true"
     aria-labelledby="ModalLabel"
     class="modal fade"
     data-bs-backdrop="static"
-    :data-bs-keyboard="!disableKeyboard"
     role="dialog"
     tabindex="-1"
   >
     <div
-      class="modal-dialog"
       :class="xl && 'modal-xl' || lg && 'modal-lg'"
+      class="modal-dialog"
       role="document"
     >
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            <slot name="title" />
+            <slot name="title"/>
           </h5>
           <button
             v-if="!removeClose"
-            type="button"
+            aria-label="Close"
             class="btn-close"
             data-bs-dismiss="modal"
-            aria-label="Close"
+            type="button"
           />
         </div>
         <div class="modal-body">
@@ -38,14 +38,14 @@
             </div>
           </div>
           <div v-else>
-            <slot name="body" />
+            <slot name="body"/>
           </div>
         </div>
         <div
           v-if="!waiting"
           class="modal-footer"
         >
-          <slot name="footer" />
+          <slot name="footer"/>
         </div>
       </div>
     </div>
@@ -53,24 +53,29 @@
 </template>
 
 <script>
-/* Modal.vue - default modal component
-
-Provide a default modal component to include modals into other components.
-
-Include, e.g. as:
-
-  <Modal ref="testModal" name="test" lg />
-  ...
-  this.$refs.testModal.open();
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: -
-*/
+/**
+ * Basic Modal to include in other components
+ *
+ * @props xl: Boolean Use xl size
+ * @props lg: Boolean Use lg size
+ * @props autoOpen: Boolean Open modal on mount
+ * @props disableKeyboard: Boolean Disable keyboard events
+ * @props removeClose: Boolean Remove close button
+ * @props props: Object Props for statistics (socket emit stats with data)
+ * @props name: Name of the modal (for statistics)
+ * @emits show: Event triggered on show
+ * @emits hide: Event triggered on hide
+ * @slot title: Title of the modal
+ * @slot body: Body of the modal
+ * @slot footer: Footer of the modal
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ *
+ */
 import {Modal} from 'bootstrap';
 
 export default {
-  name: "Modal",
+  name: "BasicModal",
   props: {
     xl: {
       type: Boolean,
@@ -99,7 +104,8 @@ export default {
     },
     props: {
       type: Object,
-      required: false
+      required: false,
+      default: () => ({}),
     },
     name: {
       type: String,
@@ -115,6 +121,7 @@ export default {
   },
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
+
     this.$refs.Modal.addEventListener('hide.bs.modal', this.hideEvent);
     this.$refs.Modal.addEventListener('show.bs.modal', this.showEvent);
 
@@ -128,14 +135,14 @@ export default {
     this.modal.hide();
   },
   methods: {
-    hideEvent(event) {
+    hideEvent() {
       this.$emit('hide');
       this.$socket.emit("stats", {
         action: "hideModal",
         data: {"name": this.name, "props": this.props}
       });
     },
-    showEvent(event) {
+    showEvent() {
       this.$emit('show');
       this.$socket.emit("stats", {
         action: "openModal",
@@ -150,9 +157,6 @@ export default {
       this.modal.show();
     },
     close() {
-      this.closeModal();
-    },
-    closeModal() {
       this.modal.hide();
     }
   }

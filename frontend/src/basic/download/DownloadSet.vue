@@ -5,13 +5,14 @@
 <script>
 import {arraysContainSameElements} from "@/assets/utils";
 
-/* DownloadSet.vue - generic downloading component for a sequence of items
-
-Generic download logic for a single stream of items with ids
-
-Author: Nils Dycke
-Source: -
-*/
+/**
+ *  Generic downloading component for a sequence of items
+ *
+ *  Generic download logic for a single stream of items with ids
+ *
+ *  @author: Nils Dycke
+ *
+ */
 export default {
   name: "DownloadSet",
   props: {
