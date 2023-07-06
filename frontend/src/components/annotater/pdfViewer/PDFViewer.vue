@@ -10,7 +10,7 @@
       :page-number="page"
       :render="renderCheck[page - 1]"
       class="scrolling-page"
-      @updateVisibility="updateVisibility"
+      @update-visibility="updateVisibility"
     />
     <Adder v-if="!readonly"/>
   </div>

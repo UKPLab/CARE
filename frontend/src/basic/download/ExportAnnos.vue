@@ -58,8 +58,6 @@ export default {
         return;
       }
 
-      console.log("WATCHING PROGERSS", newVal, this.result);
-
       // export for each document
       for (let i = 0; i < this.downloadIds.length; i++) {
         const downloadId = this.downloadIds[i];

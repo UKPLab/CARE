@@ -186,7 +186,6 @@ export default {
   },
   sockets: {
     serviceRefresh: function (data) {
-      console.log("SERVICE REFRESH ==", data);
       if (data && data.service === this.service) {
         this.history.unshift({time: Date.now(), incoming: true, data: data});
       }

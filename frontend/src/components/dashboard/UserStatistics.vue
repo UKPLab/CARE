@@ -130,7 +130,6 @@ export default {
       this.$socket.emit("userGetData");
     },
     loadUserStats(rows) {
-      console.log("selected users!", rows);
       rows.forEach(user => {
         if (this.$store.getters["admin/getStatsByUser"](user.id) == null) {
           this.$socket.emit("statsGetByUser", {userId: user.id})

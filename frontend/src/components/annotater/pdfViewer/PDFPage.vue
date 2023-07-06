@@ -238,7 +238,6 @@ export default {
       }).catch(response => {
         this.destroyRenderTask();
         console.log(`Failed to render page ${this.pageNumber}: ` + response);
-
       });
     },
 

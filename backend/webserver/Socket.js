@@ -113,9 +113,6 @@ module.exports = class Socket {
             return true;
         }
         if (this.userId !== userId) {
-            console.log("ACCESS ISSUE!");
-            console.trace();
-
             this.logger.warn("User " + this.userId + " tried to access user " + userId + ". Prohibiting access.");
             return false;
         }

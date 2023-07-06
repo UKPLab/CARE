@@ -19,6 +19,11 @@ import JsonEditor from "@/basic/editor/JsonEditor.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import deepEqual from "deep-equal";
 
+/* SkillItem.vue - a single entry in the skill listing
+
+Author: Nils Dycke (dycke@ukp...)
+Source: -
+*/
 export default {
   name: "SkillItem",
   components: {LoadIcon, JsonEditor},
@@ -43,8 +48,14 @@ export default {
       currentData: null,
     }
   },
-  beforeMount() {
-    this.currentData = this.modelValue;
+  computed: {
+    iconShown() {
+      if(this.icon !== null){
+        return this.icon;
+      } else {
+        return Array.isArray(this.currentData) ? "list" : "box";
+      }
+    }
   },
   watch: {
     currentData: {
@@ -60,14 +71,8 @@ export default {
       }, deep: true
     }
   },
-  computed: {
-    iconShown() {
-      if(this.icon !== null){
-        return this.icon;
-      } else {
-        return Array.isArray(this.currentData) ? "list" : "box";
-      }
-    }
+  beforeMount() {
+    this.currentData = this.modelValue;
   }
 }
 </script>

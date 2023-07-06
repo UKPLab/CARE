@@ -132,7 +132,7 @@ export default {
   },
   methods: {
     action(data) {
-      switch(data.action) {
+      switch (data.action) {
         case "configure":
           this.getDetails(data.params);
           break;
@@ -142,7 +142,6 @@ export default {
       }
     },
     changeSkillActiveStatus(skill_row, newActiveState) {
-      console.log("Saving setting", skill_row, newActiveState);
       this.$socket.emit("settingSave", [{key: `annotator.nlp.${skill_row.name}.activated`, value: newActiveState}]);
     },
     getDetails(skill_row) {

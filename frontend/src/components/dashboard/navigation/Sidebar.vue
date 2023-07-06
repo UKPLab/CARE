@@ -59,11 +59,12 @@
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke
  */
 import LoadIcon from "@/basic/Icon.vue";
+import Loading from "@/basic/Loading.vue";
 
 export default {
   fetchData: ['nav_group', 'nav_element'],
   name: "SidebarNavigation",
-  components: {LoadIcon},
+  components: {LoadIcon, Loading},
   computed: {
     sidebarElements() {
       const groups = this.$store.getters['table/nav_element/getAll'].reduce((acc, cur) => {

@@ -373,14 +373,11 @@ export default {
       });
     },
     selectRow(action, row) {
-      console.log("Row selection", action, row);
-
       if (this.selectableRows) {
         if (action) {
           this.selectedRows.push(row);
         } else {
           const toRemove = this.selectedRows.findIndex(r => deepEqual(r, row));
-          console.log("REMOVING", toRemove);
           if(toRemove >= 0) {
             this.selectedRows.splice(toRemove, 1);
           }

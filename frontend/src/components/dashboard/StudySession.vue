@@ -33,7 +33,7 @@
   </div>
   <Timer
     autostart
-    @timeStep="trigger++"
+    @time-step="trigger++"
   />
 </template>
 

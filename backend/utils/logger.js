@@ -21,7 +21,7 @@ class SQLTransport extends Transport {
             callback();
         }
     }
-};
+}
 
 /**
  * This module logs everything into different formats
