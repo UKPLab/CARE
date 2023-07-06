@@ -193,109 +193,153 @@ The properties of the ``fields`` object could be extended by the field specific 
       - false
       - ""
       - String
-    * - invalidText
-      - The text shown if the field is invalid when require validation
+    * - placeholder
+      - The placeholder text shown in the field
+      - false
+      - ""
+      - String
+    * - class
+      - The class of the field
       - false
       - ""
       - String
 
-Form Types
-~~~~~~~~~~
-
-The following types are available:
 
 .. list-table:: Available extended properties in form fields
     :header-rows: 1
 
     * - Type
-      - disabled
       - label
+      - disabled
       - help
       - placeholder
+      - class
     * - :ref:`text<Text>`
-      -
-      -
-      -
-      -
-    * - :ref:`password<Password>`
-      -
-      -
-      -
-      -
-    * - :ref:`number<Number>`
-      -
-      -
-      -
-      -
+      - Y
+      - Y
+      - Y
+      - Y
+      - Y
     * - :ref:`switch<Switch>`
       - Y
       - Y
       - Y
       - N
+      - Y
     * - :ref:`slider<Slider>`
-      -
-      -
-      -
-      -
+      - Y
+      - N
+      - Y
+      - N
+      - Y
     * - :ref:`datetime<Datetime>`
-      -
-      -
-      -
-      -
+      - Y
+      - N
+      - Y
+      - N
+      - N
     * - :ref:`select<Select>`
-      -
-      -
-      -
-      -
+      - Y
+      - N
+      - Y
+      - N
+      - N
     * - :ref:`checkbox<Checkbox>`
-      -
-      -
-      -
-      -
+      - Y
+      - N
+      - Y
+      - N
+      - Y
     * - :ref:`editor<Editor>`
-      -
-      -
-      -
+      - Y
+      - N
+      - Y
+      - N
+      - N
     * - :ref:`textarea<Textarea>`
-      -
-      -
-      -
-      -
+      - Y
+      - Y
+      - Y
+      - Y
+      - Y
     * - :ref:`table<Table>`
-      -
-      -
-      -
-      -
+      - Y
+      - N
+      - Y
+      - N
+      - N
     * - :ref:`*<Default>`
-      -
-      -
-      -
-      -
+      - Y
+      - Y
+      - Y
+      - Y
+      - Y
 
+
+Specific form properties
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following types are available:
 
 Switch
 ^^^^^^
 
-
+No specific options.
 
 Slider
 ^^^^^^
 
-      - min
-      - max
-      - step
+Additional options:
+
+* min
+* max
+* step
 
 Datetime
 ^^^^^^^^
 
+No specific options.
+
 Select
 ^^^^^^
+
+There are two ways to define the options of a select field, either by passing an object or use data from a autotable in vuex store.
+
+Passing an object:
+
+.. code-block:: javascript
+
+    {
+        default: "info",
+        options: [
+            {
+                name: "info",
+                value: "info",
+                class: "border border-info"
+            },
+            ...
+        ]
+    }
+
+Using autotable:
+
+.. code-block:: javascript
+
+    {
+        options: {
+            table: <tableName>, id: <columnForForeignKey>
+        },
+    }
 
 Checkbox
 ^^^^^^^^
 
+No specific options.
+
 Editor
 ^^^^^^
+
+See :doc:`Editor <./editor>` for more information.
 
 .. note::
 
@@ -304,8 +348,28 @@ Editor
 Textarea
 ^^^^^^^^
 
+No specific options.
+
 Table
 ^^^^^
+
+Tables are a bit more complex, example:
+
+.. code-block:: javascript
+
+    {
+        key: "tags",
+        label: "Tags:",
+        type: "table",
+        options: {
+            table: "tag", id: "tagSetId"
+        },
+        required: true,
+    }
+
+
+It shows the corresponding fields of the table ``tag`` and allows to add and remove rows.
+Only Select and Text fields are supported.
 
 
 Default

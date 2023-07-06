@@ -1,16 +1,17 @@
 <template>
   <FormElement ref="formElement" :data-table="dataTable" :options="options">
-    <template #element="{blur}" >
+    <template #element="{blur}">
       <input
-          v-model="currentData"
-          :class="options.class"
-          :name="options.key"
-          :placeholder="options.placeholder"
-          :required="options.required"
-          :type="options.type"
-          :maxlength="options.maxLength"
-          class="form-control"
-          @blur="blur(currentData)"
+        v-model="currentData"
+        :class="options.class"
+        :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
+        :maxlength="options.maxLength"
+        :name="options.key"
+        :placeholder="options.placeholder"
+        :required="options.required"
+        :type="options.type"
+        class="form-control"
+        @blur="blur(currentData)"
       >
     </template>
   </FormElement>

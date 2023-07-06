@@ -7,6 +7,7 @@
         :required="options.required"
         class="form-check-input"
         type="checkbox"
+        :class="options.class"
       >
     </template>
   </FormElement>
