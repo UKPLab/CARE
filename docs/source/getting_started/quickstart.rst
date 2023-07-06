@@ -2,42 +2,42 @@ Quickstart
 ==========
 
 Doing research with comments and highlights isn't difficult anymore. Properly configured, you can start using CARE
-within a few minutes. Simply follow the :doc:`Installation <./installation>` instructions and visit http://localhost:8080.
+within a few minutes. Simply follow the :doc:`Installation <./installation>` instructions and visit http://localhost:9090.
 
 If you want to get an high-level overview on CARE and understand what's going on under the hood,
 we have compiled this very condensed quickstart guide.
 
-
 System Architecture
 -------------------
+
 The CARE system architecture follows a classical client-server approach split in the three tiers:
     * frontend (presentation)
     * backend (app/logic)
     * external data services (data).
 
-The frontend is realized as a monolithic Vue3.js application running in the browser of the clients.
-The frontend communicates with the backend via websockets requesting and updating data.
-The backend runs an express server that listens to the clients and forwards data and service requests.
-The last tier consists of components, the database as the key component for persistent data,
-and external services such as the NLP-Service enabling AI-assistance.
-
-.. note::
-    Check out the :doc:`architecture <for_developers/basics/architecture>` chapter for all the details on the
-    different components.
+The frontend is realized as a monolithic Vue3.js application running in the browser of the clients, communicating with the backend via websockets and updating data.
+The backend itself runs as an express server that listens to the clients and forwards data and service requests.
+The last tier consists the database as the key component for persistent data and external services such as the NLP-Service enabling AI-assistance.
 
 The code is structured accordingly:
 
 .. code-block::
 
-    > backend         # backend logic
-      > db            # database management and interaction
-      > webserver     # actual server and socket interface
-      > tests         # webserver tests
-      > utils         # utility functions
+    > backend           # backend logic
+      > db              # database management and interaction
+      > webserver       # actual server and socket interface
+      > tests           # webserver tests
+      > utils           # utility functions
 
-    > frontend        # frontend logic
+    > frontend          # frontend logic
+      > src/assets      # static assets
+      > src/auth        # authentication logic (i.e. login and register)
+      > src/basic       # basic components (e.g. forms, buttons, etc.)
+      > src/components  # main vue components of the application
+      > src/plugins     # vue plugins
+      > src/store       # vuex store - state management
 
-    > docs            # this documentation
+    > docs              # documentation
 
 
 The Frontend
@@ -58,10 +58,6 @@ Structurally, the frontend architecture is made up of the following base compone
     * Vue Router (view navigation),
     * Socket.IO (communication through websockets),
     * and the actual visual components (presentation)
-If you want to extend the CARE frontend,
-you usually need to extend the update the store to include new data, adapt the websocket interfaces,
-and add the actual component for visualization.
-
 
 The Backend
 -----------

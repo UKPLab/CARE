@@ -5,15 +5,15 @@
 <script>
 import Documents from "@/components/dashboard/Documents.vue";
 
-/* Home.vue - home dashboard
-
-Currently showing the documents component
-
-Author: Dennis Zyska, Nils Dycke
-Source: -
-*/
+/**
+ * Home dashboard
+ *
+ * Currently showing the documents component
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ */
 export default {
-  name: "Home",
+  name: "DashboardHome",
   components: {
     Documents
   }

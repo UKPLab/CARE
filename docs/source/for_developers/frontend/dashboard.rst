@@ -108,45 +108,7 @@ available for visualization in the frontend, but provide only a conceptual overv
     socket interface, please refer to the step-by-step guide in the :doc:`socket chapter <for_developers/backend/socket>`.
 
 
-Communicating with the socket interface within a vue component is very simple: you need to use the ``$socket`` attribute
-to *send* messages. Simply add the following code to the desired method of your component:
-
-.. code-block:: javascript
-
-    this.$socket.emit("annotationGetByDocument", {documentId: "x"}); // emits an object containing id on the message "annotationGetByDocument"
-
-If the response to this message might be of relevance for multiple components, e.g. if you load data from the database
-which might be visualized or accessed in multiple components you should always use the vuex store socket integration
-to listen to the results. To do this first extend the vuex store, as described :doc:`here <for_developers/frontend/vuex_store>`.
-Let's assume we changed the vuex store, so it is updated upon receiving the response. In the example above, we could
-get the results from the ``anno`` store module under the getter ``getAnnotations``. Now add a watch on that variable
-to your component to listen to incoming results -- triggered by whatever component requesting them.
-
-.. code-block:: vue-js
-
-    <template>
-    </template>
-    <script>
-    //... BOILERPLATE
-    computed: {
-        annotations(){return this.$store.getters["anno/getAnnotations"]("X")};
-    },
-    watch: {
-        annotations(newVal, oldVal){
-            if(newVal !== null and newVal.length > 0)
-                console.log("Received annotations", newVal);
-        }
-    }
-    </script>
-
-Alternatively, if you are sending backend requests that are specific to the visualizing component, e.g. you request
-the feedback of an NLP model for a specific input, you may also listen to the socket responses directly within the
-vue component.
-
-.. code-block:: javascript
-
-    this.$socket.subscribe("annotationRefresh", (a) => {console.log("Received annotations", a)}); // listens to refresh
-
-
-Visualizing and processing this data is up to you. We highly recommend using the predefined base components that provide
-many convenience features and ensure a consistent interface design. Check out the details :doc:`here <for_developers/frontend/base_components>`.
+Table
+-----
+The table is the best way to visualize many rows of data.
+We recommend to use the basic table component :doc:`Table <./table>` for this purpose.

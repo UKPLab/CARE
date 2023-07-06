@@ -22,13 +22,14 @@ import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs, omitObjectAttributeSubset} from "@/assets/utils";
 import DownloadSet from "./DownloadSet.vue";
 
-/* ExportAnnos.vue - default anno and comment export component
-
-Export logic for annos and comments
-
-Author: Nils Dycke
-Source: -
-*/
+/**
+ * Default anno and comment export component
+ *
+ * Export logic for annos and comments
+ *
+ * @author: Nils Dycke
+ *
+ */
 export default {
   name: "ExportAnnos",
   components: {DownloadSet},
@@ -52,7 +53,8 @@ export default {
   },
   watch: {
     download_progress(newVal) {
-      if (newVal !== 1) {
+      this.$nextTick(() => {
+        if (newVal !== 1) {
         return;
       }
 
@@ -66,6 +68,7 @@ export default {
       }
 
       this.reset();
+      });
     }
   },
   methods: {
@@ -117,7 +120,7 @@ export default {
         return;
       }
 
-      const doc = this.$store.getters["document/getDocument"](annoExport.documentId);
+      const doc = this.$store.getters["table/document/get"](annoExport.documentId);
       const docHash = doc ? doc.hash : null;
 
       let [merged, docComments] = mergeAnnotationsAndComments(

@@ -10,28 +10,29 @@
 
 <script>
 import {v4 as uuidv4} from "uuid";
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
-/* Collaboration.vue - default component managing collaborations
-
-Use this component to synchronize actions with the server that are based on the same document view. E.g. to
-collab on comments.
-
-Include e.g.:
-
-   <Collaboration ref="collab" @collabStatus="visualizeCollab" targetType="doc" :targetId="commentId" :documentId="documentId" />
-   ...
-   this.$refs.collab.startCollab();
-   ...
-   visualizeCollab(res){
-    console.log(res ? "Collaboration!" : "No Collaboration!");
-   }
-
-Author: Dennis Zyska, Nils Dycke
-Source: -
-*/
+/**
+ * Default component managing collaborations
+ *
+ * Use this component to synchronize actions with the server that are based on the same document view. E.g. to
+ * collab on comments.
+ *
+ * Include e.g.:
+ *
+ *    <Collaboration ref="collab" @collabStatus="visualizeCollab" targetType="doc" :targetId="commentId" :documentId="documentId" />
+ *    ...
+ *    this.$refs.collab.startCollab();
+ *    ...
+ *    visualizeCollab(res){
+ *     console.log(res ? "Collaboration!" : "No Collaboration!");
+ *    }
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ *
+ */
 export default {
-  name: "Collaboration",
+  name: "BasicCollaboration",
   components: {LoadIcon},
   props: {
     targetType: {
@@ -75,7 +76,9 @@ export default {
   },
   computed: {
     collaborations() {
-      return this.$store.getters["collab/getCollab"](this.targetType, this.targetId);
+      return this.$store.getters["table/collab/getFiltered"](
+        e => e.targetType === this.targetType && e.targetId === this.targetId
+      ).filter(c => (Date.now() - Date.parse(c.timestamp)) < 2100);
     },
   },
   watch: {
@@ -104,15 +107,15 @@ export default {
     startCollab() {
       this.collabHash = uuidv4();
       this.$socket.emit("collabUpdate",
-          {
-            targetType: this.targetType,
-            targetId: this.targetId,
-            documentId: this.documentId,
-            collabHash: this.collabHash
-          });
+        {
+          targetType: this.targetType,
+          targetId: this.targetId,
+          documentId: this.documentId,
+          collabHash: this.collabHash
+        });
     },
     removeCollab() {
-      if(this.collabId !== null){
+      if (this.collabId !== null) {
         this.$socket.emit("collabDelete", {collabId: this.collabId});
         if (this.collabUpdater !== null) {
           clearInterval(this.collabUpdater);

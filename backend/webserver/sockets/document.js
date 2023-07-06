@@ -25,9 +25,9 @@ module.exports = class DocumentSocket extends Socket {
     async checkDocumentAccess(documentId) {
         const doc = await this.models['document'].getById(documentId);
         if (doc
-            && (this.checkUserAccess(doc.userId)
-                || doc.public
+            && (doc.public
                 || (await this.models['study'].getAllByKey('documentId', documentId)).length > 0)
+                || (this.checkUserAccess(doc.userId))
         ) {
             return true;
         } else {
@@ -83,7 +83,7 @@ module.exports = class DocumentSocket extends Socket {
     async updateDocument(documentId, document) {
         const doc = await this.models['document'].getById(documentId);
 
-        if (this.checkUserAccess(doc.userId)) {
+        if (await this.checkUserAccess(doc.userId)) {
             this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(doc.id, document)));
             if (document.deleted && !doc.deleted) {
                 await this.cascadeDelete(documentId);
@@ -101,8 +101,8 @@ module.exports = class DocumentSocket extends Socket {
      * @return {Promise<void>}
      */
     async cascadeDelete(documentId) {
-        (await this.models['study'].getAllByKey("documentId", documentId))
-            .filter(s => this.checkUserAccess(s.userId))
+        (await Promise.all(await this.models['study'].getAllByKey("documentId", documentId))
+            .filter(async s => await this.checkUserAccess(s.userId)))
             .forEach(s => {
                 try {
                     this.getSocket("StudySocket").updateStudy(s.id, {deleted: true})
@@ -119,13 +119,15 @@ module.exports = class DocumentSocket extends Socket {
      * @return {Promise<void>}
      */
     async sendDocument(documentId) {
-        const doc = await this.models['document'].getById(documentId)
+        const doc = await this.models['document'].getById(documentId);
+
         if (this.checkDocumentAccess(doc.id)) {
             this.emit("documentRefresh", doc);
+
+            fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
+                this.socket.emit("documentFile", {document: doc, file: data});
+            });
         }
-        fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
-            this.socket.emit("documentFile", {document: doc, file: data});
-        })
     }
 
     /**
@@ -144,7 +146,7 @@ module.exports = class DocumentSocket extends Socket {
 
                     // send studySessions
                     const studySessions = await this.models['study_session'].getAllByKey('studyId', study.id);
-                    this.emit("studySessionRefresh", studySessions);
+                    this.emit("study_sessionRefresh", studySessions);
 
                     // send annotations
                     const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByKey('studySessionId', s.id)));
@@ -182,7 +184,7 @@ module.exports = class DocumentSocket extends Socket {
         try {
             const doc = await this.models['document'].getById(documentId)
 
-            if (this.checkUserAccess(doc.userId)) {
+            if (await this.checkUserAccess(doc.userId)) {
                 this.socket.emit("documentRefresh", await this.updateCreatorName(
                     await this.models['document'].updateById(doc.id, {public: true})));
                 this.socket.emit("documentPublished", {success: true});

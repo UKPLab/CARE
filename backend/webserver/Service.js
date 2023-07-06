@@ -5,12 +5,22 @@
  *
  * @author Dennis Zyska
  */
+const {overrideObjectAttributes} = require("../utils/generic");
 module.exports = class Service {
-    constructor(server) {
+    constructor(server, metadata = null) {
         this.logger = require("../utils/logger")("Service/" + this.constructor.name, server.db);
 
         this.server = server;
         this.clients = {}
+
+        this.metadata = {
+            cmdTypes: [],
+            resTypes: []
+        }
+
+        if (metadata) {
+            this.metadata = overrideObjectAttributes(metadata, metadata)
+        }
     }
 
     /**
@@ -21,7 +31,7 @@ module.exports = class Service {
         this.logger.info("Service initialized");
     }
 
-     /**
+    /**
      * This method should be overwritten if the service needs to close any resources
      * when the app is closed
      */
@@ -36,6 +46,8 @@ module.exports = class Service {
      */
     async connectClient(client, data) {
         this.logger.info("Client connected with data " + data);
+
+        await this.send(client, "isAlive", this.metadata);
     }
 
     /**
@@ -86,5 +98,25 @@ module.exports = class Service {
      */
     async command(client, command, data) {
         this.logger.info("Client command " + command + " with data " + data);
+
+        if (command === "getStatus") {
+            await this.send(client, "isAlive", this.metadata);
+        }
+    }
+
+    /**
+     * Returns the socket to communicate with a specific client given by ID.
+     * If there is no client connected with the given ID, undefined is returned
+     * and an error is logged.
+     *
+     * @param clientId the client's socketio ID
+     * @returns {Object | undefined}
+     */
+    getClient(clientId) {
+        if (clientId in this.server.availSockets) {
+            return this.server.availSockets[clientId]["ServiceSocket"];
+        } else {
+            this.logger.error(`Client ${clientId} not found!`);
+        }
     }
 }

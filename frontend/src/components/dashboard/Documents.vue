@@ -1,58 +1,70 @@
 <template>
-  <PublishModal ref="publishModal" />
-  <StudyModal ref="studyCoordinator" />
   <Card title="Documents">
     <template #headerElements>
-      <button
-        class="btn btn-sm me-1 btn-secondary"
-        type="button"
-        title="Export"
-        @click="exportAll()"
-      >
-        <LoadIcon
-          icon-name="cloud-arrow-down"
-        />
-        Export all
-      </button>
-      <Upload @addedDoc="onAddedDoc" />
+      <ButtonHeader
+          class="btn-secondary"
+          icon="cloud-arrow-down"
+          title="Export All"
+          @click="exportAll()"
+      />
+      <ButtonHeader
+          class="btn-primary"
+          title="Add document"
+          text="Add"
+          @click="$refs.uploadModal.open()"
+      />
     </template>
     <template #body>
-      <Table
-        :columns="columns"
-        :data="docs"
-        :options="options"
-        @action="action"
+      <BasicTable
+          :columns="columns"
+          :data="docs"
+          :options="options"
+          @action="action"
       />
     </template>
   </Card>
-  <ExportAnnos ref="export" />
-  <ConfirmModal ref="deleteConf" />
+  <PublishModal ref="publishModal"/>
+  <StudyModal ref="studyCoordinator"/>
+  <ExportAnnos ref="export"/>
+  <ConfirmModal ref="deleteConf"/>
+  <UploadModal ref="uploadModal"/>
+  <EditModal ref="editModal"/>
 </template>
 
 <script>
-import {mapGetters} from "vuex";
-import Upload from "./documents/Upload.vue";
 import PublishModal from "./documents/PublishModal.vue";
 import ExportAnnos from "@/basic/download/ExportAnnos.vue";
 import Card from "@/basic/Card.vue";
-import Table from "@/basic/table/Table.vue";
-import LoadIcon from "@/icons/LoadIcon.vue";
-import StudyModal from "./study/StudyModal.vue";
-import ConfirmModal from "@/basic/ConfirmModal.vue";
+import BasicTable from "@/basic/table/Table.vue";
+import StudyModal from "./coordinator/Study.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import ButtonHeader from "@/basic/card/ButtonHeader.vue";
+import UploadModal from "./documents/UploadModal.vue";
+import EditModal from "./documents/EditModal.vue";
 
-/* Documents.vue - document list component
-
-This component loads the user-specific documents from the server
-and allows to interact with them. The user can delete existing
-documents or access the annotator view for the respective pdf.
-
-Author: Nils Dycke (dycke@ukp...)
-Co-Author:  Dennis Zyska (zyska@ukp...)
-Source: -
-*/
+/**
+ * Document list component
+ *
+ * This component loads the user-specific documents from the server
+ * and allows to interact with them. The user can delete existing
+ * documents or access the annotator view for the respective pdf.
+ *
+ * @author Nils Dycke, Dennis Zyska
+ */
 export default {
-  name: "Document",
-  components: {StudyModal, Upload, ExportAnnos, Card, LoadIcon, Table, PublishModal, ConfirmModal},
+  name: "DashboardDocument",
+  fetchData: ['document', 'study'],
+  components: {
+    StudyModal,
+    ExportAnnos,
+    UploadModal,
+    Card,
+    BasicTable,
+    ButtonHeader,
+    PublishModal,
+    ConfirmModal,
+    EditModal
+  },
   data() {
     return {
       options: {
@@ -68,31 +80,27 @@ export default {
         {name: "Created At", key: "createdAt"},
         {
           name: "Public",
-          key: "public",
+          key: "publicBadge",
           type: "badge",
-          typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
-            classMapping: {true: "bg-success", false: "bg-danger"}
-          }
         },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
     }
   },
-  mounted() {
-    this.$socket.emit("documentGetAll");
-    this.$socket.emit("studyGetAll", {userId: this.$store.getters["auth/getUserId"]});
-  },
   computed: {
     documents() {
-      return this.$store.getters["document/getDocuments"];
+      return this.$store.getters["table/document/getAll"];
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
     docs() {
       return this.documents.filter(doc => doc.userId === this.userId).map(d => {
-        let newD = {... d};
+        let newD = {...d};
+        newD.publicBadge = {
+          class: newD.public ? "bg-success" : "bg-danger",
+          text: newD.public ? "Yes" : "No"
+        }
         newD.manage = [
           {
             icon: "box-arrow-in-right",
@@ -126,8 +134,7 @@ export default {
             },
             title: "Publish document...",
             action: "publicDoc",
-          }
-          /*
+          },
         {
           icon: "pencil",
           options: {
@@ -137,8 +144,8 @@ export default {
             }
           },
           title: "Rename document...",
-          onClick: this.renameDoc,
-        },  */
+          action: "renameDoc"
+        },
         ];
         if (this.studiesEnabled) {
           newD.manage.push({
@@ -159,11 +166,10 @@ export default {
     studiesEnabled() {
       return this.$store.getters["settings/getValue"]('app.study.enabled') === "true";
     },
-    ...mapGetters({reviews: 'user/getReviews'})
   },
   methods: {
     action(data) {
-      switch(data.action){
+      switch (data.action) {
         case "accessDoc":
           this.accessDoc(data.params);
           break;
@@ -173,15 +179,18 @@ export default {
         case "publicDoc":
           this.$refs.publishModal.open(data.params.id);
           break;
+        case "renameDoc":
+          this.renameDoc(data.params);
+          break;
         case "studyCoordinator":
           this.studyCoordinator(data.params);
           break;
       }
     },
     async deleteDoc(row) {
-      const studies = this.$store.getters["study/getStudiesByDocument"](row.id);
+      const studies = this.$store.getters["table/study/getFiltered"](e => e.documentId === row.id)
       let warning;
-      if(studies && studies.length > 0){
+      if (studies && studies.length > 0) {
         warning = ` There ${studies.length !== 1 ? 'are' : 'is'} currently ${studies.length} ${studies.length !== 1 ? 'studies' : 'study'}
          running on this document. Deleting it will delete the ${studies.length !== 1 ? 'studies' : 'study'}!`
       } else {
@@ -192,14 +201,14 @@ export default {
           "Delete Document",
           "Are you sure you want to delete the document?",
           warning,
-          function(val) {
-            if(val){
+          function (val) {
+            if (val) {
               this.$socket.emit("documentUpdate", {documentId: row.id, deleted: true});
             }
-      });
+          });
     },
     renameDoc(row) {
-      this.$socket.emit("documentUpdate", {documentId: row.id, document: {name: "default_name"}});
+      this.$refs.editModal.open(row.id);
     },
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);

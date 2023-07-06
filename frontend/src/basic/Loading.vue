@@ -1,37 +1,49 @@
 <template>
-  <div class="text-center mt-5">
-    <div
-      class="spinner-border"
-      role="status"
-    >
-      <span class="visually-hidden">{{ text }}</span>
+  <div
+    v-if="loading"
+    class="d-flex flex-column align-items-center justify-content-center"
+  >
+    <div class="row">
+      <div
+        class="spinner-border text-dark"
+        role="status"
+      >
+        <span class="visually-hidden">{{ text }}</span>
+      </div>
     </div>
-    <div>{{ text }}</div>
+    <div class="row">
+      <strong>{{ text }}</strong>
+    </div>
   </div>
 </template>
 
 <script>
-/* Loading.vue - default loading component
 
-Loading component to show a loading spinner.
-
-Include e.g.:
-  <Loading v-if="isLoading" />
-  ...
-  isLoading = false;
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
+/**
+ * Default loader component
+ *
+ * Include e.g.:
+ *
+ *    <Loader :loading="isLoading" />
+ *    ...
+ *    isLoading = false;
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ */
 export default {
-  name: "Loading",
+  name: "BasicLoader",
   props: {
-    text: {
-      type: String,
-      default: "Loading...",
+    'loading': {
+      type: Boolean,
       required: false,
+      default: true
+    },
+    'text': {
+      type: String,
+      required: false,
+      default: "Loading..."
     }
-  }
+  },
 }
 </script>
 

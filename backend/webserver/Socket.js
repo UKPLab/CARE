@@ -26,6 +26,7 @@ module.exports = class Socket {
         this.user = this.socket.request.session.passport.user;
         this.userId = this.user.id;
         this.logger.defaultMeta = {userId: this.userId};
+        this.autoTables = Object.values(this.models).filter(model => model.autoTable).map(model => model.tableName);
 
     }
 
@@ -75,13 +76,22 @@ module.exports = class Socket {
      *
      * @param data
      */
-    updateCreatorName(data) {
-        const socket = this.getSocket("UserSocket");
-        if (socket) {
-            return socket.updateCreatorName(data);
-        } else {
-            this.logger.error("UserSocket not found!")
-            return data;
+    async updateCreatorName(data) {
+        try {
+            const socket = this.getSocket("UserSocket");
+            if (socket) {
+                // Check if server side pagination is used
+                if (data && 'count' in data) {
+                    data.rows = await socket.updateCreatorName(data.rows);
+                    return new Promise(resolve => resolve(data));
+                }
+                return socket.updateCreatorName(data);
+            } else {
+                this.logger.error("UserSocket not found!")
+                return data;
+            }
+        } catch (err) {
+            this.logger.error(err);
         }
     }
 
@@ -103,7 +113,7 @@ module.exports = class Socket {
             return true;
         }
         if (this.userId !== userId) {
-            this.logger.warn("User " + this.userId + " tried to access user " + userId);
+            this.logger.warn("User " + this.userId + " tried to access user " + userId + ". Prohibiting access.");
             return false;
         }
         return true;
@@ -149,6 +159,69 @@ module.exports = class Socket {
             data = await this.updateCreatorName(data);
         }
         this.io.to("doc:" + documentId).emit(event, data);
+    }
+
+    /**
+     * Emit to all clients on document and update the creator_name
+     * @param {string} room Emit to room if available
+     * @param event
+     * @param data
+     * @param includeSender also send data to original sender
+     * @param updateCreatorName
+     * @return {Promise<void>}
+     */
+    async emitRoom(room, event, data, includeSender = true,  updateCreatorName = true) {
+        if (updateCreatorName) {
+            data = await this.updateCreatorName(data);
+        }
+        this.io.to(room).emit(event, data);
+        if (includeSender) {
+            this.socket.emit(event, data);
+        }
+    }
+
+    /**
+     * Send auto table data to the clients
+     * @param table
+     * @param filterIds list of ids to send
+     * @param userId
+     * @param includeForeignData also includes data from foreign keys tables
+     * @return {Promise<void>}
+     */
+    async sendTableData(table, filterIds = null, userId = null, includeForeignData = true) {
+        try {
+            if (!this.autoTables.includes(table)) {
+                this.logger.error("Table " + table + " is not an auto table!");
+                return;
+            } else {
+
+                //check to update creator name
+                const updateCreatorName = "userId" in this.models[table].getAttributes();
+
+                let data = [];
+                if (this.isAdmin()) {
+                    data = await this.models[table].getAutoTable(userId, filterIds);
+                } else {
+                    data = await this.models[table].getAutoTable(this.userId, filterIds);
+                }
+
+                if (includeForeignData) {
+                    const foreignKeys = await this.server.db.sequelize.getQueryInterface().getForeignKeyReferencesForTable(table);
+
+                    // send all foreign keys of table that are in autoTables
+                    foreignKeys.filter(fk => this.autoTables.includes(fk.referencedTableName)).map(async fk => {
+                        const uniqueIds = data.map(d => d[fk.columnName]).filter((value, index, array) => array.indexOf(value) === index);
+                        if (uniqueIds.length > 0) {
+                            await this.sendTableData(fk.referencedTableName, uniqueIds, userId, includeForeignData);
+                        }
+                    });
+                }
+                this.emit(table + "Refresh", data, updateCreatorName);
+
+            }
+        } catch (err) {
+            this.logger.error(err);
+        }
     }
 
 

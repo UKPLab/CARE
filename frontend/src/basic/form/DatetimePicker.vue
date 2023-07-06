@@ -1,28 +1,36 @@
+-
 <template>
-  <div class="input-group">
-    <input
-      v-model="date"
-      class="form-control "
-      type="date"
-    >
-    <input
-      v-model="time"
-      class="form-control"
-      type="time"
-    >
-    <button
-      class="btn btn-outline-secondary"
-      type="button"
-      @click="date = null"
-    >
-      Reset
-    </button>
-  </div>
+  <FormElement ref="formElement" :options="options">
+    <template #element="{blur}">
+      <input
+          v-model="date"
+          class="form-control"
+          type="date"
+          @blur="blur(currentDate)"
+      >
+      <input
+          v-model="time"
+          class="form-control"
+          type="time"
+          @blur="blur(currentDate)"
+      >
+      <button
+          class="btn btn-outline-secondary"
+          type="button"
+          @click="date = null"
+      >
+        Reset
+      </button>
+    </template>
+  </FormElement>
 </template>
 
 <script>
+import FormElement from "@/basic/form/Element.vue"
+
 export default {
   name: "DatetimePicker",
+  components: {FormElement},
   props: {
     options: {
       type: Object,
@@ -74,7 +82,7 @@ export default {
     }
   },
   mounted() {
-    if (this.modelValue !== null)
+    if (this.modelValue)
       this.currentDate = new Date(this.modelValue);
   },
   methods: {
@@ -95,13 +103,16 @@ export default {
       let newDate = null;
       if (this.date !== null) {
         if (this.time !== null) {
-          newDate = new Date(`${this.date}T${this.time}`).toISOString()
+          newDate = new Date(`${this.date}T${this.time}`).toISOString();
         } else {
           newDate = new Date(`${this.date}T00:00`).toISOString();
         }
       }
       this.$emit("update:modelValue", newDate);
     },
+    validate() {
+      return this.$refs.formElement.validate(this.currentDate);
+    }
   }
 }
 </script>

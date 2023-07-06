@@ -15,6 +15,13 @@ const Socket = require("../Socket.js");
  */
 module.exports = class UploadSocket extends Socket {
 
+    /**
+     * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
+     * an entry in the database.
+     *
+     * @param data the data including name and pdf binary file
+     * @returns {Promise<void>}
+     */
     async uploadDocument(data) {
         const doc = await this.models['document'].add({
             name: data.name.replace(/.pdf$/, ''),

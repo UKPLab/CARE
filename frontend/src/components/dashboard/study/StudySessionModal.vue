@@ -1,10 +1,10 @@
 <template>
   <Modal
     ref="studySessionModal"
-    lg
-    remove-close
-    name="studySessionModal"
     :props="{studyId: studyId}"
+    lg
+    name="studySessionModal"
+    remove-close
   >
     <template #title>
       <span>
@@ -12,7 +12,7 @@
       </span>
     </template>
     <template #body>
-      <Table
+      <DTable
         :columns="columns"
         :data="studySessions"
         :options="options"
@@ -32,19 +32,18 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
-import Form from "@/basic/form/Form.vue";
-import Table from "@/basic/table/Table.vue";
+import DTable from "@/basic/table/Table.vue";
 
-/* StudySessionModal.vue - details of study session for a given study in a modal
-
-Modal including the details of existing study sessions for a study.
-
-Author: Nils Dycke
-Source: -
-*/
+/**
+ * Details of study session for a given study in a modal
+ *
+ * Modal including the details of existing study sessions for a study.
+ *
+ * @author: Nils Dycke, Dennis Zyska
+ */
 export default {
   name: "StudySessionModal",
-  components: {Modal, Form, Table},
+  components: {Modal, DTable},
   data() {
     return {
       studyId: 0,
@@ -82,72 +81,72 @@ export default {
   },
   computed: {
     study() {
-      return this.studyId ? this.$store.getters["study/getStudyById"](this.studyId) : null;
+      return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
     },
     studySessions() {
       if (!this.study) {
         return [];
       }
+      return this.$store.getters['table/study_session/getByKey']("studyId", this.studyId)
+        .filter(s => this.showFinished || s.end === null)
+        .map(s => {
+          let session = {...s};
 
-      return this.$store.getters['study_session/getStudySessionsByStudyId'](this.studyId)
-          .filter(s => this.showFinished || s.end === null)
-          .map(s => {
-            let session = {...s};
+          session.startParsed = new Date(session.start).toLocaleString();
+          session.finished = session.end !== null;
+          session.manage = [
+            {
+              icon: "box-arrow-in-right",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                  "btn-sm": true,
+                }
+              },
+              title: "Open session",
+              action: "openStudySession",
+            },
+            {
+              icon: "link-45deg",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                  "btn-sm": true,
+                }
+              },
+              title: "Copy session link",
+              action: "copyStudySessionLink",
+            },
+            {
+              icon: "trash",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                  "btn-sm": true,
+                }
+              },
+              title: "Delete Study Session",
+              action: "deleteStudySession",
+            },
+          ];
 
-            session.startParsed = new Date(session.start).toLocaleString();
-            session.finished = session.end !== null;
-            session.manage = [
-                {
-                icon: "box-arrow-in-right",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                    "btn-sm": true,
-                  }
-                },
-                title: "Open session",
-                action: "openStudySession",
-              },
-                {
-                icon: "link-45deg",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                    "btn-sm": true,
-                  }
-                },
-                title: "Copy session link",
-                action: "copyStudySessionLink",
-              },
-                {
-                icon: "trash",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                    "btn-sm": true,
-                  }
-                },
-                title: "Delete Study Session",
-                action: "deleteStudySession",
-              },
-            ];
-
-            return session;
-          });
+          return session;
+        });
     },
   },
   methods: {
     open(studyId) {
       this.studyId = studyId;
       this.load();
-
-      this.$refs.studySessionModal.openModal();
+      this.$socket.emit("studySessionSubscribe", {studyId: studyId});
+      this.$refs.studySessionModal.open();
     },
     close() {
-      this.$refs.studySessionModal.closeModal();
+      this.$socket.emit("studySessionUnsubscribe", {studyId: this.studyId});
+      this.$refs.studySessionModal.close();
     },
     load() {
       if (!this.study) {
@@ -155,7 +154,7 @@ export default {
       }
     },
     action(data) {
-      switch(data.action) {
+      switch (data.action) {
         case "openStudySession":
           this.$router.push("/review/" + data.params.hash);
           break;
@@ -163,7 +162,7 @@ export default {
           this.copyURL(data.params.hash);
           break;
         case "deleteStudySession":
-          this.$socket.emit("studySessionUpdate", {sessionId: data.params.id, deleted:true});
+          this.$socket.emit("studySessionUpdate", {sessionId: data.params.id, deleted: true});
           break;
       }
     },

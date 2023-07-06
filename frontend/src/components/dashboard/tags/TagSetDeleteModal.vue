@@ -58,7 +58,7 @@ export default {
     },
     remove() {
       this.sockets.subscribe("tagSetDeleted", (data) => {
-        this.$refs.tagSetDeleteModal.closeModal();
+        this.$refs.tagSetDeleteModal.close();
         this.sockets.unsubscribe('tagSetDeleted');
         if (data.success) {
           this.eventBus.emit('toast', {
@@ -74,7 +74,7 @@ export default {
       this.$refs.tagSetDeleteModal.waiting = true;
     },
     cancel() {
-      this.$refs.tagSetDeleteModal.closeModal();
+      this.$refs.tagSetDeleteModal.close();
       this.$socket.emit("stats", {
         action: "cancelModalDeleteTagSet",
         data: {id: this.id}

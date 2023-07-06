@@ -57,7 +57,7 @@ export default {
          * @param settings
          * @constructor
          */
-        SOCKET_settingRefresh: (state, settings) => {
+        setSettings: (state, settings) => {
             Object.entries(settings).forEach(([key, value]) => {
                 state[key] = value
             });

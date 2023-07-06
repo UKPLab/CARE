@@ -78,10 +78,10 @@ module.exports = function (server) {
         // check if name is defined if it is required
         if ((await server.db.models['setting'].get("app.register.requestName")) === "true") {
             if (!data.firstName) {
-                return res.status(400).json({message: "Please provide a user name."});
+                return res.status(400).json({message: "Please provide a first name."});
             }
             if (!data.lastName) {
-                return res.status(400).json({message: "Please provide a user name."});
+                return res.status(400).json({message: "Please provide a last name."});
             }
         }
 
