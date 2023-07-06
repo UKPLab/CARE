@@ -41,9 +41,8 @@
       <div v-if="finished">
         <button
           class="btn btn-primary"
-          data-bs-dismiss="modal"
           type="button"
-          @click="$router.push('/')"
+          @click="toDashboard"
         >
           Back to
           Dashboard
@@ -116,9 +115,16 @@ export default {
     open() {
       this.$refs.modal.open();
     },
+    close() {
+      this.$refs.modal.close();
+    },
     finish() {
       this.$emit("finish", {"comment": this.comment});
-    }
+    },
+    toDashboard() {
+      this.close();
+      this.$router.push({name: "dashboard", params: {catchAll: "home"}});
+    },
   }
 }
 </script>

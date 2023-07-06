@@ -21,8 +21,8 @@
       >
         <Loader
           :loading="!isRendered"
-          class="pageLoader"
           :text="'Loading Page ' + pageNumber"
+          class="pageLoader"
         />
 
         <canvas
@@ -38,59 +38,56 @@
     </div>
     <Highlights
       ref="highlights"
-      :page-id="pageNumber"
       :document-id="documentId"
+      :page-id="pageNumber"
       :study-session-id="studySessionId"
     />
   </div>
 </template>
 
 <script>
-/* PDFPage.vue - pdf page
+/**
+ *  Rendering a single pdf page
+ *
+ *  This component holds a single pdf page and includes the rendering itself
+ *
+ *  @author Dennis Zyska, Nils Dycke
+ */
 
-This component holds a single pdf page and includes the rendering itself
-
-Author: Dennis Zyska (zyska@ukp...)
-Source: -
-*/
 import * as pdfjsLib from "pdfjs-dist/build/pdf.js"
 import {ObserveVisibility} from 'vue3-observe-visibility'
 import debounce from 'lodash.debounce';
 import Highlights from "./Highlights.vue";
 
 import {Anchoring} from "@/assets/pdfViewer/anchor.js";
-import Loader from "@/basic/Loader.vue";
+import Loader from "@/basic/Loading.vue";
+import {toRaw} from 'vue';
 
-/* PDFPage.vue -- an actual pdf page shown ion the viewer
-
-Showing a PDF page as loaded from the store. Rendered using pdfjs.
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: -
-*/
 export default {
   name: 'PDFPage',
   components: {Loader, Highlights},
   directives: {
     ObserveVisibility,
   },
-  props: {
-    pdf: {
-      type: Object
+  inject: {
+    documentId: {
+      type: String,
+      required: true,
     },
+    studySessionId: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    pdf: {
+      type: Object,
+      required: true,
+    },
+  },
+  props: {
     pageNumber: {
       type: Number,
       default: 0,
-    },
-    documentId: {
-      type: Number,
-      required: true
-    },
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: null
     },
     render: {
       type: Boolean,
@@ -110,17 +107,22 @@ export default {
   },
   computed: {
     annotations() {
-      return this.$store.getters['anno/getPageAnnotations'](this.documentId, this.pageNumber);
+      return this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
+        && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageNumber);
     },
     anchors() {
-      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId, this.pageNumber))
+      return [].concat(
+        this.annotations.filter(a => a.anchors !== null)
+          .flatMap(a => a.anchors)
+          .filter(a => a !== undefined)
+      )
     },
   },
   watch: {
     render() {
       this.init();
     },
-    annotations(newVal, oldVal) {
+    annotations() {
       if (this.isRendered)
         this.add_anchors();
     },
@@ -167,7 +169,7 @@ export default {
           const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
 
           this.scale = wrapper.getBoundingClientRect().width /
-              page.getViewport({scale: 1.0}).width;
+            page.getViewport({scale: 1.0}).width;
 
           const viewport = page.getViewport({scale: this.scale});
           canvas.height = viewport.height;
@@ -209,7 +211,7 @@ export default {
 
       this.renderTask = page.render(renderContext);
 
-      this.renderTask.promise.then(() => {
+      toRaw(this.renderTask).promise.then(() => {
         return page.getTextContent();
       }).then((textContent) => {
 
@@ -221,7 +223,7 @@ export default {
 
         pdfjsLib.renderTextLayer({
           textContent: textContent,
-          enhanceTextSelection: true,
+          textLayerMode: 2,
           container: document.getElementById('text-layer-' + page.pageNumber),
           viewport: viewport,
           textDivs: []
@@ -236,7 +238,6 @@ export default {
       }).catch(response => {
         this.destroyRenderTask();
         console.log(`Failed to render page ${this.pageNumber}: ` + response);
-
       });
     },
 
@@ -244,7 +245,7 @@ export default {
       if (!this.renderTask) return;
       // RenderTask#cancel
       // https://mozilla.github.io/pdf.js/api/draft/RenderTask.html
-      this.renderTask.cancel();
+      toRaw(this.renderTask).cancel();
       this.isRendered = false;
       this.pdf.renderingDone.set(this.pageNumber, false);
       this.renderTask = undefined;

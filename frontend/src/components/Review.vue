@@ -4,19 +4,9 @@
     :loading="true"
   />
   <span v-else>
-    <Annotater
-      :document-id="documentId"
-      :readonly="true"
-      :study-session-id="studySessionId"
-    />
-    <ReviewModal
-      ref="reviewModal"
-      :study-session-id="studySessionId"
-    />
-    <ReportModal
-      ref="reportModal"
-      :study-session-id="studySessionId"
-    />
+    <Annotater/>
+    <ReviewModal ref="reviewModal" />
+    <ReportModal ref="reportModal" />
     <Teleport to="#topbarCustomPlaceholder">
       <button
         class="btn btn-outline-secondary me-2"
@@ -33,22 +23,30 @@
 </template>
 
 <script>
-import Loader from "@/basic/Loader.vue"
-import Annotater from "@/components/Annotater.vue";
+import Loader from "@/basic/Loading.vue"
+import Annotater from "@/components/annotater/Annotater.vue";
 import ReviewModal from "@/components/study/ReviewModal.vue";
 import ReportModal from "@/components/study/ReportModal.vue";
+import {computed} from "vue";
 
-/* Review.vue - document view in reviewing mode
-
-Loads a document and study session in reviewing mode, i.e. readonly and with the option to assess an existing
-study session.
-
-Author: Dennis Zyska
-Source: -
-*/
+/**
+ *  Document view in reviewing mode
+ *
+ * Loads a document and study session in reviewing mode, i.e. readonly and with the option to assess an existing
+ * study session.
+ *
+ * @author Dennis Zyska
+ */
 export default {
-  name: "Review",
+  name: "ReviewRoute",
   components: {ReviewModal, Loader, Annotater, ReportModal},
+  provide() {
+    return {
+      documentId: computed(() => this.documentId),
+      studySessionId: computed(() => this.studySessionId),
+      readonly: this.readonly
+    }
+  },
   props: {
     'studySessionHash': {
       type: String,
@@ -56,7 +54,11 @@ export default {
     },
   },
   data() {
-    return {}
+    return {
+      documentId: 0,
+      readonly: true,
+      studySessionId: 0,
+    }
   },
   sockets: {
     studySessionError: function (data) {
@@ -72,31 +74,34 @@ export default {
   },
   computed: {
     studySession() {
-      return this.$store.getters['study_session/getStudySessionByHash'](this.studySessionHash);
+      return this.$store.getters['table/study_session/getByHash'](this.studySessionHash);
     },
     study() {
       if (this.studySession) {
-        return this.$store.getters['study/getStudyById'](this.studySession.studyId);
+        return this.$store.getters['table/study/get'](this.studySession.studyId);
       }
       return null;
     },
-    documentId() {
-      if (this.study) {
-        return this.study.documentId;
+  },
+  watch: {
+    study(newVal) {
+      if (newVal) {
+        this.documentId = newVal.documentId;
+      } else {
+        this.documentId = 0
       }
-      return 0;
     },
-    studySessionId() {
-      if (this.studySession) {
-        return this.studySession.id;
-      } else
-        return 0;
-    },
+    studySession(newVal) {
+      if (newVal) {
+        this.studySessionId = this.studySession.id;
+      } else {
+        this.studySessionId = 0;
+      }
+    }
   },
   mounted() {
     this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
   },
-
   methods: {
     evaluate() {
       this.$refs.reviewModal.open();

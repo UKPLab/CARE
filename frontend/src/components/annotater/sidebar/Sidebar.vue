@@ -1,17 +1,17 @@
 <template>
   <div
-    id="sidebar-container"
-    :class="(show ? 'show' : 'collapsing')"
-    class="collapse collapse-horizontal border-end d-flex flex-column"
+      id="sidebar-container"
+      :class="(show ? 'show' : 'collapsing')"
+      class="collapse collapse-horizontal border-end d-flex flex-column"
   >
     <div
-      id="sidepane"
-      ref="sidepane"
+        id="sidepane"
+        ref="sidepane"
     >
-      <div id="spacer" />
+      <div id="spacer"/>
       <ul
-        id="anno-list"
-        class="list-group"
+          id="anno-list"
+          class="list-group"
       >
         <li v-if="documentComments.length === 0">
           <p class="text-center">
@@ -23,39 +23,37 @@
           :id="'comment-' + comment.id"
           :key="'documentComment-' + comment.id"
           class="list-group-i"
-          @mouseleave="unhover(comment.id)"
-          @mouseover="hover(comment.id)"
+          @mouseleave="unhover(comment.annotationId)"
+          @mouseover="hover(comment.annotationId)"
         >
           <AnnoCard
-            :id="comment.id"
-            :document-id="documentId"
-            :readonly="readonly"
-            :study-session-id="studySessionId"
-            :comment-id="comment.id"
-            @focus="sidebarScrollTo"
+              :id="comment.id"
+              :ref="'annocard' + comment.id"
+              :comment-id="comment.id"
+              @focus="sidebarScrollTo"
           />
         </li>
 
         <li
-          v-if="!readonly"
-          id="addPageNote"
+            v-if="!readonly"
+            id="addPageNote"
         >
           <button
-            class="btn btn-light"
-            type="button"
-            @click="createDocumentComment"
+              class="btn btn-light"
+              type="button"
+              @click="createDocumentComment"
           >
             <svg
-              class="bi bi-plus-lg"
-              fill="currentColor"
-              height="16"
-              viewBox="0 0 16 16"
-              width="16"
-              xmlns="http://www.w3.org/2000/svg"
+                class="bi bi-plus-lg"
+                fill="currentColor"
+                height="16"
+                viewBox="0 0 16 16"
+                width="16"
+                xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
-                fill-rule="evenodd"
+                  d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
+                  fill-rule="evenodd"
               />
             </svg>
             Document Note
@@ -64,40 +62,40 @@
       </ul>
     </div>
   </div>
-  <ConfirmModal ref="leavePageConf" />
+  <ConfirmModal ref="leavePageConf"/>
 </template>
 
 <script>
-import {mapMutations} from "vuex";
-import AnnoCard from "./AnnoCard.vue";
-import ConfirmModal from "@/basic/ConfirmModal.vue"
+import AnnoCard from "./card/AnnoCard.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue"
 import {scrollElement} from "@/assets/anchoring/scroll";
 
-/* Sidebar.vue - sidebar component
-
-Here the annotations are listed and can be modified, also includes scrolling feature.
-
-Author: Nils Dycke, Dennis Zyska
-Source: -
-*/
+/** Sidebar component of the Annotator
+ *
+ * Here the annotations are listed and can be modified, also includes scrolling feature.
+ *
+ * @author Nils Dycke, Dennis Zyska
+ */
 export default {
-  name: "Sidebar",
+  name: "AnnotationSidebar",
   components: {AnnoCard, ConfirmModal},
-  props: {
-    'documentId': {
-      type: Number,
-      required: true
+  inject: {
+    documentId: {
+      type: String,
+      required: true,
     },
-    'studySessionId': {
-      type: Number,
+    studySessionId: {
+      type: String,
       required: false,
-      default: null
+      default: null,
     },
     readonly: {
       type: Boolean,
       required: false,
       default: false,
     },
+  },
+  props: {
     show: {
       type: Boolean,
       required: false,
@@ -107,19 +105,19 @@ export default {
   computed: {
     study() {
       if (this.studySession) {
-        return this.$store.getters["study/getStudyById"](this.studySession.studyId);
+        return this.$store.getters["table/study/get"](this.studySession.studyId);
       }
       return null;
     },
     studySession() {
       if (this.studySessionId && this.studySessionId !== 0) {
-        return this.$store.getters["study_session/getStudySessionById"](this.studySessionId);
+        return this.$store.getters["table/study_session/get"](this.studySessionId);
       }
       return null;
     },
     studySessionIds() {
       if (this.study) {
-        return this.$store.getters["study_session/getStudySessionsByStudyId"](this.studySession.studyId)
+        return this.$store.getters["table/study_session/getByKey"]("studyId", this.studySession.studyId)
             .map(s => s.id);
       }
       return null;
@@ -129,42 +127,43 @@ export default {
       return (showAllComments !== undefined && showAllComments);
     },
     documentComments() {
-      return this.$store.getters['comment/getDocumentComments'](this.documentId)
-          .filter(comment => {
-            // if the studySessionId is set, we are in study session mode
-            if (this.studySessionId !== null) {
-              return comment.studySessionId === this.studySessionId;
-            } else if (this.studySessionIds) {
-              return this.studySessionIds.includes(comment.studySessionId);
+      return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
+        .filter(comment => {
+          // if the studySessionId is set, we are in study session mode
+          if (this.studySessionId) {
+            return comment.studySessionId === this.studySessionId;
+          } else if (this.studySessionIds) {
+            return this.studySessionIds.includes(comment.studySessionId);
+          } else {
+            if (this.showAll) {
+              return true;
             } else {
-              if (this.showAll) {
-                return true;
-              } else {
-                return comment.studySessionId === null;
-              }
+              return comment.studySessionId === null;
             }
-          })
-          .sort((a, b) => {
-            if (!a.annotationId && !b.annotationId) {
-              return Date.parse(a) - Date.parse(b);
-            } else if (a.annotationId && b.annotationId) {
-              const aAnno = this.$store.getters['anno/getAnnotation'](a.annotationId);
-              const bAnno = this.$store.getters['anno/getAnnotation'](b.annotationId);
+          }
+        })
+        .sort((a, b) => {
+          if (!a.annotationId && !b.annotationId) {
+            return Date.parse(a) - Date.parse(b);
+          } else if (a.annotationId && b.annotationId) {
+            const aAnno = this.$store.getters['table/annotation/get'](a.annotationId);
+            const bAnno = this.$store.getters['table/annotation/get'](b.annotationId);
 
-              if (!aAnno || !bAnno) {
-                return 0;
-              }
-              return (aAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start
-                  - bAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start);
-            } else {
-              return !a.annotationId ? 1 : -1;
+            if (!aAnno || !bAnno) {
+              return 0;
             }
-          });
+            return (aAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start
+              - bAnno.selectors.target[0].selector.find(s => s.type === "TextPositionSelector").start);
+          } else {
+            return !a.annotationId ? 1 : -1;
+          }
+        });
     },
   },
   mounted() {
     this.eventBus.on('sidebarScroll', (anno_id) => {
-      const comment = this.$store.getters["comment/getCommentByAnnotation"](anno_id);
+      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", anno_id)
+        .find(comm => comm.parentCommentId === null);
       // in case the comment might not be loaded yet
       if (!comment) {
         return;
@@ -178,26 +177,43 @@ export default {
     })
   },
   methods: {
-    ...mapMutations({
-      toggleSidebar: "anno/TOGGLE_SIDEBAR",
-      annoHover: "anno/HOVER",
-      annoUnhover: "anno/UNHOVER"
-    }),
-    hover(commentId) {
-      const annotationId = this.$store.getters['comment/getComment'](commentId).annotationId;
-
-      if (annotationId)
-        this.annoHover(annotationId)
+    hover(annotationId) {
+      if (annotationId) {
+        const annotation = this.$store.getters['table/annotation/get'](annotationId);
+        if ("anchors" in annotation && annotation.anchors != null) {
+          annotation.anchors
+            .filter(anchor => "highlights" in anchor)
+            .forEach(anchor => anchor.highlights.map((highlight) => {
+              if ("svgHighlight" in highlight) {
+                highlight.svgHighlight.classList.add("is-focused");
+              }
+              highlight.classList.add("highlight-focus");
+            }))
+        }
+      }
     },
-    unhover(commentId) {
-      const annotationId = this.$store.getters['comment/getComment'](commentId).annotationId;
-
-      if (annotationId)
-        this.annoUnhover(annotationId)
+    unhover(annotationId) {
+      if (annotationId) {
+        const annotation = this.$store.getters['table/annotation/get'](annotationId);
+        if ("anchors" in annotation && annotation.anchors != null) {
+          annotation.anchors
+            .filter(anchor => "highlights" in anchor)
+            .forEach(anchor => anchor.highlights.map((highlight) => {
+              if ("svgHighlight" in highlight) {
+                highlight.svgHighlight.classList.remove("is-focused");
+              }
+              highlight.classList.remove("highlight-focus");
+            }))
+        }
+      }
     },
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;
       await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
+
+      if(this.$refs["annocard" + commentId]){
+        this.$refs["annocard" + commentId][0].putFocus();
+      }
     },
     createDocumentComment() {
       this.$socket.emit('commentUpdate', {
@@ -222,8 +238,8 @@ export default {
         return true;
       }
     }
-    }
   }
+}
 </script>
 
 <style scoped>

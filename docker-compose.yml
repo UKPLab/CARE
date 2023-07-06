@@ -31,8 +31,8 @@ services:
     volumes:
       - ./docs/build:/content-server/docs/build
       - ./docs/api:/content-server/docs/api
-    restart: unless-stopped
     depends_on:
       - postgres
     ports:
       - ${PUBLISHED_PORT}:${CONTENT_SERVER_PORT}
+    restart: unless-stopped

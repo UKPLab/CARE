@@ -1,15 +1,18 @@
 // make sure, it's not been reactive!
 const state = {pdf: undefined, pages: {}};
 
-/* PDF Store
-
-All information about the PDF are stored in this class.
-The class holds the pdf.js object and it is the central entry point for all components that
-interact with the pdf.js object.
-
-Author: Dennis Zyska
-Source: -
-*/
+/**
+ *  PDF Store
+ *
+ * All information about the PDF are stored in this class.
+ * The class holds the pdf.js object and it is the central entry point for all components that
+ * interact with the pdf.js object.
+ *
+ * Note: This is needed, because vue3 only provides a copy of the original object, which not includes hidden properties.
+ * PDF.js uses hidden properties e.g. generate pdf page
+ *
+ * @author Dennis Zyska
+ */
 export class PDF {
 
     constructor(pdf, SIZE = 10) {

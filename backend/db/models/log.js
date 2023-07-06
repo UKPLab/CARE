@@ -13,16 +13,20 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Get all logs
-         * @param {number} limit Limit of the logs
-         * @returns {Promise<array>} Logs
+         * Get all logs with pagination
+         * @param {object} data Data with limit and optional page, order and where
+         * @returns {Promise<{rows: Log[]; count: number}>} Logs
          */
-        static async getLogs(limit = 100) {
-            return await Log.findAll({
-                order: [
+        static async getLogs(data) {
+            console.log("Data", data);
+            return await Log.findAndCountAll({
+                where: ("filter" in data) ? data.filter : {},
+                order: ('order' in data && data.order) ? data.order.filter(o => o[0] in this.getAttributes()) : [
                     ['timestamp', 'DESC']
                 ],
-                limit: limit
+                limit: data.limit,
+                offset: ("page" in data) ? data.page * data.limit : 0,
+                raw: true
             });
         }
 

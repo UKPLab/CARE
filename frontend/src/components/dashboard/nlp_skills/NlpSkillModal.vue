@@ -5,7 +5,7 @@
     name="nlpSkills"
   >
     <template #title>
-      Details on {{ skillName }}
+      Skill Details
     </template>
     <template #body>
       <div class="modal-body justify-content-center">
@@ -17,16 +17,12 @@
           <span class="visually-hidden">Loading...</span>
         </div>
         <div v-else>
-          <pre>
-            <code>
-            {{ config }}
-            </code>
-          </pre>
+          <SkillListing ref="skillListing" v-model="config" />
         </div>
       </div>
     </template>
     <template #footer>
-      <button
+       <button
         class="btn btn-secondary"
         data-bs-dismiss="modal"
         type="button"
@@ -39,6 +35,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
+import SkillListing from "./SkillListing.vue";
 
 /* NlpSkillModal.vue - modal for details on a given NLP Skill
 
@@ -47,12 +44,11 @@ Source: -
 */
 export default {
   name: "NlpSkillModal",
-  components: {Modal},
+  components: {SkillListing, Modal},
   data() {
     return {
-      loading: true,
       show: false,
-      skillName: null
+      skillName: null,
     }
   },
   computed: {
@@ -60,26 +56,26 @@ export default {
      * Returns the associated skill description based on the vuex stored information. The skill
      * description is simply shown as a JSON string.
      *
-     * @returns {string} the JSON string to be shown
+     * @returns {string|null} the JSON string to be shown
      */
-    config(){
-      if(this.skillName !== null){
-        const stored = this.$store.getters["service/get"]("NLPService", "skillConfig");
-        if(stored && this.skillName in stored){
-          return JSON.stringify(stored[this.skillName], null, 2);
+    config() {
+      if (this.skillName) {
+        const stored = this.$store.getters["service/get"]("NLPService", "skillUpdate");
+
+        if (stored && this.skillName in stored) {
+          return stored[this.skillName].config;
         }
       }
-      return "";
-    }
-  },
-  watch: {
-    config(newVal, oldVal) {
-      if(newVal.length > 0){
-        this.loading = false;
-      }
-    }
-  },
-  mounted() {
+      return null;
+    },
+    /**
+     * Indicates whether the modal is still loading the config; false if it was loaded successfully.
+     * @returns {boolean}
+     */
+    loading() {
+      return !this.config || this.config.length === 0;
+    },
+
   },
   methods: {
     /**
@@ -88,25 +84,39 @@ export default {
      * @param skillName, the name of the skill as advertised by a model
      */
     openModal(skillName) {
+      if(this.skillName !== skillName) {
+        this.reset();
+      }
+
       this.skillName = skillName;
 
       this.$refs.nlpSkillModal.openModal();
 
-      if(this.config.length === 0) {
-        this.$socket.emit("serviceCommand", {service: "NLPService", command: "skillGetConfig", data: {name: this.skillName}});
+      if (!this.config || this.config.length === 0) {
+        this.$socket.emit("serviceCommand", {
+          service: "NLPService",
+          command: "skillGetConfig",
+          data: {name: this.skillName}
+        });
+      }
+    },
+    reset(){
+      this.skillName = null;
+      if(this.$refs.skillListing){
+        this.$refs.skillListing.reset();
       }
     }
   },
-
 }
 </script>
 
 <style scoped>
 pre {
-    overflow-x: auto;
+  overflow-x: auto;
 }
+
 pre code {
-    overflow-wrap: normal;
-    white-space: pre;
+  overflow-wrap: normal;
+  white-space: pre;
 }
 </style>

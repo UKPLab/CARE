@@ -39,29 +39,35 @@
   </Teleport>
   <Annotater
     v-if="documentId !== 0"
-    :document-id="documentId"
-    :readonly="readonly"
     :study-session-id="studySessionId"
   />
 </template>
 
 <script>
+/**
+ * Document view in study mode
+ *
+ * Loads a document in study mode; if a study session is provided, the session is loaded instead. Otherwise,
+ * the user is prompted to start a study (or resume an existing session).
+ *
+ * @author Dennis Zyska
+ */
 import StudyModal from "@/components/study/StudyModal.vue";
-import Annotater from "./Annotater.vue";
+import Annotater from "./annotater/Annotater.vue";
 import FinishModal from "./study/FinishModal.vue";
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
+import {computed} from "vue";
 
-/* Study.vue - document view in study mode
-
-Loads a document in study mode; if a study session is provided, the session is loaded instead. Otherwise,
-the user is prompted to start a study (or resume an existing session).
-
-Author: Dennis Zyska
-Source: -
-*/
 export default {
-  name: "Study",
+  name: "StudyRoute",
   components: {LoadIcon, FinishModal, StudyModal, Annotater},
+  provide() {
+    return {
+      documentId: computed(() => this.documentId),
+      studySessionId: computed(() => this.studySessionId),
+      readonly: this.readonly,
+    }
+  },
   props: {
     'studyHash': {
       type: String,
@@ -84,21 +90,22 @@ export default {
       studySessionId: 0,
       timeLeft: 0,
       timerInterval: null,
+      documentId: 0,
     }
   },
   computed: {
     studySession() {
       if (this.studySessionId !== 0) {
-        return this.$store.getters['study_session/getStudySessionById'](this.studySessionId);
+        return this.$store.getters['table/study_session/get'](this.studySessionId);
       }
       return null;
     },
     study() {
       if (this.studySession) {
-        return this.$store.getters['study/getStudyById'](this.studySession.studyId);
+        return this.$store.getters['table/study/get'](this.studySession.studyId);
       }
       if (this.studyHash) {
-        return this.$store.getters['study/getStudyByHash'](this.studyHash);
+        return this.$store.getters['table/study/getByHash'](this.studyHash);
       }
       return null;
     },
@@ -107,12 +114,6 @@ export default {
         return this.study.id;
       } else
         return 0;
-    },
-    documentId() {
-      if (this.study) {
-        return this.study.documentId;
-      }
-      return 0;
     },
     finished() {
       if (this.studySession) {
@@ -137,7 +138,7 @@ export default {
   },
   watch: {
     studySession(newVal) {
-      if (this.study.timeLimit > 0) {
+      if (this.study.timeLimit > 0 && this.studySession) {  //studySession required, otherwise not all data may be there yet
         if (this.timerInterval) {
           clearInterval(this.timerInterval);
           this.timerInterval = null;
@@ -149,8 +150,14 @@ export default {
         }
       }
     },
+    study(newVal) {
+      if (newVal) {
+        this.documentId = newVal.documentId;
+      } else {
+        this.documentId = 0
+      }
+    }
   },
-
   mounted() {
     this.studySessionId = this.initStudySessionId;
     if (this.studySessionId === 0) {
@@ -194,7 +201,6 @@ export default {
       if (this.timeLeft < 0) {
         this.finish({studySessionId: this.studySessionId});
       }
-
     }
   }
 }

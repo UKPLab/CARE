@@ -30,7 +30,7 @@ describe("Test Websockets - Studies", () => {
     });
 
     test("Add Session to study", (done) => {
-        clientSocket.on("studySessionRefresh", (data) => {
+        clientSocket.on("study_sessionRefresh", (data) => {
             expect(data.length).toBeGreaterThan(0);
             done();
         })

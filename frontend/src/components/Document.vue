@@ -7,46 +7,59 @@
   <Annotater
     v-else
     ref="annotator"
-    :document-id="documentId"
   />
 </template>
 
 <script>
-import Annotater from "./Annotater.vue";
-import Loader from "@/basic/Loader.vue";
+/**
+ * Standard document view without sessions, studies or reviews
+ *
+ * Loads a document, allows the user to annotate the document. The annotations are not associated with a study or
+ * session. The users may simply share the link to this view after publication, to allow other users to
+ * collaboratively work on a paper.
+ *
+ * @author: Dennis Zyska, Nils Dycke
+ */
 
-/* Document.vue - standard document view without sessions, studies or reviews
+import Annotater from "./annotater/Annotater.vue";
+import Loader from "@/basic/Loading.vue";
+import {computed} from "vue";
 
-Loads a document, allows the user to annotate the document. The annotations are not associated with a study or
-session. The users may simply share the link to this view after publication, to allow other users to
-collaboratively work on a paper.
-
-Author: Dennis Zyska
-Co-author: Nils Dycke
-Source: -
-*/
 export default {
-  name: "Document",
+  name: "DocumentRoute",
   components: {Annotater, Loader},
-  async beforeRouteLeave(to, from){
+  provide() {
+    return {
+      documentId: computed(() => this.documentId),
+    }
+  },
+  async beforeRouteLeave(to, from) {
     return await this.confirmLeave();
   },
   props: {
     'documentHash': {
       type: String,
-      required: true,
+      required: true
     },
+  },
+  data() {
+    return {
+      documentId: 0
+    }
   },
   computed: {
     document() {
-      return this.$store.getters["document/getDocumentByHash"](this.documentHash);
+      return this.$store.getters["table/document/getByHash"](this.documentHash);
     },
-    documentId() {
-      if (this.document) {
-        return this.document.id;
+  },
+  watch: {
+    document(newVal) {
+      if (newVal) {
+        this.documentId = newVal.id;
+      } else {
+        this.documentId = 0
       }
-      return 0;
-    }
+    },
   },
   mounted() {
     this.$socket.emit("documentGetByHash", {documentHash: this.documentHash})
@@ -64,8 +77,10 @@ export default {
     }
   },
   methods: {
-    async confirmLeave(){
-      return await this.$refs.annotator.leave();
+    async confirmLeave() {
+      if (this.$refs.annotator) {
+        return await this.$refs.annotator.leave();
+      }
     }
   }
 }
