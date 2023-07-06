@@ -1,20 +1,20 @@
 <template>
   <button
-      v-if="icon"
       :title="title"
       class="btn btn-sm me-1"
       type="button"
       @click="action"
   >
     <LoadIcon
+        v-if="icon"
         :icon-name="icon"
     />
-    {{ title }}
+    {{ buttonText }}
   </button>
 </template>
 
 <script>
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 export default {
   name: "ButtonHeader",
@@ -27,15 +27,26 @@ export default {
     },
     title: {
       type: String,
-      required: true,
+      required: false,
+      default: null
     },
     "props": {
       type: Object,
       required: false,
       default: null
     },
+    text: {
+      type: String,
+      required: false,
+      default: null
+    },
   },
   emits: ["click"],
+  computed: {
+    buttonText() {
+      return this.text ? this.text : this.title
+    }
+  },
   methods: {
     action() {
       this.$emit("click")

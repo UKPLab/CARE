@@ -80,7 +80,7 @@ module.exports = class StudySocket extends Socket {
         const study = await this.models['study'].getByHash(studyHash);
         if (study) {
             const sessions = await this.models['study_session'].getAllByKey('userId', this.userId);
-            this.emit("studySessionRefresh", sessions.filter(s => s.studyId === study.id));
+            this.emit("study_sessionRefresh", sessions.filter(s => s.studyId === study.id));
             this.emit("studyRefresh", study);
         } else {
             this.socket.emit("studyError", {
@@ -103,30 +103,6 @@ module.exports = class StudySocket extends Socket {
                 studyHash: data.studyHash, message: "Not found!"
             });
         }
-    }
-
-    /**
-     * Start a study
-     * @param {number} studyId
-     * @returns {Promise<void>}
-     */
-    async startStudy(studyId) {
-        const study = await this.models['study'].getById(studyId);
-        if (study.start !== null && new Date() < new Date(study.start)) {
-            this.sendToast("Failed to start study, the study hasn't started yet.", "Study Failure", "danger");
-            return;
-        }
-        if (study.end !== null && new Date(study.end) < new Date()) {
-            this.sendToast("Failed to start study, the study already finished.", "Study Failure", "danger");
-            return;
-        }
-
-        const studySession = await this.models["study_session"].add({
-            studyId: study.id, userId: this.userId, start: Date.now()
-        });
-
-        this.emit("studySessionRefresh", studySession);
-        this.socket.emit("studyStarted", {success: true, studySessionId: studySession.id});
     }
 
     /**
@@ -195,16 +171,6 @@ module.exports = class StudySocket extends Socket {
             } catch (err) {
                 this.logger.error(err);
                 this.sendToast(err, "Error updating study", "Danger");
-            }
-        });
-
-
-        this.socket.on("studyStart", async (data) => {
-            try {
-                await this.startStudy(data.studyId);
-            } catch (err) {
-                this.socket.emit("studyStarted", {success: false});
-                this.logger.error(err);
             }
         });
 

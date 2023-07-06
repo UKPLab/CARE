@@ -36,29 +36,27 @@
 </template>
 
 <script>
-/* ConfirmModal.vue - modal for confirming a critical action
+import Modal from "../Modal.vue";
 
-Provide a default modal component for confirming actions.
-
-Include e.g.:
-
-  <ConfirmModal ref="confirmModal" />
-  ...
-  this.$refs.confirmModal.open("title", "message", null, (res) => console.log(res))
-
-If you prefer to wait for a confirmation response, consider wrapping the call to open with the callback
-function inside a Promise.
-
-Author: Nils Dycke
-Source: -
-*/
-import Modal from "./Modal.vue";
-
+/**
+ * Modal for confirming a critical action
+ *
+ * Provide a default modal component for confirming actions.
+ *
+ * Include e.g.:
+ *
+ *   <ConfirmModal ref="confirmModal" />
+ *   ...
+ *   this.$refs.confirmModal.open("title", "message", null, (res) => console.log(res))
+ *
+ * If you prefer to wait for a confirmation response, consider wrapping the call to open with the callback
+ * function inside a Promise.
+ *
+ * @author: Nils Dycke
+ */
 export default {
   name: "ConfirmModal",
   components: {Modal},
-  props: {
-  },
   emits: ['response'],
   data() {
     return {

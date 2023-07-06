@@ -1,6 +1,6 @@
 <template>
   <Loader
-    v-if="documentId === 0"
+    v-if="documentId && documentId === 0"
     :loading="true"
     class="pageLoader"
   />
@@ -15,9 +15,6 @@
         >
           <PDFViewer
             ref="pdfViewer"
-            :document-id="documentId"
-            :readonly="readonly"
-            :study-session-id="studySessionId"
             class="rounded border border-1 shadow-sm"
             style="margin:auto"
           />
@@ -27,12 +24,7 @@
           class="col border mh-100  col-sm-auto g-0"
           style="overflow-y: scroll;"
         >
-          <Sidebar
-            ref="sidebar"
-            :document-id="documentId"
-            :readonly="readonly"
-            :study-session-id="studySessionId"
-          />
+          <Sidebar ref="sidebar"/>
         </div>
       </div>
     </div>
@@ -72,7 +64,7 @@
           />
         </button>
       </li>
-      <ExpandMenu class="nav-item" />
+      <ExpandMenu class="nav-item"/>
     </Teleport>
 
     <Teleport to="#topBarExtendMenuItems">
@@ -121,7 +113,7 @@
       </form>
     </Teleport>
 
-    <ExportAnnos ref="export" />
+    <ExportAnnos ref="export"/>
   </span>
 </template>
 
@@ -135,13 +127,13 @@
  */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
-import Loader from "@/basic/Loader.vue";
+import Loader from "@/basic/Loading.vue";
 import ExportAnnos from "@/basic/download/ExportAnnos.vue"
 import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
-import LoadIcon from "@/icons/LoadIcon.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 
@@ -155,26 +147,15 @@ export default {
     Loader,
     ExportAnnos
   },
+  inject: {
+    documentId: {
+      default: 0
+    },
+    studySessionId: {
+      default: null
+    },
+  },
   props: {
-    'documentId': {
-      type: Number,
-      required: true
-    },
-    'reviewId': {
-      type: String,
-      required: false,
-      default: null
-    },
-    'studySessionId': {
-      type: Number,
-      required: false,
-      default: null
-    },
-    'readonly': {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
     approve: {
       type: Boolean,
       required: false,
@@ -203,17 +184,31 @@ export default {
   },
   computed: {
     anchors() {
-      return [].concat(this.$store.getters['anno/getAnchorsFlat'](this.documentId))
+      return [].concat(
+        this.annotations.filter(a => a.anchors !== null)
+          .flatMap(a => a.anchors)
+          .filter(a => a !== undefined)
+      )
     },
     showAll() {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
     annotations() {
-      return this.$store.getters["anno/getAnnotations"](this.documentId);
+      return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId)
+        .sort((a, b) => {
+          const a_noanchor = a.anchors === null || a.anchors.length === 0;
+          const b_noanchor = b.anchors === null || b.anchors.length === 0;
+
+          if (a_noanchor || b_noanchor) {
+            return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+          }
+
+          return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+        });
     },
     comments() {
-      return this.$store.getters["comment/getDocumentComments"](this.documentId);
+      return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
     },
     nlpActive() {
       const nlpActive = this.$store.getters["settings/getValue"]("annotator.nlp.activated");
@@ -238,7 +233,7 @@ export default {
       this.scrollTo(anno_id);
       this.$socket.emit("stats", {
         action: "pdfScroll",
-        data: {review_id: this.reviewId, documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
+        data: {documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
       });
     });
 
@@ -267,13 +262,13 @@ export default {
     toggleNlp() {
       const newNlpActive = !this.nlpActive;
       this.setSetting({key: "annotator.nlp.activated", value: newNlpActive});
-      this.$socket.emit("settingSet", {key: "annotator.nlp.activated", value: newNlpActive});
+      this.$socket.emit("appSettingSet", {key: "annotator.nlp.activated", value: newNlpActive});
     },
     scrollActivity() {
       this.logScroll();
     },
     async scrollTo(annotationId) {
-      const annotation = this.$store.getters['anno/getAnnotation'](annotationId)
+      const annotation = this.$store.getters['table/annotation/get'](annotationId)
 
       if ("anchors" in annotation) {
         const anchor = annotation.anchors[0]
@@ -300,8 +295,8 @@ export default {
 
         if (inPlaceholder) {
           const anchor = await this._waitForAnnotationToBeAnchored(
-              annotation,
-              3000
+            annotation,
+            3000
           );
           if (!anchor) {
             return;
@@ -364,7 +359,7 @@ export default {
         });
       }
     },
-    async leave(){
+    async leave() {
       return await this.$refs.sidebar.leave();
     },
     downloadAnnotations(outputType) {
@@ -388,7 +383,7 @@ IconBoostrap[disabled] {
 }
 
 #sidebarContainer::-webkit-scrollbar {
-  display:none;
+  display: none;
 }
 
 </style>

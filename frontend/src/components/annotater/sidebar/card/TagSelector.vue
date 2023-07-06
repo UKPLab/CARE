@@ -28,6 +28,7 @@
   <div v-if="disabled && tags.length > 0">
     <span
       v-for="t in tags"
+      :key="t"
       class="badge bg-primary"
     >
       {{ t }}

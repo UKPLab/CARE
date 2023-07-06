@@ -7,7 +7,6 @@
   <Annotater
     v-else
     ref="annotator"
-    :document-id="documentId"
   />
 </template>
 
@@ -23,30 +22,44 @@
  */
 
 import Annotater from "./annotater/Annotater.vue";
-import Loader from "@/basic/Loader.vue";
+import Loader from "@/basic/Loading.vue";
+import {computed} from "vue";
 
 export default {
   name: "DocumentRoute",
   components: {Annotater, Loader},
-  async beforeRouteLeave(to, from){
+  provide() {
+    return {
+      documentId: computed(() => this.documentId),
+    }
+  },
+  async beforeRouteLeave(to, from) {
     return await this.confirmLeave();
   },
   props: {
     'documentHash': {
       type: String,
-      required: true,
+      required: true
     },
+  },
+  data() {
+    return {
+      documentId: 0
+    }
   },
   computed: {
     document() {
-      return this.$store.getters["document/getDocumentByHash"](this.documentHash);
+      return this.$store.getters["table/document/getByHash"](this.documentHash);
     },
-    documentId() {
-      if (this.document) {
-        return this.document.id;
+  },
+  watch: {
+    document(newVal) {
+      if (newVal) {
+        this.documentId = newVal.id;
+      } else {
+        this.documentId = 0
       }
-      return 0;
-    }
+    },
   },
   mounted() {
     this.$socket.emit("documentGetByHash", {documentHash: this.documentHash})
@@ -64,8 +77,10 @@ export default {
     }
   },
   methods: {
-    async confirmLeave(){
-      return await this.$refs.annotator.leave();
+    async confirmLeave() {
+      if (this.$refs.annotator) {
+        return await this.$refs.annotator.leave();
+      }
     }
   }
 }

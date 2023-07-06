@@ -1,18 +1,28 @@
 <template>
   <span
+    v-tooltip="title && title.length > 0"
     :class="badgeClass"
+    :title="title"
     class="badge"
+    data-bs-html="true"
+    data-bs-placement="top"
+    data-bs-toggle="tooltip"
   >
-    {{ displayValue }}
+    {{ text }}
   </span>
 </template>
 
 <script>
+import {tooltip} from "@/assets/tooltip.js";
+
 export default {
-  name: "Badge",
+  name: "TableColumnBadge",
+  directives: {
+    'tooltip': tooltip
+  },
   props: {
     value: {
-      type: String,
+      type: Object,
       required: true
     },
     options: {
@@ -23,20 +33,27 @@ export default {
   },
   computed: {
     badgeClass() {
-      return (this.options && this.options.classMapping && this.options.classMapping[this.value])
-          ? this.options.classMapping[this.value] : this.defaultBadgeClass();
+      if(this.options && this.options.classMapping){
+        return this.value in this.options.classMapping ? this.options.classMapping[this.value] : this.options.classMapping["default"];
+      } else {
+        return (this.value && this.value.class) ? this.value.class : 'bg-black';
+      }
     },
-    defaultBadgeClass() {
-      return (this.options && this.options.classMapping && this.options.classMapping.default)
-          ? this.options.classMapping.default : 'bg-black';
+    text() {
+      if(this.options && this.options.keyMapping){
+        return this.value in this.options.keyMapping ? this.options.keyMapping[this.value] : this.options.keyMapping["default"];
+      } else {
+        return this.value.text;
+      }
     },
-    displayValue() {
-      return (this.options && this.options.keyMapping && this.options.keyMapping[this.value])
-          ? this.options.keyMapping[this.value] : this.defaultDisplayValue;
-    },
-    defaultDisplayValue() {
-      return (this.options && this.options.keyMapping && this.options.keyMapping.default)
-          ? this.options.keyMapping.default : this.value;
+    title() {
+      if(this.options && this.options.tooltip){
+        return this.options.tooltip;
+      } else if(this.value && this.value.tooltip){
+        return this.value.tooltip;
+      } else {
+        return "";
+      }
     }
   }
 }

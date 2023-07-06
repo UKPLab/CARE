@@ -15,12 +15,21 @@ const yaml = require('js-yaml')
  */
 module.exports = class NLPService extends Service {
     constructor(server) {
-        super(server);
+        super(server, {
+            cmdTypes: [
+                "skillGetAll",
+                "skillGetConfig"
+            ],
+            resTypes: [
+                "skillUpdate",
+                "skillConfig",
+                "skillResults"
+            ]
+        });
 
         this.retryDelay = 10000; //default delay between connection attempts
 
-        this.skills = null;
-        this.configs = null;
+        this.skills = [];
         this.timer = null;
 
         this.nlpSocket = null;
@@ -70,9 +79,7 @@ module.exports = class NLPService extends Service {
             this.nlpSocket.disconnect();
             this.nlpSocket = null;
         }
-        this.skills = null;
-        this.configs = null;
-
+        this.skills = [];
     }
 
     /**
@@ -112,7 +119,7 @@ module.exports = class NLPService extends Service {
             self.logger.info(`Connection to NLP server established: ${self.nlpSocket.connected}`);
 
             // if connection established, get information about the NLP Service
-            this.skills = null;
+            this.skills = [];
             self.nlpSocket.emit("skillGetAll");
         });
 
@@ -121,26 +128,22 @@ module.exports = class NLPService extends Service {
             self.logger.error(`Connection to NLP server disrupted: ${!self.nlpSocket.connected}`);
         });
 
-        nlpSocket.on("skillConfig", (data) => {
-            // deep copy (otherwise we may get an undefined object)
-            const config = JSON.parse(JSON.stringify(data));
-            self.#updateConfigCache(config);
-        });
-
+        // receives a list of objects, where each indicates a skill name and the number of nodes that provide it
+        // we store this information in the this.skills attribute to keep track of available skills.
         nlpSocket.on("skillUpdate", (data) => {
             // update cache with deep copy of data
             const skills = JSON.parse(JSON.stringify(data));
-            this.#updateSkillCache(skills);
+            self.#updateSkillCache(skills);
 
-            // delete configs of removed skills and request configs for changed services (that were not deleted)
-            skills.filter(s => s.nodes === 0 && s.name in self.configs).forEach(s => delete self.configs[s.name]);
-            skills.filter(s => s.nodes > 0).forEach(s => nlpSocket.emit("skillGetConfig", {name: s.name}));
+            // check for configs for skills without them
+            self.skills.filter(s => !self.#hasConfig(s))
+                       .map(s => nlpSocket.emit("skillGetConfig", {name: s.name}));
 
             self.sendAll("skillUpdate", self.skills);
         });
 
         nlpSocket.on("skillResults", (data) => {
-            const client = self.#getClient(data.clientId)
+            const client = self.getClient(data.clientId)
             delete data.clientId;
             if (client) {
                 self.send(client, "skillResults", data);
@@ -157,7 +160,8 @@ module.exports = class NLPService extends Service {
      * @param data
      */
     async connectClient(client, data) {
-        this.send(client, "skillUpdate", this.skills !== null ? this.skills : []);
+        await this.send(client, "skillUpdate", this.skills);
+        await super.connectClient(client, data);
     }
 
     /**
@@ -165,38 +169,24 @@ module.exports = class NLPService extends Service {
      * @param updatedSkills
      */
     #updateSkillCache(updatedSkills) {
-        if (this.skills !== null) {
-            const upSkills = updatedSkills.map(s => s.name);
+        const upSkills = updatedSkills.map(s => s.name);
 
-            this.skills = this.skills.filter(e => !upSkills.includes(e.name));
-            this.skills = this.skills.concat(updatedSkills.filter(s => s.nodes > 0));
-        } else {
-            this.skills = updatedSkills;
-        }
+        // discard prior entries on update
+        this.skills = this.skills.filter(e => !upSkills.includes(e.name));
+
+        // add new skills or add updated skill, as long as they have connected nodes.
+        // this implicitly discards skills with no connected nodes, because they were erased in the prior step
+        this.skills = this.skills.concat(updatedSkills.filter(s => s.nodes > 0));
     }
 
     /**
-     * Update the config cache
-     * @param updatedConfig
+     * Returns true, if the given skill has non-trivial (name, nodes always given) config.
+     *
+     * @param skill
+     * @returns {boolean}
      */
-    #updateConfigCache(updatedConfig) {
-        if (this.configs === null) {
-            this.configs = {};
-        }
-        this.configs[updatedConfig.name] = updatedConfig;
-    }
-
-    /**
-     * Get the client socket from id
-     * @param {string} clientId
-     * @return {*}
-     */
-    #getClient(clientId) {
-        if (clientId in this.server.availSockets) {
-            return this.server.availSockets[clientId]["ServiceSocket"];
-        } else {
-            this.logger.error(`Client ${clientId} not found!`);
-        }
+    #hasConfig(skill) {
+        return Object.keys(skill).filter(k => !["name", "nodes"].includes(k)).length > 0;
     }
 
     /**
@@ -214,17 +204,14 @@ module.exports = class NLPService extends Service {
      */
     async command(client, command, data) {
         if (command === "skillGetAll") {
-            if (!this.skills) {
-                await this.send(client, "skillUpdate", [])
-            } else {
-                await this.send(client, "skillUpdate", this.skills);
-            }
+            // send all skills with config
+            await this.send(client, "skillUpdate", this.skills.filter(s => this.#hasConfig(s)));
         } else if (command === "skillGetConfig") {
-            if (this.configs && data.name in this.configs) {
-                await this.send(client, "skillConfig", this.configs[data.name]);
-            } else {
-                await this.send(client, "skillConfig", null);
-            }
+            // check for skill with config to send
+            const conf = this.skills.find(n => this.#hasConfig(n) && n.name === data.name);
+            await this.send(client, "skillConfig", conf ? conf : null);
+        } else {
+            await super.command(client, command, data);
         }
     }
 
@@ -235,19 +222,16 @@ module.exports = class NLPService extends Service {
      * @return {Promise<void>}
      */
     async request(client, data) {
-
         if (this.nlpSocket && this.nlpSocket.connected) {
             data["clientId"] = client.socket.id;
             this.nlpSocket.emit("skillRequest", data);
-        } else if (this.skills && this.skills.find(s => s.name === data.name)) {
-
+        } else if (this.skills && this.skills.find(s => this.#hasConfig(s) && s.name === data.name)) {
             await this.send(client, "skillResults", {
                 id: data.id,
-                data: this.configs[data.name].output.example,
+                data: this.skills.find(s => this.#hasConfig(s) && s.name === data.name).config.output.example,
                 fallback: true
             });
         }
-
     }
 
     /**
@@ -256,7 +240,6 @@ module.exports = class NLPService extends Service {
      */
     async loadFallbacks() {
         this.skills = [];
-        this.configs = {};
         await fs.readdir(path.resolve(__dirname, "../../../files/sdf"), async (err, files) => {
             await Promise.all(files.filter(file => file.endsWith(".yaml")).map(async file => {
                 if (file.endsWith(".yaml")) {
@@ -266,8 +249,7 @@ module.exports = class NLPService extends Service {
                             return null;
                         }
                         const skill = yaml.load(data);
-                        this.skills.push({name: skill.name, nodes: 1, "fallback": true});
-                        this.configs[skill.name] = skill;
+                        this.skills.push({config: skill, nodes: 1, "fallback": true, name:skill.name});
                     });
                 }
             }));

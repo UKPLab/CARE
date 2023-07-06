@@ -41,7 +41,8 @@ app.use(new VueSocketIO({
         {
             path: '',
             withCredentials: true,
-            reconnect: !0
+            reconnect: !0,
+            autoConnect: false
         }),
     vuex: {
         store,
@@ -55,7 +56,13 @@ import mitt from 'mitt';
 
 const eventBus = mitt()
 app.config.globalProperties.eventBus = eventBus;
+app.config.unwrapInjectedRef = true;
 
 app.use(store);
 app.use(router);
+
+//Add Auto emits for sockets on mounted
+import fetchData from "@/plugins/fetchData";
+app.use(fetchData);
+
 app.mount('#app');

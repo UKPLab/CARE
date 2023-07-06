@@ -15,7 +15,7 @@
     class="btn btn-sm"
     data-placement="top"
     data-toggle="tooltip"
-    title="Edit"
+    :title="title"
     type="button"
     :disabled="disabled"
     @click="action"
@@ -29,8 +29,8 @@
 </template>
 
 <script>
-import LoadIcon from "@/icons/LoadIcon.vue";
-import IconLoading from "@/icons/IconLoading.vue";
+import LoadIcon from "@/basic/Icon.vue";
+import IconLoading from "@/basic/icons/IconLoading.vue";
 
 /**
  * Generic button for the sidebar

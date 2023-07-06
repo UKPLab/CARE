@@ -6,14 +6,14 @@
   <Study
     v-else
     :init-study-session-id="studySessionId"
-    :study-hash="studySessionHash"
     :readonly="readonly"
+    :study-hash="studySessionHash"
   />
 </template>
 
 <script>
 import Study from "./Study.vue";
-import Loader from "@/basic/Loader.vue"
+import Loader from "@/basic/Loading.vue"
 
 /**
  * Document view in study session mode
@@ -51,7 +51,7 @@ export default {
   },
   computed: {
     studySession() {
-      return this.$store.getters['study_session/getStudySessionByHash'](this.studySessionHash);
+      return this.$store.getters['table/study_session/getByHash'](this.studySessionHash);
     },
     studySessionId() {
       if (this.studySession) {
@@ -68,13 +68,8 @@ export default {
     },
   },
   mounted() {
-    this.load();
+    this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
   },
-  methods: {
-    load() {
-      this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
-    },
-  }
 }
 </script>
 

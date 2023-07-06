@@ -1,23 +1,18 @@
 <template>
   <Card title="Users">
     <template #headerElements>
-      <button
+      <ButtonHeader
         class="btn btn-sm me-1 btn-secondary"
-        type="button"
         title="Export"
+        icon="cloud-arrow-down"
         @click="exportAllStats()"
-      >
-        <LoadIcon icon-name="cloud-arrow-down" />
-        Export all statistics
-      </button>
-      <button
+      />
+      <ButtonHeader
         class="btn btn-sm me-1"
-        type="button"
         title="Refresh"
+        icon="arrow-clockwise"
         @click="loadUserData()"
-      >
-        <LoadIcon icon-name="arrow-clockwise" />
-      </button>
+      />
     </template>
     <template #body>
       <BasicTable
@@ -50,8 +45,8 @@
 </template>
 
 <script>
-import LoadIcon from "../../icons/LoadIcon.vue";
 import BasicTable from "@/basic/table/Table.vue";
+import ButtonHeader from "@/basic/card/ButtonHeader.vue";
 import Card from "@/basic/Card.vue";
 import ExportSingle from "@/basic/download/ExportSingle.vue";
 
@@ -69,7 +64,7 @@ import ExportSingle from "@/basic/download/ExportSingle.vue";
  */
 export default {
   name: "UserStatistics",
-  components: {LoadIcon, BasicTable, Card, ExportSingle},
+  components: {BasicTable, ButtonHeader, Card, ExportSingle},
   props: {
     'admin': {
       type: Boolean,
@@ -134,13 +129,13 @@ export default {
     loadUserData() {
       this.$socket.emit("userGetData");
     },
-    loadUserStats(userIds, force = false) {
-      userIds.forEach(user => {
+    loadUserStats(rows) {
+      rows.forEach(user => {
         if (this.$store.getters["admin/getStatsByUser"](user.id) == null) {
           this.$socket.emit("statsGetByUser", {userId: user.id})
         }
       });
-      this.selectedUsers = userIds;
+      this.selectedUsers = rows;
     },
     exportAllStats() {
       this.$refs.export.requestExport({}, "json");

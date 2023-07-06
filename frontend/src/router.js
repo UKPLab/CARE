@@ -4,12 +4,11 @@
  * that require a login is realized.
  *
  * Pass metadata via the meta attribute. Current supported fields:
- * > requiresAuth: true/false <=> true, iff a login is required
+ * > requireAuth: true/false <=> true, iff a login is required
  *
  * @author: Dennis Zyska, Nils Dycke
 **/
 import * as VueRouter from 'vue-router'
-import store from "./store";
 
 const routes = [
     {
@@ -22,27 +21,29 @@ const routes = [
     },
     {
         path: "/dashboard/:catchAll(.*)",
-        name: "Dashboard",
+        name: "dashboard",
         props: true,
         component: () => import('@/components/Dashboard.vue'),
         alias: "/dashboard",
-        meta: {requiresAuth: true, toggleSidebar: true, default: true},
+        meta: {requireAuth: true, toggleSidebar: true, default: true},
     },
     {
         path: "/login",
         component: () => import("@/auth/Login.vue"),
-        meta: {requiresAuth: false, hideTopbar: true}
+        name: "login",
+        meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
         path: "/register",
+        name: "register",
         component: () => import("@/auth/Register.vue"),
-        meta: {requiresAuth: false, hideTopbar: true}
+        meta: {requireAuth: false, hideTopbar: true, checkLogin: true}
     },
     {
         path: "/document/:documentHash",
         component: () => import('@/components/Document.vue'),
         props: true,
-        meta: {requiresAuth: true}
+        meta: {requireAuth: true}
     },
     {
         path: "/review/:studySessionHash",
@@ -65,8 +66,8 @@ const routes = [
     {
         path: "/:catchAll(.*)",
         name: "NotFound",
-        component: () => import("@/basic/NotFound.vue"),
-        meta: {requiresAuth: false, hideTopbar: true}
+        component: () => import("@/auth/NotFound.vue"),
+        meta: {requireAuth: false, hideTopbar: true}
     }
 ]
 
@@ -77,18 +78,6 @@ const router = VueRouter.createRouter({
     routes: routes,
     mode: 'html5',
     root: "/"
-})
-
-// add basic access management (requiring login)
-router.beforeEach(async (to, from, next) => {
-    await store.restored;
-
-    if (to.meta.requiresAuth && store.getters['auth/isAuthenticated'] === false) {
-        next("/login");
-    } else {
-        if (store.getters['auth/isAuthenticated'] && (to.path === '/register' || to.path === '/login')) next('/');
-        else next();
-    }
 })
 
 export default router;

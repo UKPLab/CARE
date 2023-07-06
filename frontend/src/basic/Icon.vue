@@ -14,11 +14,11 @@
  * @author: Dennis Zyska, Nils Dycke
  */
 import {defineAsyncComponent} from "vue";
-import IconLoading from "./IconLoading.vue";
-import IconBootstrap from "./IconBootstrap.vue";
+import IconLoading from "./icons/IconLoading.vue";
+import IconBootstrap from "./icons/IconBootstrap.vue";
 
 export default {
-  name: "LoadIcon",
+  name: "BasicIcon",
   props: {
     size: {
       type: Number,
@@ -46,7 +46,7 @@ export default {
       }
       return defineAsyncComponent(
           {
-            loader: () => import("./IconBootstrap.vue"),
+            loader: () => import("./icons/IconBootstrap.vue"),
             loadingComponent: IconLoading,
             errorComponent: IconBootstrap
           });

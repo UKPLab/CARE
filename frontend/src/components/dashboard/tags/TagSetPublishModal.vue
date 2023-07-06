@@ -61,7 +61,7 @@ export default {
     },
     publish() {
       this.sockets.subscribe("tagSetPublished", (data) => {
-        this.$refs.tagSetPublishModal.closeModal();
+        this.$refs.tagSetPublishModal.close();
         this.sockets.unsubscribe('tagSetPublished');
         if (data.success) {
           this.eventBus.emit('toast', {
@@ -77,7 +77,7 @@ export default {
       this.$refs.tagSetPublishModal.waiting = true;
     },
     cancel() {
-      this.$refs.tagSetPublishModal.closeModal();
+      this.$refs.tagSetPublishModal.close();
       this.$socket.emit("stats", {
         action: "cancelModalPublishTagSet",
         data: {id: this.id}

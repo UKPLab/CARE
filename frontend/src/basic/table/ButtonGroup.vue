@@ -1,5 +1,5 @@
 <template>
-  <div class="btn-group">
+  <div class="btn-group btn-group-sm">
     <TableButton
       v-for="b in buttons"
       :key="b"
@@ -27,6 +27,7 @@ export default {
     params: {
       type: Object,
       required: false,
+      default: null
     }
   },
   emits: ['action'],
