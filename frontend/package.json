@@ -1,6 +1,6 @@
 {
   "name": "CAREFrontend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "scripts": {
     "frontend-dev": "vite",
     "frontend-preview": "vite preview --port 5050",
