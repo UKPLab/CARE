@@ -81,8 +81,6 @@ export default {
       focusListener: null,
       defFocusListener: function (e) {
         const active = this.topHtml === e.target || this.topHtml.contains(e.target);
-        console.log("registering click", active, this.actions);
-
         Object.values(this.actions).map(a => a.action(active));
       }.bind(this),
       actions: {},
@@ -111,8 +109,6 @@ export default {
   },
   methods: {
     checkFocus(a) {
-      console.log("Adding focus listening!", this.focusListener, a);
-
       this.actions[a.id] = a;
 
       if (!this.focusListener) {
@@ -121,8 +117,6 @@ export default {
       }
     },
     uncheckFocus(a) {
-      console.log("Unhcecking focus listening!", this.focusListener, a, this.actions);
-
       if(this.actions[a.id]){
         delete this.actions[a.id];
       }

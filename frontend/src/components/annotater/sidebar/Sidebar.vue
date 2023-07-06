@@ -66,7 +66,6 @@
 </template>
 
 <script>
-import {mapMutations} from "vuex";
 import AnnoCard from "./card/AnnoCard.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue"
 import {scrollElement} from "@/assets/anchoring/scroll";

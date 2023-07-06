@@ -49,7 +49,6 @@ export function mergeAnnotationsAndComments(annos, comms) {
 
 export function validateServiceConfig(config) {
     // todo future: use jsonschema-style checking based on a shared schema definition file
-    console.log("CHECKING OUT CONFIG", config);
 
     // should exist and be an object
     if (!config || typeof (config) !== "object") {

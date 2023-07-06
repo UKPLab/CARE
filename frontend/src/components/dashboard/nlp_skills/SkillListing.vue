@@ -46,7 +46,7 @@
           <span class="fs-6 fw-light">{{ currentData.description }}</span>
         </div>
       </div>
-      <div class="row p-2" v-if="commandEditorActive">
+      <div v-if="commandEditorActive" class="row p-2">
         <CommandEditor :config="commandEditorConfig" service="NLPService" :init-payload="exampleRequest"></CommandEditor>
       </div>
       <div class="row py-2">
@@ -168,25 +168,6 @@ export default {
       currentData: null
     }
   },
-   watch: {
-    currentData: {
-      handler() {
-        if (!deepEqual(this.currentData, this.modelValue)) {
-          this.$emit("update:modelValue", this.currentData);
-        }
-      }, deep: true
-    },
-    modelValue: {
-      handler() {
-        this.currentData = this.modelValue;
-      }, deep: true
-    }
-  },
-  beforeMount() {
-    this.currentData = this.modelValue;
-
-    console.log("CURRENT DATA IN LISTING", this.currentData, this.modelValue);
-  },
   computed: {
     validConfig() {
       if (this.currentData) {
@@ -208,6 +189,23 @@ export default {
 
       return {};
     }
+  },
+   watch: {
+    currentData: {
+      handler() {
+        if (!deepEqual(this.currentData, this.modelValue)) {
+          this.$emit("update:modelValue", this.currentData);
+        }
+      }, deep: true
+    },
+    modelValue: {
+      handler() {
+        this.currentData = this.modelValue;
+      }, deep: true
+    }
+  },
+  beforeMount() {
+    this.currentData = this.modelValue;
   },
   methods: {
     async copyConfig() {

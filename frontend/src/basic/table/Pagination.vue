@@ -152,7 +152,6 @@ export default {
   },
   mounted() {
     this.itemsPerPageSelect = this.itemsPerPage;
-    console.log(this.itemsPerPageList);
     if (this.itemsPerPageList.length > 0) {
       this.itemsPerPageListSelect = this.itemsPerPageList;
       if (this.itemsPerPageListSelect.indexOf(this.itemsPerPage) === -1) {

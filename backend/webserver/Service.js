@@ -100,8 +100,6 @@ module.exports = class Service {
         this.logger.info("Client command " + command + " with data " + data);
 
         if (command === "getStatus") {
-            console.log("GETTING STATUS", this.metadata);
-
             await this.send(client, "isAlive", this.metadata);
         }
     }

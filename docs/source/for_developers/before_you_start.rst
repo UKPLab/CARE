@@ -184,7 +184,7 @@ To shorten things, both commands can also be executed with ``make dev-build`` at
 Deployment Build
 ----------------
 If you want to deploy your current CARE code, please double-check the ``.env.main`` file to make sure it meets your
-needs. For a deployment build simply run the following command to create a docker container (terminating in ``_main``),
+needs. For a deployment build simply run the following command to create a docker container (name ends with ``_main``),
 start it and detach it from your terminal.
 
 .. code-block:: bash

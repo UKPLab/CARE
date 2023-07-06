@@ -126,10 +126,21 @@ module.exports = class AppSocket extends Socket {
         this.socket.emit("appTables", tables);
     }
 
+    /**
+     * Sends the data stored under data.table.
+     *
+     * @param data incl. table data
+     * @returns {Promise<void>}
+     */
     async sendData(data) {
         await this.sendTableData(data.table)
     }
 
+    /**
+     * Sends the user information for this user loaded from ther db.
+     *
+     * @returns {Promise<void>}
+     */
     async sendUser() {
         this.socket.emit("appUser", relevantFields(await this.models['user'].getById(this.userId)));
     }
