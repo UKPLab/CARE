@@ -275,7 +275,6 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - Y
 
-
 Specific form properties
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -375,7 +374,7 @@ Only Select and Text fields are supported.
 Default
 ^^^^^^^
 
-Basic HTML `input<https://www.w3.org/TR/2010/WD-html5-20101019/the-input-element.html>`_ from type specified in ``type`` if no other type matches.
+Basic HTML `input <https://www.w3.org/TR/2010/WD-html5-20101019/the-input-element.html>`_ from type specified in ``type`` if no other type matches.
 For example it is used for ``text`` or ``password``.
 
 .. list-table:: Extended form properties
