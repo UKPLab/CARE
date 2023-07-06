@@ -44,15 +44,15 @@ messages).
 
 For our simple example, the code would look like this:
 
-.. code-block:: vue-js
+.. code-block:: html
 
     <template>
      <button id="specialButton" @click="log">Hello!</button>
     </template>
-    <script>
-    //... BOILERPLATE
+
+.. code-block:: javascript
+
     methods: {
-        //... other methods
         log(){
             this.$socket.emit("stats", {
               action: "specialButtonClick",
@@ -60,4 +60,3 @@ For our simple example, the code would look like this:
             })
         }
     }
-    </script>
