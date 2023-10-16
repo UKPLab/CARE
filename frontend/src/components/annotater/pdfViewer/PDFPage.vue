@@ -169,7 +169,7 @@ export default {
           const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
 
           this.scale = wrapper.getBoundingClientRect().width /
-            page.getViewport({scale: 1.0}).width;
+            page.getViewport({scale: 1.0}).width * window.devicePixelRatio;
 
           const viewport = page.getViewport({scale: this.scale});
           canvas.height = viewport.height;
@@ -304,4 +304,10 @@ export default {
 .canvasWrapper {
   position: relative;
 }
+
+.pdf-page {
+  width: 100%; /* This will maintain the visual size */
+  height: auto; /* Maintain aspect ratio */
+}
+
 </style>
