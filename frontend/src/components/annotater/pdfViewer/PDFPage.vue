@@ -306,8 +306,8 @@ export default {
 }
 
 .pdf-page {
-  width: 100%; /* This will maintain the visual size */
-  height: auto; /* Maintain aspect ratio */
+  width: 100%;
+  height: auto;
 }
 
 </style>
