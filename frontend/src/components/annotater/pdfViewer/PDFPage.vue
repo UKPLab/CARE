@@ -102,7 +102,8 @@ export default {
       isRendered: false,
       scale: null,
       currentWidth: 0,
-      anchor: null
+      anchor: null,
+      devicePixelRatio: window.devicePixelRatio || 1,
     };
   },
   computed: {
@@ -117,6 +118,12 @@ export default {
           .filter(a => a !== undefined)
       )
     },
+    canvasStyle() {
+      return {
+        transform: `scale(${1 / this.devicePixelRatio})`,
+        transformOrigin: '0 0',
+      };
+    }
   },
   watch: {
     render() {
@@ -169,7 +176,7 @@ export default {
           const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
 
           this.scale = wrapper.getBoundingClientRect().width /
-            page.getViewport({scale: 1.0}).width * window.devicePixelRatio;
+            page.getViewport({scale: 1.0}).width;
 
           const viewport = page.getViewport({scale: this.scale});
           canvas.height = viewport.height;
@@ -202,7 +209,10 @@ export default {
 
       const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
       const context = canvas.getContext('2d');
-      const viewport = page.getViewport({scale: this.scale});
+      const viewport = page.getViewport({scale: this.scale * this.devicePixelRatio}); 
+
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
 
       let renderContext = {
         canvasContext: context,
@@ -225,7 +235,7 @@ export default {
           textContent: textContent,
           textLayerMode: 2,
           container: document.getElementById('text-layer-' + page.pageNumber),
-          viewport: viewport,
+          viewport: viewport.clone({scale: this.scale}),
           textDivs: []
         })
 
