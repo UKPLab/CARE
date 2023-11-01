@@ -374,8 +374,6 @@ export default {
 #sidebarContainer {
   position: relative;
   padding: 0;
-  max-width: 400px;
-  min-width: 400px;
 }
 
 IconBoostrap[disabled] {

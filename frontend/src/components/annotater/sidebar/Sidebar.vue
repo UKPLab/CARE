@@ -3,7 +3,8 @@
       id="sidebar-container"
       :class="(show ? 'show' : 'collapsing')"
       class="collapse collapse-horizontal border-end d-flex flex-column"
-  >
+      :style="widthStyle">
+    <div id="hotZone" class="hot-zone"></div>
     <div
         id="sidepane"
         ref="sidepane"
@@ -102,6 +103,11 @@ export default {
       default: true,
     },
   },
+  data() {
+    return {
+      width: 400,
+    }
+  },
   computed: {
     study() {
       if (this.studySession) {
@@ -159,6 +165,11 @@ export default {
           }
         });
     },
+    widthStyle() {
+      return {
+        minWidth: this.width + "px"
+      }
+    }
   },
   mounted() {
     this.eventBus.on('sidebarScroll', (anno_id) => {
@@ -175,6 +186,7 @@ export default {
         data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}
       });
     })
+    this.initDragControlle()
   },
   methods: {
     hover(annotationId) {
@@ -237,6 +249,28 @@ export default {
       } else {
         return true;
       }
+    },
+    initDragControlle() {
+      const dom = document.querySelector('#hotZone')
+
+      let startX, originX;
+      const handleStart = (e) => {
+        originX = this.width
+        startX = e.clientX
+        document.addEventListener('mousemove', handleMove)
+        document.addEventListener('mouseup', handleEnd)
+      }
+
+      const handleMove = (e) => {
+        this.width = originX + (startX - e.clientX)
+      }
+
+      const handleEnd = () => {
+        document.removeEventListener('mousemove', handleMove)
+        document.removeEventListener('mouseup', handleEnd)
+      }
+
+      dom.addEventListener('mousedown', handleStart)
     }
   }
 }
@@ -244,8 +278,8 @@ export default {
 
 <style scoped>
 #sidebar-container {
-  max-width: 400px;
   height: 100%;
+  position: relative;
 }
 
 #spacer {
@@ -285,5 +319,14 @@ export default {
 
 #sidepane::-webkit-scrollbar {
   display: none;
+}
+
+.hot-zone {
+  width: 3px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  cursor: col-resize;
 }
 </style>
