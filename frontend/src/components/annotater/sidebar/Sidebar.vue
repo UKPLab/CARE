@@ -255,6 +255,9 @@ export default {
 
       let startX, originX;
       const handleStart = (e) => {
+        e.preventDefault();
+        document.body.style.userSelect = 'none'
+
         originX = this.width
         startX = e.clientX
         document.addEventListener('mousemove', handleMove)
@@ -262,12 +265,14 @@ export default {
       }
 
       const handleMove = (e) => {
+        e.preventDefault();
         this.width = originX + (startX - e.clientX)
       }
 
       const handleEnd = () => {
         document.removeEventListener('mousemove', handleMove)
         document.removeEventListener('mouseup', handleEnd)
+        document.body.style.userSelect = ''
       }
 
       dom.addEventListener('mousedown', handleStart)
