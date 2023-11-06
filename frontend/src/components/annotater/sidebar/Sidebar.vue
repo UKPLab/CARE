@@ -186,7 +186,7 @@ export default {
         data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}
       });
     })
-    this.initDragControlle()
+    this.initDragController()
   },
   methods: {
     hover(annotationId) {
@@ -250,15 +250,16 @@ export default {
         return true;
       }
     },
-    initDragControlle() {
+    initDragController() {
       const dom = document.querySelector('#hotZone')
+      const minWidth = 400
 
-      let startX, originX;
+      let startX, startWidth;
       const handleStart = (e) => {
         e.preventDefault();
         document.body.style.userSelect = 'none'
 
-        originX = this.width
+        startWidth = this.width
         startX = e.clientX
         document.addEventListener('mousemove', handleMove)
         document.addEventListener('mouseup', handleEnd)
@@ -266,7 +267,10 @@ export default {
 
       const handleMove = (e) => {
         e.preventDefault();
-        this.width = originX + (startX - e.clientX)
+        const newWidth = startWidth - (e.clientX - startX);
+        if (newWidth > minWidth) {
+          this.width = newWidth;
+        }
       }
 
       const handleEnd = () => {
