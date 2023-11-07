@@ -40,13 +40,13 @@ doc_asyncapi:
 .PHONY: doc_sphinx
 doc_sphinx:
 	@echo "Building sphinx documentation"
-	@docker-compose -f docker-compose.yml --env-file ".env" build docs_sphinx
+	@docker compose -f docker-compose.yml --env-file ".env" build docs_sphinx
 	@docker run --rm -v ${CURDIR}/docs:/docs docs_sphinx make html
 
 .PHONY: doc_clean
 doc_clean:
 	@echo "Clean sphinx documentation"
-	@docker-compose -f docker-compose.yml --env-file ".env" build docs_sphinx
+	@docker compose -f docker-compose.yml --env-file ".env" build docs_sphinx
 	@docker run --rm -v ${CURDIR}/docs:/docs docs_sphinx make clean
 
 .PHONY: test
@@ -59,7 +59,7 @@ lint: frontend/node_modules/.uptodate
 
 .PHONY: docker
 docker:
-	docker-compose -f docker-compose.yml -f docker-dev.yml up postgres
+	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres
 
 .PHONY: init
 init: backend/node_modules/.uptodate
@@ -89,7 +89,7 @@ dev-build-frontend: frontend/node_modules/.uptodate
 
 .PHONY: build
 build:
-	docker-compose -f docker-compose.yml -p ${PROJECT_NAME} up --build -d
+	@docker compose -f docker-compose.yml -p ${PROJECT_NAME} up --build -d
 
 .PHONE: build-frontend
 build-frontend: frontend/node_modules/.uptodate
@@ -98,14 +98,14 @@ build-frontend: frontend/node_modules/.uptodate
 .PHONY: build-clean
 build-clean:
 	@echo "Cleaning project code and database. WARNING: This will remove your current DB state."
-	docker-compose -p ${PROJECT_NAME} rm  -f -s -v
-	docker network rm ${PROJECT_NAME}_default || echo "IGNORING ERROR"
+	@docker compose -p ${PROJECT_NAME} rm  -f -s -v
+	@docker network rm ${PROJECT_NAME}_default || echo "IGNORING ERROR"
 
 .PHONY: backup_db
 backup_db:
 	@echo "Backing up database"
 	mkdir -p db_dumps
-	docker exec -t $${CONTAINER} pg_dumpall -c -U postgres > db_dumps/dump_`date +%d-%m-%Y"_"%H_%M_%S`.sql
+	@docker exec -t $${CONTAINER} pg_dumpall -c -U postgres > db_dumps/dump_`date +%d-%m-%Y"_"%H_%M_%S`.sql
 
 .PHONY: recover_db
 recover_db:
@@ -124,8 +124,8 @@ clean: check_clean
 	rm -f backend/node_modules/.uptodate
 	rm -rf dist
 	find files -maxdepth 1 -type f ! -name "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" -exec rm {} \;
-	docker-compose rm -f -s -v
-	docker network rm care_default || echo "IGNORING ERROR"
+	@docker compose rm -f -s -v
+	@docker network rm care_default || echo "IGNORING ERROR"
 
 .PHONY: check_kill
 check_kill:

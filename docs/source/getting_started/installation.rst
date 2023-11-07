@@ -13,7 +13,14 @@ Docker and docker-compose are required to build the containers.
 Please install them according to the official documentation:
 
 * `Docker <https://docs.docker.com/engine/installation/>`_
-* `Docker Compose <https://docs.docker.com/compose/install/>`_
+* `Docker Compose <https://docs.docker.com/compose/install/linux>`_
+
+or install Docker Desktop:
+
+* `Docker Desktop for Windows <https://docs.docker.com/docker-for-windows/install/>`_
+* `Docker Desktop for Mac <https://docs.docker.com/desktop/install/mac-install/>`_
+* `Docker Desktop for Linux <https://docs.docker.com/desktop/install/linux-install/>`_
+
 
 Also make sure that you have GNU's ``make`` installed on your system.
 
