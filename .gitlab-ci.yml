@@ -21,7 +21,7 @@ services:
   - docker:dind
 
 .setup-nvm-template: &setup-nvm
-  - apt update && apt install curl bash -y
+  - apk add --no-cache curl bash
   - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
   - export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" --no-use # load nvm
   - nvm --version
@@ -31,50 +31,40 @@ services:
   - npm --version
   - node --version
 
-.debian-archiv-template: &add-debian-archive
-  - sed -i s/deb.debian.org/archive.debian.org/g /etc/apt/sources.list
-  - sed -i 's|security.debian.org|archive.debian.org/|g' /etc/apt/sources.list
-  - sed -i '/stretch-updates/d' /etc/apt/sources.list
-  - cat /etc/apt/sources.list
-  - cat /etc/os-release
-
 
 test:
   image:
-    name: docker/compose:debian-1.29.2
+    name: docker:24.0.7-dind
   stage: test
   needs: []
   allow_failure: true
   before_script:
-    - *add-debian-archive
+    - *setup-nvm
+    - apk add --no-cache make
     - docker info
     - docker version
-    - docker-compose version
-    - *setup-nvm
-    - apt update && apt install make -y
   script:
-    - docker-compose -f docker-compose.yml -f docker-dev.yml --env-file ".env.test" up -d postgres
-    - docker-compose ps
+    - docker compose -f docker-compose.yml -f docker-dev.yml --env-file ".env.test" up -d postgres
+    - docker compose ps
     - make ENV=test test
 
 # https://stackoverflow.com/questions/36399848/install-node-in-dockerfile
 
 build:
   image:
-    name: docker/compose:debian-1.29.2
+    name: docker:24.0.7-dind
   stage: build
   #needs: ['test']
   before_script:
-    - *add-debian-archive
+    - *setup-nvm
+    - apk add --no-cache make
     - docker info
     - docker version
-    - docker-compose version
-    - apt update && apt install make -y
   script:
     - make ENV=dev build
-    - docker wait care_dev_docs_sphinx_1
-    - docker wait care_dev_docs_asyncapi_1
-    - docker-compose -p "care_dev"  rm -f -s -v
+    - docker wait care_dev-docs_sphinx-1
+    - docker wait care_dev-docs_asyncapi-1
+    - docker compose -p "care_dev"  rm -f -s -v
     - tar -czvf ${PWD}/docs.tar.gz ./docs/build
     - tar -czvf ${PWD}/doc_api.tar.gz ./docs/api
   artifacts:
@@ -126,11 +116,9 @@ lint:
   needs: []
   allow_failure: true
   before_script:
-    - *add-debian-archive
+    - *setup-nvm
+    - apk add --no-cache make
     - docker info
     - docker version
-    - docker-compose version
-    - *setup-nvm
-    - apt update && apt install make -y
   script:
     - make lint
