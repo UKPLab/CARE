@@ -9,8 +9,3 @@
 ## Estimated effort (Story Points)
 
 (Please estimate story points for this issue)
-
-## Tasks
-
-- [ ] Task 1
-- [ ] ...
