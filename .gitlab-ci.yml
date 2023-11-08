@@ -39,8 +39,9 @@ test:
   needs: []
   allow_failure: true
   before_script:
-    - *setup-nvm
+    #- *setup-nvm
     - apk add --no-cache make
+    - apk add --no-cache nodejs npm
     - docker info
     - docker version
   script:
@@ -56,7 +57,7 @@ build:
   stage: build
   #needs: ['test']
   before_script:
-    - *setup-nvm
+    - apk add --no-cache nodejs npm
     - apk add --no-cache make
     - docker info
     - docker version
@@ -116,7 +117,7 @@ lint:
   needs: []
   allow_failure: true
   before_script:
-    - *setup-nvm
+    - apk add --no-cache nodejs npm
     - apk add --no-cache make
     - docker info
     - docker version
