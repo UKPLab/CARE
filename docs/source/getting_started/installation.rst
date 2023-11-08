@@ -9,11 +9,10 @@ checkout the :doc:`Before You Start <../for_developers/before_you_start>` option
 Prerequisites
 -------------
 
-Docker and docker-compose are required to build the containers.
+Docker is required to build the containers.
 Please install them according to the official documentation:
 
 * `Docker <https://docs.docker.com/engine/installation/>`_
-* `Docker Compose <https://docs.docker.com/compose/install/linux>`_
 
 or install Docker Desktop:
 
@@ -21,13 +20,16 @@ or install Docker Desktop:
 * `Docker Desktop for Mac <https://docs.docker.com/desktop/install/mac-install/>`_
 * `Docker Desktop for Linux <https://docs.docker.com/desktop/install/linux-install/>`_
 
-
 Also make sure that you have GNU's ``make`` installed on your system.
 
 .. note::
 
     On Windows, you can use the ``make`` command with the `GNU Make for Windows <http://gnuwin32.sourceforge.net/packages/make.htm>`_ package.
     On newer windows systems, simply use ``winget install GnuWin32.Make`` and make it executable with ``set PATH=%PATH%;C:/Program Files (x86)/GnuWin32/bin``.
+
+.. note::
+
+    On Ubuntu, you need to install the docker compose plugin with ``sudo update && sudo apt-get install docker-compose-plugin``.
 
 Build
 -----
