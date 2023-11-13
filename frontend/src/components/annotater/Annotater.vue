@@ -384,4 +384,10 @@ IconBoostrap[disabled] {
   display: none;
 }
 
+@media screen and (max-width: 900px) {
+  #sidebarContainer {
+    display: none;
+  }
+}
+
 </style>
