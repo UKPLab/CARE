@@ -3,7 +3,8 @@
       id="sidebar-container"
       :class="(show ? 'show' : 'collapsing')"
       class="collapse collapse-horizontal border-end d-flex flex-column"
-      :style="widthStyle">
+      :style="{width: `${width}px`}"
+  >
     <div id="hotZone" class="hot-zone"></div>
     <div
         id="sidepane"
@@ -164,14 +165,10 @@ export default {
             return !a.annotationId ? 1 : -1;
           }
         });
-    },
-    widthStyle() {
-      return {
-        minWidth: this.width + "px"
-      }
     }
   },
   mounted() {
+    this.width = this.$store.getters["settings/getValue"]("sidebar.width");
     this.eventBus.on('sidebarScroll', (anno_id) => {
       const comment = this.$store.getters["table/comment/getByKey"]("annotationId", anno_id)
         .find(comm => comm.parentCommentId === null);
@@ -251,18 +248,18 @@ export default {
       }
     },
     initDragController() {
-      const dom = document.querySelector('#hotZone')
-      const minWidth = 400
+      const dom = document.querySelector('#hotZone');
+      const minWidth = 400;
 
       let startX, startWidth;
       const handleStart = (e) => {
         e.preventDefault();
-        document.body.style.userSelect = 'none'
+        document.body.style.userSelect = 'none';
 
-        startWidth = this.width
-        startX = e.clientX
-        document.addEventListener('mousemove', handleMove)
-        document.addEventListener('mouseup', handleEnd)
+        startWidth = this.width;
+        startX = e.clientX;
+        document.addEventListener('mousemove', handleMove);
+        document.addEventListener('mouseup', handleEnd);
       }
 
       const handleMove = (e) => {
@@ -274,12 +271,14 @@ export default {
       }
 
       const handleEnd = () => {
-        document.removeEventListener('mousemove', handleMove)
-        document.removeEventListener('mouseup', handleEnd)
-        document.body.style.userSelect = ''
+        document.removeEventListener('mousemove', handleMove);
+        document.removeEventListener('mouseup', handleEnd);
+        document.body.style.userSelect = '';
+
+        this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
       }
 
-      dom.addEventListener('mousedown', handleStart)
+      dom.addEventListener('mousedown', handleStart);
     }
   }
 }
