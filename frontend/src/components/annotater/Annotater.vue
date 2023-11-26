@@ -14,6 +14,7 @@
           style="overflow-y: scroll;"
         >
           <PDFViewer
+            v-if="documentType === null"
             ref="pdfViewer"
             class="rounded border border-1 shadow-sm"
             style="margin:auto"
@@ -23,6 +24,7 @@
           id="sidebarContainer"
           class="col border mh-100  col-sm-auto g-0"
           style="overflow-y: scroll;"
+          v-show="isSidebarVisible"
         >
           <Sidebar ref="sidebar"/>
         </div>
@@ -61,6 +63,17 @@
             :color="(!nlpActive) ?'#777777':'#097969'"
             :size="18"
             icon-name="robot"
+          />
+        </button>
+        <button
+          :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
+          class="btn rounded-circle"
+          type="button"
+          @click="toggleSidebar"
+        >
+          <LoadIcon
+            :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
+            :size="18"
           />
         </button>
       </li>
@@ -136,6 +149,7 @@ import debounce from 'lodash.debounce';
 import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
+// import EditorComponent from "@/components/annotater/Editor.vue"
 
 export default {
   name: "AnnotaterComponent",
@@ -145,7 +159,8 @@ export default {
     ExpandMenu,
     Sidebar,
     Loader,
-    ExportAnnos
+    ExportAnnos,
+    // EditorComponent
   },
   inject: {
     documentId: {
@@ -170,6 +185,7 @@ export default {
   data() {
     return {
       downloading: false,
+      isSidebarVisible: true, 
       logScroll: debounce(function () {
         this.$socket.emit("stats", {
           action: "annotatorScrollActivity",
@@ -219,7 +235,11 @@ export default {
     },
     numStudyComments() {
       return this.comments.filter(c => c.studySessionId).length;
-    }
+    },
+    documentType() {
+      const doc = this.$store.getters['table/document/get'](this.documentId);
+      return doc.type;
+    },
   },
   watch: {
     studySessionId(newVal, oldVal) {
@@ -263,6 +283,9 @@ export default {
       const newNlpActive = !this.nlpActive;
       this.setSetting({key: "annotator.nlp.activated", value: newNlpActive});
       this.$socket.emit("appSettingSet", {key: "annotator.nlp.activated", value: newNlpActive});
+    },
+    toggleSidebar() {
+      this.isSidebarVisible = !this.isSidebarVisible;
     },
     scrollActivity() {
       this.logScroll();
