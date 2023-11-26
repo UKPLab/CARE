@@ -2,33 +2,40 @@
   <Card title="Documents">
     <template #headerElements>
       <ButtonHeader
-          class="btn-secondary"
-          icon="cloud-arrow-down"
-          title="Export All"
-          @click="exportAll()"
+        class="btn-secondary"
+        icon="cloud-arrow-down"
+        title="Export All"
+        @click="exportAll()"
       />
       <ButtonHeader
-          class="btn-primary"
-          title="Add document"
-          text="Add"
-          @click="$refs.uploadModal.open()"
+        class="btn-primary"
+        title="Add document"
+        text="Add"
+        @click="$refs.uploadModal.open()"
+      />
+      <ButtonHeader
+        class="btn-primary"
+        title="Create document"
+        text="Create"
+        @click="$refs.createModal.open()"
       />
     </template>
     <template #body>
       <BasicTable
-          :columns="columns"
-          :data="docs"
-          :options="options"
-          @action="action"
+        :columns="columns"
+        :data="docs"
+        :options="options"
+        @action="action"
       />
     </template>
   </Card>
-  <PublishModal ref="publishModal"/>
-  <StudyModal ref="studyCoordinator"/>
-  <ExportAnnos ref="export"/>
-  <ConfirmModal ref="deleteConf"/>
-  <UploadModal ref="uploadModal"/>
-  <EditModal ref="editModal"/>
+  <PublishModal ref="publishModal" />
+  <StudyModal ref="studyCoordinator" />
+  <ExportAnnos ref="export" />
+  <ConfirmModal ref="deleteConf" />
+  <UploadModal ref="uploadModal" />
+  <CreateModal ref="createModal" />
+  <EditModal ref="editModal" />
 </template>
 
 <script>
@@ -40,6 +47,7 @@ import StudyModal from "./coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import ButtonHeader from "@/basic/card/ButtonHeader.vue";
 import UploadModal from "./documents/UploadModal.vue";
+import CreateModal from "./documents/CreateModal.vue";
 import EditModal from "./documents/EditModal.vue";
 
 /**
@@ -53,7 +61,7 @@ import EditModal from "./documents/EditModal.vue";
  */
 export default {
   name: "DashboardDocument",
-  fetchData: ['document', 'study'],
+  fetchData: ["document", "study"],
   components: {
     StudyModal,
     ExportAnnos,
@@ -63,7 +71,8 @@ export default {
     ButtonHeader,
     PublishModal,
     ConfirmModal,
-    EditModal
+    EditModal,
+    CreateModal,
   },
   data() {
     return {
@@ -76,16 +85,16 @@ export default {
         pagination: 10,
       },
       columns: [
-        {name: "Title", key: "name"},
-        {name: "Created At", key: "createdAt"},
+        { name: "Title", key: "name" },
+        { name: "Created At", key: "createdAt" },
         {
           name: "Public",
           key: "publicBadge",
           type: "badge",
         },
-        {name: "Manage", key: "manage", type: "button-group"},
-      ]
-    }
+        { name: "Manage", key: "manage", type: "button-group" },
+      ],
+    };
   },
   computed: {
     documents() {
@@ -95,76 +104,80 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     docs() {
-      return this.documents.filter(doc => doc.userId === this.userId).map(d => {
-        let newD = {...d};
-        newD.publicBadge = {
-          class: newD.public ? "bg-success" : "bg-danger",
-          text: newD.public ? "Yes" : "No"
-        }
-        newD.manage = [
-          {
-            icon: "box-arrow-in-right",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              }
+      return this.documents
+        .filter((doc) => doc.userId === this.userId)
+        .map((d) => {
+          let newD = { ...d };
+          newD.publicBadge = {
+            class: newD.public ? "bg-success" : "bg-danger",
+            text: newD.public ? "Yes" : "No",
+          };
+          newD.manage = [
+            {
+              icon: "box-arrow-in-right",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                },
+              },
+              title: "Access document...",
+              action: "accessDoc",
             },
-            title: "Access document...",
-            action: "accessDoc",
-          },
-          {
-            icon: "trash",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              }
+            {
+              icon: "trash",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                },
+              },
+              title: "Delete document...",
+              action: "deleteDoc",
             },
-            title: "Delete document...",
-            action: "deleteDoc",
-          },
-          {
-            icon: "cloud-arrow-up",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              }
+            {
+              icon: "cloud-arrow-up",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                },
+              },
+              title: "Publish document...",
+              action: "publicDoc",
             },
-            title: "Publish document...",
-            action: "publicDoc",
-          },
-        {
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
-          title: "Rename document...",
-          action: "renameDoc"
-        },
-        ];
-        if (this.studiesEnabled) {
-          newD.manage.push({
-            icon: "person-workspace",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              }
+            {
+              icon: "pencil",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                },
+              },
+              title: "Rename document...",
+              action: "renameDoc",
             },
-            title: "Open study coordinator...",
-            action: "studyCoordinator",
-          });
-        }
-        return newD;
-      });
+          ];
+          if (this.studiesEnabled) {
+            newD.manage.push({
+              icon: "person-workspace",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                },
+              },
+              title: "Open study coordinator...",
+              action: "studyCoordinator",
+            });
+          }
+          return newD;
+        });
     },
     studiesEnabled() {
-      return this.$store.getters["settings/getValue"]('app.study.enabled') === "true";
+      return (
+        this.$store.getters["settings/getValue"]("app.study.enabled") === "true"
+      );
     },
   },
   methods: {
@@ -188,24 +201,34 @@ export default {
       }
     },
     async deleteDoc(row) {
-      const studies = this.$store.getters["table/study/getFiltered"](e => e.documentId === row.id)
+      const studies = this.$store.getters["table/study/getFiltered"](
+        (e) => e.documentId === row.id
+      );
       let warning;
       if (studies && studies.length > 0) {
-        warning = ` There ${studies.length !== 1 ? 'are' : 'is'} currently ${studies.length} ${studies.length !== 1 ? 'studies' : 'study'}
-         running on this document. Deleting it will delete the ${studies.length !== 1 ? 'studies' : 'study'}!`
+        warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${
+          studies.length
+        } ${studies.length !== 1 ? "studies" : "study"}
+         running on this document. Deleting it will delete the ${
+           studies.length !== 1 ? "studies" : "study"
+         }!`;
       } else {
         warning = "";
       }
 
       this.$refs.deleteConf.open(
-          "Delete Document",
-          "Are you sure you want to delete the document?",
-          warning,
-          function (val) {
-            if (val) {
-              this.$socket.emit("documentUpdate", {documentId: row.id, deleted: true});
-            }
-          });
+        "Delete Document",
+        "Are you sure you want to delete the document?",
+        warning,
+        function (val) {
+          if (val) {
+            this.$socket.emit("documentUpdate", {
+              documentId: row.id,
+              deleted: true,
+            });
+          }
+        }
+      );
     },
     renameDoc(row) {
       this.$refs.editModal.open(row.id);
@@ -220,14 +243,14 @@ export default {
       this.$refs.publishModal.open(row.id);
     },
     exportAll() {
-      const doc_ids = this.docs.map(i => i.id);
+      const doc_ids = this.docs.map((i) => i.id);
       this.$refs.export.requestExport(doc_ids, "json");
     },
     studyCoordinator(row) {
       this.$refs.studyCoordinator.open(0, row.id);
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style scoped>
