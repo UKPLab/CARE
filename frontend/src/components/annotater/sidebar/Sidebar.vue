@@ -168,7 +168,8 @@ export default {
     }
   },
   mounted() {
-    this.width = this.$store.getters["settings/getValue"]("sidebar.width");
+    this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.width;
+    
     this.eventBus.on('sidebarScroll', (anno_id) => {
       const comment = this.$store.getters["table/comment/getByKey"]("annotationId", anno_id)
         .find(comm => comm.parentCommentId === null);
@@ -253,6 +254,7 @@ export default {
 
       let startX, startWidth;
       const handleStart = (e) => {
+
         e.preventDefault();
         document.body.style.userSelect = 'none';
 
