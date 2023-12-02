@@ -19,6 +19,10 @@
             class="rounded border border-1 shadow-sm"
             style="margin:auto"
           />
+          <EditorComponent
+            v-else-if="documentType === 1"
+            :document-id="documentId"
+          />
         </div>
         <div
           id="sidebarContainer"
@@ -149,7 +153,7 @@ import debounce from 'lodash.debounce';
 import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
-// import EditorComponent from "@/components/annotater/Editor.vue"
+import EditorComponent from "@/components/annotater/Editor.vue"
 
 export default {
   name: "AnnotaterComponent",
@@ -160,7 +164,7 @@ export default {
     Sidebar,
     Loader,
     ExportAnnos,
-    // EditorComponent
+    EditorComponent
   },
   inject: {
     documentId: {
@@ -397,8 +401,6 @@ export default {
 #sidebarContainer {
   position: relative;
   padding: 0;
-  max-width: 400px;
-  min-width: 400px;
 }
 
 IconBoostrap[disabled] {
@@ -407,6 +409,12 @@ IconBoostrap[disabled] {
 
 #sidebarContainer::-webkit-scrollbar {
   display: none;
+}
+
+@media screen and (max-width: 900px) {
+  #sidebarContainer {
+    display: none;
+  }
 }
 
 </style>

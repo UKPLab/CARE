@@ -3,7 +3,9 @@
       id="sidebar-container"
       :class="(show ? 'show' : 'collapsing')"
       class="collapse collapse-horizontal border-end d-flex flex-column"
+      :style="{width: `${width}px`}"
   >
+    <div id="hotZone" class="hot-zone"></div>
     <div
         id="sidepane"
         ref="sidepane"
@@ -102,6 +104,11 @@ export default {
       default: true,
     },
   },
+  data() {
+    return {
+      width: 400,
+    }
+  },
   computed: {
     study() {
       if (this.studySession) {
@@ -158,9 +165,11 @@ export default {
             return !a.annotationId ? 1 : -1;
           }
         });
-    },
+    }
   },
   mounted() {
+    this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.width;
+    
     this.eventBus.on('sidebarScroll', (anno_id) => {
       const comment = this.$store.getters["table/comment/getByKey"]("annotationId", anno_id)
         .find(comm => comm.parentCommentId === null);
@@ -175,6 +184,7 @@ export default {
         data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}
       });
     })
+    this.initDragController()
   },
   methods: {
     hover(annotationId) {
@@ -237,6 +247,40 @@ export default {
       } else {
         return true;
       }
+    },
+    initDragController() {
+      const dom = document.querySelector('#hotZone');
+      const minWidth = 400;
+
+      let startX, startWidth;
+      const handleStart = (e) => {
+
+        e.preventDefault();
+        document.body.style.userSelect = 'none';
+
+        startWidth = this.width;
+        startX = e.clientX;
+        document.addEventListener('mousemove', handleMove);
+        document.addEventListener('mouseup', handleEnd);
+      }
+
+      const handleMove = (e) => {
+        e.preventDefault();
+        const newWidth = startWidth - (e.clientX - startX);
+        if (newWidth > minWidth) {
+          this.width = newWidth;
+        }
+      }
+
+      const handleEnd = () => {
+        document.removeEventListener('mousemove', handleMove);
+        document.removeEventListener('mouseup', handleEnd);
+        document.body.style.userSelect = '';
+
+        this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
+      }
+
+      dom.addEventListener('mousedown', handleStart);
     }
   }
 }
@@ -244,8 +288,8 @@ export default {
 
 <style scoped>
 #sidebar-container {
-  max-width: 400px;
   height: 100%;
+  position: relative;
 }
 
 #spacer {
@@ -285,5 +329,14 @@ export default {
 
 #sidepane::-webkit-scrollbar {
   display: none;
+}
+
+.hot-zone {
+  width: 3px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  cursor: col-resize;
 }
 </style>
