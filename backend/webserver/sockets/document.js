@@ -82,8 +82,7 @@ module.exports = class DocumentSocket extends Socket {
      */
     async updateDocument(documentId, document) {
         const doc = await this.models['document'].getById(documentId);
-
-        if (await this.checkUserAccess(doc.userId)) {
+        if (this.checkUserAccess(doc.userId)) {
             this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(doc.id, document)));
             if (document.deleted && !doc.deleted) {
                 await this.cascadeDelete(documentId);
@@ -101,8 +100,9 @@ module.exports = class DocumentSocket extends Socket {
      * @return {Promise<void>}
      */
     async cascadeDelete(documentId) {
-        (await Promise.all(await this.models['study'].getAllByKey("documentId", documentId))
-            .filter(async s => await this.checkUserAccess(s.userId)))
+        const studies = await this.models['study'].getAllByKey("documentId", documentId);
+
+        studies.filter(async s => this.checkUserAccess(s.userId))
             .forEach(s => {
                 try {
                     this.getSocket("StudySocket").updateStudy(s.id, {deleted: true})
@@ -110,6 +110,8 @@ module.exports = class DocumentSocket extends Socket {
                     this.logger.error("Failed to delete study " + s.id + " for doc " + documentId);
                 }
             });
+
+
     }
 
     /**
