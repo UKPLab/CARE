@@ -5,7 +5,7 @@
     class="pageLoader"
   />
   <span v-else>
-    <div id="annotatorContainer" class="container-fluid d-flex min-vh-100 vh-100 flex-column ">
+    <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
         <div
           id="viewerContainer"
@@ -19,14 +19,7 @@
             style="margin:auto"
           />
         </div>
-        <div
-          id="sidebarContainer"
-          ref="sidebarContainer"
-          class="col border mh-100  col-sm-auto g-0 collapse show collapse-horizontal"
-          style="overflow-y: scroll;"
-        >
-          <Sidebar ref="sidebar"/>
-        </div>
+        <Sidebar ref="sidebar" :show="isSidebarVisible" />
       </div>
     </div>
 
@@ -151,7 +144,6 @@ import debounce from 'lodash.debounce';
 import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
-import {Collapse} from "bootstrap"
 
 export default {
   name: "AnnotaterComponent",
@@ -186,7 +178,7 @@ export default {
   data() {
     return {
       downloading: false,
-      sidebarCollapser: null,
+      isSidebarVisible: false,
       logScroll: debounce(function () {
         this.$socket.emit("stats", {
           action: "annotatorScrollActivity",
@@ -210,10 +202,6 @@ export default {
     showAll() {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
-    },
-    isSidebarVisible() {
-      console.log(this.sidebarCollapser?._isShown());
-      return this.sidebarCollapser?._isShown();
     },
     annotations() {
       return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId)
@@ -267,10 +255,6 @@ export default {
 
     // scrolling
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
-
-    // collapsing
-    this.sidebarCollapser = new Collapse(this.$refs.sidebarContainer, {});
-    console.log(this.sidebarCollapser);
   },
   beforeUnmount() {
     // Leave the room for document updates
@@ -282,15 +266,21 @@ export default {
       setSetting: "settings/set",
     }),
     decisionSubmit(decision) {
-      this.$refs.decisionSubmit.open(decision);
-    },
-    toggleSidebar() {
-      this.sidebarCollapser.toggle();
+      this.$refs.decisionSubmit.open(decision)
     },
     toggleNlp() {
-      const newNlpActive = !this.nlpActive;
-      this.setSetting({key: "annotator.nlp.activated", value: newNlpActive});
-      this.$socket.emit("appSettingSet", {key: "annotator.nlp.activated", value: newNlpActive});
+      const newNlpActive = !this.nlpActive
+      this.setSetting({
+        key: 'annotator.nlp.activated',
+        value: newNlpActive
+      })
+      this.$socket.emit('appSettingSet', {
+        key: 'annotator.nlp.activated',
+        value: newNlpActive
+      })
+    },
+    toggleSidebar() {
+      this.isSidebarVisible = !this.isSidebarVisible;
     },
     scrollActivity() {
       this.logScroll();
@@ -398,24 +388,7 @@ export default {
 </script>
 
 <style scoped>
-
-#sidebarContainer {
-  position: relative;
-  padding: 0;
-}
-
 IconBoostrap[disabled] {
   background-color: darkgrey;
 }
-
-#sidebarContainer::-webkit-scrollbar {
-  display: none;
-}
-
-@media screen and (max-width: 900px) {
-  #sidebarContainer {
-    display: none;
-  }
-}
-
 </style>
