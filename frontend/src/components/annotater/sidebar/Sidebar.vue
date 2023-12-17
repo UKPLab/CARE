@@ -103,6 +103,8 @@ export default {
   data() {
     return {
       width: 400,
+      minWidth: 400,
+      maxWidth: '50%',
       isFixed: false,
       isDragging: false
     }
@@ -181,8 +183,9 @@ export default {
     }
   },
   mounted() {
-    this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.width;
-    
+    this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
+    this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
+    this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
     this.eventBus.on('sidebarScroll', (anno_id) => {
       const comment = this.$store.getters["table/comment/getByKey"]("annotationId", anno_id)
         .find(comm => comm.parentCommentId === null);
@@ -262,14 +265,20 @@ export default {
         return true;
       }
     },
+    /**
+     * Initializes the drag controller for the sidebar
+     * 
+     * When the mouse is pressed on the hot zone, the sidebar can be resized
+     * 
+     * @author Zheyu Zhang
+     */
     initDragController() {
       const dom = document.querySelector('#hotZone');
-      const minWidth = 400;
-      const that = this
+      const that = this;
 
       let startX, startWidth;
       const handleStart = (e) => {
-        that.isDragging = true
+        that.isDragging = true;
 
         e.preventDefault();
         document.body.style.userSelect = 'none';
@@ -282,14 +291,15 @@ export default {
 
       const handleMove = (e) => {
         e.preventDefault();
-        const newWidth = startWidth - (e.clientX - startX);
-        if (newWidth > minWidth) {
-          this.width = newWidth;
-        }
+        let newWidth = startWidth - (e.clientX - startX);
+        const maxWidthInPixels = this.maxWidth.endsWith('%') ? window.innerWidth * parseInt(this.maxWidth) / 100 : parseInt(this.maxWidth);
+        newWidth = Math.max(newWidth, this.minWidth);
+        newWidth = Math.min(newWidth, maxWidthInPixels);
+        this.width = newWidth;
       }
 
       const handleEnd = () => {
-        that.isDragging = false
+        that.isDragging = false;
 
         document.removeEventListener('mousemove', handleMove);
         document.removeEventListener('mouseup', handleEnd);
@@ -298,21 +308,32 @@ export default {
         this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
       }
 
-      dom.addEventListener('mousedown', handleStart)
+      dom.addEventListener('mousedown', handleStart);
     },
+    /**
+     * Initializes the hover controller for the sidebar
+     * 
+     * When the mouse enters the hover zone, the sidebar will be fixed
+     * 
+     * @author Zheyu Zhang
+     */
     initHoverController() {
-      const hoverHotZoneDom = document.querySelector('#hoverHotZone')
-      const sidebarContainerDom = document.querySelector('#sidebarContainer')
+      const hoverHotZoneDom = document.querySelector('#hoverHotZone');
+      const sidebarContainerDom = document.querySelector('#sidebarContainer');
 
       hoverHotZoneDom.addEventListener('mouseenter', () => {
-        this.isFixed = true
-
-        sidebarContainerDom.addEventListener('mouseleave', handleMouseleave)
+        this.isFixed = true;
+        this.tempWidth = this.width;
+        this.width = this.minWidth;
+        this.isHovering = true; 
+        sidebarContainerDom.addEventListener('mouseleave', handleMouseleave);
       })
 
       const handleMouseleave = () => {
-        this.isFixed = false
-        sidebarContainerDom.removeEventListener('mouseleave', handleMouseleave)
+        this.width = this.tempWidth;
+        this.isFixed = false;
+        this.isHovering = false; 
+        sidebarContainerDom.removeEventListener('mouseleave', handleMouseleave);
       }
     }
   }
@@ -406,6 +427,10 @@ export default {
 #sidebarContainer.is-fixed {
   position: fixed;
   right: 0;
+}
+
+#sidebarContainer.is-fixed .hot-zone {
+  display: none;
 }
 
 #sidebarContainer::-webkit-scrollbar {
