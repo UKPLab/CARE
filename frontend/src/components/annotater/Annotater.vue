@@ -19,7 +19,10 @@
             style="margin:auto"
           />
         </div>
-        <Sidebar ref="sidebar" :show="isSidebarVisible" />
+        <Sidebar 
+          v-if="!sidebarDisabled"
+          ref="sidebar" :show="isSidebarVisible" 
+        />
       </div>
     </div>
 
@@ -170,6 +173,11 @@ export default {
       default: false,
     },
     review: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    sidebarDisabled: {
       type: Boolean,
       required: false,
       default: false,

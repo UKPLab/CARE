@@ -111,6 +111,18 @@ const settings = [
         value: "true",
         type: "boolean",
         description: "Whether to enable the user study functionality"
+    },
+    {
+        key: "annotator.sidebar.maxWidth",
+        value: "50%",
+        type: "string",
+        description: "The maximum width of the sidebar (percentage of the screen)"
+    },
+    {
+        key: "annotator.sidebar.minWidth",
+        value: 400,
+        type: "integer",
+        description: "The minimum width of the sidebar (px)"
     }
 ]
 
