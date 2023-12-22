@@ -114,15 +114,15 @@ const settings = [
     },
     {
         key: "annotator.sidebar.maxWidth",
-        value: "50%",
-        type: "string",
-        description: "The maximum width of the sidebar (percentage of the screen)"
+        value: 50,
+        type: "integer",
+        description: "The maximum width of the sidebar (percentage of the screen, in %)"
     },
     {
         key: "annotator.sidebar.minWidth",
         value: 400,
         type: "integer",
-        description: "The minimum width of the sidebar (px)"
+        description: "The minimum width of the sidebar (in px)"
     }
 ]
 
