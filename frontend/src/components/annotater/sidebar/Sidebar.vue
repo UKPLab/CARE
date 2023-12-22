@@ -104,7 +104,7 @@ export default {
     return {
       width: 400,
       minWidth: 400,
-      maxWidth: '50%',
+      maxWidth: 50,
       isFixed: false,
       isDragging: false
     }
@@ -180,9 +180,25 @@ export default {
     },
     sidebarClassList() {
       return [this.show || this.isFixed ? 'is-active' : 'collapsing']
+    },
+    hasDrafts() {
+      return this.$store.getters["table/comment/getFiltered"](e => e.draft).length > 0 
+        || this.$store.getters["table/annotation/getFiltered"](e => e.draft).length > 0;
     }
   },
   mounted() {
+    this.$watch('hasDrafts', (newVal) => {
+      if (newVal) {
+        this.isFixed = true;
+        this.tempWidth = this.width;
+        this.width = this.minWidth;
+        this.isHovering = true; 
+      } else {
+        this.width = this.tempWidth;
+        this.isFixed = false;
+        this.isHovering = false; 
+      }
+    });
     this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
     this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
     this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
@@ -292,7 +308,7 @@ export default {
       const handleMove = (e) => {
         e.preventDefault();
         let newWidth = startWidth - (e.clientX - startX);
-        const maxWidthInPixels = this.maxWidth.endsWith('%') ? window.innerWidth * parseInt(this.maxWidth) / 100 : parseInt(this.maxWidth);
+        const maxWidthInPixels = window.innerWidth * this.maxWidth / 100;
         newWidth = Math.max(newWidth, this.minWidth);
         newWidth = Math.min(newWidth, maxWidthInPixels);
         this.width = newWidth;
@@ -320,21 +336,29 @@ export default {
     initHoverController() {
       const hoverHotZoneDom = document.querySelector('#hoverHotZone');
       const sidebarContainerDom = document.querySelector('#sidebarContainer');
+      let hoverTimer;
 
       hoverHotZoneDom.addEventListener('mouseenter', () => {
-        this.isFixed = true;
-        this.tempWidth = this.width;
-        this.width = this.minWidth;
-        this.isHovering = true; 
-        sidebarContainerDom.addEventListener('mouseleave', handleMouseleave);
+        hoverTimer = setTimeout(() => {
+          this.isFixed = true;
+          this.tempWidth = this.width;
+          this.width = this.minWidth;
+          this.isHovering = true;
+          sidebarContainerDom.addEventListener('mouseleave', handleMouseleave);
+        }, 300);
       })
 
       const handleMouseleave = () => {
+        clearTimeout(hoverTimer);
         this.width = this.tempWidth;
         this.isFixed = false;
         this.isHovering = false; 
         sidebarContainerDom.removeEventListener('mouseleave', handleMouseleave);
-      }
+      };
+
+      hoverHotZoneDom.addEventListener('mouseleave', () => {
+        clearTimeout(hoverTimer);
+      });
     }
   }
 }
