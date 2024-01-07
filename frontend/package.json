@@ -25,6 +25,7 @@
     "bootstrap-vue-3": "^0.1.21",
     "bootstrap5-tags": "^1.6.2",
     "deep-equal": "^2.2.1",
+    "diff": "^5.1.0",
     "file-saver": "^2.0.5",
     "intersection-observer": "^0.12.2",
     "jsonschema": "^1.4.1",
