@@ -40,6 +40,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
         text: DataTypes.STRING(10000),
+        version: DataTypes.INTEGER,
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
