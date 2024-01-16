@@ -1,4 +1,8 @@
 const Socket = require("../Socket.js");
+const fs = require("fs");
+const path = require("path");
+
+const DOCUMENT_PATH = `${__dirname}/../../../documents`;
 
 /**
  * Handle all editable document through websocket
@@ -138,6 +142,24 @@ module.exports = class EditableDocumentSocket extends Socket {
     }
   }
 
+  /**
+   * Save document data to a local file
+   * @param doc
+   * @param data
+   * @returns {Promise<void>}
+   */
+  async saveDocumentData(hash, data) {
+    try {
+      const target = path.join(DOCUMENT_PATH, `${hash}`);
+
+      fs.writeFile(target, data, (err) => {
+        this.socket.emit("saveDocumentData", { success: !err, documentHash: hash });
+      });
+    } catch (err) {
+      this.logger.error(err);
+    }
+  }
+
   async init() {
     this.socket.on("editableDocumentGet", async (data) => {
       try {
@@ -179,6 +201,14 @@ module.exports = class EditableDocumentSocket extends Socket {
         }
 
         await this.saveHistoryData(doc, diff);
+      } catch (err) {
+        this.logger.error(err);
+      }
+    });
+
+    this.socket.on("saveDocumentData", async ({ hash, data }) => {
+      try {
+        this.saveDocumentData(hash, data);
       } catch (err) {
         this.logger.error(err);
       }

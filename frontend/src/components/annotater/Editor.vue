@@ -3,18 +3,10 @@
 </template>
 
 <script>
-import { QuillEditor } from '@vueup/vue-quill';
-import '@vueup/vue-quill/dist/vue-quill.snow.css';
-import debounce from 'lodash.debounce';
-import { diffChars } from 'diff';
-
-/**
- * Editor component
- * 
- * This component provides a Quill editor to edit the document.
- * 
- * @author Zheyu Zhang
- */
+import { QuillEditor } from "@vueup/vue-quill";
+import "@vueup/vue-quill/dist/vue-quill.snow.css";
+import debounce from "lodash.debounce";
+import { diffChars } from "diff";
 
 export default {
   name: "EditorComponent",
@@ -30,18 +22,29 @@ export default {
   data() {
     return {
       content: "",
+      originalContent: undefined,
       editable_document: undefined,
-      debounceHandleSave: undefined
+      debounceHandleSave: undefined,
+      documentHash: undefined
     };
   },
   created() {
     this.debounceHandleSave = debounce(() => {
       this.contentChanged();
-    }, 2000); // 2 seconds
+    }, 2000);
+
+    // Get route param
+    this.documentHash = this.$route.params.documentHash;
+
+    window.addEventListener("beforeunload", this.handleBeforeunload);
   },
   mounted() {
     // Get or create editable document for this document
     this.$socket.emit("editableDocumentGetOrCreateForDocument", { documentId: this.documentId, text: "" });
+  },
+  unmounted() {
+    this.saveCompleteDocment();
+    window.removeEventListener("beforeunload", this.handleBeforeunload);
   },
   sockets: {
     editable_docRefresh: function (data) {
@@ -50,6 +53,7 @@ export default {
         // then set eidtable document and content
         this.editable_document = data[0];
         this.content = this.editable_document.text;
+        this.originalContent = this.editable_document.text;
       }
     }
   },
@@ -101,6 +105,21 @@ export default {
       console.log("ret:", ret);
 
       return ret;
+    },
+
+    // Save document data
+    saveCompleteDocment() {
+      this.$socket.emit("saveDocumentData", {
+        hash: this.documentHash,
+        data: this.content
+      });
+    },
+    handleBeforeunload(event) {
+      if (this.originalContent === this.content) return;
+
+      event.preventDefault();
+      event.returnValue = "";
+      return event;
     }
   }
 };
