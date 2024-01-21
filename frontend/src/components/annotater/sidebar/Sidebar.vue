@@ -500,7 +500,7 @@ export default {
 #hoverHotZone {
   position: fixed;
   height: 100%;
-  width: 3px;
+  width: 6px;
   top: 0;
   right: 0px;
   z-index: 999;
