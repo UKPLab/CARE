@@ -65,8 +65,8 @@
 
 <script>
 import AnnoCard from "./card/AnnoCard.vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue"
-import {scrollElement} from "@/assets/anchoring/scroll";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import { scrollElement } from "@/assets/anchoring/scroll";
 
 /** Sidebar component of the Annotator
  *
@@ -106,8 +106,10 @@ export default {
       minWidth: 400,
       maxWidth: 50,
       isFixed: false,
-      isDragging: false
-    }
+      isDragging: false,
+      sidebarContainerDom: undefined,
+      originalWidth: undefined
+    };
   },
   computed: {
     study() {
@@ -186,22 +188,31 @@ export default {
         || this.$store.getters["table/annotation/getFiltered"](e => e.draft).length > 0;
     }
   },
-  mounted() {
-    this.$watch('hasDrafts', (newVal) => {
+  watch: {
+    hasDrafts(newVal) {
+      // If opened from navigation
+      if (this.show) return;
+      // If sidebar is fixed
       if (newVal) {
         this.isFixed = true;
-        this.tempWidth = this.width;
         this.width = this.minWidth;
-        this.isHovering = true; 
-      } else {
-        this.width = this.tempWidth;
-        this.isFixed = false;
-        this.isHovering = false; 
+        this.isHovering = true;
+        this.registerSidebarBlurEvent();
       }
-    });
+    },
+    show(newVal) {
+      if (newVal) {
+        this .width = this .originalWidth;
+        this .isFixed = false;
+        this .isHovering = false;
+      }
+    }
+  },
+  mounted() {
     this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
     this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
     this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
+    this.originalWidth = this.width;
     this.eventBus.on('sidebarScroll', (anno_id) => {
       const comment = this.$store.getters["table/comment/getByKey"]("annotationId", anno_id)
         .find(comm => comm.parentCommentId === null);
@@ -322,6 +333,7 @@ export default {
         document.body.style.userSelect = '';
 
         this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
+        this.originalWidth = this.width;
       }
 
       dom.addEventListener('mousedown', handleStart);
@@ -335,30 +347,48 @@ export default {
      */
     initHoverController() {
       const hoverHotZoneDom = document.querySelector('#hoverHotZone');
-      const sidebarContainerDom = document.querySelector('#sidebarContainer');
+      this.sidebarContainerDom = document.querySelector('#sidebarContainer');
       let hoverTimer;
 
       hoverHotZoneDom.addEventListener('mouseenter', () => {
         hoverTimer = setTimeout(() => {
           this.isFixed = true;
-          this.tempWidth = this.width;
           this.width = this.minWidth;
           this.isHovering = true;
-          sidebarContainerDom.addEventListener('mouseleave', handleMouseleave);
-        }, 300);
-      })
+          this.sidebarContainerDom.addEventListener('mouseleave', handleMouseleave);
+        }, 500);
+      });
 
       const handleMouseleave = () => {
         clearTimeout(hoverTimer);
-        this.width = this.tempWidth;
+        this.width = this.originalWidth;
         this.isFixed = false;
-        this.isHovering = false; 
-        sidebarContainerDom.removeEventListener('mouseleave', handleMouseleave);
+        this.isHovering = false;
+        this.sidebarContainerDom.removeEventListener('mouseleave', handleMouseleave);
       };
 
       hoverHotZoneDom.addEventListener('mouseleave', () => {
         clearTimeout(hoverTimer);
       });
+    },
+    /**
+     * Registers the sidebar blur event
+     * 
+     * @author Zheyu Zhang
+     */
+    registerSidebarBlurEvent() {
+      const handleSidebarClick = (e) => {
+        e.stopPropagation();
+      };
+
+      const handleBodyClick = () => {
+        this.isFixed = false;
+        this.isHovering = false;
+        document.body.removeEventListener("click", handleBodyClick);
+      };
+
+      this.sidebarContainerDom.addEventListener("click", handleSidebarClick);
+      document.body.addEventListener("click", handleBodyClick);
     }
   }
 }
@@ -400,7 +430,7 @@ export default {
 }
 
 #anno-list {
-  list-style-type: none
+  list-style-type: none;
 }
 
 #addPageNote {

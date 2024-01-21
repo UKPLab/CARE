@@ -186,7 +186,7 @@ export default {
   data() {
     return {
       downloading: false,
-      isSidebarVisible: false,
+      isSidebarVisible: true,
       logScroll: debounce(function () {
         this.$socket.emit("stats", {
           action: "annotatorScrollActivity",
