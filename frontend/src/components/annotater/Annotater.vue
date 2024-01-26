@@ -19,13 +19,10 @@
             style="margin:auto"
           />
         </div>
-        <div
-          id="sidebarContainer"
-          class="col border mh-100  col-sm-auto g-0"
-          style="overflow-y: scroll;"
-        >
-          <Sidebar ref="sidebar"/>
-        </div>
+        <Sidebar 
+          v-if="!sidebarDisabled"
+          ref="sidebar" :show="isSidebarVisible" 
+        />
       </div>
     </div>
 
@@ -50,6 +47,7 @@
         </button>
       </li>
       <li class="nav-item">
+
         <button
           v-if="nlpEnabled"
           :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
@@ -57,10 +55,23 @@
           type="button"
           @click="toggleNlp"
         >
+
+
           <LoadIcon
             :color="(!nlpActive) ?'#777777':'#097969'"
             :size="18"
             icon-name="robot"
+          />
+        </button>
+        <button
+          :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
+          class="btn rounded-circle"
+          type="button"
+          @click="toggleSidebar"
+        >
+          <LoadIcon
+            :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
+            :size="18"
           />
         </button>
       </li>
@@ -166,10 +177,16 @@ export default {
       required: false,
       default: false,
     },
+    sidebarDisabled: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   data() {
     return {
       downloading: false,
+      isSidebarVisible: true,
       logScroll: debounce(function () {
         this.$socket.emit("stats", {
           action: "annotatorScrollActivity",
@@ -257,12 +274,21 @@ export default {
       setSetting: "settings/set",
     }),
     decisionSubmit(decision) {
-      this.$refs.decisionSubmit.open(decision);
+      this.$refs.decisionSubmit.open(decision)
     },
     toggleNlp() {
-      const newNlpActive = !this.nlpActive;
-      this.setSetting({key: "annotator.nlp.activated", value: newNlpActive});
-      this.$socket.emit("appSettingSet", {key: "annotator.nlp.activated", value: newNlpActive});
+      const newNlpActive = !this.nlpActive
+      this.setSetting({
+        key: 'annotator.nlp.activated',
+        value: newNlpActive
+      })
+      this.$socket.emit('appSettingSet', {
+        key: 'annotator.nlp.activated',
+        value: newNlpActive
+      })
+    },
+    toggleSidebar() {
+      this.isSidebarVisible = !this.isSidebarVisible;
     },
     scrollActivity() {
       this.logScroll();
@@ -370,20 +396,7 @@ export default {
 </script>
 
 <style scoped>
-
-#sidebarContainer {
-  position: relative;
-  padding: 0;
-  max-width: 400px;
-  min-width: 400px;
-}
-
 IconBoostrap[disabled] {
   background-color: darkgrey;
 }
-
-#sidebarContainer::-webkit-scrollbar {
-  display: none;
-}
-
 </style>
