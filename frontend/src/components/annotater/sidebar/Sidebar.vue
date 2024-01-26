@@ -1,74 +1,72 @@
 <template>
   <div
-      id="sidebar-container"
-      :class="(show ? 'show' : 'collapsing')"
-      class="collapse collapse-horizontal border-end d-flex flex-column"
+    id="sidebarContainer"
+    class="col border mh-100 col-sm-auto g-0"
+    :class="sidebarContainerClassList"
+    :style="sidebarContainerStyle"
   >
+    <div id="hoverHotZone"></div>
     <div
-        id="sidepane"
-        ref="sidepane"
+      id="sidebar"
+      :class="sidebarClassList"
+      class="collapse collapse-horizontal border-end d-flex flex-column"
     >
-      <div id="spacer"/>
-      <ul
-          id="anno-list"
-          class="list-group"
-      >
-        <li v-if="documentComments.length === 0">
-          <p class="text-center">
-            No elements
-          </p>
-        </li>
-        <li
-          v-for="comment in documentComments"
-          :id="'comment-' + comment.id"
-          :key="'documentComment-' + comment.id"
-          class="list-group-i"
-          @mouseleave="unhover(comment.annotationId)"
-          @mouseover="hover(comment.annotationId)"
-        >
-          <AnnoCard
+      <div id="hotZone" class="hot-zone"></div>
+      <div id="sidepane" ref="sidepane">
+        <div id="spacer" />
+        <ul id="anno-list" class="list-group">
+          <li v-if="documentComments.length === 0">
+            <p class="text-center">No elements</p>
+          </li>
+          <li
+            v-for="comment in documentComments"
+            :id="'comment-' + comment.id"
+            :key="'documentComment-' + comment.id"
+            class="list-group-i"
+            @mouseleave="unhover(comment.annotationId)"
+            @mouseover="hover(comment.annotationId)"
+          >
+            <AnnoCard
               :id="comment.id"
               :ref="'annocard' + comment.id"
               :comment-id="comment.id"
               @focus="sidebarScrollTo"
-          />
-        </li>
+            />
+          </li>
 
-        <li
-            v-if="!readonly"
-            id="addPageNote"
-        >
-          <button
+          <li v-if="!readonly" id="addPageNote">
+            <button
               class="btn btn-light"
               type="button"
               @click="createDocumentComment"
-          >
-            <svg
+            >
+              <svg
                 class="bi bi-plus-lg"
                 fill="currentColor"
                 height="16"
                 viewBox="0 0 16 16"
                 width="16"
                 xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
+              >
+                <path
                   d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
                   fill-rule="evenodd"
-              />
-            </svg>
-            Document Note
-          </button>
-        </li>
-      </ul>
+                />
+              </svg>
+              Document Note
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
+    <ConfirmModal ref="leavePageConf" />
   </div>
-  <ConfirmModal ref="leavePageConf"/>
 </template>
 
 <script>
 import AnnoCard from "./card/AnnoCard.vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue"
-import {scrollElement} from "@/assets/anchoring/scroll";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import { scrollElement } from "@/assets/anchoring/scroll";
 
 /** Sidebar component of the Annotator
  *
@@ -101,6 +99,17 @@ export default {
       required: false,
       default: true,
     },
+  },
+  data() {
+    return {
+      width: 400,
+      minWidth: 400,
+      maxWidth: 50,
+      isFixed: false,
+      isDragging: false,
+      sidebarContainerDom: undefined,
+      originalWidth: undefined
+    };
   },
   computed: {
     study() {
@@ -157,10 +166,53 @@ export default {
           } else {
             return !a.annotationId ? 1 : -1;
           }
-        });
+        })
     },
+    sidebarContainerStyle() {
+      return {
+        width: this.show || this.isFixed ? `${this.width}px` : 0
+      }
+    },
+    sidebarContainerClassList() {
+      return [
+        this.show ? 'is-active' : 'is-hidden',
+        this.isDragging ? 'is-dragging' : '',
+        this.isFixed ? 'is-fixed' : ''
+      ]
+    },
+    sidebarClassList() {
+      return [this.show || this.isFixed ? 'is-active' : 'collapsing']
+    },
+    hasDrafts() {
+      return this.$store.getters["table/comment/getFiltered"](e => e.draft).length > 0 
+        || this.$store.getters["table/annotation/getFiltered"](e => e.draft).length > 0;
+    }
+  },
+  watch: {
+    hasDrafts(newVal) {
+      // If opened from navigation
+      if (this.show) return;
+      // If sidebar is fixed
+      if (newVal) {
+        this.isFixed = true;
+        this.width = this.minWidth;
+        this.isHovering = true;
+        this.registerSidebarBlurEvent();
+      }
+    },
+    show(newVal) {
+      if (newVal) {
+        this .width = this .originalWidth;
+        this .isFixed = false;
+        this .isHovering = false;
+      }
+    }
   },
   mounted() {
+    this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
+    this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
+    this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
+    this.originalWidth = this.width;
     this.eventBus.on('sidebarScroll', (anno_id) => {
       const comment = this.$store.getters["table/comment/getByKey"]("annotationId", anno_id)
         .find(comm => comm.parentCommentId === null);
@@ -175,6 +227,8 @@ export default {
         data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}
       });
     })
+    this.initDragController()
+    this.initHoverController()
   },
   methods: {
     hover(annotationId) {
@@ -237,15 +291,121 @@ export default {
       } else {
         return true;
       }
+    },
+    /**
+     * Initializes the drag controller for the sidebar
+     * 
+     * When the mouse is pressed on the hot zone, the sidebar can be resized
+     * 
+     * @author Zheyu Zhang
+     */
+    initDragController() {
+      const dom = document.querySelector('#hotZone');
+      const that = this;
+
+      let startX, startWidth;
+      const handleStart = (e) => {
+        that.isDragging = true;
+
+        e.preventDefault();
+        document.body.style.userSelect = 'none';
+
+        startWidth = this.width;
+        startX = e.clientX;
+        document.addEventListener('mousemove', handleMove);
+        document.addEventListener('mouseup', handleEnd);
+      }
+
+      const handleMove = (e) => {
+        e.preventDefault();
+        let newWidth = startWidth - (e.clientX - startX);
+        const maxWidthInPixels = window.innerWidth * this.maxWidth / 100;
+        newWidth = Math.max(newWidth, this.minWidth);
+        newWidth = Math.min(newWidth, maxWidthInPixels);
+        this.width = newWidth;
+      }
+
+      const handleEnd = () => {
+        that.isDragging = false;
+
+        document.removeEventListener('mousemove', handleMove);
+        document.removeEventListener('mouseup', handleEnd);
+        document.body.style.userSelect = '';
+
+        this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
+        this.originalWidth = this.width;
+      }
+
+      dom.addEventListener('mousedown', handleStart);
+    },
+    /**
+     * Initializes the hover controller for the sidebar
+     * 
+     * When the mouse enters the hover zone, the sidebar will be fixed
+     * 
+     * @author Zheyu Zhang
+     */
+    initHoverController() {
+      const hoverHotZoneDom = document.querySelector('#hoverHotZone');
+      this.sidebarContainerDom = document.querySelector('#sidebarContainer');
+      let hoverTimer;
+
+      hoverHotZoneDom.addEventListener('mouseenter', () => {
+        hoverTimer = setTimeout(() => {
+          this.isFixed = true;
+          this.width = this.minWidth;
+          this.isHovering = true;
+          this.sidebarContainerDom.addEventListener('mouseleave', handleMouseleave);
+        }, 500);
+      });
+
+      const handleMouseleave = () => {
+        clearTimeout(hoverTimer);
+        this.width = this.originalWidth;
+        this.isFixed = false;
+        this.isHovering = false;
+        this.sidebarContainerDom.removeEventListener('mouseleave', handleMouseleave);
+      };
+
+      hoverHotZoneDom.addEventListener('mouseleave', () => {
+        clearTimeout(hoverTimer);
+      });
+    },
+    /**
+     * Registers the sidebar blur event
+     * 
+     * @author Zheyu Zhang
+     */
+    registerSidebarBlurEvent() {
+      const handleSidebarClick = (e) => {
+        e.stopPropagation();
+      };
+
+      const handleBodyClick = () => {
+        this.isFixed = false;
+        this.isHovering = false;
+        document.body.removeEventListener("click", handleBodyClick);
+      };
+
+      this.sidebarContainerDom.addEventListener("click", handleSidebarClick);
+      document.body.addEventListener("click", handleBodyClick);
     }
   }
 }
 </script>
 
 <style scoped>
-#sidebar-container {
-  max-width: 400px;
+#sidebar {
   height: 100%;
+  width: 100%;
+  position: relative;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  position: absolute;
+}
+
+#sidebar.is-active {
+  transform: translateX(0);
 }
 
 #spacer {
@@ -270,7 +430,7 @@ export default {
 }
 
 #anno-list {
-  list-style-type: none
+  list-style-type: none;
 }
 
 #addPageNote {
@@ -284,6 +444,66 @@ export default {
 }
 
 #sidepane::-webkit-scrollbar {
+  display: none;
+}
+
+.hot-zone {
+  width: 3px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  cursor: col-resize;
+}
+
+#sidebarContainer {
+  position: relative;
+  padding: 0;
+  transition: width 0.3s ease;
+  overflow-y: scroll;
+}
+
+#sidebarContainer.is-hidden {
+  position: fixed;
+  height: 100%;
+  right: 0;
+  width: 10px;
+}
+
+#sidebarContainer.is-hidden #hoverHotZone {
+  display: block;
+}
+
+#sidebarContainer.is-dragging {
+  transition: unset;
+}
+
+#sidebarContainer.is-fixed {
+  position: fixed;
+  right: 0;
+}
+
+#sidebarContainer.is-fixed .hot-zone {
+  display: none;
+}
+
+#sidebarContainer::-webkit-scrollbar {
+  display: none;
+}
+
+@media screen and (max-width: 900px) {
+  #sidebarContainer {
+    display: none;
+  }
+}
+
+#hoverHotZone {
+  position: fixed;
+  height: 100%;
+  width: 6px;
+  top: 0;
+  right: 0px;
+  z-index: 999;
   display: none;
 }
 </style>
