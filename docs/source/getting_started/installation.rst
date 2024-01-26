@@ -9,18 +9,33 @@ checkout the :doc:`Before You Start <../for_developers/before_you_start>` option
 Prerequisites
 -------------
 
-Docker and docker-compose are required to build the containers.
+Docker is required to build the containers.
 Please install them according to the official documentation:
 
 * `Docker <https://docs.docker.com/engine/installation/>`_
-* `Docker Compose <https://docs.docker.com/compose/install/>`_
+
+or install Docker Desktop:
+
+* `Docker Desktop for Windows <https://docs.docker.com/docker-for-windows/install/>`_
+* `Docker Desktop for Mac <https://docs.docker.com/desktop/install/mac-install/>`_
+* `Docker Desktop for Linux <https://docs.docker.com/desktop/install/linux-install/>`_
 
 Also make sure that you have GNU's ``make`` installed on your system.
 
 .. note::
 
-    On Windows, you can use the ``make`` command with the `GNU Make for Windows <http://gnuwin32.sourceforge.net/packages/make.htm>`_ package.
+    **Windows**
+
+    You can use the ``make`` command with the `GNU Make for Windows <http://gnuwin32.sourceforge.net/packages/make.htm>`_ package.
     On newer windows systems, simply use ``winget install GnuWin32.Make`` and make it executable with ``set PATH=%PATH%;C:/Program Files (x86)/GnuWin32/bin``.
+
+    ``make`` via Cygwin is not supported, because it is not compatible with nodejs (see `common_errors`_).
+
+.. note::
+
+    **Debian/Ubuntu**
+
+    You need to install the docker compose plugin with ``sudo update && sudo apt-get install docker-compose-plugin``.
 
 Build
 -----
@@ -49,8 +64,6 @@ To install nginx and Certbot, run the following commands (adapted from this `Imp
 
 .. code-block:: bash
 
-    # Install Docker Compose if not already installed
-    sudo pip3 install docker-compose
     sudo chmod 666 /var/run/docker.sock
 
     # Clone Project
@@ -64,8 +77,8 @@ To install nginx and Certbot, run the following commands (adapted from this `Imp
     # Run Script for first generation process of the certificate
     sudo ./init-letsencrypt.sh
 
-    # Run docker-compose to generate all docker instances
-    sudo docker-compose up -d
+    # Run docker compose to generate all docker instances
+    sudo docker compose up -d
 
 Now the ssl certificate should be available and will be renewed periodically.
 
@@ -120,4 +133,30 @@ A sample configuration for nginx ``./data/nginx/app.conf`` can look like this:
 .. warning::
 
     The IP-Address can change, if the docker network is newly created! Please adapt the ip address accordingly!
-    A better way is to reload just the config with ``sudo docker-compose restart``.
+    A better way is to reload just the config with ``sudo docker compose restart``.
+
+.. _common_errors:
+
+Possible errors
+---------------
+
+Wrong make file
+^^^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    /bin/bash: /cygdrive/c/Program Files/nodejs/npm: No such file or directory
+    make: *** [backend/node_modules/.uptodate] Error 127
+
+This is usually an error with the wrong make file installed with cygwin, which is not compatible with nodejs.
+Please install the GNU make for Windows as described above.
+
+Further make sure that the path to the make executable is correctly set in the PATH variable.
+You can check which make is used with ``where make`` (under Windows).
+
+.. note::
+
+    In case of doubt, you can uninstall the cygwin make with the installer package manager ``setup-x86_64.exe`` of `Cygwin <https://cygwin.com/install.html>`_.
+
+
+
