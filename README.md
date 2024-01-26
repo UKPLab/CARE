@@ -40,15 +40,22 @@ https://www.tu-darmstadt.de
 If you use this software, please cite the following paper:
 
 ```bibtex
-@misc{https://doi.org/10.48550/arxiv.2302.12611,
-  doi = {10.48550/ARXIV.2302.12611},
-  url = {https://arxiv.org/abs/2302.12611},
-  author = {Zyska, Dennis and Dycke, Nils and Buchmann, Jan and Kuznetsov, Ilia and Gurevych, Iryna},
-  keywords = {Computation and Language (cs.CL), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  title = {CARE: Collaborative AI-Assisted Reading Environment},
-  publisher = {arXiv},
-  year = {2023},
-  copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
+@inproceedings{zyska-etal-2023-care,
+    title = "{CARE}: Collaborative {AI}-Assisted Reading Environment",
+    author = "Zyska, Dennis  and
+      Dycke, Nils  and
+      Buchmann, Jan  and
+      Kuznetsov, Ilia  and
+      Gurevych, Iryna",
+    booktitle = "Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 3: System Demonstrations)",
+    month = jul,
+    year = "2023",
+    address = "Toronto, Canada",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2023.acl-demo.28",
+    doi = "10.18653/v1/2023.acl-demo.28",
+    pages = "291--303",
+    abstract = "Recent years have seen impressive progress in AI-assisted writing, yet the developments in AI-assisted reading are lacking. We propose inline commentary as a natural vehicle for AI-based reading assistance, and present CARE: the first open integrated platform for the study of inline commentary and reading. CARE facilitates data collection for inline commentaries in a commonplace collaborative reading environment, and provides a framework for enhancing reading with NLP-based assistance, such as text classification, generation or question answering. The extensible behavioral logging allows unique insights into the reading and commenting behavior, and flexible configuration makes the platform easy to deploy in new scenarios. To evaluate CARE in action, we apply the platform in a user study dedicated to scholarly peer review. CARE facilitates the data collection and study of inline commentary in NLP, extrinsic evaluation of NLP assistance, and application prototyping. We invite the community to explore and build upon the open source implementation of CARE.Github Repository: \url{https://github.com/UKPLab/CAREPublic} Live Demo: \url{https://care.ukp.informatik.tu-darmstadt.de}",
 }
 ```
 
