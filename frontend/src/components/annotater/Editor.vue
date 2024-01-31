@@ -1,12 +1,18 @@
 <template>
-  <QuillEditor v-model:content="content" content-type="html" theme="snow" :on-update:content="debounceHandleSave()" />
+  <QuillEditor v-model:content="content" theme="snow" @text-change="handleTextChange" />
 </template>
 
 <script>
-import { QuillEditor } from "@vueup/vue-quill";
+/**
+ * Editor component
+ * 
+ * This component provides a Quill editor to edit the document.
+ * 
+ * @author Zheyu Zhang
+ */
+import { Delta, QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import debounce from "lodash.debounce";
-import { diffChars } from "diff";
 
 export default {
   name: "EditorComponent",
@@ -35,16 +41,16 @@ export default {
 
     // Get route param
     this.documentHash = this.$route.params.documentHash;
-
-    window.addEventListener("beforeunload", this.handleBeforeunload);
   },
   mounted() {
     // Get or create editable document for this document
-    this.$socket.emit("editableDocumentGetOrCreateForDocument", { documentId: this.documentId, text: "" });
+    this.$socket.emit("editableDocumentGetOrCreateForDocument", {
+      documentId: this.documentId,
+      docHash: this.documentHash
+    });
   },
   unmounted() {
-    this.saveCompleteDocment();
-    window.removeEventListener("beforeunload", this.handleBeforeunload);
+    this.syncDocDataFromDiffData();
   },
   sockets: {
     editable_docRefresh: function (data) {
@@ -52,7 +58,7 @@ export default {
       if (this.editable_document === undefined && data.length > 0) {
         // then set eidtable document and content
         this.editable_document = data[0];
-        this.content = this.editable_document.text;
+        this.content = new Delta(this.editable_document.text);
         this.originalContent = this.editable_document.text;
       }
     }
@@ -74,52 +80,18 @@ export default {
         });
       }
     },
-    getDiffData(oldStr, newStr) {
-      const ret = [];
-
-      const diffArray = diffChars(oldStr, newStr);
-      console.log("diffArray:", diffArray);
-      let currentIndex = 0;
-
-      diffArray.forEach((item) => {
-        const activeData = {
-          active: undefined,
-          value: item.value,
-          newPos: currentIndex,
-          value: item.value
-        };
-
-        if (item.added) {
-          activeData.active = "added";
-        } else if (item.removed) {
-          activeData.active = "removed";
-        }
-
-        if (!item.removed) {
-          currentIndex += item.count;
-        }
-
-        if (activeData.active) ret.push(activeData);
-      });
-
-      console.log("ret:", ret);
-
-      return ret;
+    handleTextChange({ delta, source, oldContents }) {
+      if (source === "user") {
+        this.$socket.emit("saveDiffData", {
+          editableDocId: this.editable_document.documentId,
+          diffData: delta
+        });
+      }
     },
-
-    // Save document data
-    saveCompleteDocment() {
-      this.$socket.emit("saveDocumentData", {
-        hash: this.documentHash,
-        data: this.content
+    syncDocDataFromDiffData() {
+      this.$socket.emit("syncDocDataFromDiffData", {
+        editableDocId: this.editable_document.documentId
       });
-    },
-    handleBeforeunload(event) {
-      if (this.originalContent === this.content) return;
-
-      event.preventDefault();
-      event.returnValue = "";
-      return event;
     }
   }
 };

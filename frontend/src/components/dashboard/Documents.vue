@@ -7,17 +7,17 @@
         title="Export All"
         @click="exportAll()"
       />
-      <ButtonHeader
-        class="btn-primary"
-        title="Add document"
-        text="Add"
-        @click="$refs.uploadModal.open()"
-      />
-      <ButtonHeader
-        class="btn-primary"
-        title="Create document"
-        text="Create"
-        @click="$refs.createModal.open()"
+      <ButtonHeader 
+        class="btn-primary" 
+        title="Add document" 
+        text="Add" 
+        @click="$refs.uploadModal.open()" 
+        />
+      <ButtonHeader 
+        class="btn-primary" 
+        title="Create document" 
+        text="Create" 
+        @click="$refs.createModal.open()" 
       />
     </template>
     <template #body>
@@ -171,6 +171,20 @@ export default {
               action: "studyCoordinator",
             });
           }
+
+          if (newD.type === 1) {
+            newD.manage.push({
+              icon: "download",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true
+                }
+              },
+              title: "Export data to a local file",
+              action: "exportEditableDoc"
+            });
+          }
           return newD;
         });
     },
@@ -197,6 +211,9 @@ export default {
           break;
         case "studyCoordinator":
           this.studyCoordinator(data.params);
+          break;
+        case "exportEditableDoc":
+          this.exportEditableDoc(data.params);
           break;
       }
     },
@@ -249,7 +266,27 @@ export default {
     studyCoordinator(row) {
       this.$refs.studyCoordinator.open(0, row.id);
     },
-  },
+    exportEditableDoc(row) {
+      const docHash = row.hash;
+      this.$socket.emit("exportEditableDocument", {
+        docHash,
+        docId: row.id
+      });
+
+      this.sockets.subscribe(`exportEditableDocument.${docHash}`, (r) => {
+        this.sockets.unsubscribe(`exportEditableDocument.${docHash}`);
+
+        const fileName = `${row.name}.delta`;
+        window.saveAs(new Blob([JSON.stringify(r)], { type: "text/plain;charset=utf-8" }), fileName);
+
+        this.eventBus.emit("toast", {
+          title: "Export Success",
+          message: `Exported editable document ${fileName}`,
+          variant: "success"
+        });
+      });
+    }
+  }
 };
 </script>
 

@@ -4,9 +4,17 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn("editable_document", "version", {
-      type: Sequelize.INTEGER,
+      type: Sequelize.STRING,
       defaultValue: 0,
       allowNull: false
+    });
+    await queryInterface.addColumn("editable_document", "docHash", {
+      type: Sequelize.STRING,
+      allowNull: false,
+      references: {
+        model: "document",
+        key: "hash"
+      }
     });
   },
 

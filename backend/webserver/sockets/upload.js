@@ -15,43 +15,71 @@ const Socket = require("../Socket.js");
  */
 module.exports = class UploadSocket extends Socket {
 
-    /**
-     * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
-     * an entry in the database.
-     *
-     * @param data the data including name and pdf binary file
-     * @returns {Promise<void>}
-     */
-    async uploadDocument(data) {
-        const doc = await this.models['document'].add({
-            name: data.name.replace(/.pdf$/, ''),
-            userId: this.userId
-        });
-        const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+  /**
+   * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
+   * an entry in the database.
+   *
+   * @author Zheyu Zhang
+   * @param data the data including name and pdf binary file
+   * @returns {Promise<void>}
+   */
+  async uploadDocument(data) {
+    const doc = await this.models["document"].add({
+      name: data.name.replace(/.pdf$/, ""),
+      userId: this.userId
+    });
+    const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
 
-        fs.writeFile(target, data.file, (err) => {
-            this.socket.emit("uploadResult", {success: !err, documentId: doc.id})
-        });
+    fs.writeFile(target, data.file, (err) => {
+      this.socket.emit("uploadResult", { success: !err, documentId: doc.id });
+    });
 
-        this.emit("documentRefresh", doc);
-    }
+    this.emit("documentRefresh", doc);
+  }
 
-    init() {
+  /**
+   * Uploads the given data object as a document. Stores the given delta file in the files path and creates
+   * an entry in the database.
+   *
+   * @param data the data including name and delta binary file
+   * @returns {Promise<void>}
+   */
+  async uploadEditableDocument(data) {
+    const doc = await this.models["document"].add({
+      name: data.name.replace(/.delta$/, ""),
+      userId: this.userId,
+      type: 1
+    });
+    await this.models["editable_document"].add({
+      userId: this.userId,
+      docHash: doc.hash,
+      documentId: doc.id
+    });
 
-        //Make sure upload directory exists
-        fs.mkdirSync(UPLOAD_PATH, {recursive: true});
+    const target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
 
-        this.socket.on("uploadFile", async (data) => {
-            try {
-                if (data.type === "document") {
-                    await this.uploadDocument(data);
-                }
-            } catch (err) {
-                this.logger.error("Upload error: " + err);
-                this.socket.emit("uploadResult", {success: false});
-            }
+    fs.writeFile(target, data.file, (err) => {
+      this.socket.emit("uploadResult", { success: !err, documentId: doc.id });
+    });
 
-        });
+    this.emit("documentRefresh", doc);
+  }
 
-    }
-}
+  init() {
+    //Make sure upload directory exists
+    fs.mkdirSync(UPLOAD_PATH, { recursive: true });
+
+    this.socket.on("uploadFile", async (data) => {
+      try {
+        if (data.type === "document") {
+          await this.uploadDocument(data);
+        } else if (data.type === "editableDocument") {
+          await this.uploadEditableDocument(data);
+        }
+      } catch (err) {
+        this.logger.error("Upload error: " + err);
+        this.socket.emit("uploadResult", { success: false });
+      }
+    });
+  }
+};

@@ -108,7 +108,19 @@ export default {
         return
       }
 
-      this.$socket.emit("uploadFile", {type: "document", file: fileElement.files[0], name: fileElement.files[0].name});
+      const fileName = fileElement.files[0].name;
+      const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+
+      switch (fileType) {
+        case ".delta":
+          this.$socket.emit("uploadFile", { type: "editableDocument", file: fileElement.files[0], name: fileName });
+          break;
+
+        default:
+          this.$socket.emit("uploadFile", { type: "document", file: fileElement.files[0], name: fileName });
+          break;
+      }
+
       this.uploading = true;
     }
   },

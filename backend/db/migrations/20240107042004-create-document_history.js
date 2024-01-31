@@ -25,7 +25,7 @@ module.exports = {
         }
       },
       version: {
-        type: Sequelize.INTEGER
+        type: Sequelize.STRING
       },
       data: {
         type: Sequelize.TEXT()

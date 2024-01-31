@@ -13,18 +13,21 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
 
-  DocumentHistory.init({
-    userId: DataTypes.INTEGER,
-    documentId: DataTypes.INTEGER,
-    version: DataTypes.INTEGER,
-    data: DataTypes.TEXT,
-    createdAt: DataTypes.DATE,
-    updatedAt: DataTypes.DATE,
-    deletedAt: DataTypes.DATE
-  }, {
-    sequelize: sequelize,
-    modelName: "document_history",
-    tableName: "document_history"
-  });
+  DocumentHistory.init(
+    {
+      userId: DataTypes.INTEGER,
+      documentId: DataTypes.INTEGER,
+      version: DataTypes.STRING,
+      data: DataTypes.TEXT,
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE,
+      deletedAt: DataTypes.DATE
+    },
+    {
+      sequelize: sequelize,
+      modelName: "document_history",
+      tableName: "document_history"
+    }
+  );
   return DocumentHistory;
 };
