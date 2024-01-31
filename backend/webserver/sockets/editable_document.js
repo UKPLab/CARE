@@ -1,8 +1,10 @@
 const Socket = require("../Socket.js");
 const fs = require("fs");
 const path = require("path");
+const Delta = require("quill-delta");
+const { Op } = require("sequelize");
 
-const DOCUMENT_PATH = `${__dirname}/../../../documents`;
+const DOCUMENT_PATH = `${__dirname}/../../../files`;
 
 /**
  * Handle all editable document through websocket
@@ -30,10 +32,24 @@ module.exports = class EditableDocumentSocket extends Socket {
         }
       }
 
-      this.emit("editable_docRefresh", editable_doc);
+      this.emitEditableDocRefresh(editable_doc);
       return editable_doc;
     } else {
       this.sendToast("You are not allowed to update this editable document", "Error", "Danger");
+    }
+  }
+
+  /**
+   * emit editable doc refresh
+   * @param {*} editableDoc
+   */
+  async emitEditableDocRefresh(editableDoc) {
+    try {
+      editableDoc.text = this.getDocDataFromLocalFile(editableDoc.docHash);
+
+      this.emit("editable_docRefresh", editableDoc);
+    } catch (error) {
+      this.logger.error(error);
     }
   }
 
@@ -46,7 +62,7 @@ module.exports = class EditableDocumentSocket extends Socket {
     editable_document.userId = this.userId;
 
     const newEditableDoc = await this.models["editable_document"].add(editable_document);
-    this.emit("editable_docRefresh", newEditableDoc);
+    this.emitEditableDocRefresh(newEditableDoc);
 
     return newEditableDoc;
   }
@@ -93,7 +109,7 @@ module.exports = class EditableDocumentSocket extends Socket {
   async sendEditableDoc(editableDocumentId) {
     const editable_doc = await this.models["editable_document"].getById(editableDocumentId);
     if (editable_doc) {
-      this.emit("editable_docRefresh", editable_doc);
+      this.emitEditableDocRefresh(editable_doc);
     } else {
       this.socket.emit("editable_docError", {
         message: "Not found!"
@@ -108,15 +124,17 @@ module.exports = class EditableDocumentSocket extends Socket {
    */
   async getOrCreateForDocument(data) {
     const editable_doc = await this.models["editable_document"].getByKey("documentId", data.documentId);
+
     if (editable_doc) {
-      this.emit("editable_docRefresh", editable_doc);
+      await this.syncDocDataFromDiffData({ editableDocId: data.documentId });
+      this.emitEditableDocRefresh(editable_doc);
     } else {
       await this.addEditableDoc(data);
     }
   }
 
   /**
-   * Save document history data
+   * Save docuemnt history data
    * @param docuemnt
    * @param diff
    * @returns {Promise<void>}
@@ -142,22 +160,94 @@ module.exports = class EditableDocumentSocket extends Socket {
     }
   }
 
-  /**
-   * Save document data to a local file
-   * @param doc
-   * @param data
-   * @returns {Promise<void>}
-   */
-  async saveDocumentData(hash, data) {
+  async saveDiffData({ editableDocId, diffData }) {
     try {
-      const target = path.join(DOCUMENT_PATH, `${hash}`);
+      const latestDiffVersion = new Date().getTime();
+      const historyData = {
+        userId: this.userId,
+        documentId: editableDocId,
+        version: latestDiffVersion,
+        data: JSON.stringify(diffData)
+      };
 
-      fs.writeFile(target, data, (err) => {
-        this.socket.emit("saveDocumentData", { success: !err, documentHash: hash });
-      });
-    } catch (err) {
-      this.logger.error(err);
+      await this.models["document_history"].add(historyData);
+    } catch (error) {
+      this.logger.error(error);
     }
+  }
+
+  async syncDocDataFromDiffData({ editableDocId }) {
+    try {
+      const editableDoc = await this.models["editable_document"].getByKey("documentId", editableDocId);
+
+      // Get unsynchronized data from db
+      const unSyncedDiffList = await this.models["document_history"].findAll({
+        attributes: ["id", "version", "data"],
+        order: [["version", "ASC"]],
+        where: {
+          version: {
+            [Op.gt]: editableDoc.version
+          },
+          documentId: editableDoc.documentId,
+          userId: this.userId
+        }
+      });
+
+      // No need for sync
+      if (unSyncedDiffList.length == 0) return;
+
+      // Local file data
+      let deltaData = new Delta(this.getDocDataFromLocalFile(editableDoc.docHash));
+
+      // Compose diff data
+      deltaData = unSyncedDiffList.reduce((prev, current) => prev.compose(JSON.parse(current.data)), deltaData);
+
+      // Save Data
+      this.saveDocDataToLocalFile(editableDoc.docHash, JSON.stringify(deltaData));
+
+      // Set the document version to the latest diff version
+      await this.models["editable_document"].updateById(editableDoc.id, {
+        version: unSyncedDiffList[unSyncedDiffList.length - 1].version
+      });
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  getLocalFilePath(docHash) {
+    return path.join(DOCUMENT_PATH, `${docHash}.delta`);
+  }
+
+  getDocDataFromLocalFile(docHash) {
+    const filePath = this.getLocalFilePath(docHash);
+
+    let docData = [];
+
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, "utf8");
+
+      if (data.length != 0) docData = JSON.parse(data);
+    }
+
+    return docData;
+  }
+
+  async saveDocDataToLocalFile(docHash, data) {
+    try {
+      const filePath = this.getLocalFilePath(docHash);
+
+      fs.writeFile(filePath, data, (error) => {
+        error && this.logger.error(error);
+      });
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  async exportEditableDocument({ docHash, docId }) {
+    await this.syncDocDataFromDiffData({ editableDocId: docId });
+
+    this.socket.emit(`exportEditableDocument.${docHash}`, this.getDocDataFromLocalFile(docHash));
   }
 
   async init() {
@@ -206,12 +296,16 @@ module.exports = class EditableDocumentSocket extends Socket {
       }
     });
 
-    this.socket.on("saveDocumentData", async ({ hash, data }) => {
-      try {
-        this.saveDocumentData(hash, data);
-      } catch (err) {
-        this.logger.error(err);
-      }
+    this.socket.on("saveDiffData", (data) => {
+      this.saveDiffData(data);
+    });
+
+    this.socket.on("syncDocDataFromDiffData", (data) => {
+      this.syncDocDataFromDiffData(data);
+    });
+
+    this.socket.on("exportEditableDocument", (data) => {
+      this.exportEditableDocument(data);
     });
   }
 };

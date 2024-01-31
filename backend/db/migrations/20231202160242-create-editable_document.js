@@ -5,47 +5,42 @@ module.exports = {
   async up (queryInterface, Sequelize) {
     await queryInterface.createTable('editable_document', {
       id: {
-          allowNull: false,
-          autoIncrement: true,
-          primaryKey: true,
-          type: Sequelize.INTEGER
+        allowNull: false,
+        autoIncrement: true,
+        primaryKey: true,
+        type: Sequelize.INTEGER
       },
       userId: {
-          type: Sequelize.INTEGER,
-          references: {
-              model: "user", key: "id"
-          }
+        type: Sequelize.INTEGER,
+        references: {
+          model: "user", key: "id"
+        }
       },
       documentId: {
-          type: Sequelize.INTEGER,
-          references: {
-              model: "document",
-              key: "id"
-          }
-      },
-      text: {
-          type: Sequelize.STRING(10000),
-
+        type: Sequelize.INTEGER,
+        references: {
+          model: "document",
+          key: "id"
+        }
       },
       deleted: {
-          type: Sequelize.BOOLEAN,
-          defaultValue: false
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
       },
       createdAt: {
-          allowNull: false,
-          type: Sequelize.DATE
+        allowNull: false,
+        type: Sequelize.DATE
       },
       updatedAt: {
-          allowNull: false,
-          type: Sequelize.DATE
+        allowNull: false,
+        type: Sequelize.DATE
       },
       deletedAt: {
-          allowNull: true,
-          defaultValue: null,
-          type: Sequelize.DATE
+        allowNull: true,
+        defaultValue: null,
+        type: Sequelize.DATE
       }
-  });
-
+    });
   },
 
   async down (queryInterface, Sequelize) {
