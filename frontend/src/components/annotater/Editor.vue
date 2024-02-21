@@ -1,5 +1,20 @@
 <template>
-  <QuillEditor v-model:content="content" theme="snow" @text-change="handleTextChange" />
+  <QuillEditor ref="editor" v-model:content="content" theme="snow" @text-change="handleTextChange" />
+  <Teleport to="#topBarNavItems">
+    <button
+          title="Download document"
+          class="btn rounded-circle"
+          type="button"
+          @click="downloadDocument"
+        >
+          <LoadIcon
+            :color="'#777777'"
+            :size="18"
+            icon-name="download"
+          />
+        </button>
+  </Teleport>
+
 </template>
 
 <script>
@@ -13,10 +28,12 @@
 import { Delta, QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import debounce from "lodash.debounce";
+import LoadIcon from "@/basic/Icon.vue";
 
 export default {
   name: "EditorComponent",
   components: {
+    LoadIcon,
     QuillEditor
   },
   props: {
@@ -92,6 +109,18 @@ export default {
       this.$socket.emit("syncDocDataFromDiffData", {
         editableDocId: this.editable_document.documentId
       });
+    },
+    downloadDocument() {
+      var blob = new Blob([this.$refs.editor.getHTML()], { type: 'text/html;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.setAttribute('href', url);
+      anchor.setAttribute('target', '_blank');
+      anchor.style.visibility = 'hidden';
+      anchor.setAttribute('download', 'document.html');
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
     }
   }
 };
