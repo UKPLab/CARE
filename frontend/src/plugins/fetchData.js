@@ -8,10 +8,16 @@ export default {
     install: (app, options = {namespace: "table"}) => {
         app.mixin({
             mounted() {
-                if (this.$options.fetchData && this.$options.fetchData.length > 0) {
-                    this.$options.fetchData.forEach((table) => {
-                        this.$socket.emit("appData", {table: table});
-                    });
+                if (this.$options.fetchData) {
+                    if (this.$options.fetchData.length > 0) {
+                        this.$options.fetchData.forEach((table) => {
+                            if (typeof table === "object") {
+                                this.$socket.emit("appData", table);
+                            } else {
+                                this.$socket.emit("appData", {table: table});
+                            }
+                        });
+                    }
                 }
             }
         })
