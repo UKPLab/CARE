@@ -1,4 +1,9 @@
 <template>
+  <div v-if="disconnected" class="modal-backdrop fade show" style="opacity: 0.75">
+    <Loader
+        text-class="text-light" class="text disconnect_error" :loading="true" :size="5"
+        text="Connection error! Reconnecting..."/>
+  </div>
   <div v-if="requireAuth">
     <TopBar v-if="!hideTopbar"/>
     <div v-if="!appLoaded" class="pageLoader">
@@ -37,11 +42,18 @@ export default {
         tables: false,
         settings: false,
       },
+      disconnected: false,
     }
   },
   sockets: {
     connect() {
-      this.$socket.emit("appInit");
+      this.disconnected = false;
+      if (!this.appLoaded) {
+        this.$socket.emit("appInit");
+      }
+    },
+    disconnect() {
+      this.disconnected = true;
     },
     logout: function () {
       // if not authenticated, backend will always send logout event
@@ -77,7 +89,7 @@ export default {
       return Object.keys(this.loaded).find((k) => !this.loaded[k]);
     },
     appLoadText() {
-      if (!this.$store.connected) {
+      if (!this.$socket.connected) {
         return "Connecting...";
       }
       if (this.appLoadPercent < 100) {
@@ -97,26 +109,32 @@ export default {
     },
     "$route.meta.requireAuth"(newValue, oldValue) {
       if (newValue !== oldValue) {
-        if (newValue && !this.$socket.connected) {
-          this.$socket.connect();
-        }
+        this.connect();
       }
     }
   },
-  mounted() {
-    this.$router.isReady().then(async () => {
-      if (this.$route.meta.checkLogin) {
-        // Check if user already authenticated, if so, we redirect him to the dashboard.
-        const response = await axios.get(getServerURL() + '/auth/check',
-            {withCredentials: true});
-        if (response.data.user) {
-          await this.$router.push("/dashboard");
-        }
+  beforeMount() {
+    this.connect();
+  },
+  async mounted() {
+    if (this.$route.meta.checkLogin) {
+      // Check if user already authenticated, if so, we redirect him to the dashboard.
+      const response = await axios.get(getServerURL() + '/auth/check',
+          {withCredentials: true});
+      if (response.data.user) {
+        await this.$router.push("/dashboard");
       }
-    });
-
+    }
+  },
+  methods: {
+    connect() {
+      if (this.$route.meta.requireAuth && !this.$socket.connected) {
+        this.$socket.connect();
+      }
+    },
   },
 }
+
 </script>
 
 <style>
@@ -130,4 +148,25 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%)
 }
+
+.overlay {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  z-index: 1050;
+  top: 0;
+  left: 0;
+  opacity: 0.9;
+  filter: alpha(opacity=90);
+  background-color: #de1818;
+}
+
+.disconnect_error {
+  transform: translate(-50%, -50%);
+  top: 50%;
+  left: 50%;
+  position: absolute;
+  margin: 0;
+}
+
 </style>

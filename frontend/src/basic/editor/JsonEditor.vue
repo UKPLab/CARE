@@ -157,19 +157,24 @@ export default {
       }
     },
     updateJson(data) {
-      const newTree = jsonview.create(data);
+      console.log("Data", data);
+      try {
+        const newTree = jsonview.create(data);
 
-      this.cleanJson();
-      jsonview.render(newTree, this.$refs.content);
-      this.jsonTree = newTree;
+        this.cleanJson();
+        jsonview.render(newTree, this.$refs.content);
+        this.jsonTree = newTree;
 
-      jsonview.expand(this.jsonTree);
-      this.jsonTree.children.forEach(c => {
-        if (c.children && c.children.length > 1) {
-          jsonview.collapse(c);
-        }
-        c.children.forEach(c2 => jsonview.collapse(c2));
-      });
+        jsonview.expand(this.jsonTree);
+        this.jsonTree.children.forEach(c => {
+          if (c.children && c.children.length > 1) {
+            jsonview.collapse(c);
+          }
+          c.children.forEach(c2 => jsonview.collapse(c2));
+        });
+      } catch (e) {
+        console.error(e);
+      }
     },
     cleanJson() {
       if (this.jsonTree) {

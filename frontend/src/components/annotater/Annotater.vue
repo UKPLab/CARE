@@ -56,6 +56,7 @@
         </button>
       </li>
       <li class="nav-item">
+
         <button
           v-if="nlpEnabled"
           :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
@@ -63,6 +64,8 @@
           type="button"
           @click="toggleNlp"
         >
+
+
           <LoadIcon
             :color="(!nlpActive) ?'#777777':'#097969'"
             :size="18"
@@ -185,11 +188,16 @@ export default {
       required: false,
       default: false,
     },
+    sidebarDisabled: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   data() {
     return {
       downloading: false,
-      isSidebarVisible: true, 
+      isSidebarVisible: true,
       logScroll: debounce(function () {
         this.$socket.emit("stats", {
           action: "annotatorScrollActivity",
@@ -281,12 +289,18 @@ export default {
       setSetting: "settings/set",
     }),
     decisionSubmit(decision) {
-      this.$refs.decisionSubmit.open(decision);
+      this.$refs.decisionSubmit.open(decision)
     },
     toggleNlp() {
-      const newNlpActive = !this.nlpActive;
-      this.setSetting({key: "annotator.nlp.activated", value: newNlpActive});
-      this.$socket.emit("appSettingSet", {key: "annotator.nlp.activated", value: newNlpActive});
+      const newNlpActive = !this.nlpActive
+      this.setSetting({
+        key: 'annotator.nlp.activated',
+        value: newNlpActive
+      })
+      this.$socket.emit('appSettingSet', {
+        key: 'annotator.nlp.activated',
+        value: newNlpActive
+      })
     },
     toggleSidebar() {
       this.isSidebarVisible = !this.isSidebarVisible;

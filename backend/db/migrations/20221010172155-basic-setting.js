@@ -65,12 +65,6 @@ const settings = [
     },
     {key: "service.nlp.url", value: process.env.SERVICE_NLP_URL, description: "The URL of the NLP service"},
     {
-        key: "service.nlp.token",
-        value: process.env.SERVICE_NLP_TOKEN,
-        description: "The token to use for the NLP service",
-        onlyAdmin: true
-    },
-    {
         key: "service.nlp.timeout",
         type: "number",
         value: "60000",
