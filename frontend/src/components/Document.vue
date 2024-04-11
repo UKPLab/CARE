@@ -1,13 +1,13 @@
 <template>
   <Loader
-    v-if="documentId === 0"
-    :loading="true"
-    class="pageLoader"
+      v-if="documentId === 0"
+      :loading="true"
+      class="pageLoader"
   />
-  <Annotater
-    v-else
-    ref="annotator"
-  />
+  <span v-else>
+    <Editor v-if="document.type === 1" ref="editor"/>
+    <Annotater v-else ref="annotator"/>
+  </span>
 </template>
 
 <script>
@@ -24,10 +24,11 @@
 import Annotater from "./annotater/Annotater.vue";
 import Loader from "@/basic/Loading.vue";
 import {computed} from "vue";
+import Editor from "@/components/annotater/Editor.vue"
 
 export default {
   name: "DocumentRoute",
-  components: {Annotater, Loader},
+  components: {Annotater, Loader, Editor},
   provide() {
     return {
       documentId: computed(() => this.documentId),
@@ -62,7 +63,7 @@ export default {
     },
   },
   mounted() {
-    this.$socket.emit("documentGetByHash", {documentHash: this.documentHash})
+    this.$socket.emit("documentGetByHash", {documentHash: this.documentHash});
   },
   sockets: {
     documentError: function (data) {
@@ -80,6 +81,8 @@ export default {
     async confirmLeave() {
       if (this.$refs.annotator) {
         return await this.$refs.annotator.leave();
+      } else if(this.$refs.editor) {
+        return await this.$refs.editor.leave();
       }
     }
   }

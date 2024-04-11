@@ -27,12 +27,28 @@ module.exports = class DocumentSocket extends Socket {
         if (doc
             && (doc.public
                 || (await this.models['study'].getAllByKey('documentId', documentId)).length > 0)
-                || (this.checkUserAccess(doc.userId))
+            || (this.checkUserAccess(doc.userId))
         ) {
             return true;
         } else {
             return false;
         }
+    }
+
+    /**
+     * Create document (html)
+     * @param data
+     * @returns {Promise<void>}
+     */
+    async createDocument(data) {
+        const doc = await this.models["document"].add({
+            name: data.name,
+            type: data.type,
+            userId: this.userId
+        });
+        this.socket.emit("createResult", {success: true, documentId: doc.id})
+
+        this.emit("documentRefresh", doc);
     }
 
     /**
@@ -126,9 +142,19 @@ module.exports = class DocumentSocket extends Socket {
         if (this.checkDocumentAccess(doc.id)) {
             this.emit("documentRefresh", doc);
 
-            fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
-                this.socket.emit("documentFile", {document: doc, file: data});
-            });
+            if (doc.type === 1) {
+                if (fs.existsSync(`${UPLOAD_PATH}/${doc['hash']}.html`)) {
+                    fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.html`, (err, data) => {
+                        this.socket.emit("documentFile", {document: doc, file: data});
+                    });
+                } else {
+                    this.socket.emit("documentFile", {document: doc, file: null});
+                }
+            } else {
+                fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
+                    this.socket.emit("documentFile", {document: doc, file: data});
+                });
+            }
         }
     }
 
@@ -261,13 +287,33 @@ module.exports = class DocumentSocket extends Socket {
         });
 
         this.socket.on("documentSubscribe", (data) => {
-            this.socket.join("doc:" + data.documentId);
-            this.logger.debug("Subscribe document " + data.documentId);
+            try {
+                this.socket.join("doc:" + data.documentId);
+                this.logger.debug("Subscribe document " + data.documentId);
+            } catch (e) {
+                this.logger.error(e);
+                this.sendToast("Error subscribe document", "Error", "danger");
+            }
         });
 
         this.socket.on("documentUnsubscribe", (data) => {
-            this.socket.leave("doc:" + data.documentId);
-            this.logger.debug("Unsubscribe document " + data.documentId);
+            try {
+                this.socket.leave("doc:" + data.documentId);
+                this.logger.debug("Unsubscribe document " + data.documentId);
+            } catch (e) {
+                this.logger.error(e);
+                this.sendToast("Error unsubscribe document", "Error", "danger");
+            }
+        });
+
+        this.socket.on("documentCreate", async (data) => {
+            try {
+                await this.createDocument(data);
+            } catch (e) {
+                this.logger.error(e);
+                this.sendToast("Error create document", "Error", "danger");
+            }
+
         });
 
     }

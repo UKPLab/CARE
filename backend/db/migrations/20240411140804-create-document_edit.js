@@ -1,9 +1,10 @@
 "use strict";
 
+const {INTEGER} = require("sequelize");
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("document_history", {
+    await queryInterface.createTable("document_edit", {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -17,18 +18,31 @@ module.exports = {
           key: "id"
         }
       },
-      documentId: {
+      draft: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
+      offset: {
         type: Sequelize.INTEGER,
-        references: {
-          model: "document",
-          key: "id"
-        }
+        defaultValue: 0,
+        allowNull: false,
       },
-      version: {
-        type: Sequelize.STRING
+      operationType: {
+        type: Sequelize.INTEGER, // 0: Retain (Attribute-Change), 1: Insert, 2: Delete
+        allowNull: false
       },
-      data: {
-        type: Sequelize.TEXT()
+      span: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
+      text: {
+        type: Sequelize.STRING(256),
+        allowNull: true,
+      },
+      attributes: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+        defaultValue: null
       },
       createdAt: {
         allowNull: false,
@@ -47,6 +61,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("document_history");
+    await queryInterface.dropTable("document_edit");
   }
 };

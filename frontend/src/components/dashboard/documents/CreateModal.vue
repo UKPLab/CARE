@@ -81,8 +81,8 @@ export default {
         return;
       }
 
-      this.$socket.emit("create", {
-        type: "document",
+      this.$socket.emit("documentCreate", {
+        type: 1,
         name: this.name,
       });
       this.creating = true;
