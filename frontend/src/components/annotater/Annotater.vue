@@ -14,15 +14,11 @@
           style="overflow-y: scroll;"
         >
           <PDFViewer
-            v-if="documentType === null"
             ref="pdfViewer"
             class="rounded border border-1 shadow-sm"
             style="margin:auto"
           />
-          <EditorComponent
-            v-else-if="documentType === 1"
-            :document-id="documentId"
-          />
+
         </div>
         <div
           id="sidebarContainer"
@@ -156,18 +152,16 @@ import debounce from 'lodash.debounce';
 import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
-import EditorComponent from "@/components/annotater/Editor.vue"
 
 export default {
-  name: "AnnotaterComponent",
+  name: "AnnotaterView",
   components: {
     LoadIcon,
     PDFViewer,
     ExpandMenu,
     Sidebar,
     Loader,
-    ExportAnnos,
-    EditorComponent
+    ExportAnnos
   },
   inject: {
     documentId: {
@@ -247,10 +241,6 @@ export default {
     },
     numStudyComments() {
       return this.comments.filter(c => c.studySessionId).length;
-    },
-    documentType() {
-      const doc = this.$store.getters['table/document/get'](this.documentId);
-      return doc.type;
     },
   },
   watch: {
