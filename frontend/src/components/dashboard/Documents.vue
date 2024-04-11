@@ -87,6 +87,7 @@ export default {
       columns: [
         { name: "Title", key: "name" },
         { name: "Created At", key: "createdAt" },
+        { name: "Type", key: "type" }, 
         {
           name: "Public",
           key: "publicBadge",
@@ -108,6 +109,7 @@ export default {
         .filter((doc) => doc.userId === this.userId)
         .map((d) => {
           let newD = { ...d };
+          newD.type = d.type === 0 ? 'PDF' : 'HTML';
           newD.publicBadge = {
             class: newD.public ? "bg-success" : "bg-danger",
             text: newD.public ? "Yes" : "No",
