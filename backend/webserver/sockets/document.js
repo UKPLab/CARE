@@ -138,22 +138,28 @@ module.exports = class DocumentSocket extends Socket {
      */
     async sendDocument(documentId) {
         const doc = await this.models['document'].getById(documentId);
-
+    
         if (this.checkDocumentAccess(doc.id)) {
             this.emit("documentRefresh", doc);
-
-            if (doc.type === 1) {
-                if (fs.existsSync(`${UPLOAD_PATH}/${doc['hash']}.html`)) {
-                    fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.html`, (err, data) => {
-                        this.socket.emit("documentFile", {document: doc, file: data});
+            try {
+                let filePath = `${UPLOAD_PATH}/${doc['hash']}${doc.type === 1 ? '.html' : '.pdf'}`;
+                if (fs.existsSync(filePath)) {
+                    let fileStream = fs.createReadStream(filePath);
+    
+                    // Sending file in chunks
+                    fileStream.on('data', (chunk) => {
+                        this.socket.emit("documentFileChunk", {documentId: doc.id, chunk: chunk});
                     });
+    
+                    fileStream.on('end', () => {
+                        this.socket.emit("documentFileEnd", {documentId: doc.id});
+                    });
+    
                 } else {
                     this.socket.emit("documentFile", {document: doc, file: null});
                 }
-            } else {
-                fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
-                    this.socket.emit("documentFile", {document: doc, file: data});
-                });
+            } catch (err) {
+                this.socket.emit("documentFileError", {documentId: doc.id, error: err.message});
             }
         }
     }

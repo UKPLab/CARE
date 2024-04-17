@@ -14,7 +14,7 @@
           style="overflow-y: scroll;"
         >
 
-  <QuillEditor ref="editor" v-model:content="content" theme="snow" @text-change="textChange"/>
+        <QuillEditor ref="editor" v-model:content="content" theme="snow" @text-change="handleTextChange"/>
 
         </div>
       </div>
@@ -53,7 +53,7 @@ import LoadIcon from "@/basic/Icon.vue";
 
 export default {
   name: "EditorView",
-  fetchData: ['document_edit'],
+  fetch_data: ['document_edit'],
   components: {
     LoadIcon,
     QuillEditor
@@ -85,7 +85,11 @@ export default {
     this.documentHash = this.$route.params.documentHash;
   },
   mounted() {
-    this.$socket.emit("documentGet", {documentId: this.documentId});
+      console.log("Attempting to connect to socket...");
+      this.$socket.emit("documentGet", {documentId: this.documentId});
+      this.$socket.on('connect', () => {
+          console.log('Socket connected:', this.$socket.id);
+      });
   },
   unmounted() {
     this.syncDocDataFromDiffData();
@@ -126,16 +130,57 @@ export default {
         });
       }*/
     },
-    handleTextChange(data) {
-      console.log(data);
-      /*{ delta, source, oldContents } = data;
-      if (source === "user") {
-        this.$socket.emit("saveDiffData", {
-          editableDocId: this.editable_document.documentId,
-          diffData: delta
-        });
-      }*/
+    handleTextChange({ delta, oldContents, source }) {
+      console.log("Editor Change Detected:", delta);
+      if (source === 'user') {
+        this.processDelta(delta);
+      }
     },
+
+    processDelta(delta) {
+      console.log("Processing delta:", delta);
+      const ops = delta.ops;
+      const dbOps = this.deltaToDatabaseOps(ops);
+      console.log("Processed Delta to DB Operations:", dbOps);
+      this.$socket.emit('saveDelta', { documentId: this.documentId, ops: dbOps });
+  },
+
+    deltaToDatabaseOps(ops) {
+      let offset = 0;
+      return ops.map(op => {
+        let dbOp = {
+          userId: this.userId,  // Assuming `userId` is globally available or injected
+          draft: true,
+          offset,
+          operationType: this.getOperationType(op),
+          span: this.getSpan(op),
+          text: op.insert || null,
+          attributes: op.attributes || null
+        };
+        if (op.retain) {
+          offset += op.retain;
+        } else if (op.insert && typeof op.insert === 'string') {
+          offset += op.insert.length;
+        }
+        return dbOp;
+      });
+    },
+
+    getOperationType(op) {
+      if (op.insert) {
+        return 1; // Insert
+      } else if (op.delete) {
+        return 2; // Delete
+      } else if (op.retain) {
+        return 0; // Retain
+      }
+    },
+
+    getSpan(op) {
+      return op.retain || op.delete || (op.insert ? op.insert.length : 1);
+    },
+
+    
     syncDocDataFromDiffData() {
       this.$socket.emit("syncDocDataFromDiffData", {
         editableDocId: this.editable_document.documentId
