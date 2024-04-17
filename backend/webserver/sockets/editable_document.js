@@ -161,19 +161,20 @@ module.exports = class EditableDocumentSocket extends Socket {
   }
 
   async saveDiffData({ editableDocId, diffData }) {
-    try {
-      const latestDiffVersion = new Date().getTime();
-      const historyData = {
-        userId: this.userId,
-        documentId: editableDocId,
-        version: latestDiffVersion,
-        data: JSON.stringify(diffData)
-      };
-
-      await this.models["document_history"].add(historyData);
-    } catch (error) {
-      this.logger.error(error);
-    }
+      console.log("Attempting to save diff data:", diffData);
+      try {
+          const latestDiffVersion = new Date().getTime();
+          const historyData = {
+              userId: this.userId,
+              documentId: editableDocId,
+              version: latestDiffVersion,
+              data: JSON.stringify(diffData)
+          };
+          await this.models["document_history"].add(historyData);
+          console.log("Saved history data:", historyData);
+      } catch (error) {
+          console.error("Failed to save diff data:", error);
+      }
   }
 
   async syncDocDataFromDiffData({ editableDocId }) {
@@ -257,6 +258,18 @@ module.exports = class EditableDocumentSocket extends Socket {
       } catch (err) {
         this.logger.error(err);
       }
+    });
+
+    this.socket.on("saveDelta", async (data) => {
+        console.log("Received saveDelta with data:", data);
+        try {
+            const results = await this.models['document_edit'].bulkCreate(data.ops);
+            console.log("Database operation successful:", results);
+            this.socket.emit('saveDeltaSuccess');
+        } catch (error) {
+            console.error("Error handling saveDelta:", error);
+            this.socket.emit('saveDeltaFailure', {error: error.message});
+        }
     });
 
     this.socket.on("editableDocumentGetOrCreateForDocument", async (data) => {
