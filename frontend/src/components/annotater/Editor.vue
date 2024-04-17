@@ -53,6 +53,7 @@ import LoadIcon from "@/basic/Icon.vue";
 
 export default {
   name: "EditorView",
+  fetchData: ['document_edit'],
   components: {
     LoadIcon,
     QuillEditor
