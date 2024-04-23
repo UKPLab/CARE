@@ -148,15 +148,13 @@ export default {
       const ops = delta.ops;
       const dbOps = this.deltaToDatabaseOps(ops);
       console.log("Processed Delta to DB Operations:", dbOps);
-      this.$socket.emit('saveDelta', { documentId: this.documentId, ops: dbOps });
+      this.$socket.emit('documentEdit', { documentId: this.documentId, ops: dbOps });
   },
 
     deltaToDatabaseOps(ops) {
       let offset = 0;
       return ops.map(op => {
         let dbOp = {
-          userId: this.userId,  // Assuming `userId` is globally available or injected
-          draft: true,
           offset,
           operationType: this.getOperationType(op),
           span: this.getSpan(op),
@@ -186,15 +184,6 @@ export default {
       return op.retain || op.delete || (op.insert ? op.insert.length : 1);
     },
 
-    
-    syncDocDataFromDiffData() {
-      this.$socket.emit("syncDocDataFromDiffData", {
-        editableDocId: this.editable_document.documentId
-      });
-    },
-    leave() {
-      //TODO
-    },
     downloadDocument() {
       var blob = new Blob([this.$refs.editor.getHTML()], {type: 'text/html;charset=utf-8;'});
       var url = URL.createObjectURL(blob);

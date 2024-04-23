@@ -164,51 +164,7 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
-    /**
-     * Add a edit
-     * @param {object} data edit object
-     * @return {Promise<void>}
-     */
-    async addEdit(data) {
-        if (data.userId !== undefined) {
-            if (data.userId === 'Bot') {
-                const parentComment = await this.models['comment'].getById(data.parentCommentId);
-                if (!this.checkUserAccess(parentComment.userId)) {
-                    this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
-                    return;
-                } else {
-                    data.userId = await this.models['user'].getUserIdByName("Bot");
-                    data.draft = false;
-                }
-            } else if (!this.checkUserAccess(data.userId)) {
-                this.sendToast("You are not allowed to edit this document.", "Access denied", "danger");
-                return;
-            }
-        } else {
-            data.userId = this.userId;
-        }
     
-        if (!this.checkDocumentAccess(data.documentId)) {
-            this.sendToast("You don't have access to this document", "Error", "danger");
-            return;
-        }
-    
-        let newDocument = {
-            title: data.title !== undefined ? data.title : null,
-            content: data.content !== undefined ? data.content : null,
-            userId: data.userId,
-            documentId: data.documentId,
-            draft: data.draft !== undefined ? data.draft : true
-        };
-    
-        try {
-            const savedDocument = await this.models['document'].add(newDocument);
-            this.emit("documentRefresh", savedDocument);
-        } catch (e) {
-            this.logger.error("Could not add or edit document in database. Error: " + e);
-            this.sendToast("Internal server error. Failed to add or edit document.", "Internal server error", "danger");
-        }
-    }
 
     /**
      * Send document data to client
@@ -283,6 +239,44 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    /**
+ * Edit document based on provided data.
+ * 
+ * @param {object} data Data needed to edit the document.
+ */
+async editDocument(data) {
+    try {
+        // Retrieve document based on ID from the request.
+        const documentId = data.documentId;
+        const doc = await this.models['document'].getById(documentId);
+
+        // Check if the current user has access to edit the document.
+        if (!(await this.checkUserAccess(doc.userId))) {
+            this.sendToast("You are not allowed to edit this document", "Error", "Danger");
+            return; // Early return if the user does not have access.
+        }
+        
+        // Assign additional properties for the document edit operation.
+        data.userId = this.userId; // Add current user ID to the data.
+        data.draft = true; // Mark the document edit as a draft.
+
+        // Add the edited document data to the database.
+        const savedEdit = await this.models['document_edit'].add(data);
+
+        // Emit an event to refresh the document edits on clients.
+        this.emit("document_editRefresh", savedEdit);
+    } catch (error) {
+        // Log the error and send a detailed error message to the client.
+        this.logger.error("Error editing document: " + error.message);
+        this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
+        this.socket.emit("documentEditError", {
+            success: false,
+            message: "Failed to edit document due to server error"
+        });
+    }
+}
+
+
     init() {
 
         //Make sure upload directory exists
@@ -305,8 +299,6 @@ module.exports = class DocumentSocket extends Socket {
             try {
                 if (data.documentId && data.documentId !== 0) {
                     await this.updateDocument(data.documentId, data);
-                } else {
-                    await this.addEdit(data);
                 }
             } catch (err) {
                 this.logger.error(err);
@@ -371,6 +363,18 @@ module.exports = class DocumentSocket extends Socket {
             }
 
         });
+
+        this.socket.on("documentEdit", async (data) => {
+            try {
+                await this.editDocument(data);
+            } catch (e) {
+                this.logger.error(e);
+                this.sendToast("Error sending edit", "Error", "danger");
+            }
+
+        });
+
+
 
     }
 }
