@@ -165,6 +165,52 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
+     * Add a edit
+     * @param {object} data edit object
+     * @return {Promise<void>}
+     */
+    async addEdit(data) {
+        if (data.userId !== undefined) {
+            if (data.userId === 'Bot') {
+                const parentComment = await this.models['comment'].getById(data.parentCommentId);
+                if (!this.checkUserAccess(parentComment.userId)) {
+                    this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
+                    return;
+                } else {
+                    data.userId = await this.models['user'].getUserIdByName("Bot");
+                    data.draft = false;
+                }
+            } else if (!this.checkUserAccess(data.userId)) {
+                this.sendToast("You are not allowed to edit this document.", "Access denied", "danger");
+                return;
+            }
+        } else {
+            data.userId = this.userId;
+        }
+    
+        if (!this.checkDocumentAccess(data.documentId)) {
+            this.sendToast("You don't have access to this document", "Error", "danger");
+            return;
+        }
+    
+        let newDocument = {
+            title: data.title !== undefined ? data.title : null,
+            content: data.content !== undefined ? data.content : null,
+            userId: data.userId,
+            documentId: data.documentId,
+            draft: data.draft !== undefined ? data.draft : true
+        };
+    
+        try {
+            const savedDocument = await this.models['document'].add(newDocument);
+            this.emit("documentRefresh", savedDocument);
+        } catch (e) {
+            this.logger.error("Could not add or edit document in database. Error: " + e);
+            this.sendToast("Internal server error. Failed to add or edit document.", "Internal server error", "danger");
+        }
+    }
+
+    /**
      * Send document data to client
      * And send additional data like annotations, comments, tags
      *
@@ -257,7 +303,11 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentUpdate", async (data) => {
             try {
-                await this.updateDocument(data.documentId, data);
+                if (data.documentId && data.documentId !== 0) {
+                    await this.updateDocument(data.documentId, data);
+                } else {
+                    await this.addEdit(data);
+                }
             } catch (err) {
                 this.logger.error(err);
                 this.sendToast(err, "Error updating document", "Danger");

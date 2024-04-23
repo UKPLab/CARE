@@ -261,15 +261,16 @@ module.exports = class EditableDocumentSocket extends Socket {
     });
 
     this.socket.on("saveDelta", async (data) => {
-        console.log("Received saveDelta with data:", data);
-        try {
-            const results = await this.models['document_edit'].bulkCreate(data.ops);
-            console.log("Database operation successful:", results);
-            this.socket.emit('saveDeltaSuccess');
-        } catch (error) {
-            console.error("Error handling saveDelta:", error);
-            this.socket.emit('saveDeltaFailure', {error: error.message});
-        }
+      console.log("Received saveDelta with data:", data);
+      try {
+        // Emit the saveDelta event with the data.ops array
+        this.$socket.emit('saveDelta', { documentId: this.documentId, ops: data.ops });
+        console.log("saveDelta event emitted with data.ops:", data.ops);
+        this.socket.emit('saveDeltaSuccess');
+      } catch (error) {
+        console.error("Error handling saveDelta:", error);
+        this.socket.emit('saveDeltaFailure', {error: error.message});
+      }
     });
 
     this.socket.on("editableDocumentGetOrCreateForDocument", async (data) => {
