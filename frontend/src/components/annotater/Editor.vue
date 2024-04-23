@@ -65,6 +65,9 @@ export default {
     studySessionId: {
       default: null
     },
+    userId: {
+    default: null
+  }
   },
   data() {
     return {
@@ -73,7 +76,10 @@ export default {
       editable_document: undefined,
       debounceHandleSave: undefined,
       documentHash: undefined,
-      textChange: debounce(this.contentChanged, 500)
+      textChange: debounce(this.contentChanged, 500),
+      data: {
+        userId: this.userId,
+      },
     };
   },
   created() {
