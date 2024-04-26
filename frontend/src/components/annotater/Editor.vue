@@ -151,6 +151,23 @@ export default {
       return op.retain || op.delete || (op.insert ? op.insert.length : 1);
     },
 
+    async leave() {
+      // Check if document_edits is defined and not null
+      if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
+        return new Promise((resolve, reject) => {
+          this.$refs.leavePageConf.open(
+              "Unsaved Changes",
+              "Are you sure you want to leave? There are unsaved changes, which will be lost.",
+              null,
+              function (val) {
+                return resolve(val);
+              });
+        });
+      } else {
+        return true;
+      }
+    },
+    
     
   }
 };
