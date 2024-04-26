@@ -240,50 +240,53 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
- * Edit document based on provided data.
- * 
- * @param {object} data Data needed to edit the document.
- */
-async editDocument(data) {
-    const operationType = this.getOperationType(data.op); // Assuming data.op contains the operation details
-    // Include operationType in your data object
-    const insertData = {
-        userId: 2,
-        draft: true,
-        operationType: operationType,
-        // other necessary data fields...
-    };
-    await this.models['document_edit'].add(insertData);
-    this.logger.error("Error editing document: " + error.message);
-        this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
-        this.socket.emit("documentEditError", {
-            success: false,
-            message: "Failed to edit document due to server error"
-        });
+     * Edit document based on provided data.
+     * 
+     * @param {object} data Data needed to edit the document.
+     */
+    async editDocument(data) {
 
-
-    try {
-        await this.models['document_edit'].add(insertData);
-
-        // Check if the current user has access to edit the document.
-        if (!(await this.checkUserAccess(doc.userId))) {
-            this.sendToast("You are not allowed to edit this document", "Error", "Danger");
-            return; // Early return if the user does not have access.
+        if (data.userId !== undefined) {
+            if (data.userId === 'Bot') {
+                data.userId = await this.models['user'].getUserIdByName("Bot");
+                data.draft = false; 
+            } else if (!await this.checkUserAccess(data.userId, data.documentId)) {
+                this.sendToast("You are not allowed to edit this document.", "Access denied", "danger");
+                this.socket.emit("documentEditError", {
+                    success: false,
+                    message: "You do not have permission to edit this document."
+                });
+                return;
+            }
+        } else {
+            data.userId = this.userId;
         }
-        
 
-        // Emit an event to refresh the document edits on clients.
-        //this.emit("document_editRefresh", savedEdit);
-    } catch (error) {
-        // Log the error and send a detailed error message to the client.
-        this.logger.error("Error editing document: " + error.message);
-        this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
-        this.socket.emit("documentEditError", {
-            success: false,
-            message: "Failed to edit document due to server error"
-        });
+        try {
+            const { userId, draft, documentId, ops } = data;
+
+            for (const op of ops) {
+                const entryData = {
+                    userId: data.userId,
+                    draft: true ,
+                    documentId,
+                    ...op  
+                };
+
+                console.log("data being send to database:", entryData);
+                const savedEdit = await this.models['document_edit'].add(entryData);
+                this.emit("document_editRefresh", savedEdit);
+            }
+            
+        } catch (error) {
+            this.logger.error("Error editing document: " + error.message);
+            this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
+            this.socket.emit("documentEditError", {
+                success: false,
+                message: "Failed to edit document due to server error"
+            });
+        }
     }
-}
 
 
     init() {
@@ -376,6 +379,7 @@ async editDocument(data) {
         this.socket.on("documentEdit", async (data) => {
             try {
                 await this.editDocument(data);
+                console.log("data in socket:",data);
             } catch (error) {
                 const errorDetails = {
                     timestamp: new Date().toISOString(),

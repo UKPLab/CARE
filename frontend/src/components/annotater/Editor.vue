@@ -136,17 +136,15 @@ export default {
     },
 
     getOperationType(op) {
-      switch (op) {
-      case 'insert':
-        return 0;
-      case 'delete':
-        return 1;
-      case 'retain':
-        return 2;
-      // Add more cases as needed
-      default:
+      if ('insert' in op) {
+        return 0; // Insert
+      } else if ('delete' in op) {
+        return 1; // Delete
+      } else if ('retain' in op) {
+        return 2; // Retain
+      } else {
         throw new Error('Unsupported operation type');
-      } 
+      }
     },
 
     getSpan(op) {
