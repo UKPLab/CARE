@@ -245,10 +245,25 @@ module.exports = class DocumentSocket extends Socket {
  * @param {object} data Data needed to edit the document.
  */
 async editDocument(data) {
+    const operationType = this.getOperationType(data.op); // Assuming data.op contains the operation details
+    // Include operationType in your data object
+    const insertData = {
+        userId: 2,
+        draft: true,
+        operationType: operationType,
+        // other necessary data fields...
+    };
+    await this.models['document_edit'].add(insertData);
+    this.logger.error("Error editing document: " + error.message);
+        this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
+        this.socket.emit("documentEditError", {
+            success: false,
+            message: "Failed to edit document due to server error"
+        });
+
+
     try {
-        // Retrieve document based on ID from the request.
-        const documentId = data.documentId;
-        const doc = await this.models['document'].getById(documentId);
+        await this.models['document_edit'].add(insertData);
 
         // Check if the current user has access to edit the document.
         if (!(await this.checkUserAccess(doc.userId))) {
@@ -256,15 +271,9 @@ async editDocument(data) {
             return; // Early return if the user does not have access.
         }
         
-        // Assign additional properties for the document edit operation.
-        data.userId = this.userId; // Add current user ID to the data.
-        data.draft = true; // Mark the document edit as a draft.
-
-        // Add the edited document data to the database.
-        const savedEdit = await this.models['document_edit'].add(data);
 
         // Emit an event to refresh the document edits on clients.
-        this.emit("document_editRefresh", savedEdit);
+        //this.emit("document_editRefresh", savedEdit);
     } catch (error) {
         // Log the error and send a detailed error message to the client.
         this.logger.error("Error editing document: " + error.message);
@@ -367,9 +376,27 @@ async editDocument(data) {
         this.socket.on("documentEdit", async (data) => {
             try {
                 await this.editDocument(data);
-            } catch (e) {
-                this.logger.error(e);
-                this.sendToast("Error sending edit", "Error", "danger");
+            } catch (error) {
+                const errorDetails = {
+                    timestamp: new Date().toISOString(),
+                    errorMessage: error.message,
+                    errorType: error.constructor.name,
+                    stackTrace: error.stack,
+                    userId: data.userId,
+                    documentId: data.documentId,
+                    operationDetails: JSON.stringify(data.ops),  // assuming 'data.ops' contains operations attempted
+                    component: "Document Editor",
+                    errorCode: error.code || "N/A"  // Include a default if no specific error code
+                };
+            
+                this.logger.error("Critical error during document edit:", errorDetails);
+            
+                this.sendToast("An error occurred while editing the document.", "Error", "danger");
+                this.socket.emit("documentEditResponse", {
+                    success: false,
+                    message: "Internal server error while editing the document.",
+                    errorCode: 500
+                });
             }
 
         });
