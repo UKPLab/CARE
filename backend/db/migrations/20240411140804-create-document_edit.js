@@ -18,6 +18,13 @@ module.exports = {
           key: "id"
         }
       },
+      documentId: {
+        type: Sequelize.INTEGER,
+        references: {
+            model: "document",
+            key: "id"
+        }
+      },
       draft: {
         type: Sequelize.BOOLEAN,
         defaultValue: true,

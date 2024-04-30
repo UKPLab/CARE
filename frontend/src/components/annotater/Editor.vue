@@ -58,6 +58,7 @@ export default {
     LoadIcon,
     QuillEditor
   },
+  //computed - getFiltered nach nicht applied und später watch (hier nach empty abfragen)
   inject: {
     documentId: {
       default: 0
@@ -85,7 +86,16 @@ export default {
   },
   mounted() {
       console.log("Attempting to connect to socket...");
-      this.$socket.emit("documentGet", {documentId: this.documentId});
+      this.$socket.emit("documentGet", { documentId: this.documentId, contentType: 'edits'});
+      console.log("documentId:",this.documentId);
+
+      this.$socket.on('document_editRefresh', this.initializeEditorWithContent);
+
+      this.$socket.on('documentError', (error) => {
+        console.error('Document error:', error.message);
+        this.handleDocumentError(error);
+      });
+
       this.$socket.on('connect', () => {
           console.log('Socket connected:', this.$socket.id);
       });
@@ -167,7 +177,53 @@ export default {
         return true;
       }
     },
-    
+
+    initializeEditorWithContent(data) {
+        console.log("Received document content from server:", data);
+        if (data.documentId === this.documentId) {
+            const { edits } = data;
+            this.content = this.reconstructDocumentFromEdits(edits);
+            this.$refs.editor.setHTML(this.content);
+        }
+    },
+
+    reconstructDocumentFromEdits(edits) {
+        console.log("Reconstructing document from edits:", edits);
+        
+        edits.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+        let content = '';
+        edits.forEach(edit => {
+            switch(edit.operationType) {
+                case 0: // Insert
+                    // Insert text at the specified offset
+                    content = this.applyInsert(content, edit.text, edit.offset);
+                    break;
+                case 1: // Delete
+                    // Delete text starting from the specified offset
+                    content = this.applyDelete(content, edit.offset, edit.span);
+                    break;
+                case 2: // Retain
+                    // Apply attribute changes if any (not handled here as text is plain)
+                    break;
+            }
+        });
+        return content;
+    },
+
+    applyInsert(content, text, offset) {
+        if (offset > content.length) offset = content.length;
+        return content.slice(0, offset) + text + content.slice(offset);
+    },
+
+    applyDelete(content, offset, span) {
+        if (offset > content.length) return content;
+        return content.substring(0, offset) + content.substring(offset + span);
+    },
+
+    handleDocumentError(error) {
+        alert(`Error: ${error.message}`);
+    },
     
   }
 };

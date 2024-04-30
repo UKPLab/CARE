@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
     DocumentEdit.init(
         {
             userId: DataTypes.INTEGER,
+            documentId: DataTypes.INTEGER,
             draft: DataTypes.BOOLEAN,
             offset: DataTypes.INTEGER,
             operationType: DataTypes.INTEGER, // 0: Retain (Attribute-Change), 1: Insert, 2: Delete
@@ -26,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
             attributes: DataTypes.JSONB,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,
-            deletedAt: DataTypes.DATE
+            deletedAt: DataTypes.DATE,
         },
         {
             sequelize: sequelize,
