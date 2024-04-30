@@ -138,6 +138,9 @@ module.exports = class DocumentSocket extends Socket {
      */
     async sendDocument(documentId) {
         const doc = await this.models['document'].getById(documentId);
+
+        //TODO applied auf false setzen
+        // https://git.ukp.informatik.tu-darmstadt.de/zyska/care/-/compare/feat-195-editor_func_ITG...issue-256-merging-the-editor-into-dev?from_project_id=1700&straight=false
     
         if (this.checkDocumentAccess(doc.id)) {
             this.emit("documentRefresh", doc);
@@ -275,6 +278,10 @@ module.exports = class DocumentSocket extends Socket {
 
                 console.log("data being send to database:", entryData);
                 const savedEdit = await this.models['document_edit'].add(entryData);
+                // TODO add parameter to saveEdit "applied = True"
+                // return Promise.all(data.map(async x => {
+            //return {...x, [targetName]: await this.models['user'].getUserName(x[key])};
+        //}));
                 this.emit("document_editRefresh", savedEdit);
             }
             
@@ -288,6 +295,27 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    async fetchAndSendDocumentContent(documentId, userId) {
+        console.log("Fetching and sending document content for documentId:", documentId, "and userId:", userId);
+        try {
+            if (await this.checkDocumentAccess(documentId)) {
+                console.log("Executing query to fetch edits for documentId:", documentId);
+                const edits = await this.models['document_edit'].findAll({
+                    where: { documentId: documentId }
+                });
+                console.log("Edits fetched from DB:", JSON.stringify(edits));
+                console.log("Sending document edits to client:", edits);
+                this.emit('document_editRefresh', edits);
+            } else {
+                console.log("Access denied for userId:", userId, "on documentId:", documentId);
+                this.sendToast("Access denied", "You do not have permission to access this document.", "danger");
+            }
+        } catch (error) {
+            console.log("Error fetching document content:", error);
+            this.sendToast("Error fetching document content", "Internal server error", "danger");
+        }
+    }
+
 
     init() {
 
@@ -295,8 +323,13 @@ module.exports = class DocumentSocket extends Socket {
         fs.mkdirSync(UPLOAD_PATH, {recursive: true});
 
         this.socket.on("documentGet", async (data) => {
+            console.log("Received documentGet event for documentId:", data.documentId, "Request Type:", data.contentType);
             try {
-                await this.sendDocument(data.documentId);
+                if (data.contentType === 'edits') {
+                    await this.fetchAndSendDocumentContent(data.documentId, this.userId);
+                } else {
+                    await this.sendDocument(data.documentId);
+                }
             } catch (e) {
                 this.logger.error(e);
                 this.sendToast("Error while loading pdf file!", "PDF Error", "danger");
