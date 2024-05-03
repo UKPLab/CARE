@@ -139,17 +139,25 @@ module.exports = class DocumentSocket extends Socket {
     async sendDocument(documentId) {
         const doc = await this.models['document'].getById(documentId);
 
-        //TODO applied auf false setzen
-        // https://git.ukp.informatik.tu-darmstadt.de/zyska/care/-/compare/feat-195-editor_func_ITG...issue-256-merging-the-editor-into-dev?from_project_id=1700&straight=false
+        // TODO applied auf false setzen
     
         if (this.checkDocumentAccess(doc.id)) {
+
             if (doc.type === 1) { // HTML document type
                 console.log("Document is HTML, fetching and sending edits.");
                 const edits = await this.models['document_edit'].findAll({
                     where: { documentId: documentId }
                 });
-                console.log("Edits fetched from DB:", JSON.stringify(edits));
-                this.emit('document_editRefresh', edits);
+
+                // Apply 'applied: false' to each edit before sending
+                const editsWithAppliedFalse = edits.map(edit => ({
+                    ...edit,
+                    applied: false  // Set applied to false
+                }));
+
+                console.log("Edits fetched from DB plus applied: false:", JSON.stringify(editsWithAppliedFalse));
+                this.emit('document_editRefresh', editsWithAppliedFalse);
+
             } else { // Non-HTML document type, send file
                 if (fs.existsSync(`${UPLOAD_PATH}/${doc['hash']}.pdf`)) {
                     fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
@@ -160,6 +168,7 @@ module.exports = class DocumentSocket extends Socket {
                         }
                         this.socket.emit("documentFile", {document: doc, file: data});
                     });
+
                 } else {
                     this.logger.error("PDF file not found.");
                     this.sendToast("PDF file not found!", "File Error", "danger");
@@ -270,6 +279,8 @@ module.exports = class DocumentSocket extends Socket {
         try {
             const { userId, draft, documentId, ops } = data;
 
+            const appliedEdits = [];
+
             for (const op of ops) {
                 const entryData = {
                     userId: data.userId,
@@ -280,12 +291,18 @@ module.exports = class DocumentSocket extends Socket {
 
                 console.log("data being send to database:", entryData);
                 const savedEdit = await this.models['document_edit'].add(entryData);
-                // TODO add parameter to saveEdit "applied = True"
-                // return Promise.all(data.map(async x => {
-            //return {...x, [targetName]: await this.models['user'].getUserName(x[key])};
-        //}));
-                this.emit("document_editRefresh", savedEdit);
-            }
+
+                const editedEntry = {
+                ...savedEdit,
+                applied: true
+            };
+            console.log("Edit after adding 'applied: true' status:", editedEntry);
+            appliedEdits.push(editedEntry);
+        }
+
+        // Emit all edits at once with the 'applied' status
+        console.log("Emitting all edits with applied:true status to frontend:", appliedEdits);
+        this.emit("document_editRefresh", appliedEdits);
             
         } catch (error) {
             this.logger.error("Error editing document: " + error.message);
