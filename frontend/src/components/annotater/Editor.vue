@@ -58,7 +58,6 @@ export default {
     LoadIcon,
     QuillEditor
   },
-  //computed - getFiltered nach nicht applied und später watch (hier nach empty abfragen)
   inject: {
     documentId: {
       default: 0
@@ -81,7 +80,6 @@ export default {
     };
   },
   created() {
-    // Get route param
     this.documentHash = this.$route.params.documentHash;
   },
   mounted() {
@@ -89,7 +87,7 @@ export default {
       this.$socket.emit("documentGet", { documentId: this.documentId});
       console.log("documentId:",this.documentId);
 
-      this.$socket.on('document_editRefresh', this.initializeEditorWithContent);
+      // this.$socket.on('document_editRefresh', this.initializeEditorWithContent); Is this useful here?
 
       this.$socket.on('documentError', (error) => {
         console.error('Document error:', error.message);
@@ -107,6 +105,23 @@ export default {
           this.$refs.editor.setHTML(data.file);
         }
       }
+    }
+  },
+  computed: {
+    unappliedEdits() {
+      return this.$store.getters["table/document_edit/getFiltered"](
+        e => e.applied === false
+      ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    },
+  },
+  watch: {
+    unappliedEdits: {
+      handler(newEdits) {
+        if (newEdits.length > 0) {
+          this.initializeEditorWithContent(newEdits); 
+        }
+      },
+      deep: true 
     }
   },
   methods: {
@@ -162,7 +177,6 @@ export default {
     },
 
     async leave() {
-      // Check if document_edits is defined and not null
       if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
         return new Promise((resolve, reject) => {
           this.$refs.leavePageConf.open(

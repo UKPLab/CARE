@@ -131,28 +131,26 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Send document to client
+     * Sends the document to the client.
      *
-     * @param {number} documentId
-     * @return {Promise<void>}
+     * This method is called when the client requests to view a document. It first checks if the user has access to the document,
+     * and if so, it fetches the edits for the document and sends them to the client.
+     *
+     * @param {number} documentId - The ID of the document to send.
      */
     async sendDocument(documentId) {
         const doc = await this.models['document'].getById(documentId);
-
-        // TODO applied auf false setzen
     
         if (this.checkDocumentAccess(doc.id)) {
 
             if (doc.type === 1) { // HTML document type
-                console.log("Document is HTML, fetching and sending edits.");
-                const edits = await this.models['document_edit'].findAll({
-                    where: { documentId: documentId }
-                });
+                console.log("Document is HTML, fetching and sending edits:",doc);
+                const edits = await this.models['document_edit'].findAll({ where: {documentId: documentId, draft: true}, raw: true }); //FRAGE an Dennis: Wieso wirft es hier fehler, wenn deleted: false mitgegeben wird? 
 
                 // Apply 'applied: false' to each edit before sending
                 const editsWithAppliedFalse = edits.map(edit => ({
                     ...edit,
-                    applied: false  // Set applied to false
+                    applied: false  
                 }));
 
                 console.log("Edits fetched from DB plus applied: false:", JSON.stringify(editsWithAppliedFalse));
@@ -254,9 +252,16 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Edit document based on provided data.
-     * 
-     * @param {object} data Data needed to edit the document.
+     * Edits the document based on the provided data.
+     *
+     * This method is called when the client requests to edit a document. It first checks if the user has access to the document,
+     * and if so, it applies the edits to the document and sends the updated document to the client.
+     *
+     * @param {object} data - The data needed to edit the document. It contains the following properties:
+     * - userId: The ID of the user editing the document.
+     * - draft: A boolean indicating whether the edits are a draft or not.
+     * - documentId: The ID of the document to edit.
+     * - ops: An array of operations to apply to the document.
      */
     async editDocument(data) {
 
@@ -313,35 +318,6 @@ module.exports = class DocumentSocket extends Socket {
             });
         }
     }
-
-    /**
-     * Fetches and sends the document edits content for the given documentId.
-     *
-     * This method is called when the client requests to fetch and send the document edits.
-     * It first checks if the user has access to the document, and if so, it fetches the edits for the document
-     * and sends them to the client.
-     *
-     * @param {number} documentId - The ID of the document to fetch and send the content for.
-     */
-    async fetchAndSendDocumentContent(documentId) {
-        console.log("Fetching and sending document content for documentId:", documentId);
-        try {
-            if (await this.checkDocumentAccess(documentId)) {
-                console.log("Executing query to fetch edits for documentId:", documentId);
-                const edits = await this.models['document_edit'].findAll({ where: {documentId: documentId, deleted: false, draft: true}, raw: true });
-                console.log("Edits fetched from DB:", JSON.stringify(edits));
-                console.log("Sending document edits to client:", edits);
-                this.emit('document_editRefresh', edits);
-            } else {
-                console.log("Access denied on documentId:", documentId);
-                this.sendToast("Access denied", "You do not have permission to access this document.", "danger");
-            }
-        } catch (error) {
-            console.log("Error fetching document content:", error);
-            this.sendToast("Error fetching document content", "Internal server error", "danger");
-        }
-    }
-
 
     init() {
 
