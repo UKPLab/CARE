@@ -8,7 +8,7 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * Loading the document through websocket
  *
- * @author Dennis Zyska
+ * @author Dennis Zyska, Juliane Bechert
  * @type {DocumentSocket}
  */
 module.exports = class DocumentSocket extends Socket {
@@ -143,30 +143,32 @@ module.exports = class DocumentSocket extends Socket {
         // https://git.ukp.informatik.tu-darmstadt.de/zyska/care/-/compare/feat-195-editor_func_ITG...issue-256-merging-the-editor-into-dev?from_project_id=1700&straight=false
     
         if (this.checkDocumentAccess(doc.id)) {
-            this.emit("documentRefresh", doc);
-            try {
-                let filePath = `${UPLOAD_PATH}/${doc['hash']}${doc.type === 1 ? '.html' : '.pdf'}`;
-                if (fs.existsSync(filePath)) {
-                    let fileStream = fs.createReadStream(filePath);
-    
-                    // Sending file in chunks
-                    fileStream.on('data', (chunk) => {
-                        this.socket.emit("documentFileChunk", {documentId: doc.id, chunk: chunk});
+            if (doc.type === 1) { // HTML document type
+                console.log("Document is HTML, fetching and sending edits.");
+                const edits = await this.models['document_edit'].findAll({
+                    where: { documentId: documentId }
+                });
+                console.log("Edits fetched from DB:", JSON.stringify(edits));
+                this.emit('document_editRefresh', edits);
+            } else { // Non-HTML document type, send file
+                if (fs.existsSync(`${UPLOAD_PATH}/${doc['hash']}.pdf`)) {
+                    fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
+                        if (err) {
+                            this.logger.error("Failed to read PDF:", err);
+                            this.sendToast("Error loading PDF file!", "PDF Error", "danger");
+                            return;
+                        }
+                        this.socket.emit("documentFile", {document: doc, file: data});
                     });
-    
-                    fileStream.on('end', () => {
-                        this.socket.emit("documentFileEnd", {documentId: doc.id});
-                    });
-    
                 } else {
-                    this.socket.emit("documentFile", {document: doc, file: null});
+                    this.logger.error("PDF file not found.");
+                    this.sendToast("PDF file not found!", "File Error", "danger");
                 }
-            } catch (err) {
-                this.socket.emit("documentFileError", {documentId: doc.id, error: err.message});
             }
+        } else {
+            this.sendToast("You do not have access to this document.", "Access Error", "danger");
         }
     }
-
     
 
     /**
@@ -295,19 +297,26 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
-    async fetchAndSendDocumentContent(documentId, userId) {
-        console.log("Fetching and sending document content for documentId:", documentId, "and userId:", userId);
+    /**
+     * Fetches and sends the document edits content for the given documentId.
+     *
+     * This method is called when the client requests to fetch and send the document edits.
+     * It first checks if the user has access to the document, and if so, it fetches the edits for the document
+     * and sends them to the client.
+     *
+     * @param {number} documentId - The ID of the document to fetch and send the content for.
+     */
+    async fetchAndSendDocumentContent(documentId) {
+        console.log("Fetching and sending document content for documentId:", documentId);
         try {
             if (await this.checkDocumentAccess(documentId)) {
                 console.log("Executing query to fetch edits for documentId:", documentId);
-                const edits = await this.models['document_edit'].findAll({
-                    where: { documentId: documentId }
-                });
+                const edits = await this.models['document_edit'].findAll({ where: {documentId: documentId, deleted: false, draft: true}, raw: true });
                 console.log("Edits fetched from DB:", JSON.stringify(edits));
                 console.log("Sending document edits to client:", edits);
                 this.emit('document_editRefresh', edits);
             } else {
-                console.log("Access denied for userId:", userId, "on documentId:", documentId);
+                console.log("Access denied on documentId:", documentId);
                 this.sendToast("Access denied", "You do not have permission to access this document.", "danger");
             }
         } catch (error) {
@@ -323,16 +332,12 @@ module.exports = class DocumentSocket extends Socket {
         fs.mkdirSync(UPLOAD_PATH, {recursive: true});
 
         this.socket.on("documentGet", async (data) => {
-            console.log("Received documentGet event for documentId:", data.documentId, "Request Type:", data.contentType);
+            console.log("Received documentGet event for documentId:", data.documentId);
             try {
-                if (data.contentType === 'edits') {
-                    await this.fetchAndSendDocumentContent(data.documentId, this.userId);
-                } else {
-                    await this.sendDocument(data.documentId);
-                }
+                await this.sendDocument(data.documentId);
             } catch (e) {
                 this.logger.error(e);
-                this.sendToast("Error while loading pdf file!", "PDF Error", "danger");
+                this.sendToast("Error handling document request!", "Error", "danger");
             }
         });
 

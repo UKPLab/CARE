@@ -44,7 +44,7 @@
  *
  * This component provides a Quill editor to edit the document.
  *
- * @author Zheyu Zhang
+ * @author Zheyu Zhang, Juliane Bechert
  */
 import {Delta, QuillEditor} from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
@@ -86,7 +86,7 @@ export default {
   },
   mounted() {
       console.log("Attempting to connect to socket...");
-      this.$socket.emit("documentGet", { documentId: this.documentId, contentType: 'edits'});
+      this.$socket.emit("documentGet", { documentId: this.documentId});
       console.log("documentId:",this.documentId);
 
       this.$socket.on('document_editRefresh', this.initializeEditorWithContent);
