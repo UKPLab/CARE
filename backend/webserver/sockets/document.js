@@ -90,22 +90,36 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Update document
+     * Update document if changes are detected compared to the current version.
+     * Emits a `documentRefresh` event to connected clients only if the document data has genuinely changed,
+     * reducing unnecessary data transmission and processing on the client side.
      *
-     * @param {number} documentId
-     * @param {Object} document
+     * @param {number} documentId - The ID of the document to update.
+     * @param {Object} document - The new document data proposed for updating.
      * @return {Promise<void>}
      */
     async updateDocument(documentId, document) {
-        const doc = await this.models['document'].getById(documentId);
-        if (this.checkUserAccess(doc.userId)) {
-            this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(doc.id, document)));
-            if (document.deleted && !doc.deleted) {
-                await this.cascadeDelete(documentId);
-            }
+        const originalDoc = await this.models['document'].getById(documentId);
+        const hasChanges = this.checkIfDocumentChanged(originalDoc, document);
+    
+        if (hasChanges) {
+            await this.models['document'].updateById(documentId, document);
+            this.socket.emit("documentRefresh", document); // Emit only if there are changes
         } else {
-            this.sendToast("You are not allowed to update this document", "Error", "Danger");
+            console.log("No changes detected, not emitting documentRefresh.");
         }
+    }
+    
+    /**
+     * Compares two document objects to determine if there are any differences.
+     * This function helps in identifying whether an update operation should trigger a `documentRefresh` event.
+     *
+     * @param {Object} originalDoc - The original document data from the database.
+     * @param {Object} newDoc - The proposed new document data.
+     * @return {boolean} - Returns true if there are changes, false otherwise.
+     */
+    checkIfDocumentChanged(originalDoc, newDoc) {
+        return JSON.stringify(originalDoc) !== JSON.stringify(newDoc);
     }
 
     /**
