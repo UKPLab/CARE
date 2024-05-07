@@ -109,18 +109,7 @@ module.exports = class DocumentSocket extends Socket {
             console.log("No changes detected, not emitting documentRefresh.");
         }
     }
-    
-    /**
-     * Compares two document objects to determine if there are any differences.
-     * This function helps in identifying whether an update operation should trigger a `documentRefresh` event.
-     *
-     * @param {Object} originalDoc - The original document data from the database.
-     * @param {Object} newDoc - The proposed new document data.
-     * @return {boolean} - Returns true if there are changes, false otherwise.
-     */
-    checkIfDocumentChanged(originalDoc, newDoc) {
-        return JSON.stringify(originalDoc) !== JSON.stringify(newDoc);
-    }
+
 
     /**
      * Cascading the delete of a document (by ID) to all tables with FK. This information is only pushed
