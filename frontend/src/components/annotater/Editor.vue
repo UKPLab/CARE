@@ -200,10 +200,23 @@ export default {
         }));
 
         console.log("Unwrapped edits:", unwrappedEdits);
-        this.content = this.reconstructDocumentFromEdits(unwrappedEdits);
-        console.log("Reconstructed:", this.content);
+
+         const reconstructedContent = this.reconstructDocumentFromEdits(unwrappedEdits);
+        console.log("Reconstructed content:", reconstructedContent);
+
+        this.content = reconstructedContent;
+        console.log("Setting content in editor:", this.content);
+
         this.$refs.editor.setText(this.content);
         this.adjustEditorOffset(unwrappedEdits);
+
+        const ids = edits.map(edit => ({
+            id: edit.id,
+        }));
+
+        // Change applied column in edits, map 
+        this.$store.commit("table/document_edit/applyEdits", [ids]);
+
     },
 
     adjustEditorOffset(edits) {
@@ -214,11 +227,10 @@ export default {
 
     reconstructDocumentFromEdits(edits) {
         console.log("Reconstructing document from edits:", edits);
-        
-        edits.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
+      
         let content = '';
         edits.forEach(edit => {
+          console.log("Processing edit:", edit);
             switch(edit.operationType) {
                 case 0: // Insert
                     // Insert text at the specified offset
@@ -233,6 +245,7 @@ export default {
                     break;
             }
         });
+        console.log("Reconstructed content:", content);
         return content;
     },
 
