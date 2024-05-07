@@ -76,6 +76,7 @@ export default {
       editable_document: undefined,
       debounceHandleSave: undefined,
       documentHash: undefined,
+      currentOffset: 0,
       textChange: debounce(this.handleTextChange, 500),
     };
   },
@@ -98,15 +99,6 @@ export default {
           console.log('Socket connected:', this.$socket.id);
       });
   },
-  sockets: {
-    documentFile: function (data) {
-      if (data.document.id === this.documentId) {
-        if (data.file !== null) {
-          this.$refs.editor.setHTML(data.file);
-        }
-      }
-    }
-  },
   computed: {
     unappliedEdits() {
       return this.$store.getters["table/document_edit/getFiltered"](
@@ -128,21 +120,22 @@ export default {
     handleTextChange({ delta, oldContents, source }) {
       console.log("Editor Change Detected:", delta);
       if (source === 'user') {
-        this.processDelta(delta);
+        this.processDelta(delta, this.currentOffset);
+        console.log("Current Offset:", this.currentOffset);
       }
     },
 
-    processDelta(delta) {
+    processDelta(delta, currentOffset) {
       console.log("Processing delta:", delta);
       const ops = delta.ops;
-      const dbOps = this.deltaToDatabaseOps(ops);
+      const dbOps = this.deltaToDatabaseOps(ops, currentOffset);
       console.log("Processed Delta to DB Operations:", dbOps);
       this.$socket.emit('documentEdit', { documentId: this.documentId, ops: dbOps });
       console.log("Emitting edit operation to server:", { userId: this.userId, documentId: this.documentId, ops: dbOps});
     },
 
-    deltaToDatabaseOps(ops) {
-      let offset = 0;
+    deltaToDatabaseOps(ops, currentOffset) {
+      let offset = currentOffset; 
       return ops.map(op => {
         let dbOp = {
           offset,
@@ -210,6 +203,13 @@ export default {
         this.content = this.reconstructDocumentFromEdits(unwrappedEdits);
         console.log("Reconstructed:", this.content);
         this.$refs.editor.setText(this.content);
+        this.adjustEditorOffset(unwrappedEdits);
+    },
+
+    adjustEditorOffset(edits) {
+        const maxOffset = edits.reduce((max, edit) => Math.max(max, edit.offset + (edit.span || 0)), 0);
+        this.currentOffset = maxOffset; // Assuming `currentOffset` is tracked in data
+        console.log("Set initial offset for editor:", this.currentOffset);
     },
 
     reconstructDocumentFromEdits(edits) {
