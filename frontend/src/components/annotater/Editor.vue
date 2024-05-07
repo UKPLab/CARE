@@ -192,13 +192,24 @@ export default {
       }
     },
 
-    initializeEditorWithContent(data) {
-        console.log("Received document content from server:", data);
-        if (data.documentId === this.documentId) {
-            const { edits } = data;
-            this.content = this.reconstructDocumentFromEdits(edits);
-            this.$refs.editor.setHTML(this.content);
-        }
+    initializeEditorWithContent(edits) {
+        console.log("Received document content from server:", edits);
+        
+        const unwrappedEdits = edits.map(edit => ({
+            id: edit.id,
+            documentId: edit.documentId,
+            draft: edit.draft,
+            offset: edit.offset,
+            operationType: edit.operationType,
+            span: edit.span,
+            text: edit.text,
+            attributes:edit.attributes,
+        }));
+
+        console.log("Unwrapped edits:", unwrappedEdits);
+        this.content = this.reconstructDocumentFromEdits(unwrappedEdits);
+        console.log("Reconstructed:", this.content);
+        this.$refs.editor.setText(this.content);
     },
 
     reconstructDocumentFromEdits(edits) {
@@ -238,7 +249,6 @@ export default {
     handleDocumentError(error) {
         alert(`Error: ${error.message}`);
     },
-    
   }
 };
 </script>
