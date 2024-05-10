@@ -14,6 +14,7 @@
         @click="$refs.uploadModal.open()" 
         />
       <ButtonHeader 
+        v-if="showCreateButton"
         class="btn-primary" 
         title="Create document" 
         text="Create" 
@@ -174,27 +175,34 @@ export default {
             });
           }
 
-          if (newD.type === 1) {
+          if (d.type === 1 && this.showDeltaDownloadButton) {
             newD.manage.push({
-              icon: "download",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true
-                }
-              },
-              title: "Export data to a local file",
-              action: "exportEditableDoc"
-            });
-          }
-          return newD;
-        });
+            icon: "download",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true
+              }
+            },
+            title: "Export delta to a local file",
+            action: "exportEditableDoc"
+          });
+        }
+        
+        return newD;
+      });
     },
     studiesEnabled() {
       return (
         this.$store.getters["settings/getValue"]("app.study.enabled") === "true"
       );
     },
+    showCreateButton() {
+      return this.$store.getters["settings/getValue"]('editor.document.showButtonCreate') === 'true';
+    },
+    showDeltaDownloadButton() {
+      return this.$store.getters["settings/getValue"]('editor.document.showButtonDeltaDownload') === 'true';
+    }
   },
   methods: {
     action(data) {
@@ -269,24 +277,24 @@ export default {
       this.$refs.studyCoordinator.open(0, row.id);
     },
     exportEditableDoc(row) {
-      const docHash = row.hash;
-      this.$socket.emit("exportEditableDocument", {
-        docHash,
-        docId: row.id
-      });
+    const documentHash = row.hash;
+    console.log(`Requesting deltas for document ID: ${row.id} with hash: ${documentHash}`);
+    this.$socket.emit("exportEditableDocument", {
+        documentHash,
+        documentId: row.id
+    });
 
-      this.sockets.subscribe(`exportEditableDocument.${docHash}`, (r) => {
-        this.sockets.unsubscribe(`exportEditableDocument.${docHash}`);
-
-        const fileName = `${row.name}.delta`;
-        window.saveAs(new Blob([JSON.stringify(r)], { type: "text/plain;charset=utf-8" }), fileName);
-
-        this.eventBus.emit("toast", {
-          title: "Export Success",
-          message: `Exported editable document ${fileName}`,
-          variant: "success"
-        });
-      });
+    this.$socket.on(`exportEditableDocument.${documentHash}`, (response) => {
+        console.log(`Received response for document hash: ${documentHash}`, response);
+        if (response.error) {
+            console.error("Error exporting document:", response.error);
+        } else if (response.deltas) {
+            console.log("Deltas received:", response.deltas);
+            const fileName = `document-${documentHash}-deltas.json`;
+            const blob = new Blob([JSON.stringify(response.deltas)], { type: "application/json" });
+            window.saveAs(blob, fileName);
+        }
+    });
     }
   }
 };
