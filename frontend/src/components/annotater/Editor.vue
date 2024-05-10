@@ -14,7 +14,7 @@
           style="overflow-y: scroll;"
         >
 
-        <QuillEditor ref="editor" v-model:content="content" theme="snow" @text-change="handleTextChange"/>
+        <QuillEditor ref="editor" v-model:content="content" theme="snow" @text-change="handleTextChangeDebounced"/>
 
         </div>
       </div>
@@ -75,9 +75,9 @@ export default {
       originalContent: undefined,
       editable_document: undefined,
       debounceHandleSave: undefined,
-      documentHash: undefined,
+      documentHash: this.$route.params.documentHash,
       currentOffset: 0,
-      textChange: debounce(this.handleTextChange, 500),
+      handleTextChangeDebounced: null
     };
   },
   created() {
@@ -99,6 +99,13 @@ export default {
       this.$socket.on('connect', () => {
           console.log('Socket connected:', this.$socket.id);
       });
+
+      // Dynamically set the text change handler based on the debounce time
+      if (this.debounceTimeForEdits > 0) {
+        this.handleTextChangeDebounced = debounce(this.handleTextChange, this.debounceTimeForEdits);
+      } else {
+        this.handleTextChangeDebounced = this.handleTextChange;
+      }
   },
   computed: {
     unappliedEdits() {
@@ -106,6 +113,9 @@ export default {
         e => e.applied === false
       ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     },
+    debounceTimeForEdits() {
+      return parseInt(this.$store.getters["settings/getValue"]('editor.edits.debounceTime'), 10);
+    }
   },
   watch: {
     unappliedEdits: {

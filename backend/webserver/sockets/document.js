@@ -296,6 +296,34 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    async exportEditableDocument({ documentId, documentHash }) {
+        console.log(`Starting export of document deltas. Document ID: ${documentId}, Document Hash: ${documentHash}`);
+        try {
+            console.log(`Querying database for deltas...`);
+            // Fetch the deltas for the document
+            const deltas = await this.models['document_edit'].findAll({
+                where: { documentId: documentId, draft: true },
+                order: [['createdAt', 'ASC']],  // Ensure deltas are sent in the order they were made
+                raw: true
+            });
+    
+            console.log(`Deltas fetched:`,deltas);
+            
+            if (deltas.length > 0) {
+                console.log(`Emitting deltas for document hash: ${documentHash}`);
+                // Send the fetched deltas directly to the client
+                this.socket.emit(`exportEditableDocument.${documentHash}`, { deltas });
+            } else {
+                console.log(`No deltas found for document ID: ${documentId}`);
+                this.socket.emit(`exportEditableDocument.${documentHash}`, { error: "No deltas found." });
+            }
+        } catch (error) {
+            console.error("Error during export of document deltas:", error);
+            this.logger.error("Failed to export deltas:", error);
+            this.socket.emit(`exportEditableDocument.${documentHash}`, { error: "Server error during export." });
+        }
+    }
+
     init() {
 
         //Make sure upload directory exists
@@ -408,6 +436,11 @@ module.exports = class DocumentSocket extends Socket {
                     errorCode: 500
                 });
             }
+        });
+
+        this.socket.on("exportEditableDocument", async (data) => {
+            console.log("Received export request:", data);
+            await this.exportEditableDocument(data);
         });
     }
 }
