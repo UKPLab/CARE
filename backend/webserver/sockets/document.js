@@ -129,8 +129,6 @@ module.exports = class DocumentSocket extends Socket {
                     this.logger.error("Failed to delete study " + s.id + " for doc " + documentId);
                 }
             });
-
-
     }
 
     /**
@@ -147,8 +145,7 @@ module.exports = class DocumentSocket extends Socket {
         if (this.checkDocumentAccess(doc.id)) {
 
             if (doc.type === 1) { // HTML document type
-                console.log("Document is HTML, fetching and sending edits:",doc);
-                const edits = await this.models['document_edit'].findAll({ where: {documentId: documentId, draft: true}, raw: true }); //FRAGE an Dennis: Wieso wirft es hier fehler, wenn deleted: false mitgegeben wird? 
+                const edits = await this.models['document_edit'].findAll({ where: {documentId: documentId, draft: true}, raw: true }); 
 
                 // Apply 'applied: false' to each edit before sending
                 const editsWithAppliedFalse = edits.map(edit => ({
@@ -156,7 +153,6 @@ module.exports = class DocumentSocket extends Socket {
                     applied: false  
                 }));
 
-                console.log("Edits fetched from DB plus applied: false:", JSON.stringify(editsWithAppliedFalse));
                 this.emit('document_editRefresh', editsWithAppliedFalse);
 
             } else { // Non-HTML document type, send file
@@ -267,51 +263,29 @@ module.exports = class DocumentSocket extends Socket {
      * - ops: An array of operations to apply to the document.
      */
     async editDocument(data) {
-
-        if (data.userId !== undefined) {
-            if (data.userId === 'Bot') {
-                data.userId = await this.models['user'].getUserIdByName("Bot");
-                data.draft = false; 
-            } else if (!await this.checkUserAccess(data.userId, data.documentId)) {
-                this.sendToast("You are not allowed to edit this document.", "Access denied", "danger");
-                this.socket.emit("documentEditError", {
-                    success: false,
-                    message: "You do not have permission to edit this document."
-                });
-                return;
-            }
-        } else {
-            data.userId = this.userId;
-        }
-
         try {
-            const { userId, draft, documentId, ops } = data;
-
-            const appliedEdits = [];
-
-            for (const op of ops) {
+            const { userId, documentId, ops } = data;
+            let appliedEdits = [];
+    
+            await ops.reduce(async (promise, op) => {
+                await promise;
                 const entryData = {
-                    userId: data.userId,
-                    draft: true ,
+                    userId: this.userId,
+                    draft: true,
                     documentId,
-                    ...op  
+                    ...op
                 };
-
-                console.log("data being send to database:", entryData);
+    
                 const savedEdit = await this.models['document_edit'].add(entryData);
-
-                const editedEntry = {
-                ...savedEdit,
-                applied: true
-            };
-            console.log("Edit after adding 'applied: true' status:", editedEntry);
-            appliedEdits.push(editedEntry);
-        }
-
-        // Emit all edits at once with the 'applied' status
-        console.log("Emitting all edits with applied:true status to frontend:", appliedEdits);
-        this.emit("document_editRefresh", appliedEdits);
-            
+    
+                appliedEdits.push({
+                    ...savedEdit,
+                    applied: true
+                });
+            }, Promise.resolve());
+    
+            this.emit("document_editRefresh", appliedEdits); 
+    
         } catch (error) {
             this.logger.error("Error editing document: " + error.message);
             this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
@@ -328,7 +302,6 @@ module.exports = class DocumentSocket extends Socket {
         fs.mkdirSync(UPLOAD_PATH, {recursive: true});
 
         this.socket.on("documentGet", async (data) => {
-            console.log("Received documentGet event for documentId:", data.documentId);
             try {
                 await this.sendDocument(data.documentId);
             } catch (e) {
@@ -413,7 +386,6 @@ module.exports = class DocumentSocket extends Socket {
         this.socket.on("documentEdit", async (data) => {
             try {
                 await this.editDocument(data);
-                console.log("data in socket:",data);
             } catch (error) {
                 const errorDetails = {
                     timestamp: new Date().toISOString(),
@@ -422,9 +394,9 @@ module.exports = class DocumentSocket extends Socket {
                     stackTrace: error.stack,
                     userId: data.userId,
                     documentId: data.documentId,
-                    operationDetails: JSON.stringify(data.ops),  // assuming 'data.ops' contains operations attempted
+                    operationDetails: JSON.stringify(data.ops),  
                     component: "Document Editor",
-                    errorCode: error.code || "N/A"  // Include a default if no specific error code
+                    errorCode: error.code || "N/A"  
                 };
             
                 this.logger.error("Critical error during document edit:", errorDetails);
@@ -436,10 +408,6 @@ module.exports = class DocumentSocket extends Socket {
                     errorCode: 500
                 });
             }
-
         });
-
-
-
     }
 }

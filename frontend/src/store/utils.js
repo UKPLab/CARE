@@ -194,15 +194,10 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
 
     if (table.name === "document_edit") {
         newModule.mutations['applyEdits'] = (state, ids) => {
-            console.log("state.find(s => s.id === id):",state.data.find(s => s.ids === ids));
-            ids.forEach(ids => {
-                const edit = state.data.find(s => s.ids === ids);
-                if (edit) {
-                  edit.applied = true;
-                }
-              });
+            ids.map(id => 
+                state.data.find(s => s.id === id).applied = true
+            );
         }
-
     }
 
     //remove old store if exists
