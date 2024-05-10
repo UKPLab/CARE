@@ -84,11 +84,12 @@ export default {
     this.documentHash = this.$route.params.documentHash;
   },
   mounted() {
-      console.log("Attempting to connect to socket...");
       this.$socket.emit("documentGet", { documentId: this.documentId});
-      console.log("documentId:",this.documentId);
 
-      // this.$socket.on('document_editRefresh', this.initializeEditorWithContent); Is this useful here?
+      this.$socket.on('document_editRefresh', (edits) => {
+        console.log("Ereignis 'document_editRefresh' empfangen, Daten:", edits);
+        this.initializeEditorWithContent(edits);
+      });
 
       this.$socket.on('documentError', (error) => {
         console.error('Document error:', error.message);
@@ -118,20 +119,15 @@ export default {
   },
   methods: {
     handleTextChange({ delta, oldContents, source }) {
-      console.log("Editor Change Detected:", delta);
       if (source === 'user') {
-        this.processDelta(delta, this.currentOffset);
-        console.log("Current Offset:", this.currentOffset);
+        this.processDelta(delta, this.currentOffset);;
       }
     },
 
     processDelta(delta, currentOffset) {
-      console.log("Processing delta:", delta);
       const ops = delta.ops;
       const dbOps = this.deltaToDatabaseOps(ops, currentOffset);
-      console.log("Processed Delta to DB Operations:", dbOps);
       this.$socket.emit('documentEdit', { documentId: this.documentId, ops: dbOps });
-      console.log("Emitting edit operation to server:", { userId: this.userId, documentId: this.documentId, ops: dbOps});
     },
 
     deltaToDatabaseOps(ops, currentOffset) {
@@ -186,81 +182,65 @@ export default {
     },
 
     initializeEditorWithContent(edits) {
-        console.log("Received document content from server:", edits);
-        
-        const unwrappedEdits = edits.map(edit => ({
-            id: edit.id,
-            documentId: edit.documentId,
-            draft: edit.draft,
-            offset: edit.offset,
-            operationType: edit.operationType,
-            span: edit.span,
-            text: edit.text,
-            attributes:edit.attributes,
-        }));
+      const unwrappedEdits = edits.map(edit => ({
+          id: edit.id,
+          documentId: edit.documentId,
+          draft: edit.draft,
+          offset: edit.offset,
+          operationType: edit.operationType,
+          span: edit.span,
+          text: edit.text,
+          attributes:edit.attributes,
+      }));
 
-        console.log("Unwrapped edits:", unwrappedEdits);
+      const reconstructedContent = this.reconstructDocumentFromEdits(unwrappedEdits);
 
-         const reconstructedContent = this.reconstructDocumentFromEdits(unwrappedEdits);
-        console.log("Reconstructed content:", reconstructedContent);
+      this.content = reconstructedContent;
 
-        this.content = reconstructedContent;
-        console.log("Setting content in editor:", this.content);
+      this.$refs.editor.setText(this.content);
 
-        this.$refs.editor.setText(this.content);
-        this.adjustEditorOffset(unwrappedEdits);
+      this.adjustEditorOffset(unwrappedEdits);
 
-        const ids = edits.map(edit => ({
-            id: edit.id,
-        }));
-
-        // Change applied column in edits, map 
-        this.$store.commit("table/document_edit/applyEdits", [ids]);
+      this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
 
     },
 
     adjustEditorOffset(edits) {
-        const maxOffset = edits.reduce((max, edit) => Math.max(max, edit.offset + (edit.span || 0)), 0);
-        this.currentOffset = maxOffset; // Assuming `currentOffset` is tracked in data
-        console.log("Set initial offset for editor:", this.currentOffset);
+      const maxOffset = edits.reduce((max, edit) => Math.max(max, edit.offset + (edit.span || 0)), 0);
+      this.currentOffset = maxOffset; 
     },
 
     reconstructDocumentFromEdits(edits) {
-        console.log("Reconstructing document from edits:", edits);
-      
-        let content = '';
-        edits.forEach(edit => {
-          console.log("Processing edit:", edit);
-            switch(edit.operationType) {
-                case 0: // Insert
-                    // Insert text at the specified offset
-                    content = this.applyInsert(content, edit.text, edit.offset);
-                    break;
-                case 1: // Delete
-                    // Delete text starting from the specified offset
-                    content = this.applyDelete(content, edit.offset, edit.span);
-                    break;
-                case 2: // Retain
-                    // Apply attribute changes if any (not handled here as text is plain)
-                    break;
-            }
-        });
-        console.log("Reconstructed content:", content);
-        return content;
+      let content = '';
+
+      edits.forEach(edit => {
+          switch(edit.operationType) {
+              case 0: // Insert
+                  content = this.applyInsert(content, edit.text, edit.offset);
+                  break;
+              case 1: // Delete
+                  content = this.applyDelete(content, edit.offset, edit.span);
+                  break;
+              case 2: // Retain
+                  break;
+          }
+      });
+
+      return content;
     },
 
     applyInsert(content, text, offset) {
-        if (offset > content.length) offset = content.length;
-        return content.slice(0, offset) + text + content.slice(offset);
+      if (offset > content.length) offset = content.length;
+      return content.slice(0, offset) + text + content.slice(offset);
     },
 
     applyDelete(content, offset, span) {
-        if (offset > content.length) return content;
-        return content.substring(0, offset) + content.substring(offset + span);
+      if (offset > content.length) return content;
+      return content.substring(0, offset) + content.substring(offset + span);
     },
 
     handleDocumentError(error) {
-        alert(`Error: ${error.message}`);
+      alert(`Error: ${error.message}`);
     },
   }
 };
