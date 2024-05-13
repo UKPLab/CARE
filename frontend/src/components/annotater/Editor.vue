@@ -14,7 +14,7 @@
           style="overflow-y: scroll;"
         >
 
-        <QuillEditor ref="editor" v-model:content="content" theme="snow" @text-change="handleTextChangeDebounced"/>
+        <QuillEditor ref="editor" v-model:content="content" :options="editorOptions" @text-change="handleTextChangeDebounced"/>
 
         </div>
       </div>
@@ -115,6 +115,15 @@ export default {
     },
     debounceTimeForEdits() {
       return parseInt(this.$store.getters["settings/getValue"]('editor.edits.debounceTime'), 10);
+    },
+    editorOptions() {
+        const toolbarVisible = this.$store.getters["settings/getValue"]('editor.toolbar.visibility') === 'true';
+        return {
+            modules: {
+                toolbar: toolbarVisible ? undefined : false // Use false to hide, undefined to show default toolbar
+            },
+            theme: 'snow'
+        };
     }
   },
   watch: {
@@ -255,3 +264,10 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* This targets the toolbar part of the Quill editor and hides it */
+.ql-toolbar {
+  display: none;
+}
+</style>
