@@ -1,11 +1,19 @@
 'use strict';
 
-const settings = [{
-    key: "editor.edits.debounceTime",
-    value: "150",
-    type: "number",
-    description: "Delay time in milliseconds before processing edits"
-}];
+const settings = [
+    {
+        key: "editor.edits.debounceTime",
+        value: "150",
+        type: "number",
+        description: "Delay time in milliseconds before processing edits"
+    },
+    {
+        key: "editor.toolbar.visibility",
+        value: "false", 
+        type: "boolean",
+        description: "Make toolbar in the editor visible"
+    }
+];
 
 module.exports = {
     async up(queryInterface, Sequelize) {

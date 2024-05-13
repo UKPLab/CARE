@@ -276,6 +276,7 @@ export default {
     studyCoordinator(row) {
       this.$refs.studyCoordinator.open(0, row.id);
     },
+    //TODO Data is not correctly receiced
     exportEditableDoc(row) {
     const documentHash = row.hash;
     console.log(`Requesting deltas for document ID: ${row.id} with hash: ${documentHash}`);

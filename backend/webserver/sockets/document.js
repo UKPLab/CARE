@@ -296,6 +296,16 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    /**
+     * Exports the draft edits (deltas) of a document to the client.
+     *
+     * The method fetches draft deltas for the specified document from the database, ensuring they are ordered by creation time.
+     * It then emits these deltas to the client session identified by the document hash. If no deltas are found,
+     * an error message is sent. Errors during the database query or the emission process are logged and reported to the client.
+     *
+     * @param {object} params - Parameters containing document identifiers documentId and documentHash
+     */
+    //TODO make this Code work - data is transferred correctly but not received correctly in Frontend "Document.vue"
     async exportEditableDocument({ documentId, documentHash }) {
         console.log(`Starting export of document deltas. Document ID: ${documentId}, Document Hash: ${documentHash}`);
         try {
