@@ -261,6 +261,19 @@ export default {
     handleDocumentError(error) {
       alert(`Error: ${error.message}`);
     },
+
+    downloadDocument() {
+      var blob = new Blob([this.$refs.editor.getHTML()], {type: 'text/html;charset=utf-8;'});
+      var url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.setAttribute('href', url);
+      anchor.setAttribute('target', '_blank');
+      anchor.style.visibility = 'hidden';
+      anchor.setAttribute('download', 'document.html');
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    }
   }
 };
 </script>

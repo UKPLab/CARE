@@ -1,5 +1,6 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
+//const Quill = require("quill")
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -175,6 +176,9 @@ module.exports = class DocumentSocket extends Socket {
             this.sendToast("You do not have access to this document.", "Access Error", "danger");
         }
     }
+
+    // const d:Quill = new quill();
+    // d.setContents({ops: [{insert: 'Hello'}]});
     
 
     /**
@@ -306,19 +310,23 @@ module.exports = class DocumentSocket extends Socket {
      * @param {object} params - Parameters containing document identifiers documentId and documentHash
      */
     //TODO make this Code work - data is transferred correctly but not received correctly in Frontend "Document.vue"
-    async exportEditableDocument({ documentId, documentHash }) {
+    async exportEditableDocument(data) {
+        console.log("Received data:", data);
+        // Correcting the property names to match the incoming data
+        const { docId: documentId, docHash: documentHash } = data;
         console.log(`Starting export of document deltas. Document ID: ${documentId}, Document Hash: ${documentHash}`);
+    
         try {
             console.log(`Querying database for deltas...`);
             // Fetch the deltas for the document
             const deltas = await this.models['document_edit'].findAll({
                 where: { documentId: documentId, draft: true },
-                order: [['createdAt', 'ASC']],  // Ensure deltas are sent in the order they were made
+                order: [['createdAt', 'ASC']],
                 raw: true
             });
     
-            console.log(`Deltas fetched:`,deltas);
-            
+            console.log(`Deltas fetched:`, deltas);
+    
             if (deltas.length > 0) {
                 console.log(`Emitting deltas for document hash: ${documentHash}`);
                 // Send the fetched deltas directly to the client

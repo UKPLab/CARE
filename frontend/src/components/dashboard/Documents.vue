@@ -278,24 +278,42 @@ export default {
     },
     //TODO Data is not correctly receiced
     exportEditableDoc(row) {
-    const documentHash = row.hash;
-    console.log(`Requesting deltas for document ID: ${row.id} with hash: ${documentHash}`);
-    this.$socket.emit("exportEditableDocument", {
-        documentHash,
-        documentId: row.id
-    });
+        const docHash = row.hash;
+        const eventName = `exportEditableDocument.${docHash}`;
 
-    this.$socket.on(`exportEditableDocument.${documentHash}`, (response) => {
-        console.log(`Received response for document hash: ${documentHash}`, response);
-        if (response.error) {
-            console.error("Error exporting document:", response.error);
-        } else if (response.deltas) {
-            console.log("Deltas received:", response.deltas);
-            const fileName = `document-${documentHash}-deltas.json`;
-            const blob = new Blob([JSON.stringify(response.deltas)], { type: "application/json" });
-            window.saveAs(blob, fileName);
-        }
-    });
+        // Emit the request to export the document
+        this.$socket.emit("exportEditableDocument", {
+            docHash,
+            docId: row.id
+        });
+
+        // Subscribe to the WebSocket event
+        this.sockets.subscribe(eventName, (response) => {
+            // Once data is received, unsubscribe to avoid handling old events
+            this.sockets.unsubscribe(eventName);
+
+            // Process the received data
+            this.processExportedData(response, row);
+
+            // Notify user of success
+            this.eventBus.emit("toast", {
+                title: "Export Success",
+                message: `Exported editable document ${row.name}.delta`,
+                variant: "success"
+            });
+        });
+
+        // Emit the request to export the document
+        this.$socket.emit("exportEditableDocument", {
+            docHash,
+            docId: row.id
+        });
+    },
+
+    processExportedData(data, row) {
+        const fileName = `${row.name}.delta`;
+        const blob = new Blob([JSON.stringify(data)], { type: "text/plain;charset=utf-8" });
+        window.saveAs(blob, fileName);
     }
   }
 };
