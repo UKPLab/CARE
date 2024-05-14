@@ -5,11 +5,11 @@ module.exports = {
     await queryInterface.createTable('user_role', {
       id: {
         allowNull: false,
-        primaryKey: true,
         type: Sequelize.INTEGER,
       },
       name: {
         allowNull: false,
+        primaryKey: true,
         type: Sequelize.STRING,
       },
       description: {

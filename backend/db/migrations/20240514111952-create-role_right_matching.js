@@ -16,12 +16,12 @@ module.exports = {
           key: 'id'
         },
       },
-      roleRightKey: {
+      userRightName: {
         allowNull: false,
         type: Sequelize.STRING,
         references: {
           model: 'user_right',
-          key: 'key'
+          key: 'name'
         },
       },
       deleted: {
