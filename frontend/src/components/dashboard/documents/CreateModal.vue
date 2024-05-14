@@ -1,6 +1,6 @@
 <template>
   <Modal ref="createModal" lg name="documentUpload">
-    <template #title> Create new document </template>
+    <template #title>Create new document</template>
     <template #body>
       <div class="modal-body justify-content-center flex-grow-1 d-flex">
         <div v-if="creating" class="spinner-border m-5" role="status">
@@ -8,7 +8,8 @@
         </div>
         <div v-else class="flex-grow-1">
           <label class="form-label">Name of the document:</label>
-          <input class="form-control" name="file" type="text" v-model="name" />
+          <input class="form-control" name="file" type="text" v-model="name"
+                 @keyup.enter="create" />  
         </div>
       </div>
     </template>
@@ -17,7 +18,8 @@
         <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">
           Close
         </button>
-        <button class="btn btn-primary" type="button" @click="create">
+        <button class="btn btn-primary" type="button" @click="create"
+                @keyup.enter="create"> 
           Create
         </button>
       </div>
@@ -34,7 +36,7 @@ import Modal from "@/basic/Modal.vue";
  * This component provides the functionality for creating a document
  * to the server.
  *
- * @author: Zheyu Zhang
+ * @author: Zheyu Zhang, Juliane Bechert
  */
 export default {
   name: "DocumentCreateModal",
@@ -77,7 +79,7 @@ export default {
     create() {
       // check if user had input document name
       if (this.name.length === 0) {
-        alert("please input document name");
+        alert("Please enter the name of the document.");
         return;
       }
 
@@ -90,5 +92,3 @@ export default {
   },
 };
 </script>
-
-<style scoped></style>
