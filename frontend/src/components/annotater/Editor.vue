@@ -76,7 +76,6 @@ export default {
       editable_document: undefined,
       debounceHandleSave: undefined,
       documentHash: this.$route.params.documentHash,
-      currentOffset: 0,
       handleTextChangeDebounced: null
     };
   },
@@ -87,7 +86,6 @@ export default {
       this.$socket.emit("documentGet", { documentId: this.documentId});
 
       this.$socket.on('document_editRefresh', (edits) => {
-        console.log("Ereignis 'document_editRefresh' empfangen, Daten:", edits);
         this.initializeEditorWithContent(edits);
       });
 
@@ -139,18 +137,18 @@ export default {
   methods: {
     handleTextChange({ delta, oldContents, source }) {
       if (source === 'user') {
-        this.processDelta(delta, this.currentOffset);;
+        this.processDelta(delta);;
       }
     },
 
-    processDelta(delta, currentOffset) {
+    processDelta(delta) {
       const ops = delta.ops;
-      const dbOps = this.deltaToDatabaseOps(ops, currentOffset);
+      const dbOps = this.deltaToDatabaseOps(ops);
       this.$socket.emit('documentEdit', { documentId: this.documentId, ops: dbOps });
     },
 
-    deltaToDatabaseOps(ops, currentOffset) {
-      let offset = currentOffset; 
+    deltaToDatabaseOps(ops) {
+      let offset = 0; 
       return ops.map(op => {
         let dbOp = {
           offset,
@@ -163,6 +161,8 @@ export default {
           offset += op.retain;
         } else if (op.insert && typeof op.insert === 'string') {
           offset += op.insert.length;
+        } else if (op.delete) {
+          offset -= op.delete;
         }
         return dbOp;
       });
@@ -218,18 +218,12 @@ export default {
 
       this.$refs.editor.setText(this.content);
 
-      this.adjustEditorOffset(unwrappedEdits);
-
       this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
 
     },
 
-    adjustEditorOffset(edits) {
-      const maxOffset = edits.reduce((max, edit) => Math.max(max, edit.offset + (edit.span || 0)), 0);
-      this.currentOffset = maxOffset; 
-    },
-
     reconstructDocumentFromEdits(edits) {
+      edits.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       let content = '';
 
       edits.forEach(edit => {
