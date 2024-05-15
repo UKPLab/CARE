@@ -91,25 +91,24 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Update document if changes are detected compared to the current version.
-     * Emits a `documentRefresh` event to connected clients only if the document data has genuinely changed,
-     * reducing unnecessary data transmission and processing on the client side.
+     * Update document
      *
-     * @param {number} documentId - The ID of the document to update.
-     * @param {Object} document - The new document data proposed for updating.
+     * @param {number} documentId
+     * @param {Object} document
      * @return {Promise<void>}
      */
     async updateDocument(documentId, document) {
-        const originalDoc = await this.models['document'].getById(documentId);
-        const hasChanges = this.checkIfDocumentChanged(originalDoc, document);
-    
-        if (hasChanges) {
-            await this.models['document'].updateById(documentId, document);
-            this.socket.emit("documentRefresh", document); // Emit only if there are changes
+        const doc = await this.models['document'].getById(documentId);
+        if (this.checkUserAccess(doc.userId)) {
+            this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(doc.id, document)));
+            if (document.deleted && !doc.deleted) {
+                await this.cascadeDelete(documentId);
+            }
         } else {
-            console.log("No changes detected, not emitting documentRefresh.");
+            this.sendToast("You are not allowed to update this document", "Error", "Danger");
         }
     }
+
 
 
     /**
@@ -362,9 +361,7 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentUpdate", async (data) => {
             try {
-                if (data.documentId && data.documentId !== 0) {
-                    await this.updateDocument(data.documentId, data);
-                }
+                await this.updateDocument(data.documentId, data);
             } catch (err) {
                 this.logger.error(err);
                 this.sendToast(err, "Error updating document", "Danger");
