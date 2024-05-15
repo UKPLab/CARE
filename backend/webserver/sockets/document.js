@@ -1,6 +1,6 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
-//const Quill = require("quill")
+const { QuillDeltaToHtmlConverter } = require('quill-delta-to-html');
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -131,6 +131,17 @@ module.exports = class DocumentSocket extends Socket {
             });
     }
 
+     /**
+     * Example method to convert Quill Delta to HTML
+     * @param {object} delta - The Quill Delta object
+     * @return {string} - The HTML string
+     */
+     convertDeltaToHtml(delta) {
+        const converter = new QuillDeltaToHtmlConverter(delta.ops, {});
+        const html = converter.convert();
+        return html;
+    }
+
     /**
      * Sends the document to the client.
      *
@@ -146,12 +157,17 @@ module.exports = class DocumentSocket extends Socket {
 
             if (doc.type === 1) { // HTML document type
                 const edits = await this.models['document_edit'].findAll({ where: {documentId: documentId, draft: true}, raw: true }); 
+                console.log("edit",edits);
 
                 // Apply 'applied: false' to each edit before sending
                 const editsWithAppliedFalse = edits.map(edit => ({
                     ...edit,
                     applied: false  
                 }));
+
+                //const deltas = edits.map(edit => edit.delta); // Adjust this to match your data structure
+                //const htmlContents = deltas.map(this.convertDeltaToHtml);
+                //console.log("htmlContents",htmlContents);
 
                 this.emit('document_editRefresh', editsWithAppliedFalse);
 
@@ -176,8 +192,7 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
-    // const d:Quill = new quill();
-    // d.setContents({ops: [{insert: 'Hello'}]});
+    
     
 
     /**
