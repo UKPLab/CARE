@@ -200,6 +200,8 @@ export default {
       }
     },
 
+    // setText needs to be changed into setContents or updateContents: https://quilljs.com/docs/api#content-container
+    // attempt to do so can be found below in the comment, to use the code in comments, comment out line 205-255
     initializeEditorWithContent(edits) {
       const unwrappedEdits = edits.map(edit => ({
           id: edit.id,
@@ -251,6 +253,74 @@ export default {
       if (offset > content.length) return content;
       return content.substring(0, offset) + content.substring(offset + span);
     },
+
+    /* This code transforms the edits into deltas and uses updateContents() instead of setText() but trows error:@vueup_vue-quill.js?v=c1bf69a2:13746 Uncaught (in promise) Error: diff() called on non-document
+
+    initializeEditorWithContent(edits) {
+      console.log("Edits:",edits);
+      const delta = this.convertEditsToDelta(edits);
+      console.log("Converted Deltas:",delta);
+
+      this.content = delta;
+      
+      if (this.$refs.editor && this.$refs.editor.quill) {
+        console.log("Updating contents with delta:", delta);
+        if (delta.ops.length > 0) {
+          this.$refs.editor.quill.updateContents(delta, 'silent');
+        } else {
+          console.warn("Empty Delta, not applying to editor.");
+        }
+      }
+
+      this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
+    },
+
+    convertEditsToDelta(edits) {
+      let delta = new Delta();
+      let currentOffset = 0;
+      let insertBuffer = '';
+      let deleteCount = 0;
+
+      edits.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).forEach(edit => {
+        const { operationType, offset, span, text } = edit;
+
+        if (offset > currentOffset) {
+          if (insertBuffer.length > 0) {
+            delta = delta.insert(insertBuffer);
+            insertBuffer = '';
+          }
+          if (deleteCount > 0) {
+            delta = delta.delete(deleteCount);
+            deleteCount = 0;
+          }
+          delta = delta.retain(offset - currentOffset);
+          currentOffset = offset;
+        }
+
+        if (operationType === 0) { // Insert
+          insertBuffer += text;
+          currentOffset += span;
+        } else if (operationType === 1) { // Delete
+          if (insertBuffer.length > 0) {
+            delta = delta.insert(insertBuffer);
+            insertBuffer = '';
+          }
+          deleteCount += span;
+        } else if (operationType === 2) { // Retain
+            currentOffset += span; // Adjust current offset for retain operations
+          }
+        });
+
+      if (insertBuffer.length > 0) {
+        delta = delta.insert(insertBuffer);
+      }
+      if (deleteCount > 0) {
+        delta = delta.delete(deleteCount);
+      }
+
+      return delta;
+    },
+    */
 
     handleDocumentError(error) {
       alert(`Error: ${error.message}`);
