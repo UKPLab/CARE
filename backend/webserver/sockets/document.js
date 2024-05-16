@@ -1,5 +1,6 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
+const Delta = require('quill-delta');
 const { QuillDeltaToHtmlConverter } = require('quill-delta-to-html');
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
@@ -131,17 +132,6 @@ module.exports = class DocumentSocket extends Socket {
             });
     }
 
-     /**
-     * Example method to convert Quill Delta to HTML
-     * @param {object} delta - The Quill Delta object
-     * @return {string} - The HTML string
-     */
-     convertDeltaToHtml(delta) {
-        const converter = new QuillDeltaToHtmlConverter(delta.ops, {});
-        const html = converter.convert();
-        return html;
-    }
-
     /**
      * Sends the document to the client.
      *
@@ -151,13 +141,67 @@ module.exports = class DocumentSocket extends Socket {
      * @param {number} documentId - The ID of the document to send.
      */
     async sendDocument(documentId) {
+
+        // This methods converts our data properly to deltas
+        function editsToDeltas(edits) {
+            let delta = new Delta();
+            let currentOffset = 0;
+            let insertBuffer = '';
+            let deleteCount = 0;
+    
+            edits.forEach(edit => {
+                const { operationType, offset, span, text } = edit;
+    
+                if (offset > currentOffset) {
+                    if (insertBuffer.length > 0) {
+                        delta = delta.insert(insertBuffer);
+                        insertBuffer = '';
+                    }
+                    if (deleteCount > 0) {
+                        delta = delta.delete(deleteCount);
+                        deleteCount = 0;
+                    }
+                    delta = delta.retain(offset - currentOffset);
+                    currentOffset = offset;
+                }
+    
+                if (operationType === 0) { // Insert
+                    insertBuffer += text;
+                    currentOffset += span;
+                } else if (operationType === 1) { // Delete
+                    if (insertBuffer.length > 0) {
+                        delta = delta.insert(insertBuffer);
+                        insertBuffer = '';
+                    }
+                    deleteCount += span;
+                    currentOffset += span;  // Advance the currentOffset when deleting
+                }
+            });
+    
+            if (insertBuffer.length > 0) {
+                delta = delta.insert(insertBuffer);
+            }
+            if (deleteCount > 0) {
+                delta = delta.delete(deleteCount);
+            }
+    
+            return delta;
+        }
+
         const doc = await this.models['document'].getById(documentId);
     
         if (this.checkDocumentAccess(doc.id)) {
 
             if (doc.type === 1) { // HTML document type
                 const edits = await this.models['document_edit'].findAll({ where: {documentId: documentId, draft: true}, raw: true }); 
-                console.log("edit",edits);
+
+                const delta = editsToDeltas(edits);
+                console.log("deltaStringify", JSON.stringify(delta, null, 2));
+
+                const converter = new QuillDeltaToHtmlConverter(delta.ops, {}); // Does not work as intended, seems like it does not handle deletions properly
+                const html = converter.convert();
+                console.log("html", html);
+
 
                 // Apply 'applied: false' to each edit before sending
                 const editsWithAppliedFalse = edits.map(edit => ({
@@ -165,11 +209,9 @@ module.exports = class DocumentSocket extends Socket {
                     applied: false  
                 }));
 
-                //const deltas = edits.map(edit => edit.delta); // Adjust this to match your data structure
-                //const htmlContents = deltas.map(this.convertDeltaToHtml);
-                //console.log("htmlContents",htmlContents);
-
                 this.emit('document_editRefresh', editsWithAppliedFalse);
+
+                return { delta };
 
             } else { // Non-HTML document type, send file
                 if (fs.existsSync(`${UPLOAD_PATH}/${doc['hash']}.pdf`)) {
@@ -323,34 +365,18 @@ module.exports = class DocumentSocket extends Socket {
      *
      * @param {object} params - Parameters containing document identifiers documentId and documentHash
      */
-    //TODO make this Code work - data is transferred correctly but not received correctly in Frontend "Document.vue"
     async exportEditableDocument(data) {
-        console.log("Received data:", data);
-        // Correcting the property names to match the incoming data
         const { docId: documentId, docHash: documentHash } = data;
-        console.log(`Starting export of document deltas. Document ID: ${documentId}, Document Hash: ${documentHash}`);
-    
+
         try {
-            console.log(`Querying database for deltas...`);
-            // Fetch the deltas for the document
-            const deltas = await this.models['document_edit'].findAll({
-                where: { documentId: documentId, draft: true },
-                order: [['createdAt', 'ASC']],
-                raw: true
-            });
-    
-            console.log(`Deltas fetched:`, deltas);
-    
-            if (deltas.length > 0) {
-                console.log(`Emitting deltas for document hash: ${documentHash}`);
-                // Send the fetched deltas directly to the client
-                this.socket.emit(`exportEditableDocument.${documentHash}`, { deltas });
+            const result = await this.sendDocument(documentId);
+
+            if (result && result.deltas) {
+                this.socket.emit(`exportEditableDocument.${documentHash}`, { deltas: result.deltas });
             } else {
-                console.log(`No deltas found for document ID: ${documentId}`);
                 this.socket.emit(`exportEditableDocument.${documentHash}`, { error: "No deltas found." });
             }
         } catch (error) {
-            console.error("Error during export of document deltas:", error);
             this.logger.error("Failed to export deltas:", error);
             this.socket.emit(`exportEditableDocument.${documentHash}`, { error: "Server error during export." });
         }
