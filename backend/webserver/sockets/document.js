@@ -211,6 +211,47 @@ module.exports = class DocumentSocket extends Socket {
 
                 this.emit('document_editRefresh', editsWithAppliedFalse);
 
+                // Save edits from database to HTML on disk - not tested
+                const targetPath = `${UPLOAD_PATH}/${doc.hash}.html`;
+                console.log("targetPath",targetPath);
+
+                if (fs.existsSync(targetPath)) {
+                    // If file exists, read its content
+                    fs.readFile(targetPath, 'utf8', (err, data) => {
+                    if (err) {
+                        this.logger.error("Failed to read HTML file:", err);
+                        this.sendToast("Error loading HTML file!", "HTML Error", "danger");
+                        return;
+                    }
+
+                    // TODO Combine existing HTML content with new edits - right now only the first edits are entered into html file
+
+                    // Write the updated HTML content back to the file
+                    /*
+                    fs.writeFile(targetPath, updatedHtml, (err) => {
+                        if (err) {
+                        this.logger.error("Failed to write updated HTML file:", err);
+                        this.sendToast("Error saving updated HTML file!", "HTML Error", "danger");
+                        return;
+                        }
+                        this.logger.info("HTML file updated successfully.");
+                        this.socket.emit("documentFile", { document: doc, file: updatedHtml });
+                    });
+                    */
+                    });
+                } else {
+                    // If file does not exist, create a new one
+                    fs.writeFile(targetPath, html, (err) => {
+                    if (err) {
+                        this.logger.error("Failed to write new HTML file:", err);
+                        this.sendToast("Error saving new HTML file!", "HTML Error", "danger");
+                        return;
+                    }
+                    this.logger.info("HTML file created successfully.");
+                    this.socket.emit("documentFile", { document: doc, file: html });
+                    });
+                }
+
                 return { delta };
 
             } else { // Non-HTML document type, send file
