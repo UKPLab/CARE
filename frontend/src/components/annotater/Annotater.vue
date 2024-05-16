@@ -20,14 +20,10 @@
           />
 
         </div>
-        <div
-          id="sidebarContainer"
-          class="col border mh-100  col-sm-auto g-0"
-          style="overflow-y: scroll;"
-          v-show="isSidebarVisible"
-        >
-          <Sidebar ref="sidebar"/>
-        </div>
+        <Sidebar
+            v-if="!sidebarDisabled"
+            ref="sidebar" :show="isSidebarVisible"
+        />
       </div>
     </div>
 

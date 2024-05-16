@@ -1,7 +1,7 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
-const Delta = require('quill-delta');
-const {QuillDeltaToHtmlConverter} = require('quill-delta-to-html');
+
+const {convertToHtml, convert} = require("editor-delta-conversion");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -140,53 +140,6 @@ module.exports = class DocumentSocket extends Socket {
      * @param {number} documentId - The ID of the document to send.
      */
     async sendDocument(documentId) {
-
-        // This methods converts our data properly to deltas
-        function editsToDeltas(edits) {
-            let delta = new Delta();
-            let currentOffset = 0;
-            let insertBuffer = '';
-            let deleteCount = 0;
-
-            edits.forEach(edit => {
-                const {operationType, offset, span, text} = edit;
-
-                if (offset > currentOffset) {
-                    if (insertBuffer.length > 0) {
-                        delta = delta.insert(insertBuffer);
-                        insertBuffer = '';
-                    }
-                    if (deleteCount > 0) {
-                        delta = delta.delete(deleteCount);
-                        deleteCount = 0;
-                    }
-                    delta = delta.retain(offset - currentOffset);
-                    currentOffset = offset;
-                }
-
-                if (operationType === 0) { // Insert
-                    insertBuffer += text;
-                    currentOffset += span;
-                } else if (operationType === 1) { // Delete
-                    if (insertBuffer.length > 0) {
-                        delta = delta.insert(insertBuffer);
-                        insertBuffer = '';
-                    }
-                    deleteCount += span;
-                    currentOffset += span;  // Advance the currentOffset when deleting
-                }
-            });
-
-            if (insertBuffer.length > 0) {
-                delta = delta.insert(insertBuffer);
-            }
-            if (deleteCount > 0) {
-                delta = delta.delete(deleteCount);
-            }
-
-            return delta;
-        }
-
         const doc = await this.models['document'].getById(documentId);
 
         if (this.checkDocumentAccess(doc.id)) {
@@ -197,12 +150,9 @@ module.exports = class DocumentSocket extends Socket {
                     raw: true
                 });
 
-                const delta = editsToDeltas(edits);
+                const delta = convert(edits);
                 console.log("deltaStringify", JSON.stringify(delta, null, 2));
-
-                const converter = new QuillDeltaToHtmlConverter(delta.ops, {}); // Does not work as intended, seems like it does not handle deletions properly
-                const html = converter.convert();
-                console.log("html", html);
+                console.log("html", convertToHtml(delta.ops));
 
 
                 // Apply 'applied: false' to each edit before sending

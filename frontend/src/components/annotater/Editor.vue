@@ -50,6 +50,7 @@ import {Delta, QuillEditor} from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
+import {convert} from "editor-delta-conversion";
 
 export default {
   name: "EditorView",
@@ -203,6 +204,7 @@ export default {
       }
     },
 
+    /*
     // setText needs to be changed into setContents or updateContents: https://quilljs.com/docs/api#content-container
     // attempt to do so can be found below in the comment, to use the code in comments, comment out line 205-255
     initializeEditorWithContent(edits) {
@@ -258,10 +260,10 @@ export default {
     },
 
     /* This code transforms the edits into deltas and uses updateContents() instead of setText() but trows error:@vueup_vue-quill.js?v=c1bf69a2:13746 Uncaught (in promise) Error: diff() called on non-document
-
+*/
     initializeEditorWithContent(edits) {
       console.log("Edits:",edits);
-      const delta = this.convertEditsToDelta(edits);
+      const delta = convert(edits);
       console.log("Converted Deltas:",delta);
 
       this.content = delta;
@@ -323,7 +325,7 @@ export default {
 
       return delta;
     },
-    */
+
 
     handleDocumentError(error) {
       alert(`Error: ${error.message}`);
