@@ -137,7 +137,7 @@ export default {
   methods: {
     handleTextChange({ delta, oldContents, source }) {
       if (source === 'user') {
-        this.processDelta(delta);;
+        this.processDelta(delta);
       }
     },
 
