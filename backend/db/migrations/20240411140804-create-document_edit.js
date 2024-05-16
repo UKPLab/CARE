@@ -35,7 +35,7 @@ module.exports = {
         allowNull: false,
       },
       operationType: {
-        type: Sequelize.INTEGER, // 0: Retain (Attribute-Change), 1: Insert, 2: Delete
+        type: Sequelize.INTEGER, // 0: Attribute-Change (only retain), 1: Insert, 2: Delete
         allowNull: false
       },
       span: {

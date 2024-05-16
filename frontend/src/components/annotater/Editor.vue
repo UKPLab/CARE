@@ -51,6 +51,7 @@ import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
 import {convert} from "editor-delta-conversion";
+import {deltaToDb} from "editor-delta-conversion";
 
 export default {
   name: "EditorView",
@@ -146,47 +147,13 @@ export default {
     },
 
     processDelta(delta) {
-      const ops = delta.ops;
-      const dbOps = this.deltaToDatabaseOps(ops);
-      this.$socket.emit('documentEdit', { documentId: this.documentId, ops: dbOps });
+      console.log(delta.ops);
+      console.log(deltaToDb(delta.ops));
+      this.$socket.emit('documentEdit', { documentId: this.documentId, ops: deltaToDb(delta.ops) });
     },
 
-    deltaToDatabaseOps(ops) {
-      let offset = 0; 
-      return ops.map(op => {
-        let dbOp = {
-          offset,
-          operationType: this.getOperationType(op),
-          span: this.getSpan(op),
-          text: op.insert || null,
-          attributes: op.attributes || null
-        };
-        if (op.retain) {
-          offset += op.retain;
-        } else if (op.insert && typeof op.insert === 'string') {
-          offset += op.insert.length;
-        } else if (op.delete) {
-          offset -= op.delete;
-        }
-        return dbOp;
-      });
-    },
 
-    getOperationType(op) {
-      if ('insert' in op) {
-        return 0; // Insert
-      } else if ('delete' in op) {
-        return 1; // Delete
-      } else if ('retain' in op) {
-        return 2; // Retain
-      } else {
-        throw new Error('Unsupported operation type');
-      }
-    },
 
-    getSpan(op) {
-      return op.retain || op.delete || (op.insert ? op.insert.length : 1);
-    },
 
     async leave() {
       if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
@@ -278,52 +245,6 @@ export default {
       }
 
       this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
-    },
-
-    convertEditsToDelta(edits) {
-      let delta = new Delta();
-      let currentOffset = 0;
-      let insertBuffer = '';
-      let deleteCount = 0;
-
-      edits.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).forEach(edit => {
-        const { operationType, offset, span, text } = edit;
-
-        if (offset > currentOffset) {
-          if (insertBuffer.length > 0) {
-            delta = delta.insert(insertBuffer);
-            insertBuffer = '';
-          }
-          if (deleteCount > 0) {
-            delta = delta.delete(deleteCount);
-            deleteCount = 0;
-          }
-          delta = delta.retain(offset - currentOffset);
-          currentOffset = offset;
-        }
-
-        if (operationType === 0) { // Insert
-          insertBuffer += text;
-          currentOffset += span;
-        } else if (operationType === 1) { // Delete
-          if (insertBuffer.length > 0) {
-            delta = delta.insert(insertBuffer);
-            insertBuffer = '';
-          }
-          deleteCount += span;
-        } else if (operationType === 2) { // Retain
-            currentOffset += span; // Adjust current offset for retain operations
-          }
-        });
-
-      if (insertBuffer.length > 0) {
-        delta = delta.insert(insertBuffer);
-      }
-      if (deleteCount > 0) {
-        delta = delta.delete(deleteCount);
-      }
-
-      return delta;
     },
 
 
