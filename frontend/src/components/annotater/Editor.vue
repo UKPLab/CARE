@@ -105,6 +105,9 @@ export default {
         this.handleTextChangeDebounced = this.handleTextChange;
       }
   },
+  unmounted() {
+    this.$socket.emit('documentSave', { documentId: this.documentId });
+  },
   computed: {
     unappliedEdits() {
       return this.$store.getters["table/document_edit/getFiltered"](
