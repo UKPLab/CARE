@@ -36,7 +36,7 @@ import Modal from "@/basic/Modal.vue";
  * This component provides the functionality for creating a document
  * to the server.
  *
- * @author: Zheyu Zhang, Juliane Bechert
+ * @author: Juliane Bechert, Zheyu Zhang
  */
 export default {
   name: "DocumentCreateModal",
@@ -51,7 +51,7 @@ export default {
   computed: {},
   mounted() {},
   sockets: {
-    createResult: function (data) {
+    documentCreated: function (data) {
       this.$refs.createModal.close();
       this.creating = false;
       if (data.success) {

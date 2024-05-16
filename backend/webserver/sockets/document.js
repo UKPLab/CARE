@@ -1,7 +1,7 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
-const { QuillDeltaToHtmlConverter } = require('quill-delta-to-html');
+const {QuillDeltaToHtmlConverter} = require('quill-delta-to-html');
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -48,7 +48,7 @@ module.exports = class DocumentSocket extends Socket {
             type: data.type,
             userId: this.userId
         });
-        this.socket.emit("createResult", {success: true, documentId: doc.id})
+        this.socket.emit("documentCreated", {success: true, documentId: doc.id})
 
         this.emit("documentRefresh", doc);
     }
@@ -111,7 +111,6 @@ module.exports = class DocumentSocket extends Socket {
     }
 
 
-
     /**
      * Cascading the delete of a document (by ID) to all tables with FK. This information is only pushed
      * to the deleting client and not any others.
@@ -148,10 +147,10 @@ module.exports = class DocumentSocket extends Socket {
             let currentOffset = 0;
             let insertBuffer = '';
             let deleteCount = 0;
-    
+
             edits.forEach(edit => {
-                const { operationType, offset, span, text } = edit;
-    
+                const {operationType, offset, span, text} = edit;
+
                 if (offset > currentOffset) {
                     if (insertBuffer.length > 0) {
                         delta = delta.insert(insertBuffer);
@@ -164,7 +163,7 @@ module.exports = class DocumentSocket extends Socket {
                     delta = delta.retain(offset - currentOffset);
                     currentOffset = offset;
                 }
-    
+
                 if (operationType === 0) { // Insert
                     insertBuffer += text;
                     currentOffset += span;
@@ -177,23 +176,26 @@ module.exports = class DocumentSocket extends Socket {
                     currentOffset += span;  // Advance the currentOffset when deleting
                 }
             });
-    
+
             if (insertBuffer.length > 0) {
                 delta = delta.insert(insertBuffer);
             }
             if (deleteCount > 0) {
                 delta = delta.delete(deleteCount);
             }
-    
+
             return delta;
         }
 
         const doc = await this.models['document'].getById(documentId);
-    
+
         if (this.checkDocumentAccess(doc.id)) {
 
             if (doc.type === 1) { // HTML document type
-                const edits = await this.models['document_edit'].findAll({ where: {documentId: documentId, draft: true}, raw: true }); 
+                const edits = await this.models['document_edit'].findAll({
+                    where: {documentId: documentId, draft: true},
+                    raw: true
+                });
 
                 const delta = editsToDeltas(edits);
                 console.log("deltaStringify", JSON.stringify(delta, null, 2));
@@ -206,53 +208,53 @@ module.exports = class DocumentSocket extends Socket {
                 // Apply 'applied: false' to each edit before sending
                 const editsWithAppliedFalse = edits.map(edit => ({
                     ...edit,
-                    applied: false  
+                    applied: false
                 }));
 
                 this.emit('document_editRefresh', editsWithAppliedFalse);
 
                 // Save edits from database to HTML on disk - not tested
                 const targetPath = `${UPLOAD_PATH}/${doc.hash}.html`;
-                console.log("targetPath",targetPath);
+                console.log("targetPath", targetPath);
 
                 if (fs.existsSync(targetPath)) {
                     // If file exists, read its content
                     fs.readFile(targetPath, 'utf8', (err, data) => {
-                    if (err) {
-                        this.logger.error("Failed to read HTML file:", err);
-                        this.sendToast("Error loading HTML file!", "HTML Error", "danger");
-                        return;
-                    }
-
-                    // TODO Combine existing HTML content with new edits - right now only the first edits are entered into html file
-
-                    // Write the updated HTML content back to the file
-                    /*
-                    fs.writeFile(targetPath, updatedHtml, (err) => {
                         if (err) {
-                        this.logger.error("Failed to write updated HTML file:", err);
-                        this.sendToast("Error saving updated HTML file!", "HTML Error", "danger");
-                        return;
+                            this.logger.error("Failed to read HTML file:", err);
+                            this.sendToast("Error loading HTML file!", "HTML Error", "danger");
+                            return;
                         }
-                        this.logger.info("HTML file updated successfully.");
-                        this.socket.emit("documentFile", { document: doc, file: updatedHtml });
-                    });
-                    */
+
+                        // TODO Combine existing HTML content with new edits - right now only the first edits are entered into html file
+
+                        // Write the updated HTML content back to the file
+                        /*
+                        fs.writeFile(targetPath, updatedHtml, (err) => {
+                            if (err) {
+                            this.logger.error("Failed to write updated HTML file:", err);
+                            this.sendToast("Error saving updated HTML file!", "HTML Error", "danger");
+                            return;
+                            }
+                            this.logger.info("HTML file updated successfully.");
+                            this.socket.emit("documentFile", { document: doc, file: updatedHtml });
+                        });
+                        */
                     });
                 } else {
                     // If file does not exist, create a new one
                     fs.writeFile(targetPath, html, (err) => {
-                    if (err) {
-                        this.logger.error("Failed to write new HTML file:", err);
-                        this.sendToast("Error saving new HTML file!", "HTML Error", "danger");
-                        return;
-                    }
-                    this.logger.info("HTML file created successfully.");
-                    this.socket.emit("documentFile", { document: doc, file: html });
+                        if (err) {
+                            this.logger.error("Failed to write new HTML file:", err);
+                            this.sendToast("Error saving new HTML file!", "HTML Error", "danger");
+                            return;
+                        }
+                        this.logger.info("HTML file created successfully.");
+                        this.socket.emit("documentFile", {document: doc, file: html});
                     });
                 }
 
-                return { delta };
+                return {delta};
 
             } else { // Non-HTML document type, send file
                 if (fs.existsSync(`${UPLOAD_PATH}/${doc['hash']}.pdf`)) {
@@ -275,8 +277,6 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
-    
-    
 
     /**
      * Send document data to client
@@ -365,9 +365,9 @@ module.exports = class DocumentSocket extends Socket {
      */
     async editDocument(data) {
         try {
-            const { userId, documentId, ops } = data;
+            const {userId, documentId, ops} = data;
             let appliedEdits = [];
-    
+
             await ops.reduce(async (promise, op) => {
                 await promise;
                 const entryData = {
@@ -376,17 +376,17 @@ module.exports = class DocumentSocket extends Socket {
                     documentId,
                     ...op
                 };
-    
+
                 const savedEdit = await this.models['document_edit'].add(entryData);
-    
+
                 appliedEdits.push({
                     ...savedEdit,
                     applied: true
                 });
             }, Promise.resolve());
-    
-            this.emit("document_editRefresh", appliedEdits); 
-    
+
+            this.emit("document_editRefresh", appliedEdits);
+
         } catch (error) {
             this.logger.error("Error editing document: " + error.message);
             this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
@@ -407,19 +407,19 @@ module.exports = class DocumentSocket extends Socket {
      * @param {object} params - Parameters containing document identifiers documentId and documentHash
      */
     async exportEditableDocument(data) {
-        const { docId: documentId, docHash: documentHash } = data;
+        const {docId: documentId, docHash: documentHash} = data;
 
         try {
             const result = await this.sendDocument(documentId);
 
             if (result && result.deltas) {
-                this.socket.emit(`exportEditableDocument.${documentHash}`, { deltas: result.deltas });
+                this.socket.emit(`exportEditableDocument.${documentHash}`, {deltas: result.deltas});
             } else {
-                this.socket.emit(`exportEditableDocument.${documentHash}`, { error: "No deltas found." });
+                this.socket.emit(`exportEditableDocument.${documentHash}`, {error: "No deltas found."});
             }
         } catch (error) {
             this.logger.error("Failed to export deltas:", error);
-            this.socket.emit(`exportEditableDocument.${documentHash}`, { error: "Server error during export." });
+            this.socket.emit(`exportEditableDocument.${documentHash}`, {error: "Server error during export."});
         }
     }
 
@@ -519,13 +519,13 @@ module.exports = class DocumentSocket extends Socket {
                     stackTrace: error.stack,
                     userId: data.userId,
                     documentId: data.documentId,
-                    operationDetails: JSON.stringify(data.ops),  
+                    operationDetails: JSON.stringify(data.ops),
                     component: "Document Editor",
-                    errorCode: error.code || "N/A"  
+                    errorCode: error.code || "N/A"
                 };
-            
+
                 this.logger.error("Critical error during document edit:", errorDetails);
-            
+
                 this.sendToast("An error occurred while editing the document.", "Error", "danger");
                 this.socket.emit("documentEditResponse", {
                     success: false,
