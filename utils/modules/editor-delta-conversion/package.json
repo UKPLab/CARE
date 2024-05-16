@@ -1,0 +1,16 @@
+{
+  "name": "editor-delta-conversion",
+  "version": "1.0.0",
+  "description": "Converts DB entries for the editor into quill delta",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "quill": "^2.0.2",
+    "quill-delta": "^5.1.0",
+    "quill-delta-to-html": "^0.10.0"
+  }
+}
