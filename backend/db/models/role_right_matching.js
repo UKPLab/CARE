@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
   RoleRightMatching.init(
     {
       id: DataTypes.INTEGER,
-      userRoleId: DataTypes.INTEGER,
+      userRoleName: DataTypes.STRING,
       userRightName: DataTypes.STRING,
       deleted: DataTypes.BOOLEAN,
       createdAt: DataTypes.DATE,
