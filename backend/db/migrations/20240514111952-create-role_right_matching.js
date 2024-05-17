@@ -7,13 +7,14 @@ module.exports = {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.INTEGER,
+        autoIncrement: true,
       },
       userRoleId: {
         allowNull: false,
         type: Sequelize.INTEGER,
         references: {
           model: 'user_role',
-          key: 'id'
+          key: 'id',
         },
       },
       userRightName: {
@@ -21,7 +22,7 @@ module.exports = {
         type: Sequelize.STRING,
         references: {
           model: 'user_right',
-          key: 'name'
+          key: 'name',
         },
       },
       deleted: {
