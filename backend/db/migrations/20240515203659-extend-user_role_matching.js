@@ -1,12 +1,17 @@
 'use strict';
 
-const User = require('../models/user'); // Adjust the path as necessary
-
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Transfer data from sysrole column to user_role_matching table
-    const users = await User.findAll();
-
+    // Fetch all users using raw SQL query
+    const users = await queryInterface.sequelize.query(
+      'SELECT * FROM "user" WHERE sysrole IN (:sysroles)',
+      {
+        replacements: { sysroles: ['regular', 'admin'] },
+        type: queryInterface.sequelize.QueryTypes.SELECT,
+      }
+    );
+    
+    // Transfer the data to user_role_matching table
     for (const user of users) {
       await queryInterface.bulkInsert('user_role_matching', [
         {
