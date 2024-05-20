@@ -1,31 +1,33 @@
 'use strict';
 
 const { Op } = require('sequelize');
-const Sysrole = require('../models/sysrole'); // Adjust the path as necessary
 
 module.exports = {
   async up(queryInterface, Sequelize) {
     // Fetch two rows from sysrole table where the names are regular and admin
-    const selectedSysroles = await Sysrole.findAll({
-      where: {
-        name: {
-          [Op.in]: ['regular', 'admin'],
-        },
-      },
-    });
+    const selectedSysroles = await queryInterface.sequelize.query(
+      'SELECT * FROM sysrole WHERE name IN (:names)',
+      {
+        replacements: { names: ['regular', 'admin'] },
+        type: queryInterface.sequelize.QueryTypes.SELECT,
+      }
+    );
 
-    for (const sysrole of selectedSysroles) {
-      await queryInterface.bulkInsert('user_role', [
-        {
-          name: sysrole.name,
-          description: sysrole.description,
-          deleted: sysrole.deleted,
-          createdAt: sysrole.createdAt,
-          updatedAt: sysrole.updatedAt,
-          deletedAt: sysrole.deletedAt,
-        },
-      ]);
-    }
+    await queryInterface.bulkInsert(
+      'user_role',
+      await Promise.all(
+        selectedSysroles.map(async (sysrole) => {
+          return {
+            name: sysrole.name,
+            description: sysrole.description,
+            deleted: sysrole.deleted,
+            createdAt: sysrole.createdAt,
+            updatedAt: sysrole.updatedAt,
+            deletedAt: sysrole.deletedAt,
+          };
+        })
+      )
+    );
   },
 
   async down(queryInterface, Sequelize) {

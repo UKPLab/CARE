@@ -30,5 +30,8 @@ module.exports = (sequelize, DataTypes) => {
       tableName: 'user_role',
     }
   );
+  
+  UserRole.removeAttribute('id');
+
   return UserRole;
 };
