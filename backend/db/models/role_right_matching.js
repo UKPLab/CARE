@@ -1,5 +1,5 @@
-'use strict';
-const MetaModel = require('../MetaModel.js');
+"use strict";
+const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
   class RoleRightMatching extends MetaModel {
@@ -16,7 +16,12 @@ module.exports = (sequelize, DataTypes) => {
 
   RoleRightMatching.init(
     {
-      id: DataTypes.INTEGER,
+      id: {
+        allowNull: false,
+        primaryKey: true,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+      },
       userRoleName: DataTypes.STRING,
       userRightName: DataTypes.STRING,
       deleted: DataTypes.BOOLEAN,
@@ -26,8 +31,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize: sequelize,
-      modelName: 'role_right_matching',
-      tableName: 'role_right_matching',
+      modelName: "role_right_matching",
+      tableName: "role_right_matching",
     }
   );
   return RoleRightMatching;

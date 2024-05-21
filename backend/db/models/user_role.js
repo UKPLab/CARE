@@ -1,5 +1,5 @@
-'use strict';
-const MetaModel = require('../MetaModel.js');
+"use strict";
+const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
   class UserRole extends MetaModel {
@@ -16,22 +16,25 @@ module.exports = (sequelize, DataTypes) => {
 
   UserRole.init(
     {
-      name: DataTypes.STRING,
+      name: {
+        allowNull: false,
+        primaryKey: true,
+        type: DataTypes.STRING,
+      },
       description: DataTypes.STRING,
       deleted: DataTypes.BOOLEAN,
       createdAt: DataTypes.DATE,
       updatedAt: DataTypes.DATE,
       deletedAt: DataTypes.DATE,
-      
     },
     {
       sequelize: sequelize,
-      modelName: 'user_role',
-      tableName: 'user_role',
+      modelName: "user_role",
+      tableName: "user_role",
     }
   );
-  
-  UserRole.removeAttribute('id');
+
+  UserRole.removeAttribute("id");
 
   return UserRole;
 };
