@@ -107,6 +107,32 @@ module.exports = class Socket {
   }
 
   /**
+   * Check if the user has this right
+   * @param {string} right The name of the right to check
+   * @returns {boolean} True if the user has the specified right
+   */
+  async hasAccess(right) {
+    try {
+      const userRoles = await this.models["user_role_matching"].findAll({
+        where: { userId: this.userId },
+        raw: true,
+      });
+      const roleNames = userRoles.map((role) => role.userRoleName);
+      for (const roleName of roleNames) {
+        const matchedRoles = await this.models["role_right_matching"].findAll({
+          where: { userRoleName: roleName },
+          raw: true,
+        });
+        return matchedRoles.some((role) => role.userRightName === right);
+      }
+      // If no roles have the right, return false
+      return false;
+    } catch (error) {
+      this.logger.error(err);
+    }
+  }
+
+  /**
    * Check if the user has access
    * @param {number} userId The userId to check
    * @return {boolean}
