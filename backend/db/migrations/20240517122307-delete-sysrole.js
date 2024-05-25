@@ -1,12 +1,12 @@
-'use strict';
+"use strict";
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.dropTable('sysrole');
+    await queryInterface.dropTable("sysrole");
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.createTable('sysrole', {
+    await queryInterface.createTable("sysrole", {
       name: {
         type: Sequelize.STRING,
         allowNull: false,
@@ -34,5 +34,14 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
+    
+    await queryInterface.bulkInsert("sysrole", [
+      {
+        name: "admin",
+        description: "full control",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
   },
 };
