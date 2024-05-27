@@ -2,12 +2,12 @@
 
 const settings = [{
     key: "editor.document.showButtonCreate",
-    value: "false",
+    value: "true",
     type: "boolean",
     description: "Show create button in dashboard to create a new html document"
 }, {
     key: "editor.document.showButtonDeltaDownload",
-    value: "false",
+    value: "true",
     type: "boolean",
     description: "Show download button for document deltas (edits)"
 },
@@ -19,10 +19,17 @@ const settings = [{
 },
 {
     key: "editor.toolbar.visibility",
-    value: "false", 
+    value: "true", 
     type: "boolean",
     description: "Make toolbar in the editor visible"
-}];
+},
+{
+    key: "editor.toolbar.showHTMLDownload",
+    value: "true",
+    type: "boolean",
+    description: "Show download button for the html document"
+    },
+];
 
 module.exports = {
     async up(queryInterface, Sequelize) {
