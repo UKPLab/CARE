@@ -21,7 +21,7 @@
     </div>
   </span>
 
-  <Teleport to="#topBarNavItems">
+  <Teleport v-if="showHTMLDownloadButton" to="#topBarNavItems">
     <button
         title="Download document"
         class="btn rounded-circle"
@@ -127,6 +127,9 @@ export default {
             },
             theme: 'snow'
         };
+    },
+    showHTMLDownloadButton() {
+      return this.$store.getters["settings/getValue"]('editor.toolbar.showHTMLDownload') === 'true';
     }
   },
   watch: {
