@@ -19,6 +19,7 @@ help:
 	@echo "make dev-build-frontend   		 	Build frontend in development mode"
 	@echo "make build-frontend                  Build frontend in production mode"
 	@echo "make test							Run unit tests (backend only)"
+	@echo "make test-modules                    Run unit tests for specific modules"
 	@echo "make init             		 		Init (migrating) the database"
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
 	@echo "make build-clean                     Clean the environment of production build"
@@ -52,6 +53,11 @@ doc_clean:
 .PHONY: test
 test: backend/node_modules/.uptodate
 	cd backend && npm run test
+
+.PHONY: test-modules
+test-modules:
+	cd utils/modules/editor-delta-conversion && npm run test:module -- tests/editor-delta-conversion.test.js
+
 
 .PHONY: lint
 lint: frontend/node_modules/.uptodate
