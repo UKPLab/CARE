@@ -71,14 +71,13 @@ module.exports = class UserSocket extends Socket {
 
   /**
    * Get users by their role
-   * @param {string} role
-   * @returns {array<string>}
+   * @param {string} role - The role of the users to fetch. Possible values: "student", "mentor".
+   * @returns {string[]} An array of users.
    */
   async getUsers(role) {
     try {
       const isAdmin = await this.isAdmin();
-      // TODO: right to be filled
-      const rightToLoad = "";
+      const rightToLoad = `backend.socket.user.getUsers.${role}s`;
       const hasAccess = await this.hasAccess(rightToLoad);
       if (!isAdmin && !hasAccess) {
         this.logger.error(
