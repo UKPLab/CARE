@@ -1,7 +1,7 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
 
-const {convertToHtml, convert} = require("editor-delta-conversion");
+const {convertToHtml, convert, concatDeltas} = require("editor-delta-conversion");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -151,8 +151,11 @@ module.exports = class DocumentSocket extends Socket {
                 });
 
                 const delta = convert(edits);
+                console.log("edits",edits);
+                console.log("delta",delta);
+                console.log("concatenated Delta",concatDeltas(delta));
                 console.log("deltaStringify", JSON.stringify(delta, null, 2));
-                console.log("html", convertToHtml(delta.ops));
+                console.log("html", convertToHtml(delta));
 
 
                 // Apply 'applied: false' to each edit before sending
@@ -192,6 +195,7 @@ module.exports = class DocumentSocket extends Socket {
                         */
                     });
                 } else {
+                    const html = convertToHtml(delta);
                     // If file does not exist, create a new one
                     fs.writeFile(targetPath, html, (err) => {
                         if (err) {
@@ -379,10 +383,11 @@ module.exports = class DocumentSocket extends Socket {
         fs.mkdirSync(UPLOAD_PATH, {recursive: true});
 
         this.socket.on("documentGet", async (data) => {
+            await this.sendDocument(data.documentId);
             try {
                 await this.sendDocument(data.documentId);
             } catch (e) {
-                this.logger.error(e);
+                this.logger.error("Error handling document request: ", e);
                 this.sendToast("Error handling document request!", "Error", "danger");
             }
         });

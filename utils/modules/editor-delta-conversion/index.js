@@ -4,23 +4,26 @@ const {QuillDeltaToHtmlConverter} = require('quill-delta-to-html');
 function convertToHtml(delta) {
     const converter = new QuillDeltaToHtmlConverter(delta.ops, {}); // Does not work as intended, seems like it does not handle deletions properly
     return converter.convert();
-}
+} 
 
 function convert(dbEntries) {
-    return dbEntries.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).forEach(edit => {
+    return dbEntries.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map(edit => {
         const {operationType, offset, span, text, attributes} = edit;
 
         let delta = new Delta();
 
         switch (operationType) {
-            case 0:
-                delta = delta.retain(offset);
-                delta = delta.insert(text, attributes);
-            case 1:
-                delta = delta.retain(offset);
-                delta = delta.delete(span);
-            case 2:
-                delta = delta.retain(offset, attributes);
+            case 0: // Insert
+                delta = delta.retain(offset).insert(text, attributes);
+                break;
+            case 1: // Delete
+                delta = delta.retain(offset).delete(span);
+                break;
+            case 2: // Retain with attributes
+                delta = delta.retain(offset).retain(span, attributes);
+                break;
+            default:
+                throw new Error(`Unknown operation type: ${operationType}`);
         }
 
         return delta;
@@ -52,6 +55,26 @@ function getSpan(op) {
     }
 }
 
+function concatDeltas(deltas) {
+    let result = new Delta();
+  
+    deltas.forEach(delta => {
+        delta.ops.forEach(op => {
+          if (op.insert) {
+            result.insert(op.insert, op.attributes || {});
+          }
+          if (op.retain !== undefined) {
+            result.retain(op.retain);
+          }
+          if (op.delete !== undefined) {
+            result.delete(op.delete);
+          }
+        });
+      });
+
+    return result;
+  }
+
 function deltaToDb(ops) {
     let offset = 0;
     return ops.reduce(function (pV, op) {
@@ -75,5 +98,6 @@ function deltaToDb(ops) {
 module.exports = {
     deltaToDb: deltaToDb,
     convert: convert,
-    convertToHtml: convertToHtml
+    convertToHtml: convertToHtml,
+    concatDeltas: concatDeltas
 }
