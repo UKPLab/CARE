@@ -102,8 +102,19 @@ module.exports = class Socket {
    * Check if the user is an admin
    * @returns {boolean}
    */
-  isAdmin() {
-    return this.user.sysrole === "admin";
+  async isAdmin() {
+    try {
+      const userRoles = await this.models["user_role_matching"].findAll({
+        where: { userId: this.userId },
+        raw: true,
+      });
+      const roleNames = userRoles.map((role) => role.userRoleName);
+      if (roleNames.length < 1) return false;
+      return roleNames.includes("admin");
+    } catch (error) {
+      this.logger.error(error);
+      return false;
+    }
   }
 
   /**
