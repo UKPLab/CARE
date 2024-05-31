@@ -69,6 +69,40 @@ module.exports = class UserSocket extends Socket {
     }
   }
 
+  /**
+   * Get users by their role
+   * @param {string} role
+   * @returns {array<string>}
+   */
+  async getUsers(role) {
+    try {
+      const isAdmin = await this.isAdmin();
+      // TODO: right to be filled
+      const rightToLoad = "";
+      const hasAccess = await this.hasAccess(rightToLoad);
+      if (!isAdmin && !hasAccess) {
+        this.logger.error(
+          "This user is not an admin and does not have the right to load users by their role."
+        );
+        return;
+      }
+
+      const users = await this.models["user"].findAll({
+        include: [
+          {
+            model: this.models["user_role_matching"],
+            where: { userRoleName: role },
+            required: true,
+          },
+        ],
+        raw: true,
+      });
+      return users;
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
   init() {
     this.socket.on("userGetData", async (data) => {
       try {
