@@ -22,7 +22,7 @@ function deltaToHtml(delta) {
  * @param {array} dbEntries - The array of database entries to convert to a Quill Delta object.
  * @returns {object} The Quill Delta object representation of the database entries.
  */
-function DbToDelta(dbEntries) {
+function dbToDelta(dbEntries) {
     return dbEntries.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map(edit => {
         const {operationType, offset, span, text, attributes} = edit;
 
@@ -146,7 +146,7 @@ function deltaToDb(ops) {
 
 module.exports = {
     deltaToDb: deltaToDb,
-    DbToDelta: DbToDelta,
+    dbToDelta: dbToDelta,
     deltaToHtml: deltaToHtml,
     concatDeltas: concatDeltas
 }

@@ -47,9 +47,7 @@ import { Delta, QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
-import { DbToDelta } from "editor-delta-conversion";
-import { deltaToDb } from "editor-delta-conversion";
-import { concatDeltas } from "editor-delta-conversion";
+import { dbToDelta, deltaToDb, deltaToHtml, concatDeltas } from "editor-delta-conversion";
 
 export default {
   name: "EditorView",
@@ -149,6 +147,34 @@ export default {
         console.log(deltaToDb(combinedDelta.ops));
         this.$socket.emit("documentEdit", { documentId: this.documentId, ops: deltaToDb(combinedDelta.ops) });
         this.deltaBuffer = []; // Clear the buffer after processing
+        
+        /* Code to collect data for testing
+        // Prepare data for download
+        const htmlContent = this.$refs.editor.getHTML();
+          const outputData = {
+            delta: combinedDelta,
+            html: htmlContent,
+            dbEntries: deltaToDb(combinedDelta.ops)
+          };
+
+          // Convert the data to a JSON string
+          const jsonData = JSON.stringify(outputData, null, 2);
+
+          // Create a Blob from the JSON string
+          const blob = new Blob([jsonData], { type: "application/json" });
+
+          // Create a URL for the Blob and trigger the download
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'data.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          */
+          this.deltaBuffer = []; // Clear the buffer after processing
       }
     },
     async leave() {
@@ -170,7 +196,7 @@ export default {
     initializeEditorWithContent(edits) {
       console.log("Edits:", edits);
       
-      const delta = DbToDelta(edits);
+      const delta = dbToDelta(edits);
       console.log("Converted Deltas:", delta);
       
       const concatDelta = concatDeltas(delta);
