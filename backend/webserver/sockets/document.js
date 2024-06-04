@@ -1,7 +1,7 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
 
-const {convertToHtml, convert, concatDeltas} = require("editor-delta-conversion");
+const {deltaToHtml, DbToDelta, concatDeltas} = require("editor-delta-conversion");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -150,12 +150,12 @@ module.exports = class DocumentSocket extends Socket {
                     raw: true
                 });
 
-                const delta = convert(edits);
+                const delta = DbToDelta(edits);
                 console.log("edits",edits);
                 console.log("delta",delta);
                 console.log("concatenated Delta",concatDeltas(delta));
                 console.log("deltaStringify", JSON.stringify(delta, null, 2));
-                console.log("html", convertToHtml(delta));
+                console.log("html", deltaToHtml(delta));
 
 
                 // Apply 'applied: false' to each edit before sending
@@ -195,7 +195,7 @@ module.exports = class DocumentSocket extends Socket {
                         */
                     });
                 } else {
-                    const html = convertToHtml(delta);
+                    const html = deltaToHtml(delta);
                     // If file does not exist, create a new one
                     fs.writeFile(targetPath, html, (err) => {
                         if (err) {
@@ -383,7 +383,6 @@ module.exports = class DocumentSocket extends Socket {
         fs.mkdirSync(UPLOAD_PATH, {recursive: true});
 
         this.socket.on("documentGet", async (data) => {
-            await this.sendDocument(data.documentId);
             try {
                 await this.sendDocument(data.documentId);
             } catch (e) {
@@ -393,7 +392,12 @@ module.exports = class DocumentSocket extends Socket {
         });
 
         this.socket.on("documentGetAll", async (data) => {
-            await this.refreshAllDocuments((data && data.userId) ? data.userId : null);
+            try {
+                await this.refreshAllDocuments((data && data.userId) ? data.userId : null);
+              } catch (error) {
+                console.error(error);
+                this.sendToast(err, "Error getting all document data", "Error", "danger");
+              }
         });
 
         this.socket.on("documentUpdate", async (data) => {
@@ -401,7 +405,7 @@ module.exports = class DocumentSocket extends Socket {
                 await this.updateDocument(data.documentId, data);
             } catch (err) {
                 this.logger.error(err);
-                this.sendToast(err, "Error updating document", "Danger");
+                this.sendToast(err, "Error updating document", "Error", "danger");
             }
         });
 
@@ -491,8 +495,12 @@ module.exports = class DocumentSocket extends Socket {
         });
 
         this.socket.on("exportEditableDocument", async (data) => {
-            console.log("Received export request:", data);
-            await this.exportEditableDocument(data);
+            try {
+                await this.exportEditableDocument(data);
+              } catch (error) {
+                console.error(error);
+                this.sendToast("Error exporting edited document", "Error", "danger");
+              }
         });
     }
 }

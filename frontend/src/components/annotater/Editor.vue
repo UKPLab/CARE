@@ -47,7 +47,7 @@ import { Delta, QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
-import { convert } from "editor-delta-conversion";
+import { DbToDelta } from "editor-delta-conversion";
 import { deltaToDb } from "editor-delta-conversion";
 import { concatDeltas } from "editor-delta-conversion";
 
@@ -170,7 +170,7 @@ export default {
     initializeEditorWithContent(edits) {
       console.log("Edits:", edits);
       
-      const delta = convert(edits);
+      const delta = DbToDelta(edits);
       console.log("Converted Deltas:", delta);
       
       const concatDelta = concatDeltas(delta);
@@ -180,7 +180,7 @@ export default {
 
       if (this.$refs.editor) {
         console.log("Updating contents with delta:", concatDelta);
-        this.$refs.editor.quill.updateContents(concatDelta, "silent");
+        this.$refs.editor.setContents(concatDelta, "silent"); // updateContents does not work due to the format of the deltas
       }
 
       this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
