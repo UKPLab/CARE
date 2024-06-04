@@ -45,6 +45,16 @@ export default {
                 return null;
             }
         },
+
+        /**
+         * Fetch users by their role from the server
+         * 
+         * @param {*} state 
+         * @returns 
+         */
+        getUsersByRole: state => {
+            return state["users"]
+        },
     },
     mutations: {
         /**
@@ -70,6 +80,18 @@ export default {
                 state.user_stats[message.userId] = message.statistics;
             }
         },
+
+        /**
+         * On "respondUsersByRole", fetch the user list by their role and update the store 
+         * 
+         * @param state 
+         * @param message 
+         */
+        SOCKET_respondUsersByRole: (state, message) => {
+            if (message.success) {
+                state.users = message.users;
+            }
+        }
     },
     actions: {}
 };

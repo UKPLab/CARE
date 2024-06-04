@@ -3,7 +3,7 @@ const Socket = require("../Socket.js");
 /**
  * Handle user through websocket
  *
- * @author Nils Dycke, Dennis Zyska
+ * @author Nils Dycke, Dennis Zyska, Linyin Huang
  * @type {UserSocket}
  */
 module.exports = class UserSocket extends Socket {
@@ -86,6 +86,7 @@ module.exports = class UserSocket extends Socket {
         return;
       }
 
+      // FIXME: The include part will prompt an error due to table association issue
       const users = await this.models["user"].findAll({
         include: [
           {
@@ -114,6 +115,24 @@ module.exports = class UserSocket extends Socket {
         this.logger.error(
           "DB error while loading all users from database" + JSON.stringify(e)
         );
+      }
+    });
+
+    this.socket.on("requestUsersByRole", async (role) => {
+      try {
+        const users = await this.getUsers(role);
+        const mappedUsers = users.map((user) => this.minimalFields(user));
+        this.socket.emit("respondUsersByRole", {
+          success: true,
+          users: mappedUsers,
+        });
+      } catch (error) {
+        const errorMsg = "User Authority and request parameter mismatch";
+        this.socket.emit("respondUsersByRole", {
+          success: false,
+          message: errorMsg,
+        });
+        this.logger.error(errorMsg);
       }
     });
   }
