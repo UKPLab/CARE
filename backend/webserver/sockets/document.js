@@ -1,7 +1,7 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
 
-const {deltaToHtml, DbToDelta, concatDeltas} = require("editor-delta-conversion");
+const {deltaToHtml, dbToDelta, concatDeltas} = require("editor-delta-conversion");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -150,7 +150,7 @@ module.exports = class DocumentSocket extends Socket {
                     raw: true
                 });
 
-                const delta = DbToDelta(edits);
+                const delta = dbToDelta(edits);
                 console.log("edits",edits);
                 console.log("delta",delta);
                 console.log("concatenated Delta",concatDeltas(delta));
