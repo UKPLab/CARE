@@ -2,6 +2,10 @@
 
 const { Op } = require("sequelize");
 
+/**
+ * This migration transfers the existing roles ("regular" and "admin") from 'sysrole' table 
+ * to 'user_role' table and inserts new roles to 'user_role' table.
+ */
 module.exports = {
   async up(queryInterface, Sequelize) {
     // Fetch two rows from sysrole table where the names are regular and admin

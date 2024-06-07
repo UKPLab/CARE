@@ -34,33 +34,8 @@ module.exports = {
         type: Sequelize.DATE,
       },
     });
-
-    // TODO: Check if there are other rights to be inserted
-    // Insert rights into the user_right table
-    await queryInterface.bulkInsert("user_right", [
-      {
-        name: "backend.socket.user.getUsers.students",
-        description: "access to get all student users",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        name: "backend.socket.user.getUsers.mentors",
-        description: "access to get all student mentors",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        name: "frontend.dashboard.users.view",
-        description: "access to view users on the dashboard",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ]);
   },
   async down(queryInterface, Sequelize) {
-    // Delete all rows in the user_right table
-    await queryInterface.bulkDelete("user_right", null, {});
     await queryInterface.dropTable("user_right");
   },
 };
