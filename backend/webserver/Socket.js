@@ -99,18 +99,30 @@ module.exports = class Socket {
   }
 
   /**
-   * Check if the user is an admin
-   * @returns {boolean}
+   * Get the roles the user currently has
+   * @returns {string[]}
    */
-  async isAdmin() {
+  async getUserRoles() {
     try {
       const userRoles = await this.models["user_role_matching"].findAll({
         where: { userId: this.userId },
         raw: true,
       });
-      const roleNames = userRoles.map((role) => role.userRoleName);
-      if (roleNames.length < 1) return false;
-      return roleNames.includes("admin");
+      return userRoles.map((role) => role.userRoleName);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  /**
+   * Check if the user is an admin
+   * @returns {boolean}
+   */
+  async isAdmin() {
+    try {
+      const roles = await this.getUserRoles();
+      if (roles.length < 1) return false;
+      return roles.includes("admin");
     } catch (error) {
       this.logger.error(error);
       return false;
@@ -124,14 +136,10 @@ module.exports = class Socket {
    */
   async hasAccess(right) {
     try {
-      const userRoles = await this.models["user_role_matching"].findAll({
-        where: { userId: this.userId },
-        raw: true,
-      });
-      const roleNames = userRoles.map((role) => role.userRoleName);
-      for (const roleName of roleNames) {
+      const roles = await this.getUserRoles();
+      for (const role of roles) {
         const matchedRoles = await this.models["role_right_matching"].findAll({
-          where: { userRoleName: roleName },
+          where: { userRoleName: role },
           raw: true,
         });
         return matchedRoles.some((role) => role.userRightName === right);
