@@ -128,7 +128,7 @@ function deltaToDb(ops) {
     let offset = 0;
     return ops.reduce(function (pV, op) {
         if (op.retain) {
-            offset += op.retain;
+            offset = op.retain;
         }
         if (getOperationType(op) >= 0) {
             pV.push({
