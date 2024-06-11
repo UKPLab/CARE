@@ -12,7 +12,7 @@ function flattenDeltas(deltas) {
 function runAllTestsInOne(data) {
     const { delta, html, dbEntries } = data;
 
-    describe('${testName} - Editor Delta Conversion Comprehensive Test', () => {
+    describe('Editor Delta Conversion Comprehensive Test', () => {
         test('should convert between Delta, HTML, and DB entries correctly', () => {
             try {
                 // Test deltaToHtml function

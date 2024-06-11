@@ -207,7 +207,10 @@ export default {
 
       if (this.$refs.editor) {
         console.log("Updating contents with delta:", concatDelta);
+        console.log("this.$refs.editor",this.$refs.editor); // Check if the editor ref is correctly set
+        console.log("this.$refs.editor.getEditor()",this.$refs.editor.getEditor()); // Check what this method returns
         this.$refs.editor.setContents(concatDelta, "silent"); // updateContents does not work due to the format of the deltas
+        console.log("this.$refs.editor.updateContents()",this.$refs.editor.updateContents()); 
       }
 
       this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
