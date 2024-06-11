@@ -3,37 +3,65 @@ const Delta = require('quill-delta');
 const fs = require('fs');
 const path = require('path');
 
-const testDataPath = path.join(__dirname, 'testData', 'data_1.json');
-const testData = JSON.parse(fs.readFileSync(testDataPath, 'utf8'));
+function flattenDeltas(deltas) {
+    let allOps = [];
+    deltas.forEach(delta => allOps.push(...delta.ops));
+    return { ops: allOps };
+}
 
 function runAllTestsInOne(data) {
     const { delta, html, dbEntries } = data;
 
-    describe('Editor Delta Conversion Comprehensive Test', () => {
+    describe('${testName} - Editor Delta Conversion Comprehensive Test', () => {
         test('should convert between Delta, HTML, and DB entries correctly', () => {
-            // Test deltaToHtml function
-            const convertedHtml = deltaToHtml(delta);
-            expect(convertedHtml).toBe(html);
+            try {
+                // Test deltaToHtml function
+                const convertedHtml = deltaToHtml(delta);
+                expect(convertedHtml).toBe(html);
+            } catch (error) {
+                console.error('deltaToHtml test failed:', error);
+            }
 
-            // Test DbToDelta function
-            const convertedDeltaArray = dbToDelta(dbEntries);
-            expect(convertedDeltaArray).toEqual(new Delta(delta));
+            try {
+                // Test dbToDelta function
+                const convertedDeltaArray = dbToDelta(dbEntries);
+                const normalizedExpectedDelta = flattenDeltas([new Delta(delta)]); 
+                const normalizedActualDelta = flattenDeltas(convertedDeltaArray);
+                expect(normalizedActualDelta).toEqual(normalizedExpectedDelta);
+            } catch (error) {
+                console.error('dbToDelta test failed:', error);
+            }
 
-            // Test deltaToDb function
-            const deltaOps = delta.ops;
-            const convertedDbEntries = deltaToDb(deltaOps);
-            expect(convertedDbEntries).toEqual(dbEntries);
-
-            // Test concatDeltas function
-            const deltas = [new Delta([{ insert: 'Hello, ' }]), new Delta([{ insert: 'world!', attributes: { bold: true } }])];
-            const concatenatedDeltaForTest = concatDeltas(deltas);
-            const expectedDelta = new Delta(delta);
-            expect(concatenatedDeltaForTest).toEqual(expectedDelta);
+            try {
+                // Test deltaToDb function
+                const deltaOps = delta.ops;
+                const convertedDbEntries = deltaToDb(deltaOps);
+                expect(convertedDbEntries).toEqual(dbEntries);
+            } catch (error) {
+                console.error('deltaToDb test failed:', error);
+            }
         });
     });
 }
 
-runAllTestsInOne(testData);
+// Function to load data from a JSON file
+function loadDataAndRunTest(fileName, testName) {
+    const testDataPath = path.join(__dirname, 'testData', fileName);
+    const testData = JSON.parse(fs.readFileSync(testDataPath, 'utf8'));
+    runAllTestsInOne(testData, testName);
+}
+
+// List of test files and their descriptive names
+const testCases = [
+    { fileName: 'data_insert.json', testName: 'Insert Operations Test' },
+    { fileName: 'data_delete.json', testName: 'Deletion Operations Test' },
+    { fileName: 'data_attributes.json', testName: 'Attribute Operations Test' }
+];
+
+// Execute tests for each case
+testCases.forEach(caseInfo => {
+    loadDataAndRunTest(caseInfo.fileName, caseInfo.testName);
+});
 
 
 

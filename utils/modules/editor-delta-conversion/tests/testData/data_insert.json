@@ -86,11 +86,11 @@
         "retain": 14
       },
       {
-        "insert": "."
+        "insert": "!"
       }
     ]
   },
-  "html": "<p>This is a test.</p>",
+  "html": "<p>This is a test!</p>",
   "dbEntries": [
     {
       "offset": 0,
@@ -107,7 +107,28 @@
       "attributes": null
     },
     {
+      "offset": 2,
+      "operationType": 0,
+      "span": 1,
+      "text": "i",
+      "attributes": null
+    },
+    {
       "offset": 3,
+      "operationType": 0,
+      "span": 1,
+      "text": "s",
+      "attributes": null
+    },
+    {
+      "offset": 4,
+      "operationType": 0,
+      "span": 1,
+      "text": " ",
+      "attributes": null
+    },
+    {
+      "offset": 5,
       "operationType": 0,
       "span": 1,
       "text": "i",
@@ -121,80 +142,59 @@
       "attributes": null
     },
     {
-      "offset": 10,
+      "offset": 7,
       "operationType": 0,
       "span": 1,
       "text": " ",
       "attributes": null
     },
     {
-      "offset": 15,
-      "operationType": 0,
-      "span": 1,
-      "text": "i",
-      "attributes": null
-    },
-    {
-      "offset": 21,
-      "operationType": 0,
-      "span": 1,
-      "text": "s",
-      "attributes": null
-    },
-    {
-      "offset": 28,
-      "operationType": 0,
-      "span": 1,
-      "text": " ",
-      "attributes": null
-    },
-    {
-      "offset": 36,
+      "offset": 8,
       "operationType": 0,
       "span": 1,
       "text": "a",
       "attributes": null
     },
     {
-      "offset": 45,
+      "offset": 9,
       "operationType": 0,
       "span": 1,
       "text": " ",
       "attributes": null
     },
     {
-      "offset": 55,
+      "offset": 10,
       "operationType": 0,
       "span": 1,
       "text": "t",
       "attributes": null
     },
     {
-      "offset": 66,
+      "offset": 11,
       "operationType": 0,
       "span": 1,
       "text": "e",
       "attributes": null
     },
     {
-      "offset": 78,
+      "offset": 12,
       "operationType": 0,
       "span": 1,
       "text": "s",
       "attributes": null
     },
     {
-      "offset": 91,
+      "offset": 13,
       "operationType": 0,
       "span": 1,
       "text": "t",
       "attributes": null
     },
     {
-      "offset": 105,
+      "offset": 14,
       "operationType": 0,
       "span": 1,
-      "text": ".",
+      "text": "!",
       "attributes": null
     }
   ]
