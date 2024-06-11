@@ -27,6 +27,9 @@ module.exports = class Socket {
     this.models = this.server.db.models;
     this.user = this.socket.request.session.passport.user;
     this.userId = this.user.id;
+    // The roles the user currently has
+    this.userRoles = [];
+    this.isUserAdmin = null;
     this.logger.defaultMeta = { userId: this.userId };
     this.autoTables = Object.values(this.models)
       .filter((model) => model.autoTable)
@@ -104,13 +107,17 @@ module.exports = class Socket {
    */
   async getUserRoles() {
     try {
-      const userRoles = await this.models["user_role_matching"].findAll({
-        where: { userId: this.userId },
-        raw: true,
-      });
-      return userRoles.map((role) => role.userRoleName);
+      if (this.userRoles.length === 0) {
+        const userRoles = await this.models["user_role_matching"].findAll({
+          where: { userId: this.userId },
+          raw: true,
+        });
+        this.userRoles = userRoles.map((role) => role.userRoleName);
+      }
+      return this.userRoles;
     } catch (error) {
       this.logger.error(error);
+      return [];
     }
   }
 
@@ -120,9 +127,11 @@ module.exports = class Socket {
    */
   async isAdmin() {
     try {
-      const roles = await this.getUserRoles();
-      if (roles.length < 1) return false;
-      return roles.includes("admin");
+      if (this.isUserAdmin === null) {
+        const roles = await this.getUserRoles();
+        this.isUserAdmin = roles.includes("admin");
+      }
+      return this.isUserAdmin;
     } catch (error) {
       this.logger.error(error);
       return false;
@@ -136,6 +145,8 @@ module.exports = class Socket {
    */
   async hasAccess(right) {
     try {
+      // admin has full rights, so return true directly
+      if (this.isAdmin()) return true;
       const roles = await this.getUserRoles();
       for (const role of roles) {
         const matchedRoles = await this.models["role_right_matching"].findAll({
