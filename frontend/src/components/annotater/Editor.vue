@@ -143,9 +143,10 @@ export default {
     processDelta() {
       if (this.deltaBuffer.length > 0) {
         const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.concat(delta), new Delta());
-        console.log(combinedDelta.ops);
-        console.log(deltaToDb(combinedDelta.ops));
         this.$socket.emit("documentEdit", { documentId: this.documentId, ops: deltaToDb(combinedDelta.ops) });
+
+        console.log("Method getContents",this.$refs.editor.getContents());
+
         this.deltaBuffer = []; // Clear the buffer after processing
         
         /* Code to collect data for testing

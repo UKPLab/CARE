@@ -1,0 +1,448 @@
+{
+  "delta": {
+    "ops": [
+      {
+        "insert": "T"
+      },
+      {
+        "retain": 1
+      },
+      {
+        "insert": "e"
+      },
+      {
+        "retain": 2
+      },
+      {
+        "insert": "s"
+      },
+      {
+        "retain": 3
+      },
+      {
+        "insert": "t"
+      },
+      {
+        "retain": 4
+      },
+      {
+        "insert": "i"
+      },
+      {
+        "retain": 5
+      },
+      {
+        "insert": "n"
+      },
+      {
+        "retain": 6
+      },
+      {
+        "insert": "g"
+      },
+      {
+        "retain": 7
+      },
+      {
+        "insert": " "
+      },
+      {
+        "retain": 8
+      },
+      {
+        "insert": "d"
+      },
+      {
+        "retain": 9
+      },
+      {
+        "insert": "e"
+      },
+      {
+        "retain": 10
+      },
+      {
+        "insert": "l"
+      },
+      {
+        "retain": 11
+      },
+      {
+        "insert": "e"
+      },
+      {
+        "retain": 12
+      },
+      {
+        "insert": "t"
+      },
+      {
+        "retain": 13
+      },
+      {
+        "insert": "i"
+      },
+      {
+        "retain": 14
+      },
+      {
+        "insert": "o"
+      },
+      {
+        "retain": 15
+      },
+      {
+        "insert": "n"
+      },
+      {
+        "retain": 16
+      },
+      {
+        "insert": ":"
+      },
+      {
+        "retain": 17
+      },
+      {
+        "insert": " "
+      },
+      {
+        "retain": 18
+      },
+      {
+        "insert": "d"
+      },
+      {
+        "retain": 19
+      },
+      {
+        "insert": "e"
+      },
+      {
+        "retain": 20
+      },
+      {
+        "insert": "l"
+      },
+      {
+        "retain": 21
+      },
+      {
+        "insert": "e"
+      },
+      {
+        "retain": 22
+      },
+      {
+        "insert": "t"
+      },
+      {
+        "retain": 23
+      },
+      {
+        "insert": "i"
+      },
+      {
+        "retain": 24
+      },
+      {
+        "insert": "o"
+      },
+      {
+        "retain": 25
+      },
+      {
+        "insert": "n"
+      },
+      {
+        "retain": 25
+      },
+      {
+        "delete": 1
+      },
+      {
+        "retain": 24
+      },
+      {
+        "delete": 1
+      },
+      {
+        "retain": 23
+      },
+      {
+        "delete": 1
+      },
+      {
+        "retain": 22
+      },
+      {
+        "delete": 1
+      },
+      {
+        "retain": 21
+      },
+      {
+        "delete": 1
+      },
+      {
+        "retain": 20
+      },
+      {
+        "delete": 1
+      },
+      {
+        "retain": 19
+      },
+      {
+        "delete": 1
+      },
+      {
+        "retain": 18
+      },
+      {
+        "delete": 1
+      }
+    ]
+  },
+  "html": "<p>Testing deletion: </p>",
+  "dbEntries": [
+    {
+      "offset": 0,
+      "operationType": 0,
+      "span": 1,
+      "text": "T",
+      "attributes": null
+    },
+    {
+      "offset": 1,
+      "operationType": 0,
+      "span": 1,
+      "text": "e",
+      "attributes": null
+    },
+    {
+      "offset": 2,
+      "operationType": 0,
+      "span": 1,
+      "text": "s",
+      "attributes": null
+    },
+    {
+      "offset": 3,
+      "operationType": 0,
+      "span": 1,
+      "text": "t",
+      "attributes": null
+    },
+    {
+      "offset": 4,
+      "operationType": 0,
+      "span": 1,
+      "text": "i",
+      "attributes": null
+    },
+    {
+      "offset": 5,
+      "operationType": 0,
+      "span": 1,
+      "text": "n",
+      "attributes": null
+    },
+    {
+      "offset": 6,
+      "operationType": 0,
+      "span": 1,
+      "text": "g",
+      "attributes": null
+    },
+    {
+      "offset": 7,
+      "operationType": 0,
+      "span": 1,
+      "text": " ",
+      "attributes": null
+    },
+    {
+      "offset": 8,
+      "operationType": 0,
+      "span": 1,
+      "text": "d",
+      "attributes": null
+    },
+    {
+      "offset": 9,
+      "operationType": 0,
+      "span": 1,
+      "text": "e",
+      "attributes": null
+    },
+    {
+      "offset": 10,
+      "operationType": 0,
+      "span": 1,
+      "text": "l",
+      "attributes": null
+    },
+    {
+      "offset": 11,
+      "operationType": 0,
+      "span": 1,
+      "text": "e",
+      "attributes": null
+    },
+    {
+      "offset": 12,
+      "operationType": 0,
+      "span": 1,
+      "text": "t",
+      "attributes": null
+    },
+    {
+      "offset": 13,
+      "operationType": 0,
+      "span": 1,
+      "text": "i",
+      "attributes": null
+    },
+    {
+      "offset": 14,
+      "operationType": 0,
+      "span": 1,
+      "text": "o",
+      "attributes": null
+    },
+    {
+      "offset": 15,
+      "operationType": 0,
+      "span": 1,
+      "text": "n",
+      "attributes": null
+    },
+    {
+      "offset": 16,
+      "operationType": 0,
+      "span": 1,
+      "text": ":",
+      "attributes": null
+    },
+    {
+      "offset": 17,
+      "operationType": 0,
+      "span": 1,
+      "text": " ",
+      "attributes": null
+    },
+    {
+      "offset": 18,
+      "operationType": 0,
+      "span": 1,
+      "text": "d",
+      "attributes": null
+    },
+    {
+      "offset": 19,
+      "operationType": 0,
+      "span": 1,
+      "text": "e",
+      "attributes": null
+    },
+    {
+      "offset": 20,
+      "operationType": 0,
+      "span": 1,
+      "text": "l",
+      "attributes": null
+    },
+    {
+      "offset": 21,
+      "operationType": 0,
+      "span": 1,
+      "text": "e",
+      "attributes": null
+    },
+    {
+      "offset": 22,
+      "operationType": 0,
+      "span": 1,
+      "text": "t",
+      "attributes": null
+    },
+    {
+      "offset": 23,
+      "operationType": 0,
+      "span": 1,
+      "text": "i",
+      "attributes": null
+    },
+    {
+      "offset": 24,
+      "operationType": 0,
+      "span": 1,
+      "text": "o",
+      "attributes": null
+    },
+    {
+      "offset": 25,
+      "operationType": 0,
+      "span": 1,
+      "text": "n",
+      "attributes": null
+    },
+    {
+      "offset": 25,
+      "operationType": 1,
+      "span": 1,
+      "text": null,
+      "attributes": null
+    },
+    {
+      "offset": 24,
+      "operationType": 1,
+      "span": 1,
+      "text": null,
+      "attributes": null
+    },
+    {
+      "offset": 23,
+      "operationType": 1,
+      "span": 1,
+      "text": null,
+      "attributes": null
+    },
+    {
+      "offset": 22,
+      "operationType": 1,
+      "span": 1,
+      "text": null,
+      "attributes": null
+    },
+    {
+      "offset": 21,
+      "operationType": 1,
+      "span": 1,
+      "text": null,
+      "attributes": null
+    },
+    {
+      "offset": 20,
+      "operationType": 1,
+      "span": 1,
+      "text": null,
+      "attributes": null
+    },
+    {
+      "offset": 19,
+      "operationType": 1,
+      "span": 1,
+      "text": null,
+      "attributes": null
+    },
+    {
+      "offset": 18,
+      "operationType": 1,
+      "span": 1,
+      "text": null,
+      "attributes": null
+    }
+  ]
+}

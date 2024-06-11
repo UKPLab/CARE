@@ -12,7 +12,7 @@
     "test": "cross-env NODE_ENV=test DISABLE_LOGGING=false jest --silent=false --forceExit --testTimeout=10000 --runInBand --collect-coverage -- test.js",
     "test_doh": "cross-env NODE_ENV=test jest --detectOpenHandles --testTimeout=10000",
     "pretest": "cross-env NODE_ENV=test npm run db_migrate:reset",
-    "test:module": "cross-env NODE_ENV=test jest --silent=false --forceExit --testTimeout=10000 --runInBand --collect-coverage"
+    "test:module": "cross-env NODE_ENV=test jest --silent=false --forceExit --testTimeout=10000 --runInBand --collect-coverage --detectOpenHandles tests/editor-delta-conversion.test.js"
   },
   "author": "",
   "license": "Apache-2.0",
