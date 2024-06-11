@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const { Op } = require("sequelize");
 
 /**
  * Handle user through websocket
@@ -71,36 +72,61 @@ module.exports = class UserSocket extends Socket {
 
   /**
    * Get users by their role
-   * @param {string} role - The role of the users to fetch. Possible values: "student", "mentor".
+   * @param {string} role - The role of the users to fetch. Possible values: "student", "mentor", "all"
    * @returns {string[]} An array of users.
    */
   async getUsers(role) {
     try {
-      const isAdmin = await this.isAdmin();
-      const rightToLoad = `backend.socket.user.getUsers.${role}s`;
-      const hasAccess = await this.hasAccess(rightToLoad);
-      if (!isAdmin && !hasAccess) {
+      // Admin can fetch all users or users with specific roles
+      if (this.isUserAdmin) {
+        return role === "all"
+          ? await this.getAllUsers()
+          : await this.getUsersByRole(role);
+      }
+
+      // If not admin, check if the user has access to fetch the user list first
+      const rightToFetch = `backend.socket.user.getUsers.${role}s`;
+      if (!(await this.hasAccess(rightToFetch))) {
         this.logger.error(
           "This user is not an admin and does not have the right to load users by their role."
         );
         return;
       }
 
-      // FIXME: The include part will prompt an error due to table association issue
-      const users = await this.models["user"].findAll({
-        include: [
-          {
-            model: this.models["user_role_matching"],
-            where: { userRoleName: role },
-            required: true,
-          },
-        ],
-        raw: true,
-      });
-      return users;
+      return await this.getUsersByRole(role);
     } catch (error) {
       this.logger.error(error);
     }
+  }
+
+  /**
+   * Get all users
+   * @returns {string[]} An array of all users.
+   */
+  async getAllUsers() {
+    return await this.models["user"].findAll({ raw: true });
+  }
+
+  /**
+   * Get users by their role
+   * @param {string} role - The role of the users to fetch.
+   * @returns {string[]} An array of users with the specified role.
+   */
+  async getUsersByRole(role) {
+    const matchedUsers = await this.models["user_role_matching"].findAll({
+      where: { userRoleName: role },
+      attributes: ["userId"],
+      raw: true,
+    });
+    const userIds = matchedUsers.map((user) => user.userId);
+    return await this.models["user"].findAll({
+      where: {
+        id: {
+          [Op.in]: userIds,
+        },
+      },
+      raw: true,
+    });
   }
 
   init() {
