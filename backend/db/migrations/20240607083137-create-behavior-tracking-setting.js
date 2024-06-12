@@ -1,7 +1,7 @@
 'use strict';
 
 const settings = [{
-    key: "statistics.tracking",
+    key: "statistics.behaviorTracking",
     value: "false",
     type: "boolean",
     description: "Enable or disable behavior tracking"
