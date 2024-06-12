@@ -100,6 +100,9 @@ export default {
     requireAuth() {
       return this.$route.meta.requireAuth !== undefined && this.$route.meta.requireAuth;
     },
+    behaviorTracking() {
+      return Boolean(this.$store.getters["settings/getValue"]("behaviorTracking"));
+    },
   },
   watch: {
     $route(to, from) {
@@ -137,7 +140,12 @@ export default {
       }
     },
     reportVisibilityChange() {
-      this.$socket.emit("stats", {action: "tabVisibilityChange", data: {hidden: document.hidden}});
+      // TODO: remove logs after debugging
+      console.log("Behavior Tracking before op: " + this.behaviorTracking)
+      if (this.behaviorTracking) {
+        console.log("Behavior Tracking after op: " + this.behaviorTracking)
+        this.$socket.emit("stats", {action: "tabVisibilityChange", data: {hidden: document.hidden}});
+      }
     },
   },
 }
