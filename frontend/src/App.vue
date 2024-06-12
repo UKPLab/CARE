@@ -111,12 +111,13 @@ export default {
       if (newValue !== oldValue) {
         this.connect();
       }
-    }
+    },
   },
   beforeMount() {
     this.connect();
   },
   async mounted() {
+    document.addEventListener("visibilitychange", this.reportVisibilityChange);
     if (this.$route.meta.checkLogin) {
       // Check if user already authenticated, if so, we redirect him to the dashboard.
       const response = await axios.get(getServerURL() + '/auth/check',
@@ -126,11 +127,17 @@ export default {
       }
     }
   },
+  beforeUnmount() {
+    document.removeEventListener('visibilitychange', this.reportVisibilityChange);
+  },
   methods: {
     connect() {
       if (this.$route.meta.requireAuth && !this.$socket.connected) {
         this.$socket.connect();
       }
+    },
+    reportVisibilityChange() {
+      this.$socket.emit("stats", {action: "tabVisibilityChange", data: {hidden: document.hidden}});
     },
   },
 }
