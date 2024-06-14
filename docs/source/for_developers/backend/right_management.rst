@@ -28,11 +28,11 @@ ways to check existing rights:
    const roleRights = [
      {
        userRoleName: "teacher",
-       userRightName: "backend.socket.user.getUsers.students",
+       userRightName: "backend.socket.user.getUsers.student",
      },
      {
        userRoleName: "teacher",
-       userRightName: "backend.socket.user.getUsers.mentors",
+       userRightName: "backend.socket.user.getUsers.mentor",
      },
    ];
 
@@ -48,12 +48,12 @@ Adding a New Right
 
    const userRights = [
      {
-       name: "backend.socket.user.getUsers.students",
-       description: "access to get all student users",
+       name: "backend.socket.user.getUsers.student",
+       description: "access to get all students",
      },
      {
-       name: "backend.socket.user.getUsers.mentors",
-       description: "access to get all student mentors",
+       name: "backend.socket.user.getUsers.mentor",
+       description: "access to get all mentors",
      },
      {
        name: "frontend.dashboard.users.view",
@@ -78,11 +78,11 @@ Adding a New Right
    const roleRights = [
      {
        userRoleName: "teacher",
-       userRightName: "backend.socket.user.getUsers.students",
+       userRightName: "backend.socket.user.getUsers.student",
      },
      {
        userRoleName: "teacher",
-       userRightName: "backend.socket.user.getUsers.mentors",
+       userRightName: "backend.socket.user.getUsers.mentor",
      },
      // Please assign more rights to the corresponding roles here...
    ];

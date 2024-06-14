@@ -3,11 +3,11 @@
 const roleRights = [
   {
     userRoleName: "teacher",
-    userRightName: "backend.socket.user.getUsers.students",
+    userRightName: "backend.socket.user.getUsers.student",
   },
   {
     userRoleName: "teacher",
-    userRightName: "backend.socket.user.getUsers.mentors",
+    userRightName: "backend.socket.user.getUsers.mentor",
   },
 ];
 
