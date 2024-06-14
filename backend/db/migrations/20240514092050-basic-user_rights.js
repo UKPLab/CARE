@@ -2,16 +2,21 @@
 
 const userRights = [
   {
-    name: "backend.socket.user.getUsers.students",
-    description: "access to get all student users",
+    name: "backend.socket.user.getUsers.student",
+    description: "access to get all students",
   },
   {
-    name: "backend.socket.user.getUsers.mentors",
-    description: "access to get all student mentors",
+    name: "backend.socket.user.getUsers.mentor",
+    description: "access to get all mentors",
   },
   {
     name: "frontend.dashboard.users.view",
     description: "access to view users on the dashboard",
+  },
+  // TODO: The following right hasn't been assigned to any role in the 'role_right_matching' table 
+  {
+    name: "backend.socket.user.getUsers.all",
+    description: "access to get all users",
   },
 ];
 

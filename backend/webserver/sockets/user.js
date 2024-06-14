@@ -77,15 +77,7 @@ module.exports = class UserSocket extends Socket {
    */
   async getUsers(role) {
     try {
-      // Admin can fetch all users or users with specific roles
-      if (this.isUserAdmin) {
-        return role === "all"
-          ? await this.getAllUsers()
-          : await this.getUsersByRole(role);
-      }
-
-      // If not admin, check if the user has access to fetch the user list first
-      const rightToFetch = `backend.socket.user.getUsers.${role}s`;
+      const rightToFetch = `backend.socket.user.getUsers.${role}`;
       if (!(await this.hasAccess(rightToFetch))) {
         this.logger.error(
           "This user is not an admin and does not have the right to load users by their role."
@@ -93,7 +85,9 @@ module.exports = class UserSocket extends Socket {
         return;
       }
 
-      return await this.getUsersByRole(role);
+      return role === "all"
+        ? await this.getAllUsers()
+        : await this.getSpecificUsers(role);
     } catch (error) {
       this.logger.error(error);
     }
@@ -112,7 +106,7 @@ module.exports = class UserSocket extends Socket {
    * @param {string} role - The role of the users to fetch.
    * @returns {string[]} An array of users with the specified role.
    */
-  async getUsersByRole(role) {
+  async getSpecificUsers(role) {
     const matchedUsers = await this.models["user_role_matching"].findAll({
       where: { userRoleName: role },
       attributes: ["userId"],
