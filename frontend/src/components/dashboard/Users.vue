@@ -38,29 +38,39 @@ export default {
         pagination: 10,
       },
       columns: [
-        { name: "User", key: "userName", sortable: true },
         { name: "ID", key: "id", sortable: true },
-        // TODO: There is no sysrole value associated with a user, replace this value
-        { name: "Role", key: "sysrole", sortable: true },
+        { name: "First Name", key: "firstName", sortable: false },
+        { name: "Last Name", key: "lastName", sortable: false },
+        { name: "User", key: "userName", sortable: true },
+        { name: "Email", key: "email", sortable: true },
+        { name: "Accept Terms", key: "acceptTerms", sortable: true },
+        { name: "Accept Status", key: "acceptStats", sortable: true },
         { name: "Last Login", key: "lastLoginAt", sortable: true },
+        { name: "Deleted", key: "deleted", sortable: true },
+        { name: "Created At", key: "createdAt", sortable: false },
+        { name: "Updated At", key: "updatedAt", sortable: false },
+        { name: "Deleted At", key: "deletedAt", sortable: false },
       ],
-      role: "student"
+      role: "all"
     }
   },
   computed: {
     users() {
       return this.$store.getters["admin/getUsersByRole"].map(user => {
-        let newUsers = { ...user };
-        newUsers.lastLoginAt = user.lastLoginAt ? (new Date(user.lastLoginAt)).toLocaleDateString() : "-";
-        return newUsers;
+        let newUser = { ...user };
+        newUser.lastLoginAt = user.lastLoginAt ? (new Date(user.lastLoginAt)).toLocaleDateString() : "-";
+        newUser.createdAt = user.createdAt ? (new Date(user.createdAt)).toLocaleDateString() : "-";
+        newUser.updatedAt = user.updatedAt ? (new Date(user.updatedAt)).toLocaleDateString() : "-";
+        newUser.deletedAt = user.deletedAt ? (new Date(user.deletedAt)).toLocaleDateString() : "-";
+        return newUser;
       });
     },
   },
   mounted() {
-    this.loadUsers();
+    this.fetchUsers();
   },
   methods: {
-    loadUsers() {
+    fetchUsers() {
       this.$socket.emit("requestUsersByRole", this.role);
     },
   }
