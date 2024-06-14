@@ -98,7 +98,12 @@ module.exports = class UserSocket extends Socket {
    * @returns {string[]} An array of all users.
    */
   async getAllUsers() {
-    return await this.models["user"].findAll({ raw: true });
+    return await this.models["user"].findAll({
+      attributes: {
+        exclude: ["passwordHash", "salt"],
+      },
+      raw: true,
+    });
   }
 
   /**
@@ -114,6 +119,9 @@ module.exports = class UserSocket extends Socket {
     });
     const userIds = matchedUsers.map((user) => user.userId);
     return await this.models["user"].findAll({
+      attributes: {
+        exclude: ["passwordHash", "salt"],
+      },
       where: {
         id: {
           [Op.in]: userIds,
@@ -141,10 +149,9 @@ module.exports = class UserSocket extends Socket {
     this.socket.on("requestUsersByRole", async (role) => {
       try {
         const users = await this.getUsers(role);
-        const mappedUsers = users.map((user) => this.minimalFields(user));
         this.socket.emit("respondUsersByRole", {
           success: true,
-          users: mappedUsers,
+          users,
         });
       } catch (error) {
         const errorMsg = "User Authority and request parameter mismatch";

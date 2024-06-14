@@ -53,6 +53,7 @@ export default {
          * @returns 
          */
         getUsersByRole: state => {
+            // TODO: Check if it is better to add another defaultState, e.g. userList
             return state["users"]
         },
     },
