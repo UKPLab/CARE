@@ -13,7 +13,7 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll;"
         >
-          <QuillEditor ref="editor" v-model:content="content" :options="editorOptions" @text-change="handleTextChange"/>
+          <div ref="editor"></div>
         </div>
       </div>
     </div>
@@ -43,18 +43,19 @@
  *
  * @autor Zheyu Zhang, Juliane Bechert
  */
-import { Delta, QuillEditor } from "@vueup/vue-quill";
-import "@vueup/vue-quill/dist/vue-quill.snow.css";
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
-import { dbToDelta, deltaToDb, deltaToHtml, concatDeltas } from "editor-delta-conversion";
+import { dbToDelta, deltaToDb, concatDeltas } from "editor-delta-conversion";
+
+const Delta = Quill.import('delta');
 
 export default {
   name: "EditorView",
   fetch_data: ["document_edit"],
   components: {
-    LoadIcon,
-    QuillEditor
+    LoadIcon
   },
   inject: {
     documentId: {
@@ -74,13 +75,21 @@ export default {
       editable_document: undefined,
       debounceHandleSave: undefined,
       documentHash: this.$route.params.documentHash,
-      deltaBuffer: []
+      deltaBuffer: [],
+      editor: null
     };
   },
   created() {
     this.documentHash = this.$route.params.documentHash;
   },
   mounted() {
+    this.editor = new Quill(this.$refs.editor, {
+      theme: "snow",
+      modules: this.editorOptions.modules
+    }); 
+
+    this.editor.on('text-change', this.handleTextChange);
+
     this.$socket.emit("documentGet", { documentId: this.documentId });
 
     this.$socket.on("document_editRefresh", edits => {
@@ -134,7 +143,8 @@ export default {
     }
   },
   methods: {
-    handleTextChange({ delta, oldContents, source }) {
+    handleTextChange(delta, oldContents, source) {
+      console.log("Delta:",delta);
       if (source === "user") {
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
@@ -142,40 +152,33 @@ export default {
     },
     processDelta() {
       if (this.deltaBuffer.length > 0) {
-        const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.concat(delta), new Delta());
-        this.$socket.emit("documentEdit", { documentId: this.documentId, ops: deltaToDb(combinedDelta.ops) });
-
-        console.log("Method getContents",this.$refs.editor.getContents());
-
+        this.deltaBuffer.forEach(delta => {
+          this.$socket.emit("documentEdit", { documentId: this.documentId, ops: deltaToDb(delta.ops) });
+        });
         this.deltaBuffer = []; // Clear the buffer after processing
         
-        /* Code to collect data for testing
-        // Prepare data for download
-        const htmlContent = this.$refs.editor.getHTML();
-          const outputData = {
-            delta: combinedDelta,
-            html: htmlContent,
-            dbEntries: deltaToDb(combinedDelta.ops)
-          };
+        /*// Code to collect data for testing
+        const htmlContent = this.editor.root.innerHTML;
+        const outputData = {
+          delta: combinedDelta,
+          html: htmlContent,
+          dbEntries: deltaToDb(combinedDelta.ops)
+        };
 
-          // Convert the data to a JSON string
-          const jsonData = JSON.stringify(outputData, null, 2);
+        const jsonData = JSON.stringify(outputData, null, 2);
+        const blob = new Blob([jsonData], { type: "application/json" });
 
-          // Create a Blob from the JSON string
-          const blob = new Blob([jsonData], { type: "application/json" });
-
-          // Create a URL for the Blob and trigger the download
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'data.json';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-
-          */
-          this.deltaBuffer = []; // Clear the buffer after processing
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'data.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        */
+       
+        this.deltaBuffer = []; // Clear the buffer after processing
       }
     },
     async leave() {
@@ -205,22 +208,17 @@ export default {
       
       this.content = concatDelta;
 
-      if (this.$refs.editor) {
-        console.log("Updating contents with delta:", concatDelta);
-        console.log("this.$refs.editor",this.$refs.editor); // Check if the editor ref is correctly set
-        console.log("this.$refs.editor.getEditor()",this.$refs.editor.getEditor()); // Check what this method returns
-        this.$refs.editor.setContents(concatDelta, "silent"); // updateContents does not work due to the format of the deltas
-        console.log("this.$refs.editor.updateContents()",this.$refs.editor.updateContents()); 
-      }
-
+      this.editor.setContents(concatDelta, "user");
+      
+        
       this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
     },
     handleDocumentError(error) {
       alert(`Error: ${error.message}`);
     },
     downloadDocument() {
-      var blob = new Blob([this.$refs.editor.getHTML()], { type: "text/html;charset=utf-8;" });
-      var url = URL.createObjectURL(blob);
+      const blob = new Blob([this.editor.root.innerHTML], { type: "text/html;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.setAttribute("href", url);
       anchor.setAttribute("target", "_blank");

@@ -1,5 +1,6 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
+const Delta = require('quill-delta');
 
 const {deltaToHtml, dbToDelta, concatDeltas} = require("editor-delta-conversion");
 
@@ -166,51 +167,65 @@ module.exports = class DocumentSocket extends Socket {
 
                 this.emit('document_editRefresh', editsWithAppliedFalse);
 
-                // Save edits from database to HTML on disk - not tested
-                const targetPath = `${UPLOAD_PATH}/${doc.hash}.html`;
-                console.log("targetPath", targetPath);
+                // Path for the delta file
+                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                console.log("deltaFilePath", deltaFilePath);
 
-                if (fs.existsSync(targetPath)) {
-                    // If file exists, read its content
-                    fs.readFile(targetPath, 'utf8', (err, data) => {
-                        if (err) {
-                            this.logger.error("Failed to read HTML file:", err);
-                            this.sendToast("Error loading HTML file!", "HTML Error", "danger");
-                            return;
-                        }
-
-                        // TODO Combine existing HTML content with new edits - right now only the first edits are entered into html file
-
-                        // Write the updated HTML content back to the file
-                        /*
-                        fs.writeFile(targetPath, updatedHtml, (err) => {
+                const readJsonFile = (path) => {
+                    return new Promise((resolve, reject) => {
+                        fs.readFile(path, 'utf8', (err, data) => {
                             if (err) {
-                            this.logger.error("Failed to write updated HTML file:", err);
-                            this.sendToast("Error saving updated HTML file!", "HTML Error", "danger");
-                            return;
+                                return reject(err);
                             }
-                            this.logger.info("HTML file updated successfully.");
-                            this.socket.emit("documentFile", { document: doc, file: updatedHtml });
+                            try {
+                                const jsonData = JSON.parse(data);
+                                resolve(jsonData);
+                            } catch (parseErr) {
+                                reject(parseErr);
+                            }
                         });
-                        */
                     });
-                } else {
-                    const html = deltaToHtml(delta);
-                    // If file does not exist, create a new one
-                    fs.writeFile(targetPath, html, (err) => {
-                        if (err) {
-                            this.logger.error("Failed to write new HTML file:", err);
-                            this.sendToast("Error saving new HTML file!", "HTML Error", "danger");
-                            return;
-                        }
-                        this.logger.info("HTML file created successfully.");
-                        this.socket.emit("documentFile", {document: doc, file: html});
+                };
+
+                const writeJsonFile = (path, data) => {
+                    return new Promise((resolve, reject) => {
+                        fs.writeFile(path, JSON.stringify(data, null, 2), 'utf8', (err) => {
+                            if (err) {
+                                return reject(err);
+                            }
+                            resolve();
+                        });
                     });
+                };
+
+                try {
+                    let existingDeltas = new Delta(); // Initialize as empty Delta object
+                    if (fs.existsSync(deltaFilePath)) {
+                        const existingDeltasJson = await readJsonFile(deltaFilePath);
+                        console.log("readJsonFile(deltaFilePath)", existingDeltasJson);
+                        existingDeltas = new Delta(existingDeltasJson); // Convert JSON to Delta
+                    }
+
+                    const newDelta = concatDeltas(delta); // Combine all incoming deltas
+                    console.log("newDelta:", JSON.stringify(newDelta, null, 2));
+
+                    const combinedDeltas = existingDeltas.compose(newDelta);
+                    console.log("combinedDeltas:", JSON.stringify(combinedDeltas, null, 2));
+
+                    await writeJsonFile(deltaFilePath, combinedDeltas); // Write combined deltas to file
+
+                    this.logger.info("Deltas file updated successfully.");
+                    this.socket.emit("documentFile", { document: doc, deltas: combinedDeltas });
+
+                } catch (err) {
+                    this.logger.error("Failed to read/write delta file:", err);
+                    this.sendToast("Error handling delta file!", "Delta File Error", "danger");
+                    return;
                 }
 
-                return {delta};
+                return { delta };
 
-            } else { // Non-HTML document type, send file
+                } else { // Non-HTML document type, send file
                 if (fs.existsSync(`${UPLOAD_PATH}/${doc['hash']}.pdf`)) {
                     fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
                         if (err) {
