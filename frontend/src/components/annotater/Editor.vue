@@ -43,8 +43,8 @@
  *
  * @autor Zheyu Zhang, Juliane Bechert
  */
-import Quill from "quill";
-import "quill/dist/quill.snow.css";
+import Quill from "@nuxeo/quill";
+import "@nuxeo/quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
 import { dbToDelta, deltaToDb, concatDeltas } from "editor-delta-conversion";
@@ -152,10 +152,11 @@ export default {
     },
     processDelta() {
       if (this.deltaBuffer.length > 0) {
-        this.deltaBuffer.forEach(delta => {
-          this.$socket.emit("documentEdit", { documentId: this.documentId, ops: deltaToDb(delta.ops) });
-        });
-        this.deltaBuffer = []; // Clear the buffer after processing
+      const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
+
+      this.$socket.emit("documentEdit", { documentId: this.documentId, ops: deltaToDb(combinedDelta.ops) });
+
+      this.deltaBuffer = []; // Clear the buffer after processing
         
         /*// Code to collect data for testing
         const htmlContent = this.editor.root.innerHTML;
@@ -199,18 +200,23 @@ export default {
     },
     initializeEditorWithContent(edits) {
       console.log("Edits:", edits);
-      
-      const delta = dbToDelta(edits);
+
+      const unappliedEdits = edits.filter(edit => !edit.applied);
+      const delta = dbToDelta(unappliedEdits);
       console.log("Converted Deltas:", delta);
-      
+
       const concatDelta = concatDeltas(delta);
       console.log("Concatenated Delta:", concatDelta);
-      
+
       this.content = concatDelta;
 
-      this.editor.setContents(concatDelta, "user");
-      
-        
+      if (this.editor) {
+        this.editor.setContents(new Delta()); // Clear the editor content first
+        concatDelta.ops.forEach(op => {
+          this.editor.updateContents(new Delta([op]), "api");
+        });
+      }
+
       this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
     },
     handleDocumentError(error) {
