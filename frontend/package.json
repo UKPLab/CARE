@@ -36,7 +36,7 @@
     "pdfjs-dist": "^2.16.105",
     "pg": "^8.11.0",
     "pg-hstore": "^2.3.4",
-    "quill": "^2.0.2",
+    "@nuxeo/quill": "^2.0.0-NX",
     "scroll-into-view": "^1.16.2",
     "socket.io-client": "^4.6.2",
     "uuid": "^8.3.2",
