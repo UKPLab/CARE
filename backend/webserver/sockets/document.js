@@ -152,13 +152,7 @@ module.exports = class DocumentSocket extends Socket {
                 });
 
                 const delta = dbToDelta(edits);
-                console.log("edits",edits);
-                console.log("delta",delta);
-                console.log("concatenated Delta",concatDeltas(delta));
-                console.log("deltaStringify", JSON.stringify(delta, null, 2));
-                console.log("html", deltaToHtml(delta));
-
-
+        
                 // Apply 'applied: false' to each edit before sending
                 const editsWithAppliedFalse = edits.map(edit => ({
                     ...edit,
@@ -199,31 +193,31 @@ module.exports = class DocumentSocket extends Socket {
                 };
 
                 try {
-                    let existingDeltas = new Delta(); // Initialize as empty Delta object
                     if (fs.existsSync(deltaFilePath)) {
                         const existingDeltasJson = await readJsonFile(deltaFilePath);
-                        console.log("readJsonFile(deltaFilePath)", existingDeltasJson);
-                        existingDeltas = new Delta(existingDeltasJson); // Convert JSON to Delta
                     }
-
-                    const newDelta = concatDeltas(delta); // Combine all incoming deltas
-                    console.log("newDelta:", JSON.stringify(newDelta, null, 2));
-
-                    const combinedDeltas = existingDeltas.compose(newDelta);
-                    console.log("combinedDeltas:", JSON.stringify(combinedDeltas, null, 2));
-
-                    await writeJsonFile(deltaFilePath, combinedDeltas); // Write combined deltas to file
-
+    
+                    const newDelta = concatDeltas(delta); 
+    
+                    await writeJsonFile(deltaFilePath, newDelta); 
+    
+                    // Mark the unapplied edits as applied
+                    await this.models['document_edit'].update(
+                        { applied: true },
+                        { where: { id: edits.map(edit => edit.id) } }
+                    );
+    
                     this.logger.info("Deltas file updated successfully.");
-                    this.socket.emit("documentFile", { document: doc, deltas: combinedDeltas });
-
+                    this.socket.emit("documentFile", { document: doc, deltas: newDelta });
+    
                 } catch (err) {
                     this.logger.error("Failed to read/write delta file:", err);
                     this.sendToast("Error handling delta file!", "Delta File Error", "danger");
                     return;
                 }
-
+    
                 return { delta };
+    
 
                 } else { // Non-HTML document type, send file
                 if (fs.existsSync(`${UPLOAD_PATH}/${doc['hash']}.pdf`)) {
