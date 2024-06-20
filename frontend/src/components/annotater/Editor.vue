@@ -41,16 +41,15 @@
  *
  * This component provides a Quill editor to edit the document.
  *
- * @autor Zheyu Zhang, Juliane Bechert
+ * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska
  */
-//import Quill from "@nuxeo/quill"; ///"@nuxeo/quill": "^2.0.0-NX",
-import Quill, {Parchment} from "quill";
-//import "@nuxeo/quill/dist/quill.snow.css";
+import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
-import { dbToDelta, deltaToDb, concatDeltas } from "editor-delta-conversion";
-import { LeafBlot, Scope } from 'parchment';
+import {dbToDelta, deltaToDb, concatDeltas} from "editor-delta-conversion";
+import {Editor} from './editorStore.js';
+
 const Delta = Quill.import('delta');
 
 export default {
@@ -86,60 +85,24 @@ export default {
   },
   mounted() {
     const editorContainer = document.getElementById('editor-container');
+
     if (editorContainer) {
-      console.log(Quill);
-
-
-      this.editor = new Quill(editorContainer, {
+      this.editor = new Editor(editorContainer, {
         theme: "snow",
         modules: this.editorOptions.modules
       });
 
-      this.editor.selection.normalizedToRange = function(range) {
-
-    const positions = [
-      [range.start.node, range.start.offset],
-    ];
-    if (!range.native.collapsed) {
-      positions.push([range.end.node, range.end.offset]);
-    }
-    const indexes = positions.map((position) => {
-      const [node, offset] = position;
-      console.log({Parchment});
-      console.log(this);
-      console.log(node);
-      const blot = this.scroll.registry.find(node, true);
-      console.log(blot);
-      // @ts-expect-error Fix me later
-      const index = blot.offset(this.scroll);
-      if (offset === 0) {
-        return index;
-      }
-      if (blot instanceof LeafBlot) {
-        return index + blot.index(node, offset);
-      }
-      // @ts-expect-error Fix me later
-      return index + blot.length();
-    });
-    const end = Math.min(Math.max(...indexes), this.scroll.length() - 1);
-    const start = Math.min(end, ...indexes);
-    return new Range(start, end - start);
-  }
-
-      console.log(this.editor);
+     /* this.editor.selection.scroll.find = function (node, bubble = false) {
+        const blot = this.registry.find(node, bubble);
+        return blot ? toRaw(blot.scroll) === this ? blot : bubble ? this.find(blot.scroll.domNode.parentNode, true) : null : null;
+      }*/
     }
 
-    //this.editor.on('text-change', this.handleTextChange);
+    this.editor.getEditor().on('text-change', this.handleTextChange);
 
-    this.$socket.emit("documentGet", { documentId: this.documentId });
-    this.editor.setContents(
-        [
-      {
-        "insert": "Test"
-      }
-    ]
-    );
-    /*this.$socket.on("document_editRefresh", edits => {
+    this.$socket.emit("documentGet", {documentId: this.documentId});
+
+    this.$socket.on("document_editRefresh", edits => {
       this.initializeEditorWithContent(edits);
     });
 
@@ -153,11 +116,9 @@ export default {
     });
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
-
-     */
   },
   unmounted() {
-    this.$socket.emit("documentSave", { documentId: this.documentId });
+    this.$socket.emit("documentSave", {documentId: this.documentId});
   },
   computed: {
     unappliedEdits() {
@@ -185,7 +146,7 @@ export default {
     unappliedEdits: {
       handler(newEdits) {
         if (newEdits.length > 0) {
-          //this.initializeEditorWithContent(newEdits);
+          this.initializeEditorWithContent(newEdits);
         }
       },
       deep: true
@@ -198,7 +159,7 @@ export default {
       console.log("handleTextChange: ", source);
 
 
-      console.log("Delta receives from editor:",delta);
+      console.log("Delta receives from editor:", delta);
       if (source === "user") {
         console.log("handleTextChange:", delta);
         this.deltaBuffer.push(delta);
@@ -216,11 +177,11 @@ export default {
         console.log("Operations to be saved in DB:", dbOps);
 
         if (dbOps.length > 0) {
-            this.$socket.emit("documentEdit", { documentId: this.documentId, ops: dbOps });
+          this.$socket.emit("documentEdit", {documentId: this.documentId, ops: dbOps});
         }
 
         this.deltaBuffer = []; // Clear the buffer after processing
-        
+
         /*// Code to collect data for testing
         const outputData = {
           delta: combinedDelta,
@@ -239,7 +200,7 @@ export default {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         */
-       
+
         this.deltaBuffer = []; // Clear the buffer after processing
       }
     },
@@ -271,10 +232,11 @@ export default {
 
       this.content = concatDelta;
 
+
       if (this.editor) {
-        this.editor.setContents(new Delta()); // Clear the editor content first
+        this.editor.getEditor().setContents(new Delta()); // Clear the editor content first
         concatDelta.ops.forEach(op => {
-          this.editor.updateContents(new Delta([op]), "api");
+          this.editor.getEditor().updateContents(new Delta([op]), "api");
         });
       }
 
@@ -284,7 +246,7 @@ export default {
       alert(`Error: ${error.message}`);
     },
     downloadDocument() {
-      const blob = new Blob([this.editor.root.innerHTML], { type: "text/html;charset=utf-8;" });
+      const blob = new Blob([this.editor.root.innerHTML], {type: "text/html;charset=utf-8;"});
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.setAttribute("href", url);
