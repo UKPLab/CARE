@@ -13,7 +13,7 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll;"
         >
-          <div ref="editor"></div>
+          <div id="editor-container"></div>
         </div>
       </div>
     </div>
@@ -83,10 +83,13 @@ export default {
     this.documentHash = this.$route.params.documentHash;
   },
   mounted() {
-    this.editor = new Quill(this.$refs.editor, {
-      theme: "snow",
-      modules: this.editorOptions.modules
-    }); 
+    const editorContainer = document.getElementById('editor-container');
+    if (editorContainer) {
+      this.editor = new Quill(editorContainer, {
+        theme: "snow",
+        modules: this.editorOptions.modules
+      });
+    }
 
     this.editor.on('text-change', this.handleTextChange);
 
@@ -144,7 +147,7 @@ export default {
   },
   methods: {
     handleTextChange(delta, oldContents, source) {
-      console.log("Delta:",delta);
+      console.log("Delta receives from editor:",delta);
       if (source === "user") {
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
@@ -152,17 +155,21 @@ export default {
     },
     processDelta() {
       if (this.deltaBuffer.length > 0) {
-      const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
+        const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
+        console.log("Combined Delta:", combinedDelta);
 
-      this.$socket.emit("documentEdit", { documentId: this.documentId, ops: deltaToDb(combinedDelta.ops) });
+        const dbOps = deltaToDb(combinedDelta.ops);
+        console.log("Operations to be saved in DB:", dbOps);
 
-      this.deltaBuffer = []; // Clear the buffer after processing
+        if (dbOps.length > 0) {
+            this.$socket.emit("documentEdit", { documentId: this.documentId, ops: dbOps });
+        }
+
+        this.deltaBuffer = []; // Clear the buffer after processing
         
         /*// Code to collect data for testing
-        const htmlContent = this.editor.root.innerHTML;
         const outputData = {
           delta: combinedDelta,
-          html: htmlContent,
           dbEntries: deltaToDb(combinedDelta.ops)
         };
 

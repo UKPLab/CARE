@@ -2,7 +2,7 @@ const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
 
-const {deltaToHtml, dbToDelta, concatDeltas} = require("editor-delta-conversion");
+const {dbToDelta, concatDeltas} = require("editor-delta-conversion");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 

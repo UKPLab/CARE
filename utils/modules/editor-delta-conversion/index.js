@@ -1,18 +1,4 @@
 const Delta = require('quill-delta');
-const {QuillDeltaToHtmlConverter} = require('quill-delta-to-html');
-
-/**
- * Converts a Quill Delta object to HTML.
- *
- * This method takes a Quill Delta object as input and returns the corresponding HTML.
- *
- * @param {object} delta - The Quill Delta object to convert to HTML.
- * @returns {string} The HTML representation of the Quill Delta object.
- */
-function deltaToHtml(delta) {
-    const converter = new QuillDeltaToHtmlConverter(delta.ops, {}); 
-    return converter.convert();
-} 
 
 /**
  * Converts an array of database entries to a Quill Delta object.
@@ -147,6 +133,5 @@ function deltaToDb(ops) {
 module.exports = {
     deltaToDb: deltaToDb,
     dbToDelta: dbToDelta,
-    deltaToHtml: deltaToHtml,
     concatDeltas: concatDeltas
 }
