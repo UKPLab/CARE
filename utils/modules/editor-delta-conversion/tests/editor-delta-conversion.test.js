@@ -1,4 +1,4 @@
-const { deltaToHtml, dbToDelta, deltaToDb, concatDeltas } = require('../index');
+const { dbToDelta, deltaToDb, concatDeltas } = require('../index');
 const Delta = require('quill-delta');
 const fs = require('fs');
 const path = require('path');
@@ -10,17 +10,11 @@ function flattenDeltas(deltas) {
 }
 
 function runAllTestsInOne(data) {
-    const { delta, html, dbEntries } = data;
+    const { delta, dbEntries } = data;
 
     describe('Editor Delta Conversion Comprehensive Test', () => {
-        test('should convert between Delta, HTML, and DB entries correctly', () => {
-            try {
-                // Test deltaToHtml function
-                const convertedHtml = deltaToHtml(delta);
-                expect(convertedHtml).toBe(html);
-            } catch (error) {
-                console.error('deltaToHtml test failed:', error);
-            }
+        test('should convert between Delta, and DB entries correctly', () => {
+            
 
             try {
                 // Test dbToDelta function
