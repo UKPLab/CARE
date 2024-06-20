@@ -132,17 +132,17 @@ endif
 clean: check_clean
 	@echo "Cleaning project code and database. WARNING: This will remove your current DB state."
 ifeq ($(OS),Windows_NT)
-	rmdir /S /Q "frontend\node_modules"
-	@if exist "backend\node_modules.uptodate" del /Q "backend\node_modules.uptodate"
+	@if exist "frontend\node_modules" rmdir /S /Q "frontend\node_modules"
+	@if exist "backend\node_modules" rmdir /S /Q "backend\node_modules"
 	@if exist "utils\modules\editor-delta-conversion\node_modules" rmdir /S /Q "utils\modules\editor-delta-conversion\node_modules"
 	@if exist "dist" rmdir /S /Q "dist"
 	@for %%F in (files*) do if "%%~nxF" neq "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" del "%%F"
 else
 	rm -rf frontend/node_modules
-	rm -rf backend/node_modules/.uptodate
+	rm -rf backend/node_modules
 	rm -rf care/utils/modules/editor-delta-conversion/node_modules
 	rm -rf dist
-	find files -maxdepth 1 -type f ! -name "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" -exec rm {} ;
+	find files -maxdepth 1 -type f ! -name "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" -exec rm {} \;
 endif
 	@docker compose rm -f -s -v
 	@docker network rm care_default || echo "IGNORING ERROR"
@@ -182,8 +182,10 @@ endif
 
 install-utils-modules:
 ifeq ($(OS),Windows_NT)
+	@if exist "frontend\node_modules" rmdir /S /Q "frontend\node_modules"
 	@for /D %%d in (utils\modules\*) do @if exist "%%d\package.json" (cd %%d && npm install && @echo. > node_modules\.uptodate)
 else
+	rm -rf frontend/node_modules
 	@for d in $(shell find utils/modules -type d -maxdepth 1 -mindepth 1); do \
 		(cd $$d && npm install && touch node_modules/.uptodate); \
 	done
