@@ -43,12 +43,14 @@
  *
  * @autor Zheyu Zhang, Juliane Bechert
  */
-import Quill from "@nuxeo/quill";
-import "@nuxeo/quill/dist/quill.snow.css";
+//import Quill from "@nuxeo/quill"; ///"@nuxeo/quill": "^2.0.0-NX",
+import Quill, {Parchment} from "quill";
+//import "@nuxeo/quill/dist/quill.snow.css";
+import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
 import { dbToDelta, deltaToDb, concatDeltas } from "editor-delta-conversion";
-
+import { LeafBlot, Scope } from 'parchment';
 const Delta = Quill.import('delta');
 
 export default {
@@ -85,17 +87,59 @@ export default {
   mounted() {
     const editorContainer = document.getElementById('editor-container');
     if (editorContainer) {
+      console.log(Quill);
+
+
       this.editor = new Quill(editorContainer, {
         theme: "snow",
         modules: this.editorOptions.modules
       });
+
+      this.editor.selection.normalizedToRange = function(range) {
+
+    const positions = [
+      [range.start.node, range.start.offset],
+    ];
+    if (!range.native.collapsed) {
+      positions.push([range.end.node, range.end.offset]);
+    }
+    const indexes = positions.map((position) => {
+      const [node, offset] = position;
+      console.log({Parchment});
+      console.log(this);
+      console.log(node);
+      const blot = this.scroll.registry.find(node, true);
+      console.log(blot);
+      // @ts-expect-error Fix me later
+      const index = blot.offset(this.scroll);
+      if (offset === 0) {
+        return index;
+      }
+      if (blot instanceof LeafBlot) {
+        return index + blot.index(node, offset);
+      }
+      // @ts-expect-error Fix me later
+      return index + blot.length();
+    });
+    const end = Math.min(Math.max(...indexes), this.scroll.length() - 1);
+    const start = Math.min(end, ...indexes);
+    return new Range(start, end - start);
+  }
+
+      console.log(this.editor);
     }
 
-    this.editor.on('text-change', this.handleTextChange);
+    //this.editor.on('text-change', this.handleTextChange);
 
     this.$socket.emit("documentGet", { documentId: this.documentId });
-
-    this.$socket.on("document_editRefresh", edits => {
+    this.editor.setContents(
+        [
+      {
+        "insert": "Test"
+      }
+    ]
+    );
+    /*this.$socket.on("document_editRefresh", edits => {
       this.initializeEditorWithContent(edits);
     });
 
@@ -109,6 +153,8 @@ export default {
     });
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
+
+     */
   },
   unmounted() {
     this.$socket.emit("documentSave", { documentId: this.documentId });
@@ -139,7 +185,7 @@ export default {
     unappliedEdits: {
       handler(newEdits) {
         if (newEdits.length > 0) {
-          this.initializeEditorWithContent(newEdits);
+          //this.initializeEditorWithContent(newEdits);
         }
       },
       deep: true
@@ -147,14 +193,22 @@ export default {
   },
   methods: {
     handleTextChange(delta, oldContents, source) {
+      console.log("handleTextChange: ", delta);
+      console.log("handleTextChange: ", oldContents);
+      console.log("handleTextChange: ", source);
+
+
       console.log("Delta receives from editor:",delta);
       if (source === "user") {
+        console.log("handleTextChange:", delta);
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
       }
     },
     processDelta() {
       if (this.deltaBuffer.length > 0) {
+        console.log("deltaBuffer", this.deltaBuffer);
+
         const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
         console.log("Combined Delta:", combinedDelta);
 

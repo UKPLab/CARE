@@ -47,7 +47,7 @@ function getOperationType(op) {
         return 0; // Insert
     } else if ('delete' in op) {
         return 1; // Delete
-    } else if ('attribute' in op) {
+    } else if ('attributes' in op) {
         return 2; // Attribute Change
     } else {
         return -1;
