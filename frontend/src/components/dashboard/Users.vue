@@ -20,7 +20,6 @@ import DetailsModal from "./users/DetailsModal.vue";
  */
 export default {
   name: "Users",
-  fetchData: ['user'],
   components: {
     Card,
     BasicTable,
@@ -91,7 +90,7 @@ export default {
         }
       ]
 
-      const formatDate = date => (date ? new Date(date).toLocaleString() : "-");
+      const formatDate = date => (date ? new Date(date).toLocaleDateString() : "-");
 
       return {
         ...user,
