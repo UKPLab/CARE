@@ -4,7 +4,7 @@ const {relevantFields} = require("../../utils/auth");
 /**
  * Send data for building the frontend app
  *
- * @author Dennis Zyska
+ * @author Dennis Zyska, Linyin Huang
  * @type {SettingSocket}
  */
 module.exports = class AppSocket extends Socket {
@@ -137,12 +137,23 @@ module.exports = class AppSocket extends Socket {
     }
 
     /**
-     * Sends the user information for this user loaded from ther db.
+     * Sends the user information for this user loaded from the db.
      *
      * @returns {Promise<void>}
      */
     async sendUser() {
-        this.socket.emit("appUser", relevantFields(await this.models['user'].getById(this.userId)));
+        const user = relevantFields(await this.models['user'].getById(this.userId));
+        const matchedRoles = await this.models["user_role_matching"].findAll({
+            where: { userId: this.userId },
+            raw: true,
+          }); 
+        const userRoles = matchedRoles.map((role) => role.userRoleName);
+        const userWithRoleInfo = {
+            ...user,
+            roles: userRoles,
+            isAdmin: userRoles.includes("admin")
+          }
+        this.socket.emit("appUser", userWithRoleInfo);
     }
 
     /**
