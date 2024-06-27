@@ -24,7 +24,7 @@
 import Annotater from "./annotater/Annotater.vue";
 import Loader from "@/basic/Loading.vue";
 import {computed} from "vue";
-import Editor from "@/components/annotater/Editor.vue"
+import Editor from "@/components/editor/Editor.vue"
 
 export default {
   name: "DocumentRoute",
