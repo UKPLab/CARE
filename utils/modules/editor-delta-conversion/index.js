@@ -81,7 +81,7 @@ function deltaToDb(ops) {
     let offset = 0;
     return ops.reduce(function (pV, op) {
         if ('retain' in op && !('attributes' in op)) {
-            offset += op.retain; 
+            offset = op.retain; 
         }
         const operationType = getOperationType(op);
         if (operationType >= 0) {
