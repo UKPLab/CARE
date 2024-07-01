@@ -47,7 +47,7 @@ import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
-import {dbToDelta, deltaToDb, concatDeltas} from "editor-delta-conversion";
+import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from './editorStore.js';
 
 const Delta = Quill.import('delta');
@@ -154,22 +154,14 @@ export default {
   },
   methods: {
     handleTextChange(delta, oldContents, source) {
-      console.log("handleTextChange: ", delta);
-      console.log("handleTextChange: ", oldContents);
-      console.log("handleTextChange: ", source);
-
-
       console.log("Delta receives from editor:", delta);
       if (source === "user") {
-        console.log("handleTextChange:", delta);
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
       }
     },
     processDelta() {
       if (this.deltaBuffer.length > 0) {
-        console.log("deltaBuffer", this.deltaBuffer);
-
         const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
         console.log("Combined Delta:", combinedDelta);
 
@@ -221,23 +213,19 @@ export default {
       }
     },
     initializeEditorWithContent(edits) {
-      console.log("Edits:", edits);
+      console.log("Edits to initialize:", edits);
 
       const unappliedEdits = edits.filter(edit => !edit.applied);
       const delta = dbToDelta(unappliedEdits);
-      console.log("Converted Deltas:", delta);
+      console.log("Converted Deltas to initialize:", delta);
 
-      const concatDelta = concatDeltas(delta);
-      console.log("Concatenated Delta:", concatDelta);
-
-      this.content = concatDelta;
-
+      this.content = delta;
 
       if (this.editor) {
         this.editor.getEditor().setContents(new Delta()); // Clear the editor content first
-        concatDelta.ops.forEach(op => {
-          this.editor.getEditor().updateContents(new Delta([op]), "api");
-        });
+        
+        this.editor.getEditor().updateContents(delta, "api");
+        
       }
 
       this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
