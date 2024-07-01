@@ -9,29 +9,26 @@ const Delta = require('quill-delta');
  * @returns {object} The Quill Delta object representation of the database entries.
  */
 function dbToDelta(dbEntries) {
-    return dbEntries.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map(edit => {
-        const {operationType, offset, span, text, attributes} = edit;
+    return dbEntries.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).reduce((compositeDelta, edit) => {
+            const { operationType, offset, span, text, attributes } = edit;
+            let delta = new Delta();
 
-        let delta = new Delta();
+            switch (operationType) {
+                case 0: // Insert
+                    delta = new Delta().retain(offset).insert(text, attributes);
+                    break;
+                case 1: // Delete
+                    delta = new Delta().retain(offset).delete(span);
+                    break;
+                case 2: // Retain with attributes
+                    delta = new Delta().retain(offset).retain(span, attributes);
+                    break;
+                default:
+                    throw new Error(`Unknown operation type: ${operationType}`);
+            }
 
-        switch (operationType) {
-            case 0: // Insert
-                delta = delta.retain(offset).insert(text, attributes);
-                break;
-            case 1: // Delete
-                delta = delta.retain(offset).delete(span);
-                break;
-            case 2: // Retain with attributes
-                delta = delta.retain(offset).retain(span, attributes);
-                break;
-            default:
-                throw new Error(`Unknown operation type: ${operationType}`);
-        }
-
-        return delta;
-
-    });
-
+            return compositeDelta.compose(delta);
+        }, new Delta());
 }
 
 /**
@@ -47,7 +44,7 @@ function getOperationType(op) {
         return 0; // Insert
     } else if ('delete' in op) {
         return 1; // Delete
-    } else if ('attributes' in op) {
+    } else if ('retain' in op && 'attributes' in op) {
         return 2; // Attribute Change
     } else {
         return -1;
@@ -73,36 +70,6 @@ function getSpan(op) {
 }
 
 /**
- * Concatenates an array of Quill Delta objects into a single Quill Delta object. Used for method setContent in Editor.vue to present data in the corrct format.
- *
- * This method takes an array of Quill Delta objects as input and returns a single Quill Delta object.
- *
- * @param {array} deltas - The array of Quill Delta objects to concatenate.
- * @returns {object} The concatenated Quill Delta object.
- */
-function concatDeltas(deltas) {
-    let result = new Delta();
-  
-    deltas.forEach(delta => {
-        delta.ops.forEach(op => {
-          if (op.insert) {
-            result.insert(op.insert, op.attributes || {});
-          }
-          /*
-          if (op.retain !== undefined) {
-            result.retain(op.retain);
-          }
-          */
-          if (op.delete !== undefined) {
-            result.delete(op.delete);
-          }
-        });
-      });
-
-    return result;
-  }
-
-/**
  * Converts a Quill Delta object to an array of database entries.
  *
  * This method takes a Quill Delta object as input and returns an array of database entries.
@@ -113,25 +80,27 @@ function concatDeltas(deltas) {
 function deltaToDb(ops) {
     let offset = 0;
     return ops.reduce(function (pV, op) {
-        if (op.retain) {
-            offset = op.retain;
+        if ('retain' in op && !('attributes' in op)) {
+            offset += op.retain; 
         }
-        if (getOperationType(op) >= 0) {
+        const operationType = getOperationType(op);
+        if (operationType >= 0) {
             pV.push({
                 offset,
-                operationType: getOperationType(op),
+                operationType: operationType,
                 span: getSpan(op),
-                text: op.insert || null,
-                attributes: op.attributes || null
+                text: 'insert' in op ? op.insert : null,
+                attributes: 'attributes' in op ? op.attributes : null
             });
         }
+        if ('insert' in op) {
+            offset += op.insert.length; 
+        }
         return pV;
-
     }, []);
 }
 
 module.exports = {
     deltaToDb: deltaToDb,
     dbToDelta: dbToDelta,
-    concatDeltas: concatDeltas
 }

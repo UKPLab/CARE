@@ -2,7 +2,7 @@ const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
 
-const {dbToDelta, concatDeltas} = require("editor-delta-conversion");
+const {dbToDelta} = require("editor-delta-conversion");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -197,9 +197,7 @@ module.exports = class DocumentSocket extends Socket {
                         const existingDeltasJson = await readJsonFile(deltaFilePath);
                     }
     
-                    const newDelta = concatDeltas(delta); 
-    
-                    await writeJsonFile(deltaFilePath, newDelta); 
+                    await writeJsonFile(deltaFilePath, delta); 
     
                     // Mark the unapplied edits as applied
                     await this.models['document_edit'].update(
@@ -208,7 +206,7 @@ module.exports = class DocumentSocket extends Socket {
                     );
     
                     this.logger.info("Deltas file updated successfully.");
-                    this.socket.emit("documentFile", { document: doc, deltas: newDelta });
+                    this.socket.emit("documentFile", { document: doc, deltas: delta });
     
                 } catch (err) {
                     this.logger.error("Failed to read/write delta file:", err);
