@@ -1,29 +1,20 @@
-const { dbToDelta, deltaToDb, concatDeltas } = require('../index');
+const { dbToDelta, deltaToDb } = require('../index');
 const Delta = require('quill-delta');
 const fs = require('fs');
 const path = require('path');
-
-function flattenDeltas(deltas) {
-    let allOps = [];
-    deltas.forEach(delta => allOps.push(...delta.ops));
-    return { ops: allOps };
-}
 
 function runAllTestsInOne(data) {
     const { delta, dbEntries } = data;
 
     describe('Editor Delta Conversion Comprehensive Test', () => {
-        test('should convert between Delta, and DB entries correctly', () => {
-            
-
+        test('should convert between Delta and DB entries correctly', () => {
             try {
                 // Test dbToDelta function
-                const convertedDeltaArray = dbToDelta(dbEntries);
-                const normalizedExpectedDelta = flattenDeltas([new Delta(delta)]); 
-                const normalizedActualDelta = flattenDeltas(convertedDeltaArray);
-                expect(normalizedActualDelta).toEqual(normalizedExpectedDelta);
+                const convertedDelta = dbToDelta(dbEntries);
+                expect(convertedDelta).toEqual(new Delta(delta));
             } catch (error) {
                 console.error('dbToDelta test failed:', error);
+                throw error;  
             }
 
             try {
@@ -33,6 +24,7 @@ function runAllTestsInOne(data) {
                 expect(convertedDbEntries).toEqual(dbEntries);
             } catch (error) {
                 console.error('deltaToDb test failed:', error);
+                throw error;  
             }
         });
     });
@@ -56,6 +48,5 @@ const testCases = [
 testCases.forEach(caseInfo => {
     loadDataAndRunTest(caseInfo.fileName, caseInfo.testName);
 });
-
 
 

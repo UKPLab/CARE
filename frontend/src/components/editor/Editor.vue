@@ -172,28 +172,7 @@ export default {
           this.$socket.emit("documentEdit", {documentId: this.documentId, ops: dbOps});
         }
 
-        this.deltaBuffer = []; // Clear the buffer after processing
-
-        /*// Code to collect data for testing
-        const outputData = {
-          delta: combinedDelta,
-          dbEntries: deltaToDb(combinedDelta.ops)
-        };
-
-        const jsonData = JSON.stringify(outputData, null, 2);
-        const blob = new Blob([jsonData], { type: "application/json" });
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'data.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        */
-
-        this.deltaBuffer = []; // Clear the buffer after processing
+        this.deltaBuffer = []; 
       }
     },
     async leave() {
