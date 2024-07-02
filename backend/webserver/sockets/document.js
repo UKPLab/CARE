@@ -136,7 +136,12 @@ module.exports = class DocumentSocket extends Socket {
      * Sends the document to the client.
      *
      * This method is called when the client requests to view a document. It first checks if the user has access to the document,
-     * and if so, it fetches the edits for the document and sends them to the client.
+     * and if so, it fetches the edits for the document and sends them to the client. For HTML documents, it also handles the 
+     * conversion of edits to delta format and updates the edits' applied status.
+     * 
+     * Supports:
+     * - HTML documents: Fetches draft edits, converts to delta, writes delta file, marks edits as applied, and sends deltas.
+     * - Non-HTML documents: Reads and sends the document file (e.g., PDF).
      *
      * @param {number} documentId - The ID of the document to send.
      */
@@ -319,10 +324,6 @@ module.exports = class DocumentSocket extends Socket {
      * and if so, it applies the edits to the document and sends the updated document to the client.
      *
      * @param {object} data - The data needed to edit the document. It contains the following properties:
-     * - userId: The ID of the user editing the document.
-     * - draft: A boolean indicating whether the edits are a draft or not.
-     * - documentId: The ID of the document to edit.
-     * - ops: An array of operations to apply to the document.
      */
     async editDocument(data) {
         try {
