@@ -208,7 +208,8 @@ export default {
       alert(`Error: ${error.message}`);
     },
     downloadDocument() {
-      const blob = new Blob([this.editor.root.innerHTML], {type: "text/html;charset=utf-8;"});
+      const editorContent = this.editor.getEditor().root.innerHTML;
+      const blob = new Blob([editorContent], { type: "text/html;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.setAttribute("href", url);
