@@ -95,9 +95,6 @@ function deltaToDb(ops) {
                 attributes: 'attributes' in op ? op.attributes : null
             });
         }
-        if ('insert' in op) {
-            offset += op.insert.length; 
-        }
         return pV;
     }, []);
 }
