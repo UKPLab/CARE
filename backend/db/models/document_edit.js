@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
             documentId: DataTypes.INTEGER,
             draft: DataTypes.BOOLEAN,
             offset: DataTypes.INTEGER,
-            operationType: DataTypes.INTEGER, // 0: Retain (Attribute-Change), 1: Insert, 2: Delete
+            operationType: DataTypes.INTEGER, // 0: Insert, 1: Delete, 2: Attribute-Change (only retain)
             span: DataTypes.INTEGER,
             text: DataTypes.STRING,
             attributes: DataTypes.JSONB,

@@ -91,11 +91,6 @@ export default {
         theme: "snow",
         modules: this.editorOptions.modules
       });
-
-     /* this.editor.selection.scroll.find = function (node, bubble = false) {
-        const blot = this.registry.find(node, bubble);
-        return blot ? toRaw(blot.scroll) === this ? blot : bubble ? this.find(blot.scroll.domNode.parentNode, true) : null : null;
-      }*/
     }
 
     this.editor.getEditor().on('text-change', this.handleTextChange);
@@ -201,7 +196,7 @@ export default {
       this.content = delta;
 
       if (this.editor) {
-        this.editor.getEditor().setContents(new Delta()); // Clear the editor content first
+        this.editor.getEditor().setContents(new Delta()); 
         
         this.editor.getEditor().updateContents(delta, "api");
         

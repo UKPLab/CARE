@@ -3,7 +3,9 @@ const Delta = require('quill-delta');
 /**
  * Converts an array of database entries to a Quill Delta object.
  *
- * This method takes an array of database entries as input and returns a Quill Delta object.
+ * This method takes an array of database entries as input, sorts them by creation date,
+ * and returns a Quill Delta object. It supports three types of operations: insert, delete, 
+ * and retain with attributes.
  *
  * @param {array} dbEntries - The array of database entries to convert to a Quill Delta object.
  * @returns {object} The Quill Delta object representation of the database entries.
