@@ -58,6 +58,12 @@
             v-model="currentData[field.key]"
             :options="field"
           />
+          <FormPassword
+            v-else-if="field.type === 'password'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]"
+            :options="field"
+          />
           <FormDefault
             v-else
             :ref="'ref_' + field.key"
@@ -77,6 +83,7 @@ import FormSlider from "@/basic/form/Slider.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import FormCheckbox from "@/basic/form/Checkbox.vue";
 import FormDefault from "@/basic/form/Default.vue";
+import FormPassword from "@/basic/form/Password.vue";
 import FormTextarea from "@/basic/form/Textarea.vue";
 import FormEditor from "@/basic/form/Editor.vue";
 import FormTable from "@/basic/form/DataTable.vue";
@@ -96,6 +103,7 @@ export default {
     FormSelect,
     FormCheckbox,
     FormDefault,
+    FormPassword,
     FormTextarea,
     FormEditor,
     FormTable,

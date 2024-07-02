@@ -2,16 +2,23 @@
   <Card title="Users">
     <template #headerElements></template>
     <template #body>
-      <BasicTable :columns="columns" :data="users" :options="options" @action="chooseAction" />
+      <BasicTable
+        :columns="columns"
+        :data="users"
+        :options="options"
+        @action="chooseAction"
+      />
     </template>
   </Card>
   <DetailsModal ref="detailsModal" />
+  <PasswordModal ref="passwordModal" />
 </template>
 
 <script>
 import BasicTable from "@/basic/table/Table.vue";
 import Card from "@/basic/Card.vue";
 import DetailsModal from "./users/DetailsModal.vue";
+import PasswordModal from "./users/PasswordModal.vue";
 
 /**
  * Display user list by users' role
@@ -23,13 +30,14 @@ export default {
   components: {
     Card,
     BasicTable,
-    DetailsModal
+    DetailsModal,
+    PasswordModal,
   },
   props: {
-    'admin': {
+    admin: {
       type: Boolean,
       required: false,
-      default: false
+      default: false,
     },
   },
   data() {
@@ -51,19 +59,15 @@ export default {
         { name: "Accept Terms", key: "acceptTerms", sortable: true },
         { name: "Accept Status", key: "acceptStats", sortable: true },
         { name: "Last Login", key: "lastLoginAt", sortable: true },
-        { name: "Deleted", key: "deleted" },
-        { name: "Created At", key: "createdAt" },
-        { name: "Updated At", key: "updatedAt" },
-        { name: "Deleted At", key: "deletedAt" },
         { name: "Manage", key: "manage", type: "button-group" },
       ],
       // Possible values for role are "all", "student", "mentor", "teacher"
-      role: "all"
-    }
+      role: "all",
+    };
   },
   computed: {
     users() {
-      return this.$store.getters["admin/getUsersByRole"].map(user => {
+      return this.$store.getters["admin/getUsersByRole"].map((user) => {
         return this.formatUserData(user);
       });
     },
@@ -85,35 +89,63 @@ export default {
             iconOnly: true,
             specifiers: {
               "btn-outline-secondary": true,
-            }
+            },
           },
-        }
-      ]
+        },
+        {
+          title: "View Rights",
+          action: "viewRights",
+          icon: "card-list",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+        },
+        {
+          title: "Reset Password",
+          action: "resetPassword",
+          icon: "person-lock",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+        },
+      ];
 
-      const formatDate = date => (date ? new Date(date).toLocaleDateString() : "-");
+      const formatDate = (date) =>
+        date ? new Date(date).toLocaleDateString() : "-";
 
       return {
         ...user,
         lastLoginAt: formatDate(user.lastLoginAt),
-        createdAt: formatDate(user.createdAt),
-        updatedAt: formatDate(user.updatedAt),
-        deletedAt: formatDate(user.deletedAt),
       };
     },
     chooseAction(data) {
       switch (data.action) {
         case "editUser":
-          this.openUserDetailsModal(data.params)
+          this.openUserDetailsModal(data.params);
           break;
-        default:
+        case "viewRights":
+          this.openViewRightsModal(data.params);
+          break;
+        case "resetPassword":
+          this.openResetPasswordModal(data.params);
           break;
       }
     },
     openUserDetailsModal(user) {
-      this.$refs.detailsModal.open(user.id)
-    }
-  }
-}
+      this.$refs.detailsModal.open(user.id);
+    },
+    openViewRightsModal() {},
+    openResetPasswordModal(user) {
+      this.$refs.passwordModal.open(user.id);
+    },
+  },
+};
 </script>
 
 <style scoped></style>
