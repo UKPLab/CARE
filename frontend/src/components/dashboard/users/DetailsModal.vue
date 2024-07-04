@@ -8,9 +8,31 @@
     <template #body>
       <BasicForm
         ref="form"
-        v-model="data"
+        v-model="userInfo"
         :fields="fields"
       />
+      <table>
+        <tr>
+          <th>Accept Terms</th>
+          <th>Accept Stats</th>
+          <th>Last Login</th>
+        </tr>
+        <tr>
+          <td>2024-07-02</td>
+          <td>2024-07-02</td>
+          <td>2024-07-02</td>
+        </tr>
+        <tr>
+          <th>Created At</th>
+          <th>Updated At</th>
+          <th>Deleted At</th>
+        </tr>
+        <tr>
+          <td>2024-07-02</td>
+          <td>2024-07-02</td>
+          <td>2024-07-02</td>
+        </tr>
+      </table>
     </template>
     <template #footer>
       <span class="btn-group">
@@ -22,8 +44,8 @@
           Cancel
         </button>
         <button
-          type="button"
-          class="btn btn-primary me-2"
+          type="submit"
+          class="btn btn-primary"
           @click="submit"
         >
           Save
@@ -47,49 +69,37 @@ export default {
   components: { BasicModal, BasicForm },
   data() {
     return {
-      id: 0,
-      data: {},
+      userId: 0,
+      userInfo: {},
       fields: [
-        {
-          key: "firstName",
-          label: "First Name:",
-          type: "text",
-          required: true,
-          // readOnly: true,
-          default: "",
-        },
-        {
-          key: "lastName",
-          label: "Last Name:",
-          type: "text",
-          required: true,
-          readOnly: true,
-          default: "",
-        },
         {
           key: "userName",
           label: "Username:",
           type: "text",
           required: true,
           readOnly: true,
-          default: "",
         },
-        // TODO: Check if password section should be separated from here.
-        // {
-        //   key: "password",
-        //   label: "Password:",
-        //   type: "password",
-        //   required: true,
-        //   readOnly: true,
-        //   default: "",
-        // },
+        {
+          key: "firstName",
+          label: "First Name:",
+          type: "text",
+        },
+        {
+          key: "lastName",
+          label: "Last Name:",
+          type: "text",
+        },
+        {
+          key: "email",
+          label: "Email:",
+          type: "text",
+        },
         {
           key: "roles",
           label: "Roles:",
           type: "checkbox",
           required: true,
           readOnly: false,
-          default: [],
           options: [
             { value: "admin", label: "Admin" },
             { value: "teacher", label: "Teacher" },
@@ -97,38 +107,23 @@ export default {
             { value: "student", label: "Student" },
           ],
         },
-        // {
-        //   key: "right",
-        //   label: "Rights:",
-        //   type: "table",
-        //   required: true,
-        //   readOnly: true,
-        //   default: "",
-        //   options: {
-        //     table: "",
-        //   },
-        // },
       ],
       editTimeout: null,
     };
   },
   computed: {
-    user() {
-      return this.$store.getters["table/user/get"](this.id);
+    userInfo() {
+      return this.$store.getters["admin/getUserDetails"];
     },
   },
-  watch: {
-    data(newVal) {
-      console.log(newVal);
-    },
-  },
+
   methods: {
-    open(id) {
-      this.$refs.modal.open(id, this.user);
-      // TODO: the following is test data
-      this.data = {
-        firstName: "Charlie",
-      };
+    open(userId) {
+      this.$refs.modal.open();
+      this.getUserDetails(userId);
+    },
+    getUserDetails(userId) {
+      this.$socket.emit("requestUserDetails", userId);
     },
     submit() {
       const { modelValue } = this.$refs.form;
@@ -138,4 +133,15 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+table {
+  margin-top: 15px;
+  width: 100%;
+}
+th,
+td {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+</style>
