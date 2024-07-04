@@ -39,6 +39,7 @@
           class="form-control"
           placeholder="Enter text..."
           @keydown.ctrl.enter="saveOnDeactivated(false)"
+          @paste="onPaste"
       />
     </div>
     <div v-else-if="comment.text != null && comment.text.length > 0">
@@ -231,7 +232,7 @@ export default {
     },
     myBotRequest() {
       return this.comment.creator_name === "Bot"
-        && this.$store.getters["table/comment/get"](this.comment.parentCommentId).userId === this.userId;
+          && this.$store.getters["table/comment/get"](this.comment.parentCommentId).userId === this.userId;
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -241,14 +242,14 @@ export default {
     },
     childComments() {
       return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId)
-        .sort(
-          function (a, b) {
-            let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
-            if (keyA < keyB) return -1;
-            if (keyA > keyB) return 1;
-            return 0;
-          }
-        );
+          .sort(
+              function (a, b) {
+                let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
+                if (keyA < keyB) return -1;
+                if (keyA > keyB) return 1;
+                return 0;
+              }
+          );
     },
     nlp_active() {
       const conf = this.$store.getters["service/get"]("NLPService", "skillUpdate");
@@ -302,14 +303,14 @@ export default {
     }
   },
   unmounted() {
-    if(this.editedByMyself){
-      if(this.level === 0){
-          this.saveCard();
-        } else {
-          this.save();
-        }
+    if (this.editedByMyself) {
+      if (this.level === 0) {
+        this.saveCard();
+      } else {
+        this.save();
+      }
 
-      if(this.listeningToFocus){
+      if (this.listeningToFocus) {
         this.unlistenOnActive({id: this.commentId, level: this.level});
       }
     }
@@ -332,7 +333,7 @@ export default {
     },
     saveOnDeactivated(active) {
       if (!active) {
-        if(this.level === 0){
+        if (this.level === 0) {
           this.saveCard();
         } else {
           this.save();
@@ -386,7 +387,21 @@ export default {
           }
       );
       this.awaitingNlpResult = true;
-    }
+    },
+    onPaste(event) {
+      console.log("Paste event")
+      const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+      if (pastedText) {
+        this.$socket.emit("stats", {
+          action: "textPasted",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            pastedText: pastedText
+          }
+        })
+      }
+    },
   }
 }
 </script>
