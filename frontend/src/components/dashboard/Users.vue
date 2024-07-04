@@ -57,7 +57,7 @@ export default {
         { name: "User", key: "userName" },
         { name: "Email", key: "email" },
         { name: "Accept Terms", key: "acceptTerms", sortable: true },
-        { name: "Accept Status", key: "acceptStats", sortable: true },
+        { name: "Accept Stats", key: "acceptStats", sortable: true },
         { name: "Last Login", key: "lastLoginAt", sortable: true },
         { name: "Manage", key: "manage", type: "button-group" },
       ],
