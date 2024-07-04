@@ -149,80 +149,33 @@ module.exports = class DocumentSocket extends Socket {
         const doc = await this.models['document'].getById(documentId);
 
         if (this.checkDocumentAccess(doc.id)) {
-
             if (doc.type === 1) { // HTML document type
+                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                let delta = new Delta();
+
+                if (fs.existsSync(deltaFilePath)) {
+                    delta = await this.loadDocument(deltaFilePath);
+                }
+
                 const edits = await this.models['document_edit'].findAll({
-                    where: {documentId: documentId, draft: true},
+                    where: { documentId: documentId, draft: true },
                     raw: true
                 });
 
-                const delta = dbToDelta(edits);
-        
-                // Apply 'applied: false' to each edit before sending
+                const dbDelta = dbToDelta(edits);
+                delta = delta.compose(dbDelta);
+
                 const editsWithAppliedFalse = edits.map(edit => ({
                     ...edit,
                     applied: false
                 }));
 
                 this.emit('document_editRefresh', editsWithAppliedFalse);
+                this.socket.emit("documentFile", { document: doc, deltas: delta });
 
-                // Path for the delta file
-                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
-                console.log("deltaFilePath", deltaFilePath);
-
-                const readJsonFile = (path) => {
-                    return new Promise((resolve, reject) => {
-                        fs.readFile(path, 'utf8', (err, data) => {
-                            if (err) {
-                                return reject(err);
-                            }
-                            try {
-                                const jsonData = JSON.parse(data);
-                                resolve(jsonData);
-                            } catch (parseErr) {
-                                reject(parseErr);
-                            }
-                        });
-                    });
-                };
-
-                const writeJsonFile = (path, data) => {
-                    return new Promise((resolve, reject) => {
-                        fs.writeFile(path, JSON.stringify(data, null, 2), 'utf8', (err) => {
-                            if (err) {
-                                return reject(err);
-                            }
-                            resolve();
-                        });
-                    });
-                };
-
-                try {
-                    if (fs.existsSync(deltaFilePath)) {
-                        const existingDeltasJson = await readJsonFile(deltaFilePath);
-                    }
-    
-                    await writeJsonFile(deltaFilePath, delta); 
-    
-                    // Mark the unapplied edits as applied
-                    await this.models['document_edit'].update(
-                        { applied: true },
-                        { where: { id: edits.map(edit => edit.id) } }
-                    );
-    
-                    this.logger.info("Deltas file updated successfully.");
-                    this.socket.emit("documentFile", { document: doc, deltas: delta });
-    
-                } catch (err) {
-                    this.logger.error("Failed to read/write delta file:", err);
-                    this.sendToast("Error handling delta file!", "Delta File Error", "danger");
-                    return;
-                }
-    
                 return { delta };
-    
 
-                } else { // Non-HTML document type, send file
+            } else { // Non-HTML document type, send file
                 if (fs.existsSync(`${UPLOAD_PATH}/${doc['hash']}.pdf`)) {
                     fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
                         if (err) {
@@ -230,7 +183,7 @@ module.exports = class DocumentSocket extends Socket {
                             this.sendToast("Error loading PDF file!", "PDF Error", "danger");
                             return;
                         }
-                        this.socket.emit("documentFile", {document: doc, file: data});
+                        this.socket.emit("documentFile", { document: doc, file: data });
                     });
 
                 } else {
@@ -243,6 +196,78 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    /**
+     * Load document delta from disk.
+     *
+     * @param {string} filePath - Path to the delta file.
+     * @returns {Promise<Delta>} - The loaded delta.
+     */
+    async loadDocument(filePath) {
+        return new Promise((resolve, reject) => {
+            fs.readFile(filePath, 'utf8', (err, data) => {
+                if (err) {
+                    return reject(err);
+                }
+                try {
+                    const delta = new Delta(JSON.parse(data));
+                    resolve(delta);
+                } catch (parseErr) {
+                    reject(parseErr);
+                }
+            });
+        });
+    }
+
+    /**
+     * Save document delta to disk and mark edits as applied.
+     *
+     * @param {number} documentId - The ID of the document to save.
+     * @returns {Promise<void>}
+     */
+    async saveDocument(documentId) {
+        const doc = await this.models['document'].getById(documentId);
+
+        if (!doc) {
+            this.logger.error(`Document with ID ${documentId} not found.`);
+            return;
+        }
+
+        const edits = await this.models['document_edit'].findAll({
+            where: { documentId: documentId, draft: true },
+            raw: true
+        });
+
+        const delta = dbToDelta(edits);
+
+        const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+
+        const writeJsonFile = (path, data) => {
+            return new Promise((resolve, reject) => {
+                fs.writeFile(path, JSON.stringify(data, null, 2), 'utf8', (err) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve();
+                });
+            });
+        };
+
+        try {
+            await writeJsonFile(deltaFilePath, delta);
+
+            await this.models['document_edit'].update(
+                { applied: true },
+                { where: { id: edits.map(edit => edit.id) } }
+            );
+
+            this.logger.info("Deltas file updated successfully.");
+            this.socket.emit("documentFilePath", { document: doc, deltaFilePath: deltaFilePath });
+
+        } catch (err) {
+            this.logger.error("Failed to read/write delta file:", err);
+            this.sendToast("Error handling delta file!", "Delta File Error", "danger");
+        }
+    }
 
     /**
      * Send document data to client
@@ -327,7 +352,7 @@ module.exports = class DocumentSocket extends Socket {
      */
     async editDocument(data) {
         try {
-            const {userId, documentId, ops} = data;
+            const { userId, documentId, ops } = data;
             let appliedEdits = [];
 
             await ops.reduce(async (promise, op) => {
@@ -386,9 +411,7 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     init() {
-
-        //Make sure upload directory exists
-        fs.mkdirSync(UPLOAD_PATH, {recursive: true});
+        fs.mkdirSync(UPLOAD_PATH, { recursive: true });
 
         this.socket.on("documentGet", async (data) => {
             try {
@@ -402,10 +425,10 @@ module.exports = class DocumentSocket extends Socket {
         this.socket.on("documentGetAll", async (data) => {
             try {
                 await this.refreshAllDocuments((data && data.userId) ? data.userId : null);
-              } catch (error) {
+            } catch (error) {
                 console.error(error);
-                this.sendToast(err, "Error getting all document data", "Error", "danger");
-              }
+                this.sendToast(error, "Error getting all document data", "Error", "danger");
+            }
         });
 
         this.socket.on("documentUpdate", async (data) => {
@@ -422,10 +445,9 @@ module.exports = class DocumentSocket extends Socket {
                 await this.sendByHash(data.documentHash);
             } catch (e) {
                 this.logger.error(e);
-                this.socket.emit("documentError", {message: "Document not found!", documentHash: data.documentHash});
+                this.socket.emit("documentError", { message: "Document not found!", documentHash: data.documentHash });
             }
         });
-
 
         this.socket.on("documentGetData", async (data) => {
             try {
@@ -472,7 +494,6 @@ module.exports = class DocumentSocket extends Socket {
                 this.logger.error(e);
                 this.sendToast("Error create document", "Error", "danger");
             }
-
         });
 
         this.socket.on("documentEdit", async (data) => {
@@ -505,10 +526,19 @@ module.exports = class DocumentSocket extends Socket {
         this.socket.on("exportEditableDocument", async (data) => {
             try {
                 await this.exportEditableDocument(data);
-              } catch (error) {
+            } catch (error) {
                 console.error(error);
                 this.sendToast("Error exporting edited document", "Error", "danger");
-              }
+            }
+        });
+
+        this.socket.on("saveDocument", async (data) => {
+            try {
+                await this.saveDocument(data.documentId);
+            } catch (err) {
+                this.logger.error("Error saving document: ", err);
+                this.sendToast("Error saving document!", "Error", "danger");
+            }
         });
     }
 }
