@@ -100,9 +100,6 @@ export default {
     requireAuth() {
       return this.$route.meta.requireAuth !== undefined && this.$route.meta.requireAuth;
     },
-    behaviorTracking() {
-      return Boolean(this.$store.getters["settings/getValue"]("behaviorTracking"));
-    },
   },
   watch: {
     $route(to, from) {
@@ -120,7 +117,7 @@ export default {
     this.connect();
   },
   async mounted() {
-    document.addEventListener("visibilitychange", this.reportVisibilityChange);
+    document.addEventListener("visibilitychange", this.reportTabVisibilityChange);
     if (this.$route.meta.checkLogin) {
       // Check if user already authenticated, if so, we redirect him to the dashboard.
       const response = await axios.get(getServerURL() + '/auth/check',
@@ -131,7 +128,7 @@ export default {
     }
   },
   beforeUnmount() {
-    document.removeEventListener('visibilitychange', this.reportVisibilityChange);
+    document.removeEventListener('visibilitychange', this.reportTabVisibilityChange);
   },
   methods: {
     connect() {
@@ -139,13 +136,8 @@ export default {
         this.$socket.connect();
       }
     },
-    reportVisibilityChange() {
-      // TODO: remove logs after debugging
-      console.log("Behavior Tracking before op: " + this.behaviorTracking)
-      if (this.behaviorTracking) {
-        console.log("Behavior Tracking after op: " + this.behaviorTracking)
-        this.$socket.emit("stats", {action: "tabVisibilityChange", data: {hidden: document.hidden}});
-      }
+    reportTabVisibilityChange() {
+      this.$socket.emit("stats", {action: "tabVisibilityChange", data: {hidden: document.hidden}});
     },
   },
 }
