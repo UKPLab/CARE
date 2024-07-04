@@ -1,27 +1,27 @@
 <template>
   <Loader
-    v-if="documentId && documentId === 0"
-    :loading="true"
-    class="pageLoader"
+      v-if="documentId && documentId === 0"
+      :loading="true"
+      class="pageLoader"
   />
   <span v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
         <div
-          id="viewerContainer"
-          ref="viewer"
-          class="col border mh-100 justify-content-center p-3"
-          style="overflow-y: scroll;"
+            id="viewerContainer"
+            ref="viewer"
+            class="col border mh-100 justify-content-center p-3"
+            style="overflow-y: scroll;"
         >
           <PDFViewer
-            ref="pdfViewer"
-            class="rounded border border-1 shadow-sm"
-            style="margin:auto"
+              ref="pdfViewer"
+              class="rounded border border-1 shadow-sm"
+              style="margin:auto"
           />
         </div>
-        <Sidebar 
-          v-if="!sidebarDisabled"
-          ref="sidebar" :show="isSidebarVisible" 
+        <Sidebar
+            v-if="!sidebarDisabled"
+            ref="sidebar" :show="isSidebarVisible"
         />
       </div>
     </div>
@@ -29,19 +29,19 @@
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
         <button
-          v-if="studySessionId === null && numStudyComments > 0"
-          :title="showAll ? 'Hide study comments' : 'Show study comments'"
-          class="btn rounded-circle"
-          type="button"
-          @click="setSetting({key: 'annotator.showAllComments', value: !showAll})"
+            v-if="studySessionId === null && numStudyComments > 0"
+            :title="showAll ? 'Hide study comments' : 'Show study comments'"
+            class="btn rounded-circle"
+            type="button"
+            @click="setSetting({key: 'annotator.showAllComments', value: !showAll})"
         >
           <span class="position-relative translate-middle top-100 start-100 fs-10 fw-light">
             {{ numStudyComments }}
           </span>
           <span>
             <LoadIcon
-              :icon-name="showAll ? 'eye-slash-fill' : 'eye-fill'"
-              :size="18"
+                :icon-name="showAll ? 'eye-slash-fill' : 'eye-fill'"
+                :size="18"
             />
           </span>
         </button>
@@ -49,29 +49,29 @@
       <li class="nav-item">
 
         <button
-          v-if="nlpEnabled"
-          :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
-          class="btn rounded-circle"
-          type="button"
-          @click="toggleNlp"
+            v-if="nlpEnabled"
+            :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
+            class="btn rounded-circle"
+            type="button"
+            @click="toggleNlp"
         >
 
 
           <LoadIcon
-            :color="(!nlpActive) ?'#777777':'#097969'"
-            :size="18"
-            icon-name="robot"
+              :color="(!nlpActive) ?'#777777':'#097969'"
+              :size="18"
+              icon-name="robot"
           />
         </button>
         <button
-          :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
-          class="btn rounded-circle"
-          type="button"
-          @click="toggleSidebar"
+            :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
+            class="btn rounded-circle"
+            type="button"
+            @click="toggleSidebar"
         >
           <LoadIcon
-            :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
-            :size="18"
+              :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
+              :size="18"
           />
         </button>
       </li>
@@ -80,10 +80,10 @@
 
     <Teleport to="#topBarExtendMenuItems">
       <li><a
-        :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
-        class="dropdown-item"
-        href="#"
-        @click="downloadAnnotations('json')"
+          :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
+          class="dropdown-item"
+          href="#"
+          @click="downloadAnnotations('json')"
       >Download
         Annotations</a></li>
     </Teleport>
@@ -91,33 +91,33 @@
     <Teleport to="#topbarCustomPlaceholder">
       <form class="hstack gap-3 container-fluid justify-content-center">
         <button
-          v-if="review"
-          class="btn btn-outline-success me-2"
-          type="button"
-          @click="$refs.reviewSubmit.open()"
+            v-if="review"
+            class="btn btn-outline-success me-2"
+            type="button"
+            @click="$refs.reviewSubmit.open()"
         >Submit Review
         </button>
         <button
-          v-if="approve"
-          class="btn btn-outline-dark me-2"
-          type="button"
-          @click="$refs.report.open()"
+            v-if="approve"
+            class="btn btn-outline-dark me-2"
+            type="button"
+            @click="$refs.report.open()"
         >
           Report
         </button>
         <button
-          v-if="approve"
-          class="btn btn-outline-success me-2"
-          type="button"
-          @click="decisionSubmit(true)"
+            v-if="approve"
+            class="btn btn-outline-success me-2"
+            type="button"
+            @click="decisionSubmit(true)"
         >
           Accept
         </button>
         <button
-          v-if="approve"
-          class="btn btn-outline-danger me-2"
-          type="button"
-          @click="decisionSubmit(false)"
+            v-if="approve"
+            class="btn btn-outline-danger me-2"
+            type="button"
+            @click="decisionSubmit(false)"
         >
           Reject
         </button>
@@ -202,9 +202,9 @@ export default {
   computed: {
     anchors() {
       return [].concat(
-        this.annotations.filter(a => a.anchors !== null)
-          .flatMap(a => a.anchors)
-          .filter(a => a !== undefined)
+          this.annotations.filter(a => a.anchors !== null)
+              .flatMap(a => a.anchors)
+              .filter(a => a !== undefined)
       )
     },
     showAll() {
@@ -213,16 +213,16 @@ export default {
     },
     annotations() {
       return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId)
-        .sort((a, b) => {
-          const a_noanchor = a.anchors === null || a.anchors.length === 0;
-          const b_noanchor = b.anchors === null || b.anchors.length === 0;
+          .sort((a, b) => {
+            const a_noanchor = a.anchors === null || a.anchors.length === 0;
+            const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
-          if (a_noanchor || b_noanchor) {
-            return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
-          }
+            if (a_noanchor || b_noanchor) {
+              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+            }
 
-          return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
-        });
+            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+          });
     },
     comments() {
       return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
@@ -263,11 +263,13 @@ export default {
 
     // scrolling
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
+    document.addEventListener('copy', this.onCopy);
   },
   beforeUnmount() {
     // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
+    document.removeEventListener('copy', this.onCopy);
   },
   methods: {
     ...mapMutations({
@@ -321,8 +323,8 @@ export default {
 
         if (inPlaceholder) {
           const anchor = await this._waitForAnnotationToBeAnchored(
-            annotation,
-            3000
+              annotation,
+              3000
           );
           if (!anchor) {
             return;
@@ -390,7 +392,21 @@ export default {
     },
     downloadAnnotations(outputType) {
       this.$refs.export.requestExport([this.documentId], outputType, true);
-    }
+    },
+    onCopy() {
+      const selection = document.getSelection();
+      if (selection && selection.toString().trim() !== '') {
+        const copiedText = selection.toString();
+        this.$socket.emit("stats", {
+          action: "textCopied",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            copiedText: copiedText,
+          }
+        });
+      }
+    },
   }
 }
 </script>

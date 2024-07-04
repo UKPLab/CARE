@@ -72,11 +72,9 @@ export default {
   },
   created() {
     document.body.addEventListener('mouseup', this.checkSelection);
-    document.addEventListener('copy', this.onCopy);
   },
   beforeUnmount() {
     document.body.removeEventListener('mouseup', this.checkSelection);
-    document.removeEventListener('copy', this.onCopy);
   },
   methods: {
     checkSelection(event) {
@@ -293,20 +291,6 @@ export default {
         offset += text.length;
       }
       return offset;
-    },
-    onCopy() {
-      const selection = document.getSelection();
-      if (selection && selection.toString().trim() !== '') {
-        const copiedText = selection.toString();
-        this.$socket.emit("stats", {
-          action: "textCopied",
-          data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            copiedText: copiedText,
-          }
-        });
-      }
     },
   }
 }
