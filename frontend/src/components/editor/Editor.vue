@@ -47,8 +47,8 @@ import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
-import {dbToDelta, deltaToDb} from "editor-delta-conversion";
-import {Editor} from './editorStore.js';
+import { dbToDelta, deltaToDb } from "editor-delta-conversion";
+import { Editor } from './editorStore.js';
 
 const Delta = Quill.import('delta');
 
@@ -95,10 +95,14 @@ export default {
 
     this.editor.getEditor().on('text-change', this.handleTextChange);
 
-    this.$socket.emit("documentGet", {documentId: this.documentId});
+    this.$socket.emit("documentGet", { documentId: this.documentId });
+
+    this.$socket.on("documentFile", ({ document, deltas }) => {
+      this.initializeEditorWithContent(deltas);
+    });
 
     this.$socket.on("document_editRefresh", edits => {
-      this.initializeEditorWithContent(edits);
+      this.applyAdditionalEdits(edits);
     });
 
     this.$socket.on("documentError", error => {
@@ -113,7 +117,7 @@ export default {
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
   },
   unmounted() {
-    this.$socket.emit("documentSave", {documentId: this.documentId});
+    this.$socket.emit("saveDocument", { documentId: this.documentId });
   },
   computed: {
     unappliedEdits() {
@@ -128,7 +132,7 @@ export default {
       const toolbarVisible = this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true";
       return {
         modules: {
-          toolbar: toolbarVisible ? undefined : false // Use false to hide, undefined to show default toolbar
+          toolbar: toolbarVisible ? undefined : false
         },
         theme: "snow"
       };
@@ -141,7 +145,7 @@ export default {
     unappliedEdits: {
       handler(newEdits) {
         if (newEdits.length > 0) {
-          this.initializeEditorWithContent(newEdits);
+          this.applyAdditionalEdits(newEdits);
         }
       },
       deep: true
@@ -149,7 +153,7 @@ export default {
   },
   methods: {
     handleTextChange(delta, oldContents, source) {
-      console.log("Delta receives from editor:", delta);
+      console.log("Delta received from editor:", delta);
       if (source === "user") {
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
@@ -164,14 +168,14 @@ export default {
         console.log("Operations to be saved in DB:", dbOps);
 
         if (dbOps.length > 0) {
-          this.$socket.emit("documentEdit", {documentId: this.documentId, ops: dbOps});
+          this.$socket.emit("documentEdit", { documentId: this.documentId, ops: dbOps });
         }
 
-        this.deltaBuffer = []; 
+        this.deltaBuffer = [];
       }
     },
     async leave() {
-      if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
+      if (this.document_edits && this.document_edits.length > 0 && diese.document_edits.filter(edit => edit.draft).length > 0) {
         return new Promise((resolve, reject) => {
           this.$refs.leavePageConf.open(
             "Unsaved Changes",
@@ -186,23 +190,22 @@ export default {
         return true;
       }
     },
-    initializeEditorWithContent(edits) {
-      console.log("Edits to initialize:", edits);
+    initializeEditorWithContent(deltas) {
+      console.log("Initializing editor with deltas:", deltas);
 
-      const unappliedEdits = edits.filter(edit => !edit.applied);
-      const delta = dbToDelta(unappliedEdits);
-      console.log("Converted Deltas to initialize:", delta);
-
-      this.content = delta;
+      this.content = deltas;
 
       if (this.editor) {
-        this.editor.getEditor().setContents(new Delta()); 
-        
-        this.editor.getEditor().updateContents(delta, "api");
-        
+        this.editor.getEditor().setContents(deltas); 
       }
-
-      this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
+    },
+    applyAdditionalEdits(edits) {
+      const unappliedEdits = edits.filter(edit => !edit.applied);
+      if (unappliedEdits.length > 0) {
+        const delta = dbToDelta(unappliedEdits);
+        this.editor.getEditor().updateContents(delta, "api");
+        this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
+      }
     },
     handleDocumentError(error) {
       alert(`Error: ${error.message}`);
@@ -225,7 +228,6 @@ export default {
 </script>
 
 <style scoped>
-/* This targets the toolbar part of the Quill editor and hides it */
 .ql-toolbar {
   display: none;
 }
