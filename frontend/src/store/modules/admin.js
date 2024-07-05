@@ -13,6 +13,7 @@ const getDefaultState = () => {
     docs: [],
     users: [],
     user_stats: {},
+    user: {},
   };
 };
 
@@ -53,8 +54,17 @@ export default {
      * @returns
      */
     getUsersByRole: (state) => {
-      // TODO: Check if it is better to add another defaultState, e.g. userList
+      // TODO: Check if it is better to add another defaultState, e.g. userList,
+      // because currently this returned data overwrites data returned from getUsers method
       return state["users"];
+    },
+
+    /**
+     * Fetch specific user's details
+     * @returns {Object}
+     */
+    getUserDetails: (state) => {
+      return state["user"];
     },
   },
   mutations: {
@@ -83,7 +93,7 @@ export default {
     },
 
     /**
-     * On "respondUsersByRole", fetch the user list by their role and update the store
+     * On "respondUsersByRole", update the user list
      *
      * @param state
      * @param message
@@ -91,6 +101,17 @@ export default {
     SOCKET_respondUsersByRole: (state, message) => {
       if (message.success) {
         state.users = message.users;
+      }
+    },
+
+    /**
+     * On "respondUserDetails", update the specific user' details
+     * @param {*} state
+     * @param {*} message
+     */
+    SOCKET_respondUserDetails: (state, message) => {
+      if (message.success) {
+        state.user = message.user;
       }
     },
   },

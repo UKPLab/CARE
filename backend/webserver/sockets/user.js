@@ -131,6 +131,57 @@ module.exports = class UserSocket extends Socket {
     });
   }
 
+  /**
+   * Get specific user's details
+   * @param {number} userId 
+   * @returns {Object} 
+   */
+  async getUserDetails(userId) {
+    try {
+      const user = await this.models["user"].findOne({
+        where: {
+          id: userId,
+          deleted: false,
+        },
+        attributes: [
+          "userName",
+          "firstName",
+          "lastName",
+          "email",
+          "acceptTerms",
+          "acceptStats",
+          "lastLoginAt",
+          "createdAt",
+          "updatedAt",
+          "deletedAt",
+        ],
+        include: [
+          {
+            model: this.models["user_role_matching"],
+            as: "roles",
+            attributes: ["userRoleName"],
+            where: {
+              deleted: false,
+            },
+            // Ensures we get the user even if they have no roles
+            required: false,
+          },
+        ],
+      });
+
+      if (!user) {
+        this.logger.error("User not found");
+        return;
+      }
+      const userDetails = user.get({ plain: true });
+      userDetails.roles = userDetails.roles.map((role) => role.userRoleName);
+      return userDetails;
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
   init() {
     this.socket.on("userGetData", async (data) => {
       try {
@@ -146,6 +197,7 @@ module.exports = class UserSocket extends Socket {
       }
     });
 
+    // Get users by their role
     this.socket.on("requestUsersByRole", async (role) => {
       try {
         const users = await this.getUsers(role);
@@ -160,6 +212,23 @@ module.exports = class UserSocket extends Socket {
           message: errorMsg,
         });
         this.logger.error(errorMsg);
+      }
+    });
+
+    // Get specific user's details
+    this.socket.on("requestUserDetails", async (userId) => {
+      try {
+        const user = await this.getUserDetails(userId);
+        this.socket.emit("respondUserDetails", {
+          success: true,
+          user,
+        });
+      } catch (error) {
+        this.socket.emit("respondUsersByRole", {
+          success: false,
+          message: "Fail to load user details",
+        });
+        this.logger.error(error);
       }
     });
   }

@@ -18,9 +18,9 @@
           <th>Last Login</th>
         </tr>
         <tr>
-          <td>2024-07-02</td>
-          <td>2024-07-02</td>
-          <td>2024-07-02</td>
+          <td>{{ userInfo.acceptTerms }}</td>
+          <td>{{ userInfo.acceptStats }}</td>
+          <td>{{ userInfo.lastLoginAt }}</td>
         </tr>
         <tr>
           <th>Created At</th>
@@ -28,9 +28,9 @@
           <th>Deleted At</th>
         </tr>
         <tr>
-          <td>2024-07-02</td>
-          <td>2024-07-02</td>
-          <td>2024-07-02</td>
+          <td>{{ userInfo.createdAt }}</td>
+          <td>{{ userInfo.updatedAt }}</td>
+          <td>{{ userInfo.deletedAt }}</td>
         </tr>
       </table>
     </template>
@@ -108,12 +108,20 @@ export default {
           ],
         },
       ],
-      editTimeout: null,
     };
   },
   computed: {
     userInfo() {
-      return this.$store.getters["admin/getUserDetails"];
+      const userInfo = this.$store.getters["admin/getUserDetails"];
+      const formatDate = (date) =>
+        date ? new Date(date).toLocaleDateString() : "-";
+      return {
+        ...userInfo,
+        createdAt: formatDate(userInfo.createdAt),
+        updatedAt: formatDate(userInfo.updatedAt),
+        lastLoginAt: formatDate(userInfo.lastLoginAt),
+        deletedAt: formatDate(userInfo.deletedAt),
+      };
     },
   },
 
