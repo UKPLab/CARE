@@ -416,9 +416,19 @@ module.exports = class DocumentSocket extends Socket {
         this.socket.on("documentGet", async (data) => {
             try {
                 await this.sendDocument(data.documentId);
+                if (!this.socket.openComponents.editor.includes(data.documentId)) {
+                    this.socket.openComponents.editor.push(data.documentId);  // Track the document
+                }
             } catch (e) {
                 this.logger.error("Error handling document request: ", e);
                 this.sendToast("Error handling document request!", "Error", "danger");
+            }
+        });
+
+        this.socket.on("documentClose", (data) => {
+            const index = this.socket.openComponents.editor.indexOf(data.documentId);
+            if (index > -1) {
+                this.socket.openComponents.editor.splice(index, 1);  // Remove the document ID
             }
         });
 
