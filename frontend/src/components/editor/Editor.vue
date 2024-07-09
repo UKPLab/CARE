@@ -153,7 +153,6 @@ export default {
   },
   methods: {
     handleTextChange(delta, oldContents, source) {
-      console.log("Delta received from editor:", delta);
       if (source === "user") {
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
@@ -162,11 +161,7 @@ export default {
     processDelta() {
       if (this.deltaBuffer.length > 0) {
         const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
-        console.log("Combined Delta:", combinedDelta);
-
         const dbOps = deltaToDb(combinedDelta.ops);
-        console.log("Operations to be saved in DB:", dbOps);
-
         if (dbOps.length > 0) {
           this.$socket.emit("documentEdit", { documentId: this.documentId, ops: dbOps });
         }
@@ -191,8 +186,6 @@ export default {
       }
     },
     initializeEditorWithContent(deltas) {
-      console.log("Initializing editor with deltas:", deltas);
-
       this.content = deltas;
 
       if (this.editor) {

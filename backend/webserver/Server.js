@@ -229,6 +229,9 @@ module.exports = class Server {
 
         this.io.on("connection", (socket) => {
             this.availSockets[socket.id] = {};
+            socket.openComponents = {
+                editor: []  // Array to track open documents
+            };
             this.logger.debug("Socket connect: " + socket.id);
 
             Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
@@ -237,12 +240,19 @@ module.exports = class Server {
                 await this.availSockets[socket.id][socketName].init();
             });
 
-            socket.on("disconnect", (reason) => {
+            socket.on("disconnect", async (reason) => {
                 this.logger.debug("Socket disconnected: " + reason);
+                
+                // Save open documents on disconnect
+                for (const documentId of socket.openComponents.editor) {
+                    if (this.availSockets[socket.id]['DocumentSocket']) {
+                        await this.availSockets[socket.id]['DocumentSocket'].saveDocument(documentId);
+                    }
+                }
+
                 delete this.availSockets[socket.id];
             });
         });
-
     }
 
     /**
