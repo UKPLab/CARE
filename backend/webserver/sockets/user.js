@@ -1,6 +1,7 @@
 const Socket = require("../Socket.js");
 const { Op } = require("sequelize");
 const db = require("../../db/index.js");
+const { genSalt, genPwdHash } = require("../../utils/auth.js");
 
 /**
  * Handle user through websocket
@@ -185,9 +186,9 @@ module.exports = class UserSocket extends Socket {
 
   /**
    * Update user's details
-   * @param {*} userId 
-   * @param {*} userData Includes firstName, lastName, email, roles
-   * @returns 
+   * @param {number} userId
+   * @param {Object} userData Includes firstName, lastName, email, roles
+   * @returns
    */
   async updateUserDetails(userId, userData) {
     const transaction = await db.sequelize.transaction();
@@ -248,6 +249,34 @@ module.exports = class UserSocket extends Socket {
       await transaction.commit();
     } catch (error) {
       await transaction.rollback();
+      this.logger.error("Failed to update user: " + error);
+    }
+  }
+
+  /**
+   * Reset user's password
+   * @param {number} userId 
+   * @param {string} pwd 
+   * @returns 
+   */
+  async resetUserPwd(userId, pwd) {
+    const User = this.models["user"];
+    try {
+      const salt = genSalt();
+      const passwordHash = await genPwdHash(pwd, salt);
+      const [updatedRowsCount] = await User.update(
+        { passwordHash },
+        {
+          where: { id: userId },
+          returning: true,
+        }
+      );
+
+      if (updatedRowsCount === 0) {
+        this.logger.error("Failed to update user: User not found");
+        return;
+      }
+    } catch (error) {
       this.logger.error("Failed to update user: " + error);
     }
   }
@@ -315,6 +344,24 @@ module.exports = class UserSocket extends Socket {
         callback({
           success: false,
           message: "Fail to update user details",
+        });
+        this.logger.error(error);
+      }
+    });
+
+    // Reset user's password
+    this.socket.on("resetUserPwd", async (data, callback) => {
+      const { userId, password } = data;
+      try {
+        await this.resetUserPwd(userId, password);
+        callback({
+          success: true,
+          message: "Successfully reset password!",
+        });
+      } catch (error) {
+        callback({
+          success: false,
+          message: "Fail to reset password",
         });
         this.logger.error(error);
       }
