@@ -45,7 +45,7 @@ export default {
   components: { BasicModal, BasicForm },
   data() {
     return {
-      id: 0,
+      userId: 0,
       data: {},
       fields: [
         {
@@ -61,10 +61,31 @@ export default {
   },
   methods: {
     open(id) {
-      this.$refs.modal.open(id);
+      this.userId = id;
+      this.$refs.modal.open();
     },
     submit() {
-      const { modelValue } = this.$refs.form;
+      const {
+        modelValue: { password },
+      } = this.$refs.form;
+      const userId = this.userId;
+      if (!password) return;
+      this.$socket.emit("resetUserPwd", { userId, password }, (response) => {
+        if (response.success) {
+          this.$refs.modal.close();
+          this.eventBus.emit("toast", {
+            title: "Password updated",
+            message: response.message,
+            variant: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Fail to reset password",
+            message: response.message,
+            variant: "danger",
+          });
+        }
+      });
     },
   },
 };
