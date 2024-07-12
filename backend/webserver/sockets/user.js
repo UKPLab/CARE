@@ -1,5 +1,6 @@
 const Socket = require("../Socket.js");
 const { Op } = require("sequelize");
+const db = require("../../db/index.js");
 
 /**
  * Handle user through websocket
@@ -133,8 +134,8 @@ module.exports = class UserSocket extends Socket {
 
   /**
    * Get specific user's details
-   * @param {number} userId 
-   * @returns {Object} 
+   * @param {number} userId
+   * @returns {Object}
    */
   async getUserDetails(userId) {
     try {
@@ -179,6 +180,75 @@ module.exports = class UserSocket extends Socket {
     } catch (error) {
       this.logger.error(error);
       throw error;
+    }
+  }
+
+  /**
+   * Update user's details
+   * @param {*} userId 
+   * @param {*} userData Includes firstName, lastName, email, roles
+   * @returns 
+   */
+  async updateUserDetails(userId, userData) {
+    const transaction = await db.sequelize.transaction();
+    const User = this.models["user"];
+    const UserRoleMatching = this.models["user_role_matching"];
+    try {
+      const [updatedRowsCount] = await User.update(
+        {
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
+        },
+        {
+          where: { id: userId },
+          returning: true,
+          transaction,
+        }
+      );
+
+      if (updatedRowsCount === 0) {
+        this.logger.error("Failed to update user: User not found");
+        return;
+      }
+
+      // Get current roles
+      const currentRoles = await UserRoleMatching.findAll({
+        where: { userId },
+        transaction,
+      });
+
+      // Determine roles to add and remove
+      const currentRoleNames = currentRoles.map((role) => role.userRoleName);
+      const rolesToAdd = userData.roles.filter(
+        (role) => !currentRoleNames.includes(role)
+      );
+      const rolesToRemove = currentRoleNames.filter(
+        (role) => !userData.roles.includes(role)
+      );
+
+      // Add new roles
+      await Promise.all(
+        rolesToAdd.map((role) =>
+          UserRoleMatching.create(
+            { userId, userRoleName: role },
+            { transaction }
+          )
+        )
+      );
+
+      // Remove roles
+      await UserRoleMatching.destroy({
+        where: {
+          userId,
+          userRoleName: rolesToRemove,
+        },
+        transaction,
+      });
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      this.logger.error("Failed to update user: " + error);
     }
   }
 
@@ -227,6 +297,24 @@ module.exports = class UserSocket extends Socket {
         this.socket.emit("respondUsersByRole", {
           success: false,
           message: "Fail to load user details",
+        });
+        this.logger.error(error);
+      }
+    });
+
+    // Update user's following data: firstName, lastName, email, roles
+    this.socket.on("updateUserDetails", async (data, callback) => {
+      const { userId, userData } = data;
+      try {
+        await this.updateUserDetails(userId, userData);
+        callback({
+          success: true,
+          message: "Successfully updated user!",
+        });
+      } catch (error) {
+        callback({
+          success: false,
+          message: "Fail to update user details",
         });
         this.logger.error(error);
       }

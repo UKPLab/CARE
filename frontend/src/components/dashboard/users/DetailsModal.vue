@@ -83,16 +83,19 @@ export default {
           key: "firstName",
           label: "First Name:",
           type: "text",
+          required: true,
         },
         {
           key: "lastName",
           label: "Last Name:",
           type: "text",
+          required: true,
         },
         {
           key: "email",
           label: "Email:",
           type: "text",
+          required: true,
         },
         {
           key: "roles",
@@ -127,15 +130,48 @@ export default {
 
   methods: {
     open(userId) {
+      this.userId = userId;
       this.$refs.modal.open();
       this.getUserDetails(userId);
     },
+    submit() {
+      const userId = this.userId;
+      const { modelValue } = this.$refs.form;
+      const { firstName, lastName, email, roles } = modelValue;
+      if (!firstName || !lastName || !email || roles.length === 0) return;
+
+      const userData = {
+        firstName,
+        lastName,
+        email,
+        roles,
+      };
+      this.$refs.modal.waiting = true;
+      this.$socket.emit(
+        "updateUserDetails",
+        { userId, userData },
+        (response) => {
+          if (response.success) {
+            this.$refs.modal.waiting = false;
+            this.$refs.modal.close();
+            this.eventBus.emit("toast", {
+              title: "User updated",
+              message: response.message,
+              variant: "success",
+            });
+          } else {
+            this.$refs.modal.waiting = false;
+            this.eventBus.emit("toast", {
+              title: "Fail to update",
+              message: response.message,
+              variant: "danger",
+            });
+          }
+        }
+      );
+    },
     getUserDetails(userId) {
       this.$socket.emit("requestUserDetails", userId);
-    },
-    submit() {
-      const { modelValue } = this.$refs.form;
-      this.$socket.emit("testABC", modelValue);
     },
   },
 };
