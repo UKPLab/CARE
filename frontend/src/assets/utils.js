@@ -96,7 +96,7 @@ export function downloadObjectsAs(objs, name, file_type) {
         httpType = "application/json";
     } else if (file_type === "txt") {
         data = objectsToTXT(objs);
-        httpType = "text/plain";
+        httpType = "text/plain";   
     } else {
         throw `Invalid argument '${file_type}' passed to downloadObjectsAs`;
     }
@@ -167,4 +167,26 @@ export function getTimeDiffString(start, end) {
   } else {
     return `${seconds} second${seconds > 1 ? "s" : ""}`;
   }
+}
+
+/**
+ * Downloads a document as a file.
+ * @param content the content of the document
+ * @param file_name the name of the file
+ * @param file_type the type of the file
+ */
+export function downloadDocument(content, file_name, file_type) {
+  
+    if(file_type === "html"){
+      const blob = new Blob([content], { type: "text/html;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.setAttribute("href", url);
+      anchor.setAttribute("target", "_blank");
+      anchor.style.visibility = "hidden";
+      anchor.setAttribute("download", file_name.concat(file_type));
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    }
 }

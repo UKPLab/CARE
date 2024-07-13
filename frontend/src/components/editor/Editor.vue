@@ -24,7 +24,7 @@
       title="Download document"
       class="btn rounded-circle"
       type="button"
-      @click="downloadDocument"
+      @click="downloadDocumentAsHTML"
     >
       <LoadIcon
         :color="'#777777'"
@@ -49,6 +49,7 @@ import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
 import { dbToDelta, deltaToDb } from "editor-delta-conversion";
 import { Editor } from './editorStore.js';
+import { downloadDocument } from "@/assets/utils.js";
 
 const Delta = Quill.import('delta');
 
@@ -203,18 +204,9 @@ export default {
     handleDocumentError(error) {
       alert(`Error: ${error.message}`);
     },
-    downloadDocument() {
+    downloadDocumentAsHTML() {
       const editorContent = this.editor.getEditor().root.innerHTML;
-      const blob = new Blob([editorContent], { type: "text/html;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.setAttribute("href", url);
-      anchor.setAttribute("target", "_blank");
-      anchor.style.visibility = "hidden";
-      anchor.setAttribute("download", "document.html");
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
+      downloadDocument(editorContent, "document", "html");
     }
   }
 };
