@@ -7,18 +7,18 @@
         title="Export All"
         @click="exportAll()"
       />
-      <ButtonHeader 
-        class="btn-primary" 
-        title="Add document" 
-        text="Add" 
-        @click="$refs.uploadModal.open()" 
-        />
-      <ButtonHeader 
+      <ButtonHeader
+        class="btn-primary"
+        title="Add document"
+        text="Add"
+        @click="$refs.uploadModal.open()"
+      />
+      <ButtonHeader
         v-if="showCreateButton"
-        class="btn-primary" 
-        title="Create document" 
-        text="Create" 
-        @click="$refs.createModal.open()" 
+        class="btn-primary"
+        title="Create document"
+        text="Create"
+        @click="$refs.createModal.open()"
       />
     </template>
     <template #body>
@@ -28,6 +28,7 @@
         :options="options"
         @action="action"
       />
+      <EditorDownload ref="editorDownload" />
     </template>
   </Card>
   <PublishModal ref="publishModal" />
@@ -50,6 +51,7 @@ import ButtonHeader from "@/basic/card/ButtonHeader.vue";
 import UploadModal from "./documents/UploadModal.vue";
 import CreateModal from "./documents/CreateModal.vue";
 import EditModal from "./documents/EditModal.vue";
+import EditorDownload from "@/components/editor/EditorDownload.vue";
 
 /**
  * Document list component
@@ -74,6 +76,7 @@ export default {
     ConfirmModal,
     EditModal,
     CreateModal,
+    EditorDownload,
   },
   data() {
     return {
@@ -88,7 +91,7 @@ export default {
       columns: [
         { name: "Title", key: "name" },
         { name: "Created At", key: "createdAt" },
-        { name: "Type", key: "type" }, 
+        { name: "Type", key: "type" },
         {
           name: "Public",
           key: "publicBadge",
@@ -161,7 +164,7 @@ export default {
               action: "renameDoc",
             },
           ];
-          if (this.studiesEnabled) {
+          if (this.studiesEnabled && d.type !== 1) {
             newD.manage.push({
               icon: "person-workspace",
               options: {
@@ -177,20 +180,32 @@ export default {
 
           if (d.type === 1 && this.showDeltaDownloadButton) {
             newD.manage.push({
-            icon: "download",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true
-              }
-            },
-            title: "Export delta to a local file",
-            action: "exportEditableDoc"
-          });
-        }
-        
-        return newD;
-      });
+              icon: "download",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                },
+              },
+              title: "Export delta to a local file",
+              action: "exportDeltaDoc",
+            });
+          }
+          if (d.type === 1 && this.showHTMLDownloadButton) {
+            newD.manage.push({
+              icon: "download",
+              options: {
+                iconOnly: true,
+                specifiers: {
+                  "btn-outline-secondary": true,
+                },
+              },
+              title: "Export HTML to a local file",
+              action: "exportHTMLDoc",
+            });
+          }
+          return newD;
+        });
     },
     studiesEnabled() {
       return (
@@ -202,6 +217,9 @@ export default {
     },
     showDeltaDownloadButton() {
       return this.$store.getters["settings/getValue"]('editor.document.showButtonDeltaDownload') === 'true';
+    },
+    showHTMLDownloadButton() {
+      return this.$store.getters["settings/getValue"]('editor.document.showButtonHTMLDownload') === 'true';
     }
   },
   methods: {
@@ -222,8 +240,11 @@ export default {
         case "studyCoordinator":
           this.studyCoordinator(data.params);
           break;
-        case "exportEditableDoc":
-          this.exportEditableDoc(data.params);
+        case "exportDeltaDoc":
+          this.$refs.editorDownload.exportDeltaDoc(data.params);
+          break;
+        case "exportHTMLDoc":
+          this.$refs.editorDownload.exportHTMLDoc(data.params);
           break;
       }
     },
@@ -276,46 +297,7 @@ export default {
     studyCoordinator(row) {
       this.$refs.studyCoordinator.open(0, row.id);
     },
-    //TODO Data is not correctly receiced
-    exportEditableDoc(row) {
-        const docHash = row.hash;
-        const eventName = `exportEditableDocument.${docHash}`;
-
-        // Emit the request to export the document
-        this.$socket.emit("exportEditableDocument", {
-            docHash,
-            docId: row.id
-        });
-
-        // Subscribe to the WebSocket event
-        this.sockets.subscribe(eventName, (response) => {
-            // Once data is received, unsubscribe to avoid handling old events
-            this.sockets.unsubscribe(eventName);
-
-            // Process the received data
-            this.processExportedData(response, row);
-
-            // Notify user of success
-            this.eventBus.emit("toast", {
-                title: "Export Success",
-                message: `Exported editable document ${row.name}.delta`,
-                variant: "success"
-            });
-        });
-
-        // Emit the request to export the document
-        this.$socket.emit("exportEditableDocument", {
-            docHash,
-            docId: row.id
-        });
-    },
-
-    processExportedData(data, row) {
-        const fileName = `${row.name}.delta`;
-        const blob = new Blob([JSON.stringify(data)], { type: "text/plain;charset=utf-8" });
-        window.saveAs(blob, fileName);
-    }
-  }
+  },
 };
 </script>
 

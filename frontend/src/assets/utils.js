@@ -175,18 +175,33 @@ export function getTimeDiffString(start, end) {
  * @param file_name the name of the file
  * @param file_type the type of the file
  */
-export function downloadDocument(content, file_name, file_type) {
-  
-    if(file_type === "html"){
-      const blob = new Blob([content], { type: "text/html;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.setAttribute("href", url);
-      anchor.setAttribute("target", "_blank");
-      anchor.style.visibility = "hidden";
-      anchor.setAttribute("download", file_name);
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-    }
+export function downloadDocument(content, file_name, file_type = "") {
+  let typeSet;
+
+  switch (file_type) {
+    case "html":
+      typeSet = "text/html;charset=utf-8";
+      break;
+    case "json":
+      typeSet = "application/json;charset=utf-8";
+      break;
+    case "csv":
+      typeSet = "text/csv;charset=utf-8";
+      break;
+    case "txt":
+    default:
+      typeSet = "text/plain;charset=utf-8";
+      break;
+  }
+
+  const blob = new Blob([content], { type: typeSet });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.setAttribute("href", url);
+  anchor.setAttribute("target", "_blank");
+  anchor.style.visibility = "hidden";
+  anchor.setAttribute("download", file_name);
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
 }

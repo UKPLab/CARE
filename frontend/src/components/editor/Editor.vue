@@ -78,59 +78,49 @@ export default {
       debounceHandleSave: undefined,
       documentHash: this.$route.params.documentHash,
       deltaBuffer: [],
-      editor: null
+      editor: null,
+      documentLoaded: false
     };
   },
   created() {
     this.documentHash = this.$route.params.documentHash;
   },
   mounted() {
-    const editorContainer = document.getElementById('editor-container');
+      const editorContainer = document.getElementById('editor-container');
 
-    if (editorContainer) {
-      this.editor = new Editor(editorContainer, this.editorOptions);
+      if (editorContainer) {
+        this.editor = new Editor(editorContainer, this.editorOptions);
 
-      if(this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true"){
-      // Add titles to toolbar buttons
-      const toolbarButtons = document.querySelectorAll('.ql-toolbar button');
-      toolbarButtons.forEach(button => {
-        const format = button.className.match(/ql-(\w+)/);
-        if (format) {
-          button.setAttribute('title', format[1]);
+        if (this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true") {
+          // Add titles to toolbar buttons
+          const toolbarButtons = document.querySelectorAll('.ql-toolbar button');
+          toolbarButtons.forEach(button => {
+            const format = button.className.match(/ql-(\w+)/);
+            if (format) {
+              button.setAttribute('title', format[1]);
+            }
+          });
         }
-      });
+
+        this.editor.getEditor().on('text-change', this.handleTextChange);
       }
-    }
+      this.$socket.emit("documentGet", { documentId: this.documentId });
 
-    this.editor.getEditor().on('text-change', this.handleTextChange);
-
-    this.$socket.emit("documentGet", { documentId: this.documentId });
-
-    this.$socket.on("documentFile", ({ document, deltas }) => {
-      this.initializeEditorWithContent(deltas);
-    });
-
-    this.$socket.on("document_editRefresh", edits => {
-      this.applyAdditionalEdits(edits);
-    });
-
-    this.$socket.on("documentError", error => {
-      console.error("Document error:", error.message);
-      this.handleDocumentError(error);
-    });
-
-    this.$socket.on("connect", () => {
-      console.log("Socket connected:", this.$socket.id);
-    });
-
-    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
-  },
-  sockets: {
-    connect() {
-      console.log("socket connected");
-      this.$socket.emit("documentOpen", { documentId: this.documentId });
-    }
-  },
+      this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
+    },
+    sockets: {
+      connect() {
+        console.log("Socket connected:", this.$socket.id);
+        this.$socket.emit("documentOpen", { documentId: this.documentId });
+      },
+      documentFile(data) {
+        this.initializeEditorWithContent(data["deltas"]);
+      },
+      documentError(error) {
+        console.error("Document error:", error.message);
+        this.handleDocumentError(error);
+      }
+    },
   unmounted() {
     this.$socket.emit("saveDocument", { documentId: this.documentId });
   },
@@ -187,7 +177,7 @@ export default {
     unappliedEdits: {
       handler(newEdits) {
         if (newEdits.length > 0) {
-          this.applyAdditionalEdits(newEdits);
+          this.applyAdditionalEdits();
         }
       },
       deep: true
@@ -233,11 +223,12 @@ export default {
       if (this.editor) {
         this.editor.getEditor().setContents(deltas); 
       }
+      this.documentLoaded = true;
+      this.applyAdditionalEdits();
     },
-    applyAdditionalEdits(edits) {
-      const unappliedEdits = edits.filter(edit => !edit.applied);
-      if (unappliedEdits.length > 0) {
-        const delta = dbToDelta(unappliedEdits);
+    applyAdditionalEdits() {
+      if (this.unappliedEdits.length > 0) {
+        const delta = dbToDelta(this.unappliedEdits);
         this.editor.getEditor().updateContents(delta, "api");
         this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
       }
