@@ -184,7 +184,7 @@ export function downloadDocument(content, file_name, file_type) {
       anchor.setAttribute("href", url);
       anchor.setAttribute("target", "_blank");
       anchor.style.visibility = "hidden";
-      anchor.setAttribute("download", file_name.concat(file_type));
+      anchor.setAttribute("download", file_name);
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
