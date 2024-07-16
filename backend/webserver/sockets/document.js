@@ -225,44 +225,32 @@ module.exports = class DocumentSocket extends Socket {
      * @returns {Promise<void>}
      */
     async saveDocument(documentId) {
-        const doc = await this.models['document'].getById(documentId);
-
-        if (!doc) {
-            this.logger.error(`Document with ID ${documentId} not found.`);
-            return;
-        }
-
-        const edits = await this.models['document_edit'].findAll({
-            where: { documentId: documentId, draft: true },
-            raw: true
-        });
-
-        const delta = dbToDelta(edits);
-
-        const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
-
-        const writeJsonFile = (path, data) => {
-            return new Promise((resolve, reject) => {
-                fs.writeFile(path, JSON.stringify(data, null, 2), 'utf8', (err) => {
-                    if (err) {
-                        return reject(err);
-                    }
-                    resolve();
-                });
-            });
-        };
-
         try {
-            await writeJsonFile(deltaFilePath, delta);
-
+            const doc = await this.models['document'].getById(documentId);
+    
+            if (!doc) {
+                this.logger.error(`Document with ID ${documentId} not found.`);
+                return;
+            }
+    
+            const edits = await this.models['document_edit'].findAll({
+                where: { documentId: documentId, draft: true },
+                raw: true
+            });
+    
+            const delta = dbToDelta(edits);
+            const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+    
+            await fs.promises.writeFile(deltaFilePath, JSON.stringify(delta, null, 2), 'utf8');
+    
             await this.models['document_edit'].update(
-                { applied: true },
+                { applied: true},
                 { where: { id: edits.map(edit => edit.id) } }
             );
-
+    
             this.logger.info("Deltas file updated successfully.");
             this.socket.emit("documentFilePath", { document: doc, deltaFilePath: deltaFilePath });
-
+    
         } catch (err) {
             this.logger.error("Failed to read/write delta file:", err);
             this.sendToast("Error handling delta file!", "Delta File Error", "danger");
@@ -385,28 +373,18 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Exports the draft edits (deltas) of a document to the client.
+     * Open the document and track it if not already tracked.
      *
-     * The method fetches draft deltas for the specified document from the database, ensuring they are ordered by creation time.
-     * It then emits these deltas to the client session identified by the document hash. If no deltas are found,
-     * an error message is sent. Errors during the database query or the emission process are logged and reported to the client.
-     *
-     * @param {object} params - Parameters containing document identifiers documentId and documentHash
+     * @param {number} documentId
      */
-    async exportEditableDocument(data) {
-        const {docId: documentId, docHash: documentHash} = data;
-
+    async openDocument(documentId) {
         try {
-            const result = await this.sendDocument(documentId);
-
-            if (result && result.deltas) {
-                this.socket.emit(`exportEditableDocument.${documentHash}`, {deltas: result.deltas});
-            } else {
-                this.socket.emit(`exportEditableDocument.${documentHash}`, {error: "No deltas found."});
+            if (!this.socket.openComponents.editor.includes(documentId)) {
+                this.socket.openComponents.editor.push(documentId);  // Track the document
             }
-        } catch (error) {
-            this.logger.error("Failed to export deltas:", error);
-            this.socket.emit(`exportEditableDocument.${documentHash}`, {error: "Server error during export."});
+        } catch (e) {
+            this.logger.error("Error tracking document: ", e);
+            this.sendToast("Error tracking document!", "Error", "danger");
         }
     }
 
@@ -416,9 +394,7 @@ module.exports = class DocumentSocket extends Socket {
         this.socket.on("documentGet", async (data) => {
             try {
                 await this.sendDocument(data.documentId);
-                if (!this.socket.openComponents.editor.includes(data.documentId)) {
-                    this.socket.openComponents.editor.push(data.documentId);  // Track the document
-                }
+                await this.openDocument(data.documentId);
             } catch (e) {
                 this.logger.error("Error handling document request: ", e);
                 this.sendToast("Error handling document request!", "Error", "danger");
@@ -428,7 +404,17 @@ module.exports = class DocumentSocket extends Socket {
         this.socket.on("documentClose", (data) => {
             const index = this.socket.openComponents.editor.indexOf(data.documentId);
             if (index > -1) {
-                this.socket.openComponents.editor.splice(index, 1);  // Remove the document ID
+                this.socket.openComponents.editor[index] = undefined; // Remove the document ID
+            }
+        });
+
+        // Handle document open event
+        this.socket.on("documentOpen", async (data) => {
+            try {
+                await this.openDocument(data.documentId); 
+            } catch (e) {
+                this.logger.error("Error handling document open request: ", e);
+                this.sendToast("Error handling document open request!", "Error", "danger");
             }
         });
 
@@ -530,15 +516,6 @@ module.exports = class DocumentSocket extends Socket {
                     message: "Internal server error while editing the document.",
                     errorCode: 500
                 });
-            }
-        });
-
-        this.socket.on("exportEditableDocument", async (data) => {
-            try {
-                await this.exportEditableDocument(data);
-            } catch (error) {
-                console.error(error);
-                this.sendToast("Error exporting edited document", "Error", "danger");
             }
         });
 

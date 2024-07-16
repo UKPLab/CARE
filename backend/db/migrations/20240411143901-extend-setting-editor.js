@@ -5,12 +5,20 @@ const settings = [{
     value: "true",
     type: "boolean",
     description: "Show create button in dashboard to create a new html document"
-}, {
+},
+{
     key: "editor.document.showButtonDeltaDownload",
-    value: "true",
+    value: "false",
     type: "boolean",
     description: "Show download button for document deltas (edits)"
 },
+{
+    key: "editor.document.showButtonHTMLDownload",
+    value: "true",
+    type: "boolean",
+    description: "Show download button for document HTML (edits)"
+},
+
 {
     key: "editor.edits.debounceTime",
     value: "150",

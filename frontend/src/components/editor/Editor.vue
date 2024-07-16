@@ -125,6 +125,12 @@ export default {
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
   },
+  sockets: {
+    connect() {
+      console.log("socket connected");
+      this.$socket.emit("documentOpen", { documentId: this.documentId });
+    }
+  },
   unmounted() {
     this.$socket.emit("saveDocument", { documentId: this.documentId });
   },
