@@ -28,7 +28,98 @@ const settings = [{
     value: "true",
     type: "boolean",
     description: "Show download button for the html document"
-    },
+},
+{
+    key: "editor.toolbar.tools.font",
+    value: "true", 
+    type: "boolean",
+    description: "Font tool in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.size",
+    value: "true", 
+    type: "boolean",
+    description: "Font size in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.align",
+    value: "true",
+    type: "boolean",
+    description: "Text alignment in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.bold",
+    value: "true",
+    type: "boolean",
+    description: "Bold text in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.italic",
+    value: "true",
+    type: "boolean",
+    description: "Italic text in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.underline",
+    value: "true",
+    type: "boolean",
+    description: "Underline text in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.strike",
+    value: "true",
+    type: "boolean",
+    description: "Strike through text in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.color",
+    value: "true",
+    type: "boolean",
+    description: "Text color in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.background",
+    value: "true",
+    type: "boolean",
+    description: "Text background color in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.orderedList",
+    value: "true",
+    type: "boolean",
+    description: "Ordered list in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.unorderedList",
+    value: "true",
+    type: "boolean",
+    description: "Bullet list in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.link",
+    value: "true",
+    type: "boolean",
+    description: "Link tool in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.image",
+    value: "true",
+    type: "boolean",
+    description: "Image tool in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.video",
+    value: "true",
+    type: "boolean",
+    description: "Video tool in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.clean",
+    value: "true",
+    type: "boolean",
+    description: "Clean tool in the toolbar"
+},
+
 ];
 
 module.exports = {
