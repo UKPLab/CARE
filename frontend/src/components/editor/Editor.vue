@@ -88,10 +88,18 @@ export default {
     const editorContainer = document.getElementById('editor-container');
 
     if (editorContainer) {
-      this.editor = new Editor(editorContainer, {
-        theme: "snow",
-        modules: this.editorOptions.modules
+      this.editor = new Editor(editorContainer, this.editorOptions);
+
+      if(this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true"){
+      // Add titles to toolbar buttons
+      const toolbarButtons = document.querySelectorAll('.ql-toolbar button');
+      toolbarButtons.forEach(button => {
+        const format = button.className.match(/ql-(\w+)/);
+        if (format) {
+          button.setAttribute('title', format[1]);
+        }
       });
+      }
     }
 
     this.editor.getEditor().on('text-change', this.handleTextChange);
@@ -130,14 +138,41 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
     },
     editorOptions() {
-      const toolbarVisible = this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true";
-      return {
-        modules: {
-          toolbar: toolbarVisible ? undefined : false
-        },
-        theme: "snow"
-      };
-    },
+    const toolbarVisible = this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true";
+
+    const toolsMap = {
+      "editor.toolbar.tools.font": { font: [] },
+      "editor.toolbar.tools.size": { size: [] },
+      "editor.toolbar.tools.align": { align: [] },
+      "editor.toolbar.tools.bold": "bold",
+      "editor.toolbar.tools.italic": "italic",
+      "editor.toolbar.tools.underline": "underline",
+      "editor.toolbar.tools.strike": "strike",
+      "editor.toolbar.tools.color": "color",
+      "editor.toolbar.tools.background": "background",
+      "editor.toolbar.tools.orderedList": { list: "ordered" },
+      "editor.toolbar.tools.unorderedList": { list: "bullet" },
+      "editor.toolbar.tools.link": "link",
+      "editor.toolbar.tools.image": "image",
+      "editor.toolbar.tools.video": "video",
+      "editor.toolbar.tools.clean": "clean"
+    };
+
+    const toolbarTools = [];
+
+    for (const [key, tool] of Object.entries(toolsMap)) {
+      if (this.$store.getters["settings/getValue"](key) === "true") {
+        toolbarTools.push(tool);
+      }
+    }
+    
+    return {
+      modules: {
+         toolbar: toolbarVisible ? {container: toolbarTools} : false
+      },
+      theme: "snow"
+    };
+  },
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     }
