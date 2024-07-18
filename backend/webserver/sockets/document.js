@@ -133,17 +133,13 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Sends the document to the client.
+     * Sends the document to the client
      *
-     * This method is called when the client requests to view a document. It first checks if the user has access to the document,
-     * and if so, it fetches the edits for the document and sends them to the client. For HTML documents, it also handles the 
-     * conversion of edits to delta format and updates the edits' applied status.
-     * 
-     * Supports:
-     * - HTML documents: Fetches draft edits, converts to delta, writes delta file, marks edits as applied, and sends deltas.
-     * - Non-HTML documents: Reads and sends the document file (e.g., PDF).
+     * This method checks if the user has access to the document and then retrieves and sends the document data.
+     * For HTML documents, it fetches and combines draft edits with the existing content before sending.
      *
-     * @param {number} documentId - The ID of the document to send.
+     * @param {number} documentId 
+     * @returns {Promise<Delta|void>} 
      */
     async sendDocument(documentId) {
         try {
@@ -198,10 +194,12 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Load document delta from disk.
+     * Load document delta from disk
      *
-     * @param {string} filePath - Path to the delta file.
-     * @returns {Promise<Delta>} - The loaded delta.
+     * This method reads the delta file from the disk and returns it as a Delta object.
+     *
+     * @param {string} filePath 
+     * @returns {Promise<Delta>} 
      */
     async loadDocument(filePath) {
         try {
@@ -226,9 +224,11 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Save document delta to disk and mark edits as applied.
+     * Save document delta to disk and mark edits as applied
      *
-     * @param {number} documentId - The ID of the document to save.
+     * This method saves the combined delta of the document on the disk and updates the edits in the database to mark them as applied.
+     *
+     * @param {number} documentId 
      * @returns {Promise<void>}
      */
     async saveDocument(documentId) {
@@ -355,7 +355,7 @@ module.exports = class DocumentSocket extends Socket {
      * This method is called when the client requests to edit a document. It first checks if the user has access to the document,
      * and if so, it applies the edits to the document and sends the updated document to the client.
      *
-     * @param {object} data - The data needed to edit the document. It contains the following properties:
+     * @param {object} data 
      */
     async editDocument(data) {
         try {
@@ -392,7 +392,9 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Open the document and track it if not already tracked.
+     * Open the document and track it if not already tracked
+     *
+     * This method adds the document to the list of open documents being tracked by the socket.
      *
      * @param {number} documentId
      */

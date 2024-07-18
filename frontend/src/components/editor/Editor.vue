@@ -92,7 +92,6 @@ export default {
         this.editor = new Editor(editorContainer, this.editorOptions);
 
         if (this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true") {
-          // Add titles to toolbar buttons
           const toolbarButtons = document.querySelectorAll('.ql-toolbar button');
           toolbarButtons.forEach(button => {
             const format = button.className.match(/ql-(\w+)/);
