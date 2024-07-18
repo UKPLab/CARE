@@ -125,6 +125,15 @@ Editor Component
   The `editorStore.js` file contains the `Editor` class, which wraps the Quill editor. 
   It ensures the editor is not reactive and manages its state.
 
+- **frontend/src/components/editor/EditorDownload.vue**
+
+  The EditorDownload.vue component provides a hidden Quill editor instance used for exporting documents in delta or HTML format. Key features include:
+
+  - Initializing a hidden editor instance.
+  - Fetching document data and setting the editor's contents.
+  - Providing methods to export the document as a JSON delta file or an HTML file (used in frontend/src/components/dashboard/Documents.vue).
+
+
 Delta Conversion Module
 -----------------------
 
