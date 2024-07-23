@@ -16,7 +16,7 @@
         <div v-if="!collapsed" class="card-body">
           <template v-for="(value, key) in group">
             <div v-if="Array.isArray(value)" :key="`array-${key}`" class="mb-3">
-              <div>{{ key }}</div>
+              
               <div v-for="setting in value" :key="setting.key" class="row">
                 <div class="col-12">
                   <div class="card mt-3">
