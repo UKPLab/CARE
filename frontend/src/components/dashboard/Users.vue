@@ -11,6 +11,7 @@
     </template>
   </Card>
   <DetailsModal ref="detailsModal" />
+  <RightsModal ref="rightsModal" />
   <PasswordModal ref="passwordModal" />
 </template>
 
@@ -19,6 +20,7 @@ import BasicTable from "@/basic/table/Table.vue";
 import Card from "@/basic/Card.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import PasswordModal from "./users/PasswordModal.vue";
+import RightsModal from "./users/RightsModal.vue";
 
 /**
  * Display user list by users' role
@@ -32,6 +34,7 @@ export default {
     BasicTable,
     DetailsModal,
     PasswordModal,
+    RightsModal,
   },
   props: {
     admin: {
@@ -140,7 +143,9 @@ export default {
     openUserDetailsModal(user) {
       this.$refs.detailsModal.open(user.id);
     },
-    openViewRightsModal() {},
+    openViewRightsModal(user) {
+      this.$refs.rightsModal.open(user.id);
+    },
     openResetPasswordModal(user) {
       this.$refs.passwordModal.open(user.id);
     },
