@@ -14,6 +14,8 @@ const getDefaultState = () => {
     users: [],
     user_stats: {},
     user: {},
+    // TODO: Check if it complies with naming convention to use snake case instead of camel case.
+    user_right: {},
   };
 };
 
@@ -66,6 +68,14 @@ export default {
     getUserDetails: (state) => {
       return state["user"];
     },
+
+    /**
+     * Fetch specific user's right
+     * @returns {Object}
+     */
+    getUserRight: (state) => {
+      return state["user_right"];
+    },
   },
   mutations: {
     /**
@@ -112,6 +122,17 @@ export default {
     SOCKET_respondUserDetails: (state, message) => {
       if (message.success) {
         state.user = message.user;
+      }
+    },
+
+    /**
+     * On "respondUserRight", update the specific user_right object
+     * @param {*} state
+     * @param {*} message
+     */
+    SOCKET_respondUserRight: (state, message) => {
+      if (message.success) {
+        state.user_right = message.userRight;
       }
     },
   },

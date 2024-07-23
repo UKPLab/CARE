@@ -134,6 +134,30 @@ module.exports = class UserSocket extends Socket {
   }
 
   /**
+   * Get the right associated with the user
+   * @returns {Object<string, array>}
+   */
+  async getUserRight(userId) {
+    let roles = await this.models["user_role_matching"].findAll({
+      where: { userId },
+      raw: true,
+    });
+    if (roles.length === 0) return {};
+    roles = roles.map((role) => role.userRoleName);
+    let userRight = {};
+    for (const role of roles) {
+      const matchedRoles = await this.models["role_right_matching"].findAll({
+        where: { userRoleName: role },
+        raw: true,
+      });
+      Object.assign(userRight, {
+        [role]: matchedRoles.map((role) => role.userRightName),
+      });
+    }
+    return userRight;
+  }
+
+  /**
    * Get specific user's details
    * @param {number} userId
    * @returns {Object}
@@ -255,9 +279,9 @@ module.exports = class UserSocket extends Socket {
 
   /**
    * Reset user's password
-   * @param {number} userId 
-   * @param {string} pwd 
-   * @returns 
+   * @param {number} userId
+   * @param {string} pwd
+   * @returns
    */
   async resetUserPwd(userId, pwd) {
     const User = this.models["user"];
@@ -323,9 +347,26 @@ module.exports = class UserSocket extends Socket {
           user,
         });
       } catch (error) {
-        this.socket.emit("respondUsersByRole", {
+        this.socket.emit("respondUserDetails", {
           success: false,
           message: "Fail to load user details",
+        });
+        this.logger.error(error);
+      }
+    });
+
+    // Get right associated with the user
+    this.socket.on("requestUserRight", async (userId) => {
+      try {
+        const userRight = await this.getUserRight(userId);
+        this.socket.emit("respondUserRight", {
+          success: true,
+          userRight,
+        });
+      } catch (error) {
+        this.socket.emit("respondUserRight", {
+          success: false,
+          message: "Failed to get user right",
         });
         this.logger.error(error);
       }
