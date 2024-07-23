@@ -289,7 +289,7 @@ module.exports = class UserSocket extends Socket {
       const salt = genSalt();
       const passwordHash = await genPwdHash(pwd, salt);
       const [updatedRowsCount] = await User.update(
-        { passwordHash },
+        { passwordHash, salt },
         {
           where: { id: userId },
           returning: true,
