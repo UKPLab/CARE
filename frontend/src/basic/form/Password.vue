@@ -72,6 +72,9 @@ export default {
     toggleVisibility() {
       this.isPasswordVisible = !this.isPasswordVisible;
     },
+    validate() {
+      return this.$refs.formElement.validate(this.currentData);
+    }
   },
 };
 </script>

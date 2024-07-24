@@ -79,6 +79,7 @@ export default {
         // Check pattern
         if (this.options.pattern) {
           if (new RegExp(this.options.pattern).test(data)) {
+            this.invalidField = false;
             return true;
           } else {
             this.invalidField = true;
