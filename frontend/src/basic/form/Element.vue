@@ -75,7 +75,6 @@ export default {
   methods: {
     validate(data) {
       if (this.options.required) {
-
         // Check pattern
         if (this.options.pattern) {
           if (new RegExp(this.options.pattern).test(data)) {
@@ -87,22 +86,26 @@ export default {
           }
         }
         this.invalidField = false;
-
         // Check empty
-        if (data && data !== "") {
-          this.emptyField = false;
-          return true;
+        if (data) {
+          if(typeof data === "string" && data !== "") {
+            this.emptyField = false;
+            return true;
+          }
+          if(Array.isArray(data) && data.length !== 0 ) {
+            this.emptyField = false;
+            return true;
+          }
+          this.emptyField = true;
+          return false;
         } else {
           this.emptyField = true;
           return false;
         }
-
       } else {
         return true;
       }
-
     }
-
   }
 }
 </script>
