@@ -1,5 +1,5 @@
 <template>
-  <BasicModal ref="modal">
+  <BasicModal ref="modal" @hide="resetForm">
     <template #title>
       <span>Reset Password</span>
     </template>
@@ -88,6 +88,9 @@ export default {
         }
       });
     },
+    resetForm() {
+      this.$refs.form.modelValue.password = '';
+    }
   },
 };
 </script>
