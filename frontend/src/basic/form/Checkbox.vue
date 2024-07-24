@@ -1,5 +1,8 @@
 <template>
-  <FormElement :options="options">
+  <FormElement
+    ref="formElement"
+    :options="options"
+  >
     <template #element>
       <div
         v-for="(option, index) in options.options"
@@ -57,6 +60,11 @@ export default {
   },
   mounted() {
     this.currentData = this.modelValue;
+  },
+  methods: {
+    validate() {
+      return this.$refs.formElement.validate(this.currentData);
+    },
   },
 };
 </script>
