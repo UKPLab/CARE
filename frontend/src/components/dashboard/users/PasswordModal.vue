@@ -53,7 +53,7 @@ export default {
           type: "password",
           required: true,
           placeholder: "",
-          pattern: "",
+          pattern: ".{8,}",
           default: "",
         },
       ],
@@ -65,6 +65,7 @@ export default {
       this.$refs.modal.open();
     },
     submit() {
+      if(!this.$refs.form.validate()) return;
       const {
         modelValue: { password },
       } = this.$refs.form;
