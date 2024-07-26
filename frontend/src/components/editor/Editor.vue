@@ -237,7 +237,10 @@ export default {
     },
     downloadDocumentAsHTML() {
       const editorContent = this.editor.getEditor().root.innerHTML;
-      downloadDocument(editorContent, "document", "html");
+      const document = this.$store.getters["table/document/getByHash"](this.documentHash);
+      const documentName = document ? document.name : "document";
+      const fileName = `${documentName}.html`;
+      downloadDocument(editorContent, fileName, "text/html");
     }
   }
 };

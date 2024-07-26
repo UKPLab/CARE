@@ -34,7 +34,7 @@ import Modal from "@/basic/Modal.vue";
  * Document create component
  *
  * This component provides the functionality for creating a document
- * to the server.
+ * on the server.
  *
  * @author: Juliane Bechert, Zheyu Zhang
  */

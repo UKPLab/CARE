@@ -28,7 +28,7 @@ Manages file uploads and document retrievals, ensuring proper data synchronizati
 ### Running the Application
 
 1. **Set Up the Environment**: Follow the installation steps to set up the environment.
-2. **Start the utils/modules**: Ensure utils/modules is uptodate using the Makefile command: make modules.
+2. **Initialize the Database and Modules**: Ensure the database is initialized and utils/modules is up to date using the Makefile command: make init.
 3. **Start the Backend Server**: Ensure the backend server is running.
 4. **Start the Frontend Server**: Ensure the frontend development server is running.
 5. **Interact with the Editor**: Use the application to create, edit, and manage documents. Monitor WebSocket events to ensure real-time updates and synchronization.
@@ -37,6 +37,14 @@ Makefile Configuration
 ----------------------
 
 New Make Commands:
+
+- **make init**
+
+  Initialize the database and install npm packages in all utils/modules subdirectories. This command calls both make tables and make modules
+
+- **make tables**
+
+Initialize (migrate) the database.
 
 - **make test-modules**
 
