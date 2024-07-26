@@ -135,11 +135,10 @@ export default {
       this.getUserDetails(userId);
     },
     submit() {
+      if(!this.$refs.form.validate()) return;
       const userId = this.userId;
       const { modelValue } = this.$refs.form;
       const { firstName, lastName, email, roles } = modelValue;
-      if (!firstName || !lastName || !email || roles.length === 0) return;
-
       const userData = {
         firstName,
         lastName,
