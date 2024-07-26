@@ -24,17 +24,27 @@ module.exports = class UploadSocket extends Socket {
    * @returns {Promise<void>}
    */
   async uploadDocument(data) {
-    const doc = await this.models["document"].add({
-      name: data.name.replace(/.pdf$/, ""),
-      userId: this.userId
-    });
-    const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
-
-    fs.writeFile(target, data.file, (err) => {
-      this.socket.emit("uploadResult", { success: !err, documentId: doc.id });
-    });
-
-    this.emit("documentRefresh", doc);
+    try {
+      const doc = await this.models["document"].add({
+        name: data.name.replace(/.pdf$/, ""),
+        userId: this.userId
+      });
+  
+      const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+  
+      fs.writeFile(target, data.file, (err) => {
+        if (err) {
+          this.socket.emit("uploadResult", { success: false, error: err.message });
+        } else {
+          this.socket.emit("uploadResult", { success: true, documentId: doc.id });
+        }
+      });
+  
+      this.emit("documentRefresh", doc);
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      this.socket.emit("uploadResult", { success: false, error: error.message });
+    }
   }
 
   /**
@@ -45,24 +55,34 @@ module.exports = class UploadSocket extends Socket {
    * @returns {Promise<void>}
    */
   async uploadEditableDocument(data) {
-    const doc = await this.models["document"].add({
-      name: data.name.replace(/.delta$/, ""),
-      userId: this.userId,
-      type: 1
-    });
-    await this.models["editable_document"].add({
-      userId: this.userId,
-      docHash: doc.hash,
-      documentId: doc.id
-    });
-
-    const target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
-
-    fs.writeFile(target, data.file, (err) => {
-      this.socket.emit("uploadResult", { success: !err, documentId: doc.id });
-    });
-
-    this.emit("documentRefresh", doc);
+    try {
+      const doc = await this.models["document"].add({
+        name: data.name.replace(/.delta$/, ""),
+        userId: this.userId,
+        type: 1
+      });
+  
+      await this.models["editable_document"].add({
+        userId: this.userId,
+        docHash: doc.hash,
+        documentId: doc.id
+      });
+  
+      const target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
+  
+      fs.writeFile(target, data.file, (err) => {
+        if (err) {
+          this.socket.emit("uploadResult", { success: false, error: err.message });
+        } else {
+          this.socket.emit("uploadResult", { success: true, documentId: doc.id });
+        }
+      });
+  
+      this.emit("documentRefresh", doc);
+    } catch (error) {
+      console.error("Error uploading editable document:", error);
+      this.socket.emit("uploadResult", { success: false, error: error.message });
+    }
   }
 
   init() {

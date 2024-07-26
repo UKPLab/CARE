@@ -40,18 +40,22 @@ module.exports = class DocumentSocket extends Socket {
 
     /**
      * Create document (html)
-     * @param data
+     * @param data {type: number, name: string}
      * @returns {Promise<void>}
      */
     async createDocument(data) {
-        const doc = await this.models["document"].add({
-            name: data.name,
-            type: data.type,
-            userId: this.userId
-        });
-        this.socket.emit("documentCreated", {success: true, documentId: doc.id})
-
-        this.emit("documentRefresh", doc);
+        try {
+            const doc = await this.models["document"].add({
+                name: data.name,
+                type: data.type,
+                userId: this.userId
+            });
+            this.socket.emit("documentCreated", { success: true, documentId: doc.id });
+            this.emit("documentRefresh", doc);
+        } catch (error) {
+            console.error("Error creating document:", error);
+            this.socket.emit("documentCreated", { success: false, error: error.message });
+        }
     }
 
     /**
@@ -355,7 +359,7 @@ module.exports = class DocumentSocket extends Socket {
      * This method is called when the client requests to edit a document. It first checks if the user has access to the document,
      * and if so, it applies the edits to the document and sends the updated document to the client.
      *
-     * @param {object} data 
+     * @param {object} data {documentId: number, "ops" array consisting of [offset: number, operationType: number, span: number, text: string, attributes: Object]}
      */
     async editDocument(data) {
         try {
@@ -392,9 +396,9 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Open the document and track it if not already tracked
+     * Open the document and track it, if not already tracked
      *
-     * This method adds the document to the list of open documents being tracked by the socket.
+     * This method adds the document to the list of open documents, being tracked by the socket.
      *
      * @param {number} documentId
      */

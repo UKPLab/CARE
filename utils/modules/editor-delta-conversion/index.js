@@ -82,9 +82,6 @@ function getSpan(op) {
 function deltaToDb(ops) {
     let offset = 0;
     return ops.reduce(function (pV, op) {
-        if ('retain' in op && !('attributes' in op)) {
-            offset = op.retain; 
-        }
         const operationType = getOperationType(op);
         if (operationType >= 0) {
             pV.push({
@@ -94,6 +91,13 @@ function deltaToDb(ops) {
                 text: 'insert' in op ? op.insert : null,
                 attributes: 'attributes' in op ? op.attributes : null
             });
+        }
+        if ('retain' in op) {
+            offset += op.retain;
+        } else if ('insert' in op) {
+            offset += op.insert.length;
+        } else if ('delete' in op) {
+            // No change to offset needed for delete operations
         }
         return pV;
     }, []);

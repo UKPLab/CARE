@@ -20,7 +20,8 @@ help:
 	@echo "make build-frontend                  Build frontend in production mode"
 	@echo "make test							Run unit tests (backend only)"
 	@echo "make test-modules                    Run unit tests for specific modules"
-	@echo "make init             		 		Init (migrating) the database"
+	@echo "make tables             		 		Init (migrating) the database"
+	@echo "make init           		  			Init (migrating) the database and install npm packages in all utils/modules subdirectories"
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
 	@echo "make build-clean                     Clean the environment of production build"
 	@echo "make docker          				Start docker images"
@@ -67,11 +68,14 @@ lint: frontend/node_modules/.uptodate
 docker:
 	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres
 
-.PHONY: init
-init: backend/node_modules/.uptodate
+.PHONY: tables
+tables: backend/node_modules/.uptodate
 	@echo ${POSTGRES_HOST}
 	cd backend/db && npx sequelize-cli db:create || echo "IGNORING ERROR"
 	cd backend/db && npx sequelize-cli db:migrate
+
+.PHONY: init
+init: tables modules
 
 .PHONY: dev
 dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate

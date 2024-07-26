@@ -171,14 +171,14 @@ export function getTimeDiffString(start, end) {
 
 /**
  * Downloads a document as a file.
- * @param content the content of the document
- * @param file_name the name of the file
- * @param file_type the type of the file
+ * @param content the written content inside of the document 
+ * @param fileName the name of the file
+ * @param fileType the type of the file
  */
-export function downloadDocument(content, file_name, file_type = "") {
+export function downloadDocument(content, fileName, fileType = "") {
   let typeSet;
 
-  switch (file_type) {
+  switch (fileType) {
     case "html":
       typeSet = "text/html;charset=utf-8";
       break;
@@ -200,7 +200,7 @@ export function downloadDocument(content, file_name, file_type = "") {
   anchor.setAttribute("href", url);
   anchor.setAttribute("target", "_blank");
   anchor.style.visibility = "hidden";
-  anchor.setAttribute("download", file_name);
+  anchor.setAttribute("download", fileName);
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);

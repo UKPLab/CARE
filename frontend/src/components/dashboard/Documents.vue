@@ -291,8 +291,8 @@ export default {
       this.$refs.publishModal.open(row.id);
     },
     exportAll() {
-      const doc_ids = this.docs.map((i) => i.id);
-      this.$refs.export.requestExport(doc_ids, "json");
+      const docIds = this.docs.map((i) => i.id);
+      this.$refs.export.requestExport(docIds, "json");
     },
     studyCoordinator(row) {
       this.$refs.studyCoordinator.open(0, row.id);
