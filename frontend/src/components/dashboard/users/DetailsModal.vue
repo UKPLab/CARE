@@ -1,5 +1,5 @@
 <template>
-  <BasicModal ref="modal">
+  <BasicModal ref="modal" @hide="resetForm">
     <template #title>
       <slot name="title">
         <span>Edit User</span>
@@ -172,6 +172,9 @@ export default {
     getUserDetails(userId) {
       this.$socket.emit("requestUserDetails", userId);
     },
+    resetForm() {
+      this.eventBus.emit("resetFormField");
+    }
   },
 };
 </script>

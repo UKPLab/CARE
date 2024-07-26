@@ -210,6 +210,7 @@ export default {
       this.overrideDefaultValues = {};
       this.data = this.getData(0);
       this.success = false;
+      this.eventBus.emit("resetFormField");
     },
     getData(id, copy = false) {
       if (id === 0) {
