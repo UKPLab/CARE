@@ -90,6 +90,7 @@ export default {
     },
     resetForm() {
       this.$refs.form.modelValue.password = '';
+      this.eventBus.emit("resetFormField");
     }
   },
 };

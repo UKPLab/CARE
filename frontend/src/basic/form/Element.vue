@@ -72,6 +72,12 @@ export default {
       emptyField: false
     }
   },
+  mounted() {
+    this.eventBus.on('resetFormField', this.resetFieldState)
+  },
+  beforeUnmount() {
+    this.eventBus.off('resetFormField', this.resetFieldState)
+  },
   methods: {
     validate(data) {
       if (this.options.required) {
@@ -105,6 +111,10 @@ export default {
       } else {
         return true;
       }
+    },
+    resetFieldState () {
+      this.invalidField = false;
+      this.emptyField = false;
     }
   }
 }
