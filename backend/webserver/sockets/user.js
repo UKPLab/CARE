@@ -41,16 +41,19 @@ module.exports = class UserSocket extends Socket {
    * @param {object} user - The user object
    * @return {{[p: string]: any}}
    */
-  minimalFields(user) {
-    let include = ["id", "userName"];
-    if (this.isAdmin()) {
-      include.push("lastLoginAt", "sysrole", "acceptStats");
+  async minimalFields(user) {
+    try {
+      let include = ["id", "userName"];
+      const isAdmin = await this.isAdmin();
+      if (isAdmin) {
+        include.push("lastLoginAt", "acceptStats");
+      }
+      const entries = Object.entries(user);
+      const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
+      return Object.fromEntries(filtered);
+    } catch (error) {
+      this.logger.error(error);
     }
-
-    const entries = Object.entries(user);
-    const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
-
-    return Object.fromEntries(filtered);
   }
 
   /**
@@ -100,12 +103,16 @@ module.exports = class UserSocket extends Socket {
    * @returns {string[]} An array of all users.
    */
   async getAllUsers() {
-    return await this.models["user"].findAll({
-      attributes: {
-        exclude: ["passwordHash", "salt"],
-      },
-      raw: true,
-    });
+    try {
+      return await this.models["user"].findAll({
+        attributes: {
+          exclude: ["passwordHash", "salt"],
+        },
+        raw: true,
+      });
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   /**
@@ -114,23 +121,25 @@ module.exports = class UserSocket extends Socket {
    * @returns {string[]} An array of users with the specified role.
    */
   async getSpecificUsers(role) {
-    const matchedUsers = await this.models["user_role_matching"].findAll({
-      where: { userRoleName: role },
-      attributes: ["userId"],
-      raw: true,
-    });
-    const userIds = matchedUsers.map((user) => user.userId);
-    return await this.models["user"].findAll({
-      attributes: {
-        exclude: ["passwordHash", "salt"],
-      },
-      where: {
-        id: {
-          [Op.in]: userIds,
+    try {
+      const matchedUsers = await this.models["user_role_matching"].findAll({
+        where: { userRoleName: role },
+        attributes: ["userId"],
+        raw: true,
+      });
+      const userIds = matchedUsers.map((user) => user.userId);
+      return await this.models["user"].findAll({
+        attributes: {
+          exclude: ["passwordHash", "salt"],
         },
-      },
-      raw: true,
-    });
+        where: {
+          id: { [Op.in]: userIds },
+        },
+        raw: true,
+      });
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   /**
@@ -139,23 +148,27 @@ module.exports = class UserSocket extends Socket {
    * @returns {Object<string, array>}
    */
   async getUserRight(userId) {
-    let roles = await this.models["user_role_matching"].findAll({
-      where: { userId },
-      raw: true,
-    });
-    if (roles.length === 0) return {};
-    roles = roles.map((role) => role.userRoleName);
-    let userRight = {};
-    for (const role of roles) {
-      const matchedRoles = await this.models["role_right_matching"].findAll({
-        where: { userRoleName: role },
+    try {
+      let roles = await this.models["user_role_matching"].findAll({
+        where: { userId },
         raw: true,
       });
-      Object.assign(userRight, {
-        [role]: matchedRoles.map((role) => role.userRightName),
-      });
+      if (roles.length === 0) return {};
+      roles = roles.map((role) => role.userRoleName);
+      let userRight = {};
+      for (const role of roles) {
+        const matchedRoles = await this.models["role_right_matching"].findAll({
+          where: { userRoleName: role },
+          raw: true,
+        });
+        Object.assign(userRight, {
+          [role]: matchedRoles.map((role) => role.userRightName),
+        });
+      }
+      return userRight;
+    } catch (error) {
+      this.logger.error(error);
     }
-    return userRight;
   }
 
   /**
