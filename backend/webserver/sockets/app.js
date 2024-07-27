@@ -162,7 +162,11 @@ module.exports = class AppSocket extends Socket {
    * @returns {Promise<void>}
    */
   async sendData(data) {
-    await this.sendTableData(data.table);
+    try {
+      await this.sendTableData(data.table);
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   /**
@@ -171,18 +175,24 @@ module.exports = class AppSocket extends Socket {
    * @returns {Promise<void>}
    */
   async sendUser() {
-    const user = relevantFields(await this.models["user"].getById(this.userId));
-    const matchedRoles = await this.models["user_role_matching"].findAll({
-      where: { userId: this.userId },
-      raw: true,
-    });
-    const userRoles = matchedRoles.map((role) => role.userRoleName);
-    const userWithRoleInfo = {
-      ...user,
-      roles: userRoles,
-      isAdmin: userRoles.includes("admin"),
-    };
-    this.socket.emit("appUser", userWithRoleInfo);
+    try {
+      const user = relevantFields(
+        await this.models["user"].getById(this.userId)
+      );
+      const matchedRoles = await this.models["user_role_matching"].findAll({
+        where: { userId: this.userId },
+        raw: true,
+      });
+      const userRoles = matchedRoles.map((role) => role.userRoleName);
+      const userWithRoleInfo = {
+        ...user,
+        roles: userRoles,
+        isAdmin: userRoles.includes("admin"),
+      };
+      this.socket.emit("appUser", userWithRoleInfo);
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   /**
@@ -191,9 +201,13 @@ module.exports = class AppSocket extends Socket {
    * @return {Promise<void>}
    */
   async sendInit(data) {
-    await this.sendUser();
-    await this.sendTables();
-    await this.sendSettings();
+    try {
+      await this.sendUser();
+      await this.sendTables();
+      await this.sendSettings();
+    } catch (error) {
+      this.logger.error(error);
+    }
   }
 
   init() {
