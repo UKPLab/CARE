@@ -4,7 +4,6 @@
     :options="options"
   >
     <template #element="{ blur }">
-      <!-- TODO: Password validation to be added -->
       <input
         v-model="currentData"
         :class="options.class"

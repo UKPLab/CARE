@@ -1,6 +1,5 @@
 "use strict";
 
-// TODO: name for the navigation to be checked
 const navElements = [
   {
     name: "Users",

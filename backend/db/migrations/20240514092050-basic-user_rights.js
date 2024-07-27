@@ -13,7 +13,7 @@ const userRights = [
     name: "frontend.dashboard.users.view",
     description: "access to view users on the dashboard",
   },
-  // TODO: The following right hasn't been assigned to any role in the 'role_right_matching' table 
+  // NOTE: The following right hasn't been assigned to any role in the 'role_right_matching' table 
   {
     name: "backend.socket.user.getUsers.all",
     description: "access to get all users",
