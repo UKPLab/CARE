@@ -8,6 +8,7 @@
         ref="form"
         v-model="data"
         :fields="fields"
+        @submit.prevent="submit"
       />
     </template>
     <template #footer>
