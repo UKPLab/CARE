@@ -12,10 +12,11 @@ const getDefaultState = () => {
   return {
     docs: [],
     users: [],
-    user_stats: {},
+    // userRecords contains a list of more detailed user data than the users array right above.
+    userRecords: [],
+    userStats: {},
     user: {},
-    // TODO: Check if it complies with naming convention to use snake case instead of camel case.
-    user_right: {},
+    userRight: {},
   };
 };
 
@@ -42,8 +43,8 @@ export default {
      * @returns {(function(Number): (Object|null))}
      */
     getStatsByUser: (state) => (userId) => {
-      if (userId in state["user_stats"]) {
-        return state["user_stats"][userId];
+      if (userId in state["userStats"]) {
+        return state["userStats"][userId];
       } else {
         return null;
       }
@@ -56,9 +57,7 @@ export default {
      * @returns
      */
     getUsersByRole: (state) => {
-      // TODO: Check if it is better to add another defaultState, e.g. userList,
-      // because currently this returned data overwrites data returned from getUsers method
-      return state["users"];
+      return state["userRecords"];
     },
 
     /**
@@ -74,7 +73,7 @@ export default {
      * @returns {Object}
      */
     getUserRight: (state) => {
-      return state["user_right"];
+      return state["userRight"];
     },
   },
   mutations: {
@@ -98,7 +97,7 @@ export default {
      */
     SOCKET_statsDataByUser: (state, message) => {
       if (message.success) {
-        state.user_stats[message.userId] = message.statistics;
+        state.userStats[message.userId] = message.statistics;
       }
     },
 
@@ -110,7 +109,7 @@ export default {
      */
     SOCKET_respondUsersByRole: (state, message) => {
       if (message.success) {
-        state.users = message.users;
+        state.userRecords = message.users;
       }
     },
 
@@ -126,13 +125,13 @@ export default {
     },
 
     /**
-     * On "respondUserRight", update the specific user_right object
+     * On "respondUserRight", update the specific userRight object
      * @param {*} state
      * @param {*} message
      */
     SOCKET_respondUserRight: (state, message) => {
       if (message.success) {
-        state.user_right = message.userRight;
+        state.userRight = message.userRight;
       }
     },
   },
