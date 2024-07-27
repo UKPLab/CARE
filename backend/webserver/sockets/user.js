@@ -11,14 +11,14 @@ const { genSalt, genPwdHash } = require("../../utils/auth.js");
  */
 module.exports = class UserSocket extends Socket {
   /**
-   * Add username as creator_name of an database entry with column creator
+   * Adds the username as creator_name of a database entry with column creator
    *
-   * Accept data as list of objects or single object
-   * Note: returns always list of objects!
+   * Accepts data as a list of objects or a single object
+   * Note: Always returns a list of objects
    *
-   * @param data {object|object[]} data to update
-   * @param key {string} key of the user id field
-   * @param targetName {string} name of the target field
+   * @param {object|object[]} data - The data to update
+   * @param {string} key - The key of the user ID field
+   * @param {string} targetName - The name of the target field
    * @returns {Promise<Awaited<*&{creator_name: string|*|undefined}>[]>}
    */
   async updateCreatorName(data, key = "userId", targetName = "creator_name") {
@@ -37,8 +37,8 @@ module.exports = class UserSocket extends Socket {
   }
 
   /**
-   * show only specific fields of a user
-   * @param user
+   * Shows only specific fields of a user
+   * @param {object} user - The user object
    * @return {{[p: string]: any}}
    */
   minimalFields(user) {
@@ -134,7 +134,8 @@ module.exports = class UserSocket extends Socket {
   }
 
   /**
-   * Get the right associated with the user
+   * Gets the rights associated with the user
+   * @param {number} userId - The ID of the user
    * @returns {Object<string, array>}
    */
   async getUserRight(userId) {
@@ -209,10 +210,10 @@ module.exports = class UserSocket extends Socket {
   }
 
   /**
-   * Update user's details
-   * @param {number} userId
-   * @param {Object} userData Includes firstName, lastName, email, roles
-   * @returns
+   * Updates user's details
+   * @param {number} userId - The ID of the user
+   * @param {Object} userData - Includes firstName, lastName, email, roles
+   * @returns {Promise<void>}
    */
   async updateUserDetails(userId, userData) {
     const transaction = await db.sequelize.transaction();
@@ -278,10 +279,10 @@ module.exports = class UserSocket extends Socket {
   }
 
   /**
-   * Reset user's password
-   * @param {number} userId
-   * @param {string} pwd
-   * @returns
+   * Resets user's password
+   * @param {number} userId - The ID of the user
+   * @param {string} pwd - The new password
+   * @returns {Promise<void>}
    */
   async resetUserPwd(userId, pwd) {
     const User = this.models["user"];

@@ -51,10 +51,8 @@ export default {
     },
 
     /**
-     * Fetch users by their role from the server
-     *
-     * @param {*} state
-     * @returns
+     * Fetches users by their role from the server
+     * @returns {Array} The users by role
      */
     getUsersByRole: (state) => {
       return state["userRecords"];
