@@ -139,18 +139,27 @@ export default {
       "editor.toolbar.tools.font": { font: [] },
       "editor.toolbar.tools.size": { size: [] },
       "editor.toolbar.tools.align": { align: [] },
+      "editor.toolbar.tools.header": ["header", "1", "2", "3", "4", "5", "6"],
       "editor.toolbar.tools.bold": "bold",
       "editor.toolbar.tools.italic": "italic",
       "editor.toolbar.tools.underline": "underline",
       "editor.toolbar.tools.strike": "strike",
+      "editor.toolbar.tools.blockquote": "blockquote",
+      "editor.toolbar.tools.code-block": "code-block",
+      "editor.toolbar.tools.formula": "formula",
+      "editor.toolbar.tools.subscript": { script: "sub" },
+      "editor.toolbar.tools.superscript": { script: "super" },
+      "editor.toolbar.tools.indent": [{ indent: "-1" }, { indent: "+1" }],
+      "editor.toolbar.tools.direction": { direction: [] },      
       "editor.toolbar.tools.color": { color: [] },
       "editor.toolbar.tools.background": { background: [] },
       "editor.toolbar.tools.orderedList": { list: "ordered" },
       "editor.toolbar.tools.unorderedList": { list: "bullet" },
+      "editor.toolbar.tools.checkList": { list: "check" },   
       "editor.toolbar.tools.link": "link",
       "editor.toolbar.tools.image": "image",
       "editor.toolbar.tools.video": "video",
-      "editor.toolbar.tools.clean": "clean"
+      "editor.toolbar.tools.clean": "clean" // indent, direction
     };
 
     const toolbarTools = [];

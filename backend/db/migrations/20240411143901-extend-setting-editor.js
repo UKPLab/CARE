@@ -80,6 +80,54 @@ const settings = [{
     description: "Strike through text in the toolbar"
 },
 {
+    key: "editor.toolbar.tools.blockquote",
+    value: "true",
+    type: "boolean",
+    description: "Blockquote in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.code-block",
+    value: "true",
+    type: "boolean",
+    description: "Code-block in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.formula",
+    value: "true",
+    type: "boolean",
+    description: "Formula in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.header",
+    value: "true",
+    type: "boolean",
+    description: "Header in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.subscript",
+    value: "true",
+    type: "boolean",
+    description: " Subscript in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.superscript",
+    value: "true",
+    type: "boolean",
+    description: "Superscript in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.indent",
+    value: "true",
+    type: "boolean",
+    description: "Indent in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.direction",
+    value: "true",
+    type: "boolean",
+    description: "Text direction in the toolbar"
+},
+{
     key: "editor.toolbar.tools.color",
     value: "true",
     type: "boolean",
@@ -102,6 +150,12 @@ const settings = [{
     value: "true",
     type: "boolean",
     description: "Bullet list in the toolbar"
+},
+{
+    key: "editor.toolbar.tools.checkList",
+    value: "true",
+    type: "boolean",
+    description: "Check list in the toolbar"
 },
 {
     key: "editor.toolbar.tools.link",
