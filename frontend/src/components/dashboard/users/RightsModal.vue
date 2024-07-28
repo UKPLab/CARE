@@ -72,9 +72,7 @@ export default {
   name: "RightsModal",
   components: { BasicModal },
   data() {
-    return {
-      userRight: {},
-    };
+    return {};
   },
   computed: {
     userRight() {

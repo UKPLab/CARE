@@ -28,7 +28,7 @@ import RightsModal from "./users/RightsModal.vue";
  * @author: Linyin Huang
  */
 export default {
-  name: "Users",
+  name: "DashboardUsers",
   components: {
     Card,
     BasicTable,
