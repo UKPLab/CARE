@@ -41,19 +41,14 @@ module.exports = class UserSocket extends Socket {
    * @param {object} user - The user object
    * @return {{[p: string]: any}}
    */
-  async minimalFields(user) {
-    try {
-      let include = ["id", "userName"];
-      const isAdmin = await this.isAdmin();
-      if (isAdmin) {
-        include.push("lastLoginAt", "acceptStats");
-      }
-      const entries = Object.entries(user);
-      const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
-      return Object.fromEntries(filtered);
-    } catch (error) {
-      this.logger.error(error);
+  minimalFields(user) {
+    let include = ["id", "userName"];
+    if (this.isAdmin()) {
+      include.push("lastLoginAt", "acceptStats");
     }
+    const entries = Object.entries(user);
+    const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
+    return Object.fromEntries(filtered);
   }
 
   /**
