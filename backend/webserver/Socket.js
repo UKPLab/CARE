@@ -167,25 +167,21 @@ module.exports = class Socket {
    * @param {number} userId The userId to check
    * @return {boolean}
    */
-  async checkUserAccess(userId) {
-    try {
-      const isAdmin = await this.isAdmin();
-      if (isAdmin) return true;
-      if (this.userId !== userId) {
-        this.logger.warn(
-          "User " +
-            this.userId +
-            " tried to access user " +
-            userId +
-            ". Prohibiting access."
-        );
-        return false;
-      }
+  checkUserAccess(userId) {
+    if (this.isAdmin()) {
       return true;
-    } catch (error) {
-      this.logger.error(error);
+    }
+    if (this.userId !== userId) {
+      this.logger.warn(
+        "User " +
+          this.userId +
+          " tried to access user " +
+          userId +
+          ". Prohibiting access."
+      );
       return false;
     }
+    return true;
   }
 
   /**
