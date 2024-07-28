@@ -70,7 +70,6 @@ export default {
   data() {
     return {
       userId: 0,
-      userInfo: {},
       fields: [
         {
           key: "userName",

@@ -42,7 +42,7 @@ module.exports = {
       },
       {
         name: "mentor",
-        description: "have the grading right.",
+        description: "have the right to grade",
         createdAt: new Date(),
         updatedAt: new Date(),
       },
