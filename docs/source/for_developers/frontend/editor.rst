@@ -67,7 +67,7 @@ Database Migrations
 
 - **backend/db/migrations/20240411143901-extend-setting-editor.js**
 
-  This migration extends the `setting` table to include various configuration options for the editor, such as button visibility and debounce time for processing edits.
+  This migration extends the `setting` table to include various configuration options for the editor, such as debounce time for processing edits and toolbar and its tool-buttons visibility.
 
 Database Models
 ---------------
@@ -166,6 +166,21 @@ Delta Conversion Module
   - `utils/modules/editor-delta-conversion/tests/testData/data_attributes.json`
   - `utils/modules/editor-delta-conversion/tests/testData/data_delete.json`
   - `utils/modules/editor-delta-conversion/tests/testData/data_insert.json`
+
+Toolbar Configuration
+---------------------
+
+- **backend/db/migrations/20240411143901-extend-setting-editor.js**
+  
+  This migration(as already mentioned above) contains the keys for the editor toolbar which includes the visibility of the toolbar and its tool-buttons.
+
+- **frontend/src/components/dashboard/Settings.vue** 
+
+  The `Settings.vue` component provides an interface for configuring the editor toolbar as per the admin's requirements. 
+  It includes options to toggle the visibility of the toolbar and its individual tool-buttons as well. 
+  The corresponding implementation for the tools can be found in the `frontend/src/components/editor/Editor.vue` component.
+
+  **NOTE:** When the toolbar is hidden, the editor is still functional, but the toolbar is not visible, and regardless of which tool is activated, none of the tools are visible to the user.
 
 -----------------
 
