@@ -4,26 +4,28 @@
     class="table"
   >
     <thead>
-    <tr>
-      <th v-if="selectableRows"/>
-      <th
-        v-for="c in columns"
-        :key="c.key"
-        :class="('width' in c) ? 'col-' + c.width : 'col-auto'"
-      >
-        {{ c.name }}
-        <LoadIcon
-          v-if="c.sortable"
-          :class="{'bg-success':(sortColumn === c.key),
-                     'bg-opacity-50':(sortColumn === c.key),
-                     'bg-opacity-10':(sortColumn !== c.key),
-                     'bg-black':(sortColumn !== c.key)}"
-          :icon-name="(sortColumn === c.key)?sortIcon:'sort-down'"
-          class="me-1"
-          style="cursor: pointer"
-          @click="sort(('sortKey' in c) ? c.sortKey : c.key)"
-        />
-        <span v-if="filter && c.filter">
+      <tr>
+        <th v-if="selectableRows" />
+        <th
+          v-for="c in columns"
+          :key="c.key"
+          :class="'width' in c ? 'col-' + c.width : 'col-auto'"
+        >
+          {{ c.name }}
+          <LoadIcon
+            v-if="c.sortable"
+            :class="{
+              'bg-success': sortColumn === c.key,
+              'bg-opacity-50': sortColumn === c.key,
+              'bg-opacity-10': sortColumn !== c.key,
+              'bg-black': sortColumn !== c.key,
+            }"
+            :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
+            class="me-1"
+            style="cursor: pointer"
+            @click="sort('sortKey' in c ? c.sortKey : c.key)"
+          />
+          <span v-if="filter && c.filter">
             <span
               aria-expanded="true"
               aria-haspopup="true"
@@ -33,8 +35,8 @@
             >
               <LoadIcon
                 :id="'filterDropDown_' + c.key"
-                :color="(c.key in sequelizeFilter) ? 'blue' : ''"
-                :icon-name="(c.key in sequelizeFilter) ? 'funnel-fill' : 'funnel'"
+                :color="c.key in sequelizeFilter ? 'blue' : ''"
+                :icon-name="c.key in sequelizeFilter ? 'funnel-fill' : 'funnel'"
               />
             </span>
             <ul
@@ -52,57 +54,58 @@
                   v-model="filter[c.key][f.key]"
                   class="form-check-input"
                   type="checkbox"
-                >
+                />
                 <label
                   :for="'filterDropDown_' + c.key + '_label_' + f.key"
                   class="form-check-label"
-                >{{ f.name }}</label>
+                  >{{ f.name }}</label
+                >
               </li>
             </ul>
           </span>
-      </th>
-    </tr>
+        </th>
+      </tr>
     </thead>
     <tbody>
-    <tr v-if="serverSidePagination && total > 0 && data.length === 0">
-      <td
-        :colspan="columns.length"
-        class="text-center"
+      <tr v-if="serverSidePagination && total > 0 && data.length === 0">
+        <td
+          :colspan="columns.length"
+          class="text-center"
+        >
+          Loading data from server...
+        </td>
+      </tr>
+      <tr v-else-if="!data || data.length === 0">
+        <td
+          :colspan="columns.length"
+          class="text-center"
+        >
+          No data
+        </td>
+      </tr>
+      <tr
+        v-for="r in tableData"
+        v-else
+        :key="r"
       >
-        Loading data from server...
-      </td>
-    </tr>
-    <tr v-else-if="!data || data.length === 0">
-      <td
-        :colspan="columns.length"
-        class="text-center"
-      >
-        No data
-      </td>
-    </tr>
-    <tr
-      v-for="r in tableData"
-      v-else
-      :key="r"
-    >
-      <td v-if="selectableRows">
-        <div class="form-check">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            @input="e => selectRow(e.target.checked, r)"
-          >
-        </div>
-      </td>
-      <td
-        v-for="c in columns"
-        :key="c"
-      >
+        <td v-if="selectableRows">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              @input="(e) => selectRow(e.target.checked, r)"
+            />
+          </div>
+        </td>
+        <td
+          v-for="c in columns"
+          :key="c"
+        >
           <span v-if="c.key in r">
             <TIcon
               v-if="c.type === 'icon'"
-              :color="(typeof r[c.key] === 'object') ? r[c.key].color : null"
-              :value="(typeof r[c.key] === 'object') ? r[c.key].icon : r[c.key]"
+              :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
+              :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
             />
             <TBadge
               v-else-if="c.type === 'badge'"
@@ -142,7 +145,7 @@
                 v-if="r[c.key].selected"
                 :icon-name="r[c.key].icon"
                 :size="16"
-                style="color:yellowgreen;"
+                style="color: yellowgreen"
               />
               <LoadIcon
                 v-else
@@ -151,7 +154,7 @@
                 :size="16"
                 :title="r[c.key].title"
                 role="button"
-                @click="actionEmitter({action: r[c.key].action, params: r})"
+                @click="actionEmitter({ action: r[c.key].action, params: r })"
               />
             </span>
 
@@ -159,11 +162,9 @@
               {{ r[c.key] }}
             </span>
           </span>
-        <span v-else>
-            -
-          </span>
-      </td>
-    </tr>
+          <span v-else> - </span>
+        </td>
+      </tr>
     </tbody>
   </table>
   <Pagination
@@ -181,14 +182,14 @@
 
 <script>
 import TButton from "./Button.vue";
-import TButtonGroup from "./ButtonGroup.vue"
-import TToggle from "./Toggle.vue"
+import TButtonGroup from "./ButtonGroup.vue";
+import TToggle from "./Toggle.vue";
 import TBadge from "./Badge.vue";
 import TIcon from "./Icon.vue";
 import Pagination from "./Pagination.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import {tooltip} from "@/assets/tooltip.js";
-import deepEqual from 'deep-equal';
+import { tooltip } from "@/assets/tooltip.js";
+import deepEqual from "deep-equal";
 
 /**
  * generic table with feature-rich API
@@ -199,29 +200,36 @@ import deepEqual from 'deep-equal';
  */
 export default {
   name: "BasicTable",
-  components: {Pagination, TIcon, TBadge, TButtonGroup, TButton, TToggle, LoadIcon},
-  directives: {tooltip},
+  components: {
+    Pagination,
+    TIcon,
+    TBadge,
+    TButtonGroup,
+    TButton,
+    TToggle,
+    LoadIcon,
+  },
+  directives: { tooltip },
   props: {
     data: {
       type: Array,
       required: false,
-      default: () => []
+      default: () => [],
     },
     columns: {
       type: Array,
-      required: true
+      required: true,
     },
     options: {
       type: Object,
       required: false,
-      default: () => {
-      }
+      default: () => {},
     },
     count: {
       type: Number,
       required: false,
-      default: 0
-    }
+      default: 0,
+    },
   },
   emits: ["action", "rowSelection", "paginationUpdate"],
   data: function () {
@@ -242,14 +250,17 @@ export default {
       itemsPerPageList: [10, 25, 50, 100],
       paginationShowPages: 3,
       filter: null,
-    }
+    };
   },
   computed: {
     serverSidePagination() {
-      return this.options && this.options.pagination
-        && typeof this.options.pagination === "object"
-        && "serverSide" in this.options.pagination
-        && this.options.pagination.serverSide;
+      return (
+        this.options &&
+        this.options.pagination &&
+        typeof this.options.pagination === "object" &&
+        "serverSide" in this.options.pagination &&
+        this.options.pagination.serverSide
+      );
     },
     total() {
       if (this.serverSidePagination) {
@@ -286,24 +297,34 @@ export default {
       if (this.serverSidePagination) {
         return this.data;
       }
-      let data = this.data.map(d => d);
+      let data = this.data.map((d) => d);
 
       if (this.sortColumn) {
         if (this.sortDirection === "ASC") {
-          data = data.sort(
-            (a, b) => (a[this.sortColumn] > b[this.sortColumn])
-              ? 1 : ((b[this.sortColumn] > a[this.sortColumn]) ? -1 : 0))
+          data = data.sort((a, b) =>
+            a[this.sortColumn] > b[this.sortColumn]
+              ? 1
+              : b[this.sortColumn] > a[this.sortColumn]
+              ? -1
+              : 0
+          );
         } else {
-          data = data.sort(
-            (a, b) => (a[this.sortColumn] < b[this.sortColumn])
-              ? 1 : ((b[this.sortColumn] < a[this.sortColumn]) ? -1 : 0))
+          data = data.sort((a, b) =>
+            a[this.sortColumn] < b[this.sortColumn]
+              ? 1
+              : b[this.sortColumn] < a[this.sortColumn]
+              ? -1
+              : 0
+          );
         }
       }
       if (this.filter) {
-        data = data.filter(d => {
+        data = data.filter((d) => {
           for (const [key, va] of Object.entries(this.filter)) {
             // only selected filter
-            const filter = Object.entries(va).filter(([k, v]) => v).map(([k, v]) => k)
+            const filter = Object.entries(va)
+              .filter(([k, v]) => v)
+              .map(([k, v]) => k);
             if (filter.length > 0) {
               if (!filter.includes(d[key].toString())) {
                 return false;
@@ -315,15 +336,29 @@ export default {
       }
 
       if (this.options && this.options.pagination) {
-        data = data.slice((this.currentPage - 1) * this.limit, this.currentPage * this.limit);
+        data = data.slice(
+          (this.currentPage - 1) * this.limit,
+          this.currentPage * this.limit
+        );
       }
       return data;
     },
     sequelizeFilter() {
-      let sequelizeFilter = Object.assign({}, ...Object.entries(this.filter).map(([k, v]) => ({[k]: Object.entries(v).filter(([k, v]) => v).map(([k, v]) => (k))})));
-      return Object.assign({}, ...Object.entries(sequelizeFilter).filter(([k, v]) => v.length > 0).map(([k, v]) => ({[k]: v})));
-    }
-
+      let sequelizeFilter = Object.assign(
+        {},
+        ...Object.entries(this.filter).map(([k, v]) => ({
+          [k]: Object.entries(v)
+            .filter(([k, v]) => v)
+            .map(([k, v]) => k),
+        }))
+      );
+      return Object.assign(
+        {},
+        ...Object.entries(sequelizeFilter)
+          .filter(([k, v]) => v.length > 0)
+          .map(([k, v]) => ({ [k]: v }))
+      );
+    },
   },
   watch: {
     pages(val) {
@@ -337,8 +372,8 @@ export default {
       handler() {
         this.paginationUpdate();
       },
-      deep: true
-    }
+      deep: true,
+    },
   },
   mounted() {
     if (this.options && this.options.pagination) {
@@ -352,8 +387,17 @@ export default {
       }
     }
     // map columns to filter object (e.g. {column1: {filter1: false, filter2: false})
-    this.filter = Object.assign({}, ...this.columns.filter(c => 'filter' in c)
-      .map(c => ({[c.key]: Object.assign({}, ...c.filter.map(f => ({[f.key]: false})))})));
+    this.filter = Object.assign(
+      {},
+      ...this.columns
+        .filter((c) => "filter" in c)
+        .map((c) => ({
+          [c.key]: Object.assign(
+            {},
+            ...c.filter.map((f) => ({ [f.key]: false }))
+          ),
+        }))
+    );
   },
   methods: {
     sort(column) {
@@ -369,7 +413,7 @@ export default {
       this.$emit("action", data);
       this.$socket.emit("stats", {
         action: "actionClick",
-        data: data
+        data: data,
       });
     },
     selectRow(action, row) {
@@ -377,8 +421,10 @@ export default {
         if (action) {
           this.selectedRows.push(row);
         } else {
-          const toRemove = this.selectedRows.findIndex(r => deepEqual(r, row));
-          if(toRemove >= 0) {
+          const toRemove = this.selectedRows.findIndex((r) =>
+            deepEqual(r, row)
+          );
+          if (toRemove >= 0) {
             this.selectedRows.splice(toRemove, 1);
           }
         }
@@ -391,14 +437,13 @@ export default {
     },
     paginationUpdate() {
       if (this.serverSidePagination) {
-
         this.$emit("paginationUpdate", {
           page: this.currentPage - 1,
           limit: this.limit,
-          order: (this.sortColumn) ? [
-            [this.sortColumn, this.sortDirection]
-          ] : null,
-          filter: this.sequelizeFilter
+          order: this.sortColumn
+            ? [[this.sortColumn, this.sortDirection]]
+            : null,
+          filter: this.sequelizeFilter,
         });
       }
     },
@@ -406,10 +451,9 @@ export default {
       this.itemsPerPage = value;
       this.currentPage = 1;
       this.paginationUpdate();
-    }
+    },
   },
-}
+};
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>
