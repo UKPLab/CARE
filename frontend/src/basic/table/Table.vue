@@ -12,19 +12,24 @@
           :class="'width' in c ? 'col-' + c.width : 'col-auto'"
         >
           {{ c.name }}
-          <LoadIcon
+          <span
             v-if="c.sortable"
-            :class="{
-              'bg-success': sortColumn === c.key,
-              'bg-opacity-50': sortColumn === c.key,
-              'bg-opacity-10': sortColumn !== c.key,
-              'bg-black': sortColumn !== c.key,
-            }"
-            :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
-            class="me-1"
-            style="cursor: pointer"
-            @click="sort('sortKey' in c ? c.sortKey : c.key)"
-          />
+            title="Sort By"
+          >
+            <LoadIcon
+              v-if="c.sortable"
+              :class="{
+                'bg-success': sortColumn === c.key,
+                'bg-opacity-50': sortColumn === c.key,
+                'bg-opacity-10': sortColumn !== c.key,
+                'bg-black': sortColumn !== c.key,
+              }"
+              :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
+              class="me-1"
+              style="cursor: pointer"
+              @click="sort('sortKey' in c ? c.sortKey : c.key)"
+            />
+          </span>
           <span v-if="filter && c.filter">
             <span
               aria-expanded="true"
