@@ -123,7 +123,6 @@ module.exports = function (server) {
         const salt = genSalt();
         let pwdHash = await genPwdHash(data.password, salt);
         server.db.models['user'].add({
-            sysrole: "regular",
             firstName: data.firstName,
             lastName: data.lastName,
             userName: data.userName,

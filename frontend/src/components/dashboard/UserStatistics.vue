@@ -87,7 +87,6 @@ export default {
         columns: [
           {name: "User", key: "userName", sortable: true},
           {name: "ID", key: "id", sortable: true},
-          {name: "Role", key: "sysrole", sortable: true},
           {name: "Last Login", key: "lastLoginAt", sortable: true},
         ],
       },
