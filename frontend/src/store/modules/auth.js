@@ -81,7 +81,10 @@ export default {
          * @constructor
          */
         SET_USER: (state, user) => {
-            state.user = user;
+            state.user = {
+                ...state.user,
+                ...user
+            };
         },
     },
     actions: {
