@@ -73,10 +73,11 @@ if __name__ == '__main__':
     course5 = moodle_api.call('mod_assign_get_user_mappings', assignmentids=[6350])
     #print(course5)
     
-    course5 = moodle_api.call('mod_assign_get_grades', assignmentids=[6350])
+    #course5 = moodle_api.call('mod_assign_get_grades', assignmentids=[6350])
     #print(course5)
     
-    test = moodle_api.call('core_grade_update_grades', source='mod', courseid=1615, component='mod_assign', activityid=6350, itemnumber=0, grades=[{'studentid': 12237, 'grade': 50, 'str_feedback': 'Hello'}])
+    test = moodle_api.call('core_grade_update_grades', source='test', courseid=1615, component='mod_assign', activityid=6350, itemnumber=0, grades=[], itemdetails=[])
+    'https://gitlab.pavlovia.org/Alex22671/asd.git'
     
     
     userFeedback = {
@@ -103,6 +104,7 @@ if __name__ == '__main__':
     
     #test = moodle_api.call('mod_assign_save_grades', **params)
     
+    test = moodle_api.call('mod_assign_save_grade', assignmentid=6350, userid=12237, grade=50, attemptnumber=-1, addattempt=False, applytoall = False, workflowstate='released')
     
     import requests
 
@@ -141,12 +143,13 @@ if __name__ == '__main__':
     # The REST web service call
     
 
-    #response = moodle_api.call('mod_assign_save_grades', **params[0])
+    response = moodle_api.call('mod_assign_save_grades', **params[0])
     #print(response.text)
     
-    #response = moodle_api.call('mod_assign_save_grades', assignmentid=6350, userid=13328, grade=50, attemptnumber=1, addattempt=False, workflowstate='released', plugindata=plugindata, advancedgradingdata=json.dumps({}))
+    response = moodle_api.call('mod_assign_save_grades', assignmentid=6350, userid=13328, grade=50, attemptnumber=1, addattempt=False, workflowstate='released', plugindata=plugindata, advancedgradingdata=json.dumps({}))
     #print(response.text)
-
+    'https://github.com/moodle/moodle/blob/1a33da66378c307e50b29f9a5f2a7d3888da8f09/mod/assign/externallib.php#L2097'
+    'https://github.com/moodle/moodle/blob/1a33da66378c307e50b29f9a5f2a7d3888da8f09/mod/assign/tests/externallib_test.php#L1349'
     
 '''
     parameters = {
