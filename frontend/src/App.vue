@@ -26,6 +26,7 @@ import Loader from "@/basic/Loading.vue";
 import {createTable} from "@/store/utils";
 import axios from 'axios';
 import getServerURL from "@/assets/serverUrl";
+import debounce from "lodash.debounce";
 
 /**
  * Main App Component
@@ -104,7 +105,7 @@ export default {
   watch: {
     $route(to, from) {
       if (to.fullPath !== from.fullPath) {
-        this.$socket.emit("stats", {action: "routeStep", data: {from: from.fullPath, to: to.fullPath}});
+        this.reportRouteChange(from, to);
       }
     },
     "$route.meta.requireAuth"(newValue, oldValue) {
@@ -118,6 +119,8 @@ export default {
   },
   async mounted() {
     document.addEventListener("visibilitychange", this.reportTabVisibilityChange);
+    document.addEventListener('mousemove', this.reportMouseMove);
+    document.addEventListener('click', this.reportClick);
     if (this.$route.meta.checkLogin) {
       // Check if user already authenticated, if so, we redirect him to the dashboard.
       const response = await axios.get(getServerURL() + '/auth/check',
@@ -129,8 +132,16 @@ export default {
   },
   beforeUnmount() {
     document.removeEventListener('visibilitychange', this.reportTabVisibilityChange);
+    document.removeEventListener('mousemove', this.reportMouseMove);
+    document.removeEventListener('click', this.reportClick);
   },
   methods: {
+    reportRouteChange(from, to) {
+      this.$socket.emit("stats", {
+        action: "routeStep",
+        data: {from: from.fullPath, to: to.fullPath, timestamp: Date.now()}
+      });
+    },
     connect() {
       if (this.$route.meta.requireAuth && !this.$socket.connected) {
         this.$socket.connect();
@@ -138,6 +149,43 @@ export default {
     },
     reportTabVisibilityChange() {
       this.$socket.emit("stats", {action: "tabVisibilityChange", data: {hidden: document.hidden}});
+    },
+    reportMouseMove: debounce(function (event) {
+      this.$socket.emit("stats", {
+        action: "mouseMove",
+        data: {
+          clientX: event.clientX,
+          clientY: event.clientY,
+          scrollX: window.pageXOffset,
+          scrollY: window.pageYOffset,
+          timestamp: Date.now()
+        }
+      });
+    }, 500),
+    reportClick(event) {
+      const target = event.target.closest('button, a, .clickable-element');
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        this.$socket.emit("stats", {
+          action: "click",
+          data: {
+            // TODO: subject to discussion which data to send during click event
+            elementType: target.tagName,
+            elementId: target.id,
+            elementClass: target.className,
+            clientX: event.clientX,
+            clientY: event.clientY,
+            globalX: event.clientX + window.pageXOffset,
+            globalY: event.clientY + window.pageYOffset,
+            elementX: rect.left + window.pageXOffset,
+            elementY: rect.top + window.pageYOffset,
+            elementWidth: rect.width,
+            elementHeight: rect.height,
+            path: this.$route.path,
+            timestamp: Date.now()
+          }
+        });
+      }
     },
   },
 }
