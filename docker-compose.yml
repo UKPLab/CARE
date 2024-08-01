@@ -36,3 +36,9 @@ services:
     ports:
       - ${PUBLISHED_PORT}:${CONTENT_SERVER_PORT}
     restart: unless-stopped
+  rpc_test:
+    build:
+      context: ./utils/rpcs/test
+      dockerfile: Dockerfile
+    command: python3 main.py
+    restart: unless-stopped
