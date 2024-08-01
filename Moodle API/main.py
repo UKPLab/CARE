@@ -2,6 +2,7 @@ import moodle_api
 import csv
 import json
 import requests
+import random
 
 # Webservice API Documentation:
 # https://docs.moodle.org/401/en/Using_web_services#Enable_capabilities
@@ -13,25 +14,26 @@ import requests
 # Don't share! This is a secret key for the Moodle API.
 moodle_api.URL = "https://moodle.informatik.tu-darmstadt.de"
 moodle_api.KEY = "REDACTED_SECRET"
-
-class User :
-    def __init__(self, id, fullname, role):
-        self.id = id
-        self.fullname = fullname
-        self.role = role
-
-    def __str__(self):
-        return f"User {self.id}: {self.fullname} ({self.role})"
     
 def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODLE_URL):
+    """
+    Creates a CSV file with users from a Moodle course, containing their ID, role and name.
+
+    Args:
+        course_id (int): The ID of the Moodle course.
+        filepath (str): The path to the CSV file to be created.
+        MOODLE_API_KEY (str): The API key for accessing the Moodle API.
+        MOODLE_URL (str): The URL of the Moodle site.
+
+    Returns:
+        None
+    """
     # Set the URL and the key for the Moodle API
     moodle_api.URL = MOODLE_URL
     moodle_api.KEY = MOODLE_API_KEY
     
     # Get users from the course
     course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
-    
-    #print(course_users)
     
     # Create a list of User objects
     users = []
@@ -49,135 +51,169 @@ def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODL
         for user in users:
             person_data = {attr: getattr(user, attr) for attr in header}
             writer.writerow(person_data)
+           
+def create_csv_with_users_from_assignment(course_id, assignment_name, filepath, MOODLE_API_KEY, MOODLE_URL):
+    """
+    Create a CSV file with users enrolled in a specific assignment.
+
+    Args:
+        course_id (int): The ID of the course.
+        assignment_name (str): The name of the assignment.
+        filepath (str): The path to the CSV file to be created.
+        MOODLE_API_KEY (str): The API key for accessing the Moodle API.
+        MOODLE_URL (str): The URL of the Moodle site.
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
+    moodle_api.URL = MOODLE_URL
+    moodle_api.KEY = MOODLE_API_KEY
+    
+    assign_ids_with_names = get_assignment_ids_from_course(course_id)
+    assignment_id = -1
+    
+    for assignment in assign_ids_with_names:
+        if assignment[1] == assignment_name:
+            assignment_id = assignment[0]
+            break
+        
+    if assignment_id == -1:
+        print("Assignment not found. The assignment name is case sensitive.")
+        return
+    
+    course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
+    
+    # Create a list of User objects
+    users = []
+    id_mappings = get_id_mappings(assignment_id)
+    
+    for user in course_users:
+        for id in id_mappings:
+            if id['userid'] == user['id']:
+                users.append(User(user['id'], user['fullname'], user['roles'][0]['name']))
+                continue
+    header = ['id', 'fullname', 'role']
+
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=header)
+
+        writer.writeheader()
+
+        for user in users:
+            person_data = {attr: getattr(user, attr) for attr in header}
+            writer.writerow(person_data)
+    
+def upload_passwords_to_moodle(assignment_id, csv_filepath, MOODLE_API_KEY, MOODLE_URL):
+    """
+    Uploads passwords as feedback to Moodle for a given assignment.
+
+    Args:
+        assignment_id (int): The ID of the assignment in Moodle.
+        csv_filepath (str): The filepath of the CSV file containing the passwords and the user IDs.
+        MOODLE_API_KEY (str): The API key for accessing the Moodle API.
+        MOODLE_URL (str): The URL of the Moodle instance.
+
+    Returns:
+        None
+    """
+    moodle_api.URL = MOODLE_URL
+    moodle_api.KEY = MOODLE_API_KEY
+    
+    with open(csv_filepath, mode='r') as file:
+        csv_reader = csv.DictReader(file)
+        for row in csv_reader:
+            parameters = {}
+            parameters['assignmentid'] = assignment_id
+            parameters['userid'] = row['id']
+            parameters['grade'] = 100
+            parameters['attemptnumber'] = 1
+            parameters['addattempt'] = 1
+            parameters['workflowstate'] = 'Graded'
+            parameters['applytoall'] = 0
+            parameters['plugindata[assignfeedbackcomments_editor][text]'] = 'CARE Password: ' + str(row['key'])
+            parameters['plugindata[assignfeedbackcomments_editor][format]'] = 0
+            parameters['plugindata[files_filemanager]'] = 0
+            moodle_api.call('mod_assign_save_grade', **parameters)
             
+        
+def get_assignment_ids_from_course(course_id):
+    """
+    Retrieves the assignment IDs and names from a given course.
+
+    Args:
+        course_id (int): The ID of the course.
+
+    Returns:
+        list: A list of tuples containing assignment IDs and names.
+    """
+    course_assignments = moodle_api.call('mod_assign_get_assignments', courseids=[course_id])
+    
+    assign_ids_with_names = []
+    
+    for assignment in course_assignments['courses'][0]['assignments']:
+        assign_ids_with_names.append((assignment['id'], assignment['name']))
+        
+    return assign_ids_with_names
+
+def get_id_mappings(assignment_id):
+    """
+    Retrieve the ID mappings for a given assignment.
+
+    Parameters:
+    - assignment_id (int): The ID of the assignment.
+
+    Returns:
+    - list: A list of tuples containing the general user ID and the assignment user ID.
+    """
+    return moodle_api.call('mod_assign_get_user_mappings', assignmentids=[assignment_id])['assignments'][0]['mappings']
+
+import csv
+import random
+
+def insert_random_keys(csv_path):
+    """
+    Inserts random keys into a CSV file.
+
+    Args:
+        csv_path (str): The path to the CSV file.
+
+    Returns:
+        None
+    """
+    key_column = 'key'
+    keys = []
+    
+    with open(csv_path, mode='r') as file:
+        csv_reader = csv.DictReader(file)
+        rows = [row for row in csv_reader]
+        
+    keys = [random.randint(1000, 9999) for _ in rows]
+    
+    key_column = 'key'
+    
+    if rows:
+        fieldnames = csv_reader.fieldnames + [key_column]
+
+        for row, key in zip(rows, keys):
+            row[key_column] = key
+
+        with open(csv_path, mode='w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        
 
 if __name__ == '__main__':
-    #print(moodle_api.CourseList())
-    """
-    Get a list of :class:`MoodleSubmission` objects for this assignment.
-    """
-    course5 = moodle_api.call('mod_assign_get_assignments', courseids=[1615])
-    #print(course5)
-
-    course5 = moodle_api.call('mod_assign_get_submissions', assignmentids=[6082])
-    #print(course5)
+    create_csv_with_users_from_assignment(1615, 'TANs', 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    insert_random_keys('users.csv')
+    upload_passwords_to_moodle(6350, 'users.csv','REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
     
     
-
-    #course5 = moodle_api.call('core_files_get_files', filepath="https://moodle.informatik.tu-darmstadt.de/webservice/pluginfile.php/277223/assignsubmission_file/submission_files/1046711/UKP.png")
-    #print(course5)
-    
-    create_csv_with_users_from_course(1615, 'users.csv', moodle_api.KEY, moodle_api.URL)
-    
-    #Match user ids with assignment ids
-    course5 = moodle_api.call('mod_assign_get_user_mappings', assignmentids=[6350])
-    #print(course5)
-    
-    #course5 = moodle_api.call('mod_assign_get_grades', assignmentids=[6350])
-    #print(course5)
-    
-    test = moodle_api.call('core_grade_update_grades', source='test', courseid=1615, component='mod_assign', activityid=6350, itemnumber=0, grades=[], itemdetails=[])
-    'https://gitlab.pavlovia.org/Alex22671/asd.git'
     
     
-    userFeedback = {
-        'assignmentid': 6350,
-        'applytoall': False,
-        'grades':
-        [{'userid': 14555, 'grade': 50, 'attemptnumber': 1, 'addattempt': False, 'workflowstate': 1, 'plugindata': {}, 'advancedgradingdata': {}}]}
-    
-    feedbackpluginparams = {
-    'files_filemanager': 0,
-    'assignfeedbackcomments_editor': {
-        'text': '',
-        'format': 1
-    }
-}
-    grades = []
-    
-    student1 = {'userid': 12237, 'grade': 50, 'attemptnumber': 0, 'addattempt': False, 'workflowstate': 'released', 'plugindata': feedbackpluginparams}
-    
-    grades.append(student1)
-    
-    
-    params = {'assignmentid': 6350, 'applytoall': False, 'grades': grades}
-    
-    #test = moodle_api.call('mod_assign_save_grades', **params)
-    
-    test = moodle_api.call('mod_assign_save_grade', assignmentid=6350, userid=12237, grade=50, attemptnumber=-1, addattempt=False, applytoall = False, workflowstate='released')
-    
-    import requests
-
-    token = 'REDACTED_SECRET'  # the teacher's security key
-    domainname = 'https://moodle.informatik.tu-darmstadt.de'  # the Moodle server
-    functionname = 'mod_assign_save_grades'  # the web service function we are testing
-
-    grades = []
-    plugindata = {
-        'assignfeedbackcomments_editor': {'text': '', 'format': 1},
-        'files_filemanager': 0
-    }
-    grades.append({
-        'userid': 12237,
-        'grade': 50,
-        'attemptnumber': -1,
-        'addattempt': True,
-        'workflowstate': 'released',
-        'plugindata': plugindata
-    })
-    grades.append({
-        'userid': 13328,
-        'grade': 75,
-        'attemptnumber': -1,
-        'addattempt': True,
-        'workflowstate': 'released',
-        'plugindata': plugindata
-    })
-
-    params = [{
-        'assignmentid': 6350,
-        'applytoall': False,
-        'grades': grades
-    }]
-
-    # The REST web service call
-    
-
-    response = moodle_api.call('mod_assign_save_grades', **params[0])
-    #print(response.text)
-    
-    response = moodle_api.call('mod_assign_save_grades', assignmentid=6350, userid=13328, grade=50, attemptnumber=1, addattempt=False, workflowstate='released', plugindata=plugindata, advancedgradingdata=json.dumps({}))
-    #print(response.text)
-    'https://github.com/moodle/moodle/blob/1a33da66378c307e50b29f9a5f2a7d3888da8f09/mod/assign/externallib.php#L2097'
-    'https://github.com/moodle/moodle/blob/1a33da66378c307e50b29f9a5f2a7d3888da8f09/mod/assign/tests/externallib_test.php#L1349'
-    
-'''
-    parameters = {
-    'wstoken': moodle_api.KEY,
-    'moodlewsrestformat': 'json',
-    'wsfunction': 'mod_assign_save_grades',
-    'assignmentid': 6350,
-    'applytoall': False,
-    'grades[0][userid]': 1187303,
-    'grades[0][grade]': 50.0,  # Ensure the grade is a float
-    'grades[0][attemptnumber]': 1,
-    'grades[0][addattempt]': False,
-    'grades[0][workflowstate]': 'graded',  # Ensure the state is a string
-    'grades[0][plugindata]': json.dumps({}),  # Default empty structure
-    'grades[0][advancedgradingdata]': json.dumps({})  # Default empty structure
-}
-    response = requests.post(moodle_api.URL, data=parameters)
-    
-    response_data = response.json()
-    
-    # Check if the response contains any error messages
-    if 'exception' in response_data:
-        print("API Error:", response_data['message'])
-    else:
-        # Assuming the absence of 'exception' means success
-        print("Success:", response_data)
-        
-'''
 
 
 
