@@ -101,7 +101,7 @@ Frontend Components
 - **frontend/src/components/Document.vue**
 
   The `Document.vue` component handles the display of documents based on their type. If the document is of type HTML, it loads the `Editor` component. 
-  Otherwise, it loads the `Annotater` component.
+  Otherwise, it loads the `Annotator` component.
 
 - **frontend/src/components/dashboard/Documents.vue**
 

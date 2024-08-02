@@ -6,7 +6,7 @@
   />
   <span v-else>
     <Editor v-if="document.type === 1" ref="editor"/>
-    <Annotater v-else ref="annotator"/>
+    <Annotator v-else ref="annotator"/>
   </span>
 </template>
 
@@ -21,14 +21,14 @@
  * @author: Dennis Zyska, Nils Dycke
  */
 
-import Annotater from "./annotater/Annotater.vue";
+import Annotator from "./annotator/Annotator.vue";
 import Loader from "@/basic/Loading.vue";
 import {computed} from "vue";
 import Editor from "@/components/editor/Editor.vue"
 
 export default {
   name: "DocumentRoute",
-  components: {Annotater, Loader, Editor},
+  components: {Annotator, Loader, Editor},
   provide() {
     return {
       documentId: computed(() => this.documentId),

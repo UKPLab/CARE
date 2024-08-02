@@ -4,7 +4,7 @@
     :loading="true"
   />
   <span v-else>
-    <Annotater/>
+    <Annotator/>
     <ReviewModal ref="reviewModal" />
     <ReportModal ref="reportModal" />
     <Teleport to="#topbarCustomPlaceholder">
@@ -24,7 +24,7 @@
 
 <script>
 import Loader from "@/basic/Loading.vue"
-import Annotater from "@/components/annotater/Annotater.vue";
+import Annotator from "@/components/annotator/Annotator.vue";
 import ReviewModal from "@/components/study/ReviewModal.vue";
 import ReportModal from "@/components/study/ReportModal.vue";
 import {computed} from "vue";
@@ -39,7 +39,7 @@ import {computed} from "vue";
  */
 export default {
   name: "ReviewRoute",
-  components: {ReviewModal, Loader, Annotater, ReportModal},
+  components: {ReviewModal, Loader, Annotator, ReportModal},
   provide() {
     return {
       documentId: computed(() => this.documentId),
