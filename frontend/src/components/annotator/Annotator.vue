@@ -150,7 +150,7 @@ import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 
 export default {
-  name: "AnnotaterView",
+  name: "AnnotatorView",
   components: {
     LoadIcon,
     PDFViewer,
