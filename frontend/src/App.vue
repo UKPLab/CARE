@@ -31,12 +31,14 @@
     <router-view />
   </div>
   <Toast />
+  <ConsentModal ref="consentModal"/>
 </template>
 
 <script>
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
 import Loader from "@/basic/Loading.vue";
+import ConsentModal from "@/auth/ConsentModal.vue";
 import { createTable } from "@/store/utils";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
@@ -48,7 +50,7 @@ import getServerURL from "@/assets/serverUrl";
  */
 export default {
   name: "App",
-  components: { TopBar, Toast, Loader },
+  components: { TopBar, Toast, Loader, ConsentModal },
   data() {
     return {
       loaded: {
@@ -146,6 +148,7 @@ export default {
     this.connect();
   },
   async mounted() {
+    this.$refs.consentModal.open();
     if (this.$route.meta.checkLogin) {
       // Check if user already authenticated, if so, we redirect him to the dashboard.
       const response = await axios.get(getServerURL() + "/auth/check", {
