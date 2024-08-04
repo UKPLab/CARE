@@ -257,20 +257,17 @@ module.exports = class Server {
      */
     #discoverComponents(classPath, classObj, addFunc, extension = ".js"){
         this.logger.debug("Discover components in " + classPath);
-        fs.readdir(path.resolve(__dirname, classPath), (err, files) => {
-            if (err) {
-                this.logger.error("Error while reading directory: " + err);
-                return;
-            }
-            files.forEach(file => {
-                if (file.endsWith(extension)) {
-                    const newComponent = require(path.resolve(__dirname, classPath) + "/" + file);
-                    if (newComponent.prototype instanceof classObj) {
-                        addFunc(newComponent);
-                    }
+        const files = fs.readdirSync(path.resolve(__dirname, classPath));
+
+        files.map(file => {
+            if (file.endsWith(extension)) {
+                const newComponent = require(path.resolve(__dirname, classPath) + "/" + file);
+                if (newComponent.prototype instanceof classObj) {
+                    addFunc(newComponent);
                 }
-            });
+            }
         });
+
     }
 
     /**
@@ -280,7 +277,6 @@ module.exports = class Server {
      * @param socketClass - class of the socket
      */
     addSocket(socketClass) {
-        console.log("test" + socketClass)
         this.logger.debug("Add socket " + socketClass.name + " to webserver...");
         this.sockets[socketClass.name] = socketClass;
     }
@@ -329,7 +325,9 @@ module.exports = class Server {
             service.close();
         });
         this.io.close();
-        this.http.close();
+        if (this.http) {
+            this.http.close();
+        }
     }
 
 }

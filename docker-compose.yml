@@ -40,5 +40,5 @@ services:
     build:
       context: ./utils/rpcs/test
       dockerfile: Dockerfile
-    command: python3 main.py
+    command: gunicorn --workers 1 --threads 100 --bind 0.0.0.0:8080 'main:create_app()' --access-logfile '-' --error-logfile '-'
     restart: unless-stopped

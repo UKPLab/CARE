@@ -53,13 +53,17 @@ doc_clean:
 test: backend/node_modules/.uptodate
 	cd backend && npm run test
 
+.PHONY: test-rpc
+test-rpc: backend/node_modules/.uptodate
+	cd backend && npm run test_rpc
+
 .PHONY: lint
 lint: frontend/node_modules/.uptodate
 	cd frontend && npm run frontend-lint
 
 .PHONY: docker
 docker:
-	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres
+	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres rpc_test
 
 .PHONY: init
 init: backend/node_modules/.uptodate
