@@ -146,7 +146,7 @@ export default {
       };
       this.$refs.modal.waiting = true;
       this.$socket.emit(
-        "updateUserDetails",
+        "userUpdateDetails",
         { userId, userData },
         (response) => {
           if (response.success) {
@@ -169,7 +169,7 @@ export default {
       );
     },
     getUserDetails(userId) {
-      this.$socket.emit("requestUserDetails", userId);
+      this.$socket.emit("userGetDetails", userId);
     },
     resetForm() {
       this.eventBus.emit("resetFormField");

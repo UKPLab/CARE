@@ -85,7 +85,7 @@ export default {
       this.getUserRights(userId);
     },
     getUserRights(userId) {
-      this.$socket.emit("requestUserRight", userId);
+      this.$socket.emit("userGetRight", userId);
     },
   },
 };

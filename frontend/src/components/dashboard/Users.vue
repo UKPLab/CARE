@@ -80,7 +80,7 @@ export default {
   },
   methods: {
     fetchUsers() {
-      this.$socket.emit("requestUsersByRole", this.role);
+      this.$socket.emit("userGetByRole", this.role);
     },
     formatUserData(user) {
       user.manage = [
@@ -119,8 +119,7 @@ export default {
         },
       ];
 
-      const formatDate = (date) =>
-        date ? new Date(date).toLocaleDateString() : "-";
+      const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
 
       return {
         ...user,

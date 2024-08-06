@@ -72,7 +72,7 @@ export default {
       } = this.$refs.form;
       const userId = this.userId;
       if (!password) return;
-      this.$socket.emit("resetUserPwd", { userId, password }, (response) => {
+      this.$socket.emit("userResetPwd", { userId, password }, (response) => {
         if (response.success) {
           this.$refs.modal.close();
           this.eventBus.emit("toast", {

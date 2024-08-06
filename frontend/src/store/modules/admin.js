@@ -100,34 +100,34 @@ export default {
     },
 
     /**
-     * On "respondUsersByRole", update the user list
+     * On "userByRole", update the user list
      *
      * @param state
      * @param message
      */
-    SOCKET_respondUsersByRole: (state, message) => {
+    SOCKET_userByRole: (state, message) => {
       if (message.success) {
         state.userRecords = message.users;
       }
     },
 
     /**
-     * On "respondUserDetails", update the specific user' details
+     * On "userDetails", update the specific user' details
      * @param {*} state
      * @param {*} message
      */
-    SOCKET_respondUserDetails: (state, message) => {
+    SOCKET_userDetails: (state, message) => {
       if (message.success) {
         state.user = message.user;
       }
     },
 
     /**
-     * On "respondUserRight", update the specific userRight object
+     * On "UserRight", update the specific userRight object
      * @param {*} state
      * @param {*} message
      */
-    SOCKET_respondUserRight: (state, message) => {
+    SOCKET_userRight: (state, message) => {
       if (message.success) {
         state.userRight = message.userRight;
       }

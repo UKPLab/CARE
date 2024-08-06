@@ -330,16 +330,16 @@ module.exports = class UserSocket extends Socket {
     });
 
     // Get users by their role
-    this.socket.on("requestUsersByRole", async (role) => {
+    this.socket.on("userGetByRole", async (role) => {
       try {
         const users = await this.getUsers(role);
-        this.socket.emit("respondUsersByRole", {
+        this.socket.emit("userByRole", {
           success: true,
           users,
         });
       } catch (error) {
         const errorMsg = "User rights and request parameter mismatch";
-        this.socket.emit("respondUsersByRole", {
+        this.socket.emit("userByRole", {
           success: false,
           message: errorMsg,
         });
@@ -382,7 +382,7 @@ module.exports = class UserSocket extends Socket {
     });
 
     // Update user's following data: firstName, lastName, email, roles
-    this.socket.on("updateUserDetails", async (data, callback) => {
+    this.socket.on("userUpdateDetails", async (data, callback) => {
       const { userId, userData } = data;
       try {
         await this.updateUserDetails(userId, userData);
@@ -400,7 +400,7 @@ module.exports = class UserSocket extends Socket {
     });
 
     // Reset user's password
-    this.socket.on("resetUserPwd", async (data, callback) => {
+    this.socket.on("userResetPwd", async (data, callback) => {
       const { userId, password } = data;
       try {
         await this.resetUserPwd(userId, password);
