@@ -4,7 +4,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     // Fetch all users using raw SQL query
     const users = await queryInterface.sequelize.query(
-      'SELECT * FROM "user" WHERE sysrole == "admin"',
+      'SELECT * FROM "user" WHERE sysrole = \'admin\'',
       {
         type: queryInterface.sequelize.QueryTypes.SELECT,
       }
