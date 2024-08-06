@@ -35,6 +35,8 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.bulkDelete("user_right", null, {});
+    await queryInterface.bulkDelete("user_right", {
+      name: userRights.map(r => r.name)
+    }, {});
   },
 };
