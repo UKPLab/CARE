@@ -19,14 +19,14 @@ author = 'Dennis Zyska, Nils Dycke'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.rpcs.autodoc',  # Core library for html generation from docstrings.
-    'sphinx.rpcs.napoleon',  # Support for NumPy and Google style docstrings.
-    'sphinx.rpcs.autosummary',  # Create neat summary tables for modules/classes/methods etc.
-    'sphinx.rpcs.intersphinx',  # Link to other projects' documentation.
-    'sphinx.rpcs.viewcode',  # Add a link to the Python source code of documented object.
-    'sphinx.rpcs.todo',  # Support for todo items.
-    'sphinx.rpcs.extlinks', # Support for external links.
-    'sphinx.rpcs.autosectionlabel', # Support for autolabeling sections.
+    'sphinx.ext.autodoc',  # Core library for html generation from docstrings.
+    'sphinx.ext.napoleon',  # Support for NumPy and Google style docstrings.
+    'sphinx.ext.autosummary',  # Create neat summary tables for modules/classes/methods etc.
+    'sphinx.ext.intersphinx',  # Link to other projects' documentation.
+    'sphinx.ext.viewcode',  # Add a link to the Python source code of documented object.
+    'sphinx.ext.todo',  # Support for to do items.
+    'sphinx.ext.extlinks', # Support for external links.
+    'sphinx.ext.autosectionlabel', # Support for autolabeling sections.
 ]
 autosummary_generate = True  # Turn on sphinx.rpcs.autosummary
 
