@@ -3,7 +3,7 @@ const Socket = require("../Socket.js");
 /**
  * Handle user through websocket
  *
- * @author Nils Dycke, Dennis Zyska
+ * @author Nils Dycke, Dennis Zyska, Linyin Huang
  * @type {UserSocket}
  */
 module.exports = class UserSocket extends Socket {
@@ -63,6 +63,31 @@ module.exports = class UserSocket extends Socket {
     }
   }
 
+  /**
+   * Update user's consent data
+   * @param {Object} consentData - The consent data object
+   * @param {boolean} consentData.termsConsented - Indicates whether the user has consented to the terms of service
+   * @param {boolean} consentData.trackingAgreed - Indicates whether the user has agreed to tracking
+   * @param {boolean} consentData.dataShared - Indicates whether the user has agreed to donate their annotation data
+   * @param {string} consentData.consentedAt -
+   * @returns {void}
+   */
+  async updateUserConsent(consentData) {
+    const User = this.models["user"];
+    try {
+      const [updatedRowsCount] = await User.update(consentData, {
+        where: { id: this.userId },
+        returning: true,
+      });
+      if (updatedRowsCount === 0) {
+        this.logger.error("Failed to update user: User not found");
+        return;
+      }
+    } catch (error) {
+      this.logger.error("Failed to update user: " + error);
+    }
+  }
+
   init() {
     this.socket.on("userGetData", async (data) => {
       try {
@@ -70,6 +95,22 @@ module.exports = class UserSocket extends Socket {
       } catch (e) {
         this.socket.emit("userData", { success: false, message: "Failed to retrieve all users" });
         this.logger.error("DB error while loading all users from database" + JSON.stringify(e));
+      }
+    });
+
+    this.socket.on("userUpdateConsent", async (consentData, callback) => {
+      try {
+        await this.updateUserConsent(consentData);
+        callback({
+          success: true,
+          message: "Successfully updated user consent!",
+        });
+      } catch (error) {
+        callback({
+          success: false,
+          message: "Failed to updated user consent!",
+        });
+        this.logger.error(error);
       }
     });
   }
