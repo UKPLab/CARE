@@ -80,7 +80,7 @@ module.exports = class UserSocket extends Socket {
       const rightToFetch = `backend.socket.user.getUsers.${role}`;
       if (!(await this.hasAccess(rightToFetch))) {
         this.logger.error(
-          "This user is not an admin and does not have the right to load users by their role."
+          "This user does not have the right to load users by their role."
         );
         return;
       }
@@ -338,7 +338,7 @@ module.exports = class UserSocket extends Socket {
           users,
         });
       } catch (error) {
-        const errorMsg = "User Authority and request parameter mismatch";
+        const errorMsg = "User rights and request parameter mismatch";
         this.socket.emit("respondUsersByRole", {
           success: false,
           message: errorMsg,
@@ -348,15 +348,15 @@ module.exports = class UserSocket extends Socket {
     });
 
     // Get specific user's details
-    this.socket.on("requestUserDetails", async (userId) => {
+    this.socket.on("userGetDetails", async (userId) => {
       try {
         const user = await this.getUserDetails(userId);
-        this.socket.emit("respondUserDetails", {
+        this.socket.emit("userDetails", {
           success: true,
           user,
         });
       } catch (error) {
-        this.socket.emit("respondUserDetails", {
+        this.socket.emit("userDetails", {
           success: false,
           message: "Fail to load user details",
         });
@@ -365,15 +365,15 @@ module.exports = class UserSocket extends Socket {
     });
 
     // Get right associated with the user
-    this.socket.on("requestUserRight", async (userId) => {
+    this.socket.on("userGetRight", async (userId) => {
       try {
         const userRight = await this.getUserRight(userId);
-        this.socket.emit("respondUserRight", {
+        this.socket.emit("userRight", {
           success: true,
           userRight,
         });
       } catch (error) {
-        this.socket.emit("respondUserRight", {
+        this.socket.emit("userRight", {
           success: false,
           message: "Failed to get user right",
         });

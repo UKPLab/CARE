@@ -26,8 +26,11 @@ module.exports = class AppSocket extends Socket {
       );
       userSettings.forEach((s) => (returnSettings[s.key] = s.value));
 
-      if (sendToAll) this.io.emit("appSettings", returnSettings);
-      else this.socket.emit("appSettings", returnSettings);
+      if (sendToAll) {
+        this.io.emit("appSettings", returnSettings);
+      } else {
+        this.socket.emit("appSettings", returnSettings);
+      }
     } catch (err) {
       this.logger.error(err);
     }
