@@ -1,7 +1,7 @@
 <template>
   <Modal
     lg
-    ref="terms"
+    ref="modal"
     name="terms"
     disable-keyboard
     remove-close
@@ -56,13 +56,14 @@
         <button
           type="button"
           class="btn btn-secondary"
+          @click="handleDecline"
         >
           Decline
         </button>
         <button
           type="button"
           class="btn btn-primary"
-          @click="acceptConsent"
+          @click="handleAccept"
         >
           Accept & Continue
         </button>
@@ -75,11 +76,13 @@
 /**
  * Show terms and consent options in a modal
  * The ToS must be agreed to by the user before they can proceed to use our platform.
- * The other two optionals (behavior tracking and data donation) are optional 
+ * The other two options (behavior tracking and data donation) are optional
  * and can be removed from this modal by toggling the switches in the settings.
  * @author: Linyin Huang
  */
 import Modal from "@/basic/Modal.vue";
+import axios from "axios";
+import getServerURL from "@/assets/serverUrl";
 
 export default {
   name: "ConsentModal",
@@ -99,9 +102,14 @@ export default {
   },
   methods: {
     open() {
-      this.$refs.terms.openModal();
+      // FIXME: Modal always opens on the login page
+      this.$refs.terms.open();
     },
-    acceptConsent() {
+    async handleDecline() {
+      await axios.get(getServerURL() + "/auth/logout", { withCredentials: true });
+      await this.$router.push("/login");
+    },
+    handleAccept() {
       if (!this.termsConsented) {
         this.showTermsError = true;
         return;
@@ -110,9 +118,25 @@ export default {
         termsConsented: this.termsConsented,
         trackingAgreed: this.trackingAgreed,
         dataShared: this.dataShared,
-        consentedAt: new Date().toISOString(),
+        consentedAt: new Date(),
       };
-      this.resetForm();
+      this.$socket.emit("userUpdateConsent", consentData, (res) => {
+        if (res.success) {
+          this.resetForm();
+          this.$refs.modal.close();
+          this.eventBus.emit("toast", {
+            title: "User updated",
+            message: res.message,
+            variant: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to update user",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
     resetForm() {
       this.termsConsented = false;

@@ -21,6 +21,7 @@
         </div>
       </div>
     </div>
+    <ConsentModal ref="consentModal" />
   </div>
 </template>
 
@@ -31,17 +32,18 @@
  * This view shows the dashboard after login and loads the navigation components
  * including the sidebar
  *
- * @author: Dennis Zyska, Nils Dycke
+ * @author: Dennis Zyska, Nils Dycke, Linyin Huang
  */
 import Sidebar from "./dashboard/navigation/Sidebar.vue";
 import { defineAsyncComponent } from "vue";
 import Loading from "@/basic/Loading.vue";
 import NotFoundPage from "@/auth/NotFound.vue";
+import ConsentModal from "@/auth/ConsentModal.vue";
 
 export default {
   name: "DashboardRoute",
   fetchData: ["nav_element"],
-  components: { Loading, Sidebar },
+  components: { Loading, Sidebar, ConsentModal },
   props: {
     catchAll: {
       type: String,
@@ -79,6 +81,14 @@ export default {
         return Loading;
       }
     },
+    isTermsConsented() {
+      return this.$store.getters["auth/getUser"].termsConsented;
+    },
+  },
+  mounted() {
+    if (!this.isTermsConsented) {
+      this.$refs.consentModal.open();
+    }
   },
 };
 </script>
