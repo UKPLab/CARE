@@ -25,6 +25,8 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.bulkDelete("role_right_matching", null, {});
+    await queryInterface.bulkDelete("role_right_matching", {
+      userRoleName: roleRights.map(r => r.userRoleName)
+    }, {});
   },
 };
