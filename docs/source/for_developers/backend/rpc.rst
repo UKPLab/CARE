@@ -15,6 +15,10 @@ Here you can find a simple python script that provides a scalable `python-socket
 
 The example consists of the following components:
 
+- Docker Container
+- Backend Service
+- Environment
+
 Docker Container
 ~~~~~~~~~~~~~~~~
 
@@ -32,7 +36,7 @@ The ``requirements.txt`` file contains the necessary packages that are installed
 The ``main.py`` file contains the websocket interface and the code that is executed when the RPC is called.
 
 For a new RPC service, you can copy the ``utils/rpcs/test/`` folder and adjust the files to your needs.
-If you want to extend the RPC service with more complex features, you can just add a `listening socket <https://python-socketio.readthedocs.io/en/latest/server.html#listening-to-events>`_ to the ``main.py`` file.
+If you want to extend the RPC service with more complex features, you can just add a `listening socket <https://python-socketio.readthedocs.io/en/latest/server.html#listening-to-events>`_ to the ``main.py`` file like:
 
 .. code-block:: python
 
@@ -97,6 +101,7 @@ With the environment variables, we make sure that the RPC service could run easi
 Therefore, you have to add the environment variables to all ``*.env`` files in the root folder.
 
 **.env**
+
 .. code-block:: bash
 
     # RPCs
@@ -111,6 +116,7 @@ Furthermore, we want to make sure that the RPC service is started with the CARE 
 Here we need to add the environment variables to the ``docker-compose.yml`` and ``docker-dev.yml`` file in the root folder.
 
 **docker-compose.yml**
+
 .. code-block:: yaml
 
     rpc_test:
@@ -121,6 +127,7 @@ Here we need to add the environment variables to the ``docker-compose.yml`` and 
       restart: unless-stopped
 
 **docker-dev.yml**
+
 .. code-block:: yaml
 
     rpc_test:
@@ -184,4 +191,4 @@ Here you can add simple tests to check if the RPC service is working as expected
 Now you can run the unit tests with ``make test-rpc``.
 
 .. warning::
-    When running the unit tests locally, make sure your RPC service is running (e.g., ``make docker`` or ``docker compose -f docker-compose.yml -f docker-dev.yml down <rpc_service_docker_name>``).
+    When running the unit tests locally, make sure your RPC service is running (e.g., ``make docker`` or ``docker compose -f docker-compose.yml -f docker-dev.yml up <rpc_service_docker_name>``).
