@@ -1,6 +1,7 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
+const database = require("../../db/index.js");
 
 const {dbToDelta} = require("editor-delta-conversion");
 
@@ -272,7 +273,6 @@ module.exports = class DocumentSocket extends Socket {
             );
     
             this.logger.info("Deltas file updated successfully.");
-            this.socket.emit("documentFilePath", { document: doc, deltaFilePath: deltaFilePath });
     
         } catch (err) {
             this.logger.error("Failed to read/write delta file:", err);
@@ -362,6 +362,8 @@ module.exports = class DocumentSocket extends Socket {
      * @param {object} data {documentId: number, "ops" array consisting of [offset: number, operationType: number, span: number, text: string, attributes: Object]}
      */
     async editDocument(data) {
+
+        const transaction = await database.sequelize.transaction();
         try {
             const { userId, documentId, ops } = data;
             let appliedEdits = [];
@@ -375,17 +377,21 @@ module.exports = class DocumentSocket extends Socket {
                     ...op
                 };
 
-                const savedEdit = await this.models['document_edit'].add(entryData);
+                const savedEdit = await this.models['document_edit'].add(entryData, transaction);
 
                 appliedEdits.push({
                     ...savedEdit,
                     applied: true
-                });
-            }, Promise.resolve());
+                },
+                {transaction});
+            }, Promise.resolve(), transaction);
+
+            await transaction.commit();
 
             this.emit("document_editRefresh", appliedEdits);
 
         } catch (error) {
+            await transaction.rollback();
             this.logger.error("Error editing document: " + error.message);
             this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
             this.socket.emit("documentEditError", {
@@ -543,7 +549,7 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("saveDocument", async (data) => {
+        this.socket.on("documentSave", async (data) => {
             try {
                 await this.saveDocument(data.documentId);
             } catch (err) {

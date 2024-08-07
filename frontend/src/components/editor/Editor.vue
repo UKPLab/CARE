@@ -121,7 +121,7 @@ export default {
       }
     },
   unmounted() {
-    this.$socket.emit("saveDocument", { documentId: this.documentId });
+    this.$socket.emit("documentSave", { documentId: this.documentId });
   },
   computed: {
     unappliedEdits() {
