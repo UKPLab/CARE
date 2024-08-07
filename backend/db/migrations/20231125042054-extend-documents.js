@@ -9,7 +9,7 @@ module.exports = {
       {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 0, // Default is 0 for pdf
+        defaultValue: 0, // Default is 0 for pdf, 1 for html
       }
     )
   },
