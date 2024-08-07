@@ -27,7 +27,9 @@ module.exports = class Socket {
     this.models = this.server.db.models;
     this.user = this.socket.request.session.passport.user;
     this.userId = this.user.id;
-    // The roles the user currently has
+    // Local cache of the user's current roles.
+    // Note: This cache does not automatically update.
+    // A reconnection or explicit refresh is required to update roles after any changes.
     this.userRoles = [];
     this.isUserAdmin = null;
     this.logger.defaultMeta = { userId: this.userId };
@@ -102,8 +104,14 @@ module.exports = class Socket {
   }
 
   /**
-   * Get the roles the user currently has
-   * @returns {string[]}
+   * Gets and caches user roles.
+   *
+   * Note: This method has side effects as it fills the `this.userRoles` cache
+   * to avoid frequent database queries.
+   * This can be problematic if user roles change during the login session,
+   * as the changes won't be automatically reflected in the cache.
+   *
+   * @returns {string[]} An array of user role names.
    */
   async getUserRoles() {
     try {
@@ -122,8 +130,14 @@ module.exports = class Socket {
   }
 
   /**
-   * Check if the user is an admin
-   * @returns {boolean}
+   * Checks and caches whether the user is an admin.
+   *
+   * Note: This method has side effects as it caches the admin status in `this.isUserAdmin`
+   * and calls `this.getUserRoles()`, which has its own caching behavior.
+   * This can be problematic if the user's admin status changes
+   * during their session, as the cached value won't automatically update.
+   *
+   * @returns {boolean} True if the user is an admin.
    */
   async isAdmin() {
     try {

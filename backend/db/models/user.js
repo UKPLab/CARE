@@ -169,7 +169,9 @@ module.exports = (sequelize, DataTypes) => {
           where: { userId },
           raw: true,
         });
-        if (roles.length === 0) return {};
+        if (roles.length === 0) {
+          return {};
+        }
         roles = roles.map((role) => role.userRoleName);
         let userRight = {};
         for (const role of roles) {
