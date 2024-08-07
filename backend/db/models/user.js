@@ -1,6 +1,7 @@
 "use strict";
 const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
+const { genSalt, genPwdHash } = require("../../utils/auth.js");
 
 module.exports = (sequelize, DataTypes) => {
   class User extends MetaModel {
@@ -108,6 +109,207 @@ module.exports = (sequelize, DataTypes) => {
         return updatedObject !== null && updatedObject !== undefined;
       } catch (e) {
         console.log(e);
+      }
+    }
+
+    /**
+     * Get all users
+     * @returns {string[]} An array of all users.
+     */
+    static async getAllUsers() {
+      try {
+        return await User.findAll({
+          attributes: {
+            exclude: ["passwordHash", "salt"],
+          },
+          raw: true,
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    /**
+     * Get users by their role
+     * @param {string} role - The role of the users to fetch.
+     * @param {Object} models - Sequelize models
+     * @returns {string[]} An array of users with the specified role.
+     */
+    async getSpecificUsers(role, models) {
+      try {
+        const matchedUsers = await models["user_role_matching"].findAll({
+          where: { userRoleName: role },
+          attributes: ["userId"],
+          raw: true,
+        });
+        const userIds = matchedUsers.map((user) => user.userId);
+        return await User.findAll({
+          attributes: {
+            exclude: ["passwordHash", "salt"],
+          },
+          where: {
+            id: { [Op.in]: userIds },
+          },
+          raw: true,
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    /**
+     * Gets the rights associated with the user
+     * @param {number} userId - The ID of the user
+     * @param {Object} models - Sequelize models
+     * @returns {Object<string, array>}
+     */
+    static async getUserRight(userId, models) {
+      try {
+        let roles = await models["user_role_matching"].findAll({
+          where: { userId },
+          raw: true,
+        });
+        if (roles.length === 0) return {};
+        roles = roles.map((role) => role.userRoleName);
+        let userRight = {};
+        for (const role of roles) {
+          const matchedRoles = await models["role_right_matching"].findAll({
+            where: { userRoleName: role },
+            raw: true,
+          });
+          Object.assign(userRight, {
+            [role]: matchedRoles.map((role) => role.userRightName),
+          });
+        }
+        return userRight;
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    /**
+     * Get specific user's details
+     * @param {number} userId - The ID of the user
+     * @param {Object} models - Sequelize models
+     * @returns {Object}
+     */
+    static async getUserDetails(userId, models) {
+      try {
+        const user = await User.findOne({
+          where: {
+            id: userId,
+            deleted: false,
+          },
+          // TODO: check how to simplify the attributes
+          attributes: ["userName", "firstName", "lastName", "email", "acceptTerms", "acceptStats", "lastLoginAt", "createdAt", "updatedAt", "deletedAt"],
+          include: [
+            {
+              model: models["user_role_matching"],
+              as: "roles",
+              attributes: ["userRoleName"],
+              where: {
+                deleted: false,
+              },
+              // Ensures we get the user even if they have no roles
+              required: false,
+            },
+          ],
+        });
+
+        if (!user) {
+          console.error("User not found");
+          return;
+        }
+        const userDetails = user.get({ plain: true });
+        userDetails.roles = userDetails.roles.map((role) => role.userRoleName);
+        return userDetails;
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    /**
+     * Updates user's details
+     * @param {number} userId - The ID of the user
+     * @param {Object} userData - Includes firstName, lastName, email, roles
+     * @param {Object} models - Sequelize models
+     * @returns {Promise<void>}
+     */
+    static async updateUserDetails(userId, userData, models) {
+      const transaction = await sequelize.transaction();
+      const UserRoleMatching = models["user_role_matching"];
+      try {
+        const [updatedRowsCount] = await User.update(
+          {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+          },
+          {
+            where: { id: userId },
+            returning: true,
+            transaction,
+          }
+        );
+
+        if (updatedRowsCount === 0) {
+          console.error("Failed to update user: User not found");
+          return;
+        }
+
+        // Get current roles
+        const currentRoles = await UserRoleMatching.findAll({
+          where: { userId },
+          transaction,
+        });
+
+        // Determine roles to add and remove
+        const currentRoleNames = currentRoles.map((role) => role.userRoleName);
+        const rolesToAdd = userData.roles.filter((role) => !currentRoleNames.includes(role));
+        const rolesToRemove = currentRoleNames.filter((role) => !userData.roles.includes(role));
+
+        // Add new roles
+        await Promise.all(rolesToAdd.map((role) => UserRoleMatching.create({ userId, userRoleName: role }, { transaction })));
+
+        // Remove roles
+        await UserRoleMatching.destroy({
+          where: {
+            userId,
+            userRoleName: rolesToRemove,
+          },
+          transaction,
+        });
+        await transaction.commit();
+      } catch (error) {
+        await transaction.rollback();
+        console.error("Failed to update user: " + error);
+      }
+    }
+
+    /**
+     * Resets user's password
+     * @param {number} userId - The ID of the user
+     * @param {string} pwd - The new password
+     * @returns {Promise<void>}
+     */
+    static async resetUserPwd(userId, pwd) {
+      try {
+        const salt = genSalt();
+        const passwordHash = await genPwdHash(pwd, salt);
+        const [updatedRowsCount] = await User.update(
+          { passwordHash, salt },
+          {
+            where: { id: userId },
+            returning: true,
+          }
+        );
+
+        if (updatedRowsCount === 0) {
+          console.log("Failed to update user: User not found");
+          return;
+        }
+      } catch (error) {
+        console.log(error);
       }
     }
   }

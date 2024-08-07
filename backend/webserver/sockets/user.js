@@ -1,7 +1,4 @@
 const Socket = require("../Socket.js");
-const { Op } = require("sequelize");
-const db = require("../../db/index.js");
-const { genSalt, genPwdHash } = require("../../utils/auth.js");
 
 /**
  * Handle user through websocket
@@ -79,238 +76,13 @@ module.exports = class UserSocket extends Socket {
     try {
       const rightToFetch = `backend.socket.user.getUsers.${role}`;
       if (!(await this.hasAccess(rightToFetch))) {
-        this.logger.error(
-          "This user does not have the right to load users by their role."
-        );
+        this.logger.error("This user does not have the right to load users by their role.");
         return;
       }
 
-      return role === "all"
-        ? await this.getAllUsers()
-        : await this.getSpecificUsers(role);
+      return role === "all" ? await this.models["user"].getAllUsers() : await this.models["user"].getSpecificUsers(role, models);
     } catch (error) {
       this.logger.error(error);
-    }
-  }
-
-  /**
-   * Get all users
-   * @returns {string[]} An array of all users.
-   */
-  async getAllUsers() {
-    try {
-      return await this.models["user"].findAll({
-        attributes: {
-          exclude: ["passwordHash", "salt"],
-        },
-        raw: true,
-      });
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
-  /**
-   * Get users by their role
-   * @param {string} role - The role of the users to fetch.
-   * @returns {string[]} An array of users with the specified role.
-   */
-  async getSpecificUsers(role) {
-    try {
-      const matchedUsers = await this.models["user_role_matching"].findAll({
-        where: { userRoleName: role },
-        attributes: ["userId"],
-        raw: true,
-      });
-      const userIds = matchedUsers.map((user) => user.userId);
-      return await this.models["user"].findAll({
-        attributes: {
-          exclude: ["passwordHash", "salt"],
-        },
-        where: {
-          id: { [Op.in]: userIds },
-        },
-        raw: true,
-      });
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
-  /**
-   * Gets the rights associated with the user
-   * @param {number} userId - The ID of the user
-   * @returns {Object<string, array>}
-   */
-  async getUserRight(userId) {
-    try {
-      let roles = await this.models["user_role_matching"].findAll({
-        where: { userId },
-        raw: true,
-      });
-      if (roles.length === 0) return {};
-      roles = roles.map((role) => role.userRoleName);
-      let userRight = {};
-      for (const role of roles) {
-        const matchedRoles = await this.models["role_right_matching"].findAll({
-          where: { userRoleName: role },
-          raw: true,
-        });
-        Object.assign(userRight, {
-          [role]: matchedRoles.map((role) => role.userRightName),
-        });
-      }
-      return userRight;
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
-  /**
-   * Get specific user's details
-   * @param {number} userId
-   * @returns {Object}
-   */
-  async getUserDetails(userId) {
-    try {
-      const user = await this.models["user"].findOne({
-        where: {
-          id: userId,
-          deleted: false,
-        },
-        attributes: [
-          "userName",
-          "firstName",
-          "lastName",
-          "email",
-          "acceptTerms",
-          "acceptStats",
-          "lastLoginAt",
-          "createdAt",
-          "updatedAt",
-          "deletedAt",
-        ],
-        include: [
-          {
-            model: this.models["user_role_matching"],
-            as: "roles",
-            attributes: ["userRoleName"],
-            where: {
-              deleted: false,
-            },
-            // Ensures we get the user even if they have no roles
-            required: false,
-          },
-        ],
-      });
-
-      if (!user) {
-        this.logger.error("User not found");
-        return;
-      }
-      const userDetails = user.get({ plain: true });
-      userDetails.roles = userDetails.roles.map((role) => role.userRoleName);
-      return userDetails;
-    } catch (error) {
-      this.logger.error(error);
-      throw error;
-    }
-  }
-
-  /**
-   * Updates user's details
-   * @param {number} userId - The ID of the user
-   * @param {Object} userData - Includes firstName, lastName, email, roles
-   * @returns {Promise<void>}
-   */
-  async updateUserDetails(userId, userData) {
-    const transaction = await db.sequelize.transaction();
-    const User = this.models["user"];
-    const UserRoleMatching = this.models["user_role_matching"];
-    try {
-      const [updatedRowsCount] = await User.update(
-        {
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email,
-        },
-        {
-          where: { id: userId },
-          returning: true,
-          transaction,
-        }
-      );
-
-      if (updatedRowsCount === 0) {
-        this.logger.error("Failed to update user: User not found");
-        return;
-      }
-
-      // Get current roles
-      const currentRoles = await UserRoleMatching.findAll({
-        where: { userId },
-        transaction,
-      });
-
-      // Determine roles to add and remove
-      const currentRoleNames = currentRoles.map((role) => role.userRoleName);
-      const rolesToAdd = userData.roles.filter(
-        (role) => !currentRoleNames.includes(role)
-      );
-      const rolesToRemove = currentRoleNames.filter(
-        (role) => !userData.roles.includes(role)
-      );
-
-      // Add new roles
-      await Promise.all(
-        rolesToAdd.map((role) =>
-          UserRoleMatching.create(
-            { userId, userRoleName: role },
-            { transaction }
-          )
-        )
-      );
-
-      // Remove roles
-      await UserRoleMatching.destroy({
-        where: {
-          userId,
-          userRoleName: rolesToRemove,
-        },
-        transaction,
-      });
-      await transaction.commit();
-    } catch (error) {
-      await transaction.rollback();
-      this.logger.error("Failed to update user: " + error);
-    }
-  }
-
-  /**
-   * Resets user's password
-   * @param {number} userId - The ID of the user
-   * @param {string} pwd - The new password
-   * @returns {Promise<void>}
-   */
-  async resetUserPwd(userId, pwd) {
-    const User = this.models["user"];
-    try {
-      const salt = genSalt();
-      const passwordHash = await genPwdHash(pwd, salt);
-      const [updatedRowsCount] = await User.update(
-        { passwordHash, salt },
-        {
-          where: { id: userId },
-          returning: true,
-        }
-      );
-
-      if (updatedRowsCount === 0) {
-        this.logger.error("Failed to update user: User not found");
-        return;
-      }
-    } catch (error) {
-      this.logger.error("Failed to update user: " + error);
     }
   }
 
@@ -323,9 +95,7 @@ module.exports = class UserSocket extends Socket {
           success: false,
           message: "Failed to retrieve all users",
         });
-        this.logger.error(
-          "DB error while loading all users from database" + JSON.stringify(e)
-        );
+        this.logger.error("DB error while loading all users from database" + JSON.stringify(e));
       }
     });
 
@@ -350,7 +120,7 @@ module.exports = class UserSocket extends Socket {
     // Get specific user's details
     this.socket.on("userGetDetails", async (userId) => {
       try {
-        const user = await this.getUserDetails(userId);
+        const user = await this.models["user"].getUserDetails(userId, this.models);
         this.socket.emit("userDetails", {
           success: true,
           user,
@@ -367,7 +137,7 @@ module.exports = class UserSocket extends Socket {
     // Get right associated with the user
     this.socket.on("userGetRight", async (userId) => {
       try {
-        const userRight = await this.getUserRight(userId);
+        const userRight = await this.models["user"].getUserRight(userId, this.models);
         this.socket.emit("userRight", {
           success: true,
           userRight,
@@ -385,7 +155,7 @@ module.exports = class UserSocket extends Socket {
     this.socket.on("userUpdateDetails", async (data, callback) => {
       const { userId, userData } = data;
       try {
-        await this.updateUserDetails(userId, userData);
+        await this.models["user"].updateUserDetails(userId, userData, this.models);
         callback({
           success: true,
           message: "Successfully updated user!",
@@ -393,7 +163,7 @@ module.exports = class UserSocket extends Socket {
       } catch (error) {
         callback({
           success: false,
-          message: "Fail to update user details",
+          message: "Failed to update user details",
         });
         this.logger.error(error);
       }
@@ -403,7 +173,7 @@ module.exports = class UserSocket extends Socket {
     this.socket.on("userResetPwd", async (data, callback) => {
       const { userId, password } = data;
       try {
-        await this.resetUserPwd(userId, password);
+        await this.models["user"].resetUserPwd(userId, password);
         callback({
           success: true,
           message: "Successfully reset password!",
