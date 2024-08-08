@@ -10,7 +10,7 @@
     <template #body>
       <h3>Terms of Service</h3>
       <div class="terms-container">
-        <div v-html="terms" />
+        <div v-html="config['terms']" />
       </div>
       <div class="consent-item">
         <label class="consent-label">
@@ -29,23 +29,29 @@
         </label>
       </div>
       <hr />
-      <h3>Data Consent:</h3>
-      <div class="consent-item">
+      <h3 v-if="config['requestStats'] || config['requestData']">Data Consent:</h3>
+      <div
+        class="consent-item"
+        v-if="config['requestStats']"
+      >
         <label class="consent-label">
           <input
             class="consent-input"
             type="checkbox"
-            v-model="trackingAgreed"
+            v-model="trackingValue"
           />
           I consent to behavior tracking</label
         >
       </div>
-      <div class="consent-item">
+      <div
+        class="consent-item"
+        v-if="config['requestData']"
+      >
         <label class="consent-label">
           <input
             class="consent-input"
             type="checkbox"
-            v-model="dataShared"
+            v-model="sharingValue"
           />
           I agree to donate my usage data
         </label>
@@ -95,17 +101,49 @@ export default {
       showTermsError: false,
     };
   },
+  // TODO: Rethink about the naming of the variables, e.g. trackingValue
   computed: {
-    terms() {
-      return window.config["app.register.terms"];
+    config() {
+      return {
+        terms: window.config["app.register.terms"],
+        requestStats: JSON.parse(window.config["app.register.requestStats"]),
+        isTrackingAgreed: JSON.parse(window.config["app.register.trackingAgreed.default"]),
+        requestData: JSON.parse(window.config["app.register.dataShared.enabled"]),
+        isDataShared: JSON.parse(window.config["app.register.dataShared.default"]),
+      };
+    },
+    trackingValue: {
+      get() {
+        return this.config["requestStats"] ? this.config["isTrackingAgreed"] : this.trackingAgreed;
+      },
+      set(value) {
+        if (this.config["requestStats"]) {
+          this.config["isTrackingAgreed"] = value;
+        } else {
+          this.trackingAgreed = value;
+        }
+      },
+    },
+    sharingValue: {
+      get() {
+        return this.config["requestData"] ? this.config["isDataShared"] : this.dataShared;
+      },
+      set(value) {
+        if (this.config["requestData"]) {
+          this.config["isDataShared"] = value;
+        } else {
+          this.dataShared = value;
+        }
+      },
     },
   },
   methods: {
     open() {
-      // FIXME: Modal always opens on the login page
-      this.$refs.terms.open();
+      this.$refs.modal.open();
     },
     async handleDecline() {
+      this.resetForm();
+      this.$refs.modal.close();
       await axios.get(getServerURL() + "/auth/logout", { withCredentials: true });
       await this.$router.push("/login");
     },
