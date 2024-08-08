@@ -41,6 +41,7 @@
             :icon-name="collapseFirst[k1] ? 'arrow-right-short' : 'arrow-down-short'"
             class="me-1"
           ></LoadIcon>
+          <!-- Main title inside card header -->
           {{ k1 }}
           <br />
           <span
@@ -58,6 +59,7 @@
             :key="k2"
             class="mb-3"
           >
+            <!-- Subtitle inside card body -->
             <div>
               {{ k2 }}
             </div>
