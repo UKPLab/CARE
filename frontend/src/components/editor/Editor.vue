@@ -210,7 +210,7 @@ export default {
       }
     },
     async leave() {
-      if (this.document_edits && this.document_edits.length > 0 && diese.document_edits.filter(edit => edit.draft).length > 0) {
+      if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
         return new Promise((resolve, reject) => {
           this.$refs.leavePageConf.open(
             "Unsaved Changes",
@@ -242,7 +242,11 @@ export default {
       }
     },
     handleDocumentError(error) {
-      alert(`Error: ${error.message}`);
+      this.eventBus.emit('toast', {
+          title: "Document error",
+          message: error.message,
+          variant: "danger"
+        });
     },
     downloadDocumentAsHTML() {
       const editorContent = this.editor.getEditor().root.innerHTML;

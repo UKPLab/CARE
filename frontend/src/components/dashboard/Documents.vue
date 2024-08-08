@@ -164,7 +164,7 @@ export default {
               action: "renameDoc",
             },
           ];
-          if (this.studiesEnabled && d.type !== 1) {
+          if (this.studiesEnabled && d.type === 0) { //PDF document type
             newD.manage.push({
               icon: "person-workspace",
               options: {
@@ -178,7 +178,7 @@ export default {
             });
           }
 
-          if (d.type === 1 && this.showDeltaDownloadButton) {
+          if (d.type === 1 && this.showDeltaDownloadButton) { //HTML document type
             newD.manage.push({
               icon: "download",
               options: {

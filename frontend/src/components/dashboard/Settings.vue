@@ -27,7 +27,7 @@
 import Loading from "@/basic/Loading.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
-import SettingItem from "./SettingItem.vue";
+import SettingItem from "@/components/dashboard/settings/SettingItem.vue";
 
 export default {
   name: "DashboardSettings",
