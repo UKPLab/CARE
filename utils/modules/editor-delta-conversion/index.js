@@ -1,3 +1,10 @@
+/**
+ * 
+ * This module provides methods to convert between Quill Delta objects and database entries.
+ * 
+ * @author Juliane Bechert
+ * 
+ */
 const Delta = require('quill-delta');
 
 /**

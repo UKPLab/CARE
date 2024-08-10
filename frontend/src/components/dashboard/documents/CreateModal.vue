@@ -48,8 +48,6 @@ export default {
       name: "",
     };
   },
-  computed: {},
-  mounted() {},
   sockets: {
     documentCreated: function (data) {
       this.$refs.createModal.close();
@@ -74,7 +72,6 @@ export default {
       this.name = "";
 
       this.$refs.createModal.openModal();
-      this.$socket.emit("stats", { action: "openCreateModal", data: {} });
     },
     create() {
       // check if user had input document name
