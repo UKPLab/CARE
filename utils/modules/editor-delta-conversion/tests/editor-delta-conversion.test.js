@@ -1,3 +1,14 @@
+/**
+ * 
+ * This file contains tests for the editor delta conversion functions.
+ * 
+ * The tests are separated into three categories:
+ * - Insert Operations Test
+ * - Deletion Operations Test
+ * - Attribute Operations Test
+ * 
+ * @author Juliane Bechert
+ */
 const { dbToDelta, deltaToDb } = require('../index');
 const Delta = require('quill-delta');
 const fs = require('fs');
