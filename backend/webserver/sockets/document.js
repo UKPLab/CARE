@@ -382,9 +382,8 @@ module.exports = class DocumentSocket extends Socket {
                 appliedEdits.push({
                     ...savedEdit,
                     applied: true
-                },
-                {transaction});
-            }, Promise.resolve(), transaction);
+                });
+            }, Promise.resolve());
 
             await transaction.commit();
 
