@@ -276,7 +276,6 @@ module.exports = class DocumentSocket extends Socket {
     
         } catch (err) {
             this.logger.error("Failed to read/write delta file:", err);
-            this.sendToast("Error handling delta file!", "Delta File Error", "danger");
         }
     }
 

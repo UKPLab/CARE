@@ -113,7 +113,7 @@ export default {
 
       switch (fileType) {
         case ".delta":
-          this.$socket.emit("uploadFile", { type: "editableDocument", file: fileElement.files[0], name: fileName });
+          this.$socket.emit("uploadFile", { type: "deltaDocument", file: fileElement.files[0], name: fileName });
           break;
 
         default:
