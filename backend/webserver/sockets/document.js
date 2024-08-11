@@ -430,10 +430,17 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("documentClose", (data) => {
-            const index = this.socket.openComponents.editor.indexOf(data.documentId);
-            if (index > -1) {
-                this.socket.openComponents.editor[index] = undefined; // Remove the document ID
+        this.socket.on("documentClose", async (data) => {
+
+            try {
+                await this.saveDocument(data.documentId); // Save the document before closing	
+                const index = this.socket.openComponents.editor.indexOf(data.documentId);
+                if (index > -1) {
+                    this.socket.openComponents.editor[index] = undefined; // Remove the document ID
+                }
+            } catch (err) {
+                this.logger.error("Error saving document: ", err);
+                this.sendToast("Error saving document!", "Error", "danger");
             }
         });
 
@@ -547,13 +554,5 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("documentSave", async (data) => {
-            try {
-                await this.saveDocument(data.documentId);
-            } catch (err) {
-                this.logger.error("Error saving document: ", err);
-                this.sendToast("Error saving document!", "Error", "danger");
-            }
-        });
     }
 }
