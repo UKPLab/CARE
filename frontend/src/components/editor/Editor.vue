@@ -73,9 +73,6 @@ export default {
   data() {
     return {
       content: "",
-      originalContent: undefined,
-      editable_document: undefined,
-      debounceHandleSave: undefined,
       documentHash: this.$route.params.documentHash,
       deltaBuffer: [],
       editor: null,
