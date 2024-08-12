@@ -12,9 +12,9 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       UserRoleMatching.belongsTo(models["user"], {
-        foreignKey: 'userId',
-        as: 'user'
-      })
+        foreignKey: "userId",
+        as: "user",
+      });
     }
   }
 
@@ -37,7 +37,38 @@ module.exports = (sequelize, DataTypes) => {
       sequelize: sequelize,
       modelName: "user_role_matching",
       tableName: "user_role_matching",
+      hooks: {
+        afterCreate: async (userRole, options) => {
+          const User = options.transaction.sequelize.models["user"];
+          try {
+            await User.update(
+              { rolesUpdatedAt: new Date() },
+              {
+                where: { id: userRole.userId },
+                transaction: options.transaction,
+              }
+            );
+          } catch (error) {
+            console.log(error);
+          }
+        },
+        afterDestroy: async (userRole, options) => {
+          const User = options.transaction.sequelize.models["user"];
+          try {
+            await User.update(
+              { rolesUpdatedAt: new Date() },
+              {
+                where: { id: userRole.userId },
+                transaction: options.transaction,
+              }
+            );
+          } catch (error) {
+            console.log(error);
+          }
+        },
+      },
     }
   );
+
   return UserRoleMatching;
 };
