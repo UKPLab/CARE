@@ -31,6 +31,9 @@ module.exports = class Socket {
     // Note: This cache does not automatically update.
     // A reconnection or explicit refresh is required to update roles after any changes.
     this.userRoles = [];
+    // Local cache of the timestamp when the user's roles were last updated.
+    // This is used to determine if the cached roles need refreshing.
+    this.lastRolesUpdate = null;
     this.isUserAdmin = null;
     this.logger.defaultMeta = { userId: this.userId };
     this.autoTables = Object.values(this.models)
@@ -115,12 +118,13 @@ module.exports = class Socket {
    */
   async getUserRoles() {
     try {
-      if (this.userRoles.length === 0) {
+      if (!this.userRoles.length || !this.lastRolesUpdate || this.user.rolesUpdatedAt > this.lastRolesUpdate) {
         const userRoles = await this.models["user_role_matching"].findAll({
           where: { userId: this.userId },
           raw: true,
         });
         this.userRoles = userRoles.map((role) => role.userRoleName);
+        this.lastRolesUpdate = new Date();
       }
       return this.userRoles;
     } catch (error) {

@@ -279,6 +279,7 @@ module.exports = (sequelize, DataTypes) => {
             userId,
             userRoleName: rolesToRemove,
           },
+          individualHooks: true,
           transaction,
         });
         await transaction.commit();
@@ -331,6 +332,10 @@ module.exports = (sequelize, DataTypes) => {
       deletedAt: DataTypes.DATE,
       createdAt: DataTypes.DATE,
       updatedAt: DataTypes.DATE,
+      rolesUpdatedAt: {
+        type: DataTypes.DATE,
+        allowNull: true
+      }
     },
     {
       sequelize,
