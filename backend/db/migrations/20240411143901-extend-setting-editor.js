@@ -93,7 +93,7 @@ const settings = [{
 },
 {
     key: "editor.toolbar.tools.formula",
-    value: "true",
+    value: "false",
     type: "boolean",
     description: "Formula in the toolbar"
 },
@@ -159,19 +159,19 @@ const settings = [{
 },
 {
     key: "editor.toolbar.tools.link",
-    value: "true",
+    value: "false",
     type: "boolean",
     description: "Link tool in the toolbar"
 },
 {
     key: "editor.toolbar.tools.image",
-    value: "true",
+    value: "false",
     type: "boolean",
     description: "Image tool in the toolbar"
 },
 {
     key: "editor.toolbar.tools.video",
-    value: "true",
+    value: "false",
     type: "boolean",
     description: "Video tool in the toolbar"
 },
