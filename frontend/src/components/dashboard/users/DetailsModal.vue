@@ -1,5 +1,8 @@
 <template>
-  <BasicModal ref="modal" @hide="resetForm">
+  <BasicModal
+    ref="modal"
+    @hide="resetForm"
+  >
     <template #title>
       <slot name="title">
         <span>Edit User</span>
@@ -11,28 +14,13 @@
         v-model="userInfo"
         :fields="fields"
       />
-      <table>
-        <tr>
-          <th>Accept Terms</th>
-          <th>Accept Stats</th>
-          <th>Last Login</th>
-        </tr>
-        <tr>
-          <td>{{ userInfo.acceptTerms }}</td>
-          <td>{{ userInfo.acceptStats }}</td>
-          <td>{{ userInfo.lastLoginAt }}</td>
-        </tr>
-        <tr>
-          <th>Created At</th>
-          <th>Updated At</th>
-          <th>Deleted At</th>
-        </tr>
-        <tr>
-          <td>{{ userInfo.createdAt }}</td>
-          <td>{{ userInfo.updatedAt }}</td>
-          <td>{{ userInfo.deletedAt }}</td>
-        </tr>
-      </table>
+      <div class="detail-table-container">
+        <BasicTable
+          :columns="columns"
+          :data="[userInfo]"
+          :options="options"
+        />
+      </div>
     </template>
     <template #footer>
       <span class="btn-group">
@@ -58,6 +46,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
+import BasicTable from "@/basic/table/Table.vue";
 
 /**
  * Modal for viewing and editing user data
@@ -66,7 +55,7 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "DetailsModal",
-  components: { BasicModal, BasicForm },
+  components: { BasicModal, BasicForm, BasicTable },
   data() {
     return {
       userId: 0,
@@ -110,13 +99,27 @@ export default {
           ],
         },
       ],
+      options: {
+        striped: true,
+        hover: true,
+        bordered: true,
+        borderless: false,
+        small: false,
+      },
+      columns: [
+        { name: "Accept Terms", key: "acceptTerms" },
+        { name: "Accept Stats", key: "acceptStats" },
+        { name: "Last Login", key: "lastLoginAt" },
+        { name: "Created At", key: "createdAt" },
+        { name: "Updated At", key: "updatedAt" },
+        { name: "Deleted At", key: "deletedAt" },
+      ],
     };
   },
   computed: {
     userInfo() {
       const userInfo = this.$store.getters["admin/getUserDetails"];
-      const formatDate = (date) =>
-        date ? new Date(date).toLocaleDateString() : "-";
+      const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
       return {
         ...userInfo,
         createdAt: formatDate(userInfo.createdAt),
@@ -134,7 +137,9 @@ export default {
       this.getUserDetails(userId);
     },
     submit() {
-      if(!this.$refs.form.validate()) return;
+      if (!this.$refs.form.validate()) {
+        return;
+      }
       const userId = this.userId;
       const { modelValue } = this.$refs.form;
       const { firstName, lastName, email, roles } = modelValue;
@@ -145,48 +150,42 @@ export default {
         roles,
       };
       this.$refs.modal.waiting = true;
-      this.$socket.emit(
-        "userUpdateDetails",
-        { userId, userData },
-        (response) => {
-          if (response.success) {
-            this.$refs.modal.waiting = false;
-            this.$refs.modal.close();
-            this.eventBus.emit("toast", {
-              title: "User updated",
-              message: response.message,
-              variant: "success",
-            });
-          } else {
-            this.$refs.modal.waiting = false;
-            this.eventBus.emit("toast", {
-              title: "Fail to update",
-              message: response.message,
-              variant: "danger",
-            });
-          }
+      this.$socket.emit("userUpdateDetails", { userId, userData }, (response) => {
+        if (response.success) {
+          this.$refs.modal.waiting = false;
+          this.$refs.modal.close();
+          this.eventBus.emit("toast", {
+            title: "User updated",
+            message: response.message,
+            variant: "success",
+          });
+        } else {
+          this.$refs.modal.waiting = false;
+          this.eventBus.emit("toast", {
+            title: "Fail to update",
+            message: response.message,
+            variant: "danger",
+          });
         }
-      );
+      });
     },
     getUserDetails(userId) {
       this.$socket.emit("userGetDetails", userId);
     },
     resetForm() {
       this.eventBus.emit("resetFormField");
-    }
+    },
   },
 };
 </script>
 
 <style scoped>
-table {
+.detail-table-container {
   margin-top: 15px;
-  width: 100%;
+  overflow-x: auto;
 }
-th,
-td {
-  padding: 10px;
-  text-align: left;
-  border: 1px solid #ddd;
+
+.detail-table-container > :deep(table) {
+  width: 50rem;
 }
 </style>
