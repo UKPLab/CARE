@@ -88,7 +88,7 @@ export default {
       if (editorContainer) {
         this.editor = new Editor(editorContainer, this.editorOptions);
 
-        if (this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true") {
+        if (this.toolbarVisible) {
           const toolbarButtons = document.querySelectorAll('.ql-toolbar button');
           toolbarButtons.forEach(button => {
             const format = button.className.match(/ql-(\w+)/);
@@ -103,8 +103,8 @@ export default {
       this.$socket.emit("documentGet", { documentId: this.documentId });
 
       this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
-    },
-    sockets: {
+  },
+  sockets: {
       connect() {
         console.log("Socket connected:", this.$socket.id);
         this.$socket.emit("documentOpen", { documentId: this.documentId });
@@ -121,59 +121,68 @@ export default {
     this.$socket.emit("documentClose", { documentId: this.documentId });
   },
   computed: {
-    unappliedEdits() {
-      return this.$store.getters["table/document_edit/getFiltered"](
-        e => e.applied === false
-      ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    },
-    debounceTimeForEdits() {
-      return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
-    },
-    editorOptions() {
-    const toolbarVisible = this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true";
-
-    const toolsMap = {
-      "editor.toolbar.tools.font": { font: [] },
-      "editor.toolbar.tools.size": { size: [] },
-      "editor.toolbar.tools.align": { align: [] },
-      "editor.toolbar.tools.header": ["header", "1", "2", "3", "4", "5", "6"],
-      "editor.toolbar.tools.bold": "bold",
-      "editor.toolbar.tools.italic": "italic",
-      "editor.toolbar.tools.underline": "underline",
-      "editor.toolbar.tools.strike": "strike",
-      "editor.toolbar.tools.blockquote": "blockquote",
-      "editor.toolbar.tools.code-block": "code-block",
-      "editor.toolbar.tools.formula": "formula",
-      "editor.toolbar.tools.subscript": { script: "sub" },
-      "editor.toolbar.tools.superscript": { script: "super" },
-      "editor.toolbar.tools.indent": [{ indent: "-1" }, { indent: "+1" }],
-      "editor.toolbar.tools.direction": { direction: [] },      
-      "editor.toolbar.tools.color": { color: [] },
-      "editor.toolbar.tools.background": { background: [] },
-      "editor.toolbar.tools.orderedList": { list: "ordered" },
-      "editor.toolbar.tools.unorderedList": { list: "bullet" },
-      "editor.toolbar.tools.checkList": { list: "check" },   
-      "editor.toolbar.tools.link": "link",
-      "editor.toolbar.tools.image": "image",
-      "editor.toolbar.tools.video": "video",
-      "editor.toolbar.tools.clean": "clean" // indent, direction
-    };
-
-    const toolbarTools = [];
-
-    for (const [key, tool] of Object.entries(toolsMap)) {
-      if (this.$store.getters["settings/getValue"](key) === "true") {
-        toolbarTools.push(tool);
-      }
-    }
-    
-    return {
-      modules: {
-         toolbar: toolbarVisible ? {container: toolbarTools} : false
+      unappliedEdits() {
+        return this.$store.getters["table/document_edit/getFiltered"](
+          e => e.applied === false
+        ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       },
-      theme: "snow"
-    };
-  },
+      debounceTimeForEdits() {
+        return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
+      },
+      toolbarVisible() {
+        return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true";
+      },
+      editorOptions() {
+
+      const toolsMap = {
+        "editor.toolbar.tools.font": { font: [] },
+        "editor.toolbar.tools.size": { size: [] },
+        "editor.toolbar.tools.align": { align: [] },
+        "editor.toolbar.tools.header": ["header", "1", "2", "3", "4", "5", "6"],
+        "editor.toolbar.tools.bold": "bold",
+        "editor.toolbar.tools.italic": "italic",
+        "editor.toolbar.tools.underline": "underline",
+        "editor.toolbar.tools.strike": "strike",
+        "editor.toolbar.tools.blockquote": "blockquote",
+        "editor.toolbar.tools.code-block": "code-block",
+        "editor.toolbar.tools.formula": "formula",
+        "editor.toolbar.tools.subscript": { script: "sub" },
+        "editor.toolbar.tools.superscript": { script: "super" },
+        "editor.toolbar.tools.indent": [{ indent: "-1" }, { indent: "+1" }],
+        "editor.toolbar.tools.direction": { direction: [] },      
+        "editor.toolbar.tools.color": { color: [] },
+        "editor.toolbar.tools.background": { background: [] },
+        "editor.toolbar.tools.orderedList": { list: "ordered" },
+        "editor.toolbar.tools.unorderedList": { list: "bullet" },
+        "editor.toolbar.tools.checkList": { list: "check" },   
+        "editor.toolbar.tools.link": "link",
+        "editor.toolbar.tools.image": "image",
+        "editor.toolbar.tools.video": "video",
+        "editor.toolbar.tools.clean": "clean"
+      };
+
+      const toolbarTools = [];
+
+      // hide some tools, because the functionalities have not been handled: formula, link, image, video
+      const hiddenTools = ["editor.toolbar.tools.formula",  "editor.toolbar.tools.link", "editor.toolbar.tools.image","editor.toolbar.tools.video"];
+
+      for (const [key, tool] of Object.entries(toolsMap)) {
+        if (hiddenTools.includes(key)) {
+          continue;
+        }
+
+        if (this.$store.getters["settings/getValue"](key) === "true") {
+          toolbarTools.push(tool);
+        }
+      }
+      
+      return {
+        modules: {
+          toolbar: this.toolbarVisible ? {container: toolbarTools} : false
+        },
+        theme: "snow"
+      };
+    },
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     }
@@ -257,7 +266,5 @@ export default {
 </script>
 
 <style scoped>
-.ql-toolbar {
-  display: none;
-}
+
 </style>
