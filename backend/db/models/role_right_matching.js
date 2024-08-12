@@ -16,14 +16,24 @@ module.exports = (sequelize, DataTypes) => {
 
   RoleRightMatching.init(
     {
-      id: {
-        allowNull: false,
+      userRoleName: {
+        type: DataTypes.STRING,
         primaryKey: true,
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
+        allowNull: false,
+        references: {
+          model: "user_role",
+          key: "name",
+        },
       },
-      userRoleName: DataTypes.STRING,
-      userRightName: DataTypes.STRING,
+      userRightName: {
+        type: DataTypes.STRING,
+        primaryKey: true,
+        allowNull: false,
+        references: {
+          model: "user_right",
+          key: "name",
+        },
+      },
       deleted: DataTypes.BOOLEAN,
       createdAt: DataTypes.DATE,
       updatedAt: DataTypes.DATE,

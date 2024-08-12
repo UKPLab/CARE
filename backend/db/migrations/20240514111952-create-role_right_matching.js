@@ -3,13 +3,8 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("role_right_matching", {
-      id: {
-        allowNull: false,
-        primaryKey: true,
-        type: Sequelize.INTEGER,
-        autoIncrement: true,
-      },
       userRoleName: {
+        primaryKey: true,
         allowNull: false,
         type: Sequelize.STRING,
         references: {
@@ -18,6 +13,7 @@ module.exports = {
         },
       },
       userRightName: {
+        primaryKey: true,
         allowNull: false,
         type: Sequelize.STRING,
         references: {
