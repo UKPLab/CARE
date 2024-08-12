@@ -25,35 +25,6 @@ Converts database entries into Quill Delta objects and vice versa, bridging fron
 Facilitates all document-related communications such as creation, updates, and real-time edits.
 Manages file uploads and document retrievals, ensuring proper data synchronization and access control.
 
-### Running the Application
-
-1. **Set Up the Environment**: Follow the installation steps to set up the environment.
-2. **Initialize the Database and Modules**: Ensure the database is initialized and utils/modules is up to date using the Makefile command: make init.
-3. **Start the Backend Server**: Ensure the backend server is running.
-4. **Start the Frontend Server**: Ensure the frontend development server is running.
-5. **Interact with the Editor**: Use the application to create, edit, and manage documents. Monitor WebSocket events to ensure real-time updates and synchronization.
-
-Makefile Configuration
-----------------------
-
-New Make Commands:
-
-- **make init**
-
-  Initialize the database and install npm packages in all utils/modules subdirectories. This command calls both make tables and make modules
-
-- **make tables**
-
-Initialize (migrate) the database.
-
-- **make test-modules**
-
-  Run unit tests for specific modules - In our case to run the tests defined in `utils/modules/editor-delta-conversion`
-
-- **make modules**
-
-  Install npm packages in all `utils/modules` subdirectories
-
 Database Migrations
 -------------------
 
