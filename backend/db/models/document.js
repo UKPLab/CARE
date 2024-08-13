@@ -49,6 +49,12 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
 
+    // Enum for document type
+    const docTypes = Object.freeze({
+        DOC_TYPE_PDF: 0,
+        DOC_TYPE_HTML: 1
+    });
+
     Document.init({
         name: DataTypes.STRING,
         hash: DataTypes.STRING,
