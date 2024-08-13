@@ -11,18 +11,17 @@ module.exports = {
     );
 
     // Transfer the data to user_role_matching table
-    for (const user of users) {
-      await queryInterface.bulkInsert("user_role_matching", [
-        {
-          userId: user.id,
-          userRoleName: user.sysrole,
-          deleted: user.deleted,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          deletedAt: user.deletedAt,
-        },
-      ]);
-    }
+    await queryInterface.bulkInsert(
+      "user_role_matching",
+      users.map((user) => ({
+        userId: user.id,
+        userRoleName: user.sysrole,
+        deleted: user.deleted,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        deletedAt: user.deletedAt,
+      }))
+    );
 
     // Remove the sysrole column from the user table
     await queryInterface.removeColumn("user", "sysrole");
@@ -47,17 +46,19 @@ module.exports = {
       }
     );
 
-    for (const matching of userRoleMatchings) {
-      await queryInterface.sequelize.query(
-        'UPDATE "user" SET "sysrole" = :userRoleName WHERE "id" = :userId',
-        {
-          replacements: {
-            userRoleName: matching.userRoleName,
-            userId: matching.userId,
-          },
-          type: queryInterface.sequelize.QueryTypes.UPDATE,
-        }
-      );
-    }
+    await Promise.all(
+      userRoleMatchings.map((matching) =>
+        queryInterface.sequelize.query(
+          'UPDATE "user" SET "sysrole" = :userRoleName WHERE "id" = :userId',
+          {
+            replacements: {
+              userRoleName: matching.userRoleName,
+              userId: matching.userId,
+            },
+            type: queryInterface.sequelize.QueryTypes.UPDATE,
+          }
+        )
+      )
+    );
   },
 };
