@@ -82,9 +82,6 @@ export default {
   methods: {
     open(userId) {
       this.$refs.modal.open();
-      this.getUserRights(userId);
-    },
-    getUserRights(userId) {
       this.$socket.emit("userGetRight", userId);
     },
   },
