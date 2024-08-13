@@ -80,7 +80,7 @@ module.exports = class UserSocket extends Socket {
         return;
       }
 
-      return role === "all" ? await this.models["user"].getAllUsers() : await this.models["user"].getSpecificUsers(role, models);
+      return role === "all" ? await this.models["user"].getAllUsers() : await this.models["user"].getUsersByRole(role, models);
     } catch (error) {
       this.logger.error(error);
     }

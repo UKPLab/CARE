@@ -166,15 +166,17 @@ module.exports = class Socket {
       // admin has full rights, so return true directly
       if (this.isAdmin()) return true;
       const roles = await this.getUserRoles();
-      for (const role of roles) {
-        const matchedRoles = await this.models["role_right_matching"].findAll({
-          where: { userRoleName: role },
-          raw: true,
-        });
-        return matchedRoles.some((role) => role.userRightName === right);
-      }
-      // If no roles have the right, return false
-      return false;
+      const hasRight = await Promise.all(
+        roles.map(async (role) => {
+          const matchedRoles = await this.models["role_right_matching"].findAll({
+            where: { userRoleName: role },
+            raw: true,
+          });
+          return matchedRoles.some((matchedRole) => matchedRole.userRightName === right);
+        })
+      ).then((results) => results.some((r) => Boolean(r)));
+
+      return hasRight;
     } catch (error) {
       this.logger.error(err);
     }
