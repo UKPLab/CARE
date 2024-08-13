@@ -154,14 +154,12 @@ export default {
   },
   computed: {
     fields() {
-      return this.$store.getters["table/" + this.table + "/getFields"].map(
-        (f) => {
-          if (this.readOnlyFields.includes(f.key)) {
-            f.readOnly = true;
-          }
-          return f;
+      return this.$store.getters["table/" + this.table + "/getFields"].map((f) => {
+        if (this.readOnlyFields.includes(f.key)) {
+          f.readOnly = true;
         }
-      );
+        return f;
+      });
     },
   },
   methods: {
@@ -236,19 +234,9 @@ export default {
           field.key in data
             ? data[field.key]
             : // if type is table, get the data from the store
-            field.type === "table" &&
-              this.$store.getters["table/" + field.options.table + "/hasFields"]
-            ? this.$store.getters[
-                "table/" + field.options.table + "/getFiltered"
-              ]((e) => e[field.options.id] === id).map((e) =>
-                this.getDataFromStore(
-                  e.id,
-                  field.options.table,
-                  this.$store.getters[
-                    "table/" + field.options.table + "/getFields"
-                  ],
-                  copy
-                )
+            field.type === "table" && this.$store.getters["table/" + field.options.table + "/hasFields"]
+            ? this.$store.getters["table/" + field.options.table + "/getFiltered"]((e) => e[field.options.id] === id).map((e) =>
+                this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"], copy)
               )
             : // else use the default value
               null;
