@@ -63,7 +63,7 @@ lint: frontend/node_modules/.uptodate
 
 .PHONY: docker
 docker:
-	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres rpc_test
+	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres rpc_test rpc_moodle_test
 
 .PHONY: init
 init: backend/node_modules/.uptodate
