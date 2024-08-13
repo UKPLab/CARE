@@ -135,7 +135,7 @@ module.exports = (sequelize, DataTypes) => {
      * @param {Object} models - Sequelize models
      * @returns {string[]} An array of users with the specified role.
      */
-    async getSpecificUsers(role, models) {
+    async getUsersByRole(role, models) {
       try {
         const matchedUsers = await models["user_role_matching"].findAll({
           where: { userRoleName: role },
@@ -334,8 +334,8 @@ module.exports = (sequelize, DataTypes) => {
       updatedAt: DataTypes.DATE,
       rolesUpdatedAt: {
         type: DataTypes.DATE,
-        allowNull: true
-      }
+        allowNull: true,
+      },
     },
     {
       sequelize,
