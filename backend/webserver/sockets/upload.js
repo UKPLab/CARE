@@ -4,6 +4,7 @@ const path = require("path");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const Socket = require("../Socket.js");
+const docTypes = require("../../db/models/document.js").docTypes;
 
 /**
  * Handle all uploads through websocket
@@ -30,7 +31,7 @@ module.exports = class UploadSocket extends Socket {
           const doc = await this.models["document"].add({
             name: data.name.replace(/.pdf$/, ""),
             userId: this.userId,
-            type: 0 // 0 for pdf
+            type: docTypes.DOC_TYPE_PDF
           });
       
           const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
@@ -39,7 +40,7 @@ module.exports = class UploadSocket extends Socket {
           const doc = await this.models["document"].add({
             name: data.name.replace(/.delta$/, ""),
             userId: this.userId,
-            type: 1 // 1 for html(based on delta)
+            type: docTypes.DOC_TYPE_HTML
           });
 
           const target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
