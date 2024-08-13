@@ -180,6 +180,46 @@ module.exports = class DocumentSocket extends Socket {
             this.sendToast(error.message, "Error", "danger");
         }
     }
+
+    /**
+     * Send merged deltas (from disk and database) to client
+     *
+     * @param {number} documentId
+     * @returns {Promise<void>}
+     */
+    async sendMergedDeltas(documentId) {
+        try {
+            const doc = await this.models['document'].getById(documentId);
+
+            if (this.checkDocumentAccess(doc.id)) {
+                if (doc.type === 1) { // HTML document type
+                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                    let delta = new Delta();
+
+                    if (fs.existsSync(deltaFilePath)) {
+                        delta = await this.loadDocument(deltaFilePath);
+                    }
+
+                    const edits = await this.models['document_edit'].findAll({
+                        where: { documentId: documentId, draft: true },
+                        raw: true
+                    });
+
+                    const dbDelta = dbToDelta(edits);
+                    delta = delta.compose(dbDelta);
+
+                    this.socket.emit("mergedDocumentFile", { document: doc, deltas: delta });
+                } else {
+                    throw new Error("Non-HTML documents are not supported for this operation");
+                }
+            } else {
+                throw new Error("You do not have access to this document");
+            }
+        } catch (error) {
+            this.logger.error("An error occurred while sending the merged deltas:", error);
+            this.sendToast(error.message, "Error", "danger");
+        }
+    }
     
     /**
      * Load document delta from disk
@@ -535,6 +575,16 @@ module.exports = class DocumentSocket extends Socket {
                 });
             }
         });
+
+        this.socket.on("sendMergedDeltas", async (data) => {
+            try {
+                await this.sendMergedDeltas(data.documentId);
+            } catch (e) {
+                this.logger.error("Error handling sendMergedDeltas request: ", e);
+                this.sendToast("Error handling sendMergedDeltas request!", "Error", "danger");
+            }
+        });
+    
 
     }
 }
