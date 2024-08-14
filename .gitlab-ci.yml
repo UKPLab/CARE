@@ -31,7 +31,7 @@ test:
     - docker info
     - docker version
   script:
-    - docker compose -f docker-compose.yml -f docker-dev.yml --env-file ".env.test" up -d postgres
+    - docker compose -f docker-compose.yml -f docker-dev.yml --env-file ".env.test" up -d postgres rpc
     - docker compose ps
     - make ENV=test test
 
@@ -74,11 +74,11 @@ deploy-dev:
   script:
     - chmod og= $PEER_RSAKEY
     - *setup-ssh
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=dev build-clean"
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=dev build"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd care && git fetch"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd care && git checkout $CI_COMMIT_SHORT_SHA"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd care && git submodule update --init"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd care && make ENV=dev build-clean"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd care && make ENV=dev build"
   only:
   - dev
 
@@ -89,10 +89,10 @@ deploy-main:
   script:
     - chmod og= $PEER_RSAKEY
     - *setup-ssh
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git fetch"
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git checkout $CI_COMMIT_SHORT_SHA"
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && git submodule update --init"
-    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd peer && make ENV=main build"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd care && git fetch"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd care && git checkout $CI_COMMIT_SHORT_SHA"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd care && git submodule update --init"
+    - ssh -i $PEER_RSAKEY $PEER_SERVER_USER@$PEER_SERVER_IP "cd care && make ENV=main build"
   only:
     - main
 
