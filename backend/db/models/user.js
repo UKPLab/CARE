@@ -169,15 +169,14 @@ module.exports = (sequelize, DataTypes) => {
         }
         roles = roles.map((role) => role.userRoleName);
         let userRight = {};
-        for (const role of roles) {
+        await Promise.all(roles.map(async (role) => {
           const matchedRoles = await models["role_right_matching"].findAll({
             where: { userRoleName: role },
             raw: true,
           });
-          Object.assign(userRight, {
-            [role]: matchedRoles.map((role) => role.userRightName),
-          });
-        }
+    
+          userRight[role] = matchedRoles.map((role) => role.userRightName);
+        }));
         return userRight;
       } catch (error) {
         console.error(error);
