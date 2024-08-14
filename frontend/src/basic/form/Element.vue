@@ -102,6 +102,10 @@ export default {
             this.emptyField = false;
             return true;
           }
+          if(typeof data === "number")  {
+            this.emptyField = false;
+            return true;
+          }
           this.emptyField = true;
           return false;
         } else {
