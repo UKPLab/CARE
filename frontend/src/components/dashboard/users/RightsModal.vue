@@ -49,13 +49,11 @@
     </template>
     <template #footer>
       <span class="btn-group">
-        <button
-          type="button"
+        <BasicButton
+          title="Okay"
           class="btn btn-primary"
           @click="$refs.modal.close()"
-        >
-          Okay
-        </button>
+        />
       </span>
     </template>
   </BasicModal>
@@ -63,6 +61,7 @@
 
 <script>
 import BasicModal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal for viewing the rights the user has on this platform
@@ -70,7 +69,7 @@ import BasicModal from "@/basic/Modal.vue";
  */
 export default {
   name: "RightsModal",
-  components: { BasicModal },
+  components: { BasicModal, BasicButton },
   data() {
     return {};
   },

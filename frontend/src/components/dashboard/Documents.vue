@@ -1,17 +1,17 @@
 <template>
   <Card title="Documents">
     <template #headerElements>
-      <ButtonHeader
-          class="btn-secondary"
-          icon="cloud-arrow-down"
-          title="Export All"
-          @click="exportAll()"
+      <BasicButton
+        class="btn-secondary btn-sm me-1"
+        icon="cloud-arrow-down"
+        title="Export All"
+        @click="exportAll()"
       />
-      <ButtonHeader
-          class="btn-primary"
-          title="Add document"
-          text="Add"
-          @click="$refs.uploadModal.open()"
+      <BasicButton
+        class="btn-primary btn-sm"
+        title="Add document"
+        text="Add"
+        @click="$refs.uploadModal.open()"
       />
     </template>
     <template #body>
@@ -38,7 +38,7 @@ import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "./coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import ButtonHeader from "@/basic/card/ButtonHeader.vue";
+import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./documents/UploadModal.vue";
 import EditModal from "./documents/EditModal.vue";
 
@@ -53,17 +53,17 @@ import EditModal from "./documents/EditModal.vue";
  */
 export default {
   name: "DashboardDocument",
-  fetchData: ['document', 'study'],
+  fetchData: ["document", "study"],
   components: {
     StudyModal,
     ExportAnnos,
     UploadModal,
     Card,
     BasicTable,
-    ButtonHeader,
+    BasicButton,
     PublishModal,
     ConfirmModal,
-    EditModal
+    EditModal,
   },
   data() {
     return {

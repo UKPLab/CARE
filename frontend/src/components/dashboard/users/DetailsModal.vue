@@ -24,20 +24,16 @@
     </template>
     <template #footer>
       <span class="btn-group">
-        <button
-          type="button"
+        <BasicButton
           class="btn btn-secondary"
+          title="Cancel"
           @click="$refs.modal.close()"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
+        />
+        <BasicButton
           class="btn btn-primary"
+          title="Save"
           @click="submit"
-        >
-          Save
-        </button>
+        />
       </span>
     </template>
   </BasicModal>
@@ -47,6 +43,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/table/Table.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal for viewing and editing user data
@@ -55,7 +52,7 @@ import BasicTable from "@/basic/table/Table.vue";
  */
 export default {
   name: "DetailsModal",
-  components: { BasicModal, BasicForm, BasicTable },
+  components: { BasicModal, BasicForm, BasicTable, BasicButton },
   data() {
     return {
       userId: 0,
