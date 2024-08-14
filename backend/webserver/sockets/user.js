@@ -80,7 +80,7 @@ module.exports = class UserSocket extends Socket {
         return;
       }
 
-      return role === "all" ? await this.models["user"].getAllUsers() : await this.models["user"].getUsersByRole(role, models);
+      return role === "all" ? await this.models["user"].getAllUsers() : await this.models["user"].getUsersByRole(role);
     } catch (error) {
       this.logger.error(error);
     }
@@ -120,7 +120,7 @@ module.exports = class UserSocket extends Socket {
     // Get specific user's details
     this.socket.on("userGetDetails", async (userId) => {
       try {
-        const user = await this.models["user"].getUserDetails(userId, this.models);
+        const user = await this.models["user"].getUserDetails(userId);
         this.socket.emit("userDetails", {
           success: true,
           user,
@@ -137,7 +137,7 @@ module.exports = class UserSocket extends Socket {
     // Get right associated with the user
     this.socket.on("userGetRight", async (userId) => {
       try {
-        const userRight = await this.models["user"].getUserRight(userId, this.models);
+        const userRight = await this.models["user"].getUserRight(userId);
         this.socket.emit("userRight", {
           success: true,
           userRight,
@@ -155,7 +155,7 @@ module.exports = class UserSocket extends Socket {
     this.socket.on("userUpdateDetails", async (data, callback) => {
       const { userId, userData } = data;
       try {
-        await this.models["user"].updateUserDetails(userId, userData, this.models);
+        await this.models["user"].updateUserDetails(userId, userData);
         callback({
           success: true,
           message: "Successfully updated user!",

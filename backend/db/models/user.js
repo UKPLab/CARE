@@ -127,12 +127,11 @@ module.exports = (sequelize, DataTypes) => {
     /**
      * Get users by their role
      * @param {string} role - The role of the users to fetch.
-     * @param {Object} models - Sequelize models
      * @returns {string[]} An array of users with the specified role.
      */
-    async getUsersByRole(role, models) {
+    async getUsersByRole(role) {
       try {
-        const matchedUsers = await models["user_role_matching"].findAll({
+        const matchedUsers = await this.sequelize.models["user_role_matching"].findAll({
           where: { userRoleName: role },
           attributes: ["userId"],
           raw: true,
@@ -155,12 +154,11 @@ module.exports = (sequelize, DataTypes) => {
     /**
      * Gets the rights associated with the user
      * @param {number} userId - The ID of the user
-     * @param {Object} models - Sequelize models
      * @returns {Object<string, array>}
      */
-    static async getUserRight(userId, models) {
+    static async getUserRight(userId) {
       try {
-        let roles = await models["user_role_matching"].findAll({
+        let roles = await this.sequelize.models["user_role_matching"].findAll({
           where: { userId },
           raw: true,
         });
@@ -170,7 +168,7 @@ module.exports = (sequelize, DataTypes) => {
         roles = roles.map((role) => role.userRoleName);
         let userRight = {};
         await Promise.all(roles.map(async (role) => {
-          const matchedRoles = await models["role_right_matching"].findAll({
+          const matchedRoles = await this.sequelize.models["role_right_matching"].findAll({
             where: { userRoleName: role },
             raw: true,
           });
@@ -186,10 +184,9 @@ module.exports = (sequelize, DataTypes) => {
     /**
      * Get specific user's details
      * @param {number} userId - The ID of the user
-     * @param {Object} models - Sequelize models
      * @returns {Object}
      */
-    static async getUserDetails(userId, models) {
+    static async getUserDetails(userId) {
       try {
         const user = await User.findOne({
           where: {
@@ -201,7 +198,7 @@ module.exports = (sequelize, DataTypes) => {
           },
           include: [
             {
-              model: models["user_role_matching"],
+              model: this.sequelize.models["user_role_matching"],
               as: "roles",
               attributes: ["userRoleName"],
               where: {
@@ -229,12 +226,11 @@ module.exports = (sequelize, DataTypes) => {
      * Updates user's details
      * @param {number} userId - The ID of the user
      * @param {Object} userData - Includes firstName, lastName, email, roles
-     * @param {Object} models - Sequelize models
      * @returns {Promise<void>}
      */
-    static async updateUserDetails(userId, userData, models) {
+    static async updateUserDetails(userId, userData) {
       const transaction = await sequelize.transaction();
-      const UserRoleMatching = models["user_role_matching"];
+      const UserRoleMatching = this.sequelize.models["user_role_matching"];
       try {
         const [updatedRowsCount] = await User.update(
           {
