@@ -37,7 +37,7 @@
       ><b>Time Left:</b> {{ timeLeftHuman }}</span>
     </button>
   </Teleport>
-  <Annotater
+  <Annotator
     v-if="documentId !== 0"
     :study-session-id="studySessionId"
   />
@@ -53,14 +53,14 @@
  * @author Dennis Zyska
  */
 import StudyModal from "@/components/study/StudyModal.vue";
-import Annotater from "./annotater/Annotater.vue";
+import Annotator from "./annotator/Annotator.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
 
 export default {
   name: "StudyRoute",
-  components: {LoadIcon, FinishModal, StudyModal, Annotater},
+  components: {LoadIcon, FinishModal, StudyModal, Annotator},
   provide() {
     return {
       documentId: computed(() => this.documentId),
