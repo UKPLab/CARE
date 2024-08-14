@@ -27,7 +27,7 @@ export default {
     }
   },
   sockets: {
-    mergedDocumentFile(data) {
+    documentFileMerged(data) {
       this.initializeEditorWithContent(data.deltas);
       if (this.pendingExport) {
         this.pendingExport();
@@ -62,7 +62,7 @@ export default {
     fetchMergedDocumentData(documentId) {
       return new Promise((resolve) => {
         this.pendingExport = resolve;
-        this.$socket.emit("sendMergedDeltas", { documentId });
+        this.$socket.emit("documentGetDeltas", { documentId });
       });
     },
     initializeEditorWithContent(deltas) {

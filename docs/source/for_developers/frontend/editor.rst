@@ -6,8 +6,9 @@ When the Editor is initialized, it is capable of handling text changes and proce
 
 Key features include:  
 - Handling text changes and debouncing these changes
-- Managing the content
-- Provides a download button for exporting the document as HTML
+- Managing the content, formatting, and styling of the document
+- Configuring and customizing the toolbar
+- Exporting the document as HTML and full access to delta files
 
 Overview
 --------
@@ -37,7 +38,7 @@ The editor should be properly initialized and configured. This involves setting 
         };
       },
       mounted() {
-        const editorContainer = document.getElementById('editor-container');
+        const editorContainer = document.getElementById('<editor-container-id>');
         if (editorContainer) {
           this.editor = new Editor(editorContainer, {
             modules: {
@@ -51,63 +52,26 @@ The editor should be properly initialized and configured. This involves setting 
 
 Refer to `frontend/src/components/editor/Editor.vue` for the full implementation.
 
-### Handling Text Changes
+### Debouncing of text changes
 
-The editor captures text changes using Quill's `text-change` event. 
-These changes are debounced, processed, and sent to the backend for synchronization.
+Debouncing is used to limit the number of database updates during text changes, improving performance and reducing the number of requests sent to the backend.
+The editor captures text changes using Quill's `text-change` event.
 
-.. code-block:: javascript
+.. tip::
 
-    methods: {
-      handleTextChange(delta, oldContents, source) {
-        if (source === "user") {
-          this.deltaBuffer.push(delta);
-          this.debouncedProcessDelta();
-        }
-      },
-      debouncedProcessDelta: debounce(function() {
-        // Process deltas
-      }, 1000)
-    }
+    Set the debounce time based on the expected frequency of text changes and the desired performance with the setting `editor.edits.debounceTime`.
 
-Refer to `frontend/src/components/editor/Editor.vue` for the full implementation.
 
 ### Toolbar Configuration
 
 The toolbar can be customized based on the context. 
-Toolbar visibility and tools can be managed through Vuex settings and configured within the editor options.
-
-.. code-block:: javascript
-
-    computed: {
-      toolbarVisible() {
-        return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true";
-      },
-      editorOptions() {
-        // Define toolbar options
-      }
-    }
-
-Refer to `frontend/src/components/editor/Editor.vue` for the full implementation.
-
-### Data Persistence
-
-Ensure that changes made in the editor are saved to the backend and retrieved correctly. 
-This involves converting between Quill Delta objects and database entries using the delta conversion module.
-
-.. code-block:: javascript
-
-    import { dbToDelta, deltaToDb } from '@/utils/modules/editor-delta-conversion';
-
-    const quillDelta = dbToDelta(databaseEntries);
-    const databaseEntries = deltaToDb(quillDelta);
-
-Refer to `utils/modules/editor-delta-conversion/index.js` for the full implementation.
+Toolbar visibility and tools can be managed through the settings module in Dashboard.
 
 Database Columns
 ----------------
 
 Understanding the roles of specific columns in the database tables is crucial for effective data management and extending the editor's functionality.
+This is especially important when working with the database, as we use an internal representation of the document deltas.
 
 ### Document Table
 
@@ -125,7 +89,9 @@ Understanding the roles of specific columns in the database tables is crucial fo
 - `text`: Text involved in the edit.
 - `attributes`: Additional attributes related to the edit.
 
-Refer to `backend/db/models/document_edit.js` and `backend/db/migrations/20240411140804-create-document_edit.js` for detailed schema definitions.
+.. note::
+
+    Refer to `backend/db/models/document_edit.js` and `backend/db/migrations/20240411140804-create-document_edit.js` for detailed schema definitions.
 
 Delta Files on the Hard Disk 
 ----------------------------
@@ -142,11 +108,11 @@ For more details, see the Quill Delta documentation: https://quilljs.com/docs/de
 ### Purpose of Delta Files on Disk
 
 1. **Efficient Storage**:
-   - Delta files store the current document state in delta format. 
+   - Delta files store the current document state in a merged delta format.
    This minimizes storage requirements and ensures that only the necessary data is saved.
 
 2. **Optimized Data Transfer**:
-   - By storing the current state as a delta file, only the required changes need to be sent to the frontend. 
+   - By storing the current state as a merged delta file, only the required changes need to be sent to the frontend.
    This reduces the amount of data transferred over the network and ensures quick updates.
 
 ### How Deltas are Used in the Editor and Document Socket
@@ -191,25 +157,3 @@ To execute the tests, use the following command:
 
 Test data for the delta conversion tests are stored in JSON files located in `utils/modules/editor-delta-conversion/tests/data/`. 
 Each file contains both delta and database entry representations of the document.
-
-Running the Application
------------------------
-
-1. **Set Up the Environment**:
-   Follow the installation steps to set up the environment.
-
-2. **Initialize the Database and Modules**:
-   Ensure the database is initialized using the Makefile command: `make init`.
-
-3. **Start the Backend Server**:
-   Ensure the backend server is running.
-
-4. **Start the Frontend Server**:
-   Ensure the frontend development server is running.
-
-5. **Interact with the Editor**:
-   Use the application to create, edit, and manage documents. 
-   Monitor WebSocket events to ensure real-time updates and synchronization.
-
-
-
