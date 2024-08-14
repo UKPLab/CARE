@@ -2,7 +2,6 @@ const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
 const database = require("../../db/index.js");
-const docTypes = require("../../db/models/document.js").docTypes;
 
 const {dbToDelta} = require("editor-delta-conversion");
 
@@ -150,7 +149,7 @@ module.exports = class DocumentSocket extends Socket {
         try {
             const doc = await this.models['document'].getById(documentId);
             if (this.checkDocumentAccess(doc.id)) {
-                if (doc.type === docTypes.DOC_TYPE_HTML) {
+                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
                     const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
                     if (fs.existsSync(deltaFilePath)) {
                         const delta = await this.loadDocument(deltaFilePath);
@@ -191,7 +190,7 @@ module.exports = class DocumentSocket extends Socket {
             const doc = await this.models['document'].getById(documentId);
 
             if (this.checkDocumentAccess(doc.id)) {
-                if (doc.type === docTypes.DOC_TYPE_HTML) { // HTML document type
+                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
                     const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
                     let delta = new Delta();
 
