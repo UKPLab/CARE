@@ -216,10 +216,16 @@ More Commands
       - Compile the AsyncAPI documentation.
     * - ``make doc_sphinx``
       - Compile the Sphinx documentation (this documentation).
+    * - ``make db``
+      - Initialize (migrate) the database.
     * - ``make init``
       -   Initialize the database and install npm packages in all utils/modules subdirectories. This command calls both make tables and make modules
     * - ``make test``
       - Running the backend api tests.
+    * - ``make test-modules``
+      - Run unit tests for specific modules - In our case to run the tests defined in `utils/modules/editor-delta-conversion`.
+    * - ``make test-rpc``
+      - Running the backend rpc tests.
     * - ``make backup_db CONTAINER=<name>``
       - Creates a database dump from the given postgres container and stores it in the db_dumps folder.
     * - ``make recover_db CONTAINER=<name> DUMP=<path>``
@@ -230,10 +236,6 @@ More Commands
       - Kills all node processes. (only unix)
     * - ``make lint``
       - Runs the linter for the frontend.
-    * - ``make tables``
-      - Initialize (migrate) the database.
-    * - ``make test-modules``
-      -   Run unit tests for specific modules - In our case to run the tests defined in `utils/modules/editor-delta-conversion`.
-    * - ``make modules`` 
+     * - ``make modules``
       - Install npm packages in all `utils/modules` subdirectories.
 
