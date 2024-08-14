@@ -79,7 +79,7 @@ db: backend/node_modules/.uptodate
 	cd backend/db && npx sequelize-cli db:migrate
 
 .PHONY: init
-init: db modules
+init: modules db
 
 .PHONY: dev
 dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate

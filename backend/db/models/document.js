@@ -3,6 +3,11 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     class Document extends MetaModel {
+        static docTypes = Object.freeze({
+            DOC_TYPE_PDF: 0,
+            DOC_TYPE_HTML: 1
+        });
+
         static autoTable = true;
 
         static fields = [
@@ -48,12 +53,6 @@ module.exports = (sequelize, DataTypes) => {
             // define association here
         }
     }
-
-    // Enum for document type
-    const docTypes = Object.freeze({
-        DOC_TYPE_PDF: 0,
-        DOC_TYPE_HTML: 1
-    });
 
     Document.init({
         name: DataTypes.STRING,
