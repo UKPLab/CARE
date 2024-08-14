@@ -13,20 +13,16 @@
     </template>
     <template #footer>
       <span class="btn-group">
-        <button
-          type="button"
+        <BasicButton
+          title="Cancel"
           class="btn btn-secondary"
           @click="$refs.modal.close()"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
+        />
+        <BasicButton
+          title="Confirm"
           class="btn btn-primary"
           @click="submit"
-        >
-          Confirm
-        </button>
+        />
       </span>
     </template>
   </BasicModal>
@@ -35,6 +31,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal for resetting user's password
@@ -43,7 +40,7 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "PasswordModal",
-  components: { BasicModal, BasicForm },
+  components: { BasicModal, BasicForm, BasicButton },
   data() {
     return {
       userId: 0,
