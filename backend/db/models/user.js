@@ -118,12 +118,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static async getAllUsers() {
       try {
-        return await User.findAll({
-          attributes: {
-            exclude: ["passwordHash", "salt"],
-          },
-          raw: true,
-        });
+        return await User.getAll(false, ["passwordHash", "salt"]);
       } catch (error) {
         console.error(error);
       }
@@ -202,8 +197,9 @@ module.exports = (sequelize, DataTypes) => {
             id: userId,
             deleted: false,
           },
-          // TODO: check how to simplify the attributes
-          attributes: ["userName", "firstName", "lastName", "email", "acceptTerms", "acceptStats", "lastLoginAt", "createdAt", "updatedAt", "deletedAt"],
+          attributes: {
+            exclude: ["passwordHash", "salt", "deleted"],
+          },
           include: [
             {
               model: models["user_role_matching"],
