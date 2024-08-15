@@ -149,13 +149,14 @@ module.exports = class DocumentSocket extends Socket {
         try {
             const doc = await this.models['document'].getById(documentId);
             if (this.checkDocumentAccess(doc.id)) {
+                const documentType = doc.type;
                 if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
                     const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
                     if (fs.existsSync(deltaFilePath)) {
                         const delta = await this.loadDocument(deltaFilePath);
-                        this.socket.emit("documentFile", {document: doc, deltas: delta});
+                        this.socket.emit("documentFile", {document: doc, deltas: delta, documentType });
                     } else {
-                        this.socket.emit("documentFile", {document: doc, deltas: new Delta()});
+                        this.socket.emit("documentFile", {document: doc, deltas: new Delta(), documentType });
                     }
                 } else { // Non-HTML document type, send file
                     const filePath = `${UPLOAD_PATH}/${doc.hash}.pdf`;
@@ -164,7 +165,7 @@ module.exports = class DocumentSocket extends Socket {
                             if (err) {
                                 throw new Error("Failed to read PDF");
                             }
-                            this.socket.emit("documentFile", {document: doc, file: data});
+                            this.socket.emit("documentFile", {document: doc, file: data, documentType });
                         });
                     } else {
                         throw new Error("PDF file not found");
@@ -386,7 +387,7 @@ module.exports = class DocumentSocket extends Socket {
 
         const transaction = await database.sequelize.transaction();
         try {
-            const {userId, documentId, ops} = data;
+            const {userId, documentId, studySessionId, ops} = data;
             let appliedEdits = [];
 
             await ops.reduce(async (promise, op) => {
@@ -395,6 +396,7 @@ module.exports = class DocumentSocket extends Socket {
                     userId: this.userId,
                     draft: true,
                     documentId,
+                    studySessionId,
                     ...op
                 };
 
