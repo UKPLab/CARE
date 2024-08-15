@@ -38,7 +38,12 @@
     </button>
   </Teleport>
   <Annotator
-    v-if="documentId !== 0"
+    v-if="documentId !== 0 && documentType === 0"
+    :study-session-id="studySessionId"
+  />
+  <Editor
+    v-if="documentId !== 0 && documentType === 1"
+    :document-id="documentId"
     :study-session-id="studySessionId"
   />
 </template>
@@ -54,19 +59,20 @@
  */
 import StudyModal from "@/components/study/StudyModal.vue";
 import Annotator from "./annotator/Annotator.vue";
+import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import {computed} from "vue";
+import { computed } from "vue";
 
 export default {
   name: "StudyRoute",
-  components: {LoadIcon, FinishModal, StudyModal, Annotator},
+  components: { LoadIcon, FinishModal, StudyModal, Annotator, Editor },
   provide() {
     return {
       documentId: computed(() => this.documentId),
       studySessionId: computed(() => this.studySessionId),
       readonly: this.readonly,
-    }
+    };
   },
   props: {
     'studyHash': {
@@ -91,7 +97,8 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       documentId: 0,
-    }
+      documentType: null,
+    };
   },
   computed: {
     studySession() {
@@ -153,8 +160,9 @@ export default {
     study(newVal) {
       if (newVal) {
         this.documentId = newVal.documentId;
+        this.fetchDocumentType(); // Fetch document type when study changes
       } else {
-        this.documentId = 0
+        this.documentId = 0;
       }
     }
   },
@@ -162,7 +170,7 @@ export default {
     this.studySessionId = this.initStudySessionId;
     if (this.studySessionId === 0) {
       this.$refs.studyModal.open();
-      this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
+      this.$socket.emit("studyGetByHash", { studyHash: this.studyHash });
     }
   },
   sockets: {
@@ -175,9 +183,17 @@ export default {
         });
         this.$router.push("/");
       }
+    },
+    documentFile: function (data) {
+      this.documentType = data.documentType;
     }
   },
   methods: {
+    fetchDocumentType() {
+      if (this.documentId) {
+        this.$socket.emit("documentGet", { documentId: this.documentId });
+      }
+    },
     start(data) {
       this.studySessionId = data.studySessionId;
     },
@@ -186,7 +202,7 @@ export default {
         sessionId: this.studySessionId,
         comment: data.comment,
         end: Date.now()
-      })
+      });
     },
     finish(data) {
       if (data.studySessionId) {
@@ -199,11 +215,11 @@ export default {
       this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
       if (this.timeLeft < 0) {
-        this.finish({studySessionId: this.studySessionId});
+        this.finish({ studySessionId: this.studySessionId });
       }
     }
   }
-}
+};
 </script>
 
 <style scoped>

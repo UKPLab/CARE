@@ -209,7 +209,7 @@ export default {
         const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
         const dbOps = deltaToDb(combinedDelta.ops);
         if (dbOps.length > 0) {
-          this.$socket.emit("documentEdit", { documentId: this.documentId, ops: dbOps });
+          this.$socket.emit("documentEdit", { documentId: this.documentId, studySessionId: this.studySessionId, ops: dbOps });
         }
 
         this.deltaBuffer = [];
