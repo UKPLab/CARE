@@ -2,6 +2,7 @@
   <span>
     <StudyModal ref="studyCoordinator"/>
     <StudySessionModal ref="studySessionModal"/>
+    <ConfirmModal ref="deleteConf"/>
     <Card title="Studies">
       <template #headerElements>
         <ButtonHeader
@@ -28,6 +29,7 @@ import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 import ButtonHeader from "@/basic/card/ButtonHeader.vue"
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -36,9 +38,9 @@ import ButtonHeader from "@/basic/card/ButtonHeader.vue"
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, ButtonHeader},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, ButtonHeader, ConfirmModal},
   props: {},
-  fetchData: ['study'],
+  fetchData: ['study','study_session'],
   data() {
     return {
       options: {
@@ -178,9 +180,7 @@ export default {
 
         this.studyCoordinator(data.params);
       } else if (data.action === "deleteStudy") {
-        this.$socket.emit("stats", {action: "studyDelete", data: {studyId: data.params.id}});
-
-        this.$socket.emit("studyDelete", {studyId: data.params.id})
+        this.deleteStudy(data.params);
       } else if (data.action === "openStudy") {
         this.$router.push("/study/" + data.params.hash);
       } else if (data.action === "linkStudy") {
@@ -225,6 +225,38 @@ export default {
     },
     studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
+    },
+    async deleteStudy(row) {
+      const studySessions = this.$store.getters["table/study_session/getFiltered"](
+        (e) => e.studyId === row.id
+      );
+      let warning;
+      if (studySessions && studySessions.length > 0) {
+        warning = ` There ${studySessions.length !== 1 ? "are" : "is"} currently ${
+          studySessions.length
+        } ${studySessions.length !== 1 ? "study session" : "study sessions"}
+         existing for this study. Deleting it will delete the ${
+          studySessions.length !== 1 ? "study session" : "study sessions"
+         }!`;
+      } else {
+        warning = "";
+      }
+
+      this.$refs.deleteConf.open(
+        "Delete Study",
+        "Are you sure you want to delete the study?",
+        warning,
+        function (val) {
+          if (val) {
+            this.$socket.emit("stats", {action: "studyDelete", data: {studyId: row.id}});
+
+            this.$socket.emit("studyUpdate", {
+              studyId: row.id, 
+              deleted: true
+            });
+          }
+        }
+      );
     }
   }
 }

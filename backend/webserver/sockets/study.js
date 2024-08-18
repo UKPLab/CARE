@@ -22,7 +22,7 @@ module.exports = class StudySocket extends Socket {
         if (this.checkUserAccess(currentStudy.userId)) {
             const study = await this.models['study'].updateById(studyId, data);
 
-            if (study.deleted) {
+            if (currentStudy.deleted && !study.deleted) {
                 const sessions = await this.models['study_session'].getAllByKey('studyId', study.id);
                 for (const session of sessions) {
                     await this.models['study_session'].deleteById(session.id);
@@ -165,8 +165,6 @@ module.exports = class StudySocket extends Socket {
             try {
                 if (data.studyId && data.studyId !== 0) {
                     await this.updateStudy(data.studyId, data);
-                } else {
-                    await this.addStudy(data);
                 }
             } catch (err) {
                 this.logger.error(err);
