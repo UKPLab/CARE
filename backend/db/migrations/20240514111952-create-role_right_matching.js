@@ -3,13 +3,14 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("role_right_matching", {
-      userRoleName: {
+      userRoleId: {
+        // Sets both userRoleId and userRightName as primaryKey to avoid repeated role right assignment.
         primaryKey: true,
         allowNull: false,
-        type: Sequelize.STRING,
+        type: Sequelize.INTEGER,
         references: {
           model: "user_role",
-          key: "name",
+          key: "id", 
         },
       },
       userRightName: {

@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
       },
       userId: DataTypes.INTEGER,
-      userRoleName: DataTypes.STRING,
+      userRoleId: DataTypes.INTEGER,
       deleted: DataTypes.BOOLEAN,
       createdAt: DataTypes.DATE,
       updatedAt: DataTypes.DATE,

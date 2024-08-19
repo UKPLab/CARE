@@ -2,20 +2,34 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Fetch all users using raw SQL query
+    // Fetch users using raw SQL query
     const users = await queryInterface.sequelize.query(
-      'SELECT * FROM "user" WHERE sysrole = \'admin\'',
+      "SELECT * FROM \"user\" WHERE sysrole IN ('admin', 'regular')",
       {
         type: queryInterface.sequelize.QueryTypes.SELECT,
       }
     );
+
+    // Fetch user roles to get the mapping of role names to Ids
+    const userRoles = await queryInterface.sequelize.query(
+      "SELECT id, name FROM \"user_role\" WHERE name IN ('admin', 'user')",
+      {
+        type: queryInterface.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    // Create a mapping object of role names to Ids
+    const roleNameIdMapping = userRoles.reduce((acc, role) => {
+      acc[role.name] = role.id;
+      return acc;
+    }, {});
 
     // Transfer the data to user_role_matching table
     await queryInterface.bulkInsert(
       "user_role_matching",
       users.map((user) => ({
         userId: user.id,
-        userRoleName: user.sysrole,
+        userRoleId: roleNameIdMapping[user.sysrole === "regular" ? "user" : "admin"],
         deleted: user.deleted,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
@@ -38,6 +52,20 @@ module.exports = {
       },
     });
 
+    // Fetch user roles to get the mapping of Ids to role names
+    const userRoles = await queryInterface.sequelize.query(
+      "SELECT id, name FROM \"user_role\" WHERE name IN ('admin', 'user')",
+      {
+        type: queryInterface.sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    // Create a mapping object of Ids to role names
+    const idRoleNameMapping = userRoles.reduce((acc, role) => {
+      acc[role.id] = role.name;
+      return acc;
+    }, {});
+
     // Fill in the sysrole column in the user table again
     const userRoleMatchings = await queryInterface.sequelize.query(
       "SELECT * FROM user_role_matching",
@@ -49,10 +77,10 @@ module.exports = {
     await Promise.all(
       userRoleMatchings.map((matching) =>
         queryInterface.sequelize.query(
-          'UPDATE "user" SET "sysrole" = :userRoleName WHERE "id" = :userId',
+          'UPDATE "user" SET "sysrole" = :sysrole WHERE "id" = :userId',
           {
             replacements: {
-              userRoleName: matching.userRoleName,
+              sysrole: idRoleNameMapping[matching.userRoleId] === "user" ? "regular" : "admin",
               userId: matching.userId,
             },
             type: queryInterface.sequelize.QueryTypes.UPDATE,

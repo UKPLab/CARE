@@ -16,13 +16,13 @@ module.exports = (sequelize, DataTypes) => {
 
   RoleRightMatching.init(
     {
-      userRoleName: {
-        type: DataTypes.STRING,
+      userRoleId: {
+        type: DataTypes.INTEGER,
         primaryKey: true,
         allowNull: false,
         references: {
           model: "user_role",
-          key: "name",
+          key: "id",
         },
       },
       userRightName: {
