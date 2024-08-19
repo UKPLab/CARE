@@ -190,7 +190,7 @@ module.exports = class AppSocket extends Socket {
       const userWithRoleInfo = {
         ...user,
         roles: userRoles,
-        isAdmin: this.isAdmin(),
+        isAdmin: await this.isAdmin(),
       };
       this.socket.emit("appUser", userWithRoleInfo);
     } catch (error) {
