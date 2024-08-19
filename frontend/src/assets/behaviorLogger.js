@@ -114,8 +114,7 @@ class BehaviorLogger {
         if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
             // Search started
             this.startSearch();
-        } else
-            console.log(event.key);
+        }
     }
 
     /**
