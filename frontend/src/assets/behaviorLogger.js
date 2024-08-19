@@ -19,12 +19,14 @@ import debounce from "lodash.debounce";
  * @param {Object} socket - The WebSocket connection object used to send data to the backend.
  * @param {Object} options - Configuration options for the logger. Currently only contains a debounce time.
  * @param {number} [options.debounceTime=500] - The debounce time in milliseconds for mouse move events.
+ * @param {Array} [options.clickBlackList=[]] - A list of objects that should not be logged when clicked.
  */
 class BehaviorLogger {
     constructor(socket, options = {}) {
         this.socket = socket;
         this.options = {
             debounceTime: 500,
+            clickBlackList: [],
             ...options
         };
 
@@ -34,6 +36,7 @@ class BehaviorLogger {
         this.currentSearchId = null;
 
         // Bind methods
+        // (necessary to access the correct 'this' context when the methods are called as event listeners)
         this.reportMouseMove = debounce(this.reportMouseMove.bind(this), this.options.debounceTime);
         this.reportClick = this.reportClick.bind(this);
         this.reportTabVisibilityChange = this.reportTabVisibilityChange.bind(this);
@@ -179,14 +182,22 @@ class BehaviorLogger {
 
     /**
      * Reports a click event to the backend via the socket connection whenever a click event is detected on any element.
+     * If the clicked element is in the clickBlackList, the event is not reported.
      * @param event The click event object.
      */
     reportClick(event) {
         const target = event.target;
 
+        // Check if the clicked element is in the clickBlackList
+        // Necessary to avoid double logging of certain elements for which dedicated event listeners are already set
+        if (this.options.clickBlackList.some(item => target.matches(item))) {
+            return;
+        }
+
         this.socket.emit("stats", {
             action: "click",
             data: {
+                composedPath: event.composedPath().map(el => el.tagName),
                 elementType: target.tagName,
                 elementId: target.id,
                 elementClass: target.className,
