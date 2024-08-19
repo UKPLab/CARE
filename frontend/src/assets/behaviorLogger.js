@@ -19,14 +19,14 @@ import debounce from "lodash.debounce";
  * @param {Object} socket - The WebSocket connection object used to send data to the backend.
  * @param {Object} options - Configuration options for the logger. Currently only contains a debounce time.
  * @param {number} [options.debounceTime=500] - The debounce time in milliseconds for mouse move events.
- * @param {Array} [options.clickBlackList=[]] - A list of objects that should not be logged when clicked.
+ * @param {Array} [options.clickAllowList=[]] - A list of objects that should be logged when clicked.
  */
 class BehaviorLogger {
     constructor(socket, options = {}) {
         this.socket = socket;
         this.options = {
             debounceTime: 500,
-            clickBlackList: [],
+            clickAllowList: [],
             ...options
         };
 
@@ -181,32 +181,30 @@ class BehaviorLogger {
 
     /**
      * Reports a click event to the backend via the socket connection whenever a click event is detected on any element.
-     * If the clicked element is in the clickBlackList, the event is not reported.
+     * If the clicked element is in the clickAllowList, the event is reported.
      * @param event The click event object.
      */
     reportClick(event) {
         const target = event.target;
 
-        // Check if the clicked element is in the clickBlackList
+        // Check if the clicked element is in the clickAllowList
         // Necessary to avoid double logging of certain elements for which dedicated event listeners are already set
-        if (this.options.clickBlackList.some(item => target.matches(item))) {
-            return;
-        }
 
-        this.socket.emit("stats", {
-            action: "click",
-            data: {
-                composedPath: event.composedPath().map(el => el.tagName),
-                elementType: target.tagName,
-                elementId: target.id,
-                elementClass: target.className,
-                clientX: event.clientX,
-                clientY: event.clientY,
-                pageX: event.pageX,
-                pageY: event.pageY,
-                path: window.location.pathname,
-            }
-        });
+        if (this.options.clickAllowList.some(item => target.matches(item)))
+            this.socket.emit("stats", {
+                action: "click",
+                data: {
+                    composedPath: event.composedPath().map(el => el.tagName),
+                    elementType: target.tagName,
+                    elementId: target.id,
+                    elementClass: target.className,
+                    clientX: event.clientX,
+                    clientY: event.clientY,
+                    pageX: event.pageX,
+                    pageY: event.pageY,
+                    path: window.location.pathname,
+                }
+            });
     }
 
     /**
