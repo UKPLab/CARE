@@ -2,31 +2,46 @@
 
 const roleRights = [
   {
-    userRoleName: "teacher",
+    role: "teacher",
     userRightName: "backend.socket.user.getUsers.student",
   },
   {
-    userRoleName: "teacher",
+    role: "teacher",
     userRightName: "backend.socket.user.getUsers.mentor",
   },
 ];
 
 module.exports = {
   async up(queryInterface, Sequelize) {
+    const userRoles = await queryInterface.sequelize.query('SELECT id, name FROM "user_role"', {
+      type: queryInterface.sequelize.QueryTypes.SELECT,
+    });
+
+    // Create a mapping object of role names to Ids
+    const roleNameIdMapping = userRoles.reduce((acc, role) => {
+      acc[role.name] = role.id;
+      return acc;
+    }, {});
+
     await queryInterface.bulkInsert(
       "role_right_matching",
-      roleRights.map((right) => {
-        right["createdAt"] = new Date();
-        right["updatedAt"] = new Date();
-        return right;
-      }),
+      roleRights.map((right) => ({
+        userRoleId: roleNameIdMapping[right.role],
+        userRightName: right.userRightName,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
       {}
     );
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.bulkDelete("role_right_matching", {
-      userRoleName: roleRights.map(r => r.userRoleName)
-    }, {});
+    await queryInterface.bulkDelete(
+      "role_right_matching",
+      {
+        userRightName: roleRights.map((r) => r.userRightName),
+      },
+      {}
+    );
   },
 };

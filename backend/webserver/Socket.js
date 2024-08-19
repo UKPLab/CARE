@@ -114,7 +114,7 @@ module.exports = class Socket {
    * This can be problematic if user roles change during the login session,
    * as the changes won't be automatically reflected in the cache.
    *
-   * @returns {string[]} An array of user role names.
+   * @returns {integer[]} An array of user role Ids.
    */
   async getUserRoles() {
     try {
@@ -123,7 +123,7 @@ module.exports = class Socket {
           where: { userId: this.userId },
           raw: true,
         });
-        this.userRoles = userRoles.map((role) => role.userRoleName);
+        this.userRoles = userRoles.map((role) => role.userRoleId);
         this.lastRolesUpdate = new Date();
       }
       return this.userRoles;
@@ -146,8 +146,14 @@ module.exports = class Socket {
   async isAdmin() {
     try {
       if (this.isUserAdmin === null) {
-        const roles = await this.getUserRoles();
-        this.isUserAdmin = roles.includes("admin");
+        const roleIds = await this.getUserRoles();
+        // Get the admin role Id 
+        const adminRole = await this.models["user_role"].findOne({
+          where: {name: "admin"},
+          attributes: ["id"],
+          raw: true
+        })
+        this.isUserAdmin = roleIds.includes(adminRole.id);
       }
       return this.isUserAdmin;
     } catch (error) {
@@ -165,11 +171,11 @@ module.exports = class Socket {
     try {
       // admin has full rights, so return true directly
       if (this.isAdmin()) return true;
-      const roles = await this.getUserRoles();
+      const roleIds = await this.getUserRoles();
       const hasRight = await Promise.all(
-        roles.map(async (role) => {
+        roleIds.map(async (roleId) => {
           const matchedRoles = await this.models["role_right_matching"].findAll({
-            where: { userRoleName: role },
+            where: { userRoleId: roleId },
             raw: true,
           });
           return matchedRoles.some((matchedRole) => matchedRole.userRightName === right);

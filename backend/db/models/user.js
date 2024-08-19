@@ -5,6 +5,7 @@ const { genSalt, genPwdHash } = require("../../utils/auth.js");
 
 module.exports = (sequelize, DataTypes) => {
   class User extends MetaModel {
+    static roleIdMap = null;
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -16,6 +17,20 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "userId",
         as: "roles",
       });
+    }
+
+    static async getRoleIdMap() {
+      if (!this.roleIdMap) {
+        const roles = await this.sequelize.models["user_role"].findAll({
+          attributes: ["id", "name"],
+          raw: true,
+        });
+        this.roleIdMap = roles.reduce((acc, role) => {
+          acc[role.name] = role.id;
+          return acc;
+        }, {});
+      }
+      return this.roleIdMap;
     }
 
     /**
@@ -126,13 +141,21 @@ module.exports = (sequelize, DataTypes) => {
 
     /**
      * Get users by their role
-     * @param {string} role - The role of the users to fetch.
+     * @param {string} roleName - The role of the users to fetch.
      * @returns {string[]} An array of users with the specified role.
      */
-    async getUsersByRole(role) {
+    async getUsersByRole(roleName) {
       try {
+        const roleIdMap = await User.getRoleIdMap();
+        const roleId = roleIdMap[roleName];
+
+        if (!roleId) {
+          console.error(`Role not found: ${roleName}`);
+          return [];
+        }
+
         const matchedUsers = await this.sequelize.models["user_role_matching"].findAll({
-          where: { userRoleName: role },
+          where: { userRoleId: roleId },
           attributes: ["userId"],
           raw: true,
         });
@@ -165,16 +188,18 @@ module.exports = (sequelize, DataTypes) => {
         if (roles.length === 0) {
           return {};
         }
-        roles = roles.map((role) => role.userRoleName);
+        roles = roles.map((role) => role.userRoleId);
         let userRight = {};
-        await Promise.all(roles.map(async (role) => {
-          const matchedRoles = await this.sequelize.models["role_right_matching"].findAll({
-            where: { userRoleName: role },
-            raw: true,
-          });
-    
-          userRight[role] = matchedRoles.map((role) => role.userRightName);
-        }));
+        await Promise.all(
+          roles.map(async (role) => {
+            const matchedRoles = await this.sequelize.models["role_right_matching"].findAll({
+              where: { userRoleId: role },
+              raw: true,
+            });
+
+            userRight[role] = matchedRoles.map((role) => role.userRightName);
+          })
+        );
         return userRight;
       } catch (error) {
         console.error(error);
@@ -188,6 +213,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static async getUserDetails(userId) {
       try {
+        const roleIdMap = await User.getRoleIdMap();
         const user = await User.findOne({
           where: {
             id: userId,
@@ -200,7 +226,7 @@ module.exports = (sequelize, DataTypes) => {
             {
               model: this.sequelize.models["user_role_matching"],
               as: "roles",
-              attributes: ["userRoleName"],
+              attributes: ["userRoleId"],
               where: {
                 deleted: false,
               },
@@ -215,7 +241,10 @@ module.exports = (sequelize, DataTypes) => {
           return;
         }
         const userDetails = user.get({ plain: true });
-        userDetails.roles = userDetails.roles.map((role) => role.userRoleName);
+        userDetails.roles = userDetails.roles.map((role) => {
+          const roleName = Object.keys(roleIdMap).find((key) => roleIdMap[key] === role.userRoleId);
+          return roleName;
+        });
         return userDetails;
       } catch (error) {
         console.error(error);
@@ -232,6 +261,7 @@ module.exports = (sequelize, DataTypes) => {
       const transaction = await sequelize.transaction();
       const UserRoleMatching = this.sequelize.models["user_role_matching"];
       try {
+        const roleIdMap = await User.getRoleIdMap();
         const [updatedRowsCount] = await User.update(
           {
             firstName: userData.firstName,
@@ -257,18 +287,28 @@ module.exports = (sequelize, DataTypes) => {
         });
 
         // Determine roles to add and remove
-        const currentRoleNames = currentRoles.map((role) => role.userRoleName);
-        const rolesToAdd = userData.roles.filter((role) => !currentRoleNames.includes(role));
-        const rolesToRemove = currentRoleNames.filter((role) => !userData.roles.includes(role));
+        const currentRoleIds = currentRoles.map((role) => role.userRoleId);
+        const currentRoleNames = currentRoleIds.map((id) =>
+          Object.keys(roleIdMap).find((key) => roleIdMap[key] === id)
+        );
+
+        const rolesToAdd = userData.roles.filter((roleName) => !currentRoleNames.includes(roleName));
+        const rolesToRemove = currentRoleIds.filter(
+          (roleId) => !userData.roles.includes(Object.keys(roleIdMap).find((key) => roleIdMap[key] === roleId))
+        );
 
         // Add new roles
-        await Promise.all(rolesToAdd.map((role) => UserRoleMatching.create({ userId, userRoleName: role }, { transaction })));
+        await Promise.all(
+          rolesToAdd.map((roleName) =>
+            UserRoleMatching.create({ userId, userRoleId: roleIdMap[roleName] }, { transaction })
+          )
+        );
 
         // Remove roles
         await UserRoleMatching.destroy({
           where: {
             userId,
-            userRoleName: rolesToRemove,
+            userRoleId: rolesToRemove,
           },
           individualHooks: true,
           transaction,

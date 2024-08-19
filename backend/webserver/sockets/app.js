@@ -186,11 +186,11 @@ module.exports = class AppSocket extends Socket {
         where: { userId: this.userId },
         raw: true,
       });
-      const userRoles = matchedRoles.map((role) => role.userRoleName);
+      const userRoles = matchedRoles.map((role) => role.userRoleId);
       const userWithRoleInfo = {
         ...user,
         roles: userRoles,
-        isAdmin: userRoles.includes("admin"),
+        isAdmin: this.isAdmin(),
       };
       this.socket.emit("appUser", userWithRoleInfo);
     } catch (error) {

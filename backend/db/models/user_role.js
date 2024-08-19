@@ -16,11 +16,13 @@ module.exports = (sequelize, DataTypes) => {
 
   UserRole.init(
     {
-      name: {
+      id: {
         allowNull: false,
         primaryKey: true,
-        type: DataTypes.STRING,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
       },
+      name: DataTypes.STRING,
       description: DataTypes.STRING,
       deleted: DataTypes.BOOLEAN,
       createdAt: DataTypes.DATE,
@@ -33,8 +35,6 @@ module.exports = (sequelize, DataTypes) => {
       tableName: "user_role",
     }
   );
-
-  UserRole.removeAttribute("id");
 
   return UserRole;
 };

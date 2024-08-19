@@ -22,7 +22,7 @@ module.exports = {
       await Promise.all(
         selectedSysroles.map(async (sysrole) => {
           return {
-            name: sysrole.name,
+            name: sysrole.name === 'regular' ? 'user': sysrole.name,
             description: sysrole.description,
             deleted: sysrole.deleted,
             createdAt: sysrole.createdAt,
@@ -49,6 +49,12 @@ module.exports = {
       {
         name: "student",
         description: "leave inline commentary",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        name: "guest",
+        description: "have limited rights when using the platform",
         createdAt: new Date(),
         updatedAt: new Date(),
       },

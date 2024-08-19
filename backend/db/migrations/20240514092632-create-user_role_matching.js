@@ -17,12 +17,12 @@ module.exports = {
           key: 'id'
         },
       },
-      userRoleName: {
+      userRoleId: {
         allowNull: false,
-        type: Sequelize.STRING,
+        type: Sequelize.INTEGER,
         references: {
           model: 'user_role',
-          key: 'name'
+          key: 'id'
         },
       },
       deleted: {
