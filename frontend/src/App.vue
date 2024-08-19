@@ -26,7 +26,7 @@ import Loader from "@/basic/Loading.vue";
 import {createTable} from "@/store/utils";
 import axios from 'axios';
 import getServerURL from "@/assets/serverUrl";
-import BehaviorLogger from "@/behaviorLogger";
+import BehaviorLogger from "@/assets/behaviorLogger";
 
 /**
  * Main App Component
