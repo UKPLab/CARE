@@ -12,7 +12,7 @@ module.exports = {
 
     // Fetch user roles to get the mapping of role names to Ids
     const userRoles = await queryInterface.sequelize.query(
-      "SELECT id, name FROM \"user_role\" WHERE name IN ('admin', 'user')",
+      'SELECT id, name FROM "user_role"',
       {
         type: queryInterface.sequelize.QueryTypes.SELECT,
       }
@@ -27,14 +27,26 @@ module.exports = {
     // Transfer the data to user_role_matching table
     await queryInterface.bulkInsert(
       "user_role_matching",
-      users.map((user) => ({
-        userId: user.id,
-        userRoleId: roleNameIdMapping[user.sysrole === "regular" ? "user" : "admin"],
-        deleted: user.deleted,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        deletedAt: user.deletedAt,
-      }))
+      users.map((user) => {
+        const getUserRole = (user) => {
+          if (user.userName === "guest") {
+            return "guest";
+          }
+          if (user.sysrole === "regular") {
+            return "user";
+          }
+          return "admin";
+        };
+
+        return {
+          userId: user.id,
+          userRoleId: roleNameIdMapping[getUserRole(user)],
+          deleted: user.deleted,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          deletedAt: user.deletedAt,
+        };
+      })
     );
 
     // Remove the sysrole column from the user table
@@ -54,7 +66,7 @@ module.exports = {
 
     // Fetch user roles to get the mapping of Ids to role names
     const userRoles = await queryInterface.sequelize.query(
-      "SELECT id, name FROM \"user_role\" WHERE name IN ('admin', 'user')",
+      "SELECT id, name FROM \"user_role\"",
       {
         type: queryInterface.sequelize.QueryTypes.SELECT,
       }
