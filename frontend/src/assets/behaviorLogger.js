@@ -98,7 +98,6 @@ class BehaviorLogger {
                 },
                 deviceType: isMobile() ? 'mobile' : 'desktop',
                 browserInfo: navigator.userAgent,
-                timestamp: Date.now()
             }
         });
     }
@@ -143,8 +142,7 @@ class BehaviorLogger {
      * @param status The status of the search event (start, complete).
      */
     reportSearchEvent(status) {
-        const timestamp = Date.now();
-        const duration = this.searchStartTime ? timestamp - this.searchStartTime : 0;
+        const duration = this.searchStartTime ? Date.now() - this.searchStartTime : 0;
 
         this.socket.emit("stats", {
             action: "search_event",
@@ -152,7 +150,6 @@ class BehaviorLogger {
                 searchId: this.currentSearchId,
                 status: status,
                 duration: duration,
-                timestamp: timestamp
             }
         });
 
@@ -176,7 +173,6 @@ class BehaviorLogger {
                 clientY: event.clientY,
                 scrollX: window.scrollX,
                 scrollY: window.scrollY,
-                timestamp: Date.now()
             }
         });
     }
@@ -199,7 +195,6 @@ class BehaviorLogger {
                 pageX: event.pageX,
                 pageY: event.pageY,
                 path: window.location.pathname,
-                timestamp: Date.now()
             }
         });
     }
@@ -213,7 +208,6 @@ class BehaviorLogger {
             action: "tabVisibilityChange",
             data: {
                 hidden: document.hidden,
-                timestamp: Date.now()
             }
         });
     }
@@ -229,7 +223,6 @@ class BehaviorLogger {
             data: {
                 from: from.fullPath,
                 to: to.fullPath,
-                timestamp: Date.now()
             }
         });
     }
