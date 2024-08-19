@@ -39,9 +39,8 @@ module.exports = (sequelize, DataTypes) => {
       tableName: "user_role_matching",
       hooks: {
         afterCreate: async (userRole, options) => {
-          const User = options.transaction.sequelize.models["user"];
           try {
-            await User.update(
+            await sequelize.models.user.update(
               { rolesUpdatedAt: new Date() },
               {
                 where: { id: userRole.userId },
@@ -53,9 +52,8 @@ module.exports = (sequelize, DataTypes) => {
           }
         },
         afterDestroy: async (userRole, options) => {
-          const User = options.transaction.sequelize.models["user"];
           try {
-            await User.update(
+            await sequelize.models.user.update(
               { rolesUpdatedAt: new Date() },
               {
                 where: { id: userRole.userId },
