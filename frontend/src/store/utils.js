@@ -192,6 +192,14 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
         }
     }
 
+    if (table.name === "document_edit") {
+        newModule.mutations['applyEdits'] = (state, ids) => {
+            ids.map(id => 
+                state.data.find(s => s.id === id).applied = true
+            );
+        }
+    }
+
     //remove old store if exists
     if (store.hasModule([namespace, table.name])) {
         store.unregisterModule([namespace, table.name]);

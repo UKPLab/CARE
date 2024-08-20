@@ -17,6 +17,7 @@ const crypto = require("crypto");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const Socket = require(path.resolve(__dirname, "./Socket.js"));
 const Service = require(path.resolve(__dirname, "./Service.js"));
+const RPC = require(path.resolve(__dirname,"./RPC.js"));
 /**
  * Defines Express Webserver of Content Server
  *
@@ -34,11 +35,12 @@ module.exports = class Server {
         this.logger = require("../utils/logger")("webServer", this.db);
 
         this.app = express();
+        this.socket = null;
 
+        this.rpcs = {};
         this.sockets = {};
         this.availSockets = {};
         this.services = {};
-        this.socket = null;
 
         // No Caching
         this.app.disable('etag');
@@ -77,8 +79,9 @@ module.exports = class Server {
 
         this.httpServer = http.createServer(this.app);
         this.#initWebsocketServer();
-        this.#addSockets();
-        this.#addServices();
+        this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
+        this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
+        this.#discoverComponents("./services", Service, this.addService.bind(this));
     }
 
     /**
@@ -229,6 +232,9 @@ module.exports = class Server {
 
         this.io.on("connection", (socket) => {
             this.availSockets[socket.id] = {};
+            socket.openComponents = {
+                editor: []  // Array to track open documents
+            };
             this.logger.debug("Socket connect: " + socket.id);
 
             Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
@@ -237,33 +243,41 @@ module.exports = class Server {
                 await this.availSockets[socket.id][socketName].init();
             });
 
-            socket.on("disconnect", (reason) => {
+            socket.on("disconnect", async (reason) => {
                 this.logger.debug("Socket disconnected: " + reason);
+                
+                // Save open documents on disconnect
+                for (const documentId of socket.openComponents.editor) {
+                    if (this.availSockets[socket.id]['DocumentSocket']) {
+                        await this.availSockets[socket.id]['DocumentSocket'].saveDocument(documentId);
+                    }
+                }
+
                 delete this.availSockets[socket.id];
             });
         });
-
     }
 
     /**
-     * Find all sockets and add sockets to the server
+     * This method finds and adds a specific component to the server instance
+     * @param classPath to the specific component folder inside the backend/webserver (e.g.  ./sockets)
+     * @param classObj the required class object constant (e.g., const Socket = require(path.resolve(__dirname, "./Socket.js"));)
+     * @param addFunc the defined function inside the server.js class (i.e., this - e.g. this.addSocket)
+     * @param extension  filter the files with the given extension
      */
-    #addSockets() {
-        this.logger.debug("Adding sockets: ");
-        fs.readdir(path.resolve(__dirname, "./sockets"), (err, files) => {
-            if (err) {
-                this.logger.error("Error while reading sockets directory: " + err);
-                return;
-            }
-            files.forEach(file => {
-                if (file.endsWith(".js")) {
-                    const newSocket = require(path.resolve(__dirname, "./sockets") + "/" + file);
-                    if (newSocket.prototype instanceof Socket) {
-                        this.addSocket(newSocket);
-                    }
+    #discoverComponents(classPath, classObj, addFunc, extension = ".js"){
+        this.logger.debug("Discover components in " + classPath);
+        const files = fs.readdirSync(path.resolve(__dirname, classPath));
+
+        files.map(file => {
+            if (file.endsWith(extension)) {
+                const newComponent = require(path.resolve(__dirname, classPath) + "/" + file);
+                if (newComponent.prototype instanceof classObj) {
+                    addFunc(newComponent);
                 }
-            });
+            }
         });
+
     }
 
     /**
@@ -278,28 +292,21 @@ module.exports = class Server {
     }
 
     /**
-     * Find and add all services and add to the server
+     * Add new RPC route to the server
+     *
+     * @param rpcClass - class of the RPC
      */
-    #addServices() {
-        this.logger.debug("Adding services: ");
-        fs.readdir(path.resolve(__dirname, "./services"), (err, files) => {
-            if (err) {
-                this.logger.error("Error while reading services directory: " + err);
-                return;
-            }
-            files.forEach(file => {
-                if (file.endsWith(".js")) {
-                    const newService = require(path.resolve(__dirname, "./services") + "/" + file);
-                    if (newService.prototype instanceof Service) {
-                        this.addService(newService);
-                    }
-                }
-            });
-        });
+    addRPC(rpcClass) {
+        this.logger.debug("Add RPC " + rpcClass.name + " to webserver...");
+
+        this.rpcs[rpcClass.name] = new rpcClass(this);
+        this.rpcs[rpcClass.name].init();
     }
 
     /**
      * Add external services to the server
+     *
+     * @param serviceClass - class of the Service
      */
     addService(serviceClass) {
         this.logger.debug("Add service " + serviceClass.name + " to webserver...");
@@ -328,7 +335,9 @@ module.exports = class Server {
             service.close();
         });
         this.io.close();
-        this.http.close();
+        if (this.http) {
+            this.http.close();
+        }
     }
 
 }
