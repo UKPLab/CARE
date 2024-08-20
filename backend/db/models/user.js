@@ -19,6 +19,10 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
+    /**
+     * Retrieves or creates a map of role names to role Ids.
+     * @returns {Promise<Object>} - an object that maps role names to role Ids.
+     */
     static async getRoleIdMap() {
       if (!this.roleIdMap) {
         const roles = await this.sequelize.models["user_role"].findAll({
