@@ -64,7 +64,7 @@ export default {
       default: 0
     },
     studySessionId: {
-      default: null
+      default: null // Allows for null if not in a study session
     },
     userId: {
       default: null
@@ -209,7 +209,11 @@ export default {
         const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
         const dbOps = deltaToDb(combinedDelta.ops);
         if (dbOps.length > 0) {
-          this.$socket.emit("documentEdit", { documentId: this.documentId, studySessionId: this.studySessionId, ops: dbOps });
+          this.$socket.emit("documentEdit", {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId || null, 
+            ops: dbOps
+          });
         }
 
         this.deltaBuffer = [];

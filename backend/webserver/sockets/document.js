@@ -396,7 +396,7 @@ module.exports = class DocumentSocket extends Socket {
                     userId: this.userId,
                     draft: true,
                     documentId,
-                    studySessionId,
+                    studySessionId: studySessionId || null,
                     ...op
                 };
 
