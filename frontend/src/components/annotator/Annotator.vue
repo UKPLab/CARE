@@ -18,10 +18,11 @@
             class="rounded border border-1 shadow-sm"
             style="margin:auto"
           />
+
         </div>
-        <Sidebar 
-          v-if="!sidebarDisabled"
-          ref="sidebar" :show="isSidebarVisible" 
+        <Sidebar
+            v-if="!sidebarDisabled"
+            ref="sidebar" :show="isSidebarVisible"
         />
       </div>
     </div>
@@ -149,7 +150,7 @@ import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 
 export default {
-  name: "AnnotaterComponent",
+  name: "AnnotatorView",
   components: {
     LoadIcon,
     PDFViewer,
@@ -236,7 +237,7 @@ export default {
     },
     numStudyComments() {
       return this.comments.filter(c => c.studySessionId).length;
-    }
+    },
   },
   watch: {
     studySessionId(newVal, oldVal) {
@@ -396,7 +397,24 @@ export default {
 </script>
 
 <style scoped>
+
+#sidebarContainer {
+  position: relative;
+  padding: 0;
+}
+
 IconBoostrap[disabled] {
   background-color: darkgrey;
 }
+
+#sidebarContainer::-webkit-scrollbar {
+  display: none;
+}
+
+@media screen and (max-width: 900px) {
+  #sidebarContainer {
+    display: none;
+  }
+}
+
 </style>
