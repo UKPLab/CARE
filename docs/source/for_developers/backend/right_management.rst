@@ -59,11 +59,11 @@ Adding a New Right
 
    const roleRights = [
      {
-       userRoleName: "teacher",
+       role: "teacher",
        userRightName: "backend.socket.user.getUsers.student",
      },
      {
-       userRoleName: "teacher",
+       role: "teacher",
        userRightName: "backend.socket.user.getUsers.mentor",
      },
      // Please assign more rights to the corresponding roles here...
