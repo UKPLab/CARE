@@ -4,7 +4,12 @@
     :loading="true"
   />
   <span v-else>
-    <Annotator/>
+    <Annotator
+      v-if="documentType === 0"
+    />
+    <Editor
+      v-if="documentType === 1"
+    />
     <ReviewModal ref="reviewModal" />
     <ReportModal ref="reportModal" />
     <Teleport to="#topbarCustomPlaceholder">
@@ -28,6 +33,7 @@ import Annotator from "@/components/annotator/Annotator.vue";
 import ReviewModal from "@/components/study/ReviewModal.vue";
 import ReportModal from "@/components/study/ReportModal.vue";
 import {computed} from "vue";
+import Editor from "./editor/Editor.vue";
 
 /**
  *  Document view in reviewing mode
@@ -39,12 +45,12 @@ import {computed} from "vue";
  */
 export default {
   name: "ReviewRoute",
-  components: {ReviewModal, Loader, Annotator, ReportModal},
+  components: {ReviewModal, Loader, Annotator, ReportModal, Editor},
   provide() {
     return {
       documentId: computed(() => this.documentId),
       studySessionId: computed(() => this.studySessionId),
-      readonly: this.readonly
+      readonly: this.readonly,
     }
   },
   props: {
@@ -52,12 +58,14 @@ export default {
       type: String,
       required: true,
     },
+    
   },
   data() {
     return {
       documentId: 0,
       readonly: true,
       studySessionId: 0,
+      documentType: null,
     }
   },
   sockets: {
@@ -70,9 +78,16 @@ export default {
         });
         this.$router.push("/");
       }
+    },
+    documentFile: function (data) {
+      this.documentType = data.documentType;
     }
   },
   computed: {
+    document() {
+      console.log(this.documentHash);
+      return this.$store.getters['table/document/getByHash'](this.documentHash);
+    },
     studySession() {
       return this.$store.getters['table/study_session/getByHash'](this.studySessionHash);
     },
@@ -87,6 +102,7 @@ export default {
     study(newVal) {
       if (newVal) {
         this.documentId = newVal.documentId;
+        this.fetchDocumentType(); // Fetch document type when study changes
       } else {
         this.documentId = 0
       }
@@ -103,6 +119,11 @@ export default {
     this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
   },
   methods: {
+    fetchDocumentType() {
+      if (this.documentId) {
+        this.$socket.emit("documentGet", { documentId: this.documentId });
+      }
+    },
     evaluate() {
       this.$refs.reviewModal.open();
     },
