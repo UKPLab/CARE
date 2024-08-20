@@ -10,7 +10,7 @@
       />
     </template>
   </Card>
-  <DetailsModal ref="detailsModal" />
+  <DetailsModal ref="detailsModal" @update-user="fetchUsers"/>
   <RightsModal ref="rightsModal" />
   <PasswordModal ref="passwordModal" />
 </template>

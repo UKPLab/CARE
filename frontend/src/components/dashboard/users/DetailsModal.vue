@@ -53,6 +53,7 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "DetailsModal",
   components: { BasicModal, BasicForm, BasicTable, BasicButton },
+  emits: ["updateUser"],
   data() {
     return {
       userId: 0,
@@ -151,6 +152,7 @@ export default {
         if (response.success) {
           this.$refs.modal.waiting = false;
           this.$refs.modal.close();
+          this.$emit("updateUser");
           this.eventBus.emit("toast", {
             title: "User updated",
             message: response.message,
