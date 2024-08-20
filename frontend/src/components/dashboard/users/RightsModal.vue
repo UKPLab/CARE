@@ -21,10 +21,6 @@
             </thead>
             <tbody>
               <tr v-for="(rights, role) in userRight" :key="role">
-                <!-- <template v-if="role === '2'">
-                  <td>admin</td>
-                  <td>admin has full rights</td>
-                </template> -->
                 <td>{{ role }}</td>
                   <td>
                     <ul>
