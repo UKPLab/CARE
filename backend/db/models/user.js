@@ -107,7 +107,7 @@ module.exports = (sequelize, DataTypes) => {
     /**
      * Register a new login
      * @param {string} userId user id
-     * @returns {Promise<boolean>}} true if successufl
+     * @returns {Promise<boolean>}} true if successful
      */
     static async registerUserLogin(userId) {
       try {
