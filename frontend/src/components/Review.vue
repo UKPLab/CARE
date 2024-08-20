@@ -1,15 +1,16 @@
 <template>
-  <Loader
-    v-if="studySessionId === 0 || documentId === 0"
-    :loading="true"
-  />
+  <Loader 
+    v-if="studySessionId === 0 || documentId === 0" 
+    :loading="true" 
+    />
   <span v-else>
     <Annotator
-      v-if="documentType === 0"
-    />
+     v-if="documentType === 0" 
+     />
     <Editor
-      v-if="documentType === 1"
-    />
+     v-if="documentType === 1" 
+     :readonly="readonly" 
+     />
     <ReviewModal ref="reviewModal" />
     <ReportModal ref="reportModal" />
     <Teleport to="#topbarCustomPlaceholder">
@@ -28,11 +29,11 @@
 </template>
 
 <script>
-import Loader from "@/basic/Loading.vue"
+import Loader from "@/basic/Loading.vue";
 import Annotator from "@/components/annotator/Annotator.vue";
 import ReviewModal from "@/components/study/ReviewModal.vue";
 import ReportModal from "@/components/study/ReportModal.vue";
-import {computed} from "vue";
+import { computed } from "vue";
 import Editor from "./editor/Editor.vue";
 
 /**
@@ -45,7 +46,7 @@ import Editor from "./editor/Editor.vue";
  */
 export default {
   name: "ReviewRoute",
-  components: {ReviewModal, Loader, Annotator, ReportModal, Editor},
+  components: { ReviewModal, Loader, Annotator, ReportModal, Editor },
   provide() {
     return {
       documentId: computed(() => this.documentId),
@@ -58,7 +59,7 @@ export default {
       type: String,
       required: true,
     },
-    
+
   },
   data() {
     return {
@@ -85,7 +86,6 @@ export default {
   },
   computed: {
     document() {
-      console.log(this.documentHash);
       return this.$store.getters['table/document/getByHash'](this.documentHash);
     },
     studySession() {
@@ -116,7 +116,9 @@ export default {
     }
   },
   mounted() {
-    this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
+    this.$socket.emit("studySessionGetByHash", {
+      studySessionHash: this.studySessionHash
+    });
   },
   methods: {
     fetchDocumentType() {
