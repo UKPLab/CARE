@@ -31,7 +31,7 @@ module.exports = {
             model: "study_session",
             key: "id"
         },
-        allowNull: false
+        allowNull: true
       },
       draft: {
         type: Sequelize.BOOLEAN,
