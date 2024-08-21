@@ -14,6 +14,7 @@
  * Register the routes for the config
  * @param {Server} server main server instance
  */
+// TODO: Should think about naming for acceptStats and acceptDataSharing
 module.exports = function (server) {
     server.app.get('/config.js', async (req, res) => {
         const config = {
@@ -21,9 +22,9 @@ module.exports = function (server) {
             "app.register.requestName": await server.db.models['setting'].get("app.register.requestName"),
             "app.register.requestStats": await server.db.models['setting'].get("app.register.requestStats"),
             "app.register.terms": await server.db.models['setting'].get("app.register.terms"),
-            "app.register.trackingAgreed.default": await server.db.models['setting'].get("app.register.trackingAgreed.default"),
-            "app.register.dataShared.enabled": await server.db.models['setting'].get("app.register.dataShared.enabled"),
-            "app.register.dataShared.default": await server.db.models['setting'].get("app.register.dataShared.default"),
+            "app.register.acceptStats.default": await server.db.models['setting'].get("app.register.acceptStats.default"),
+            "app.register.acceptDataSharing.enabled": await server.db.models['setting'].get("app.register.acceptDataSharing.enabled"),
+            "app.register.acceptDataSharing.default": await server.db.models['setting'].get("app.register.acceptDataSharing.default"),
             "app.login.guest": await server.db.models['setting'].get("app.login.guest"),
             "app.landing.showDocs": await server.db.models['setting'].get("app.landing.showDocs"),
             "app.landing.linkDocs": await server.db.models['setting'].get("app.landing.linkDocs"),

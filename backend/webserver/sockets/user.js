@@ -66,10 +66,10 @@ module.exports = class UserSocket extends Socket {
   /**
    * Update user's consent data
    * @param {Object} consentData - The consent data object
-   * @param {boolean} consentData.termsConsented - Indicates whether the user has consented to the terms of service
-   * @param {boolean} consentData.trackingAgreed - Indicates whether the user has agreed to tracking
-   * @param {boolean} consentData.dataShared - Indicates whether the user has agreed to donate their annotation data
-   * @param {string} consentData.consentedAt -
+   * @param {boolean} consentData.acceptTerms - Indicates whether the user has consented to the terms of service
+   * @param {boolean} consentData.acceptStats - Indicates whether the user has agreed to tracking
+   * @param {boolean} consentData.acceptDataSharing - Indicates whether the user has agreed to donate their annotation data
+   * @param {string} consentData.acceptedAt - Time when the user made the consent
    * @returns {void}
    */
   async updateUserConsent(consentData) {

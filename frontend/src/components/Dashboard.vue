@@ -82,7 +82,7 @@ export default {
       }
     },
     isTermsConsented() {
-      return this.$store.getters["auth/getUser"].termsConsented;
+      return this.$store.getters["auth/getUser"].acceptTerms;
     },
   },
   mounted() {

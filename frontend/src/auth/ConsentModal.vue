@@ -1,7 +1,7 @@
 <template>
   <Modal
-    lg
     ref="modal"
+    lg
     name="terms"
     disable-keyboard
     remove-close
@@ -15,9 +15,9 @@
       <div class="consent-item">
         <label class="consent-label">
           <input
+            v-model="acceptTerms"
             class="consent-input"
             type="checkbox"
-            v-model="termsConsented"
           />
           I agree to the Terms of Service
           <p
@@ -31,27 +31,27 @@
       <hr />
       <h3 v-if="config['requestStats'] || config['requestData']">Data Consent:</h3>
       <div
-        class="consent-item"
         v-if="config['requestStats']"
+        class="consent-item"
       >
         <label class="consent-label">
           <input
+            v-model="trackingValue"
             class="consent-input"
             type="checkbox"
-            v-model="trackingValue"
           />
           I consent to behavior tracking</label
         >
       </div>
       <div
-        class="consent-item"
         v-if="config['requestData']"
+        class="consent-item"
       >
         <label class="consent-label">
           <input
+            v-model="sharingValue"
             class="consent-input"
             type="checkbox"
-            v-model="sharingValue"
           />
           I agree to donate my usage data
         </label>
@@ -95,9 +95,9 @@ export default {
   components: { Modal },
   data() {
     return {
-      termsConsented: false,
-      trackingAgreed: false,
-      dataShared: false,
+      acceptTerms: false,
+      acceptStats: false,
+      acceptDataSharing: false,
       showTermsError: false,
     };
   },
@@ -107,34 +107,41 @@ export default {
       return {
         terms: window.config["app.register.terms"],
         requestStats: JSON.parse(window.config["app.register.requestStats"]),
-        isTrackingAgreed: JSON.parse(window.config["app.register.trackingAgreed.default"]),
-        requestData: JSON.parse(window.config["app.register.dataShared.enabled"]),
-        isDataShared: JSON.parse(window.config["app.register.dataShared.default"]),
+        isTrackingAgreed: JSON.parse(window.config["app.register.acceptStats.default"]),
+        requestData: JSON.parse(window.config["app.register.acceptDataSharing.enabled"]),
+        isDataShared: JSON.parse(window.config["app.register.acceptDataSharing.default"]),
       };
     },
     trackingValue: {
       get() {
-        return this.config["requestStats"] ? this.config["isTrackingAgreed"] : this.trackingAgreed;
+        return this.config["requestStats"] ? this.config["isTrackingAgreed"] : this.acceptStats;
       },
       set(value) {
         if (this.config["requestStats"]) {
           this.config["isTrackingAgreed"] = value;
         } else {
-          this.trackingAgreed = value;
+          this.acceptStats = value;
         }
       },
     },
     sharingValue: {
       get() {
-        return this.config["requestData"] ? this.config["isDataShared"] : this.dataShared;
+        return this.config["requestData"] ? this.config["isDataShared"] : this.acceptDataSharing;
       },
       set(value) {
         if (this.config["requestData"]) {
           this.config["isDataShared"] = value;
         } else {
-          this.dataShared = value;
+          this.acceptDataSharing = value;
         }
       },
+    },
+  },
+  watch: {
+    acceptTerms(newValue) {
+      if (newValue) {
+        this.showTermsError = false;
+      }
     },
   },
   methods: {
@@ -148,15 +155,15 @@ export default {
       await this.$router.push("/login");
     },
     handleAccept() {
-      if (!this.termsConsented) {
+      if (!this.acceptTerms) {
         this.showTermsError = true;
         return;
       }
       const consentData = {
-        termsConsented: this.termsConsented,
-        trackingAgreed: this.trackingAgreed,
-        dataShared: this.dataShared,
-        consentedAt: new Date(),
+        acceptTerms: this.acceptTerms,
+        acceptStats: this.acceptStats,
+        acceptDataSharing: this.acceptDataSharing,
+        acceptedAt: new Date(),
       };
       this.$socket.emit("userUpdateConsent", consentData, (res) => {
         if (res.success) {
@@ -177,17 +184,10 @@ export default {
       });
     },
     resetForm() {
-      this.termsConsented = false;
-      this.trackingAgreed = false;
-      this.dataShared = false;
+      this.acceptTerms = false;
+      this.acceptStats = false;
+      this.acceptDataSharing = false;
       this.showTermsError = false;
-    },
-  },
-  watch: {
-    termsConsented(newValue) {
-      if (newValue) {
-        this.showTermsError = false;
-      }
     },
   },
 };
