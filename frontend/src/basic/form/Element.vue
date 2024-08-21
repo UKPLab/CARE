@@ -72,13 +72,19 @@ export default {
       emptyField: false
     }
   },
+  mounted() {
+    this.eventBus.on('resetFormField', this.resetFieldState)
+  },
+  beforeUnmount() {
+    this.eventBus.off('resetFormField', this.resetFieldState)
+  },
   methods: {
     validate(data) {
       if (this.options.required) {
-
         // Check pattern
         if (this.options.pattern) {
           if (new RegExp(this.options.pattern).test(data)) {
+            this.invalidField = false;
             return true;
           } else {
             this.invalidField = true;
@@ -86,22 +92,34 @@ export default {
           }
         }
         this.invalidField = false;
-
         // Check empty
-        if (data && data !== "") {
-          this.emptyField = false;
-          return true;
+        if (data) {
+          if(typeof data === "string" && data !== "") {
+            this.emptyField = false;
+            return true;
+          }
+          if(Array.isArray(data) && data.length !== 0 ) {
+            this.emptyField = false;
+            return true;
+          }
+          if(typeof data === "number")  {
+            this.emptyField = false;
+            return true;
+          }
+          this.emptyField = true;
+          return false;
         } else {
           this.emptyField = true;
           return false;
         }
-
       } else {
         return true;
       }
-
+    },
+    resetFieldState () {
+      this.invalidField = false;
+      this.emptyField = false;
     }
-
   }
 }
 </script>
