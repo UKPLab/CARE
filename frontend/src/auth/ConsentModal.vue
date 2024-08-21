@@ -19,7 +19,7 @@
             class="consent-input"
             type="checkbox"
           />
-          I agree to the Terms of Service
+          I accept the Terms of Service
           <p
             v-if="showTermsError"
             class="error-message"
@@ -40,7 +40,7 @@
             class="consent-input"
             type="checkbox"
           />
-          I consent to behavior tracking</label
+          I allow the collection of anonymous statistics</label
         >
       </div>
       <div
@@ -53,7 +53,7 @@
             class="consent-input"
             type="checkbox"
           />
-          I agree to donate my usage data
+          I agree to my data being made available for research purposes
         </label>
       </div>
     </template>
