@@ -154,15 +154,13 @@
                   > I accept the <a
                     href="#"
                     @click="$refs.terms.open()"
-                >terms</a>!
+                >Terms of Service</a>
                   <div class="feedback-invalid" :class="{invalid: validity['acceptTerms'] && !validTerms}">Please accept
                     the terms.
                   </div>
-
                 </label>
               </div>
             </div>
-
             <div
                 v-if="requestStats"
                 class="form-group row my-2"
@@ -173,7 +171,7 @@
                       v-model="formData['acceptStats']"
                       name="acceptStats"
                       type="checkbox"
-                  > I allow the collection of anonymous statistics!
+                  > I allow the collection of anonymous statistics
                 </label>
               </div>
             </div>
