@@ -2,19 +2,19 @@
 
 const settings = [
   {
-    key: "app.register.trackingAgreed.default",
+    key: "app.register.acceptStats.default",
     value: true,
     type: "boolean",
     description: "The default value of whether the user agrees to tracking during registration.",
   },
   {
-    key: "app.register.dataShared.enabled",
+    key: "app.register.acceptDataSharing.enabled",
     value: true,
     type: "boolean",
     description: "Indicates if the option for data sharing during registration is enabled.",
   },
   {
-    key: "app.register.dataShared.default",
+    key: "app.register.acceptDataSharing.default",
     value: false,
     type: "boolean",
     description: "The default value of whether the user agrees to share data during registration.",

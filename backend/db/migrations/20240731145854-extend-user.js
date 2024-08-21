@@ -3,13 +3,10 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.sequelize.transaction(async (transaction) => {
-      await queryInterface.renameColumn("user", "acceptTerms", "termsConsented", { transaction });
-      await queryInterface.renameColumn("user", "acceptStats", "trackingAgreed", { transaction });
-
       // column to document the time when the consent was given
       await queryInterface.addColumn(
         "user",
-        "consentedAt",
+        "acceptedAt",
         {
           type: Sequelize.DATE,
           allowNull: true,
@@ -20,7 +17,7 @@ module.exports = {
       // column to indicate whether the user agreed to share their annotation data
       await queryInterface.addColumn(
         "user",
-        "dataShared",
+        "acceptDataSharing",
         {
           type: Sequelize.BOOLEAN,
           allowNull: false,
@@ -33,10 +30,8 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     await queryInterface.sequelize.transaction(async (transaction) => {
-      await queryInterface.renameColumn("user", "termsConsented", "acceptTerms", { transaction });
-      await queryInterface.renameColumn("user", "trackingAgreed", "acceptStats", { transaction });
-      await queryInterface.removeColumn("user", "consentedAt", { transaction });
-      await queryInterface.removeColumn("user", "dataShared", { transaction });
+      await queryInterface.removeColumn("user", "acceptedAt", { transaction });
+      await queryInterface.removeColumn("user", "acceptDataSharing", { transaction });
     });
   },
 };
