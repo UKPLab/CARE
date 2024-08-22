@@ -1,13 +1,20 @@
 'use strict';
 
-const settings = [{
-    key: "statistics.behaviorTracking",
-    value: "false",
-    type: "boolean",
-    description: "Enable or disable behavior tracking"
-}];
+const settings = [
+    {
+        key: "statistics.tracking.enabled",
+        value: "false",
+        type: "boolean",
+        description: "Enable or disable behavior tracking"
+    },
+    {
+        key: "statistics.tracking.mouseDebounceTime",
+        value: "500",
+        type: "number",
+        description: "Debounce time in milliseconds for reporting mouse move events"
+    }
+]
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
         const groups = await queryInterface.bulkInsert('setting', settings.map(t => {

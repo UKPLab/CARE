@@ -17,15 +17,15 @@ import debounce from "lodash.debounce";
  * and sending notifications about them to the backend via a socket connection.
  * For more information on the events that are tracked, see the class description.
  * @param {Object} socket - The WebSocket connection object used to send data to the backend.
+ * @param {number} mouseDebounceTime - The debounce time in milliseconds for mouse move events.
  * @param {Object} options - Configuration options for the logger. Currently only contains a debounce time.
- * @param {number} [options.debounceTime=500] - The debounce time in milliseconds for mouse move events.
  * @param {Array} [options.clickAllowList=[]] - A list of objects that should be logged when clicked.
  */
 class BehaviorLogger {
-    constructor(socket, options = {}) {
+    constructor(socket, mouseDebounceTime, options = {}) {
         this.socket = socket;
+        this.mouseDebounceTime = mouseDebounceTime;
         this.options = {
-            debounceTime: 500,
             clickAllowList: [],
             ...options
         };
@@ -37,7 +37,7 @@ class BehaviorLogger {
 
         // Bind methods
         // (necessary to access the correct 'this' context when the methods are called as event listeners)
-        this.reportMouseMove = debounce(this.reportMouseMove.bind(this), this.options.debounceTime);
+        this.reportMouseMove = debounce(this.reportMouseMove.bind(this), this.mouseDebounceTime);
         this.reportClick = this.reportClick.bind(this);
         this.reportTabVisibilityChange = this.reportTabVisibilityChange.bind(this);
         this.reportRouteChange = this.reportRouteChange.bind(this);
@@ -164,7 +164,7 @@ class BehaviorLogger {
 
     /**
      * Reports a mouse move event to the backend via the socket connection.
-     * This event is debounced based on the `debounceTime` option.
+     * This event is debounced based on the `mouseDebounceTime` option.
      * @param event The mouse move event object.
      */
     reportMouseMove(event) {
