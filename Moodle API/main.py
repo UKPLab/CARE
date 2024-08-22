@@ -216,7 +216,8 @@ if __name__ == '__main__':
     create_csv_with_users_from_assignment(1615, 'TANs', 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
     insert_random_keys('users.csv')
     upload_passwords_to_moodle(6350, 'users.csv','REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
-    
+    subs = moodle_api.call('mod_workshop_get_submission', assignmentids=[6350])
+    print(subs)
     
     
     
