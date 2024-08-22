@@ -210,6 +210,7 @@ module.exports = class DocumentSocket extends Socket {
                     delta = delta.compose(dbDelta);
 
                     this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
+                    return delta;
                 } else {
                     throw new Error("Non-HTML documents are not supported for this operation");
                 }
@@ -265,6 +266,12 @@ module.exports = class DocumentSocket extends Socket {
             const doc = await this.models['document'].getById(documentId);
             if (!doc) {
                 this.logger.error(`Document with ID ${documentId} not found.`);
+                return;
+            }
+
+            const study = await this.models['study'].getByKey('documentId', documentId);
+            if (study) {
+                this.logger.info("Cannot overwrite the base document of a study.");
                 return;
             }
 
@@ -455,9 +462,12 @@ module.exports = class DocumentSocket extends Socket {
         });
 
         this.socket.on("documentClose", async (data) => {
-
             try {
-                await this.saveDocument(data.documentId); // Save the document before closing	
+                if (data.studySessionId === null) {
+                    await this.saveDocument(data.documentId);
+                } else {
+                    this.logger.info("Closing document in a study session without saving to disk.");
+                }
                 const index = this.socket.openComponents.editor.indexOf(data.documentId);
                 if (index > -1) {
                     this.socket.openComponents.editor[index] = undefined; // Remove the document ID
