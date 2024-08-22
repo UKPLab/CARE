@@ -1,10 +1,11 @@
 <template>
   <button
       :title="title"
-      class="btn btn-sm me-1"
+      class="btn"
       type="button"
       @click="action"
   >
+  <!-- class="btn btn-sm me-1" -->
     <LoadIcon
         v-if="icon"
         :icon-name="icon"
@@ -17,7 +18,7 @@
 import LoadIcon from "@/basic/Icon.vue";
 
 export default {
-  name: "ButtonHeader",
+  name: "BasicButton",
   components: {LoadIcon},
   props: {
     icon: {
