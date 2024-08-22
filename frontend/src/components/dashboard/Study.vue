@@ -5,8 +5,8 @@
     <ConfirmModal ref="deleteConf"/>
     <Card title="Studies">
       <template #headerElements>
-        <ButtonHeader
-          class="btn-primary"
+        <BasicButton
+          class="btn-primary btn-sm"
           title="Add"
           @click="add()"
         />

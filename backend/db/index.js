@@ -39,7 +39,7 @@ models.forEach(dbModel => {
 
 Object.keys(db.models).forEach(modelName => {
     if (db.models[modelName].associate) {
-        db.models[modelName].associate(db);
+        db.models[modelName].associate(db.models);
     }
 });
 
