@@ -1,0 +1,27 @@
+{
+  "name": "editor-delta-conversion",
+  "version": "1.0.0",
+  "description": "Converts DB entries for the editor into quill delta",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "db_create": "cd db && npx sequelize-cli db:create",
+    "db_migrate": "cd db && npx sequelize-cli db:migrate",
+    "db_migrate:reset": "cd db && npx sequelize-cli db:drop && npm run db_create && npm run db_migrate",
+    "db_migrate:reset2": "cd db && npm run db_create || echo \"IGNORING ERROR\" && npx sequelize-cli db:migrate:undo:all && npm run db_migrate",
+    "test": "cross-env NODE_ENV=test DISABLE_LOGGING=false jest --silent=false --forceExit --testTimeout=10000 --runInBand --collect-coverage -- test.js",
+    "test_doh": "cross-env NODE_ENV=test jest --detectOpenHandles --testTimeout=10000",
+    "pretest": "cross-env NODE_ENV=test npm run db_migrate:reset",
+    "test:module": "cross-env NODE_ENV=test jest --silent=false --forceExit --testTimeout=10000 --runInBand --collect-coverage --detectOpenHandles tests/editor-delta-conversion.test.js"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "quill": "^2.0.2",
+    "quill-delta": "^5.1.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "jest": "^26.6.3"
+  }
+}
