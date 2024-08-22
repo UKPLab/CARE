@@ -28,7 +28,7 @@ import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
-import ButtonHeader from "@/basic/card/ButtonHeader.vue"
+import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
@@ -38,7 +38,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, ButtonHeader, ConfirmModal},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal},
   props: {},
   fetchData: ['study','study_session'],
   data() {
