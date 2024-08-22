@@ -60,3 +60,81 @@ For our simple example, the code would look like this:
             })
         }
     }
+
+Advanced Logging Class
+------------------------
+The ``BehaviorLogger`` class is a dedicated logging class that unifies several high-level logging functions in one file.
+It is designed to serve as a centralized baseclass for the existing logging functionalities, minimizing the effort of
+adding new logging functionalities and to keep the logging logic in one place, without cluttering the project's
+components.
+
+The class is implemented in the file frontend/src/assets/behaviorLogger.js.
+
+Currently, the class logs the following interactions:
+
+- Device & Browser Information
+- Route Changes
+- Tab visibility changes
+- Mouse move events
+- Click events
+- Specific key down events (currently only cmd/ctrl + f to detect search start)
+- Window focus events (currently only used to detect search end)
+
+Extending the Logging Class
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To log a new interaction, you can extend an existing logging function or create a new one. For example, we could extend
+the key down logging function to log a new interaction when the user presses a specific key or key combination:
+
+.. code-block:: javascript
+
+        handleKeyDown(event) {
+            // Previous code ...
+            if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
+                // Search started
+                this.startSearch();
+            }
+            // New code ...
+            if (event.key === 's') {
+                this.handleNewInteraction();
+            }
+        }
+
+The ``handleNewInteraction`` function would then dictate the logic on how to interpret the event and send the log to
+the statistics table.
+
+.. code-block:: javascript
+
+        handleNewInteraction() {
+            this.socket.emit("stats", {
+              action: "newInteraction",
+              data: {id: Math.random()}
+            })
+        }
+
+.. important::
+    When extending the BehaviorLogger class, make sure to follow these general guidelines:
+
+    1. Bind new logging functions in the constructor to maintain the correct context.
+    2. Add new event listeners to both ``init()`` and ``destroy()`` methods.
+    3. Use the existing WebSocket connection (``this.socket.emit``) to send data to the backend.
+    4. Consider performance optimizations (like debouncing) for frequent events.
+
+Usage in CARE
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``BehaviorLogger`` class is instantiated in the main App component (`App.vue`).
+It is initialized after the application settings are loaded, as it requires access to certain configuration values
+(like the mouse debounce time).
+
+.. code-block:: javascript
+
+    initializeBehaviorLogger() {
+      if (!this.behaviorLogger) {
+        this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
+        this.behaviorLogger.init();
+      }
+    }
+
+This initialization ensures that user behavior logging begins as soon as the application is ready,
+providing comprehensive tracking of user interactions from the start of the user session.
