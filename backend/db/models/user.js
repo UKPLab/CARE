@@ -350,6 +350,31 @@ module.exports = (sequelize, DataTypes) => {
         console.log(error);
       }
     }
+
+    /**
+     * Update user's consent data
+     * @param {number} userId - ID of the user
+     * @param {Object} consentData - The consent data object
+     * @param {boolean} consentData.acceptTerms - Indicates whether the user has consented to the terms of service
+     * @param {boolean} consentData.acceptStats - Indicates whether the user has agreed to tracking
+     * @param {boolean} consentData.acceptDataSharing - Indicates whether the user has agreed to donate their annotation data
+     * @param {string} consentData.acceptedAt - Time when the user made the consent
+     * @returns {void}
+     */
+    static async updateUserConsent(userId, consentData) {
+      try {
+        const [updatedRowsCount] = await User.update(consentData, {
+          where: { id: userId },
+          returning: true,
+        });
+        if (updatedRowsCount === 0) {
+          this.logger.error("Failed to update user: User not found");
+          return;
+        }
+      } catch (error) {
+        this.logger.error("Failed to update user: " + error);
+      }
+    }
   }
 
   User.init(
