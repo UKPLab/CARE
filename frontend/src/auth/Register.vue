@@ -29,7 +29,7 @@
 
           <div class="card-body mx-4 my-4">
             <div
-                v-if="requestName"
+                v-if="config['requestName']"
                 class="form-group row my-2"
             >
               <label
@@ -54,7 +54,7 @@
 
 
             <div
-                v-if="requestName"
+                v-if="config['requestName']"
                 class="form-group row my-2"
             >
               <label
@@ -162,7 +162,7 @@
               </div>
             </div>
             <div
-                v-if="requestStats"
+                v-if="config['requestStats']"
                 class="form-group row my-2"
             >
               <div class="col-md-6 offset-md-4">
@@ -175,7 +175,20 @@
                 </label>
               </div>
             </div>
-
+            <div
+                v-if="config['requestData']"
+                class="form-group row my-2"
+            >
+              <div class="col-md-6 offset-md-4">
+                <label>
+                  <input
+                      v-model="formData['acceptDataSharing']"
+                      name="acceptDataSharing"
+                      type="checkbox"
+                  > I agree to my data being made available for research purposes
+                </label>
+              </div>
+            </div>
             <div class="col-md-6 offset-md-4">
               <button
                   class="btn btn-primary"
@@ -219,16 +232,20 @@ export default {
         password: "",
         acceptTerms: false,
         acceptStats: false,
+        acceptDataSharing: false,
       },
       validity: null
     }
   },
   computed: {
-    requestName() {
-      return window.config['app.register.requestName'] === 'true';
-    },
-    requestStats() {
-      return window.config['app.register.requestStats'] === 'true';
+    config() {
+      return {
+        requestName: JSON.parse(window.config["app.register.requestName"]),
+        requestStats: JSON.parse(window.config["app.register.requestStats"]),
+        isTrackingAgreed: JSON.parse(window.config["app.register.acceptStats.default"]),
+        requestData: JSON.parse(window.config["app.register.requestData"]),
+        isDataShared: JSON.parse(window.config["app.register.acceptDataSharing.default"]),
+      };
     },
     validEmail() {
       const emailRegEx = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
@@ -246,6 +263,15 @@ export default {
     },
     validForm() {
       return this.validEmail && this.validUsername && this.validPassword && this.validTerms;
+    }
+  },
+  mounted() {
+    // Sets initial values for acceptStats and acceptDataSharing
+    if (this.config.requestStats) {
+      this.formData.acceptStats = this.config.isTrackingAgreed;
+    }
+    if (this.config.requestData) {
+      this.formData.acceptDataSharing = this.config.isDataShared;
     }
   },
   beforeMount() {

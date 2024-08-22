@@ -36,7 +36,7 @@
       >
         <label class="consent-label">
           <input
-            v-model="trackingValue"
+            v-model="acceptDataStats"
             class="consent-input"
             type="checkbox"
           />
@@ -49,7 +49,7 @@
       >
         <label class="consent-label">
           <input
-            v-model="sharingValue"
+            v-model="acceptDataSharing"
             class="consent-input"
             type="checkbox"
           />
@@ -101,40 +101,15 @@ export default {
       showTermsError: false,
     };
   },
-  // TODO: Rethink about the naming of the variables, e.g. trackingValue
   computed: {
     config() {
       return {
         terms: window.config["app.register.terms"],
         requestStats: JSON.parse(window.config["app.register.requestStats"]),
         isTrackingAgreed: JSON.parse(window.config["app.register.acceptStats.default"]),
-        requestData: JSON.parse(window.config["app.register.acceptDataSharing.enabled"]),
+        requestData: JSON.parse(window.config["app.register.requestData"]),
         isDataShared: JSON.parse(window.config["app.register.acceptDataSharing.default"]),
       };
-    },
-    trackingValue: {
-      get() {
-        return this.config["requestStats"] ? this.config["isTrackingAgreed"] : this.acceptStats;
-      },
-      set(value) {
-        if (this.config["requestStats"]) {
-          this.config["isTrackingAgreed"] = value;
-        } else {
-          this.acceptStats = value;
-        }
-      },
-    },
-    sharingValue: {
-      get() {
-        return this.config["requestData"] ? this.config["isDataShared"] : this.acceptDataSharing;
-      },
-      set(value) {
-        if (this.config["requestData"]) {
-          this.config["isDataShared"] = value;
-        } else {
-          this.acceptDataSharing = value;
-        }
-      },
     },
   },
   watch: {
@@ -143,6 +118,15 @@ export default {
         this.showTermsError = false;
       }
     },
+  },
+  mounted() {
+    // Sets initial values for acceptStats and acceptDataSharing
+    if (this.config.requestStats) {
+      this.acceptStats = this.config.isTrackingAgreed;
+    }
+    if (this.config.requestData) {
+      this.acceptDataSharing = this.config.isDataShared;
+    }
   },
   methods: {
     open() {

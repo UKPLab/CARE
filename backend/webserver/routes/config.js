@@ -14,7 +14,6 @@
  * Register the routes for the config
  * @param {Server} server main server instance
  */
-// TODO: Should think about naming for acceptStats and acceptDataSharing
 module.exports = function (server) {
     server.app.get('/config.js', async (req, res) => {
         const config = {
@@ -23,7 +22,7 @@ module.exports = function (server) {
             "app.register.requestStats": await server.db.models['setting'].get("app.register.requestStats"),
             "app.register.terms": await server.db.models['setting'].get("app.register.terms"),
             "app.register.acceptStats.default": await server.db.models['setting'].get("app.register.acceptStats.default"),
-            "app.register.acceptDataSharing.enabled": await server.db.models['setting'].get("app.register.acceptDataSharing.enabled"),
+            "app.register.requestData": await server.db.models['setting'].get("app.register.requestData"),
             "app.register.acceptDataSharing.default": await server.db.models['setting'].get("app.register.acceptDataSharing.default"),
             "app.login.guest": await server.db.models['setting'].get("app.login.guest"),
             "app.landing.showDocs": await server.db.models['setting'].get("app.landing.showDocs"),
