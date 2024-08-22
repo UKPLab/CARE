@@ -389,7 +389,6 @@ export default {
       this.awaitingNlpResult = true;
     },
     onPaste(event) {
-      console.log("Paste event")
       const pastedText = (event.clipboardData || window.clipboardData).getData('text');
       if (pastedText) {
         this.$socket.emit("stats", {
