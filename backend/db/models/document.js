@@ -3,6 +3,11 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     class Document extends MetaModel {
+        static docTypes = Object.freeze({
+            DOC_TYPE_PDF: 0,
+            DOC_TYPE_HTML: 1
+        });
+
         static autoTable = true;
 
         static fields = [
@@ -57,7 +62,8 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
-        createdAt: DataTypes.DATE
+        createdAt: DataTypes.DATE,
+        type: DataTypes.INTEGER, // 0 is for pdf and 1 is for html
     }, {
         sequelize: sequelize,
         modelName: 'document',

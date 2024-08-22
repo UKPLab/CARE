@@ -1,5 +1,9 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
+const Delta = require('quill-delta');
+const database = require("../../db/index.js");
+
+const {dbToDelta} = require("editor-delta-conversion");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -8,7 +12,7 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * Loading the document through websocket
  *
- * @author Dennis Zyska
+ * @author Dennis Zyska, Juliane Bechert
  * @type {DocumentSocket}
  */
 module.exports = class DocumentSocket extends Socket {
@@ -24,14 +28,33 @@ module.exports = class DocumentSocket extends Socket {
      */
     async checkDocumentAccess(documentId) {
         const doc = await this.models['document'].getById(documentId);
-        if (doc
-            && (doc.public
+        if (doc && (doc.public
                 || (await this.models['study'].getAllByKey('documentId', documentId)).length > 0)
-                || (this.checkUserAccess(doc.userId))
+            || (this.checkUserAccess(doc.userId))
         ) {
             return true;
         } else {
             return false;
+        }
+    }
+
+    /**
+     * Create document (html)
+     * @param data {type: number, name: string}
+     * @returns {Promise<void>}
+     */
+    async createDocument(data) {
+        try {
+            const doc = await this.models["document"].add({
+                name: data.name,
+                type: data.type,
+                userId: this.userId
+            });
+            this.socket.emit("documentCreated", {success: true, documentId: doc.id});
+            this.emit("documentRefresh", doc);
+        } catch (error) {
+            console.error("Error creating document:", error);
+            this.socket.emit("documentCreated", {success: false, error: error.message});
         }
     }
 
@@ -92,6 +115,7 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+
     /**
      * Cascading the delete of a document (by ID) to all tables with FK. This information is only pushed
      * to the deleting client and not any others.
@@ -110,27 +134,172 @@ module.exports = class DocumentSocket extends Socket {
                     this.logger.error("Failed to delete study " + s.id + " for doc " + documentId);
                 }
             });
-
-
     }
 
     /**
-     * Send document to client
+     * Sends the document to the client
+     *
+     * This method checks if the user has access to the document and then retrieves and sends the document data.
+     * For HTML documents, it fetches and combines draft edits with the existing content before sending.
      *
      * @param {number} documentId
-     * @return {Promise<void>}
+     * @returns {Promise<Delta|void>}
      */
     async sendDocument(documentId) {
-        const doc = await this.models['document'].getById(documentId);
-
-        if (this.checkDocumentAccess(doc.id)) {
-            this.emit("documentRefresh", doc);
-
-            fs.readFile(`${UPLOAD_PATH}/${doc['hash']}.pdf`, (err, data) => {
-                this.socket.emit("documentFile", {document: doc, file: data});
-            });
+        try {
+            const doc = await this.models['document'].getById(documentId);
+            if (this.checkDocumentAccess(doc.id)) {
+                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
+                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                    if (fs.existsSync(deltaFilePath)) {
+                        const delta = await this.loadDocument(deltaFilePath);
+                        this.socket.emit("documentFile", {document: doc, deltas: delta});
+                    } else {
+                        this.socket.emit("documentFile", {document: doc, deltas: new Delta()});
+                    }
+                } else { // Non-HTML document type, send file
+                    const filePath = `${UPLOAD_PATH}/${doc.hash}.pdf`;
+                    if (fs.existsSync(filePath)) {
+                        fs.readFile(filePath, (err, data) => {
+                            if (err) {
+                                throw new Error("Failed to read PDF");
+                            }
+                            this.socket.emit("documentFile", {document: doc, file: data});
+                        });
+                    } else {
+                        throw new Error("PDF file not found");
+                    }
+                }
+            } else {
+                throw new Error("You do not have access to this document");
+            }
+        } catch (error) {
+            this.logger.error("An error occurred while sending the document:", error);
+            this.sendToast(error.message, "Error", "danger");
         }
     }
+
+    /**
+     * Send merged deltas (from disk and database) to client (for HTML documents)
+     *
+     * @param {number} documentId
+     * @returns {Promise<void>}
+     */
+    async sendDocumentDeltas(documentId) {
+        try {
+            const doc = await this.models['document'].getById(documentId);
+
+            if (this.checkDocumentAccess(doc.id)) {
+                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
+                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                    let delta = new Delta();
+
+                    if (fs.existsSync(deltaFilePath)) {
+                        let delta = await this.loadDocument(deltaFilePath);
+                    } else {
+                        this.logger.warn("No delta file found for document: " + documentId);
+                    }
+
+                    const edits = await this.models['document_edit'].findAll({
+                        where: {documentId: documentId, draft: true},
+                        raw: true
+                    });
+
+                    const dbDelta = dbToDelta(edits);
+                    delta = delta.compose(dbDelta);
+
+                    this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
+                } else {
+                    throw new Error("Non-HTML documents are not supported for this operation");
+                }
+            } else {
+                throw new Error("You do not have access to this document");
+            }
+        } catch (error) {
+            this.logger.error("An error occurred while sending the merged deltas:", error);
+            this.sendToast(error.message, "Error", "danger");
+        }
+    }
+
+    /**
+     * Load document delta from disk (for HTML documents)
+     *
+     * This method reads the delta file from the disk and returns it as a Delta object.
+     *
+     * @param {string} filePath
+     * @returns {Promise<Delta>}
+     */
+    async loadDocument(filePath) {
+        try {
+            const data = await new Promise((resolve, reject) => {
+                fs.readFile(filePath, 'utf8', (err, data) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve(data);
+                });
+            });
+
+            try {
+                const delta = new Delta(JSON.parse(data));
+                return delta;
+            } catch (parseErr) {
+                throw parseErr;
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    /**
+     * Save document delta to disk and mark edits as applied (for HTML documents)
+     *
+     * This method saves the combined delta of the document on the disk and updates the edits in the database to mark them as applied.
+     *
+     * @param {number} documentId
+     * @returns {Promise<void>}
+     */
+    async saveDocument(documentId) {
+        try {
+            const doc = await this.models['document'].getById(documentId);
+            if (!doc) {
+                this.logger.error(`Document with ID ${documentId} not found.`);
+                return;
+            }
+
+            const edits = await this.models['document_edit'].findAll({
+                where: {documentId: documentId, draft: true},
+                raw: true
+            });
+
+            const newDelta = new Delta(dbToDelta(edits));
+            const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+
+            let oldDelta = new Delta();
+            try {
+                const oldDeltaContent = await fs.promises.readFile(deltaFilePath, 'utf8');
+                oldDelta = new Delta(JSON.parse(oldDeltaContent));
+            } catch (err) {
+                if (err.code !== 'ENOENT') {
+                    throw err;
+                }
+            }
+
+            const mergedDelta = oldDelta.compose(newDelta);
+
+            await fs.promises.writeFile(deltaFilePath, JSON.stringify(mergedDelta, null, 2), 'utf8');
+
+            await this.models['document_edit'].update(
+                {draft: false},
+                {where: {id: edits.map(edit => edit.id)}}
+            );
+
+            this.logger.info("Deltas file updated successfully.");
+        } catch (err) {
+            this.logger.error("Failed to read/write delta file:", err);
+        }
+    }
+
 
     /**
      * Send document data to client
@@ -205,22 +374,114 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
-    init() {
+    /**
+     * Edits the document based on the provided data.
+     *
+     * This method is called when the client requests to edit a document. It first checks if the user has access to the document,
+     * and if so, it applies the edits to the document and sends the updated document to the client.
+     *
+     * @param {object} data {documentId: number, "ops" array consisting of [offset: number, operationType: number, span: number, text: string, attributes: Object]}
+     */
+    async editDocument(data) {
 
-        //Make sure upload directory exists
+        const transaction = await database.sequelize.transaction();
+        try {
+            const {userId, documentId, ops} = data;
+            let appliedEdits = [];
+
+            await ops.reduce(async (promise, op) => {
+                await promise;
+                const entryData = {
+                    userId: this.userId,
+                    draft: true,
+                    documentId,
+                    ...op
+                };
+
+                const savedEdit = await this.models['document_edit'].add(entryData, transaction);
+
+                appliedEdits.push({
+                    ...savedEdit,
+                    applied: true
+                });
+            }, Promise.resolve());
+
+            await transaction.commit();
+
+            this.emit("document_editRefresh", appliedEdits);
+
+        } catch (error) {
+            await transaction.rollback();
+            this.logger.error("Error editing document: " + error.message);
+            this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
+            this.socket.emit("documentEditError", {
+                success: false,
+                message: "Failed to edit document due to server error"
+            });
+        }
+    }
+
+    /**
+     * Open the document and track it, if not already tracked
+     *
+     * This method adds the document to the list of open documents, being tracked by the socket.
+     *
+     * @param {number} documentId
+     */
+    async openDocument(documentId) {
+        try {
+            if (!this.socket.openComponents.editor.includes(documentId)) {
+                this.socket.openComponents.editor.push(documentId);  // Track the document
+            }
+        } catch (e) {
+            this.logger.error("Error tracking document: ", e);
+            this.sendToast("Error tracking document!", "Error", "danger");
+        }
+    }
+
+    init() {
         fs.mkdirSync(UPLOAD_PATH, {recursive: true});
 
         this.socket.on("documentGet", async (data) => {
             try {
                 await this.sendDocument(data.documentId);
+                await this.openDocument(data.documentId);
             } catch (e) {
-                this.logger.error(e);
-                this.sendToast("Error while loading pdf file!", "PDF Error", "danger");
+                this.logger.error("Error handling document request: ", e);
+                this.sendToast("Error handling document request!", "Error", "danger");
+            }
+        });
+
+        this.socket.on("documentClose", async (data) => {
+
+            try {
+                await this.saveDocument(data.documentId); // Save the document before closing	
+                const index = this.socket.openComponents.editor.indexOf(data.documentId);
+                if (index > -1) {
+                    this.socket.openComponents.editor[index] = undefined; // Remove the document ID
+                }
+            } catch (err) {
+                this.logger.error("Error saving document: ", err);
+                this.sendToast("Error saving document!", "Error", "danger");
+            }
+        });
+
+        this.socket.on("documentOpen", async (data) => {
+            try {
+                await this.openDocument(data.documentId);
+            } catch (e) {
+                this.logger.error("Error handling document open request: ", e);
+                this.sendToast("Error handling document open request!", "Error", "danger");
             }
         });
 
         this.socket.on("documentGetAll", async (data) => {
-            await this.refreshAllDocuments((data && data.userId) ? data.userId : null);
+            try {
+                await this.refreshAllDocuments((data && data.userId) ? data.userId : null);
+            } catch (error) {
+                console.error(error);
+                this.sendToast(error, "Error getting all document data", "Error", "danger");
+            }
         });
 
         this.socket.on("documentUpdate", async (data) => {
@@ -228,7 +489,7 @@ module.exports = class DocumentSocket extends Socket {
                 await this.updateDocument(data.documentId, data);
             } catch (err) {
                 this.logger.error(err);
-                this.sendToast(err, "Error updating document", "Danger");
+                this.sendToast(err, "Error updating document", "Error", "danger");
             }
         });
 
@@ -240,7 +501,6 @@ module.exports = class DocumentSocket extends Socket {
                 this.socket.emit("documentError", {message: "Document not found!", documentHash: data.documentHash});
             }
         });
-
 
         this.socket.on("documentGetData", async (data) => {
             try {
@@ -261,14 +521,70 @@ module.exports = class DocumentSocket extends Socket {
         });
 
         this.socket.on("documentSubscribe", (data) => {
-            this.socket.join("doc:" + data.documentId);
-            this.logger.debug("Subscribe document " + data.documentId);
+            try {
+                this.socket.join("doc:" + data.documentId);
+                this.logger.debug("Subscribe document " + data.documentId);
+            } catch (e) {
+                this.logger.error(e);
+                this.sendToast("Error subscribe document", "Error", "danger");
+            }
         });
 
         this.socket.on("documentUnsubscribe", (data) => {
-            this.socket.leave("doc:" + data.documentId);
-            this.logger.debug("Unsubscribe document " + data.documentId);
+            try {
+                this.socket.leave("doc:" + data.documentId);
+                this.logger.debug("Unsubscribe document " + data.documentId);
+            } catch (e) {
+                this.logger.error(e);
+                this.sendToast("Error unsubscribe document", "Error", "danger");
+            }
         });
+
+        this.socket.on("documentCreate", async (data) => {
+            try {
+                await this.createDocument(data);
+            } catch (e) {
+                this.logger.error(e);
+                this.sendToast("Error create document", "Error", "danger");
+            }
+        });
+
+        this.socket.on("documentEdit", async (data) => {
+            try {
+                await this.editDocument(data);
+            } catch (error) {
+                const errorDetails = {
+                    timestamp: new Date().toISOString(),
+                    errorMessage: error.message,
+                    errorType: error.constructor.name,
+                    stackTrace: error.stack,
+                    userId: data.userId,
+                    documentId: data.documentId,
+                    operationDetails: JSON.stringify(data.ops),
+                    component: "Document Editor",
+                    errorCode: error.code || "N/A"
+                };
+
+                this.logger.error("Critical error during document edit:", errorDetails);
+
+                this.sendToast("An error occurred while editing the document.", "Error", "danger");
+                this.socket.emit("documentEditResponse", {
+                    success: false,
+                    message: "Internal server error while editing the document.",
+                    errorCode: 500
+                });
+            }
+        });
+
+        this.socket.on("documentGetDeltas", async (data) => {
+            try {
+                await this.sendDocumentDeltas(data.documentId);
+            } catch (e) {
+                this.logger.error("Error handling sendDocumentDeltas request: ", e);
+                this.sendToast("Error handling sendDocumentDeltas request!", "Error", "danger");
+            }
+        });
+
 
     }
 }

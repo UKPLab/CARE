@@ -4,8 +4,8 @@
     <StudySessionModal ref="studySessionModal"/>
     <Card title="Studies">
       <template #headerElements>
-        <ButtonHeader
-          class="btn-primary"
+        <BasicButton
+          class="btn-primary btn-sm"
           title="Add"
           @click="add()"
         />
@@ -27,7 +27,7 @@ import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
-import ButtonHeader from "@/basic/card/ButtonHeader.vue"
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Dashboard component for handling studies
@@ -36,7 +36,7 @@ import ButtonHeader from "@/basic/card/ButtonHeader.vue"
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, ButtonHeader},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton},
   props: {},
   fetchData: ['study'],
   data() {

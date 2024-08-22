@@ -101,15 +101,23 @@ module.exports = class MetaModel extends Model {
 
     /**
      * Get all db entries
-     * @param {boolean} includeDeleted also return elements with deleted flag is true
+     * @param {boolean} includeDeleted - also return elements with deleted flag is true
+     * @param {string[]} exclude - an array of attributes to exclude from the result
      * @return {Promise<object|undefined>}
      */
-    static async getAll(includeDeleted = false) {
+    static async getAll(includeDeleted = false, exclude = []) {
         try {
             if (includeDeleted) {
-                return await this.findAll({raw: true});
+                return await this.findAll({
+                    raw: true,
+                    attributes: { exclude }
+                });
             } else {
-                return await this.findAll({where: {deleted: false}, raw: true});
+                return await this.findAll({
+                    where: {deleted: false}, 
+                    raw: true,
+                    attributes: { exclude }
+                });
             }
 
         } catch (err) {
