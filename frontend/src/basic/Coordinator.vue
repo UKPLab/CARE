@@ -1,10 +1,10 @@
 <template>
   <BasicModal
-      ref="coordinatorModal"
-      :props="{id: id}"
-      lg
-      name="coordinatorModal"
-      @hide="reset"
+    ref="coordinatorModal"
+    :props="{ id: id }"
+    lg
+    name="coordinatorModal"
+    @hide="reset"
   >
     <template #title>
       <slot name="title">
@@ -22,45 +22,48 @@
       </span>
       <span v-else>
         <BasicForm
-            ref="form"
-            v-model="data"
-            :fields="fields"
+          ref="form"
+          v-model="data"
+          :fields="fields"
         />
       </span>
     </template>
     <template #footer>
       <span
-          v-if="success"
-          class="btn-group"
+        v-if="success"
+        class="btn-group"
       >
         <slot name="success-footer">
           <slot name="buttons" />
           <button
-              class="btn btn-secondary"
-              @click="$refs.coordinatorModal.close()"
-          >Close</button>
+            class="btn btn-secondary"
+            @click="$refs.coordinatorModal.close()"
+          >
+            Close
+          </button>
         </slot>
       </span>
       <span
-          v-else
-          class="btn-group"
+        v-else
+        class="btn-group"
       >
         <slot name="footer">
-           <slot name="buttons" />
-            <button
-                class="btn btn-secondary"
-                type="button"
-                @click="$refs.coordinatorModal.close()"
-            >{{ textCancel }}</button>
-            <button
-                class="btn btn-primary me-2"
-                type="button"
-                @click="submit"
-            >
-              {{ data.id ? textUpdate : textAdd }}
-            </button>
-
-          </slot>
+          <slot name="buttons" />
+          <button
+            class="btn btn-secondary"
+            type="button"
+            @click="$refs.coordinatorModal.close()"
+          >
+            {{ textCancel }}
+          </button>
+          <button
+            class="btn btn-primary me-2"
+            type="button"
+            @click="submit"
+          >
+            {{ data.id ? textUpdate : textAdd }}
+          </button>
+        </slot>
       </span>
     </template>
   </BasicModal>
@@ -69,7 +72,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
-import {v4 as uuid} from "uuid";
+import { v4 as uuid } from "uuid";
 
 /**
  * Basic Coordinator to add or edit database entries
@@ -91,7 +94,7 @@ import {v4 as uuid} from "uuid";
  */
 export default {
   name: "BasicCoordinator",
-  components: {BasicModal, BasicForm},
+  components: { BasicModal, BasicForm },
   props: {
     title: {
       type: String,
@@ -125,10 +128,10 @@ export default {
       required: false,
       default: () => {
         return [];
-      }
-    }
+      },
+    },
   },
-  emits: ['submit', 'success'],
+  emits: ["submit", "success"],
   data() {
     return {
       data: {},
@@ -142,7 +145,7 @@ export default {
       if (data.requestId === this.requestId) {
         if (data.success) {
           this.showSuccess();
-          this.$emit('success', data.id);
+          this.$emit("success", data.id);
         } else {
           this.$refs.coordinatorModal.waiting = false;
         }
@@ -151,12 +154,12 @@ export default {
   },
   computed: {
     fields() {
-      return this.$store.getters["table/" + this.table + "/getFields"].map(f => {
+      return this.$store.getters["table/" + this.table + "/getFields"].map((f) => {
         if (this.readOnlyFields.includes(f.key)) {
           f.readOnly = true;
         }
         return f;
-      })
+      });
     },
   },
   methods: {
@@ -174,12 +177,10 @@ export default {
         this.data = this.getData(id, copy);
         this.$refs.coordinatorModal.open();
       } else {
-        this.eventBus.emit('toast', {
-          title: 'Error',
-          message: 'The table '
-              + this.table
-              + ' has no defined fields!',
-          type: 'error',
+        this.eventBus.emit("toast", {
+          title: "Error",
+          message: "The table " + this.table + " has no defined fields!",
+          type: "error",
         });
       }
     },
@@ -188,9 +189,13 @@ export default {
     },
     submit() {
       if (this.$refs.form.validate()) {
-        const data = {...this.data};
-        this.$emit('submit', data)
-        this.$socket.emit("appDataUpdate", {id: this.requestId, table: this.table, data: data});
+        const data = { ...this.data };
+        this.$emit("submit", data);
+        this.$socket.emit("appDataUpdate", {
+          id: this.requestId,
+          table: this.table,
+          data: data,
+        });
         this.$refs.coordinatorModal.waiting = true;
       }
     },
@@ -203,10 +208,11 @@ export default {
       this.overrideDefaultValues = {};
       this.data = this.getData(0);
       this.success = false;
+      this.eventBus.emit("resetFormField");
     },
     getData(id, copy = false) {
       if (id === 0) {
-        return {...this.defaultValue, ...this.overrideDefaultValues};
+        return { ...this.defaultValue, ...this.overrideDefaultValues };
       } else {
         return this.getDataFromStore(id, this.table, this.fields, copy);
       }
@@ -224,27 +230,27 @@ export default {
 
       let return_data = fields.reduce((acc, field) => {
         // if the key is in the data, use the data value
-        acc[field.key] = (field.key in data) ? data[field.key]
-            // if type is table, get the data from the store
-            : (field.type === "table" && this.$store.getters["table/" + field.options.table + "/hasFields"])
-                ? this.$store.getters["table/" + field.options.table + "/getFiltered"](e => e[field.options.id] === id)
-                    .map(e =>
-                        this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"], copy))
-                // else use the default value
-                : null;
+        acc[field.key] =
+          field.key in data
+            ? data[field.key]
+            : // if type is table, get the data from the store
+            field.type === "table" && this.$store.getters["table/" + field.options.table + "/hasFields"]
+            ? this.$store.getters["table/" + field.options.table + "/getFiltered"]((e) => e[field.options.id] === id).map((e) =>
+                this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"], copy)
+              )
+            : // else use the default value
+              null;
         return acc;
       }, {});
 
       if (!copy) {
-        return_data = {...return_data, ...{id: data.id}};
+        return_data = { ...return_data, ...{ id: data.id } };
       }
 
       return return_data;
     },
-  }
-}
+  },
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>
