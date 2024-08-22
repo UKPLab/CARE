@@ -196,7 +196,7 @@ module.exports = class DocumentSocket extends Socket {
                     let delta = new Delta();
 
                     if (fs.existsSync(deltaFilePath)) {
-                        let delta = await this.loadDocument(deltaFilePath);
+                        delta = await this.loadDocument(deltaFilePath);
                     } else {
                         this.logger.warn("No delta file found for document: " + documentId);
                     }
