@@ -68,31 +68,6 @@ module.exports = class UserSocket extends Socket {
   }
 
   /**
-   * Update user's consent data
-   * @param {Object} consentData - The consent data object
-   * @param {boolean} consentData.acceptTerms - Indicates whether the user has consented to the terms of service
-   * @param {boolean} consentData.acceptStats - Indicates whether the user has agreed to tracking
-   * @param {boolean} consentData.acceptDataSharing - Indicates whether the user has agreed to donate their annotation data
-   * @param {string} consentData.acceptedAt - Time when the user made the consent
-   * @returns {void}
-   */
-  async updateUserConsent(consentData) {
-    const User = this.models["user"];
-    try {
-      const [updatedRowsCount] = await User.update(consentData, {
-        where: { id: this.userId },
-        returning: true,
-      });
-      if (updatedRowsCount === 0) {
-        this.logger.error("Failed to update user: User not found");
-        return;
-      }
-    } catch (error) {
-      this.logger.error("Failed to update user: " + error);
-    }
-  }
-
-  /**
    * Get users by their role
    * @param {string} role - The role of the users to fetch. Possible values: "student", "mentor", "all"
    * @returns {string[]} An array of users.
@@ -127,7 +102,7 @@ module.exports = class UserSocket extends Socket {
     // Update user's consent
     this.socket.on("userUpdateConsent", async (consentData, callback) => {
       try {
-        await this.updateUserConsent(consentData);
+        await this.models["user"].updateUserConsent(this.userId, consentData);
         callback({
           success: true,
           message: "Successfully updated user consent!",

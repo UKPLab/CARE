@@ -8,14 +8,14 @@
         @click="exportAll()"
       />
       <BasicButton
-        class="btn-primary btn-sm"
+        class="btn-primary btn-sm me-1"
         title="Add document"
         text="Add"
         @click="$refs.uploadModal.open()"
       />
       <BasicButton
         v-if="showCreateButton"
-        class="btn-primary"
+        class="btn-primary btn-sm"
         title="Create document"
         text="Create"
         @click="$refs.createModal.open()"
