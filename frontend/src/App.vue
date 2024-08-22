@@ -102,6 +102,9 @@ export default {
     requireAuth() {
       return this.$route.meta.requireAuth !== undefined && this.$route.meta.requireAuth;
     },
+    mouseDebounceTime() {
+      return parseInt(this.$store.getters["settings/getValue"]('statistics.tracking.mouseDebounceTime'), 10);
+    }
   },
   watch: {
     $route(to, from) {
@@ -114,13 +117,20 @@ export default {
         this.connect();
       }
     },
+    // Initialize logger after settings are loaded because we access the settings table
+    'loaded.settings': {
+      handler(isLoaded) {
+        if (isLoaded) {
+          this.initializeBehaviorLogger();
+        }
+      },
+      immediate: true
+    }
   },
   beforeMount() {
     this.connect();
   },
   async mounted() {
-    this.behaviorLogger = new BehaviorLogger(this.$socket);
-    this.behaviorLogger.init();
     if (this.$route.meta.checkLogin) {
       // Check if user already authenticated, if so, we redirect him to the dashboard.
       const response = await axios.get(getServerURL() + '/auth/check',
@@ -139,6 +149,12 @@ export default {
     connect() {
       if (this.$route.meta.requireAuth && !this.$socket.connected) {
         this.$socket.connect();
+      }
+    },
+    initializeBehaviorLogger() {
+      if (!this.behaviorLogger) {
+        this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
+        this.behaviorLogger.init();
       }
     },
   },
