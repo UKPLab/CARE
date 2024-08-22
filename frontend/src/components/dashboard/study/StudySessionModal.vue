@@ -21,10 +21,11 @@
     </template>
     <template #footer>
       <span class="btn-group">
-        <button
+        <BasicButton
           class="btn btn-secondary"
           @click="close"
-        >Close</button>
+          title="Close"
+        />
       </span>
     </template>
   </Modal>
@@ -33,6 +34,7 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import DTable from "@/basic/table/Table.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Details of study session for a given study in a modal
@@ -43,7 +45,7 @@ import DTable from "@/basic/table/Table.vue";
  */
 export default {
   name: "StudySessionModal",
-  components: {Modal, DTable},
+  components: {Modal, DTable, BasicButton},
   data() {
     return {
       studyId: 0,

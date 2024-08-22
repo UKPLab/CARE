@@ -7,11 +7,11 @@
       <div v-else class="spinner-grow" role="status" style="width:12px; height:12px">
         <span class="visually-hidden">Loading...</span>
       </div>
-      <ButtonHeader
-          class="btn btn-sm me-1"
-          title="Refresh"
-          icon="arrow-clockwise"
-          @click="load()"
+      <BasicButton
+        class="btn btn-sm me-1"
+        title="Refresh"
+        icon="arrow-clockwise"
+        @click="load()"
       />
     </template>
     <template #body>
@@ -28,10 +28,10 @@
 
 <script>
 import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
-import BasicTable from "@/basic/table/Table.vue"
-import Card from "@/basic/Card.vue"
-import ButtonHeader from "@/basic/card/ButtonHeader.vue"
-import {cloneDeep} from "lodash";
+import BasicTable from "@/basic/table/Table.vue";
+import Card from "@/basic/Card.vue";
+import BasicButton from "@/basic/Button.vue";
+import { cloneDeep } from "lodash";
 
 /**
  * Shows the list of available nlp skills to admins
@@ -43,7 +43,7 @@ import {cloneDeep} from "lodash";
  */
 export default {
   name: "NlpSkills",
-  components: {BasicTable, Card, ButtonHeader, NlpSkillModal},
+  components: { BasicTable, Card, BasicButton, NlpSkillModal },
   props: {
     'admin': {
       type: Boolean,

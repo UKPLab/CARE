@@ -1,0 +1,24 @@
+{
+  "delta": {
+    "ops": [
+      { "insert": "Hello, " },
+      { "insert": "world!", "attributes": { "bold": true } }
+    ]
+  },
+  "dbEntries": [
+    {
+      "operationType": 0,
+      "offset": 0,
+      "span": 7,
+      "text": "Hello, ",
+      "attributes": null
+    },
+    {
+      "operationType": 0,
+      "offset": 7,
+      "span": 6,
+      "text": "world!",
+      "attributes": { "bold": true }
+    }
+  ]
+}
