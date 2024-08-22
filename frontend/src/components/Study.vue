@@ -160,7 +160,7 @@ export default {
     study(newVal) {
       if (newVal) {
         this.documentId = newVal.documentId;
-        this.fetchDocumentType(); // Fetch document type when study changes
+        this.documentType = newVal.documentType; // Fetch document type when study changes
       } else {
         this.documentId = 0;
       }
@@ -184,16 +184,12 @@ export default {
         this.$router.push("/");
       }
     },
-    documentFile: function (data) {
+    studyRefresh(data) {
+      this.documentId = data.documentId;
       this.documentType = data.documentType;
     }
   },
   methods: {
-    fetchDocumentType() {
-      if (this.documentId) {
-        this.$socket.emit("documentGet", { documentId: this.documentId });
-      }
-    },
     start(data) {
       this.studySessionId = data.studySessionId;
     },
