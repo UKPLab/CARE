@@ -80,8 +80,10 @@ module.exports = class StudySocket extends Socket {
         const study = await this.models['study'].getByHash(studyHash);
         if (study) {
             const sessions = await this.models['study_session'].getAllByKey('userId', this.userId);
+            const document = await this.models['document'].getById(study.documentId);  
+            
             this.emit("study_sessionRefresh", sessions.filter(s => s.studyId === study.id));
-            this.emit("studyRefresh", study);
+            this.emit("studyRefresh", { ...study, documentType: document.type });  
         } else {
             this.socket.emit("studyError", {
                 studyHash: studyHash, message: "Not found!"
