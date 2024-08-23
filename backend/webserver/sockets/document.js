@@ -187,6 +187,7 @@ module.exports = class DocumentSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendDocumentDeltas(documentId) {
+        console.log("sendDocumentDeltas called!!!");
         try {
             const doc = await this.models['document'].getById(documentId);
 
@@ -269,16 +270,19 @@ module.exports = class DocumentSocket extends Socket {
                 return;
             }
 
-            const study = await this.models['study'].getByKey('documentId', documentId);
-            if (study) {
-                this.logger.info("Cannot overwrite the base document of a study.");
-                return;
-            }
-
             const edits = await this.models['document_edit'].findAll({
                 where: {documentId: documentId, draft: true},
                 raw: true
             });
+
+            if (studySessionId) {
+                await this.models['document_edit'].update(
+                    { draft: false, studySessionId: studySessionId },
+                    { where: { id: edits.map(edit => edit.id) } }
+                );
+                this.logger.info("Edits saved to database under the study session.");
+                return;
+            }
 
             const newDelta = new Delta(dbToDelta(edits));
             const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
@@ -463,11 +467,9 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentClose", async (data) => {
             try {
-                if (data.studySessionId === null) {
-                    await this.saveDocument(data.documentId);
-                } else {
-                    this.logger.info("Closing document in a study session without saving to disk.");
-                }
+                
+                await this.saveDocument(data.documentId);
+                
                 const index = this.socket.openComponents.editor.indexOf(data.documentId);
                 if (index > -1) {
                     this.socket.openComponents.editor[index] = undefined; // Remove the document ID
