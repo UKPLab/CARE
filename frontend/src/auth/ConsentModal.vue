@@ -153,6 +153,7 @@ export default {
         if (res.success) {
           this.resetForm();
           this.$refs.modal.close();
+          this.$store.commit("auth/SET_USER", consentData );
           this.eventBus.emit("toast", {
             title: "User updated",
             message: res.message,
