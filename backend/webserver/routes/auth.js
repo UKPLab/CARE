@@ -132,6 +132,7 @@ module.exports = function (server) {
                 salt: salt,
                 acceptTerms: data.acceptTerms,
                 acceptStats: data.acceptStats,
+                acceptedAt: data.acceptedAt
             });
 
             const userRole = await server.db.models['user_role'].findOne({ where: { name: 'user' }});

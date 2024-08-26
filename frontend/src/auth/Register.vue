@@ -294,7 +294,7 @@ export default {
     },
     async registerUser() {
       try {
-        await axios.post(getServerURL() + '/auth/register', this.formData, {
+        await axios.post(getServerURL() + '/auth/register', {...this.formData, acceptedAt: new Date()}, {
           validateStatus: function (status) {
             return status >= 200 && status < 300;
           }
