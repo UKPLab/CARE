@@ -1,5 +1,10 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const { Document } = require('./document.js');
+const fs = require('fs').promises;
+const { Delta } = require('quill-delta');
+
+const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {
@@ -102,7 +107,36 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize: sequelize,
         modelName: 'study',
-        tableName: 'study'
+        tableName: 'study',
+        hooks: {
+            beforeCreate: async (study, options) => {
+                const transaction = options.transaction || await sequelize.transaction();
+                
+                try {
+                    const document = await Document.findByPk(study.documentId);
+                    if (!document) {
+                        throw new Error('Document not found with id: ' + study.documentId);
+                    }
+                    const originalDeltaPath = `${UPLOAD_PATH}/${document.hash}.delta.json`;
+                    
+                    const originalDelta = await fs.readFile(originalDeltaPath, 'utf8').then(data => new Delta(JSON.parse(data))).catch(() => new Delta());
+                    
+                    const newDocumentHash = `${document.hash}_study_${Date.now()}`;
+                    const newDeltaPath = `${UPLOAD_PATH}/${newDocumentHash}.base.delta.json`;
+                    
+                    await fs.writeFile(newDeltaPath, JSON.stringify(originalDelta, null, 2));
+
+                    await document.save({ transaction });
+
+                    study.documentId = document.id;
+
+                    await transaction.commit();
+                } catch (error) {
+                    await transaction.rollback();
+                    throw new Error('Failed to copy document for the study: ' + error.message);
+                }
+            }
+        }
     });
     return Study;
 };

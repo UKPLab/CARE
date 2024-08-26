@@ -1,7 +1,4 @@
 const Socket = require("../Socket.js");
-const fs = require("fs");
-
-const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 /**
  * Handle all studies through websocket
@@ -47,29 +44,8 @@ module.exports = class StudySocket extends Socket {
     async addStudy(study) {
         study.userId = this.userId;
 
-        // Hole das zugehörige Dokument
-        const document = await this.models['document'].getById(data.documentId);
-
-        // Hole die aktuellen Deltas des Dokuments
-        const deltas = await this.getSocket('DocumentSocket').sendDocumentDeltas(document.id);
-
-        // Erstelle einen neuen Dateinamen für die Kopie
-        const newDocumentHash = `${document.hash}_study_${study.hash}`;
-        const newDeltaFilePath = `${UPLOAD_PATH}/${newDocumentHash}.base.delta.json`;
-
-        try {
-            // Speichere die Deltas in einer neuen Datei auf der Festplatte
-            await fs.promises.writeFile(newDeltaFilePath, JSON.stringify(deltas, null, 2), 'utf8');
-        } catch (error) {
-            console.error("Error writing deltas to file:", error);
-        }
-
-        // Update the study to use the copied document
-        study.documentId = document.id; // Die documentId bleibt gleich, aber wir haben eine neue Datei erstellt
-
         const newStudy = await this.models['study'].add(study);
         this.emit("studyRefresh", newStudy);
-
         return newStudy;
     }
 

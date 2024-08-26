@@ -275,15 +275,6 @@ module.exports = class DocumentSocket extends Socket {
                 raw: true
             });
 
-            if (studySessionId) {
-                await this.models['document_edit'].update(
-                    { draft: false, studySessionId: studySessionId },
-                    { where: { id: edits.map(edit => edit.id) } }
-                );
-                this.logger.info("Edits saved to database under the study session.");
-                return;
-            }
-
             const newDelta = new Delta(dbToDelta(edits));
             const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
 
