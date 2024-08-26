@@ -24,6 +24,7 @@
       />
     </div>
     <div v-else>
+      <ConsentModal ref="consentModal" />
       <router-view class="top-padding" />
     </div>
   </div>
@@ -40,15 +41,16 @@ import Loader from "@/basic/Loading.vue";
 import { createTable } from "@/store/utils";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import ConsentModal from "@/auth/ConsentModal.vue";
 
 /**
  * Main App Component
  *
- * @author Dennis Zyska, Nils Dycke
+ * @author Dennis Zyska, Nils Dycke, Linyin Huang
  */
 export default {
   name: "App",
-  components: { TopBar, Toast, Loader },
+  components: { TopBar, Toast, Loader, ConsentModal },
   data() {
     return {
       loaded: {
@@ -57,6 +59,7 @@ export default {
         settings: false,
       },
       disconnected: false,
+      isTermsConsented: false,
     };
   },
   sockets: {
@@ -86,6 +89,7 @@ export default {
     appUser: function (data) {
       this.$store.commit("auth/SET_USER", data);
       this.loaded.users = true;
+      this.isTermsConsented = data.acceptTerms;
     },
     appSettings: function (data) {
       this.$store.commit("settings/setSettings", data);
@@ -141,6 +145,18 @@ export default {
         this.connect();
       }
     },
+    '$data': {
+      handler() {
+        if (this.appLoaded && !this.isTermsConsented) {
+          this.$nextTick(() => {
+            if (this.$refs.consentModal) {
+              this.$refs.consentModal.open();
+            }
+          });
+        }
+      },
+      deep: true
+    }
   },
   beforeMount() {
     this.connect();
