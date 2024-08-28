@@ -1,8 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
-const { Document } = require('./document.js');
 const fs = require('fs').promises;
-const { Delta } = require('quill-delta');
+const path = require('path');
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -85,7 +84,10 @@ module.exports = (sequelize, DataTypes) => {
          * The `models/index` file will call this method automatically.
          */
         static associate(models) {
-            // define association here
+            Study.belongsTo(models["document"], {
+                foreignKey: "documentId",
+                as: "document",
+              });
         }
     }
 
@@ -111,32 +113,31 @@ module.exports = (sequelize, DataTypes) => {
         hooks: {
             beforeCreate: async (study, options) => {
                 const transaction = options.transaction || await sequelize.transaction();
-                
+        
                 try {
-                    const document = await Document.findByPk(study.documentId);
-                    if (!document) {
-                        throw new Error('Document not found with id: ' + study.documentId);
-                    }
-                    const originalDeltaPath = `${UPLOAD_PATH}/${document.hash}.delta.json`;
+                  const document = await sequelize.models.document.findByPk(study.documentId, { transaction });
+                  if (!document) throw new Error('Document not found');
+        
+                  // HTML document type, copy the document
+                  if (document.type === sequelize.models.document.docTypes.DOC_TYPE_HTML) {
+                    const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
+                    const newDocumentHash = `${document.hash}_study`;
+                    const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
                     
-                    const originalDelta = await fs.readFile(originalDeltaPath, 'utf8').then(data => new Delta(JSON.parse(data))).catch(() => new Delta());
+                    await fs.copyFile(originalFilePath, newFilePath);
+                  } else { // Non-HTML document type, skip the copying operation 
                     
-                    const newDocumentHash = `${document.hash}_study_${Date.now()}`;
-                    const newDeltaPath = `${UPLOAD_PATH}/${newDocumentHash}.base.delta.json`;
-                    
-                    await fs.writeFile(newDeltaPath, JSON.stringify(originalDelta, null, 2));
-
-                    await document.save({ transaction });
-
-                    study.documentId = document.id;
-
-                    await transaction.commit();
+                  }
+        
+                  await transaction.commit();
                 } catch (error) {
-                    await transaction.rollback();
-                    throw new Error('Failed to copy document for the study: ' + error.message);
+                  console.error("Failed during document processing:", error);
+                  await transaction.rollback();
+                  throw new Error(`Failed to process document for the study: ${error.message}`);
                 }
-            }
+              }
         }
     });
+
     return Study;
 };
