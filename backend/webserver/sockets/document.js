@@ -386,10 +386,9 @@ module.exports = class DocumentSocket extends Socket {
      * @param {object} data {documentId: number, "ops" array consisting of [offset: number, operationType: number, span: number, text: string, attributes: Object]}
      */
     async editDocument(data) {
-
         const transaction = await database.sequelize.transaction();
         try {
-            const {userId, documentId, studySessionId, ops} = data;
+            const { documentId, studySessionId, ops } = data;
             let appliedEdits = [];
 
             await ops.reduce(async (promise, op) => {
@@ -411,9 +410,14 @@ module.exports = class DocumentSocket extends Socket {
             }, Promise.resolve());
 
             await transaction.commit();
-
+    
+            // Check if studySessionId is not null or zero
+            if (studySessionId !== null) {
+                this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+                return;
+            }
+    
             this.emit("document_editRefresh", appliedEdits);
-
         } catch (error) {
             await transaction.rollback();
             this.logger.error("Error editing document: " + error.message);
@@ -458,8 +462,9 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentClose", async (data) => {
             try {
-                
-                await this.saveDocument(data.documentId);
+                if (data.studySessionId === null) {
+                    await this.saveDocument(data.documentId, data.studySessionId || null);
+                } 
                 
                 const index = this.socket.openComponents.editor.indexOf(data.documentId);
                 if (index > -1) {
