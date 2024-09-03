@@ -18,4 +18,81 @@ module.exports = class MoodleRPC extends RPC {
         super(server, url);
 
     }
+
+    async init() {
+        await this.reset();
+
+        // connect to test service
+        this.socket = io_client(this.url,
+            {
+                reconnection: true,
+                timeout: this.timeout,
+            }
+        );
+        this.updateEvents(this.socket);
+        this.logger.info("Connect to RPC server at " + this.url);
+        this.socket.connect();
+
+        this.logger.info("RPC initialized");
+
+        
+}
+
+async updateEvents(socket) {
+    const self = this;
+
+    // Handle connection errors
+    socket.on("connect_error", async () => {
+        setTimeout(() => {
+            if (socket) {
+                socket.connect();
+            }
+        }, self.retryDelay);
+
+    });
+
+    // Handle reconnection attempts
+    socket.on("reconnection_attempt", () => {
+        self.logger.error("RPC Test Reconnection attempt...");
+    });
+
+    // establishing a connection
+    socket.on("connect", function () {
+        self.logger.info(`Connection to RPC server established: ${socket.connected}`);
+
+    });
+
+    // deal with broken connection
+    socket.on("disconnect", function () {
+        self.logger.error(`Connection to RPC server disrupted: ${!socket.connected}`);
+    });
+
+    this.socket.on("test123", async (data) => {
+        try {
+            await this.call(data);
+        } catch (err) {
+            this.logger.error("Test error: " + err);
+            this.socket.emit("test", {success: false});
+        }
+});
+
+}
+
+    /**
+     * This method should be overwritten to handle the call to the RPC service
+     * @param data
+     * @returns {Promise<*>}
+     */
+    async call(data) {
+        this.logger.info("Calling RPC service...");
+
+        try {
+            return this.emit("call", data);
+        } catch (err) {
+            throw err
+        }
+
+    }
+
+
 }

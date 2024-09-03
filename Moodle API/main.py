@@ -210,15 +210,69 @@ def insert_random_keys(csv_path):
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(rows)
+            
+def get_submissions_of_assignment(course_id, assignment_id, MOODLE_API_KEY, MOODLE_URL):
+    """
+    Get a list of submissions for a given assignment.
+
+    Args:
+        assignment_id (int): The ID of the assignment.
+        MOODLE_API_KEY (str): The API key for accessing the Moodle API.
+        MOODLE_URL (str): The URL of the Moodle instance.
+
+    Returns:
+        list: A list of submissions.
+    """
+    moodle_api.URL = MOODLE_URL
+    moodle_api.KEY = MOODLE_API_KEY
+
+    # Get users from the cosurse
+    course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
+    
+    # Create a list of User objects
+    users = []
+    
+    for user in course_users:
+        users.append(User(user['id'], user['fullname'], ', '.join([role['name'] for role in user['roles']])))
+
+    submissions = moodle_api.call('mod_assign_get_submissions', assignmentids=[assignment_id])
+
+    file_paths = []
+
+    for sub in submissions['assignments'][0]['submissions']:
+        fullname = ''
+        for user in users:
+            if sub['userid'] == user.id:
+                fullname = user.fullname
+                break
+        file_paths.append('submissions/' + str(sub['userid']) + '_' + fullname)
+        for plugin in sub['plugins']:
+            if 'fileareas' in plugin:
+                for filearea in plugin['fileareas']:
+                    fileIndex = 0
+                    for files in filearea['files']:
+                        file_url = files['fileurl']
+                        file_url += f'?token={MOODLE_API_KEY}'
+                        response = requests.get(file_url)
+                        newPath = 'files/' + str(sub['userid']) + '_' + fullname + '_' + str(fileIndex) + '.pdf'
+                        with open(newPath, 'wb') as file:
+                            file.write(response.content)
+                        fileIndex += 1
+                        
+                        
         
 
 if __name__ == '__main__':
-    create_csv_with_users_from_assignment(1615, 'TANs', 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
-    insert_random_keys('users.csv')
-    upload_passwords_to_moodle(6350, 'users.csv','REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
-    subs = moodle_api.call('mod_workshop_get_submission', assignmentids=[6350])
-    print(subs)
-    
+    #create_csv_with_users_from_assignment(1615, 'TANs', 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    #insert_random_keys('users.csv')
+    #upload_passwords_to_moodle(6350, 'users.csv','REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    #subs = moodle_api.call('mod_workshop_get_submission', assignmentids=[6350])
+    #sub = moodle_api.call('', workshopid=6350)
+    #print(subs)
+    get_submissions_of_assignment(1615, 6350, 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    #course = moodle_api.call('mod_assign_get_assignments', courseids=[1615])
+    #print(course)
+    #moodle_api.call('core_course_get_course_module', cmid=6350)
     
     
 
