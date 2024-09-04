@@ -27,6 +27,7 @@ import {createTable} from "@/store/utils";
 import axios from 'axios';
 import getServerURL from "@/assets/serverUrl";
 import BehaviorLogger from "@/assets/behaviorLogger";
+import {computed} from "vue";
 
 /**
  * Main App Component
@@ -36,6 +37,11 @@ import BehaviorLogger from "@/assets/behaviorLogger";
 export default {
   name: "App",
   components: {TopBar, Toast, Loader},
+  provide() {
+    return {
+      acceptStats: computed(() => this.acceptStats),
+    }
+  },
   data() {
     return {
       loaded: {
@@ -99,6 +105,13 @@ export default {
       }
       return "Loading...";
     },
+    acceptStats() {
+      if (this.$store.getters["auth/isAuthenticated"]) {
+        return this.$store.getters["auth/getUser"].acceptStats;
+      } else {
+        return false;
+      }
+    },
     requireAuth() {
       return this.$route.meta.requireAuth !== undefined && this.$route.meta.requireAuth;
     },
@@ -152,7 +165,7 @@ export default {
       }
     },
     initializeBehaviorLogger() {
-      if (!this.behaviorLogger) {
+      if (this.acceptStats && !this.behaviorLogger) {
         this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
         this.behaviorLogger.init();
       }

@@ -194,6 +194,9 @@ export default {
       type: Function,
       required: true,
     },
+    acceptStats: {
+      default: () => false
+    }
   },
   props: {
     'commentId': {
@@ -390,7 +393,7 @@ export default {
     },
     onPaste(event) {
       const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-      if (pastedText) {
+      if (this.acceptStats && pastedText) {
         this.$socket.emit("stats", {
           action: "textPasted",
           data: {

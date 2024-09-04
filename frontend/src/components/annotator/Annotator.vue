@@ -166,6 +166,9 @@ export default {
     studySessionId: {
       default: null
     },
+    acceptStats: {
+      default: () => false
+    },
   },
   props: {
     approve: {
@@ -189,14 +192,16 @@ export default {
       downloading: false,
       isSidebarVisible: true,
       logScroll: debounce(function () {
-        this.$socket.emit("stats", {
-          action: "annotatorScrollActivity",
-          data: {
-            documentId: this.documentId,
-            scrollTop: this.$refs.viewer.scrollTop,
-            scrollHeight: this.$refs.viewer.scrollHeight
-          }
-        })
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "annotatorScrollActivity",
+            data: {
+              documentId: this.documentId,
+              scrollTop: this.$refs.viewer.scrollTop,
+              scrollHeight: this.$refs.viewer.scrollHeight
+            }
+          })
+        }
       }, 500)
     }
   },
@@ -249,10 +254,12 @@ export default {
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {
       this.scrollTo(anno_id);
-      this.$socket.emit("stats", {
-        action: "pdfScroll",
-        data: {documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "pdfScroll",
+          data: {documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
+        });
+      }
     });
 
     // get tagsets
@@ -398,14 +405,16 @@ export default {
       const selection = document.getSelection();
       if (selection && selection.toString().trim() !== '') {
         const copiedText = selection.toString();
-        this.$socket.emit("stats", {
-          action: "textCopied",
-          data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            copiedText: copiedText,
-          }
-        });
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "textCopied",
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              copiedText: copiedText,
+            }
+          });
+        }
       }
     },
   }
