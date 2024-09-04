@@ -4,18 +4,18 @@
     class="table"
   >
     <thead>
-      <tr>
-        <th v-if="selectableRows" />
-        <th
-          v-for="c in columns"
-          :key="c.key"
-          :class="'width' in c ? 'col-' + c.width : 'col-auto'"
+    <tr>
+      <th v-if="selectableRows"/>
+      <th
+        v-for="c in columns"
+        :key="c.key"
+        :class="'width' in c ? 'col-' + c.width : 'col-auto'"
+      >
+        {{ c.name }}
+        <span
+          v-if="c.sortable"
+          title="Sort By"
         >
-          {{ c.name }}
-          <span
-            v-if="c.sortable"
-            title="Sort By"
-          >
             <LoadIcon
               v-if="c.sortable"
               :class="{
@@ -30,7 +30,7 @@
               @click="sort('sortKey' in c ? c.sortKey : c.key)"
             />
           </span>
-          <span v-if="filter && c.filter">
+        <span v-if="filter && c.filter">
             <span
               aria-expanded="true"
               aria-haspopup="true"
@@ -63,49 +63,49 @@
                 <label
                   :for="'filterDropDown_' + c.key + '_label_' + f.key"
                   class="form-check-label"
-                  >{{ f.name }}</label
+                >{{ f.name }}</label
                 >
               </li>
             </ul>
           </span>
-        </th>
-      </tr>
+      </th>
+    </tr>
     </thead>
     <tbody>
-      <tr v-if="serverSidePagination && total > 0 && data.length === 0">
-        <td
-          :colspan="columns.length"
-          class="text-center"
-        >
-          Loading data from server...
-        </td>
-      </tr>
-      <tr v-else-if="!data || data.length === 0">
-        <td
-          :colspan="columns.length"
-          class="text-center"
-        >
-          No data
-        </td>
-      </tr>
-      <tr
-        v-for="r in tableData"
-        v-else
-        :key="r"
+    <tr v-if="serverSidePagination && total > 0 && data.length === 0">
+      <td
+        :colspan="columns.length"
+        class="text-center"
       >
-        <td v-if="selectableRows">
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              @input="(e) => selectRow(e.target.checked, r)"
-            />
-          </div>
-        </td>
-        <td
-          v-for="c in columns"
-          :key="c"
-        >
+        Loading data from server...
+      </td>
+    </tr>
+    <tr v-else-if="!data || data.length === 0">
+      <td
+        :colspan="columns.length"
+        class="text-center"
+      >
+        No data
+      </td>
+    </tr>
+    <tr
+      v-for="r in tableData"
+      v-else
+      :key="r"
+    >
+      <td v-if="selectableRows">
+        <div class="form-check">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            @input="(e) => selectRow(e.target.checked, r)"
+          />
+        </div>
+      </td>
+      <td
+        v-for="c in columns"
+        :key="c"
+      >
           <span v-if="c.key in r">
             <TIcon
               v-if="c.type === 'icon'"
@@ -167,9 +167,9 @@
               {{ r[c.key] }}
             </span>
           </span>
-          <span v-else> - </span>
-        </td>
-      </tr>
+        <span v-else> - </span>
+      </td>
+    </tr>
     </tbody>
   </table>
   <Pagination
@@ -193,7 +193,7 @@ import TBadge from "./Badge.vue";
 import TIcon from "./Icon.vue";
 import Pagination from "./Pagination.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import { tooltip } from "@/assets/tooltip.js";
+import {tooltip} from "@/assets/tooltip.js";
 import deepEqual from "deep-equal";
 
 /**
@@ -214,7 +214,12 @@ export default {
     TToggle,
     LoadIcon,
   },
-  directives: { tooltip },
+  directives: {tooltip},
+  inject: {
+    acceptStats: {
+      default: () => false
+    }
+  },
   props: {
     data: {
       type: Array,
@@ -228,7 +233,8 @@ export default {
     options: {
       type: Object,
       required: false,
-      default: () => {},
+      default: () => {
+      },
     },
     count: {
       type: Number,
@@ -310,16 +316,16 @@ export default {
             a[this.sortColumn] > b[this.sortColumn]
               ? 1
               : b[this.sortColumn] > a[this.sortColumn]
-              ? -1
-              : 0
+                ? -1
+                : 0
           );
         } else {
           data = data.sort((a, b) =>
             a[this.sortColumn] < b[this.sortColumn]
               ? 1
               : b[this.sortColumn] < a[this.sortColumn]
-              ? -1
-              : 0
+                ? -1
+                : 0
           );
         }
       }
@@ -361,7 +367,7 @@ export default {
         {},
         ...Object.entries(sequelizeFilter)
           .filter(([k, v]) => v.length > 0)
-          .map(([k, v]) => ({ [k]: v }))
+          .map(([k, v]) => ({[k]: v}))
       );
     },
   },
@@ -399,7 +405,7 @@ export default {
         .map((c) => ({
           [c.key]: Object.assign(
             {},
-            ...c.filter.map((f) => ({ [f.key]: false }))
+            ...c.filter.map((f) => ({[f.key]: false}))
           ),
         }))
     );
@@ -416,10 +422,12 @@ export default {
     },
     actionEmitter(data) {
       this.$emit("action", data);
-      this.$socket.emit("stats", {
-        action: "actionClick",
-        data: data,
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "actionClick",
+          data: data,
+        });
+      }
     },
     selectRow(action, row) {
       if (this.selectableRows) {

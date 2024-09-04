@@ -17,13 +17,32 @@ Send these information over the websocket on the ``stats`` message type, to log 
 
 .. code-block:: javascript
 
-    this.$socket.emit("stats", {
-      action: "<action type>",
-      data: {}                      //add any data information into the object
-    })
+    if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "<action type>",
+          data: {}                      //add any data information into the object
+        })
+    }
 
 Each logged user interaction is assigned a timestamp (according to the time of storing in the backend) and the user id allowing to
 generate trace data from all logged interactions.
+
+.. note::
+
+    Statistics are only logged if the user has agreed to the data collection during registration!
+    If the user has not agreed, we do not log any statistics. This is ensured by the backend!
+    But we also want to reduce the network traffic and the load on the backend, so make sure you check the `acceptStats` flag!
+
+You can inject the `acceptStats` variable into any component by using:
+
+.. code-block:: javascript
+
+    inject: {
+        acceptStats: {
+            default: () => false
+        }
+    }
+
 
 Logging a New Interaction
 --------------------------
@@ -54,10 +73,12 @@ For our simple example, the code would look like this:
 
     methods: {
         log(){
-            this.$socket.emit("stats", {
-              action: "specialButtonClick",
-              data: {id: Math.random()}
-            })
+            if (this.acceptStats) {
+                this.$socket.emit("stats", {
+                  action: "specialButtonClick",
+                  data: {id: Math.random()}
+                })
+            }
         }
     }
 
@@ -126,15 +147,6 @@ Usage in CARE
 The ``BehaviorLogger`` class is instantiated in the main App component (`App.vue`).
 It is initialized after the application settings are loaded, as it requires access to certain configuration values
 (like the mouse debounce time).
-
-.. code-block:: javascript
-
-    initializeBehaviorLogger() {
-      if (!this.behaviorLogger) {
-        this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
-        this.behaviorLogger.init();
-      }
-    }
 
 This initialization ensures that user behavior logging begins as soon as the application is ready,
 providing comprehensive tracking of user interactions from the start of the user session.

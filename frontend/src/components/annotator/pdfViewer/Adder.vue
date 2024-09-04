@@ -47,6 +47,9 @@ export default {
       type: Object,
       required: true,
     },
+    acceptStats: {
+      default: () => false
+    },
   },
   data() {
     return {
@@ -150,14 +153,16 @@ export default {
       this.selectedRanges = [range];
 
       this.show(event.clientX, event.clientY);
-      this.$socket.emit("stats", {
-        action: "onTextSelect",
-        data: {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          eventClientX: event.clientX, eventClientY: event.clientY
-        }
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "onTextSelect",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            eventClientX: event.clientX, eventClientY: event.clientY
+          }
+        });
+      }
 
     },
     _onClearSelection() {
