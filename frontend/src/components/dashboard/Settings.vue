@@ -2,12 +2,24 @@
   <div>
     <h1>Settings</h1>
     <div class="button-group">
-      <button class="btn btn-primary me-2" @click="save">
-        <LoadIcon class="me-1" iconName="upload"></LoadIcon>
+      <button
+        class="btn btn-primary me-2"
+        @click="save"
+      >
+        <LoadIcon
+          class="me-1"
+          iconName="upload"
+        ></LoadIcon>
         Save Settings
       </button>
-      <button class="btn btn-primary" @click="load">
-        <LoadIcon class="me-1" iconName="download"></LoadIcon>
+      <button
+        class="btn btn-primary"
+        @click="load"
+      >
+        <LoadIcon
+          class="me-1"
+          iconName="download"
+        ></LoadIcon>
         Load Settings
       </button>
     </div>
@@ -26,12 +38,11 @@
 <script>
 import Loading from "@/basic/Loading.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import EditorModal from "@/basic/editor/Modal.vue";
 import SettingItem from "@/components/dashboard/settings/SettingItem.vue";
 
 export default {
   name: "DashboardSettings",
-  components: { EditorModal, LoadIcon, Loading, SettingItem },
+  components: { LoadIcon, Loading, SettingItem },
   data() {
     return {
       settings: null,
@@ -59,6 +70,10 @@ export default {
       }, {});
     }
   },
+  mounted() {
+    this.settings = null;
+    this.$socket.emit("settingGetData");
+  },
   methods: {
     nestSettings(obj, keys, setting) {
       if (keys.length === 1) {
@@ -76,9 +91,5 @@ export default {
       this.$socket.emit("settingGetData");
     }
   },
-  mounted() {
-    this.settings = null;
-    this.$socket.emit("settingGetData");
-  }
 };
 </script>
