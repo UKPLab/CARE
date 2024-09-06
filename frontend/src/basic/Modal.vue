@@ -76,6 +76,11 @@ import {Modal} from 'bootstrap';
 
 export default {
   name: "BasicModal",
+  inject: {
+    acceptStats: {
+      default: () => false
+    }
+  },
   props: {
     xl: {
       type: Boolean,
@@ -137,17 +142,21 @@ export default {
   methods: {
     hideEvent() {
       this.$emit('hide');
-      this.$socket.emit("stats", {
-        action: "hideModal",
-        data: {"name": this.name, "props": this.props}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "hideModal",
+          data: {"name": this.name, "props": this.props}
+        });
+      }
     },
     showEvent() {
       this.$emit('show');
-      this.$socket.emit("stats", {
-        action: "openModal",
-        data: {"name": this.name, "props": this.props}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "showModal",
+          data: {"name": this.name, "props": this.props}
+        });
+      }
     },
     open() {
       this.openModal();
