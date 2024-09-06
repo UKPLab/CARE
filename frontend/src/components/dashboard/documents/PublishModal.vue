@@ -72,6 +72,11 @@ Source: -
 export default {
   name: "PublishModal",
   components: {Modal, BasicButton},
+  inject: {
+    acceptStats: {
+      default: () => false
+    }
+  },
   data() {
     return {
       id: 0,
@@ -91,10 +96,12 @@ export default {
       this.id = id;
       this.success = this.document.public;
       this.$refs.publishModal.openModal();
-      this.$socket.emit("stats", {
-        action: "openModalPublishDocument",
-        data: {documentId: this.id}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "openModalPublishDocument",
+          data: {documentId: this.id}
+        });
+      }
     },
     publish() {
       this.sockets.subscribe("documentPublished", (data) => {
@@ -117,25 +124,27 @@ export default {
     },
     close() {
       this.$refs.publishModal.close();
-      this.$socket.emit("stats", {
-        action: "cancelModalPublishDocument",
-        data: {documentId: this.id}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "cancelModalPublishDocument",
+          data: {documentId: this.id}
+        });
+      }
     },
     async copyURL() {
       try {
         await navigator.clipboard.writeText(this.link);
         this.eventBus.emit('toast', {
-            title: "Link copied",
-            message: "Document link copied to clipboard!",
-            variant: "success"
-          });
+          title: "Link copied",
+          message: "Document link copied to clipboard!",
+          variant: "success"
+        });
       } catch ($e) {
         this.eventBus.emit('toast', {
-            title: "Link not copied",
-            message: "Could not copy document link to clipboard!",
-            variant: "danger"
-          });
+          title: "Link not copied",
+          message: "Could not copy document link to clipboard!",
+          variant: "danger"
+        });
       }
     }
   }

@@ -42,6 +42,8 @@ import { createTable } from "@/store/utils";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import ConsentModal from "@/auth/ConsentModal.vue";
+import BehaviorLogger from "@/assets/behaviorLogger";
+import {computed} from "vue";
 
 /**
  * Main App Component
@@ -50,7 +52,12 @@ import ConsentModal from "@/auth/ConsentModal.vue";
  */
 export default {
   name: "App",
-  components: { TopBar, Toast, Loader, ConsentModal },
+  components: {TopBar, Toast, Loader, ConsentModal},
+  provide() {
+    return {
+      acceptStats: computed(() => this.acceptStats),
+    }
+  },
   data() {
     return {
       loaded: {
@@ -60,7 +67,8 @@ export default {
       },
       disconnected: false,
       isTermsConsented: false,
-    };
+      behaviorLogger: null,
+    }
   },
   sockets: {
     connect() {
@@ -124,20 +132,27 @@ export default {
       }
       return "Loading...";
     },
+    acceptStats() {
+      if (this.$store.getters["auth/isAuthenticated"]) {
+        return this.$store.getters["auth/getUser"].acceptStats;
+      } else {
+        return false;
+      }
+    },
     requireAuth() {
       return (
         this.$route.meta.requireAuth !== undefined &&
         this.$route.meta.requireAuth
       );
     },
+    mouseDebounceTime() {
+      return parseInt(this.$store.getters["settings/getValue"]('statistics.tracking.mouseDebounceTime'), 10);
+    }
   },
   watch: {
     $route(to, from) {
-      if (to.fullPath !== from.fullPath) {
-        this.$socket.emit("stats", {
-          action: "routeStep",
-          data: { from: from.fullPath, to: to.fullPath },
-        });
+      if (to.fullPath !== from.fullPath && this.behaviorLogger) {
+        this.behaviorLogger.reportRouteChange(from, to);
       }
     },
     "$route.meta.requireAuth"(newValue, oldValue) {
@@ -156,6 +171,15 @@ export default {
         }
       },
       deep: true
+    },
+    // Initialize logger after settings are loaded because we access the settings table
+    'loaded.settings': {
+      handler(isLoaded) {
+        if (isLoaded) {
+          this.initializeBehaviorLogger();
+        }
+      },
+      immediate: true
     }
   },
   beforeMount() {
@@ -172,10 +196,21 @@ export default {
       }
     }
   },
+  beforeUnmount() {
+    if (this.behaviorLogger) {
+      this.behaviorLogger.destroy();
+    }
+  },
   methods: {
     connect() {
       if (this.$route.meta.requireAuth && !this.$socket.connected) {
         this.$socket.connect();
+      }
+    },
+    initializeBehaviorLogger() {
+      if (this.acceptStats && !this.behaviorLogger) {
+        this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
+        this.behaviorLogger.init();
       }
     },
   },
