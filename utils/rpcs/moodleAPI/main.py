@@ -1,6 +1,7 @@
 import logging
 import socketio
 
+__author__ = "Alexander Bürkle, Dennis Zyska"
 
 def create_app():
 
@@ -46,10 +47,12 @@ moodle_api.URL = "https://moodle.informatik.tu-darmstadt.de"
 moodle_api.KEY = "REDACTED_SECRET"
     
 class User:
-    def __init__(self, id, fullname, role):
+    def __init__(self, id, firstname, lastname, email, roles):
         self.id = id
-        self.fullname = fullname
-        self.role = role    
+        self.firstname = firstname
+        self.lastname = lastname
+        self.email = email
+        self.roles = roles
 
 def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODLE_URL):
     """
@@ -70,14 +73,20 @@ def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODL
     
     # Get users from the course
     course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
+    print(course_users)
     
     # Create a list of User objects
     users = []
     
     for user in course_users:
-        users.append(User(user['id'], user['fullname'], user['roles'][0]['name']))
+        print(user['firstname'])
+        roles = ''
+        for role in user['roles']:
+            roles += role['name'] + ', '
+        users.append(User(user['id'], user['firstname'], user['lastname'], user['email'], roles[:-2]))
+        
     
-    header = ['id', 'fullname', 'role']
+    header = ['id', 'firstname', 'lastname', 'email', 'roles']
 
     with open(filepath, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=header)
@@ -243,9 +252,9 @@ def insert_random_keys(csv_path):
         
 
 if __name__ == '__main__':
-    create_csv_with_users_from_assignment(1615, 'TANs', 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
-    insert_random_keys('users.csv')
-    upload_passwords_to_moodle(6350, 'users.csv','REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    #create_csv_with_users_from_assignment(1615, 'TANs', 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    #insert_random_keys('users.csv')
+    #upload_passwords_to_moodle(6350, 'users.csv','REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
     
     
     

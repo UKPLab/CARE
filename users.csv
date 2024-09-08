@@ -1,7 +1,9 @@
-id,fullname,role,key
-12237,NurEin Test,Student*in,7430
-13328,T S,Student*in,6149
-14555,TestA Student,Student*in,5082
-14557,TestC Student,Student*in,1718
-18141,Alexander David Bürkle,Betreuer*in,3662
-24142,Dennis Zyska,Student*in,8849
+id,firstname,lastname,email,roles
+8071,Thomas,Arnold,arnold@ukp.informatik.tu-darmstadt.de,Dozent*in
+12237,NurEin,Test,guido@ahrgr.de,Student*in
+13328,T,S,guido@ahrgr.de,Student*in
+14555,TestA,Student,guido@ahrgr.de,Student*in
+14557,TestC,Student,guido@ahrgr.de,Student*in
+18141,Alexander David,Bürkle,alexander.bd.buerkle@outlook.de,Betreuer*in
+20087,Dennis,Zyska,zyska@ukp.informatik.tu-darmstadt.de,"Dozent*in, Student*in, Betreuer*in"
+24142,Dennis,Zyska,dennis.zyska@tu-darmstadt.de,"Student*in, Betreuer*in"

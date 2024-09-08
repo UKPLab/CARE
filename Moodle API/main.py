@@ -16,10 +16,12 @@ moodle_api.URL = "https://moodle.informatik.tu-darmstadt.de"
 moodle_api.KEY = "REDACTED_SECRET"
     
 class User:
-    def __init__(self, id, fullname, role):
+    def __init__(self, id, firstname, lastname, email, roles):
         self.id = id
-        self.fullname = fullname
-        self.role = role    
+        self.firstname = firstname
+        self.lastname = lastname
+        self.email = email
+        self.roles = roles
 
 def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODLE_URL):
     """
@@ -40,14 +42,20 @@ def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODL
     
     # Get users from the course
     course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
+    print(course_users)
     
     # Create a list of User objects
     users = []
     
     for user in course_users:
-        users.append(User(user['id'], user['fullname'], user['roles'][0]['name']))
+        print(user['firstname'])
+        roles = ''
+        for role in user['roles']:
+            roles += role['name'] + ', '
+        users.append(User(user['id'], user['firstname'], user['lastname'], user['email'], roles[:-2]))
+        
     
-    header = ['id', 'fullname', 'role']
+    header = ['id', 'firstname', 'lastname', 'email', 'roles']
 
     with open(filepath, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=header)
@@ -269,10 +277,14 @@ if __name__ == '__main__':
     #subs = moodle_api.call('mod_workshop_get_submission', assignmentids=[6350])
     #sub = moodle_api.call('', workshopid=6350)
     #print(subs)
-    get_submissions_of_assignment(1615, 6350, 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    #test = get_assignment_ids_from_course(1615)
+    #print(test)
+    #get_submissions_of_assignment(1615, 6427, 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
     #course = moodle_api.call('mod_assign_get_assignments', courseids=[1615])
     #print(course)
     #moodle_api.call('core_course_get_course_module', cmid=6350)
+    
+    create_csv_with_users_from_course(1615, 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
     
     
 
