@@ -22,16 +22,16 @@
         >
         <div class="form-group">
           <label for="MoodleURL">Moodle URL:</label>
-          <input type="text" id="MoodleURL" v-model="username" />
+          <input type="text" id="MoodleURL" v-model="moodleURL" />
         </div>
 
         <div class="form-group">
           <label for="ApiKey">API Key:</label>
-          <input type="password" id="ApiKey" v-model="password" />
+          <input type="text" id="ApiKey" v-model="apiKey" />
         </div>
         <div class="form-group">
-          <label for="ApiKey">Kurs ID:</label>
-          <input type="password" id="ApiKey" v-model="password" />
+          <label for="KursID">Kurs ID:</label>
+          <input type="password" id="KursID" v-model="kursID" />
         </div>
         </div>
       </div>
@@ -75,7 +75,10 @@ export default {
   data() {
     return {
       uploading: false,
-      show: false
+      show: false,
+      moodleURL: '',
+      apiKey: '',
+      kursID: ''
     }
   },
   computed: {},
@@ -97,9 +100,12 @@ export default {
       this.$refs.moodleModal.openModal();
     },
     download() {
-      //console.log("Hello World");
-
-      this.$socket.emit("test123", {message: "Hello World"});
+      const testData = {
+        moodleURL: this.moodleURL,
+        apiKey: this.apiKey,
+        kursID: this.kursID
+      }
+      this.$socket.emit("moodle", {data: testData});
     }
   },
 
