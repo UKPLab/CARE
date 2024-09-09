@@ -2,6 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const fs = require('fs').promises;
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -111,7 +112,7 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'study',
         tableName: 'study',
         hooks: {
-            beforeCreate: async (study, options) => {
+            afterCreate: async (study, options) => {
                 const transaction = options.transaction || await sequelize.transaction();
         
                 try {
@@ -121,15 +122,15 @@ module.exports = (sequelize, DataTypes) => {
                   // HTML document type, copy the document
                   if (document.type === sequelize.models.document.docTypes.DOC_TYPE_HTML) {
                     const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
-                    const newDocumentHash = `${document.hash}_study_${Date.now()}`;
+                    const newDocumentHash = uuidv4(); 
                     const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
                     
                     await fs.copyFile(originalFilePath, newFilePath);
 
                     const newDocument = await sequelize.models.document.create({
-                        name: `${document.name} (Copy for Study)`, 
+                        name: `${document.name}_study`, 
                         type: document.type,
-                        hash: newDocumentHash,
+                        hash: newDocumentHash, 
                         userId: document.userId,
                     }, { transaction });
 
@@ -142,7 +143,7 @@ module.exports = (sequelize, DataTypes) => {
                   await transaction.rollback();
                   throw new Error(`Failed to process document for the study: ${error.message}`);
                 }
-              }
+            }
         }
     });
 

@@ -110,7 +110,7 @@ export default {
     },
     docs() {
       return this.documents
-        .filter((doc) => doc.userId === this.userId && !doc.hash.includes('_study_'))
+        .filter((doc) => doc.userId === this.userId && !doc.name.includes('_study'))
         .map((d) => {
           let newD = { ...d };
           newD.type = d.type === 0 ? 'PDF' : 'HTML';
