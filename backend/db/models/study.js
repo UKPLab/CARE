@@ -89,6 +89,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "documentId",
                 as: "document",
               });
+
+            Study.belongsTo(models["study_workflow"], {
+                foreignKey: "studyWorkflowId",
+                as: "workflow",
+              });
         }
     }
 
@@ -97,6 +102,7 @@ module.exports = (sequelize, DataTypes) => {
         hash: DataTypes.STRING,
         userId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
+        studyWorkflowId: DataTypes.INTEGER,
         collab: DataTypes.BOOLEAN,
         resumable: DataTypes.BOOLEAN,
         description: DataTypes.TEXT,

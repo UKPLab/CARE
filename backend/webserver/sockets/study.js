@@ -81,8 +81,27 @@ module.exports = class StudySocket extends Socket {
             const sessions = await this.models['study_session'].getAllByKey('userId', this.userId);
             const document = await this.models['document'].getById(study.documentId);  
             
+            const workflow = await this.models['study_workflow'].findByPk(study.studyWorkflowId, {
+                include: [{
+                    model: this.models['study_workflow_step'],
+                    as: 'steps',
+                    order: [['order', 'ASC']],  
+                }]
+            });
+
+            const responseData = {
+                ...study,
+                documentType: document.type,
+                workflow: workflow ? {
+                    id: workflow.id,
+                    name: workflow.name,
+                    description: workflow.description,
+                    steps: workflow.steps,
+                } : null,
+            };
+
             this.emit("study_sessionRefresh", sessions.filter(s => s.studyId === study.id));
-            this.emit("studyRefresh", { ...study, documentType: document.type });  
+            this.emit("studyRefresh", responseData);  
         } else {
             this.socket.emit("studyError", {
                 studyHash: studyHash, message: "Not found!"
