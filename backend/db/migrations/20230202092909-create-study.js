@@ -23,6 +23,15 @@ module.exports = {
                         key: "id"
                     }
                 },
+                studyWorkflowId: {  
+                    type: Sequelize.INTEGER,
+                    references: {
+                        model: "study_workflow",
+                        key: "id"
+                    },
+                    allowNull: true,  
+                    onDelete: 'SET NULL'  
+                },
                 hash: {
                     type: Sequelize.STRING, allowNull: false, unique: true
                 },
