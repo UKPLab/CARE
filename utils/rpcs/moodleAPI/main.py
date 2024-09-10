@@ -18,10 +18,21 @@ def create_app():
 
     @sio.on("call")
     def call(sid, data):
+        logger.info("This is a test")
         logger.info(f"Received call: {data} from {sid}")
-        create_csv_with_users_from_assignment(data.courseID, data.assignmentName, data.options.csvPath, data.options.apiKey, data.options.url)
-        insert_random_keys(data.options.csvPath)
-        upload_passwords_to_moodle(6350, data.options.csvPath, data.options.apiKey, data.options.url)
+        logger.info("Creating CSV file with users from course..." + str(data['data']['courseID']))
+        try:
+            if('data' in data):
+                logger.info(data['data'])
+            
+            create_csv_with_users_from_assignment(data['data']['courseID'], data['data']['assignmentName'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
+            #insert_random_keys(data.options.csvPath)
+            #upload_passwords_to_moodle(6350, data.options.csvPath, data.options.apiKey, data.options.url)
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            return "Error: " + str(e)
+        
+        
         return "Changed Passwords!"
 
 
@@ -67,6 +78,12 @@ def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODL
     Returns:
         None
     """
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger('gunicorn.error')
+    logger.setLevel(logging.INFO)
+    
+   
+    
     # Set the URL and the key for the Moodle API
     moodle_api.URL = MOODLE_URL
     moodle_api.KEY = MOODLE_API_KEY
@@ -78,12 +95,17 @@ def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODL
     # Create a list of User objects
     users = []
     
+    
+    '''
     for user in course_users:
-        print(user['firstname'])
+        logger.info(user)
         roles = ''
         for role in user['roles']:
             roles += role['name'] + ', '
-        users.append(User(user['id'], user['firstname'], user['lastname'], user['email'], roles[:-2]))
+        
+        email = user['email'] if 'email' in user else ''
+        #users.append(User(user['id'], user['firstname'], user['lastname'], email, roles[:-2]))
+    '''
         
     
     header = ['id', 'firstname', 'lastname', 'email', 'roles']
@@ -252,6 +274,7 @@ def insert_random_keys(csv_path):
         
 
 if __name__ == '__main__':
+    print('Hello')
     #create_csv_with_users_from_assignment(1615, 'TANs', 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
     #insert_random_keys('users.csv')
     #upload_passwords_to_moodle(6350, 'users.csv','REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')

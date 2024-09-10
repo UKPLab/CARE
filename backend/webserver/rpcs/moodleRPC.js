@@ -87,7 +87,9 @@ async updateEvents(socket) {
         this.logger.info("Calling RPC service...");
 
         try {
+            this.logger.info(data);
             return this.emit("call", data);
+            
         } catch (err) {
             throw err
         }

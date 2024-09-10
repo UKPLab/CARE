@@ -21,17 +21,21 @@
             class="flex-grow-1"
         >
         <div class="form-group">
-          <label for="MoodleURL">Moodle URL:</label>
-          <input type="text" id="MoodleURL" v-model="moodleURL" />
+          <label for="moodleURL">Moodle URL:</label>
+          <input type="text" id="moodleURL" v-model="moodleURL" />
         </div>
 
         <div class="form-group">
-          <label for="ApiKey">API Key:</label>
-          <input type="text" id="ApiKey" v-model="apiKey" />
+          <label for="apiKey">API Key:</label>
+          <input type="text" id="apiKey" v-model="apiKey" />
         </div>
         <div class="form-group">
-          <label for="KursID">Kurs ID:</label>
-          <input type="password" id="KursID" v-model="kursID" />
+          <label for="courseID">Kurs ID:</label>
+          <input type="text" id="courseID" v-model="courseID" />
+        </div>
+        <div class="form-group">
+          <label for="assignmentName">Assignment Name:</label>
+          <input type="text" id="assignmentName" v-model="assignmentName" />
         </div>
         </div>
       </div>
@@ -76,9 +80,10 @@ export default {
     return {
       uploading: false,
       show: false,
-      moodleURL: '',
-      apiKey: '',
-      kursID: ''
+      moodleURL: 'https://moodle.informatik.tu-darmstadt.de',
+      apiKey: 'REDACTED_SECRET',
+      courseID: '1615',
+      assignmentName: 'TANs'
     }
   },
   computed: {},
@@ -101,10 +106,16 @@ export default {
     },
     download() {
       const testData = {
-        moodleURL: this.moodleURL,
-        apiKey: this.apiKey,
-        kursID: this.kursID
+        options:
+        {
+          url: this.moodleURL,
+          apiKey: this.apiKey,
+          csvPath: "test.csv"
+        },
+        courseID: this.courseID,
+        assignmentName: this.assignmentName
       }
+      console.log(testData);
       this.$socket.emit("moodle", {data: testData});
     }
   },
