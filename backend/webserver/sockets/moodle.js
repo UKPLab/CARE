@@ -41,11 +41,11 @@ module.exports = class MoodleSocket extends Socket {
         this.socket.emit("test", {success: true});
 
         // wait until RPCtest service is connected
-        await this.server.rpcs["MoodleRPC"].wait();
+        //await this.server.rpcs["MoodleRPC"].wait();
 
         this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
 
-        const response = await this.server.rpcs["MoodleRPC"].call("Hello")
+        const response = await this.server.rpcs["MoodleRPC"].call(data);
 
         this.logger.info("Response: " + response);
         
