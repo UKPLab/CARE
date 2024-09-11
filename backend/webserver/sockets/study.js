@@ -78,7 +78,6 @@ module.exports = class StudySocket extends Socket {
     async sendStudyByHash(studyHash) {
         const study = await this.models['study'].getByHash(studyHash);
         if (study) {
-            const sessions = await this.models['study_session'].getAllByKey('userId', this.userId);
             const document = await this.models['document'].getById(study.documentId);  
             
             const workflow = await this.models['study_workflow'].findByPk(study.studyWorkflowId, {
@@ -100,7 +99,7 @@ module.exports = class StudySocket extends Socket {
                 } : null,
             };
 
-            this.emit("study_sessionRefresh", sessions.filter(s => s.studyId === study.id));
+            this.emit("study_sessionRefresh", await this.models['study_session'].getAllByKey('userId', this.userId));
             this.emit("studyRefresh", responseData);  
         } else {
             this.socket.emit("studyError", {
