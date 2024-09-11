@@ -203,7 +203,7 @@ module.exports = class DocumentSocket extends Socket {
                     }
 
                     const edits = await this.models['document_edit'].findAll({
-                        where: {documentId: documentId, draft: true},
+                        where: {documentId: documentId, studySessionId: undefined, draft: true},
                         raw: true
                     });
 
@@ -271,7 +271,7 @@ module.exports = class DocumentSocket extends Socket {
             }
 
             const edits = await this.models['document_edit'].findAll({
-                where: {documentId: documentId, draft: true},
+                where: {documentId: documentId, studySessionId: null, draft: true},
                 raw: true
             });
 

@@ -128,19 +128,12 @@ module.exports = (sequelize, DataTypes) => {
                   // HTML document type, copy the document
                   if (document.type === sequelize.models.document.docTypes.DOC_TYPE_HTML) {
                     const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
-                    const newDocumentHash = uuidv4(); 
+                    const newDocumentHash = `${document.hash}` + '_' + `${study.hash}`; 
                     const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
                     
                     await fs.copyFile(originalFilePath, newFilePath);
 
-                    const newDocument = await sequelize.models.document.create({
-                        name: `${document.name}_study`, 
-                        type: document.type,
-                        hash: newDocumentHash, 
-                        userId: document.userId,
-                    }, { transaction });
-
-                    study.documentId = newDocument.id;
+                    study.documentId = document.id;
                   } 
         
                   await transaction.commit();
