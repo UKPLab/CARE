@@ -19,7 +19,7 @@ module.exports = {
         allowNull: false
       },
       stepType: {
-        type: Sequelize.STRING,
+        type: Sequelize.INTEGER,
         allowNull: false
       },
       order: {
