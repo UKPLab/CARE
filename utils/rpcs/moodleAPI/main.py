@@ -1,5 +1,7 @@
 import logging
 import socketio
+import io
+import base64
 
 __author__ = "Alexander Bürkle, Dennis Zyska"
 
@@ -25,7 +27,11 @@ def create_app():
             if('data' in data):
                 logger.info(data['data'])
             
-            create_csv_with_users_from_assignment(data['data']['courseID'], data['data']['assignmentName'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
+            
+            pdf = get_submissions_of_assignment(data['data']['courseID'], 6427, data['data']['options']['apiKey'], data['data']['options']['url'])
+            
+            #encoded_pdf = base64.b64encode(pdf_file.read()).decode('utf-8')
+            return pdf
             #insert_random_keys(data.options.csvPath)
             #upload_passwords_to_moodle(6350, data.options.csvPath, data.options.apiKey, data.options.url)
         except Exception as e:
@@ -33,9 +39,24 @@ def create_app():
             return "Error: " + str(e)
         
         
-        return "Changed Passwords!"
-
-
+    @sio.on("getUsersFromCourse")
+    def getUsersFromCourse(sid, data):
+        logger.info(f"Received call: {data} from {sid}")
+        csv = create_csv_with_users_from_course(data['data']['courseID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
+        return csv
+    
+    @sio.on("getUsersFromAssignment")
+    def getUsersFromAssignment(sid, data):
+        logger.info(f"Received call: {data} from {sid}")
+        csv = create_csv_with_users_from_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
+        return csv
+    
+    @sio.on("getSubmissionFromUser")
+    def getUsersFromAssignment(sid, data):
+        logger.info(f"Received call: {data} from {sid}")
+        csv = get_submissions_of_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
+        return csv
+    
     logger.info("Creating App...")
     app = socketio.WSGIApp(sio)
     return app
@@ -78,12 +99,6 @@ def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODL
     Returns:
         None
     """
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger('gunicorn.error')
-    logger.setLevel(logging.INFO)
-    
-   
-    
     # Set the URL and the key for the Moodle API
     moodle_api.URL = MOODLE_URL
     moodle_api.KEY = MOODLE_API_KEY
@@ -95,31 +110,34 @@ def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODL
     # Create a list of User objects
     users = []
     
-    
-    '''
     for user in course_users:
-        logger.info(user)
         roles = ''
         for role in user['roles']:
-            roles += role['name'] + ', '
+            roles += role['name'] + '; '
         
         email = user['email'] if 'email' in user else ''
-        #users.append(User(user['id'], user['firstname'], user['lastname'], email, roles[:-2]))
-    '''
-        
+        users.append(User(user['id'], user['firstname'], user['lastname'], email, roles[:-2]))
+    
+    output = io.StringIO()    
     
     header = ['id', 'firstname', 'lastname', 'email', 'roles']
+    writer = csv.DictWriter(output, fieldnames=header)
+    writer.writeheader()
+    
+    for user in users:  # Assuming `users` is a list of User objects
+        person_data = {attr: getattr(user, attr) for attr in header}
+        writer.writerow(person_data)
+        
+    # Get the CSV content as a string
+    csv_content = output.getvalue()
+    output.close()
 
-    with open(filepath, 'w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=header)
+    # Encode the CSV content as Base64 for safe transmission
+    #encoded_csv = base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
 
-        writer.writeheader()
-
-        for user in users:
-            person_data = {attr: getattr(user, attr) for attr in header}
-            writer.writerow(person_data)
+    return csv_content  # Return this encoded data in the RPC response
            
-def create_csv_with_users_from_assignment(course_id, assignment_name, filepath, MOODLE_API_KEY, MOODLE_URL):
+def create_csv_with_users_from_assignment(course_id, assignmentId, filepath, MOODLE_API_KEY, MOODLE_URL):
     """
     Create a CSV file with users enrolled in a specific assignment.
 
@@ -138,40 +156,42 @@ def create_csv_with_users_from_assignment(course_id, assignment_name, filepath, 
     """
     moodle_api.URL = MOODLE_URL
     moodle_api.KEY = MOODLE_API_KEY
-    
-    assign_ids_with_names = get_assignment_ids_from_course(course_id)
-    assignment_id = -1
-    
-    for assignment in assign_ids_with_names:
-        if assignment[1] == assignment_name:
-            assignment_id = assignment[0]
-            break
-        
-    if assignment_id == -1:
-        print("Assignment not found. The assignment name is case sensitive.")
-        return
+
     
     course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
     
     # Create a list of User objects
     users = []
-    id_mappings = get_id_mappings(assignment_id)
+    id_mappings = get_id_mappings(assignmentId)
     
     for user in course_users:
         for id in id_mappings:
             if id['userid'] == user['id']:
-                users.append(User(user['id'], user['fullname'], user['roles'][0]['name']))
+                roles = ''
+                for role in user['roles']:
+                    roles += role['name'] + '; '
+                email = user['email'] if 'email' in user else ''
+                users.append(User(user['id'], user['firstname'], user['lastname'], email, roles[:-2]))
                 continue
-    header = ['id', 'fullname', 'role']
 
-    with open(filepath, 'w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=header)
+    output = io.StringIO()    
+    
+    header = ['id', 'firstname', 'lastname', 'email', 'roles']
+    writer = csv.DictWriter(output, fieldnames=header)
+    writer.writeheader()
+    
+    for user in users:  # Assuming `users` is a list of User objects
+        person_data = {attr: getattr(user, attr) for attr in header}
+        writer.writerow(person_data)
+        
+    # Get the CSV content as a string
+    csv_content = output.getvalue()
+    output.close()
 
-        writer.writeheader()
+    # Encode the CSV content as Base64 for safe transmission
+    #encoded_csv = base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
 
-        for user in users:
-            person_data = {attr: getattr(user, attr) for attr in header}
-            writer.writerow(person_data)
+    return csv_content  # Return this encoded data in the RPC response
     
 def upload_passwords_to_moodle(assignment_id, csv_filepath, MOODLE_API_KEY, MOODLE_URL):
     """
@@ -271,6 +291,62 @@ def insert_random_keys(csv_path):
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(rows)
+            
+            
+def get_submissions_of_assignment(course_id, assignment_id, userID, MOODLE_API_KEY, MOODLE_URL):
+    """
+    Get a list of submissions for a given assignment.
+
+    Args:
+        assignment_id (int): The ID of the assignment.
+        MOODLE_API_KEY (str): The API key for accessing the Moodle API.
+        MOODLE_URL (str): The URL of the Moodle instance.
+
+    Returns:
+        list: A list of submissions.
+    """
+    moodle_api.URL = MOODLE_URL
+    moodle_api.KEY = MOODLE_API_KEY
+
+    # Get users from the cosurse
+    course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
+    
+    # Create a list of User objects
+    users = []
+    
+    for user in course_users:
+        roles = ''
+        for role in user['roles']:
+            roles += role['name'] + ', '
+        users.append(User(user['id'], user['firstname'], user['lastname'], user['email'], roles[:-2]))
+
+    submissions = moodle_api.call('mod_assign_get_submissions', assignmentids=[assignment_id])
+
+    file_paths = []
+
+    for sub in submissions['assignments'][0]['submissions']:
+        fullname = ''
+        for user in users:
+            if sub['userid'] == user.id:
+                fullname = user.firstname + '_' + user.lastname
+                break
+        file_paths.append('submissions/' + str(sub['userid']) + '_' + fullname)
+        for plugin in sub['plugins']:
+            if 'fileareas' in plugin:
+                for filearea in plugin['fileareas']:
+                    for files in filearea['files']:
+                        file_url = files['fileurl']
+                        file_url += f'?token={MOODLE_API_KEY}'
+                        response = requests.get(file_url)
+                    return response.content
+                    ''' newPath = 'files/' + str(sub['userid']) + '_' + fullname + '_' + str(fileIndex) + '.pdf'
+                        with open(newPath, 'wb') as file:
+                            file.write(response.content)
+                        fileIndex += 1
+                    '''  
+                    
+ 
+                        
         
 
 if __name__ == '__main__':

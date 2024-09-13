@@ -96,5 +96,29 @@ async updateEvents(socket) {
 
     }
 
+    async getUsersFromCourse(data) {
+        this.logger.info("Calling RPC service...");
+
+        try {
+            this.logger.info(data);
+            return this.emit("getUsersFromCourse", data);
+            
+        } catch (err) {
+            throw err
+        }
+    }
+
+    async getUsersFromAssignment(data) {
+        this.logger.info("Calling RPC service...");
+
+        try {
+            this.logger.info(data);
+            return this.emit("getUsersFromAssignment", data);
+            
+        } catch (err) {
+            throw err
+        }
+    }
+
 
 }

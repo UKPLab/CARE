@@ -34,8 +34,8 @@
           <input type="text" id="courseID" v-model="courseID" />
         </div>
         <div class="form-group">
-          <label for="assignmentName">Assignment Name:</label>
-          <input type="text" id="assignmentName" v-model="assignmentName" />
+          <label for="assignmentName">Assignment ID:</label>
+          <input type="text" id="assignmentName" v-model="assignmentID" />
         </div>
         </div>
       </div>
@@ -83,7 +83,7 @@ export default {
       moodleURL: 'https://moodle.informatik.tu-darmstadt.de',
       apiKey: 'REDACTED_SECRET',
       courseID: '1615',
-      assignmentName: 'TANs'
+      assignmentID: '6427'
     }
   },
   computed: {},
@@ -113,10 +113,10 @@ export default {
           csvPath: "test.csv"
         },
         courseID: this.courseID,
-        assignmentName: this.assignmentName
+        assignmentID: this.assignmentID
       }
       console.log(testData);
-      this.$socket.emit("moodle", {data: testData});
+      this.$socket.emit("getUsersFromAssignment", {data: testData});
     }
   },
 

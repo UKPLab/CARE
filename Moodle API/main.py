@@ -241,9 +241,14 @@ def get_submissions_of_assignment(course_id, assignment_id, MOODLE_API_KEY, MOOD
     users = []
     
     for user in course_users:
-        users.append(User(user['id'], user['fullname'], ', '.join([role['name'] for role in user['roles']])))
+        roles = ''
+        for role in user['roles']:
+            roles += role['name'] + ', '
+        users.append(User(user['id'], user['firstname'], user['lastname'], user['email'], roles[:-2]))
 
     submissions = moodle_api.call('mod_assign_get_submissions', assignmentids=[assignment_id])
+    
+    print(submissions)
 
     file_paths = []
 
@@ -251,7 +256,7 @@ def get_submissions_of_assignment(course_id, assignment_id, MOODLE_API_KEY, MOOD
         fullname = ''
         for user in users:
             if sub['userid'] == user.id:
-                fullname = user.fullname
+                fullname = user.firstname + '_' + user.lastname
                 break
         file_paths.append('submissions/' + str(sub['userid']) + '_' + fullname)
         for plugin in sub['plugins']:
@@ -262,10 +267,15 @@ def get_submissions_of_assignment(course_id, assignment_id, MOODLE_API_KEY, MOOD
                         file_url = files['fileurl']
                         file_url += f'?token={MOODLE_API_KEY}'
                         response = requests.get(file_url)
+                        #print(response.content)
+                        return response.content
+                        '''
                         newPath = 'files/' + str(sub['userid']) + '_' + fullname + '_' + str(fileIndex) + '.pdf'
                         with open(newPath, 'wb') as file:
                             file.write(response.content)
                         fileIndex += 1
+                        '''
+                        
                         
                         
         
@@ -284,7 +294,23 @@ if __name__ == '__main__':
     #print(course)
     #moodle_api.call('core_course_get_course_module', cmid=6350)
     
-    create_csv_with_users_from_course(1615, 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    #create_csv_with_users_from_course(1615, 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    
+    #Submissions for a single user
+    params = {}
+    params['assignid'] = 6427
+    params['userid'] = 18141
+    submission = moodle_api.call('mod_assign_get_submission_status',**params)
+    
+    params2 = {}
+    params2['workshopid'] = 6427
+    params2['userid'] = 18141
+    subs = moodle_api.call('mod_workshop_get_submissions', **params2)
+    #print(subs)
+    #print(submission)
+    
+    #get_submissions_of_assignment(1615, 6427, 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    
     
     
 
