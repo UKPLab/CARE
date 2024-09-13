@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
+
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const Socket = require("../Socket.js");
@@ -36,7 +37,7 @@ module.exports = class MoodleSocket extends Socket {
         this.emit("documentRefresh", doc);
     }
 
-    async test(data) {
+    async getUsersFromCourse(data) {
         this.logger.info("Lul: " + data);
         this.socket.emit("test", {success: true});
 
@@ -45,28 +46,50 @@ module.exports = class MoodleSocket extends Socket {
 
         this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
 
-        const response = await this.server.rpcs["MoodleRPC"].call(data);
+        const response = await this.server.rpcs["MoodleRPC"].getUsersFromCourse(data);
 
         this.logger.info("Response: " + response);
-        
-        //Rückgabe Objekt von Usern oder Fehlermeldung
-        //Objekt vergleichen und schauen ob es richtig ist
-    }
+    };
+
+    async getUsersFromAssignment(data) {
+        this.logger.info("Lul: " + data);
+        this.socket.emit("test", {success: true});
+
+        // wait until RPCtest service is connected
+        //await this.server.rpcs["MoodleRPC"].wait();
+
+        this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
+
+        const response = await this.server.rpcs["MoodleRPC"].getUsersFromAssignment(data);
+
+        this.logger.info("Response: " + response);
+    };
+
+
+    
 
     init() {
 
         //Make sure upload directory exists
         fs.mkdirSync(UPLOAD_PATH, {recursive: true});
 
-        this.socket.on("moodle", async (data) => {
+        this.socket.on("getUsersFromCourse", async (data) => {
             try {
-                await this.test(data);
+                await this.getUsersFromCourse(data);
             } catch (err) {
-                this.logger.error("Test error: " + err);
-                this.socket.emit("test", {success: false});
+                this.logger.error("Couldn't get users from course. Error: " + err);
             }
+        });
+
+        this.socket.on("getUsersFromAssignment", async (data) => {
+            try {
+                await this.getUsersFromAssignment(data);
+            } catch (err) {
+                this.logger.error("Couldn't get users from assignment. Error: " + err);
+            }
+        });
 
 
-    });
+    
 }
 }
