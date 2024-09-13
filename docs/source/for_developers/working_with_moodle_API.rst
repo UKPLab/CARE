@@ -73,23 +73,24 @@ getUsersFromAssignment
 
 .. function:: getUsersFromAssignment(courseID, assignmentID, options)
 
-    This method retrieves all users from a given assignment. It then creates a csv file, containing the user information: id, username, firstname, lastname, email and their roles in the course (e.g. student/tutor)
+    This method retrieves all users from a given assignment. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
 
-    :param courseID: This is the course id of the course you want to get the users from. You can get it from the URL of the course.
-    :type param1: int
-    :param assignmentID: This is the assignment id of the assignment you want to get the users from. You can get it from the URL while looking at the assignment.
-    :type param1: int
-    :param options: This parameters holds the URL of the Moodle website and the API token.
-    :type param2: dict
-    :paramparam options.URL: The URL of the Moodle website.
+    :param courseID: This is the course ID of the course you want to get the users from. You can get it from the URL of the course.
+    :type courseID: int
+    :param assignmentID: This is the assignment ID of the assignment you want to get the users from. You can get it from the URL while looking at the assignment.
+    :type assignmentID: int
+    :param options: A dictionary containing the URL of the Moodle website and the API token.
+    :type options: dict
+    :param options.URL: The URL of the Moodle website.
     :type options.URL: str
-    :paramparam options.API_KEY: The API token of the Moodle website.
+    :param options.API_KEY: The API token of the Moodle website.
     :type options.API_KEY: str
-    :return: CSV file with the user information.
-    :rtype: CSV 
+    :return: A CSV file with the user information.
+    :rtype: CSV
 
-    :raises ExceptionType: Explanation of the exception when it might be raised.
+    :raises Exception: If something goes wrong with the API request.
     :raises AnotherException: Another possible exception.
+
 
 Example Usage
 -------------
