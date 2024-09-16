@@ -7,61 +7,79 @@
       <span>Bulk Import Users</span>
     </template>
     <template #body>
-      <div class="file-upload-container">
+      <!-- Stepper -->
+      <div class="stepper">
         <div
-          class="drag-drop-area"
-          @dragover.prevent
-          @drop.prevent="handleDrop"
-          @click="$refs.fileInput.click()"
+          v-for="(step, index) in steps"
+          :key="index"
+          :class="{ active: currentStep === index }"
         >
-          <input
-            ref="fileInput"
-            type="file"
-            accept=".csv"
-            style="display: none"
-            @change="handleFileUpload"
-          />
-          <BasicIcon
-            icon-name="cloud-arrow-up"
-            size="64"
-          />
-          <p>Drag and drop CSV file here<br />or click to upload</p>
+         {{ step.title }}
         </div>
-        <p>Please check the format or <a href="">download the template</a> here.</p>
+      </div>
+      <!-- Content -->
+      <div class="content-container">
+        <!-- Step1: Upload -->
         <div
-          v-if="file && file.name !== ''"
-          class="file-info-container"
+          v-if="currentStep === 0"
+          class="file-upload-container"
         >
-          <div class="file-info">
-            <BasicIcon
-              icon-name="file-earmark"
-              size="20"
+          <div
+            class="drag-drop-area"
+            @dragover.prevent
+            @drop.prevent="handleDrop"
+            @click="$refs.fileInput.click()"
+          >
+            <input
+              ref="fileInput"
+              type="file"
+              accept=".csv"
+              style="display: none"
+              @change="handleFileUpload"
             />
-            <strong>{{ file.name }}</strong>
-            <span>({{ file.size }} KB)</span>
+            <BasicIcon
+              icon-name="cloud-arrow-up"
+              size="64"
+            />
+            <p>Drag and drop CSV file here<br />or click to upload</p>
           </div>
-          <button @click="clearFile">
-            <BasicIcon
-              icon-name="x-circle-fill"
-              size="20"
-            />
-          </button>
+          <p>Please check the format or <a href="">download the template</a> here.</p>
+          <div
+            v-if="file && file.name !== ''"
+            class="file-info-container"
+          >
+            <div class="file-info">
+              <BasicIcon
+                icon-name="file-earmark"
+                size="20"
+              />
+              <strong>{{ file.name }}</strong>
+              <span>({{ file.size }} KB)</span>
+            </div>
+            <button @click="clearFile">
+              <BasicIcon
+                icon-name="x-circle-fill"
+                size="20"
+              />
+            </button>
+          </div>
         </div>
+        <!-- Step2:  -->
+        <!-- Step3:  -->
+        <!-- Step4:  -->
       </div>
     </template>
     <template #footer>
-      <span class="btn-group">
-        <BasicButton
-          title="Cancel"
-          class="btn btn-secondary"
-          @click="$refs.modal.close()"
-        />
-        <BasicButton
-          title="Confirm"
-          class="btn btn-primary"
-          @click="submit"
-        />
-      </span>
+      <BasicButton
+        title="Previous"
+        class="btn btn-secondary"
+        @click="prevStep"
+      />
+      <BasicButton
+        title="Next"
+        class="btn btn-primary"
+        @click="nextStep"
+      />
     </template>
   </BasicModal>
 </template>
@@ -78,8 +96,15 @@ import BasicIcon from "@/basic/Icon.vue";
 export default {
   name: "ImportModal",
   components: { BasicModal, BasicButton, BasicIcon },
+  props: {
+    steps: {
+      type: Array,
+      default: () => [{ title: "Upload" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }],
+    },
+  },
   data() {
     return {
+      currentStep: 0,
       file: {
         name: "",
         size: 0,
@@ -93,6 +118,16 @@ export default {
     resetForm() {
       this.$refs.form.modelValue.password = "";
       this.eventBus.emit("resetFormField");
+    },
+    nextStep() {
+      if (this.currentStep < 3) {
+        this.currentStep++;
+      }
+    },
+    prevStep() {
+      if (this.currentStep > 0) {
+        this.currentStep--;
+      }
     },
     handleDrop(event) {
       const file = event.dataTransfer.files[0];
@@ -129,6 +164,25 @@ export default {
 </script>
 
 <style scoped>
+/* Stepper */
+.stepper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.stepper div {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.stepper div.active {
+  --btn-color: #0d6efd;
+  background-color: var(--btn-color);
+  color: white;
+  border-color: var(--btn-color);
+}
 .file-upload-container {
   width: 100%;
   max-width: 500px;
@@ -136,9 +190,10 @@ export default {
 }
 
 .drag-drop-area {
+  margin-bottom: 0.5rem;
   border: 2px dashed #ccc;
   border-radius: 4px;
-  padding: 20px;
+  padding: 1.25rem;
   text-align: center;
   cursor: pointer;
   transition: background-color 0.3s ease;
@@ -155,7 +210,7 @@ export default {
 }
 
 .file-info-container {
-  margin-top: 15px;
+  margin-top: 0.9375rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
