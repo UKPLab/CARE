@@ -14,7 +14,7 @@
           :key="index"
           :class="{ active: currentStep === index }"
         >
-         {{ step.title }}
+          {{ step.title }}
         </div>
       </div>
       <!-- Content -->
@@ -64,7 +64,8 @@
             </button>
           </div>
         </div>
-        <!-- Step2:  -->
+        <!-- Step2: Preview -->
+
         <!-- Step3:  -->
         <!-- Step4:  -->
       </div>
@@ -88,6 +89,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
+import Papa from "papaparse";
 
 /**
  * Modal for bulk creating users through csv file
@@ -131,11 +133,75 @@ export default {
     },
     handleDrop(event) {
       const file = event.dataTransfer.files[0];
-      this.processFile(file);
+
+      // this.processFile(file);
     },
-    handleFileUpload(event) {
+    async handleFileUpload(event) {
       const file = event.target.files[0];
-      this.processFile(file);
+      const message = await this.validateCSV(file);
+      console.log({ message });
+      // this.processFile(file);
+    },
+    async validateCSV(file) {
+      return new Promise((resolve, reject) => {
+        Papa.parse(file, {
+          header: true,
+          complete: function (results) {
+            const { data: rows, meta } = results;
+            const { fields: fileHeaders } = meta;
+            const requiredHeaders = ["id", "firstname", "lastname", "username", "email", "roles", "key"];
+            const seenIds = new Set();
+            const seenEmails = new Set();
+            // src: https://www.mailercheck.com/articles/email-validation-javascript
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const errors = [];
+            // Check headers
+            if (!requiredHeaders.every((header) => fileHeaders.includes(header))) {
+              errors.push("CSV does not contain all required headers");
+            }
+            rows.forEach((row, index) => {
+              // Check if every cell has value, except for username
+              for (const [key, value] of Object.entries(row)) {
+                if (key !== "username" && (value === null || value === "")) {
+                  errors.push(`Empty value found for ${key} at index ${index + 1}`);
+                }
+              }
+              // Check for duplicate id
+              if (seenIds.has(row.id)) {
+                errors.push(`Duplicate id found: ${row.id} at index ${index + 1}`);
+              } else {
+                seenIds.add(row.id);
+              }
+
+              // Check for duplicate email
+              if (seenEmails.has(row.email)) {
+                errors.push(`Duplicate email found: ${row.email} at index ${index + 1}`);
+              } else {
+                seenEmails.add(row.email);
+              }
+
+              // Check if the values of the roles column are separated by comma
+              if (row.roles && !row.roles.includes(",") && row.roles.includes(" ")) {
+                errors.push(`Roles not comma-separated for id ${row.id} at index ${index + 1}`);
+              }
+
+              // Check if the email is in a valid format
+              if (!emailRegex.test(row.email)) {
+                errors.push(`Invalid email format for id ${row.id} at index ${index + 1}: ${row.email}`);
+              }
+            });
+
+            if (errors.length > 0) {
+              reject(errors);
+            } else {
+              resolve("CSV file is valid");
+            }
+          },
+          error: function (error) {
+            reject(["Error parsing file: " + error.message]);
+          },
+        });
+      });
     },
     processFile(file) {
       if (file && file.name.endsWith(".csv")) {
