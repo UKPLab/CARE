@@ -43,7 +43,10 @@ module.exports = class StudySocket extends Socket {
      */
     async addStudy(study) {
         study.userId = this.userId;
-
+        // TODO: that all existing deltas are saved, use documentSocket(saveDocument)
+            if (this.getSocket("DocumentSocket")) {
+                this.getSocket("DocumentSocket").saveDocument(study.documentId);
+            }        
         const newStudy = await this.models['study'].add(study);
         this.emit("studyRefresh", newStudy);
         return newStudy;

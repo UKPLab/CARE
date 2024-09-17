@@ -39,12 +39,9 @@
   </Teleport>
   <Annotator
     v-if="documentId !== 0 && documentType === 0"
-    :study-session-id="studySessionId"
   />
   <Editor
     v-if="documentId !== 0 && documentType === 1"
-    :document-id="documentId"
-    :study-session-id="studySessionId"
   />
 </template>
 
