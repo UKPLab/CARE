@@ -128,7 +128,7 @@ module.exports = class UserSocket extends Socket {
       } catch (error) {
         this.socket.emit("userDetails", {
           success: false,
-          message: "Fail to load user details",
+          message: "Failed to load user details",
         });
         this.logger.error(error);
       }
@@ -181,7 +181,27 @@ module.exports = class UserSocket extends Socket {
       } catch (error) {
         callback({
           success: false,
-          message: "Fail to reset password",
+          message: "Failed to reset password",
+        });
+        this.logger.error(error);
+      }
+    });
+
+    this.socket.on("userCheckDuplicates", async (users, callback) => {
+      try {
+        const emails = users.map((user) => user.email);
+        const existingEmails = await this.models["user"].getUsersByEmails(emails);
+        users.forEach((user) => {
+          user.status = existingEmails.includes(user.email) ? "duplicate" : "new";
+        });
+        callback({
+          success: true,
+          users,
+        });
+      } catch (error) {
+        callback({
+          success: false,
+          message: "Failed to check for duplicate users",
         });
         this.logger.error(error);
       }

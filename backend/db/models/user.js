@@ -109,6 +109,23 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
+     * Get users' email
+     * @param {string[]} emails a list of emails
+     * @returns {Promise<array>} a list of emails
+     */
+    static async getUsersEmail(emails) {
+      return await User.findAll({
+        where: {
+          email: {
+            [Op.in]: emails,
+          },
+        },
+        attributes: ["email"],
+        raw: true,
+      });
+    }
+
+    /**
      * Register a new login
      * @param {string} userId user id
      * @returns {Promise<boolean>}} true if successful
