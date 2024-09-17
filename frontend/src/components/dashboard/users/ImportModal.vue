@@ -44,25 +44,41 @@
             <p>Drag and drop CSV file here<br />or click to upload</p>
           </div>
           <p>Please check the format or <a href="">download the template</a> here.</p>
-          <div
-            v-if="file && file.name !== ''"
-            class="file-info-container"
-          >
-            <div class="file-info">
-              <BasicIcon
-                icon-name="file-earmark"
-                size="20"
-              />
-              <strong>{{ file.name }}</strong>
-              <span>({{ file.size }} KB)</span>
+          <template v-if="file.state === 1">
+            <div
+              v-if="file.name !== '' && file.errors.length === 0"
+              class="file-info-container"
+            >
+              <div class="file-info">
+                <BasicIcon
+                  icon-name="file-earmark"
+                  size="20"
+                />
+                <strong>{{ file.name }}</strong>
+                <span>({{ file.size }} KB)</span>
+              </div>
+              <button @click="clearFile">
+                <BasicIcon
+                  icon-name="x-circle-fill"
+                  size="20"
+                />
+              </button>
             </div>
-            <button @click="clearFile">
-              <BasicIcon
-                icon-name="x-circle-fill"
-                size="20"
-              />
-            </button>
-          </div>
+            <div
+              v-else
+              class="file-error-container"
+            >
+              <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
+              <ul>
+                <li
+                  v-for="(error, index) in file.errors"
+                  :key="index"
+                >
+                  {{ error }}
+                </li>
+              </ul>
+            </div>
+          </template>
         </div>
         <!-- Step2: Preview -->
 
@@ -108,8 +124,10 @@ export default {
     return {
       currentStep: 0,
       file: {
+        state: 0,
         name: "",
         size: 0,
+        errors: [],
       },
     };
   },
@@ -133,14 +151,11 @@ export default {
     },
     handleDrop(event) {
       const file = event.dataTransfer.files[0];
-
-      // this.processFile(file);
+      this.processFile(file);
     },
-    async handleFileUpload(event) {
+    handleFileUpload(event) {
       const file = event.target.files[0];
-      const message = await this.validateCSV(file);
-      console.log({ message });
-      // this.processFile(file);
+      this.processFile(file);
     },
     async validateCSV(file) {
       return new Promise((resolve, reject) => {
@@ -194,7 +209,7 @@ export default {
             if (errors.length > 0) {
               reject(errors);
             } else {
-              resolve("CSV file is valid");
+              resolve(true);
             }
           },
           error: function (error) {
@@ -203,20 +218,37 @@ export default {
         });
       });
     },
-    processFile(file) {
+    async processFile(file) {
       if (file && file.name.endsWith(".csv")) {
-        this.file = {
-          name: file.name,
-          size: file.size,
-        };
-
-        this.uploadFile(file);
+        try {
+          const isValid = await this.validateCSV(file);
+          if (isValid) {
+            this.file = {
+              state: 1,
+              name: file.name,
+              size: file.size,
+              errors: []
+            };
+            this.eventBus.emit("toast", {
+              title: "Validation completed",
+              message: "CSV is valid!",
+              variant: "success",
+            });
+            // this.uploadFile(file);
+          }
+        } catch (errors) {
+          this.file = {
+            state: 1,
+            errors,
+          };
+        }
       } else {
         alert("Please upload a CSV file");
       }
     },
     clearFile() {
       this.file = {
+        state: 0,
         name: "",
         size: 0,
       };
@@ -301,5 +333,12 @@ export default {
   border: none;
   padding: 5px 10px;
   cursor: pointer;
+}
+
+.file-error-container {
+  color: firebrick;
+  > p {
+    margin-bottom: 0.5rem;
+  }
 }
 </style>
