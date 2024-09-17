@@ -165,9 +165,8 @@ export default {
   },
   mounted() {
     this.studySessionId = this.initStudySessionId;
-    if (this.studySessionId !== 0) {
-      this.$socket.emit("studySessionGetById", { studySessionId });
-    } else {
+    console.log("studySessionId send from mounted:",this.studySessionId);
+    if (this.studySessionId === 0) {
       this.$refs.studyModal.open();
       this.$socket.emit("studyGetByHash", { studyHash: this.studyHash });
     }
