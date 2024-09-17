@@ -82,6 +82,7 @@
         </div>
         <!-- Step2: Preview -->
 
+
         <!-- Step3:  -->
         <!-- Step4:  -->
       </div>
@@ -129,6 +130,7 @@ export default {
         size: 0,
         errors: [],
       },
+      users: [],
     };
   },
   methods: {
@@ -141,6 +143,15 @@ export default {
     },
     nextStep() {
       if (this.currentStep < 3) {
+        this.$refs.modal.waiting = true;
+        if (this.currentStep === 0 && this.users.length > 0) {
+          this.$socket.emit("userCheckDuplicates", this.users, (response) => {
+            if (response.success) {
+              this.$refs.modal.waiting = false;
+              this.users = response.users;
+            }
+          });
+        }
         this.currentStep++;
       }
     },
@@ -209,7 +220,7 @@ export default {
             if (errors.length > 0) {
               reject(errors);
             } else {
-              resolve(true);
+              resolve(rows);
             }
           },
           error: function (error) {
@@ -221,21 +232,18 @@ export default {
     async processFile(file) {
       if (file && file.name.endsWith(".csv")) {
         try {
-          const isValid = await this.validateCSV(file);
-          if (isValid) {
-            this.file = {
-              state: 1,
-              name: file.name,
-              size: file.size,
-              errors: []
-            };
-            this.eventBus.emit("toast", {
-              title: "Validation completed",
-              message: "CSV is valid!",
-              variant: "success",
-            });
-            // this.uploadFile(file);
-          }
+          this.users = await this.validateCSV(file);
+          this.file = {
+            state: 1,
+            name: file.name,
+            size: file.size,
+            errors: [],
+          };
+          this.eventBus.emit("toast", {
+            title: "Validation completed",
+            message: "CSV is valid!",
+            variant: "success",
+          });
         } catch (errors) {
           this.file = {
             state: 1,
