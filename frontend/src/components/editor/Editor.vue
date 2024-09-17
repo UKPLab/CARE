@@ -109,7 +109,7 @@ export default {
       }
     }
 
-    this.$socket.emit("documentGet", { documentId: this.documentId });
+    this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId });
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
   },
@@ -119,7 +119,7 @@ export default {
       this.$socket.emit("documentOpen", { documentId: this.documentId });
     },
     documentFile(data) {
-      this.initializeEditorWithContent(data["deltas"]);
+      this.initializeEditorWithContent(data['deltas']);
     },
     documentError(error) {
       console.error("Document error:", error.message);
@@ -127,7 +127,7 @@ export default {
     }
   },
   unmounted() {
-    this.$socket.emit("documentClose", { documentId: this.documentId });
+    this.$socket.emit("documentClose", { documentId: this.documentId, studySessionId: this.studySessionId });
   },
   computed: {
     unappliedEdits() {

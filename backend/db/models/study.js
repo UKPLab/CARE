@@ -129,7 +129,7 @@ module.exports = (sequelize, DataTypes) => {
                   if (document.type === sequelize.models.document.docTypes.DOC_TYPE_HTML) {
                     const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
                     const newDocumentHash = `${document.hash}` + '_' + `${study.hash}`; 
-                    const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
+                    const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);                    
                     
                     await fs.copyFile(originalFilePath, newFilePath);
 
