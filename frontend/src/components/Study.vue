@@ -38,10 +38,10 @@
     </button>
   </Teleport>
   <Annotator
-    v-if="documentId !== 0 && documentType === 0"
+    v-if="documentId !== 0 && documentType === 0 && studySessionId !== 0"
   />
   <Editor
-    v-if="documentId !== 0 && documentType === 1"
+    v-if="documentId !== 0 && documentType === 1 && studySessionId !== 0"
   />
 </template>
 
@@ -165,7 +165,9 @@ export default {
   },
   mounted() {
     this.studySessionId = this.initStudySessionId;
-    if (this.studySessionId === 0) {
+    if (this.studySessionId !== 0) {
+      this.$socket.emit("studySessionGetById", { studySessionId });
+    } else {
       this.$refs.studyModal.open();
       this.$socket.emit("studyGetByHash", { studyHash: this.studyHash });
     }
