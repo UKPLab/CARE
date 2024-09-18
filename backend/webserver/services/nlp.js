@@ -137,9 +137,14 @@ module.exports = class NLPService extends Service {
 
             // check for configs for skills without them
             self.skills.filter(s => !self.#hasConfig(s))
-                       .map(s => nlpSocket.emit("skillGetConfig", {name: s.name}));
+                .map(s => nlpSocket.emit("skillGetConfig", {name: s.name}));
 
             self.sendAll("skillUpdate", self.skills);
+        });
+
+        nlpSocket.on("skillConfig", (data) => {
+            // update config for skill
+            self.#updateSkillConfigCache(data);
         });
 
         nlpSocket.on("skillResults", (data) => {
@@ -180,13 +185,31 @@ module.exports = class NLPService extends Service {
     }
 
     /**
+     * Update the skill cache with a configuraiton for a skill
+     * @param config the config for a skill to be updated
+     */
+    #updateSkillConfigCache(config) {
+        const skillToUpdate = config.name;
+
+        this.skills = this.skills.map(s => {
+            if (s.name === skillToUpdate) { // replace config for matching skills (leave nodes untouched)
+                s.config = config;
+                return s;
+            } else { //leave unchanged, if skill does not match config
+                return s;
+            }
+        });
+    }
+
+
+    /**
      * Returns true, if the given skill has non-trivial (name, nodes always given) config.
      *
      * @param skill
      * @returns {boolean}
      */
     #hasConfig(skill) {
-        return Object.keys(skill).filter(k => !["name", "nodes"].includes(k)).length > 0;
+        return "config" in skill && Object.entries(skill.config).length > 0;
     }
 
     /**
@@ -208,8 +231,8 @@ module.exports = class NLPService extends Service {
             await this.send(client, "skillUpdate", this.skills.filter(s => this.#hasConfig(s)));
         } else if (command === "skillGetConfig") {
             // check for skill with config to send
-            const conf = this.skills.find(n => this.#hasConfig(n) && n.name === data.name);
-            await this.send(client, "skillConfig", conf ? conf : null);
+            const skill = this.skills.find(n => this.#hasConfig(n) && n.name === data.name);
+            await this.send(client, "skillConfig", skill ? skill.config : null);
         } else {
             await super.command(client, command, data);
         }
@@ -249,7 +272,7 @@ module.exports = class NLPService extends Service {
                             return null;
                         }
                         const skill = yaml.load(data);
-                        this.skills.push({config: skill, nodes: 1, "fallback": true, name:skill.name});
+                        this.skills.push({config: skill, nodes: 1, "fallback": true, name: skill.name});
                     });
                 }
             }));
