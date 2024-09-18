@@ -19,7 +19,7 @@
       </div>
       <!-- Content -->
       <div class="content-container">
-        <!-- Step1: Upload -->
+        <!-- Step0: Upload -->
         <div
           v-if="currentStep === 0"
           class="file-upload-container"
@@ -80,7 +80,7 @@
             </div>
           </template>
         </div>
-        <!-- Step2: Preview -->
+        <!-- Step1: Preview -->
         <div
           v-if="currentStep === 1"
           class="preview-table-container"
@@ -89,10 +89,21 @@
             :columns="columns"
             :data="users"
             :options="options"
+            @row-selection="selectUsers"
           />
         </div>
+        <!-- Step2:  -->
+        <div
+          v-if="currentStep === 2"
+          class="confirm-container"
+        >
+          <p>
+            Are you sure you want to bulk create <strong>{{ userCount.new }}</strong> users <br />
+            and overwrite <strong>{{ userCount.duplicate }}</strong> users?
+          </p>
+        </div>
         <!-- Step3:  -->
-        <!-- Step4:  -->
+        <div v-if="currentStep === 3"></div>
       </div>
     </template>
     <template #footer>
@@ -133,7 +144,7 @@ export default {
   },
   data() {
     return {
-      currentStep: 1,
+      currentStep: 0,
       file: {
         state: 0,
         name: "",
@@ -141,6 +152,7 @@ export default {
         errors: [],
       },
       users: testData,
+      selectedUsers: [],
       options: {
         striped: true,
         hover: true,
@@ -169,6 +181,14 @@ export default {
       ],
     };
   },
+  computed: {
+    userCount() {
+      return {
+        new: this.selectedUsers.filter((u) => u.status === "new").length,
+        duplicate: this.selectedUsers.filter((u) => u.status === "duplicate").length,
+      };
+    },
+  },
   methods: {
     open() {
       this.$refs.modal.open();
@@ -184,11 +204,12 @@ export default {
           this.$socket.emit("userCheckDuplicates", this.users, (res) => {
             if (res.success) {
               this.$refs.modal.waiting = false;
-              console.log(res.users, "users");
               this.users = res.users;
-              // console.log(this.users, 'users')
             }
           });
+        }
+        if (this.currentStep === 1) {
+          this.$refs.modal.waiting = false;
         }
         this.currentStep++;
       }
@@ -304,6 +325,9 @@ export default {
     uploadFile(file) {
       // file
     },
+    selectUsers(users) {
+      this.selectedUsers = users;
+    },
   },
 };
 </script>
@@ -327,6 +351,11 @@ export default {
   background-color: var(--btn-color);
   color: white;
   border-color: var(--btn-color);
+}
+
+.content-container {
+  /* FIXME: */
+  height: 350px;
 }
 
 /* Upload */
@@ -395,5 +424,12 @@ export default {
 .preview-table-container {
   white-space: nowrap;
   overflow-x: scroll;
+}
+
+.confirm-container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
