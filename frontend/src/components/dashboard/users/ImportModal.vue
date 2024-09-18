@@ -81,8 +81,16 @@
           </template>
         </div>
         <!-- Step2: Preview -->
-
-
+        <div
+          v-if="currentStep === 1"
+          class="preview-table-container"
+        >
+          <BasicTable
+            :columns="columns"
+            :data="users"
+            :options="options"
+          />
+        </div>
         <!-- Step3:  -->
         <!-- Step4:  -->
       </div>
@@ -106,7 +114,9 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
+import BasicTable from "@/basic/table/Table.vue";
 import Papa from "papaparse";
+import { testData } from "./testData";
 
 /**
  * Modal for bulk creating users through csv file
@@ -114,7 +124,7 @@ import Papa from "papaparse";
  */
 export default {
   name: "ImportModal",
-  components: { BasicModal, BasicButton, BasicIcon },
+  components: { BasicModal, BasicButton, BasicIcon, BasicTable },
   props: {
     steps: {
       type: Array,
@@ -123,14 +133,40 @@ export default {
   },
   data() {
     return {
-      currentStep: 0,
+      currentStep: 1,
       file: {
         state: 0,
         name: "",
         size: 0,
         errors: [],
       },
-      users: [],
+      users: testData,
+      options: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        pagination: 10,
+        selectableRows: true,
+      },
+      columns: [
+        {
+          name: "Status",
+          key: "status",
+          width: "1",
+          filter: [
+            { key: "new", name: "New" },
+            { key: "duplicate", name: "Duplicate" },
+          ],
+        },
+        { name: "ID", key: "id" },
+        { name: "First Name", key: "firstname" },
+        { name: "Last Name", key: "lastname" },
+        { name: "Email", key: "email" },
+        { name: "Roles", key: "roles" },
+        // { name: "User", key: "username" },
+      ],
     };
   },
   methods: {
@@ -138,23 +174,26 @@ export default {
       this.$refs.modal.open();
     },
     resetForm() {
-      this.$refs.form.modelValue.password = "";
-      this.eventBus.emit("resetFormField");
+      // this.$refs.form.modelValue.password = "";
+      // this.eventBus.emit("resetFormField");
     },
     nextStep() {
       if (this.currentStep < 3) {
         this.$refs.modal.waiting = true;
         if (this.currentStep === 0 && this.users.length > 0) {
-          this.$socket.emit("userCheckDuplicates", this.users, (response) => {
-            if (response.success) {
+          this.$socket.emit("userCheckDuplicates", this.users, (res) => {
+            if (res.success) {
               this.$refs.modal.waiting = false;
-              this.users = response.users;
+              console.log(res.users, "users");
+              this.users = res.users;
+              // console.log(this.users, 'users')
             }
           });
         }
         this.currentStep++;
       }
     },
+
     prevStep() {
       if (this.currentStep > 0) {
         this.currentStep--;
@@ -289,6 +328,8 @@ export default {
   color: white;
   border-color: var(--btn-color);
 }
+
+/* Upload */
 .file-upload-container {
   width: 100%;
   max-width: 500px;
@@ -348,5 +389,11 @@ export default {
   > p {
     margin-bottom: 0.5rem;
   }
+}
+
+/* Preview */
+.preview-table-container {
+  white-space: nowrap;
+  overflow-x: scroll;
 }
 </style>

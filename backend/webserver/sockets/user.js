@@ -190,9 +190,10 @@ module.exports = class UserSocket extends Socket {
     this.socket.on("userCheckDuplicates", async (users, callback) => {
       try {
         const emails = users.map((user) => user.email);
-        const existingEmails = await this.models["user"].getUsersByEmails(emails);
+        const existingEmails = await this.models["user"].getUsersEmail(emails);
+        const duplicateEmails = existingEmails.map((item) => item.email);
         users.forEach((user) => {
-          user.status = existingEmails.includes(user.email) ? "duplicate" : "new";
+          user.status = duplicateEmails.includes(user.email) ? "duplicate" : "new";
         });
         callback({
           success: true,
