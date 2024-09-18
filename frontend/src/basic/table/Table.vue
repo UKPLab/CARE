@@ -5,7 +5,16 @@
   >
     <thead>
       <tr>
-        <th v-if="selectableRows" />
+        <th v-if="selectableRows">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              :checked="isAllRowsSelected"
+              @change="selectAllRows"
+            />
+          </div>
+        </th>
         <th
           v-for="c in columns"
           :key="c.key"
@@ -98,7 +107,8 @@
             <input
               class="form-check-input"
               type="checkbox"
-              @input="(e) => selectRow(e.target.checked, r)"
+              :checked="selectedRows.some(row => deepEqual(row, r))"
+              @change="(e) => selectRow(e.target.checked, r)"
             />
           </div>
         </td>
@@ -255,6 +265,7 @@ export default {
       itemsPerPageList: [10, 25, 50, 100],
       paginationShowPages: 3,
       filter: null,
+      isAllRowsSelected: false,
     };
   },
   computed: {
@@ -421,10 +432,13 @@ export default {
         data: data,
       });
     },
-    selectRow(action, row) {
+    selectRow(isSelected, row) {
       if (this.selectableRows) {
-        if (action) {
-          this.selectedRows.push(row);
+        if (isSelected) {
+          // Check if the row is already in the selectedRows array; if not, add it
+          if (!this.selectedRows.some(r => deepEqual(r, row))) {
+            this.selectedRows.push(row);
+          }
         } else {
           const toRemove = this.selectedRows.findIndex((r) =>
             deepEqual(r, row)
@@ -433,8 +447,18 @@ export default {
             this.selectedRows.splice(toRemove, 1);
           }
         }
+        this.isAllRowsSelected = this.selectedRows.length === this.tableData.length;
         this.$emit("rowSelection", this.selectedRows);
       }
+    },
+    selectAllRows() {
+      this.isAllRowsSelected = !this.isAllRowsSelected;
+      if (this.isAllRowsSelected) {
+        this.selectedRows = [...this.tableData];
+      } else {
+        this.selectedRows = [];
+      }
+      this.$emit("rowSelection", this.selectedRows);
     },
     paginationPageChange(page) {
       this.currentPage = page;
@@ -457,6 +481,11 @@ export default {
       this.currentPage = 1;
       this.paginationUpdate();
     },
+    // NOTE: Because deepEqual is imported after its reference in the template.
+    // Therefore, add this wrapper function here to prevent reference error.
+    deepEqual(row1, row2) {
+      return deepEqual(row1, row2);
+    }
   },
 };
 </script>
