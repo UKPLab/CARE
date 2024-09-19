@@ -56,6 +56,13 @@
         >
           Fetch
         </button>
+        <button
+            class="btn btn-primary"
+            type="button"
+            @click="download2"
+        >
+          Download
+        </button>
       </div>
     </template>
   </Modal>
@@ -83,7 +90,8 @@ export default {
       moodleURL: 'https://moodle.informatik.tu-darmstadt.de',
       apiKey: 'REDACTED_SECRET',
       courseID: '1615',
-      assignmentID: '6427'
+      assignmentID: '6427',
+      submissionInfos: []
     }
   },
   computed: {},
@@ -98,6 +106,29 @@ export default {
       } else {
         this.eventBus.emit('toast', {message: "Error during upload of file!", variant: "danger", delay: 3000});
       }
+    },
+    submissionInfos: function (data) {
+      this.submissionInfos = data;
+      console.log(data);
+      console.log(this.submissionInfos[0].submissionURLs);
+    },
+    downloadSubmissions: function (data) {
+      console.log(data);
+      // Get the binary data as a Blob
+      /*const blob = data.blob();
+        
+        // Create a link element to trigger the download
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'file.pdf'); // Set the file name
+        document.body.appendChild(link);
+        link.click();
+
+        // Clean up the URL object and link element
+        link.parentNode.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        */
     }
   },
   methods: {
@@ -116,7 +147,14 @@ export default {
         assignmentID: this.assignmentID
       }
       console.log(testData);
-      this.$socket.emit("getUsersFromAssignment", {data: testData});
+      this.$socket.emit("getSubmissionInfosFromAssignment", {data: testData});
+    },
+    download2() {
+      const testData = {
+        submissionInfos: this.submissionInfos[0]
+      }
+      console.log(testData);
+      this.$socket.emit("downloadSubmissionsFromUser", {data: testData});
     }
   },
 

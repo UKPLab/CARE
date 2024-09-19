@@ -120,5 +120,32 @@ async updateEvents(socket) {
         }
     }
 
+    async getSubmissionInfosFromAssignment(data) {
+        this.logger.info("Calling RPC service...");
+
+        try {
+            this.logger.info(data);
+            return this.emit("getSubmissionInfosFromAssignment", data);
+            
+        } catch (err) {
+            throw err
+        }
+    }
+
+    async downloadSubmissionsFromUser(data) {
+        this.logger.info("Calling RPC service...");
+
+        try {
+            this.logger.info(data);
+            return this.emit("downloadSubmissionsFromUser", data);
+            
+        } catch (err) {
+            throw err
+        }
+    }
+
+    //Abstatt direkt returnen, ist return korrekt oder fehlerhaft und wenn ja, Error throwen
+    //Testen, ob aus dem Docker Container ein Error kommt oder richtige Ausgabe
+
 
 }

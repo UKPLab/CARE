@@ -57,6 +57,18 @@ def create_app():
         csv = get_submissions_of_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
         return csv
     
+    @sio.on("getSubmissionInfosFromAssignment")
+    def getSubmissionInfosFromAssignment(sid, data):
+        logger.info(f"Received call: {data} from {sid}")
+        submissionInfos = get_submission_infos_from_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options'])
+        return submissionInfos
+        
+    @sio.on("downloadSubmissionsFromUser")
+    def downloadSubmissionsFromUser(sid, data):
+        logger.info(f"Received call: {data} from {sid}")
+        files = download_submissions_from_user(data['data']['submissionInfos'])
+        return files
+    
     logger.info("Creating App...")
     app = socketio.WSGIApp(sio)
     return app
@@ -79,12 +91,14 @@ moodle_api.URL = "https://moodle.informatik.tu-darmstadt.de"
 moodle_api.KEY = "REDACTED_SECRET"
     
 class User:
-    def __init__(self, id, firstname, lastname, email, roles):
+    def __init__(self, id, firstname, lastname, username, email, roles, password):
         self.id = id
         self.firstname = firstname
         self.lastname = lastname
+        self.username = username
         self.email = email
         self.roles = roles
+        self.key = key
 
 def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODLE_URL):
     """
@@ -116,11 +130,12 @@ def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODL
             roles += role['name'] + '; '
         
         email = user['email'] if 'email' in user else ''
-        users.append(User(user['id'], user['firstname'], user['lastname'], email, roles[:-2]))
-    
+        users.append(User(user['id'], user['firstname'], user['lastname'], "", email, roles[:-2], -1))
+        continue
+
     output = io.StringIO()    
     
-    header = ['id', 'firstname', 'lastname', 'email', 'roles']
+    header = ['id', 'firstname', 'lastname', 'username', 'email', 'roles', 'key']
     writer = csv.DictWriter(output, fieldnames=header)
     writer.writeheader()
     
@@ -171,12 +186,12 @@ def create_csv_with_users_from_assignment(course_id, assignmentId, filepath, MOO
                 for role in user['roles']:
                     roles += role['name'] + '; '
                 email = user['email'] if 'email' in user else ''
-                users.append(User(user['id'], user['firstname'], user['lastname'], email, roles[:-2]))
+                users.append(User(user['id'], user['firstname'], user['lastname'], "", email, roles[:-2], -1))
                 continue
 
     output = io.StringIO()    
     
-    header = ['id', 'firstname', 'lastname', 'email', 'roles']
+    header = ['id', 'firstname', 'lastname', 'username', 'email', 'roles', 'key']
     writer = csv.DictWriter(output, fieldnames=header)
     writer.writeheader()
     
@@ -318,7 +333,7 @@ def get_submissions_of_assignment(course_id, assignment_id, userID, MOODLE_API_K
         roles = ''
         for role in user['roles']:
             roles += role['name'] + ', '
-        users.append(User(user['id'], user['firstname'], user['lastname'], user['email'], roles[:-2]))
+        users.append(User(user['id'], user['firstname'], user['lastname'], "", user['email'], roles[:-2], -1))
 
     submissions = moodle_api.call('mod_assign_get_submissions', assignmentids=[assignment_id])
 
@@ -346,7 +361,52 @@ def get_submissions_of_assignment(course_id, assignment_id, userID, MOODLE_API_K
                     '''  
                     
  
+def get_submission_infos_from_assignment(course_id, assignment_id, options):
+    moodle_api.URL = options['url']
+    moodle_api.KEY = options['apiKey']
+
+    # Get users from the cosurse
+    course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
+    
+    # Create a list of User objects
+    users = []
+    
+    for user in course_users:
+        roles = ''
+        for role in user['roles']:
+            roles += role['name'] + ', '
+        users.append(User(user['id'], user['firstname'], user['lastname'], "", user['email'], roles[:-2], -1))
+
+    submissions = moodle_api.call('mod_assign_get_submissions', assignmentids=[assignment_id])     
+    
+    submissionInfos = []  
+    
+    for sub in submissions['assignments'][0]['submissions']:
+        submissionInfo = {}
+        for user in users:
+            if sub['userid'] == user.id:   
+                submissionInfo['userid'] = sub['userid']
+                break
+        for plugin in sub['plugins']:
+            if 'fileareas' in plugin:
+                for filearea in plugin['fileareas']:
+                    submissionURLs = []
+                    for files in filearea['files']:
+                        file_url = files['fileurl']
+                        file_url += f'?token={moodle_api.KEY}'
+                        file_name = files['filename']
+                        submissionURLs.append({"filename": file_name, "fileurl": file_url})
+        submissionInfo['submissionURLs'] = submissionURLs
+        submissionInfos.append(submissionInfo)
+    
+    return submissionInfos
                         
+def download_submissions_from_user(submissionInfos):
+    files = []
+    for submissionURL in submissionInfos['submissionURLs']:
+        response = requests.get(submissionURL["fileurl"])
+        files.append(response.content)
+    return files          
         
 
 if __name__ == '__main__':
