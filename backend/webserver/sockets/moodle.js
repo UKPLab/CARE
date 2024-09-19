@@ -65,6 +65,36 @@ module.exports = class MoodleSocket extends Socket {
         this.logger.info("Response: " + response);
     };
 
+    async getSubmissionInfosFromAssignment(data) {
+        this.socket.emit("test", {success: true});
+
+        // wait until RPCtest service is connected
+        //await this.server.rpcs["MoodleRPC"].wait();
+
+        this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
+
+        const response = await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment(data);
+
+        this.logger.info("Response: " + response);
+
+        this.socket.emit("submissionInfos", response);
+    }
+
+    async downloadSubmissionsFromUser(data) {
+        this.socket.emit("test", {success: true});
+
+        // wait until RPCtest service is connected
+        //await this.server.rpcs["MoodleRPC"].wait();
+
+        this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
+
+        const response = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUser(data);
+
+        this.logger.info("Response: " + response);
+
+        this.socket.emit("downloadSubmissions", response);
+    }
+
 
     
 
@@ -86,6 +116,22 @@ module.exports = class MoodleSocket extends Socket {
                 await this.getUsersFromAssignment(data);
             } catch (err) {
                 this.logger.error("Couldn't get users from assignment. Error: " + err);
+            }
+        });
+
+        this.socket.on("getSubmissionInfosFromAssignment", async (data) => {
+            try {
+                await this.getSubmissionInfosFromAssignment(data);
+            } catch (err) {
+                this.logger.error("Couldn't get submission infos from assignment. Error: " + err);
+            }
+        });
+
+        this.socket.on("downloadSubmissionsFromUser", async (data) => {
+            try {
+                await this.downloadSubmissionsFromUser(data);
+            } catch (err) {
+                this.logger.error("Couldn't download submissions from user. Error: " + err);
             }
         });
 

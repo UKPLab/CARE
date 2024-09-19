@@ -1,0 +1,9 @@
+id,firstname,lastname,username,email,roles,key
+8071,Thomas,Arnold,,arnold@ukp.informatik.tu-darmstadt.de,Dozent*in,-1
+12237,NurEin,Test,,guido@ahrgr.de,Student*in,-1
+13328,T,S,,guido@ahrgr.de,Student*in,-1
+14555,TestA,Student,,guido@ahrgr.de,Student*in,-1
+14557,TestC,Student,,guido@ahrgr.de,Student*in,-1
+18141,Alexander David,Bürkle,,alexander.bd.buerkle@outlook.de,Betreuer*in,-1
+20087,Dennis,Zyska,,zyska@ukp.informatik.tu-darmstadt.de,Dozent*in,-1
+24142,Dennis,Zyska,,dennis.zyska@tu-darmstadt.de,Student*in,-1

@@ -3,7 +3,7 @@ Working with the Moodle API
 
 If you want to work with the Moodle API, please take a look at this document to get an overview of the API integration and how to use it.
 
-General structue
+General structure
 ----------------------
 
 All Moodle API calls are made via an rpc call and thereofore run on a different docker container. The main.py file in the moodleAPI folder is responsible for the actual call to the Moodle API. 
@@ -30,6 +30,11 @@ If you want to use the Moodle API from CARE, you need to follow a specific struc
    * - 6
      - Now you can use the result in the frontend or save it to the database.
 
+Welche Schritte, um es zu erweitern;
+
+z.B. Freigabe auf Moodle, API Documentation Moodle, Besonders Download aktivieren und Anleitung verlinken und nochmal erklären, alle möglichen Links, Wie geht man am besten vor,um eine neue API Funktion zu nutzen
+Neues Kapitel: Was muss man in Moodle machen, um die richtige Kurs ID etc. in Moodel zu finden. Wie konfiguriert man ein Assignment etc.
+
 Functions
 ----------------------
 The following functions can by called from the frontend:
@@ -40,7 +45,6 @@ getUsersFromCourse
 .. function:: getUsersFromCourse(courseID, options)
 
     This method retrieves all users from a given course. It then creates a csv file, containing the user information: id, username, firstname, lastname, email and their roles in the course (e.g. student/tutor)
-
     :param courseID: This is the course id of the course you want to get the users from. You can get it from the URL of the course.
     :type param1: int
     :param options: This parameters holds the URL of the Moodle website and the API token.
@@ -51,7 +55,6 @@ getUsersFromCourse
     :type options.API_KEY: str
     :return: CSV file with the user information.
     :rtype: CSV 
-
     :raises ExceptionType: Explanation of the exception when it might be raised.
     :raises AnotherException: Another possible exception.
 
