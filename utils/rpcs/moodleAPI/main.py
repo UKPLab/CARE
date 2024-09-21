@@ -20,54 +20,63 @@ def create_app():
 
     @sio.on("call")
     def call(sid, data):
-        logger.info("This is a test")
         logger.info(f"Received call: {data} from {sid}")
-        logger.info("Creating CSV file with users from course..." + str(data['data']['courseID']))
         try:
-            if('data' in data):
-                logger.info(data['data'])
-            
-            
-            pdf = get_submissions_of_assignment(data['data']['courseID'], 6427, data['data']['options']['apiKey'], data['data']['options']['url'])
-            
-            #encoded_pdf = base64.b64encode(pdf_file.read()).decode('utf-8')
-            return pdf
-            #insert_random_keys(data.options.csvPath)
-            #upload_passwords_to_moodle(6350, data.options.csvPath, data.options.apiKey, data.options.url)
+            response = {"message": "Success: True", "data": "Hello World!"}
+            return response
         except Exception as e:
             logger.error(f"Error: {e}")
-            return "Error: " + str(e)
+            response = {"message": "Success: False" + "error: " + str(e)}
+            return response
         
         
     @sio.on("getUsersFromCourse")
     def getUsersFromCourse(sid, data):
-        logger.info(f"Received call: {data} from {sid}")
-        csv = create_csv_with_users_from_course(data['data']['courseID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
-        return csv
+        try:
+            logger.info(f"Received call: {data} from {sid}")
+            csv = create_csv_with_users_from_course(data['data']['courseID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
+            response = {"message": "Success: True", "data": csv}
+            return response
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            response = {"message": "Success: False" + "error: " + str(e)}
+            return response
     
     @sio.on("getUsersFromAssignment")
     def getUsersFromAssignment(sid, data):
-        logger.info(f"Received call: {data} from {sid}")
-        csv = create_csv_with_users_from_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
-        return csv
-    
-    @sio.on("getSubmissionFromUser")
-    def getUsersFromAssignment(sid, data):
-        logger.info(f"Received call: {data} from {sid}")
-        csv = get_submissions_of_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
-        return csv
+        try:
+            logger.info(f"Received call: {data} from {sid}")
+            csv = create_csv_with_users_from_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
+            response = {"message": "Success: True", "data": csv}
+            return response
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            response = {"message": "Success: False" + "error: " + str(e)}
+            return response
     
     @sio.on("getSubmissionInfosFromAssignment")
     def getSubmissionInfosFromAssignment(sid, data):
-        logger.info(f"Received call: {data} from {sid}")
-        submissionInfos = get_submission_infos_from_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options'])
-        return submissionInfos
+        try:
+            logger.info(f"Received call: {data} from {sid}")
+            submissionInfos = get_submission_infos_from_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options'])
+            response = {"message": "Success: True", "data": submissionInfos}
+            return response
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            response = {"message": "Success: False" + "error: " + str(e)}
+            return response
         
     @sio.on("downloadSubmissionsFromUser")
     def downloadSubmissionsFromUser(sid, data):
-        logger.info(f"Received call: {data} from {sid}")
-        files = download_submissions_from_user(data['data']['submissionInfos'])
-        return files
+        try:
+            logger.info(f"Received call: {data} from {sid}")
+            files = download_submissions_from_user(data['data']['submissionInfos'])
+            response = {"message": "Success: True", "data": files}
+            return response
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            response = {"message": "Success: False" + "error: " + str(e)}
+            return response
     
     logger.info("Creating App...")
     app = socketio.WSGIApp(sio)
@@ -98,9 +107,9 @@ class User:
         self.username = username
         self.email = email
         self.roles = roles
-        self.key = key
+        self.password = password
 
-def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODLE_URL):
+def create_csv_with_users_from_course(course_id, MOODLE_API_KEY, MOODLE_URL):
     """
     Creates a CSV file with users from a Moodle course, containing their ID, role and name.
 
@@ -119,11 +128,10 @@ def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODL
     
     # Get users from the course
     course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
-    print(course_users)
     
-    # Create a list of User objects
     users = []
     
+    # Write data to CSV file
     for user in course_users:
         roles = ''
         for role in user['roles']:
@@ -135,22 +143,18 @@ def create_csv_with_users_from_course(course_id, filepath, MOODLE_API_KEY, MOODL
 
     output = io.StringIO()    
     
-    header = ['id', 'firstname', 'lastname', 'username', 'email', 'roles', 'key']
+    header = ['id', 'firstname', 'lastname', 'username', 'email', 'roles', 'password']
     writer = csv.DictWriter(output, fieldnames=header)
     writer.writeheader()
     
-    for user in users:  # Assuming `users` is a list of User objects
+    for user in users:  
         person_data = {attr: getattr(user, attr) for attr in header}
         writer.writerow(person_data)
         
-    # Get the CSV content as a string
     csv_content = output.getvalue()
     output.close()
 
-    # Encode the CSV content as Base64 for safe transmission
-    #encoded_csv = base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
-
-    return csv_content  # Return this encoded data in the RPC response
+    return csv_content 
            
 def create_csv_with_users_from_assignment(course_id, assignmentId, filepath, MOODLE_API_KEY, MOODLE_URL):
     """
@@ -172,12 +176,11 @@ def create_csv_with_users_from_assignment(course_id, assignmentId, filepath, MOO
     moodle_api.URL = MOODLE_URL
     moodle_api.KEY = MOODLE_API_KEY
 
-    
+    # Get users from the course
     course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
     
-    # Create a list of User objects
     users = []
-    id_mappings = get_id_mappings(assignmentId)
+    id_mappings = get_id_mappings_for_users(assignmentId)
     
     for user in course_users:
         for id in id_mappings:
@@ -191,22 +194,18 @@ def create_csv_with_users_from_assignment(course_id, assignmentId, filepath, MOO
 
     output = io.StringIO()    
     
-    header = ['id', 'firstname', 'lastname', 'username', 'email', 'roles', 'key']
+    header = ['id', 'firstname', 'lastname', 'username', 'email', 'roles', 'password']
     writer = csv.DictWriter(output, fieldnames=header)
     writer.writeheader()
     
-    for user in users:  # Assuming `users` is a list of User objects
+    for user in users:  
         person_data = {attr: getattr(user, attr) for attr in header}
         writer.writerow(person_data)
         
-    # Get the CSV content as a string
     csv_content = output.getvalue()
     output.close()
 
-    # Encode the CSV content as Base64 for safe transmission
-    #encoded_csv = base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
-
-    return csv_content  # Return this encoded data in the RPC response
+    return csv_content  
     
 def upload_passwords_to_moodle(assignment_id, csv_filepath, MOODLE_API_KEY, MOODLE_URL):
     """
@@ -260,7 +259,7 @@ def get_assignment_ids_from_course(course_id):
         
     return assign_ids_with_names
 
-def get_id_mappings(assignment_id):
+def get_id_mappings_for_users(assignment_id):
     """
     Retrieve the ID mappings for a given assignment.
 
@@ -272,41 +271,23 @@ def get_id_mappings(assignment_id):
     """
     return moodle_api.call('mod_assign_get_user_mappings', assignmentids=[assignment_id])['assignments'][0]['mappings']
 
-import csv
-import random
-
-def insert_random_keys(csv_path):
+def get_id_mapping_for_assignment(course_id, assignment_cmid):
     """
-    Inserts random keys into a CSV file.
+    Retrieve the ID mappings for all assignments in a course.
 
-    Args:
-        csv_path (str): The path to the CSV file.
+    Parameters:
+    - course_id (int): The ID of the course.
 
     Returns:
-        None
+    - list: A list of tuples containing the general user ID and the assignment user ID.
     """
-    key_column = 'key'
-    keys = []
+    course_assignments = moodle_api.call('mod_assign_get_assignments', courseids=[course_id])
     
-    with open(csv_path, mode='r') as file:
-        csv_reader = csv.DictReader(file)
-        rows = [row for row in csv_reader]
-        
-    keys = [random.randint(1000, 9999) for _ in rows]
+    for assignment in course_assignments['courses'][0]['assignments']:
+        if assignment['cmid'] == assignment_cmid:
+            return assignment['id']
     
-    key_column = 'key'
-    
-    if rows:
-        fieldnames = csv_reader.fieldnames + [key_column]
-
-        for row, key in zip(rows, keys):
-            row[key_column] = key
-
-        with open(csv_path, mode='w', newline='') as file:
-            writer = csv.DictWriter(file, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(rows)
-            
+    return "Assignment not found."
             
 def get_submissions_of_assignment(course_id, assignment_id, userID, MOODLE_API_KEY, MOODLE_URL):
     """
