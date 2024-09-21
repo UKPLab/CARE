@@ -38,26 +38,16 @@ module.exports = class MoodleSocket extends Socket {
     }
 
     async getUsersFromCourse(data) {
-        this.logger.info("Lul: " + data);
-        this.socket.emit("test", {success: true});
-
-        // wait until RPCtest service is connected
-        //await this.server.rpcs["MoodleRPC"].wait();
-
         this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
 
         const response = await this.server.rpcs["MoodleRPC"].getUsersFromCourse(data);
 
         this.logger.info("Response: " + response);
+
+        this.socket.emit("userCSV", response);
     };
 
     async getUsersFromAssignment(data) {
-        this.logger.info("Lul: " + data);
-        this.socket.emit("test", {success: true});
-
-        // wait until RPCtest service is connected
-        //await this.server.rpcs["MoodleRPC"].wait();
-
         this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
 
         const response = await this.server.rpcs["MoodleRPC"].getUsersFromAssignment(data);
@@ -66,11 +56,6 @@ module.exports = class MoodleSocket extends Socket {
     };
 
     async getSubmissionInfosFromAssignment(data) {
-        this.socket.emit("test", {success: true});
-
-        // wait until RPCtest service is connected
-        //await this.server.rpcs["MoodleRPC"].wait();
-
         this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
 
         const response = await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment(data);
@@ -81,11 +66,6 @@ module.exports = class MoodleSocket extends Socket {
     }
 
     async downloadSubmissionsFromUser(data) {
-        this.socket.emit("test", {success: true});
-
-        // wait until RPCtest service is connected
-        //await this.server.rpcs["MoodleRPC"].wait();
-
         this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
 
         const response = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUser(data);

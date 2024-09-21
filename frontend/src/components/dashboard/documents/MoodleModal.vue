@@ -113,22 +113,11 @@ export default {
       console.log(this.submissionInfos[0].submissionURLs);
     },
     downloadSubmissions: function (data) {
+      console.log(data)
+    },
+    // USE THIS TO DO SOMETHING WITH THE CSV
+    userCSV: function (data) {
       console.log(data);
-      // Get the binary data as a Blob
-      /*const blob = data.blob();
-        
-        // Create a link element to trigger the download
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'file.pdf'); // Set the file name
-        document.body.appendChild(link);
-        link.click();
-
-        // Clean up the URL object and link element
-        link.parentNode.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        */
     }
   },
   methods: {
@@ -147,7 +136,7 @@ export default {
         assignmentID: this.assignmentID
       }
       console.log(testData);
-      this.$socket.emit("getSubmissionInfosFromAssignment", {data: testData});
+      this.$socket.emit("getUsersFromCourse", {data: testData});
     },
     download2() {
       const testData = {

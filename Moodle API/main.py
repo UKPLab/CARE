@@ -104,7 +104,7 @@ def create_csv_with_users_from_assignment(course_id, assignment_name, filepath, 
     
     # Create a list of User objects
     users = []
-    id_mappings = get_id_mappings(assignment_id)
+    id_mappings = get_id_mappings_for_users(assignment_id)
     
     for user in course_users:
         for id in id_mappings:
@@ -174,7 +174,7 @@ def get_assignment_ids_from_course(course_id):
         
     return assign_ids_with_names
 
-def get_id_mappings(assignment_id):
+def get_id_mappings_for_users(assignment_id):
     """
     Retrieve the ID mappings for a given assignment.
 
@@ -185,6 +185,24 @@ def get_id_mappings(assignment_id):
     - list: A list of tuples containing the general user ID and the assignment user ID.
     """
     return moodle_api.call('mod_assign_get_user_mappings', assignmentids=[assignment_id])['assignments'][0]['mappings']
+
+def get_id_mapping_for_assignment(course_id, assignment_cmid):
+    """
+    Retrieve the ID mappings for all assignments in a course.
+
+    Parameters:
+    - course_id (int): The ID of the course.
+
+    Returns:
+    - list: A list of tuples containing the general user ID and the assignment user ID.
+    """
+    course_assignments = moodle_api.call('mod_assign_get_assignments', courseids=[course_id])
+    
+    for assignment in course_assignments['courses'][0]['assignments']:
+        if assignment['cmid'] == assignment_cmid:
+            return assignment['id']
+    
+    return "Assignment not found."
 
 import csv
 import random
@@ -308,7 +326,10 @@ if __name__ == '__main__':
     
     #create_csv_with_users_from_course(1615, 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
     
-    get_submissions_of_assignment(1615, 6350, 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    #get_submissions_of_assignment(1615, 6350, 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
+    
+    ids = get_assignment_ids_from_course(1615)
+    print(ids)
     
     
     
