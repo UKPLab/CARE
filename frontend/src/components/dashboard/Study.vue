@@ -37,6 +37,11 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "DashboardStudy",
   components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton},
+  inject: {
+    acceptStats: {
+      default: () => false
+    }
+  },
   props: {},
   fetchData: ['study'],
   data() {
