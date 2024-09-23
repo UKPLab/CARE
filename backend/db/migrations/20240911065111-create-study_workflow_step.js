@@ -22,7 +22,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      order: {
+      step: {
         type: Sequelize.INTEGER,
         allowNull: false
       },

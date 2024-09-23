@@ -33,6 +33,26 @@ module.exports = (sequelize, DataTypes) => {
                 required: true,
             },
             {
+                key: "studyWorkflowId", 
+                label: "Select Study Workflow:",
+                type: "select",
+                options: {
+                    table: "study_workflow", 
+                    name: "name", 
+                    value: "id"  
+                },
+                icon: "list", 
+                required: false,
+                help: "Choose a workflow template for the study steps."
+            },
+            {
+                key: "allowNavigation", 
+                label: "Allow navigation between steps?",
+                type: "switch",
+                default: false, 
+                help: "Enable or disable navigation between workflow steps."
+            },
+            {
                 key: "description",
                 label: "Description of the study:",
                 help: "This text will be displayed at the beginning of the user study!",
@@ -103,6 +123,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
         studyWorkflowId: DataTypes.INTEGER,
+        allowNavigation: DataTypes.BOOLEAN,
         collab: DataTypes.BOOLEAN,
         resumable: DataTypes.BOOLEAN,
         description: DataTypes.TEXT,

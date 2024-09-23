@@ -14,14 +14,34 @@
     @finish="finalFinish"
   />
   <Teleport to="#topbarCustomPlaceholder">
-    <button
-      class="btn btn-outline-secondary"
-      type="button"
-      @click="finish"
-    >
-      Finish Study
-    </button>
-    <button
+    <div class="d-flex justify-content-between align-items-center w-100">
+      <button
+        class="btn btn-outline-primary me-3"
+        type="button"
+        @click="previousStep"
+        :disabled="currentStep === 0"
+      >
+        Previous
+      </button>
+
+      <button
+        class="btn btn-outline-secondary mx-3"
+        type="button"
+        @click="finish"
+      >
+        Finish Study
+      </button>
+
+      <button
+        class="btn btn-outline-primary ms-3"
+        type="button"
+        @click="nextStep"
+        :disabled="currentStep === maxSteps - 1"
+      >
+        Next
+      </button>
+
+      <button
       v-if="timeLeft > 0"
       class="btn mb-1"
       type="button"
@@ -36,6 +56,7 @@
         class="middle"
       ><b>Time Left:</b> {{ timeLeftHuman }}</span>
     </button>
+  </div>
   </Teleport>
   <Annotator
     v-if="documentId !== 0 && documentType === 0 && studySessionId !== 0"
@@ -44,6 +65,7 @@
     v-if="documentId !== 0 && documentType === 1 && studySessionId !== 0"
   />
 </template>
+
 
 <script>
 /**
@@ -95,9 +117,14 @@ export default {
       timerInterval: null,
       documentId: 0,
       documentType: null,
+      currentStep: 0, //dummy code for allowNaviagtion
+      maxSteps: 2 //dummy code for allowNaviagtion
     };
   },
   computed: {
+    allowNavigation() {
+      return this.study ? this.study.allowNavigation : false;
+    },
     studySession() {
       if (this.studySessionId !== 0) {
         return this.$store.getters['table/study_session/get'](this.studySessionId);
@@ -211,10 +238,33 @@ export default {
       if (this.timeLeft < 0) {
         this.finish({ studySessionId: this.studySessionId });
       }
+    },
+    previousStep() {
+      if (this.currentStep > 0) {
+        this.currentStep--;
+      }
+    },
+    nextStep() {
+      if (this.currentStep < this.maxSteps - 1) {
+        this.currentStep++;
+      }
     }
   }
 };
 </script>
 
 <style scoped>
+.d-flex {
+  width: 100%; 
+}
+.mx-auto {
+  margin-left: auto; 
+  margin-right: auto;
+}
+.me-3 {
+  margin-right: 1rem; 
+}
+.ms-3 {
+  margin-left: 1rem;
+}
 </style>

@@ -76,6 +76,15 @@ export default {
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
+        {
+          name: "Navigation",
+          key: "allowNavigation",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", false: "No"},
+            classMapping: {true: "bg-success", false: "bg-danger"}
+          }
+        },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
 
@@ -110,6 +119,7 @@ export default {
 
             const doc = this.$store.getters["table/document/get"](study.documentId)
             study.documentName = doc ? doc.name : "-";
+            study.allowNavigation = study.allowNavigation !== undefined ? study.allowNavigation : false;
 
             study.manage = [
               {
