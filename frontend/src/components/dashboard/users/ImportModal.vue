@@ -24,60 +24,69 @@
           v-if="currentStep === 0"
           class="file-upload-container"
         >
-          <div
-            class="drag-drop-area"
-            @dragover.prevent
-            @drop.prevent="handleDrop"
-            @click="$refs.fileInput.click()"
-          >
-            <input
-              ref="fileInput"
-              type="file"
-              accept=".csv"
-              style="display: none"
-              @change="handleFileUpload"
-            />
-            <BasicIcon
-              icon-name="cloud-arrow-up"
-              size="64"
-            />
-            <p>Drag and drop CSV file here<br />or click to upload</p>
-          </div>
-          <p>Please check the format or <a href="">download the template</a> here.</p>
-          <template v-if="file.state === 1">
+          <template v-if="importType === 'csv'">
             <div
-              v-if="file.name !== '' && file.errors.length === 0"
-              class="file-info-container"
+              class="drag-drop-area"
+              @dragover.prevent
+              @drop.prevent="handleDrop"
+              @click="$refs.fileInput.click()"
             >
-              <div class="file-info">
-                <BasicIcon
-                  icon-name="file-earmark"
-                  size="20"
-                />
-                <strong>{{ file.name }}</strong>
-                <span>({{ file.size }} KB)</span>
+              <input
+                ref="fileInput"
+                type="file"
+                accept=".csv"
+                style="display: none"
+                @change="handleFileUpload"
+              />
+              <BasicIcon
+                icon-name="cloud-arrow-up"
+                size="64"
+              />
+              <p>Drag and drop CSV file here<br />or click to upload</p>
+            </div>
+            <p>Please check the format or <a href="">download the template</a> here.</p>
+            <template v-if="file.state === 1">
+              <div
+                v-if="file.name !== '' && file.errors.length === 0"
+                class="file-info-container"
+              >
+                <div class="file-info">
+                  <BasicIcon
+                    icon-name="file-earmark"
+                    size="20"
+                  />
+                  <strong>{{ file.name }}</strong>
+                  <span>({{ file.size }} KB)</span>
+                </div>
+                <button @click="clearFile">
+                  <BasicIcon
+                    icon-name="x-circle-fill"
+                    size="20"
+                  />
+                </button>
               </div>
-              <button @click="clearFile">
-                <BasicIcon
-                  icon-name="x-circle-fill"
-                  size="20"
-                />
-              </button>
-            </div>
-            <div
-              v-else
-              class="file-error-container"
-            >
-              <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
-              <ul>
-                <li
-                  v-for="(error, index) in file.errors"
-                  :key="index"
-                >
-                  {{ error }}
-                </li>
-              </ul>
-            </div>
+              <div
+                v-else
+                class="file-error-container"
+              >
+                <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
+                <ul>
+                  <li
+                    v-for="(error, index) in file.errors"
+                    :key="index"
+                  >
+                    {{ error }}
+                  </li>
+                </ul>
+              </div>
+            </template>
+          </template>
+          <template v-else>
+            <BasicForm
+              ref="form"
+              v-model="moodleData"
+              :fields="fields"
+            />
           </template>
         </div>
         <!-- Step1: Preview -->
@@ -115,6 +124,7 @@
       <BasicButton
         title="Next"
         class="btn btn-primary"
+        :disabled="isNextBtnDisabled"
         @click="nextStep"
       />
     </template>
@@ -126,6 +136,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/table/Table.vue";
+import BasicForm from "@/basic/Form.vue";
 import Papa from "papaparse";
 import { testData } from "./testData";
 
@@ -135,15 +146,10 @@ import { testData } from "./testData";
  */
 export default {
   name: "ImportModal",
-  components: { BasicModal, BasicButton, BasicIcon, BasicTable },
-  props: {
-    steps: {
-      type: Array,
-      default: () => [{ title: "Upload" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }],
-    },
-  },
+  components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm },
   data() {
     return {
+      importType: "csv",
       currentStep: 0,
       file: {
         state: 0,
@@ -151,6 +157,27 @@ export default {
         size: 0,
         errors: [],
       },
+      moodleData: {},
+      fields: [
+        {
+          key: "course_id",
+          label: "Course ID:",
+          type: "text",
+          required: true,
+        },
+        {
+          key: "moodle_api_key",
+          label: "Moodle API Key:",
+          type: "text",
+          required: true,
+        },
+        {
+          key: "moodle_url",
+          label: "Moodle URL:",
+          type: "text",
+          required: true,
+        },
+      ],
       users: testData,
       selectedUsers: [],
       options: {
@@ -188,9 +215,30 @@ export default {
         duplicate: this.selectedUsers.filter((u) => u.status === "duplicate").length,
       };
     },
+    steps() {
+      return [
+        this.importType === "csv" ? { title: "Upload" } : { title: "Not Sure..." },
+        { title: "Preview" },
+        { title: "Confirm" },
+        { title: "Result" },
+      ];
+    },
+    isNextBtnDisabled() {
+      if (this.currentStep === 0) {
+        if (this.importType === "csv") {
+          return this.file.errors.length > 0;
+        } else {
+          // const { modelValue } = this.$refs.form;
+          // const { course_id, moodle_api_key, moodle_url } = modelValue;
+          // return (!course_id || !moodle_api_key || !moodle_url)
+        }
+      }
+      return false;
+    },
   },
   methods: {
-    open() {
+    open(type) {
+      this.importType = type;
       this.$refs.modal.open();
     },
     resetForm() {
@@ -198,6 +246,9 @@ export default {
       // this.eventBus.emit("resetFormField");
     },
     nextStep() {
+      // if (!this.$refs.form.validate()) {
+      //   return;
+      // }
       if (this.currentStep < 3) {
         this.$refs.modal.waiting = true;
         if (this.currentStep === 0 && this.users.length > 0) {
