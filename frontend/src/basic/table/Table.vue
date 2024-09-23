@@ -107,7 +107,7 @@
             <input
               class="form-check-input"
               type="checkbox"
-              :checked="selectedRows.some(row => deepEqual(row, r))"
+              :checked="selectedRows.some((row) => deepEqual(row, r))"
               @change="(e) => selectRow(e.target.checked, r)"
             />
           </div>
@@ -225,6 +225,11 @@ export default {
     LoadIcon,
   },
   directives: { tooltip },
+  inject: {
+    acceptStats: {
+      default: () => false,
+    },
+  },
   props: {
     data: {
       type: Array,
@@ -318,19 +323,11 @@ export default {
       if (this.sortColumn) {
         if (this.sortDirection === "ASC") {
           data = data.sort((a, b) =>
-            a[this.sortColumn] > b[this.sortColumn]
-              ? 1
-              : b[this.sortColumn] > a[this.sortColumn]
-              ? -1
-              : 0
+            a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0
           );
         } else {
           data = data.sort((a, b) =>
-            a[this.sortColumn] < b[this.sortColumn]
-              ? 1
-              : b[this.sortColumn] < a[this.sortColumn]
-              ? -1
-              : 0
+            a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0
           );
         }
       }
@@ -352,10 +349,7 @@ export default {
       }
 
       if (this.options && this.options.pagination) {
-        data = data.slice(
-          (this.currentPage - 1) * this.limit,
-          this.currentPage * this.limit
-        );
+        data = data.slice((this.currentPage - 1) * this.limit, this.currentPage * this.limit);
       }
       return data;
     },
@@ -408,10 +402,7 @@ export default {
       ...this.columns
         .filter((c) => "filter" in c)
         .map((c) => ({
-          [c.key]: Object.assign(
-            {},
-            ...c.filter.map((f) => ({ [f.key]: false }))
-          ),
+          [c.key]: Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))),
         }))
     );
   },
@@ -427,22 +418,22 @@ export default {
     },
     actionEmitter(data) {
       this.$emit("action", data);
-      this.$socket.emit("stats", {
-        action: "actionClick",
-        data: data,
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "actionClick",
+          data: data,
+        });
+      }
     },
     selectRow(isSelected, row) {
       if (this.selectableRows) {
         if (isSelected) {
           // Check if the row is already in the selectedRows array; if not, add it
-          if (!this.selectedRows.some(r => deepEqual(r, row))) {
+          if (!this.selectedRows.some((r) => deepEqual(r, row))) {
             this.selectedRows.push(row);
           }
         } else {
-          const toRemove = this.selectedRows.findIndex((r) =>
-            deepEqual(r, row)
-          );
+          const toRemove = this.selectedRows.findIndex((r) => deepEqual(r, row));
           if (toRemove >= 0) {
             this.selectedRows.splice(toRemove, 1);
           }
@@ -469,9 +460,7 @@ export default {
         this.$emit("paginationUpdate", {
           page: this.currentPage - 1,
           limit: this.limit,
-          order: this.sortColumn
-            ? [[this.sortColumn, this.sortDirection]]
-            : null,
+          order: this.sortColumn ? [[this.sortColumn, this.sortDirection]] : null,
           filter: this.sequelizeFilter,
         });
       }
@@ -485,7 +474,7 @@ export default {
     // Therefore, add this wrapper function here to prevent reference error.
     deepEqual(row1, row2) {
       return deepEqual(row1, row2);
-    }
+    },
   },
 };
 </script>

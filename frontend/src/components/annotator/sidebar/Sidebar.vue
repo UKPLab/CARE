@@ -92,6 +92,9 @@ export default {
       required: false,
       default: false,
     },
+    acceptStats: {
+      default: () => false
+    },
   },
   props: {
     show: {
@@ -222,10 +225,12 @@ export default {
       }
 
       this.sidebarScrollTo(comment.id);
-      this.$socket.emit("stats", {
-        action: "sidebarScroll",
-        data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "sidebarScroll",
+          data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}
+        });
+      }
     })
     this.initDragController()
     this.initHoverController()

@@ -83,6 +83,9 @@ export default {
       type: Object,
       required: true,
     },
+    acceptStats: {
+      default: () => false
+    },
   },
   props: {
     pageNumber: {
@@ -198,10 +201,12 @@ export default {
         if (this.isRendered) this.destroyPage();
         this.currentWidth = width;
         this.init()
-        this.$socket.emit("stats", {
-          action: "pdfPageResizeChange",
-          data: {documentId: this.documentId, pageNumber: this.pageNumber, width: width}
-        })
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "pdfPageResizeChange",
+            data: {documentId: this.documentId, pageNumber: this.pageNumber, width: width}
+          })
+        }
       }
     },
     renderPage(page) {
