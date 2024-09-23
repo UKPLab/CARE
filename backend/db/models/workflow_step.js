@@ -2,7 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
-  class StudyWorkflowStep extends MetaModel {
+  class WorkflowStep extends MetaModel {
     static autoTable = true;
 
     /**
@@ -11,26 +11,26 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      StudyWorkflowStep.belongsTo(models["study_workflow"], {
-        foreignKey: "studyWorkflowId",
+      WorkflowStep.belongsTo(models["workflow"], {
+        foreignKey: "workflowId",
         as: "workflow"
       });
     }
   }
 
-  StudyWorkflowStep.init({
-      studyWorkflowId: DataTypes.INTEGER,
+  WorkflowStep.init({
+      workflowId: DataTypes.INTEGER,
       stepType: DataTypes.INTEGER,
-      step: DataTypes.INTEGER,
-      configuration: DataTypes.JSONB,
-      createdAt: DataTypes.DATE,
-      updatedAt: DataTypes.DATE,
+      workflowStepPrevious: DataTypes.INTEGER,
+      allowBackward: DataTypes.BOOLEAN,
+      workflowStepDocument: DataTypes.INTEGER,
+      configuration: DataTypes.JSONB
     }, {
       sequelize,
-      modelName: 'study_workflow_step',
-      tableName: 'study_workflow_step'
+      modelName: 'workflow_step',
+      tableName: 'workflow_step'
     }
   );
 
-  return StudyWorkflowStep;
+  return WorkflowStep;
 };

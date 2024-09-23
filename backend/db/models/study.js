@@ -23,34 +23,17 @@ module.exports = (sequelize, DataTypes) => {
                 maxlength: 5
             },
             {
-                key: "documentId",
-                label: "Selected document for the study:",
+                key: "workflowId", 
+                label: "Select Workflow for Study:",
                 type: "select",
                 options: {
-                    table: "document", name: "name", value: "id"
-                },
-                icon: "file-earmark",
-                required: true,
-            },
-            {
-                key: "studyWorkflowId", 
-                label: "Select Study Workflow:",
-                type: "select",
-                options: {
-                    table: "study_workflow", 
+                    table: "workflow", 
                     name: "name", 
                     value: "id"  
                 },
                 icon: "list", 
                 required: false,
                 help: "Choose a workflow template for the study steps."
-            },
-            {
-                key: "allowNavigation", 
-                label: "Allow navigation between steps?",
-                type: "switch",
-                default: false, 
-                help: "Enable or disable navigation between workflow steps."
             },
             {
                 key: "description",
@@ -110,8 +93,8 @@ module.exports = (sequelize, DataTypes) => {
                 as: "document",
               });
 
-            Study.belongsTo(models["study_workflow"], {
-                foreignKey: "studyWorkflowId",
+            Study.belongsTo(models["workflow"], {
+                foreignKey: "workflowId",
                 as: "workflow",
               });
         }
@@ -121,13 +104,15 @@ module.exports = (sequelize, DataTypes) => {
         name: DataTypes.STRING,
         hash: DataTypes.STRING,
         userId: DataTypes.INTEGER,
-        documentId: DataTypes.INTEGER,
-        studyWorkflowId: DataTypes.INTEGER,
-        allowNavigation: DataTypes.BOOLEAN,
+        workflowId: DataTypes.INTEGER,
         collab: DataTypes.BOOLEAN,
         resumable: DataTypes.BOOLEAN,
         description: DataTypes.TEXT,
         timeLimit: DataTypes.INTEGER,
+        multipleSubmit: DataTypes.BOOLEAN,
+        limitSessions: DataTypes.INTEGER,
+        closed: DataTypes.DATE,
+        userIdClosed: DataTypes.INTEGER,
         start: DataTypes.DATE,
         end: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
