@@ -4,12 +4,12 @@
       <BasicButton
         class="btn-secondary btn-sm me-1"
         title="Import via Moodle"
-        @click="$refs.importModal.open()"
+        @click="$refs.importModal.open('moodle')"
       />
       <BasicButton
         class="btn btn-primary btn-sm"
         title="Import via CSV"
-        @click="$refs.importModal.open()"
+        @click="$refs.importModal.open('csv')"
       />
     </template>
     <template #body>
