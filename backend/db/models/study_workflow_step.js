@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
   StudyWorkflowStep.init({
       studyWorkflowId: DataTypes.INTEGER,
       stepType: DataTypes.INTEGER,
-      order: DataTypes.INTEGER,
+      step: DataTypes.INTEGER,
       configuration: DataTypes.JSONB,
       createdAt: DataTypes.DATE,
       updatedAt: DataTypes.DATE,
