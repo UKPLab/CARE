@@ -20,6 +20,12 @@
         text="Create"
         @click="$refs.createModal.open()"
       />
+      <ButtonHeader
+          class="btn-primary"
+          title="Add document"
+          text="Moodle"
+          @click="$refs.moodleModal.open()"
+      />
     </template>
     <template #body>
       <BasicTable
@@ -38,6 +44,13 @@
   <UploadModal ref="uploadModal" />
   <CreateModal ref="createModal" />
   <EditModal ref="editModal" />
+  <PublishModal ref="publishModal"/>
+  <StudyModal ref="studyCoordinator"/>
+  <ExportAnnos ref="export"/>
+  <ConfirmModal ref="deleteConf"/>
+  <UploadModal ref="uploadModal"/>
+  <EditModal ref="editModal"/>
+  <MoodleModal ref="moodleModal"/>
 </template>
 
 <script>
@@ -52,6 +65,7 @@ import UploadModal from "./documents/UploadModal.vue";
 import CreateModal from "./documents/CreateModal.vue";
 import EditModal from "./documents/EditModal.vue";
 import EditorDownload from "@/components/editor/EditorDownload.vue";
+import MoodleModal from "./documents/MoodleModal.vue";
 
 /**
  * Document list component
@@ -77,6 +91,7 @@ export default {
     EditModal,
     CreateModal,
     EditorDownload,
+    MoodleModal
   },
   data() {
     return {

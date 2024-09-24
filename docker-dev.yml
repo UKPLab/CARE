@@ -6,3 +6,6 @@ services:
   rpc_test:
     ports:
       - ${RPC_TEST_PORT}:8080
+  rpc_moodle_test:
+    ports:
+      - ${RPC_MOODLE_TEST_PORT}:8081
