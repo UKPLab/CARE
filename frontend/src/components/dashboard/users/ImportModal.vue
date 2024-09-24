@@ -112,7 +112,16 @@
           </p>
         </div>
         <!-- Step3:  -->
-        <div v-if="currentStep === 3"></div>
+        <div
+          v-if="currentStep === 3"
+          class="result-container"
+        >
+          <p>Successfully created X users and overwrote Y users</p>
+          <BasicButton
+            class="btn btn-primary"
+            title="Download Result CSV"
+          ></BasicButton>
+        </div>
       </div>
     </template>
     <template #footer>
@@ -150,7 +159,7 @@ export default {
   data() {
     return {
       importType: "csv",
-      currentStep: 0,
+      currentStep: 3,
       file: {
         state: 0,
         name: "",
@@ -178,7 +187,7 @@ export default {
           required: true,
         },
       ],
-      users: [],
+      users: testData,
       selectedUsers: [],
       options: {
         striped: true,
@@ -487,10 +496,13 @@ export default {
   overflow-x: scroll;
 }
 
-.confirm-container {
+.confirm-container,
+.result-container {
+  outline: 1px solid red;
   height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
 }
 </style>
