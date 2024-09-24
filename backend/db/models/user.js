@@ -3,6 +3,8 @@ const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
 const { genSalt, genPwdHash } = require("../../utils/auth.js");
 const { v4: uuidv4 } = require("uuid");
+const fs = require("fs");
+const path = require("path");
 
 module.exports = (sequelize, DataTypes) => {
   class User extends MetaModel {
@@ -442,9 +444,30 @@ module.exports = (sequelize, DataTypes) => {
             username: createdUser.userName,
             email: createdUser.email,
             roles: assignedRoles.join(", "),
-            key: password,
+            password,
           });
         }
+
+        // Generate CSV content
+        const headers = ["id", "firstname", "lastname", "username", "email", "roles", "password"];
+        let csvContent = headers.join(",") + "\n";
+        createdUsers.forEach((user) => {
+          csvContent += headers.map((header) => `"${user[header]}"`).join(",") + "\n";
+        });
+
+        // Generate a unique filename
+        const filename = `users_${Date.now()}.csv`;
+        const csvFilePath = path.join(__dirname, "..", "..", "temp", filename);
+
+        // Ensure the temp directory exists
+        await fs.mkdir(path.dirname(csvFilePath), { recursive: true });
+
+        // Write CSV content to file
+        await fs.writeFile(csvFilePath, csvContent, "utf8");
+        return {
+          filename,
+          url: `/download/temp/${filename}`,
+        };
       } catch (error) {
         this.logger.error("Failed to bulk update users: " + error);
       }

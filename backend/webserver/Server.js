@@ -73,6 +73,7 @@ module.exports = class Server {
         this.logger.debug("Initializing Routes for config...");
         require("./routes/config")(this);
         require('./routes/auth')(this);
+        require('./routes/download')(this);
 
         // all further urls reference to frontend
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));

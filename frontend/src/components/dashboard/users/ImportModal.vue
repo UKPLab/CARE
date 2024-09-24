@@ -117,10 +117,13 @@
           class="result-container"
         >
           <p>Successfully created X users and overwrote Y users</p>
-          <BasicButton
-            class="btn btn-primary"
-            title="Download Result CSV"
-          ></BasicButton>
+          <a
+            v-if="csvInfo"
+            :href="csvInfo.url"
+            :download="csvInfo.filename"
+          >
+            Download Result CSV
+          </a>
         </div>
       </div>
     </template>
@@ -148,6 +151,7 @@ import BasicTable from "@/basic/table/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import Papa from "papaparse";
 import { testData } from "./testData";
+import getServerURL from "@/assets/serverUrl";
 
 /**
  * Modal for bulk creating users through csv file
@@ -159,7 +163,7 @@ export default {
   data() {
     return {
       importType: "csv",
-      currentStep: 3,
+      currentStep: 0,
       file: {
         state: 0,
         name: "",
@@ -215,6 +219,7 @@ export default {
         { name: "Roles", key: "roles" },
         // { name: "User", key: "username" },
       ],
+      csvInfo: null,
     };
   },
   computed: {
@@ -262,8 +267,8 @@ export default {
         this.$refs.modal.waiting = true;
         if (this.currentStep === 0 && this.users.length > 0) {
           this.$socket.emit("userCheckDuplicates", this.users, (res) => {
+            this.$refs.modal.waiting = false;
             if (res.success) {
-              this.$refs.modal.waiting = false;
               this.users = res.users;
             }
           });
@@ -273,9 +278,10 @@ export default {
         }
         if (this.currentStep === 2) {
           this.$socket.emit("userBulkCreate", this.selectedUsers, (res) => {
+            this.$refs.modal.waiting = false;
             if (res.success) {
-              this.$refs.modal.waiting = false;
-              console.log(res.message);
+              this.csvInfo = res.csvInfo;
+              this.csvInfo.url = getServerURL() + this.csvInfo.url;
             } else {
               console.log(res);
             }
