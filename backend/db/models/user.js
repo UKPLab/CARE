@@ -2,6 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
 const { genSalt, genPwdHash } = require("../../utils/auth.js");
+const { v4: uuidv4 } = require("uuid");
 
 module.exports = (sequelize, DataTypes) => {
   class User extends MetaModel {
@@ -390,6 +391,62 @@ module.exports = (sequelize, DataTypes) => {
         }
       } catch (error) {
         this.logger.error("Failed to update user: " + error);
+      }
+    }
+
+    static async bulkCreateUsers(users) {
+      try {
+        const createdUsers = [];
+        for (const user of users) {
+          // Generate a password using UUID (8 characters)
+          const password = uuidv4().replace(/-/g, "").substring(0, 8);
+          const salt = genSalt();
+          const pwdHash = await genPwdHash(password, salt);
+
+          // Create the user
+          const createdUser = await User.create({
+            firstName: user.firstname,
+            lastName: user.lastname,
+            // TODO: Generate random user name
+            userName: user.firstname,
+            // FIXME: email should be unique
+            email: user.email,
+            passwordHash: pwdHash,
+            salt,
+            acceptTerms: false,
+            acceptStats: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+
+          // Find and assign roles
+          const assignedRoles = [];
+          const userRoles = user.roles.split(", ");
+          for (const roleName of userRoles) {
+            const userRole = await this.sequelize.models["user_role"].findOne({ where: { name: roleName } });
+            if (!userRole) {
+              continue;
+            }
+
+            await this.models["user_role_matching"].create({
+              userId: createdUser.id,
+              userRoleId: userRole.id,
+            });
+            assignedRoles.push(roleName);
+          }
+
+          createdUsers.push({
+            id: createdUser.id,
+            firstname: createdUser.firstName,
+            lastname: createdUser.lastName,
+            username: createdUser.userName,
+            email: createdUser.email,
+            roles: assignedRoles.join(", "),
+            key: password,
+          });
+        }
+      } catch (error) {
+        this.logger.error("Failed to bulk update users: " + error);
       }
     }
   }

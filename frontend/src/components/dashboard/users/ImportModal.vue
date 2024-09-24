@@ -178,7 +178,7 @@ export default {
           required: true,
         },
       ],
-      users: testData,
+      users: [],
       selectedUsers: [],
       options: {
         striped: true,
@@ -226,7 +226,7 @@ export default {
     isNextBtnDisabled() {
       if (this.currentStep === 0) {
         if (this.importType === "csv") {
-          return this.file.errors.length > 0;
+          // return this.file.errors.length > 0;
         } else {
           // const { modelValue } = this.$refs.form;
           // const { course_id, moodle_api_key, moodle_url } = modelValue;
@@ -261,6 +261,16 @@ export default {
         }
         if (this.currentStep === 1) {
           this.$refs.modal.waiting = false;
+        }
+        if (this.currentStep === 2) {
+          this.$socket.emit("userBulkCreate", this.selectedUsers, (res) => {
+            if (res.success) {
+              this.$refs.modal.waiting = false;
+              console.log(res.message);
+            } else {
+              console.log(res);
+            }
+          });
         }
         this.currentStep++;
       }
