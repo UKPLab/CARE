@@ -39,7 +39,7 @@ def create_app():
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
-            response = {"message": "Success: False" + "error: " + str(e)}
+            response = {"message": "Success: False " + "error: " + str(e)}
             return response
     
     @sio.on("getUsersFromAssignment")
@@ -51,7 +51,7 @@ def create_app():
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
-            response = {"message": "Success: False" + "error: " + str(e)}
+            response = {"message": "Success: False " + "error: " + str(e)}
             return response
     
     @sio.on("getSubmissionInfosFromAssignment")
@@ -63,7 +63,7 @@ def create_app():
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
-            response = {"message": "Success: False" + "error: " + str(e)}
+            response = {"message": "Success: False " + "error: " + str(e)}
             return response
         
     @sio.on("downloadSubmissionsFromUser")
@@ -75,7 +75,8 @@ def create_app():
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
-            response = {"message": "Success: False" + "error: " + str(e)}
+            logger.info(f"Received call: {data} from {sid}")
+            response = {"message": "Success: False " + "error: " + str(e)}
             return response
     
     logger.info("Creating App...")
@@ -383,8 +384,9 @@ def get_submission_infos_from_assignment(course_id, assignment_id, options):
     return submissionInfos
                         
 def download_submissions_from_user(submissionInfos):
+    print(submissionInfos)
     files = []
-    for submissionURL in submissionInfos['submissionURLs']:
+    for submissionURL in submissionInfos:
         response = requests.get(submissionURL["fileurl"])
         files.append(response.content)
     return files          

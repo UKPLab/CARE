@@ -110,7 +110,7 @@ export default {
     submissionInfos: function (data) {
       this.submissionInfos = data;
       console.log(data);
-      console.log(this.submissionInfos[0].submissionURLs);
+      //console.log(this.submissionInfos[0].submissionURLs);
     },
     downloadSubmissions: function (data) {
       console.log(data)
@@ -136,11 +136,12 @@ export default {
         assignmentID: this.assignmentID
       }
       console.log(testData);
-      this.$socket.emit("getUsersFromCourse", {data: testData});
+      this.$socket.emit("getSubmissionInfosFromAssignment", {data: testData});
     },
     download2() {
+      console.log("Submission Hello" + JSON.stringify(this.submissionInfos, null, 2))
       const testData = {
-        submissionInfos: this.submissionInfos[0]
+        submissionInfos: this.submissionInfos.data[0].submissionURLs
       }
       console.log(testData);
       this.$socket.emit("downloadSubmissionsFromUser", {data: testData});

@@ -7,7 +7,7 @@ General structure
 ----------------------
 
 All Moodle API calls are made via an rpc call and thereofore run on a different docker container. The main.py file in the moodleAPI folder is responsible for the actual call to the Moodle API. 
-The result is then returned to the socket and can be used in the frontend or saved to the database. Take a look at the rpc.rst to get an overview on how the rpc calls work and how to setup your own.
+The result is then returned to the socket and can be used in the frontend or saved to the database. Take a look at the `rpc.rst <docs/source/for_developers/backend/rpc.rst>`_ to get an overview on how the rpc calls work and how to setup your own.
 
 If you want to use the Moodle API from CARE, you need to follow a specific structure:
 
@@ -30,10 +30,54 @@ If you want to use the Moodle API from CARE, you need to follow a specific struc
    * - 6
      - Now you can use the result in the frontend or save it to the database.
 
+If your Moodle Service is not yet configured to use the API, please follow the steps:
+
+.. list-table:: Moodle API Extension
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Step
+     - Description
+   * - 1
+     - The administrator of the Moodle service needs to enable access to the API (web services). Each user who wants to use the API needs to have a token. 
+       Instructions on how to do this can be found in the Moodle documentation: ´https://docs.moodle.org/404/en/Using_web_services´
+   * - 2
+     - To use any functionality that includes downloading submissions files, the administrator needs to enable "Can Download File" in the Active External Web Service. This includes the following steps:
+     1. **Navigate to Moodle Site Admin**
+   
+        Log in to your Moodle site as an administrator and go to the "Site Administration" page.
+
+      2. **Search for External Services**
+        
+        On the "Site Administration" page, use the search bar to look for "External Services." Click on it to access the External Services section.
+
+      3. **Edit Active External Services**
+        
+        In the External Services section, find the active external service used for syncing course images. Click the "Edit" button next to it.
+
+      4. **Expand the Page**
+        
+        Once on the Active External Service page, expand the options by clicking the "Show more" button at the bottom of the page.
+
+      5. **Enable "Can Download Files" Setting**
+        
+        Check the box next to "Can download files" to enable this setting.
+
+      6. **Save Changes**
+        
+        After enabling the "Can download files" option, click on the "Save changes" button at the bottom of the page to apply your updates.
+
+      A visual guide can be found  here: `https://edwiser.helpscoutdocs.com/article/559-how-to-enable-can-download-file-in-the-active-external-web-service`_	
+
 Welche Schritte, um es zu erweitern;
 
 z.B. Freigabe auf Moodle, API Documentation Moodle, Besonders Download aktivieren und Anleitung verlinken und nochmal erklären, alle möglichen Links, Wie geht man am besten vor,um eine neue API Funktion zu nutzen
 Neues Kapitel: Was muss man in Moodle machen, um die richtige Kurs ID etc. in Moodel zu finden. Wie konfiguriert man ein Assignment etc.
+
+If you want to add a new functionality to the Moodle API, these links might be helpful:
+
+1. `Moodle API Documentation <https://docs.moodle.org/310/en/Web_services_API>`_ This site provides an overview of the Moodle API and its functions. If you are looking for a specific topic, e.g. 'submission', you can use this keyword to search for the specific function you need. However this site only contains the name of the functions and a short description. For more detailed information, you can use the following link.
+2. `https://github.com/moodle/moodle`_ This link leads you to the Moodle GitHub repository. Here you can find the source code of the Moodle API. If you are looking for a specific function, you can use the search bar to find the function you need. This is helpful if you want to know how the function works and what parameters it needs. Usually the relevant function is located in the 'exterballib.php' file of the module. Next to the function you can find another function with the same name but with the suffix 'parameters'. This function contains the parameters you need to call the function. To get an idea on how to pass the parameters in the correct format in pyton format, take a look at the existing functions.
 
 Functions
 ----------------------
