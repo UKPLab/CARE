@@ -55,7 +55,7 @@ export const testData = [
     lastname: "Pan",
     username: "",
     email: "hello@hello.com",
-    roles: "Student*in",
+    roles: "Dozent*in, Student",
     key: "-1",
     status: "duplicate",
   },

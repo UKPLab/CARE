@@ -224,5 +224,22 @@ module.exports = class UserSocket extends Socket {
         this.logger.error(error);
       }
     });
+
+    this.socket.on("userBulkCreate", async (users, callback) => {
+      try {
+        await this.models["user"].bulkCreateUsers(users);
+        // TODO: Send back the number of created users and CSV file path
+        callback({
+          success: true,
+          message: "Users successfully created",
+        });
+      } catch (error) {
+        this.logger.error(error);
+        callback({
+          success: false,
+          message: "Failed to bulk create users",
+        });
+      }
+    });
   }
 };
