@@ -89,7 +89,8 @@ export default {
         this.eventBus.emit('toast', {message: "Error during upload of file!", variant: "danger", delay: 3000});
       }
     }
-  },
+  }
+  ,
   methods: {
     open() {
       let fileElement = document.getElementById('fileInput');
