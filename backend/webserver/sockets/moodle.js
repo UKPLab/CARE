@@ -60,7 +60,7 @@ module.exports = class MoodleSocket extends Socket {
 
         const response = await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment(data);
 
-        this.logger.info("Response: " + response);
+        //this.logger.info("Response: " + response);
 
         this.socket.emit("submissionInfos", response);
     }
@@ -70,9 +70,22 @@ module.exports = class MoodleSocket extends Socket {
 
         const response = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUser(data);
 
-        this.logger.info("Response: " + response);
+        console.log("Hello this is a  message " + JSON.stringify(response.message, null, 2));
 
         this.socket.emit("downloadSubmissions", response);
+
+        const buffer = Buffer.from(response.data[0]);
+
+        //Write the Buffer to the specified file path
+        fs.writeFile("HwlloWorld.pdf", buffer, (err) => {
+            if (err) {
+                console.error('Error saving PDF:', err);
+            } else {
+                console.log('PDF saved to:', "HwlloWorld.pdf");
+            }
+        });
+        
+    
     }
 
 
