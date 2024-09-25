@@ -1,7 +1,7 @@
 <template>
   <BasicModal
     ref="modal"
-    @hide="resetForm"
+    @hide="resetModal"
   >
     <template #title>
       <span>Bulk Import Users</span>
@@ -138,7 +138,7 @@
       <BasicButton
         title="Next"
         class="btn btn-primary"
-        :disabled="isNextBtnDisabled"
+        :disabled="isDisabled"
         @click="nextStep"
       />
     </template>
@@ -162,6 +162,7 @@ import getServerURL from "@/assets/serverUrl";
 export default {
   name: "ImportModal",
   components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm },
+  emits: ["updateUser"],
   data() {
     return {
       importType: "csv",
@@ -244,15 +245,17 @@ export default {
         { title: "Result" },
       ];
     },
-    isNextBtnDisabled() {
+    isDisabled() {
       if (this.currentStep === 0) {
         if (this.importType === "csv") {
-          // return this.file.errors.length > 0;
+          return this.file.name === "";
         } else {
-          // const { modelValue } = this.$refs.form;
-          // const { course_id, moodle_api_key, moodle_url } = modelValue;
-          // return (!course_id || !moodle_api_key || !moodle_url)
+          const { courseID, url, apiKey } = this.moodleData;
+          return !courseID || !url || !apiKey;
         }
+      }
+      if (this.currentStep === 1) {
+        return !this.selectedUsers.length > 0;
       }
       return false;
     },
@@ -283,9 +286,10 @@ export default {
       this.importType = type;
       this.$refs.modal.open();
     },
-    resetForm() {
+    resetModal() {
       // this.$refs.form.modelValue.password = "";
       // this.eventBus.emit("resetFormField");
+      // this.$emit("updateUser");
     },
     prevStep() {
       if (this.currentStep > 0) {
@@ -552,7 +556,8 @@ export default {
 
 .confirm-container,
 .result-container {
-  height: 100%;
+  /* FIXME: Do not hard code the height */
+  height: 350px;
   display: flex;
   justify-content: center;
   align-items: center;
