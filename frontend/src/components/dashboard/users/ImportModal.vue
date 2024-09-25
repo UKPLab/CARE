@@ -238,7 +238,7 @@ export default {
     },
     steps() {
       return [
-        this.importType === "csv" ? { title: "Upload" } : { title: "Not Sure..." },
+        this.importType === "csv" ? { title: "Upload" } : { title: "Moodle" },
         { title: "Preview" },
         { title: "Confirm" },
         { title: "Result" },
@@ -258,12 +258,24 @@ export default {
     },
   },
   sockets: {
-    userCSV: async (data) => {
-      try {
-        this.users = await this.validateCSV(data.data);
-      } catch (error) {
-        console.log(error);
-      }
+    userCSV: async function (response) {
+      let parsedData;
+      Papa.parse(response.data, {
+        header: true,
+        complete: function (results) {
+          const { data, errors } = results;
+          // TODO: Temporary fix, remove the problematic one directly.
+          if (errors.length > 0) {
+            errors.forEach(({ row }) => {
+              data.splice(row, 1);
+            });
+          }
+          parsedData = data;
+        },
+      });
+
+      this.users = parsedData;
+      this.checkDuplicateUsers();
     },
   },
   methods: {
@@ -275,52 +287,58 @@ export default {
       // this.$refs.form.modelValue.password = "";
       // this.eventBus.emit("resetFormField");
     },
-    nextStep() {
-      if (this.currentStep >= 3) {
-        this.$refs.modal.waiting = true;
-        if (this.currentStep === 0) {
-          if (this.importType === "moodle") {
-            if (!this.$refs.form.validate()) {
-              return;
-            }
-            const { courseID, apiKey, url } = this.moodleData;
-            const data = {
-              options: { apiKey, url },
-              courseID,
-            };
-            this.$socket.emit("getUsersFromCourse", { data });
-          } else {
-            this.$socket.emit("userCheckDuplicates", this.users, (res) => {
-              this.$refs.modal.waiting = false;
-              if (res.success) {
-                this.users = res.users;
-              }
-            });
-          }
-        }
-        if (this.currentStep === 1) {
-          this.$refs.modal.waiting = false;
-        }
-        if (this.currentStep === 2) {
-          this.$socket.emit("userBulkCreate", this.selectedUsers, (res) => {
-            this.$refs.modal.waiting = false;
-            if (res.success) {
-              const { userCount, csvInfo } = res;
-              this.csvInfo = csvInfo;
-              this.csvInfo.url = getServerURL() + this.csvInfo.url;
-              this.updatedUserCount = userCount;
-            } else {
-              console.log(res);
-            }
-          });
-        }
-        this.currentStep++;
-      }
-    },
     prevStep() {
       if (this.currentStep > 0) {
         this.currentStep--;
       }
+    },
+    nextStep() {
+      if (this.currentStep >= 3) return;
+
+      this.$refs.modal.waiting = true;
+
+      switch (this.currentStep) {
+        case 0:
+          this.handleStepZero();
+          break;
+        case 1:
+          this.handleStepOne();
+          break;
+        case 2:
+          this.handleStepTwo();
+          break;
+      }
+      this.currentStep++;
+    },
+    handleStepZero() {
+      if (this.importType === "moodle") {
+        if (!this.$refs.form.validate()) return;
+        const { courseID, apiKey, url } = this.moodleData;
+        const data = {
+          options: { apiKey, url },
+          courseID,
+        };
+        this.$socket.emit("getUsersFromCourse", { data });
+      } else {
+        this.checkDuplicateUsers();
+      }
+      this.$refs.modal.waiting = false;
+    },
+    handleStepOne() {
+      this.$refs.modal.waiting = false;
+    },
+    handleStepTwo() {
+      this.$socket.emit("userBulkCreate", this.selectedUsers, (res) => {
+        this.$refs.modal.waiting = false;
+        if (res.success) {
+          const { userCount, csvInfo } = res;
+          this.csvInfo = csvInfo;
+          this.csvInfo.url = getServerURL() + this.csvInfo.url;
+          this.updatedUserCount = userCount;
+        } else {
+          console.log(res);
+        }
+      });
     },
     handleDrop(event) {
       const file = event.dataTransfer.files[0];
@@ -424,11 +442,15 @@ export default {
       };
       this.$refs.fileInput.value = "";
     },
-    uploadFile(file) {
-      // file
-    },
     selectUsers(users) {
       this.selectedUsers = users;
+    },
+    checkDuplicateUsers() {
+      this.$socket.emit("userCheckDuplicates", this.users, (res) => {
+        if (res.success) {
+          this.users = res.users;
+        }
+      });
     },
   },
 };
@@ -457,7 +479,7 @@ export default {
 
 .content-container {
   /* FIXME: */
-  height: 350px;
+  min-height: 350px;
 }
 
 /* Upload */
@@ -530,7 +552,6 @@ export default {
 
 .confirm-container,
 .result-container {
-  outline: 1px solid red;
   height: 100%;
   display: flex;
   justify-content: center;
