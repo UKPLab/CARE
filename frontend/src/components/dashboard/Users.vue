@@ -27,7 +27,10 @@
   />
   <RightsModal ref="rightsModal" />
   <PasswordModal ref="passwordModal" />
-  <ImportModal ref="importModal" />
+  <ImportModal
+    ref="importModal"
+    @update-user="fetchUsers"
+  />
 </template>
 
 <script>
@@ -53,7 +56,7 @@ export default {
     PasswordModal,
     RightsModal,
     BasicButton,
-    ImportModal
+    ImportModal,
   },
   props: {
     admin: {
