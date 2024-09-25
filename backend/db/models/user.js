@@ -3,7 +3,7 @@ const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
 const { genSalt, genPwdHash } = require("../../utils/auth.js");
 const { v4: uuidv4 } = require("uuid");
-const fs = require("fs");
+const fs = require("fs").promises;
 const path = require("path");
 
 module.exports = (sequelize, DataTypes) => {
