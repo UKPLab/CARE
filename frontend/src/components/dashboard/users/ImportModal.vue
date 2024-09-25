@@ -172,22 +172,26 @@ export default {
         size: 0,
         errors: [],
       },
-      moodleData: {},
+      moodleData: {
+        url: "https://moodle.informatik.tu-darmstadt.de",
+        apiKey: "REDACTED_SECRET",
+        courseID: "1615",
+      },
       fields: [
         {
-          key: "course_id",
+          key: "courseID",
           label: "Course ID:",
           type: "text",
           required: true,
         },
         {
-          key: "moodle_api_key",
+          key: "apiKey",
           label: "Moodle API Key:",
           type: "text",
           required: true,
         },
         {
-          key: "moodle_url",
+          key: "url",
           label: "Moodle URL:",
           type: "text",
           required: true,
@@ -253,6 +257,15 @@ export default {
       return false;
     },
   },
+  sockets: {
+    userCSV: async (data) => {
+      try {
+        this.users = await this.validateCSV(data.data);
+      } catch (error) {
+        console.log(error);
+      }
+    },
+  },
   methods: {
     open(type) {
       this.importType = type;
@@ -263,23 +276,30 @@ export default {
       // this.eventBus.emit("resetFormField");
     },
     nextStep() {
-      // if (!this.$refs.form.validate()) {
-      //   return;
-      // }
-      if (this.currentStep < 3) {
+      if (this.currentStep >= 3) {
         this.$refs.modal.waiting = true;
-        if (this.currentStep === 0 && this.users.length > 0) {
-          this.$socket.emit("userCheckDuplicates", this.users, (res) => {
-            this.$refs.modal.waiting = false;
-            if (res.success) {
-              this.users = res.users;
-              // this.currentStep++;
+        if (this.currentStep === 0) {
+          if (this.importType === "moodle") {
+            if (!this.$refs.form.validate()) {
+              return;
             }
-          });
+            const { courseID, apiKey, url } = this.moodleData;
+            const data = {
+              options: { apiKey, url },
+              courseID,
+            };
+            this.$socket.emit("getUsersFromCourse", { data });
+          } else {
+            this.$socket.emit("userCheckDuplicates", this.users, (res) => {
+              this.$refs.modal.waiting = false;
+              if (res.success) {
+                this.users = res.users;
+              }
+            });
+          }
         }
         if (this.currentStep === 1) {
           this.$refs.modal.waiting = false;
-          // this.currentStep++;
         }
         if (this.currentStep === 2) {
           this.$socket.emit("userBulkCreate", this.selectedUsers, (res) => {
@@ -289,7 +309,6 @@ export default {
               this.csvInfo = csvInfo;
               this.csvInfo.url = getServerURL() + this.csvInfo.url;
               this.updatedUserCount = userCount;
-              // this.currentStep++;
             } else {
               console.log(res);
             }
@@ -298,7 +317,6 @@ export default {
         this.currentStep++;
       }
     },
-
     prevStep() {
       if (this.currentStep > 0) {
         this.currentStep--;
@@ -319,7 +337,7 @@ export default {
           complete: function (results) {
             const { data: rows, meta } = results;
             const { fields: fileHeaders } = meta;
-            const requiredHeaders = ["id", "firstname", "lastname", "username", "email", "roles", "key"];
+            const requiredHeaders = ["id", "firstname", "lastname", "username", "email", "roles", "password"];
             const seenIds = new Set();
             const seenEmails = new Set();
             // src: https://www.mailercheck.com/articles/email-validation-javascript
