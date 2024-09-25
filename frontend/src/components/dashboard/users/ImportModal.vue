@@ -116,7 +116,9 @@
           v-if="currentStep === 3"
           class="result-container"
         >
-          <p>Successfully created X users and overwrote Y users</p>
+          <p v-if="updatedUserCount">
+            Successfully created {{ updatedUserCount.new }} users and overwrote {{ updatedUserCount.updated }} users
+          </p>
           <a
             v-if="csvInfo"
             :href="csvInfo.url"
@@ -191,7 +193,7 @@ export default {
           required: true,
         },
       ],
-      users: testData,
+      users: [],
       selectedUsers: [],
       options: {
         striped: true,
@@ -220,6 +222,7 @@ export default {
         // { name: "User", key: "username" },
       ],
       csvInfo: null,
+      updatedUserCount: null,
     };
   },
   computed: {
@@ -270,18 +273,23 @@ export default {
             this.$refs.modal.waiting = false;
             if (res.success) {
               this.users = res.users;
+              // this.currentStep++;
             }
           });
         }
         if (this.currentStep === 1) {
           this.$refs.modal.waiting = false;
+          // this.currentStep++;
         }
         if (this.currentStep === 2) {
           this.$socket.emit("userBulkCreate", this.selectedUsers, (res) => {
             this.$refs.modal.waiting = false;
             if (res.success) {
-              this.csvInfo = res.csvInfo;
+              const { userCount, csvInfo } = res;
+              this.csvInfo = csvInfo;
               this.csvInfo.url = getServerURL() + this.csvInfo.url;
+              this.updatedUserCount = userCount;
+              // this.currentStep++;
             } else {
               console.log(res);
             }
