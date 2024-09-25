@@ -88,14 +88,10 @@ module.exports = (sequelize, DataTypes) => {
          * The `models/index` file will call this method automatically.
          */
         static associate(models) {
-            Study.belongsTo(models["document"], {
-                foreignKey: "documentId",
-                as: "document",
-              });
-
-            Study.belongsTo(models["workflow"], {
-                foreignKey: "workflowId",
-                as: "workflow",
+            // define association here
+               Study.belongsTo(models["user"], {
+                foreignKey: "userId", 
+                as: "userId", 
               });
         }
     }
@@ -124,6 +120,7 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'study',
         tableName: 'study',
         hooks: {
+            /*
             afterCreate: async (study, options) => {
                 const transaction = options.transaction || await sequelize.transaction();
         
@@ -149,6 +146,9 @@ module.exports = (sequelize, DataTypes) => {
                   throw new Error(`Failed to process document for the study: ${error.message}`);
                 }
             }
+        }
+    });
+    */
         }
     });
 

@@ -15,6 +15,17 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "workflowId",
         as: "workflow"
       });
+
+      WorkflowStep.belongsTo(models["workflow_step"], {
+        foreignKey: "workflowStepPrevious", 
+        as: "previousStep", 
+      });
+
+      WorkflowStep.belongsTo(models["workflow_step"], {
+        foreignKey: "workflowStepDocument", 
+        as: "documentStep", 
+      });
+
     }
   }
 
