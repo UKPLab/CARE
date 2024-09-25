@@ -11,32 +11,10 @@ const Socket = require("../Socket.js");
  *
  * Uploading a file through websocket
  *
- * @author Dennis Zyska, Alexander Bürkle
+ * @author Alexander Bürkle, Dennis Zyska
  * @type {MoodleSocket}
  */
 module.exports = class MoodleSocket extends Socket {
-
-    /**
-     * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
-     * an entry in the database.
-     *
-     * @param data the data including name and pdf binary file
-     * @returns {Promise<void>}
-     */
-    async uploadDocument(data) {
-        const doc = await this.models['document'].add({
-            name: data.name.replace(/.pdf$/, ''),
-            userId: this.userId
-        });
-        const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
-
-        fs.writeFile(target, data.file, (err) => {
-            this.socket.emit("uploadResult", {success: !err, documentId: doc.id})
-        });
-
-        this.emit("documentRefresh", doc);
-    }
-
     async getUsersFromCourse(data) {
         this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
 
@@ -44,7 +22,7 @@ module.exports = class MoodleSocket extends Socket {
 
         this.logger.info("Response: " + response);
 
-        this.socket.emit("userCSV", response);
+        this.socket.emit("courseUsersCSV", response);
     };
 
     async getUsersFromAssignment(data) {
@@ -53,6 +31,8 @@ module.exports = class MoodleSocket extends Socket {
         const response = await this.server.rpcs["MoodleRPC"].getUsersFromAssignment(data);
 
         this.logger.info("Response: " + response);
+
+        this.socket.emit("assignmentUsersCSV", response);
     };
 
     async getSubmissionInfosFromAssignment(data) {
@@ -60,7 +40,7 @@ module.exports = class MoodleSocket extends Socket {
 
         const response = await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment(data);
 
-        //this.logger.info("Response: " + response);
+        this.logger.info("Response: " + response);
 
         this.socket.emit("submissionInfos", response);
     }
@@ -70,32 +50,22 @@ module.exports = class MoodleSocket extends Socket {
 
         const response = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUser(data);
 
-        console.log("Hello this is a  message " + JSON.stringify(response.message, null, 2));
+        this.logger.info("Response: " + response);
 
         this.socket.emit("downloadSubmissions", response);
-
-        const buffer = Buffer.from(response.data[0]);
-
-        //Write the Buffer to the specified file path
-        fs.writeFile("HwlloWorld.pdf", buffer, (err) => {
-            if (err) {
-                console.error('Error saving PDF:', err);
-            } else {
-                console.log('PDF saved to:', "HwlloWorld.pdf");
-            }
-        });
-        
-    
     }
 
+    async uploadPasswordsToMoodle(data) {
+        this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
 
-    
+        const response = await this.server.rpcs["MoodleRPC"].uploadPasswordsToMoodle(data);
+
+        this.logger.info("Response: " + response);
+        
+        this.socket.emit("uploadPasswords", response);
+    }
 
     init() {
-
-        //Make sure upload directory exists
-        fs.mkdirSync(UPLOAD_PATH, {recursive: true});
-
         this.socket.on("getUsersFromCourse", async (data) => {
             try {
                 await this.getUsersFromCourse(data);
@@ -128,7 +98,12 @@ module.exports = class MoodleSocket extends Socket {
             }
         });
 
-
-    
+        this.socket.on("uploadPasswordsToMoodle", async (data) => {
+            try {
+                await this.uploadPasswordsToMoodle(data);
+            } catch (err) {
+                this.logger.error("Couldn't upload passwords to Moodle. Error: " + err);
+            }
+        });
 }
 }

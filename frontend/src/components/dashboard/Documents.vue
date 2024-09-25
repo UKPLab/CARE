@@ -13,12 +13,6 @@
           text="Add"
           @click="$refs.uploadModal.open()"
       />
-      <ButtonHeader
-          class="btn-primary"
-          title="Add document"
-          text="Moodle"
-          @click="$refs.moodleModal.open()"
-      />
     </template>
     <template #body>
       <BasicTable
@@ -35,7 +29,6 @@
   <ConfirmModal ref="deleteConf"/>
   <UploadModal ref="uploadModal"/>
   <EditModal ref="editModal"/>
-  <MoodleModal ref="moodleModal"/>
 </template>
 
 <script>
@@ -48,7 +41,6 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import ButtonHeader from "@/basic/card/ButtonHeader.vue";
 import UploadModal from "./documents/UploadModal.vue";
 import EditModal from "./documents/EditModal.vue";
-import MoodleModal from "./documents/MoodleModal.vue";
 
 /**
  * Document list component
@@ -72,7 +64,6 @@ export default {
     PublishModal,
     ConfirmModal,
     EditModal,
-    MoodleModal
   },
   data() {
     return {
