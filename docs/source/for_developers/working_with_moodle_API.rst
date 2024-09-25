@@ -69,11 +69,6 @@ If your Moodle Service is not yet configured to use the API, please follow the s
 
       A visual guide can be found  here: `https://edwiser.helpscoutdocs.com/article/559-how-to-enable-can-download-file-in-the-active-external-web-service`_	
 
-Welche Schritte, um es zu erweitern;
-
-z.B. Freigabe auf Moodle, API Documentation Moodle, Besonders Download aktivieren und Anleitung verlinken und nochmal erklären, alle möglichen Links, Wie geht man am besten vor,um eine neue API Funktion zu nutzen
-Neues Kapitel: Was muss man in Moodle machen, um die richtige Kurs ID etc. in Moodel zu finden. Wie konfiguriert man ein Assignment etc.
-
 If you want to add a new functionality to the Moodle API, these links might be helpful:
 
 1. `Moodle API Documentation <https://docs.moodle.org/310/en/Web_services_API>`_ This site provides an overview of the Moodle API and its functions. If you are looking for a specific topic, e.g. 'submission', you can use this keyword to search for the specific function you need. However this site only contains the name of the functions and a short description. For more detailed information, you can use the following link.
