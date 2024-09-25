@@ -6,7 +6,7 @@ If you want to work with the Moodle API, please take a look at this document to 
 General structure
 ----------------------
 
-All Moodle API calls are made via an rpc call and thereofore run on a different docker container. The main.py file in the moodleAPI folder is responsible for the actual call to the Moodle API. 
+All Moodle API calls are made via an rpc call and therefore run on a different docker container. The main.py file in the moodleAPI folder is responsible for the actual call to the Moodle API. 
 The result is then returned to the socket and can be used in the frontend or saved to the database. Take a look at the `rpc.rst <docs/source/for_developers/backend/rpc.rst>`_ to get an overview on how the rpc calls work and how to setup your own.
 
 If you want to use the Moodle API from CARE, you need to follow a specific structure:
@@ -80,82 +80,32 @@ If you want to add a new functionality to the Moodle API, these links might be h
 2. `https://github.com/moodle/moodle`_ This link leads you to the Moodle GitHub repository. Here you can find the source code of the Moodle API. If you are looking for a specific function, you can use the search bar to find the function you need. This is helpful if you want to know how the function works and what parameters it needs. Usually the relevant function is located in the 'exterballib.php' file of the module. Next to the function you can find another function with the same name but with the suffix 'parameters'. This function contains the parameters you need to call the function. To get an idea on how to pass the parameters in the correct format in pyton format, take a look at the existing functions.
 3. Docker commands to rebuild the moodle api container after modifying the main.py: 
    1. Delete the moodle container in docker
-   2. Run 'docker compose -f docker-compose.yml build rpc_moodle_test' to rebuild the container
-   3. Run 'docker compose -f docker-compose.yml run -d rpc_moodle_test' to start the container
+   2. Run 'docker compose -f docker-compose.yml build rpc_moodle' to rebuild the container
+   3. Run 'docker compose -f docker-compose.yml run -d rpc_moodle' to start the container
    4. Run 'make docker' again to rebuild the whole project
 
 Functions
 ----------------------
 The following functions can by called from the frontend:
 
-getUsersFromCourse
-----------------------
+getUsersFromCourse: This method retrieves all users from a given course. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
+parameters: {courseID: int, options{url: string, apiKey: string}}
 
-.. function:: getUsersFromCourse(courseID, options)
+getUsersFromAssignment: This method retrieves all users from a given assignment. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
+parameters: {courseID: int, assignmentID: int, options{url: string, apiKey: string}}
 
-    This method retrieves all users from a given course. It then creates a csv file, containing the user information: id, username, firstname, lastname, email and their roles in the course (e.g. student/tutor)
-    :param courseID: This is the course id of the course you want to get the users from. You can get it from the URL of the course.
-    :type param1: int
-    :param options: This parameters holds the URL of the Moodle website and the API token.
-    :type param2: dict
-    :paramparam options.URL: The URL of the Moodle website.
-    :type options.URL: str
-    :paramparam options.API_KEY: The API token of the Moodle website.
-    :type options.API_KEY: str
-    :return: CSV file with the user information.
-    :rtype: CSV 
-    :raises ExceptionType: Explanation of the exception when it might be raised.
-    :raises AnotherException: Another possible exception.
+getSubmissionsInfosFromAssignment: This method retrieves all submissions from a given assignment. It then returns a list of dictionaries containing the user IDs and their corresponding submission file names and urls. This method should be used in preperation for downloading the submissions.
+parameters: {courseID: int, assignmentID: int, options{url: string, apiKey: string}}
 
-Example Usage
--------------
+downloadSubmissionsFromUser: This method downloads all submissions from the provided urls. It then returns a list of the files in binary format. The urls for the files can be obtained by calling the getSubmissionsInfosFromAssignment method.
+parameters: submission_infos: list with urls: string
 
-.. code-block:: python
+uploadPasswordsToMoodle: This method can be used to upload passwords as feedback in an assignment to Moodle. 
+parameters: {courseID: int, assignmentID: int, passwords: list: {id: int, password: string}, options{url: string, apiKey: string}}
 
-    example_variable = method_name(param1, param2)
+How to get the course ID and Assignment ID from Moodle:
 
-Notes
------
+To get the course ID from a moodle course, just navigate to the homepage of the course and you will see 'id=xxxx' in the URL. The number after the 'id=' is the course ID.
 
-- Additional details, if any.
-- Special considerations, warnings, or performance notes.
-
-getUsersFromAssignment
-----------------------
-
-.. function:: getUsersFromAssignment(courseID, assignmentID, options)
-
-    This method retrieves all users from a given assignment. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
-
-    :param courseID: This is the course ID of the course you want to get the users from. You can get it from the URL of the course.
-    :type courseID: int
-    :param assignmentID: This is the assignment ID of the assignment you want to get the users from. You can get it from the URL while looking at the assignment.
-    :type assignmentID: int
-    :param options: A dictionary containing the URL of the Moodle website and the API token.
-    :type options: dict
-    :param options.URL: The URL of the Moodle website.
-    :type options.URL: str
-    :param options.API_KEY: The API token of the Moodle website.
-    :type options.API_KEY: str
-    :return: A CSV file with the user information.
-    :rtype: CSV
-
-    :raises Exception: If something goes wrong with the API request.
-    :raises AnotherException: Another possible exception.
-
-
-Example Usage
--------------
-
-.. code-block:: python
-
-    example_variable = method_name(param1, param2)
-
-Notes
------
-
-- Additional details, if any.
-- Special considerations, warnings, or performance notes.
-
-
+To get the assignment ID from a moodle assignment, just navigate to the assignment and you will see 'id=xxxx' in the URL. The number after the 'id=' is the assignment ID.
 
