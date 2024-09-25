@@ -12,6 +12,20 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
         // define association here
+        StudyStep.belongsTo(models["study"], {
+          foreignKey: "studyId",
+          as: "study",
+        });
+  
+        StudyStep.belongsTo(models["workflow_step"], {
+          foreignKey: "workflowStepId",
+          as: "workflowStep",
+        });
+
+        StudyStep.belongsTo(models["document"], {
+          foreignKey: "documentId",
+          as: "document",
+        });
     }
   }
 
