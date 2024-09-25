@@ -398,39 +398,67 @@ module.exports = (sequelize, DataTypes) => {
 
     static async bulkCreateUsers(users) {
       try {
+        // NOTE: Moodle's role names are subject to change.
+        const moodleCareRoleMap = {
+          "Dozent*in": "teacher",
+          "Betreuer*in": "teacher",
+          "Tutor*in": "mentor",
+          "Student*in": "student",
+        };
         const createdUsers = [];
         for (const user of users) {
-          // Generate a password using UUID (8 characters)
-          const password = uuidv4().replace(/-/g, "").substring(0, 8);
-          const salt = genSalt();
-          const pwdHash = await genPwdHash(password, salt);
+          let createdUser, password;
+          if (user.status === "new") {
+            // Generate a password using UUID (8 characters)
+            password = uuidv4().replace(/-/g, "").substring(0, 8);
+            const salt = genSalt();
+            const pwdHash = await genPwdHash(password, salt);
 
-          // Create the user
-          const createdUser = await User.create({
-            firstName: user.firstname,
-            lastName: user.lastname,
-            // TODO: Generate random user name
-            userName: user.firstname,
-            // FIXME: email should be unique
-            email: user.email,
-            passwordHash: pwdHash,
-            salt,
-            acceptTerms: false,
-            acceptStats: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
+            // Create the user
+            createdUser = await User.create(
+              {
+                firstName: user.firstname,
+                lastName: user.lastname,
+                // TODO: Generate random user name
+                userName: user.firstname,
+                email: user.email,
+                passwordHash: pwdHash,
+                salt,
+                acceptTerms: false,
+                acceptStats: false,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }
+              // { raw: true }
+            );
+          } else {
+            // Update the user's details
+            await User.update(
+              {
+                firstName: user.firstname,
+                lastName: user.lastname,
+              },
+              {
+                where: { email: user.email },
+              }
+            );
+
+            // Fetch the updated user
+            createdUser = await User.findOne({ where: { email: user.email } });
+          }
 
           // Find and assign roles
           const assignedRoles = [];
           const userRoles = user.roles.split(", ");
           for (const roleName of userRoles) {
-            const userRole = await this.sequelize.models["user_role"].findOne({ where: { name: roleName } });
+            const userRole = await this.sequelize.models["user_role"].findOne({
+              where: { name: moodleCareRoleMap[roleName] },
+            });
             if (!userRole) {
               continue;
             }
 
-            await this.models["user_role_matching"].create({
+            await this.sequelize.models["user_role_matching"].create({
               userId: createdUser.id,
               userRoleId: userRole.id,
             });
@@ -444,9 +472,16 @@ module.exports = (sequelize, DataTypes) => {
             username: createdUser.userName,
             email: createdUser.email,
             roles: assignedRoles.join(", "),
-            password,
+            password: user.status === "new" ? password : "",
+            status: user.status,
           });
         }
+
+        // FIXME: The count should follow the result of bulk user creation.
+        const userCount = {
+          new: createdUsers.filter((u) => u.status === "new").length,
+          updated: createdUsers.filter((u) => u.status === "duplicate").length,
+        };
 
         // Generate CSV content
         const headers = ["id", "firstname", "lastname", "username", "email", "roles", "password"];
@@ -464,11 +499,17 @@ module.exports = (sequelize, DataTypes) => {
 
         // Write CSV content to file
         await fs.writeFile(csvFilePath, csvContent, "utf8");
-        return {
+
+        const csvInfo = {
           filename,
           url: `/download/temp/${filename}`,
         };
+        return {
+          userCount,
+          csvInfo,
+        };
       } catch (error) {
+        console.log({ error });
         this.logger.error("Failed to bulk update users: " + error);
       }
     }
