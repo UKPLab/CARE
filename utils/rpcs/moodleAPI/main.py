@@ -1,7 +1,9 @@
 import logging
 import socketio
 import io
-import base64
+import moodle_api
+import csv
+import requests
 
 __author__ = "Alexander Bürkle, Dennis Zyska"
 
@@ -22,11 +24,11 @@ def create_app():
     def call(sid, data):
         logger.info(f"Received call: {data} from {sid}")
         try:
-            response = {"message": "Success: True", "data": "Hello World!"}
+            response = {"Success": True, "data": "Hello World!"}
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
-            response = {"message": "Success: False" + "error: " + str(e)}
+            response = {"Success": False, "message": "error: " + str(e)}
             return response
         
         
@@ -35,11 +37,11 @@ def create_app():
         try:
             logger.info(f"Received call: {data} from {sid}")
             csv = create_csv_with_users_from_course(data['data']['courseID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
-            response = {"message": "Success: True", "data": csv}
+            response = {"Success": True, "data": csv}
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
-            response = {"message": "Success: False " + "error: " + str(e)}
+            response = {"Success": False, "message": "error: " + str(e)}
             return response
     
     @sio.on("getUsersFromAssignment")
@@ -47,23 +49,23 @@ def create_app():
         try:
             logger.info(f"Received call: {data} from {sid}")
             csv = create_csv_with_users_from_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options']['csvPath'], data['data']['options']['apiKey'], data['data']['options']['url'])
-            response = {"message": "Success: True", "data": csv}
+            response = {"Success": True, "data": csv}
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
-            response = {"message": "Success: False " + "error: " + str(e)}
+            response = {"Success": False, "message": "error: " + str(e)}
             return response
     
     @sio.on("getSubmissionInfosFromAssignment")
     def getSubmissionInfosFromAssignment(sid, data):
         try:
             logger.info(f"Received call: {data} from {sid}")
-            submissionInfos = get_submission_infos_from_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options'])
-            response = {"message": "Success: True", "data": submissionInfos}
+            submission_infos = get_submission_infos_from_assignment(data['data']['courseID'], data['data']['assignmentID'], data['data']['options'])
+            response = {"Success": True, "data": submission_infos}
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
-            response = {"message": "Success: False " + "error: " + str(e)}
+            response = {"Success": False, "message": "error: " + str(e)}
             return response
         
     @sio.on("downloadSubmissionsFromUser")
@@ -71,23 +73,17 @@ def create_app():
         try:
             logger.info(f"Received call: {data} from {sid}")
             files = download_submissions_from_user(data['data']['submissionInfos'])
-            response = {"message": "Success: True", "data": files}
+            response = {"Success": True, "data": files}
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
             logger.info(f"Received call: {data} from {sid}")
-            response = {"message": "Success: False " + "error: " + str(e)}
+            response = {"Success": False, "message": "error: " + str(e)}
             return response
     
     logger.info("Creating App...")
     app = socketio.WSGIApp(sio)
     return app
-
-import moodle_api
-import csv
-import json
-import requests
-import random
 
 # Webservice API Documentation:
 # https://docs.moodle.org/401/en/Using_web_services#Enable_capabilities
@@ -95,10 +91,6 @@ import random
 
 # Implementation of externallib functions in Moodle source codes (for parameters and return values):
 # https://github.com/moodle/moodle/blob/MOODLE_39_STABLE/mod/assign/externallib.php
-
-# Don't share! This is a secret key for the Moodle API.
-moodle_api.URL = "https://moodle.informatik.tu-darmstadt.de"
-moodle_api.KEY = "REDACTED_SECRET"
     
 class User:
     def __init__(self, id, firstname, lastname, username, email, roles, password):
@@ -123,7 +115,6 @@ def create_csv_with_users_from_course(course_id, MOODLE_API_KEY, MOODLE_URL):
     Returns:
         None
     """
-    # Set the URL and the key for the Moodle API
     moodle_api.URL = MOODLE_URL
     moodle_api.KEY = MOODLE_API_KEY
     
@@ -132,7 +123,6 @@ def create_csv_with_users_from_course(course_id, MOODLE_API_KEY, MOODLE_URL):
     
     users = []
     
-    # Write data to CSV file
     for user in course_users:
         roles = ''
         for role in user['roles']:
@@ -157,7 +147,7 @@ def create_csv_with_users_from_course(course_id, MOODLE_API_KEY, MOODLE_URL):
 
     return csv_content 
            
-def create_csv_with_users_from_assignment(course_id, assignmentId, filepath, MOODLE_API_KEY, MOODLE_URL):
+def create_csv_with_users_from_assignment(course_id, assignment_id, filepath, MOODLE_API_KEY, MOODLE_URL):
     """
     Create a CSV file with users enrolled in a specific assignment.
 
@@ -181,7 +171,7 @@ def create_csv_with_users_from_assignment(course_id, assignmentId, filepath, MOO
     course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
     
     users = []
-    id_mappings = get_id_mappings_for_users(assignmentId)
+    id_mappings = get_id_mappings_for_users(assignment_id)
     
     for user in course_users:
         for id in id_mappings:
@@ -344,13 +334,25 @@ def get_submissions_of_assignment(course_id, assignment_id, userID, MOODLE_API_K
                     
  
 def get_submission_infos_from_assignment(course_id, assignment_id, options):
+    """
+    Retrieves submission information from a specific assignment in a Moodle course.
+    Args:
+        course_id (int): The ID of the course.
+        assignment_id (int): The ID of the assignment.
+        options (dict): A dictionary containing the 'url' and 'apiKey' for the Moodle API.
+    Returns:
+        list: A list of dictionaries, each containing:
+            - 'userid' (int): The ID of the user who made the submission.
+            - 'submissionURLs' (list): A list of dictionaries, each containing:
+                - 'filename' (str): The name of the submitted file.
+                - 'fileurl' (str): The URL to access the submitted file.
+    """
     moodle_api.URL = options['url']
     moodle_api.KEY = options['apiKey']
 
-    # Get users from the cosurse
+    # Get users from the course
     course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
     
-    # Create a list of User objects
     users = []
     
     for user in course_users:
@@ -361,42 +363,47 @@ def get_submission_infos_from_assignment(course_id, assignment_id, options):
 
     submissions = moodle_api.call('mod_assign_get_submissions', assignmentids=[assignment_id])     
     
-    submissionInfos = []  
+    submission_infos = []  
     
     for sub in submissions['assignments'][0]['submissions']:
-        submissionInfo = {}
+        submission_info = {}
         for user in users:
             if sub['userid'] == user.id:   
-                submissionInfo['userid'] = sub['userid']
+                submission_info['userid'] = sub['userid']
                 break
         for plugin in sub['plugins']:
             if 'fileareas' in plugin:
                 for filearea in plugin['fileareas']:
-                    submissionURLs = []
+                    submission_urls = []
                     for files in filearea['files']:
                         file_url = files['fileurl']
                         file_url += f'?token={moodle_api.KEY}'
                         file_name = files['filename']
-                        submissionURLs.append({"filename": file_name, "fileurl": file_url})
-        submissionInfo['submissionURLs'] = submissionURLs
-        submissionInfos.append(submissionInfo)
+                        submission_urls.append({"filename": file_name, "fileurl": file_url})
+        submission_info['submissionURLs'] = submission_urls
+        submission_infos.append(submission_info)
     
-    return submissionInfos
+    return submission_infos
                         
-def download_submissions_from_user(submissionInfos):
-    print(submissionInfos)
+def download_submissions_from_user(submission_infos):
+    """
+    Downloads submission files from given URLs.
+
+    Args:
+        submission_infos (list of dict): A list of dictionaries where each dictionary contains a "fileurl" key 
+                                         with the URL of the submission file to be downloaded.
+
+    Returns:
+        list of bytes: A list containing the content of each downloaded file in bytes.
+    """
     files = []
-    for submissionURL in submissionInfos:
-        response = requests.get(submissionURL["fileurl"])
+    for submission_url in submission_infos:
+        response = requests.get(submission_url["fileurl"])
         files.append(response.content)
     return files          
         
 
 if __name__ == '__main__':
-    print('Hello')
-    #create_csv_with_users_from_assignment(1615, 'TANs', 'users.csv', 'REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
-    #insert_random_keys('users.csv')
-    #upload_passwords_to_moodle(6350, 'users.csv','REDACTED_SECRET', 'https://moodle.informatik.tu-darmstadt.de')
     
     
     
