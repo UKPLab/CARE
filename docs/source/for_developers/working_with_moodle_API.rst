@@ -72,7 +72,7 @@ If your Moodle Service is not yet configured to use the API, please follow the s
   
      After enabling the "Can download files" option, click on the "Save changes" button at the bottom of the page to apply your updates.
 
-  A visual guide can be found here: `https://edwiser.helpscoutdocs.com/article/559-how-to-enable-can-download-file-in-the-active-external-web-service`
+  A visual guide can be found `here: <https://edwiser.helpscoutdocs.com/article/559-how-to-enable-can-download-file-in-the-active-external-web-service>`_
 
 If you want to add new functionality to the Moodle API, these links might be helpful:
 
