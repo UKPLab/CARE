@@ -83,9 +83,9 @@ module.exports = class StudySocket extends Socket {
         if (study) {
             const document = await this.models['document'].getById(study.documentId);  
             
-            const workflow = await this.models['study_workflow'].findByPk(study.studyWorkflowId, {
+            const workflow = await this.models['workflow'].findByPk(study.workflowId, {
                 include: [{
-                    model: this.models['study_workflow_step'],
+                    model: this.models['workflow_step'],
                     as: 'steps',
                     order: [['order', 'ASC']],  
                 }]

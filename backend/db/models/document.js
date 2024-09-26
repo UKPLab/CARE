@@ -53,7 +53,7 @@ module.exports = (sequelize, DataTypes) => {
             // define association here
             Document.belongsTo(models["document"], {
                 foreignKey: 'parentDocumentId',
-                as: 'parentDocumentId',
+                as: 'parentDocument',
             });
         }
     }

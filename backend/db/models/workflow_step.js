@@ -35,7 +35,11 @@ module.exports = (sequelize, DataTypes) => {
       workflowStepPrevious: DataTypes.INTEGER,
       allowBackward: DataTypes.BOOLEAN,
       workflowStepDocument: DataTypes.INTEGER,
-      configuration: DataTypes.JSONB
+      configuration: DataTypes.JSONB,
+      deleted: DataTypes.BOOLEAN,
+      deletedAt: DataTypes.DATE,
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE
     }, {
       sequelize,
       modelName: 'workflow_step',

@@ -28,8 +28,13 @@ module.exports = class DocumentSocket extends Socket {
      */
     async checkDocumentAccess(documentId) {
         const doc = await this.models['document'].getById(documentId);
+
+        const studyStepAssociationExists = await this.models['study_step'].count({
+            where: { documentId: documentId }
+        });
+        
         if (doc && (doc.public
-                || (await this.models['study'].getAllByKey('documentId', documentId)).length > 0)
+                || studyStepAssociationExists > 0)
             || (this.checkUserAccess(doc.userId))
         ) {
             return true;
