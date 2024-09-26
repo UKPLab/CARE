@@ -35,8 +35,8 @@ If your Moodle Service is not yet configured to use the API, please follow the s
 
 * The administrator of the Moodle service needs to enable access to the API (web services). Each user who wants to use the API needs to have a token.
 
-  Instructions on how to do this can be found in the Moodle documentation: 
-  `https://docs.moodle.org/404/en/Using_web_services`
+  Instructions on how to do this can be found in the 
+  `Moodle documentation: <https://docs.moodle.org/404/en/Using_web_services>`_
 
   \nKeep in mind that every api function needs to be activated seperately. The function you need to enable in moodle are:
 
@@ -76,8 +76,8 @@ If your Moodle Service is not yet configured to use the API, please follow the s
 
 If you want to add new functionality to the Moodle API, these links might be helpful:
 
-1. `Moodle API Documentation <https://docs.moodle.org/310/en/Web_services_API>`_ This site provides an overview of the Moodle API and its functions. If you are looking for a specific topic, e.g. 'submission', you can use this keyword to search for the specific function you need. However this site only contains the name of the functions and a short description. For more detailed information, you can use the following link.
-2. `https://github.com/moodle/moodle`_ This link leads you to the Moodle GitHub repository. Here you can find the source code of the Moodle API. If you are looking for a specific function, you can use the search bar to find the function you need. This is helpful if you want to know how the function works and what parameters it needs. Usually the relevant function is located in the 'exterballib.php' file of the module. Next to the function you can find another function with the same name but with the suffix 'parameters'. This function contains the parameters you need to call the function. To get an idea on how to pass the parameters in the correct format in pyton format, take a look at the existing functions.
+1. `Moodle API Documentation <https://docs.moodle.org/310/en/Web_services_API>`_: This site provides an overview of the Moodle API and its functions. If you are looking for a specific topic, e.g. 'submission', you can use this keyword to search for the specific function you need. However this site only contains the name of the functions and a short description. For more detailed information, you can use the following link.
+2. `Moodle Github Repository <https://github.com/moodle/moodle>`_: This link leads you to the Moodle GitHub repository. Here you can find the source code of the Moodle API. If you are looking for a specific function, you can use the search bar to find the function you need. This is helpful if you want to know how the function works and what parameters it needs. Usually the relevant function is located in the 'exterballib.php' file of the module. Next to the function you can find another function with the same name but with the suffix 'parameters'. This function contains the parameters you need to call the function. To get an idea on how to pass the parameters in the correct format in pyton format, take a look at the existing functions.
 
 
 **Rebuild the docker container after modification in the main.py:**
