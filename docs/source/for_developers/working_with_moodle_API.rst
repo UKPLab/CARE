@@ -74,10 +74,10 @@ If you want to add a new functionality to the Moodle API, these links might be h
 1. `Moodle API Documentation <https://docs.moodle.org/310/en/Web_services_API>`_ This site provides an overview of the Moodle API and its functions. If you are looking for a specific topic, e.g. 'submission', you can use this keyword to search for the specific function you need. However this site only contains the name of the functions and a short description. For more detailed information, you can use the following link.
 2. `https://github.com/moodle/moodle`_ This link leads you to the Moodle GitHub repository. Here you can find the source code of the Moodle API. If you are looking for a specific function, you can use the search bar to find the function you need. This is helpful if you want to know how the function works and what parameters it needs. Usually the relevant function is located in the 'exterballib.php' file of the module. Next to the function you can find another function with the same name but with the suffix 'parameters'. This function contains the parameters you need to call the function. To get an idea on how to pass the parameters in the correct format in pyton format, take a look at the existing functions.
 3. Docker commands to rebuild the moodle api container after modifying the main.py: 
-   * Delete the moodle container in docker
-   * Run 'docker compose -f docker-compose.yml build rpc_moodle' to rebuild the container
-   * Run 'docker compose -f docker-compose.yml run -d rpc_moodle' to start the container
-   * Run 'make docker' again to rebuild the whole project
+* Delete the moodle container in docker
+* Run 'docker compose -f docker-compose.yml build rpc_moodle' to rebuild the container
+* Run 'docker compose -f docker-compose.yml run -d rpc_moodle' to start the container
+* Run 'make docker' again to rebuild the whole project
 
 Functions
 ----------------------
