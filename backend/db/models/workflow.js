@@ -26,6 +26,10 @@ module.exports = (sequelize, DataTypes) => {
   Workflow.init({
       name: DataTypes.STRING,
       description: DataTypes.TEXT,
+      deleted: DataTypes.BOOLEAN,
+      deletedAt: DataTypes.DATE,
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE
     }, {
       sequelize,
       modelName: 'workflow',
