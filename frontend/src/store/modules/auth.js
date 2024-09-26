@@ -8,7 +8,7 @@
  * To login, register or check validity of a user login use this module.
  *
  * @module store/auth
- * @author Dennis Zyska, Nils Dycke
+ * @author Dennis Zyska, Nils Dycke, Linyin Huang
  */
 const getDefaultState = () => {
     return {
@@ -38,7 +38,7 @@ export default {
          * @returns {boolean} true if user is admin
          */
         isAdmin: state => {
-            return state['user'] && state.user.sysrole === "admin";
+            return state['user'] && state.user.isAdmin;
         },
 
         /**
@@ -81,7 +81,10 @@ export default {
          * @constructor
          */
         SET_USER: (state, user) => {
-            state.user = user;
+            state.user = {
+                ...state.user,
+                ...user
+            };
         },
     },
     actions: {

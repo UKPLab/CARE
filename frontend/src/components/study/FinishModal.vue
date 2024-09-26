@@ -44,29 +44,24 @@
           type="button"
           @click="toDashboard"
         >
-          Back to
-          Dashboard
+          Back to Dashboard
         </button>
       </div>
       <div
         v-else
         class="btn-group"
       >
-        <button
+        <BasicButton
           v-if="closeable"
           class="btn btn-secondary"
+          title="Cancel"
           data-bs-dismiss="modal"
-          type="button"
-        >
-          Cancel
-        </button>
-        <button
+        />
+        <BasicButton
           class="btn btn-success"
-          type="button"
+          title="Finish study"
           @click="finish"
-        >
-          Finish study
-        </button>
+        />
       </div>
     </template>
   </Modal>
@@ -74,6 +69,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /* FinishModal.vue - modal to confirm to finish a study
 
@@ -84,7 +80,7 @@ Source: -
 */
 export default {
   name: "FinishModal",
-  components: {Modal},
+  components: { Modal, BasicButton },
   props: {
     studySessionId: {
       type: Number,

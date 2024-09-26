@@ -9,7 +9,7 @@ const Server = require("./webserver/Server");
 // check logging dir exists
 const fs = require("fs");
 if (!fs.existsSync(process.env.LOGGING_PATH || "./logs")) {
-    fs.mkdirSync(process.env.LOGGING_PATH || "./logs", {recursive: true});
+  fs.mkdirSync(process.env.LOGGING_PATH || "./logs", { recursive: true });
 }
 
 const server = new Server();

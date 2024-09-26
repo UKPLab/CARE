@@ -42,6 +42,11 @@ import IconLoading from "@/basic/icons/IconLoading.vue";
 export default {
   name: "SidebarButton",
   components: {LoadIcon, IconLoading},
+    inject: {
+    acceptStats: {
+      default: () => false
+    }
+  },
   props: {
     "icon": {
       type: String,
@@ -72,10 +77,12 @@ export default {
   methods: {
     action() {
       this.$emit("click")
-      this.$socket.emit("stats", {
-        action: "clickSidebarButton",
-        data: {"title": this.title, "icon": this.icon, "props": this.props}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "clickSidebarButton",
+          data: {"title": this.title, "icon": this.icon, "props": this.props}
+        });
+      }
     }
   }
 }
