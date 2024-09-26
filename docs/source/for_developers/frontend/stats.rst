@@ -17,13 +17,32 @@ Send these information over the websocket on the ``stats`` message type, to log 
 
 .. code-block:: javascript
 
-    this.$socket.emit("stats", {
-      action: "<action type>",
-      data: {}                      //add any data information into the object
-    })
+    if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "<action type>",
+          data: {}                      //add any data information into the object
+        })
+    }
 
 Each logged user interaction is assigned a timestamp (according to the time of storing in the backend) and the user id allowing to
 generate trace data from all logged interactions.
+
+.. note::
+
+    Statistics are only logged if the user has agreed to the data collection during registration!
+    If the user has not agreed, we do not log any statistics. This is ensured by the backend!
+    But we also want to reduce the network traffic and the load on the backend, so make sure you check the `acceptStats` flag!
+
+You can inject the `acceptStats` variable into any component by using:
+
+.. code-block:: javascript
+
+    inject: {
+        acceptStats: {
+            default: () => false
+        }
+    }
+
 
 Logging a New Interaction
 --------------------------
@@ -54,9 +73,80 @@ For our simple example, the code would look like this:
 
     methods: {
         log(){
-            this.$socket.emit("stats", {
-              action: "specialButtonClick",
+            if (this.acceptStats) {
+                this.$socket.emit("stats", {
+                  action: "specialButtonClick",
+                  data: {id: Math.random()}
+                })
+            }
+        }
+    }
+
+Advanced Logging Class
+------------------------
+The ``BehaviorLogger`` class is a dedicated logging class that unifies several high-level logging functions in one file.
+It is designed to serve as a centralized baseclass for the existing logging functionalities, minimizing the effort of
+adding new logging functionalities and to keep the logging logic in one place, without cluttering the project's
+components.
+
+The class is implemented in the file frontend/src/assets/behaviorLogger.js.
+
+Currently, the class logs the following interactions:
+
+- Device & Browser Information
+- Route Changes
+- Tab visibility changes
+- Mouse move events
+- Click events
+- Specific key down events (currently only cmd/ctrl + f to detect search start)
+- Window focus events (currently only used to detect search end)
+
+Extending the Logging Class
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To log a new interaction, you can extend an existing logging function or create a new one. For example, we could extend
+the key down logging function to log a new interaction when the user presses a specific key or key combination:
+
+.. code-block:: javascript
+
+        handleKeyDown(event) {
+            // Previous code ...
+            if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
+                // Search started
+                this.startSearch();
+            }
+            // New code ...
+            if (event.key === 's') {
+                this.handleNewInteraction();
+            }
+        }
+
+The ``handleNewInteraction`` function would then dictate the logic on how to interpret the event and send the log to
+the statistics table.
+
+.. code-block:: javascript
+
+        handleNewInteraction() {
+            this.socket.emit("stats", {
+              action: "newInteraction",
               data: {id: Math.random()}
             })
         }
-    }
+
+.. important::
+    When extending the BehaviorLogger class, make sure to follow these general guidelines:
+
+    1. Bind new logging functions in the constructor to maintain the correct context.
+    2. Add new event listeners to both ``init()`` and ``destroy()`` methods.
+    3. Use the existing WebSocket connection (``this.socket.emit``) to send data to the backend.
+    4. Consider performance optimizations (like debouncing) for frequent events.
+
+Usage in CARE
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``BehaviorLogger`` class is instantiated in the main App component (`App.vue`).
+It is initialized after the application settings are loaded, as it requires access to certain configuration values
+(like the mouse debounce time).
+
+This initialization ensures that user behavior logging begins as soon as the application is ready,
+providing comprehensive tracking of user interactions from the start of the user session.

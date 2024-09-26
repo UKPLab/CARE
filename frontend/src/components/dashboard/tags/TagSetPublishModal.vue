@@ -45,6 +45,11 @@ Source: -
 export default {
   name: "TagSetPublishModal",
   components: {Modal},
+  inject: {
+    acceptStats: {
+      default: () => false
+    }
+  },
   data() {
     return {
       id: 0,
@@ -54,10 +59,12 @@ export default {
     open(id) {
       this.id = id;
       this.$refs.tagSetPublishModal.openModal();
-      this.$socket.emit("stats", {
-        action: "openModalPublishTagSet",
-        data: {id: this.id}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "openModalPublishTagSet",
+          data: {id: this.id}
+        });
+      }
     },
     publish() {
       this.sockets.subscribe("tagSetPublished", (data) => {
@@ -78,10 +85,12 @@ export default {
     },
     cancel() {
       this.$refs.tagSetPublishModal.close();
-      this.$socket.emit("stats", {
-        action: "cancelModalPublishTagSet",
-        data: {id: this.id}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "cancelModalPublishTagSet",
+          data: {id: this.id}
+        });
+      }
     },
   }
 

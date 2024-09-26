@@ -1,6 +1,9 @@
 {
   "name": "CAREBackend",
   "version": "1.1.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node index.js",
     "db_create": "cd db && npx sequelize-cli db:create",
@@ -34,6 +37,8 @@
     "passport": "^0.6.0",
     "passport-local": "^1.0.0",
     "pg-promise": "^10.11.1",
+    "editor-delta-conversion": "file:../utils/modules/editor-delta-conversion",
+    "quill": "^2.0.2",
     "request": "^2.88.2",
     "sequelize": "^6.32.1",
     "sequelize-cli": "^6.4.1",

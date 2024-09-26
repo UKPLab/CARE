@@ -12,14 +12,13 @@ export function refreshState(state, data, removeDeleted = true) {
     if (!Array.isArray(data)) {
         data = [data];
     }
-
-    data.forEach((entry) => {
-        const old = state.find(s => s.id === entry.id);
-        if (old !== undefined) {
-            state.splice(state.indexOf(old), 1);
-        }
-        if (!removeDeleted || !entry.deleted) {
-            state.push(entry);
+    data.map((entry) => {
+        if (!entry.deleted) {
+            state.data[entry.id] = entry;
+        } else {
+            if (removeDeleted) {
+                delete state.data[entry.id];
+            }
         }
     });
 }
@@ -47,7 +46,7 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
         strict: false,
         state: () => {
             return {
-                data: [],
+                data: {},
                 refreshCount: 0
             };
         },
@@ -59,7 +58,7 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
              * @return {function(Number): Object}
              */
             get: state => id => {
-                return state.data.find(row => row.id === id);
+                return state.data[id];
             },
 
             /**
@@ -69,14 +68,14 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
              * @returns {function: Array}
              */
             getAll: state => {
-                return state.data;
+                return Object.values(state.data);
             },
 
             /**
              * Returns subset of the store by a given filter function.
              */
             getFiltered: state => filter => {
-                return state.data.filter(filter);
+                return Object.values(state.data).filter(filter);
             },
 
             /**
@@ -86,7 +85,9 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
              * @return {function(String): Object}
              */
             getByHash: state => hash => {
-                return state.data.find(row => 'hash' in row && row.hash === hash);
+                console.log(Object.values(state.data))
+                console.log(hash);
+                return Object.values(state.data).find(row => 'hash' in row && row.hash === hash);
             },
 
             /**
@@ -95,7 +96,7 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
              * @return {function(Number): Array}
              */
             getByUser: state => userId => {
-                return state.data.filter(row => 'userId' in row && row.userId === userId);
+                return Object.values(state.data).filter(row => 'userId' in row && row.userId === userId);
             },
 
             /**
@@ -104,7 +105,7 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
              * @return {function(String, *): Array}
              */
             getByKey: state => (key, value) => {
-                return state.data.filter(row => key in row && row[key] === value);
+                return Object.values(state.data).filter(row => key in row && row[key] === value);
             },
 
 
@@ -114,7 +115,7 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
              * @return {*}
              */
             length: state => {
-                return state.data.length;
+                return Object.keys(state.data).length;
             },
 
             /**
@@ -173,9 +174,10 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
                         return d;
                     });
                 }
-
+                let start = Date.now()
                 // for table tag we wont remove deleted tags - as they are needed for annotations made in documents
-                refreshState(state.data, data, (table.name !== 'tag'));
+                refreshState(state, data, (table.name !== 'tag'));
+                console.log(table.name, Date.now() - start);
                 state.refreshCount++;
             },
         },
