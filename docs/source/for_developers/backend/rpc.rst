@@ -109,7 +109,7 @@ Therefore, you have to add the environment variables to all ``*.env`` files in t
     RPC_TEST_PORT=3010
 
     RPC_MOODLE_HOST=127.0.0.1
-    RPC_MOODLE_TEST_PORT=3010
+    RPC_MOODLE_PORT=3010
 
 .. note::
     The ``.env`` file is used for development, so the IP address is set to localhost and ``docker-dev.yaml`` publishes the ports to the host machine.

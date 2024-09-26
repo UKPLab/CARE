@@ -1,0 +1,780 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.20.1: https://docutils.sourceforge.io/" />
+<title>Working with the Moodle API</title>
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 8954 2022-01-20 10:10:25Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See https://docutils.sourceforge.io/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+.subscript {
+  vertical-align: sub;
+  font-size: smaller }
+
+.superscript {
+  vertical-align: super;
+  font-size: smaller }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title, .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left, table.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right, table.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+table.align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+.align-top    {
+  vertical-align: top }
+
+.align-middle {
+  vertical-align: middle }
+
+.align-bottom {
+  vertical-align: bottom }
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="working-with-the-moodle-api">
+<h1 class="title">Working with the Moodle API</h1>
+
+<div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">&lt;string&gt;</tt>, line 2)</p>
+<p>Title underline too short.</p>
+<pre class="literal-block">
+Working with the Moodle API
+================
+</pre>
+</div>
+<p>If you want to work with the Moodle API, please take a look at this document to get an overview of the API integration and how to use it.</p>
+<div class="section" id="general-structure">
+<h1>General structure</h1>
+<p>All Moodle API calls are made via an rpc call and thereofore run on a different docker container. The main.py file in the moodleAPI folder is responsible for the actual call to the Moodle API.
+The result is then returned to the socket and can be used in the frontend or saved to the database. Take a look at the <a class="reference external" href="docs/source/for_developers/backend/rpc.rst">rpc.rst</a> to get an overview on how the rpc calls work and how to setup your own.</p>
+<p>If you want to use the Moodle API from CARE, you need to follow a specific structure:</p>
+<table border="1" class="docutils">
+<caption>Moodle API Integration</caption>
+<colgroup>
+<col width="25%" />
+<col width="75%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Step</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>1</td>
+<td>Call from the frontend to the 'moodle socket' in the backend. You can also create your own socket by following the structure of the moodle socket.</td>
+</tr>
+<tr><td>2</td>
+<td>From the socket a call to the 'moodle rpc' is made.</td>
+</tr>
+<tr><td>3</td>
+<td>The 'moodle rpc' then makes a call to the main.py file, which is located in the 'moodleAPI' folder.</td>
+</tr>
+<tr><td>4</td>
+<td>In the main.py file, the actual call to the Moodle API is made.</td>
+</tr>
+<tr><td>5</td>
+<td>The result is then returned to the socket.</td>
+</tr>
+<tr><td>6</td>
+<td>Now you can use the result in the frontend or save it to the database.</td>
+</tr>
+</tbody>
+</table>
+<p>If your Moodle Service is not yet configured to use the API, please follow the steps:</p>
+<div class="system-message">
+<p class="system-message-title">System Message: ERROR/3 (<tt class="docutils">&lt;string&gt;</tt>, line 35)</p>
+<p>Error parsing content block for the &quot;list-table&quot; directive: two-level bullet list expected, but row 3 does not contain a second-level bullet list.</p>
+<pre class="literal-block">
+.. list-table:: Moodle API Extension
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Step
+     - Description
+   * - 1
+     - The administrator of the Moodle service needs to enable access to the API (web services). Each user who wants to use the API needs to have a token.
+       Instructions on how to do this can be found in the Moodle documentation: ´https://docs.moodle.org/404/en/Using_web_services´
+   * - 2
+     - To use any functionality that includes downloading submissions files, the administrator needs to enable &quot;Can Download File&quot; in the Active External Web Service. This includes the following steps:
+     1. **Navigate to Moodle Site Admin**
+
+        Log in to your Moodle site as an administrator and go to the &quot;Site Administration&quot; page.
+
+      2. **Search for External Services**
+
+        On the &quot;Site Administration&quot; page, use the search bar to look for &quot;External Services.&quot; Click on it to access the External Services section.
+
+      3. **Edit Active External Services**
+
+        In the External Services section, find the active external service used for syncing course images. Click the &quot;Edit&quot; button next to it.
+
+      4. **Expand the Page**
+
+        Once on the Active External Service page, expand the options by clicking the &quot;Show more&quot; button at the bottom of the page.
+
+      5. **Enable &quot;Can Download Files&quot; Setting**
+
+        Check the box next to &quot;Can download files&quot; to enable this setting.
+
+      6. **Save Changes**
+
+        After enabling the &quot;Can download files&quot; option, click on the &quot;Save changes&quot; button at the bottom of the page to apply your updates.
+
+      A visual guide can be found  here: `https://edwiser.helpscoutdocs.com/article/559-how-to-enable-can-download-file-in-the-active-external-web-service`_
+
+</pre>
+</div>
+<p>Welche Schritte, um es zu erweitern;</p>
+<p>z.B. Freigabe auf Moodle, API Documentation Moodle, Besonders Download aktivieren und Anleitung verlinken und nochmal erklären, alle möglichen Links, Wie geht man am besten vor,um eine neue API Funktion zu nutzen
+Neues Kapitel: Was muss man in Moodle machen, um die richtige Kurs ID etc. in Moodel zu finden. Wie konfiguriert man ein Assignment etc.</p>
+<p>If you want to add a new functionality to the Moodle API, these links might be helpful:</p>
+<ol class="arabic simple">
+<li><a class="reference external" href="https://docs.moodle.org/310/en/Web_services_API">Moodle API Documentation</a> This site provides an overview of the Moodle API and its functions. If you are looking for a specific topic, e.g. 'submission', you can use this keyword to search for the specific function you need. However this site only contains the name of the functions and a short description. For more detailed information, you can use the following link.</li>
+<li><a href="#system-message-4"><span class="problematic" id="problematic-4">`https://github.com/moodle/moodle`_</span></a> This link leads you to the Moodle GitHub repository. Here you can find the source code of the Moodle API. If you are looking for a specific function, you can use the search bar to find the function you need. This is helpful if you want to know how the function works and what parameters it needs. Usually the relevant function is located in the 'exterballib.php' file of the module. Next to the function you can find another function with the same name but with the suffix 'parameters'. This function contains the parameters you need to call the function. To get an idea on how to pass the parameters in the correct format in pyton format, take a look at the existing functions.</li>
+</ol>
+</div>
+<div class="section" id="functions">
+<h1>Functions</h1>
+<p>The following functions can by called from the frontend:</p>
+</div>
+<div class="section" id="getusersfromcourse">
+<h1>getUsersFromCourse</h1>
+<div class="system-message">
+<p class="system-message-title">System Message: ERROR/3 (<tt class="docutils">&lt;string&gt;</tt>, line 89)</p>
+<p>Unknown directive type &quot;function&quot;.</p>
+<pre class="literal-block">
+.. function:: getUsersFromCourse(courseID, options)
+
+    This method retrieves all users from a given course. It then creates a csv file, containing the user information: id, username, firstname, lastname, email and their roles in the course (e.g. student/tutor)
+    :param courseID: This is the course id of the course you want to get the users from. You can get it from the URL of the course.
+    :type param1: int
+    :param options: This parameters holds the URL of the Moodle website and the API token.
+    :type param2: dict
+    :paramparam options.URL: The URL of the Moodle website.
+    :type options.URL: str
+    :paramparam options.API_KEY: The API token of the Moodle website.
+    :type options.API_KEY: str
+    :return: CSV file with the user information.
+    :rtype: CSV
+    :raises ExceptionType: Explanation of the exception when it might be raised.
+    :raises AnotherException: Another possible exception.
+
+</pre>
+</div>
+</div>
+<div class="section" id="example-usage">
+<h1>Example Usage</h1>
+<pre class="code python literal-block">
+<span class="name">example_variable</span> <span class="operator">=</span> <span class="name">method_name</span><span class="punctuation">(</span><span class="name">param1</span><span class="punctuation">,</span> <span class="name">param2</span><span class="punctuation">)</span>
+</pre>
+</div>
+<div class="section" id="notes">
+<h1>Notes</h1>
+<ul class="simple">
+<li>Additional details, if any.</li>
+<li>Special considerations, warnings, or performance notes.</li>
+</ul>
+</div>
+<div class="section" id="getusersfromassignment">
+<h1>getUsersFromAssignment</h1>
+<div class="system-message">
+<p class="system-message-title">System Message: ERROR/3 (<tt class="docutils">&lt;string&gt;</tt>, line 121)</p>
+<p>Unknown directive type &quot;function&quot;.</p>
+<pre class="literal-block">
+.. function:: getUsersFromAssignment(courseID, assignmentID, options)
+
+    This method retrieves all users from a given assignment. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
+
+    :param courseID: This is the course ID of the course you want to get the users from. You can get it from the URL of the course.
+    :type courseID: int
+    :param assignmentID: This is the assignment ID of the assignment you want to get the users from. You can get it from the URL while looking at the assignment.
+    :type assignmentID: int
+    :param options: A dictionary containing the URL of the Moodle website and the API token.
+    :type options: dict
+    :param options.URL: The URL of the Moodle website.
+    :type options.URL: str
+    :param options.API_KEY: The API token of the Moodle website.
+    :type options.API_KEY: str
+    :return: A CSV file with the user information.
+    :rtype: CSV
+
+    :raises Exception: If something goes wrong with the API request.
+    :raises AnotherException: Another possible exception.
+
+
+</pre>
+</div>
+</div>
+<div class="section" id="example-usage-1">
+<h1>Example Usage</h1>
+<pre class="code python literal-block">
+<span class="name">example_variable</span> <span class="operator">=</span> <span class="name">method_name</span><span class="punctuation">(</span><span class="name">param1</span><span class="punctuation">,</span> <span class="name">param2</span><span class="punctuation">)</span>
+</pre>
+</div>
+<div class="section" id="notes-1">
+<h1>Notes</h1>
+<ul class="simple">
+<li>Additional details, if any.</li>
+<li>Special considerations, warnings, or performance notes.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">On Windows, you can use the <tt class="docutils literal">make</tt> command with the <a class="reference external" href="http://gnuwin32.sourceforge.net/packages/make.htm">GNU Make for Windows</a> package.
+On newer windows systems, simply use <tt class="docutils literal">winget install GnuWin32.Make</tt> and make it executable with <tt class="docutils literal">set <span class="pre">PATH=%PATH%;C:/Program</span> Files <span class="pre">(x86)/GnuWin32/bin</span></tt>.</p>
+</div>
+</div>
+<div class="section" id="customizing-builds">
+<h1>Customizing Builds</h1>
+<p>Any commands for building components of CARE can be found in the top-most <tt class="docutils literal">Makefile</tt> of the project.
+To see a full list of available commands run:</p>
+<pre class="code bash literal-block">
+make<span class="whitespace"> </span><span class="name builtin">help</span>
+</pre>
+<p>Before running your first build commands, you may want to customize the environment variables for your specific needs.
+The environment variables are completely managed in the <tt class="docutils literal">.env</tt> files at the top-most directory.
+For most parts, the default settings should work for you, but if you want to adapt ports and hosts these are the files to change.
+Also note that the initial admin account and password are stored here in cleartext.</p>
+<div class="section" id="env-files">
+<h2>.env-files</h2>
+<p>You need to adapt different env-files depending on whether you build for development (<tt class="docutils literal">.env</tt>), for deployment
+(<tt class="docutils literal">.env.main</tt>), or for testing (<tt class="docutils literal">.env.test</tt>).</p>
+<p>To avoid manual sourcing of the environment files, e.g. for continuous development setups,
+you can pass the <tt class="docutils literal"><span class="pre">ENV=...</span></tt> before a call to make:</p>
+<pre class="code bash literal-block">
+make<span class="whitespace"> </span><span class="name variable">ENV</span><span class="operator">=</span><span class="name builtin">test</span><span class="whitespace"> </span>test-frontend
+</pre>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You should always change the password of the admin account, especially for deployment.
+Only run the service in a secure environment to avoid leakage of the password information from the environment files.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If you make changes to these files, keep in mind that some parameters are written directly to the database
+and may need a reinitialization of the database (e.g., admin password) if changed there. The database therefore loses all data!
+To reinitialize the database, run <tt class="docutils literal">make clean</tt> followed by <tt class="docutils literal">make init</tt>.</p>
+</div>
+</div>
+<div class="section" id="special-flags">
+<h2>Special Flags</h2>
+<p>The following flags are relevant to configure the functionality of the built CARE instance and should be adapted
+according to your needs.</p>
+<table border="1" class="docutils">
+<caption>Environment Variables</caption>
+<colgroup>
+<col width="25%" />
+<col width="75%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Flag</th>
+<th class="head">Meaning</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td><tt class="docutils literal">NLP_USE</tt></td>
+<td>Set to <tt class="docutils literal">true</tt> to connect the backend to the NLP Broker; we recommend <tt class="docutils literal">false</tt> if you couple no NLP models.</td>
+</tr>
+<tr><td><tt class="docutils literal">LOGGING_ALLOW_FRONTEND</tt></td>
+<td>Set to <tt class="docutils literal">true</tt> if log messages sent from a client frontend should be stored in the DB; we recommend <tt class="docutils literal">true</tt>.</td>
+</tr>
+<tr><td><tt class="docutils literal">PUBLISH_DOC</tt></td>
+<td>Set to <tt class="docutils literal">1</tt> if your local CARE documentation should be published on your server.</td>
+</tr>
+<tr><td><tt class="docutils literal">PUBLISH_API</tt></td>
+<td>Set to <tt class="docutils literal">1</tt> if the documentation for the CARE API should be published on your server.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">After changes to the <tt class="docutils literal">.env</tt> configuration files, you need to restart your server by running the build commands
+again.</p>
+</div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+</div>
+</div>
+<div class="section" id="development-build">
+<h1>Development Build</h1>
+<p>The development build consists of two individual components -- the frontend and the backend -- which can be build
+and run jointly or separately. For more advanced development, you need to understand the difference between the frontend
+and backend and how they interact.
+The frameworks used for each component, can be found in the <a href="#system-message-1"><span class="problematic" id="problematic-1">:doc:`Frameworks &lt;../for_developers/basics/frameworks&gt;`</span></a> section.
+The source code is located in the <tt class="docutils literal">frontend</tt> and <tt class="docutils literal">backend</tt> folder, respectively.</p>
+<div class="system-message" id="system-message-1">
+<p class="system-message-title">System Message: ERROR/3 (<tt class="docutils">&lt;string&gt;</tt>, line 233); <em><a href="#problematic-1">backlink</a></em></p>
+Unknown interpreted text role &quot;doc&quot;.</div>
+<p>Check out the following build options depending on your needs:</p>
+<div class="section" id="basic">
+<h2>Basic</h2>
+<p>If you are not sure what kind of build you want and possibly make changes both in the frontend and
+the backend, just run the basic build using the following commands in different consoles and the given order:</p>
+<pre class="code bash literal-block">
+make<span class="whitespace"> </span>docker<span class="whitespace"> </span><span class="comment single"># starts the docker containers needed for development
+</span>make<span class="whitespace"> </span>init<span class="whitespace">   </span><span class="comment single"># initializes the database
+</span>make<span class="whitespace"> </span>dev<span class="whitespace">    </span><span class="comment single"># starts the development server (backend &amp; frontend) - only linux!</span>
+</pre>
+<p>This will start the development server for the backend as well as the frontend. This also starts up
+a database in a docker container and populates it with the necessary schemas.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">When starting the application for the first time, you need to initialize the database!
+Please make sure you run <tt class="docutils literal">make init</tt> before and also after cleaning the environment with <tt class="docutils literal">make clean</tt>!</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">The <tt class="docutils literal">make dev</tt> command only works on Linux systems.
+On Windows, you need to start the frontend and backend separately with <tt class="docutils literal">make <span class="pre">dev-frontend</span></tt> and <tt class="docutils literal">make <span class="pre">dev-backend</span></tt>.</p>
+</div>
+</div>
+<div class="section" id="frontend">
+<h2>Frontend</h2>
+<p>Since the development of the frontend is not possible without starting the backend,
+the frontend development must always include the backend providing the database and the logic for data processing.</p>
+<p>The frontend development allows hot-loading of the elements, meaning that elements are replaced without reloading or
+reinitializing the page when they are changed. Furthermore, the source code is not compressed, which allows debugging directly in the browser.</p>
+<p>To start the frontend development, run the following command:</p>
+<pre class="code bash literal-block">
+make<span class="whitespace"> </span>dev-frontend
+</pre>
+<p>Anyway, it is possible to build the frontend in a minified code version without hot-loading:</p>
+<pre class="code bash literal-block">
+make<span class="whitespace"> </span>dev-build-frontend
+</pre>
+<p>For more information about the frontend development, see the section <a href="#system-message-2"><span class="problematic" id="problematic-2">:doc:`Frontend Development &lt;../for_developers/frontend/frontend&gt;`</span></a>.</p>
+<div class="system-message" id="system-message-2">
+<p class="system-message-title">System Message: ERROR/3 (<tt class="docutils">&lt;string&gt;</tt>, line 286); <em><a href="#problematic-2">backlink</a></em></p>
+Unknown interpreted text role &quot;doc&quot;.</div>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">Another very helpful feature is the <a class="reference external" href="https://devtools.vuejs.org/">Vue Devtools</a> browser plugin supporting extended debugging.</p>
+</div>
+</div>
+<div class="section" id="backend">
+<h2>Backend</h2>
+<p>In contrast, it is possible to make the development in the backend independent from the frontend.
+However, it should be noted that many functions interact with each other,
+so often changes in the backend also involve the need to make changes in the frontend.</p>
+<p>For a pure backend development, the frontend must first be built with:</p>
+<pre class="code bash literal-block">
+make<span class="whitespace"> </span>dev-build-frontend
+</pre>
+<p>After that, the backend can be started with:</p>
+<pre class="code bash literal-block">
+make<span class="whitespace"> </span>dev-backend
+</pre>
+<p>To shorten things, both commands can also be executed with <tt class="docutils literal">make <span class="pre">dev-build</span></tt> at once.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+</div>
+</div>
+<div class="section" id="deployment-build">
+<h1>Deployment Build</h1>
+<p>If you want to deploy your current CARE code, please double-check the <tt class="docutils literal">.env.main</tt> file to make sure it meets your
+needs. For a deployment build simply run the following command to create a docker container (name ends with <tt class="docutils literal">_main</tt>),
+start it and detach it from your terminal.</p>
+<pre class="code bash literal-block">
+make<span class="whitespace"> </span>build<span class="whitespace">   </span><span class="comment single"># creates docker container</span>
+</pre>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>For actual deployment, we heavily recommend running an <a class="reference external" href="https://www.nginx.com/">NGINX</a> in front of the actual
+backend. See <a href="#system-message-3"><span class="problematic" id="problematic-3">:doc:`../getting_started/installation`</span></a> for instructions how to use it.</p>
+<div class="last system-message" id="system-message-3">
+<p class="system-message-title">System Message: ERROR/3 (<tt class="docutils">&lt;string&gt;</tt>, line 327); <em><a href="#problematic-3">backlink</a></em></p>
+Unknown interpreted text role &quot;doc&quot;.</div>
+</div>
+<p>You can check the status and logs of the docker containers using the standard Docker CLI or
+<a class="reference external" href="https://www.portainer.io/">Portainer</a>. The container with the name ending in <tt class="docutils literal">_server</tt> hosts the actual
+backend.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+</div>
+<div class="section" id="more-commands">
+<h1>More Commands</h1>
+<table border="1" class="docutils">
+<caption>Make Commands</caption>
+<colgroup>
+<col width="60%" />
+<col width="40%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Command</th>
+<th class="head">Purpose</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td><tt class="docutils literal">make doc</tt></td>
+<td>Compile the documentation (AsyncAPI and Sphinx documentation).</td>
+</tr>
+<tr><td><tt class="docutils literal">make doc_asyncapi</tt></td>
+<td>Compile the AsyncAPI documentation.</td>
+</tr>
+<tr><td><tt class="docutils literal">make doc_sphinx</tt></td>
+<td>Compile the Sphinx documentation (this documentation).</td>
+</tr>
+<tr><td><tt class="docutils literal">make init</tt></td>
+<td>Initialize the database (creating tables from backend migrations)</td>
+</tr>
+<tr><td><tt class="docutils literal">make test</tt></td>
+<td>Running the backend api tests.</td>
+</tr>
+<tr><td><tt class="docutils literal">make backup_db <span class="pre">CONTAINER=&lt;name&gt;</span></tt></td>
+<td>Creates a database dump from the given postgres container and stores it in the db_dumps folder.</td>
+</tr>
+<tr><td><tt class="docutils literal">make recover_db <span class="pre">CONTAINER=&lt;name&gt;</span> <span class="pre">DUMP=&lt;path&gt;</span></tt></td>
+<td>Loads a given database dump from &lt;path&gt; into the postgres container &lt;name&gt;.</td>
+</tr>
+<tr><td><tt class="docutils literal">make clean</tt></td>
+<td>Cleans the environment by removing all docker containers and images, files and folders.</td>
+</tr>
+<tr><td><tt class="docutils literal">make kill</tt></td>
+<td>Kills all node processes. (only unix)</td>
+</tr>
+<tr><td><tt class="docutils literal">make lint</tt></td>
+<td>Runs the linter for the frontend.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="system-messages section">
+<h1>Docutils System Messages</h1>
+<div class="system-message" id="system-message-4">
+<p class="system-message-title">System Message: ERROR/3 (<tt class="docutils">&lt;string&gt;</tt>, line 80); <em><a href="#problematic-4">backlink</a></em></p>
+Unknown target name: &quot;https://github.com/moodle/moodle&quot;.</div>
+</div>
+</div>
+</body>
+</html>
