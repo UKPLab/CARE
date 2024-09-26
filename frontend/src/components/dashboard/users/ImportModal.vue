@@ -248,7 +248,7 @@ export default {
     isDisabled() {
       if (this.currentStep === 0) {
         if (this.importType === "csv") {
-          return this.file.name === "";
+          return this.file.name === "" || this.file.errors.length > 0;
         } else {
           const { courseID, url, apiKey } = this.moodleData;
           return !courseID || !url || !apiKey;
@@ -257,11 +257,14 @@ export default {
       if (this.currentStep === 1) {
         return !this.selectedUsers.length > 0;
       }
+      if (this.currentStep === 3) {
+        return true;
+      }
       return false;
     },
   },
   sockets: {
-    userCSV: async function (response) {
+    courseUsersCSV: async function (response) {
       let parsedData;
       Papa.parse(response.data, {
         header: true,
@@ -287,9 +290,21 @@ export default {
       this.$refs.modal.open();
     },
     resetModal() {
-      // this.$refs.form.modelValue.password = "";
+      this.currentStep = 0;
+      this.file = {
+        state: 0,
+        name: "",
+        size: 0,
+        errors: [],
+      };
+      this.users = [];
+      this.selectedUsers = [];
+      if (this.updatedUserCount) {
+        this.updatedUserCount = null;
+        this.csvInfo = null;
+        this.$emit("updateUser");
+      }
       // this.eventBus.emit("resetFormField");
-      // this.$emit("updateUser");
     },
     prevStep() {
       if (this.currentStep > 0) {
@@ -318,15 +333,11 @@ export default {
       if (this.importType === "moodle") {
         if (!this.$refs.form.validate()) return;
         const { courseID, apiKey, url } = this.moodleData;
-        const data = {
-          options: { apiKey, url },
-          courseID,
-        };
-        this.$socket.emit("getUsersFromCourse", { data });
+        const options = { apiKey, url };
+        this.$socket.emit("getUsersFromCourse", { courseID, options });
       } else {
         this.checkDuplicateUsers();
       }
-      this.$refs.modal.waiting = false;
     },
     handleStepOne() {
       this.$refs.modal.waiting = false;
@@ -451,6 +462,7 @@ export default {
     },
     checkDuplicateUsers() {
       this.$socket.emit("userCheckDuplicates", this.users, (res) => {
+        this.$refs.modal.waiting = false;
         if (res.success) {
           this.users = res.users;
         }

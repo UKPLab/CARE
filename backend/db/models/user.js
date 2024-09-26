@@ -420,7 +420,7 @@ module.exports = (sequelize, DataTypes) => {
                 firstName: user.firstname,
                 lastName: user.lastname,
                 // TODO: Generate random user name
-                userName: user.firstname,
+                userName: user.firstname + uuidv4().replace(/-/g, "").substring(0, 4),
                 email: user.email,
                 passwordHash: pwdHash,
                 salt,
@@ -429,7 +429,6 @@ module.exports = (sequelize, DataTypes) => {
                 createdAt: new Date(),
                 updatedAt: new Date(),
               }
-              // { raw: true }
             );
           } else {
             // Update the user's details
