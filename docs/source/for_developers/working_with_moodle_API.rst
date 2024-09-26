@@ -74,31 +74,31 @@ If you want to add a new functionality to the Moodle API, these links might be h
 1. `Moodle API Documentation <https://docs.moodle.org/310/en/Web_services_API>`_ This site provides an overview of the Moodle API and its functions. If you are looking for a specific topic, e.g. 'submission', you can use this keyword to search for the specific function you need. However this site only contains the name of the functions and a short description. For more detailed information, you can use the following link.
 2. `https://github.com/moodle/moodle`_ This link leads you to the Moodle GitHub repository. Here you can find the source code of the Moodle API. If you are looking for a specific function, you can use the search bar to find the function you need. This is helpful if you want to know how the function works and what parameters it needs. Usually the relevant function is located in the 'exterballib.php' file of the module. Next to the function you can find another function with the same name but with the suffix 'parameters'. This function contains the parameters you need to call the function. To get an idea on how to pass the parameters in the correct format in pyton format, take a look at the existing functions.
 3. Docker commands to rebuild the moodle api container after modifying the main.py: 
-   1. Delete the moodle container in docker
-   2. Run 'docker compose -f docker-compose.yml build rpc_moodle' to rebuild the container
-   3. Run 'docker compose -f docker-compose.yml run -d rpc_moodle' to start the container
-   4. Run 'make docker' again to rebuild the whole project
+   * Delete the moodle container in docker
+   * Run 'docker compose -f docker-compose.yml build rpc_moodle' to rebuild the container
+   * Run 'docker compose -f docker-compose.yml run -d rpc_moodle' to start the container
+   * Run 'make docker' again to rebuild the whole project
 
 Functions
 ----------------------
 The following functions can by called from the frontend:
 
-getUsersFromCourse: This method retrieves all users from a given course. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
+**getUsersFromCourse**: This method retrieves all users from a given course. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
 parameters: {courseID: int, options{url: string, apiKey: string}}
 
-getUsersFromAssignment: This method retrieves all users from a given assignment. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
+**getUsersFromAssignment**: This method retrieves all users from a given assignment. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
 parameters: {courseID: int, assignmentID: int, options{url: string, apiKey: string}}
 
-getSubmissionsInfosFromAssignment: This method retrieves all submissions from a given assignment. It then returns a list of dictionaries containing the user IDs and their corresponding submission file names and urls. This method should be used in preperation for downloading the submissions.
+**getSubmissionsInfosFromAssignment**: This method retrieves all submissions from a given assignment. It then returns a list of dictionaries containing the user IDs and their corresponding submission file names and urls. This method should be used in preperation for downloading the submissions.
 parameters: {courseID: int, assignmentID: int, options{url: string, apiKey: string}}
 
-downloadSubmissionsFromUser: This method downloads all submissions from the provided urls. It then returns a list of the files in binary format. The urls for the files can be obtained by calling the getSubmissionsInfosFromAssignment method.
+**downloadSubmissionsFromUser**: This method downloads all submissions from the provided urls. It then returns a list of the files in binary format. The urls for the files can be obtained by calling the getSubmissionsInfosFromAssignment method.
 parameters: submission_infos: list with urls: string
 
-uploadPasswordsToMoodle: This method can be used to upload passwords as feedback in an assignment to Moodle. 
+**uploadPasswordsToMoodle**: This method can be used to upload passwords as feedback in an assignment to Moodle. 
 parameters: {courseID: int, assignmentID: int, passwords: list: {id: int, password: string}, options{url: string, apiKey: string}}
 
-How to get the course ID and Assignment ID from Moodle:
+How to get the **course ID** and **Assignment ID** from Moodle:
 
 To get the course ID from a moodle course, just navigate to the homepage of the course and you will see 'id=xxxx' in the URL. The number after the 'id=' is the course ID.
 
