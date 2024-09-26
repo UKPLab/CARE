@@ -32,44 +32,49 @@ If you want to use the Moodle API from CARE, you need to follow a specific struc
 
 If your Moodle Service is not yet configured to use the API, please follow the steps:
 
-.. list-table:: Moodle API Extension
-   :widths: 25 75
-   :header-rows: 1
 
-   * - Step
-     - Description
-   * - 1
-     - The administrator of the Moodle service needs to enable access to the API (web services). Each user who wants to use the API needs to have a token. 
-       Instructions on how to do this can be found in the Moodle documentation: ´https://docs.moodle.org/404/en/Using_web_services´
-   * - 2
-     - To use any functionality that includes downloading submissions files, the administrator needs to enable "Can Download File" in the Active External Web Service. This includes the following steps:
-     1. **Navigate to Moodle Site Admin**
-   
-        Log in to your Moodle site as an administrator and go to the "Site Administration" page.
+* The administrator of the Moodle service needs to enable access to the API (web services). Each user who wants to use the API needs to have a token.
 
-      2. **Search for External Services**
-        
-        On the "Site Administration" page, use the search bar to look for "External Services." Click on it to access the External Services section.
+  Instructions on how to do this can be found in the Moodle documentation: 
+  `https://docs.moodle.org/404/en/Using_web_services`
 
-      3. **Edit Active External Services**
-        
-        In the External Services section, find the active external service used for syncing course images. Click the "Edit" button next to it.
+  \nKeep in mind that every api function needs to be activated seperately. The function you need to enable in moodle are:
 
-      4. **Expand the Page**
-        
-        Once on the Active External Service page, expand the options by clicking the "Show more" button at the bottom of the page.
+  1. **core_enrol_get_enrolled_users**
+  2. **mod_assign_save_grade**
+  3. **mod_assign_get_assignments**
+  4. **mod_assign_get_user_mappings**
+  5. **mod_assign_get_submissions**
 
-      5. **Enable "Can Download Files" Setting**
-        
-        Check the box next to "Can download files" to enable this setting.
+* To use any functionality that includes downloading submissions files, the administrator needs to enable "Can Download File" in the Active External Web Service. This includes the following steps:
 
-      6. **Save Changes**
-        
-        After enabling the "Can download files" option, click on the "Save changes" button at the bottom of the page to apply your updates.
+  1. **Navigate to Moodle Site Admin**
 
-      A visual guide can be found  here: `https://edwiser.helpscoutdocs.com/article/559-how-to-enable-can-download-file-in-the-active-external-web-service`_	
+     Log in to your Moodle site as an administrator and go to the "Site Administration" page.
 
-If you want to add a new functionality to the Moodle API, these links might be helpful:
+  2. **Search for External Services**
+  
+     On the "Site Administration" page, use the search bar to look for "External Services." Click on it to access the External Services section.
+
+  3. **Edit Active External Services**
+  
+     In the External Services section, find the active external service used for syncing course images. Click the "Edit" button next to it.
+
+  4. **Expand the Page**
+  
+     Once on the Active External Service page, expand the options by clicking the "Show more" button at the bottom of the page.
+
+  5. **Enable "Can Download Files" Setting**
+  
+     Check the box next to "Can download files" to enable this setting.
+
+  6. **Save Changes**
+  
+     After enabling the "Can download files" option, click on the "Save changes" button at the bottom of the page to apply your updates.
+
+  A visual guide can be found here: `https://edwiser.helpscoutdocs.com/article/559-how-to-enable-can-download-file-in-the-active-external-web-service`
+
+If you want to add new functionality to the Moodle API, these links might be helpful:
 
 1. `Moodle API Documentation <https://docs.moodle.org/310/en/Web_services_API>`_ This site provides an overview of the Moodle API and its functions. If you are looking for a specific topic, e.g. 'submission', you can use this keyword to search for the specific function you need. However this site only contains the name of the functions and a short description. For more detailed information, you can use the following link.
 2. `https://github.com/moodle/moodle`_ This link leads you to the Moodle GitHub repository. Here you can find the source code of the Moodle API. If you are looking for a specific function, you can use the search bar to find the function you need. This is helpful if you want to know how the function works and what parameters it needs. Usually the relevant function is located in the 'exterballib.php' file of the module. Next to the function you can find another function with the same name but with the suffix 'parameters'. This function contains the parameters you need to call the function. To get an idea on how to pass the parameters in the correct format in pyton format, take a look at the existing functions.
