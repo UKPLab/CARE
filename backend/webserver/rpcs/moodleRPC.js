@@ -44,7 +44,7 @@ module.exports = class MoodleRPC extends RPC {
      * @param {number} data.courseID - The ID of the course to fetch users from.
      * @param {string} data.options.apiKey - The API token for the Moodle instance
      * @param {string} data.options.url - The URL of the Moodle instance.
-     * @returns {Promise<Object>} - User information in csv format. (Columns: id, firstname, lastname, email, username, password)
+     * @returns {Promise<Object>} - User information in csv format. (Columns: id, firstname, lastname, email, username)
      * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
      */
     async getUsersFromCourse(data) {
@@ -63,7 +63,7 @@ module.exports = class MoodleRPC extends RPC {
      * @param {number} data.assignmentID - The ID of the assignment to fetch users from.
      * @param {string} data.options.apiKey - The API token for the Moodle instance
      * @param {string} data.options.url - The URL of the Moodle instance.
-     * @returns {Promise<Object>} - User information in csv format. (Columns: id, firstname, lastname, email, username, password)
+     * @returns {Promise<Object>} - User information in csv format. (Columns: id, firstname, lastname, email, username)
      * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
      */
     async getUsersFromAssignment(data) {
