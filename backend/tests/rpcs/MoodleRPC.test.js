@@ -17,17 +17,16 @@ describe('Test RPC call to moodle API', () => {
 
         // call rpc and check response
         testData = {
-            "courseID": 1615,
-            "assignmentName": "TANs",
+            "courseID": "",
+            "assignmentName": "",
             "options": 
             {
-                "apiKey": "REDACTED_SECRET",
-                "url": "https://moodle.informatik.tu-darmstadt.de",
-                "csvPath": "users.csv"
+                "apiKey": "1234",
+                "url": "moodle.com",
             }
         }
 
-        const response = await server.rpcs["MoodleRPC"].call(testData)
+        const response = await server.rpcs["MoodleRPC"].test(testData)
         expect(response).toEqual("Changed Passwords!")
         
         //Rückgabe Objekt von Usern oder Fehlermeldung
