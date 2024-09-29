@@ -38,13 +38,13 @@ module.exports = class MoodleRPC extends RPC {
 
 
     /**
-     * Retrieves users from a specified moodle course and returns the data as an object.
+     * Retrieves users from a specified moodle course and returns the data as an array.
      *
      * @param {Object} data - The data object containing the course ID, Moodle URL and the API token.
      * @param {number} data.courseID - The ID of the course to fetch users from.
      * @param {string} data.options.apiKey - The API token for the Moodle instance
      * @param {string} data.options.url - The URL of the Moodle instance.
-     * @returns {Promise<Object>} - User information in csv format. (Columns: id, firstname, lastname, email, username)
+     * @returns {Promise<Object>} - User information in csv format. (Columns: id, firstname, lastname, email, username, roles)
      * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
      */
     async getUsersFromCourse(data) {
@@ -56,14 +56,14 @@ module.exports = class MoodleRPC extends RPC {
     }
 
     /**
-     * Retrieves users from a specified moodle assignment and returns the data in csv format.
+     * Retrieves users from a specified assignemtn in a moodle course and returns the data as an array.
      *
      * @param {Object} data - The data object containing the course ID, assignment ID, Moodle URL and the API token.
      * @param {number} data.courseID - The ID of the course to fetch users from.
      * @param {number} data.assignmentID - The ID of the assignment to fetch users from.
      * @param {string} data.options.apiKey - The API token for the Moodle instance
      * @param {string} data.options.url - The URL of the Moodle instance.
-     * @returns {Promise<Object>} - User information in csv format. (Columns: id, firstname, lastname, email, username)
+     * @returns {Promise<Object>} - User information in csv format. (Columns: id, firstname, lastname, email, username, roles)
      * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
      */
     async getUsersFromAssignment(data) {

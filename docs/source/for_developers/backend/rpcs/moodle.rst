@@ -19,7 +19,7 @@ Usage
 
 The following functions can by called from the backend:
 
-**getUsersFromCourse**: This method retrieves all users from a given course. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
+**getUsersFromCourse**: This method retrieves all users from a given course. It then creates an array of dictionaries, containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
 parameters: {courseID: int, options{url: string, apiKey: string}}
 
 .. code-block:: javascript
@@ -31,7 +31,7 @@ parameters: {courseID: int, options{url: string, apiKey: string}}
         // handle error
     }
 
-**getUsersFromAssignment**: This method retrieves all users from a given assignment. It then creates a CSV file containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
+**getUsersFromAssignment**: This method retrieves all users from a given assignment. It then creates an array of dictionaries, containing user information: ID, username, firstname, lastname, email, and their roles in the course (e.g. student/tutor).
 parameters: {courseID: int, assignmentID: int, options{url: string, apiKey: string}}
 
 .. code-block:: javascript
@@ -150,6 +150,21 @@ To get the assignment ID from a moodle assignment,
 just navigate to the assignment and you will see 'id=xxxx' in the URL.
 The number after the 'id=' is the assignment ID.
 
+Assignment creation
+~~~~~~~~~~~~~~~~~~~~
+
+Creating an assignment that is compatible with functionalities like downloading submissions or uploading login data as feedback, is really simple. Just follow these steps:
+
+1. **Create an assignment in Moodle**
+
+   Add an activity on the homepage and choose the assignment option.
+
+2. **Configure the assignment**
+
+   You don't need to change anything in the assignment settings. The default settings are already compatible with the functionalities. If you want to change something, make sure that
+   the 'Submission types' are set to 'File submissions' and the 'Feedback types' are set to 'Feedback comments'. If you want students to be able to submit multiple files, just increase 'Maximum number of uploaded files' under 'Submission types'. 
+   If you download the submissions of a student, all files will be retrieved.
+   Other settings can be adjusted as needed.
 
 Implementing new functionality
 ------------------------------
@@ -166,7 +181,7 @@ This can be done by running the following command:
 
 .. code-block:: bash
 
-    docker compose -f docker-compose.yml build rpc_moodle
+    
 .. code-block:: bash
 
     docker compose -f docker-compose.yml run rpc_moodle

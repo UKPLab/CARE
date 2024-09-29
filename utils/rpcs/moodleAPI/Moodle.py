@@ -12,19 +12,22 @@ class Moodle:
         moodle_api.KEY = api_key
      
      
-    def create_users_from_course(course_id):
+    def create_users_from_course(self, course_id):
         """
-        Creates a CSV file with users from a Moodle course, containing their ID, role and name.
-
+        Create a list of user dictionaries from a given course.
+        This method retrieves users enrolled in a specified course and returns a list of dictionaries containing user details.
         Args:
-            course_id (int): The ID of the Moodle course.
-            filepath (str): The path to the CSV file to be created.
-            MOODLE_API_KEY (str): The API key for accessing the Moodle API.
-            MOODLE_URL (str): The URL of the Moodle site.
-
+            course_id (int): The ID of the course from which to retrieve users.
         Returns:
-            None
+            list: A list of dictionaries, each containing the following user details:
+                - id (int): The user's ID.
+                - firstname (str): The user's first name.
+                - lastname (str): The user's last name.
+                - username (str): The user's username (currently an empty string).
+                - email (str): The user's email address.
+                - roles (str): A comma-separated string of the user's roles.
         """
+        
         
         # Get users from the course
         course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
@@ -50,7 +53,7 @@ class Moodle:
         
         return users
     
-    def get_assignment_ids_from_course(course_id):
+    def get_assignment_ids_from_course(self, course_id):
         """
         Retrieves the assignment IDs and names from a given course.
 
@@ -69,7 +72,7 @@ class Moodle:
             
         return assign_ids_with_names
 
-    def get_id_mappings_for_users(assignment_id):
+    def get_id_mappings_for_users(self, assignment_id):
         """
         Retrieve the ID mappings for a given assignment.
 
@@ -81,7 +84,7 @@ class Moodle:
         """
         return moodle_api.call('mod_assign_get_user_mappings', assignmentids=[assignment_id])['assignments'][0]['mappings']
 
-    def get_id_mapping_for_assignment(course_id, assignment_cmid):
+    def get_id_mapping_for_assignment(self, course_id, assignment_cmid):
         """
         Retrieve the ID mappings for all assignments in a course.
 
@@ -101,32 +104,30 @@ class Moodle:
         
         return "Assignment not found."
             
-    def create_users_from_assignment(course_id, assignment_cmid, moodle_api_key, moodle_url):
+    def create_users_from_assignment(self, course_id, assignment_cmid, moodle_api_key, moodle_url):
         """
-        Create a CSV file with users enrolled in a specific assignment.
-
+        Create a list of user dictionaries from a given assignment in a course.
+        This method retrieves users enrolled in a specified assignment in a specific course and returns a list of dictionaries containing user details.
         Args:
-            course_id (int): The ID of the course.
-            assignment_name (str): The name of the assignment.
-            filepath (str): The path to the CSV file to be created.
-            MOODLE_API_KEY (str): The API key for accessing the Moodle API.
-            MOODLE_URL (str): The URL of the Moodle site.
-
+            course_id (int): The ID of the course from which to retrieve users.
         Returns:
-            None
-
-        Raises:
-            None
+            list: A list of dictionaries, each containing the following user details:
+                - id (int): The user's ID.
+                - firstname (str): The user's first name.
+                - lastname (str): The user's last name.
+                - username (str): The user's username (currently an empty string).
+                - email (str): The user's email address.
+                - roles (str): A comma-separated string of the user's roles.
         """
         moodle_api.URL = moodle_url
         moodle_api.KEY = moodle_api_key
 
         # Get users from the course
         course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
-        assignment_id = get_id_mapping_for_assignment(course_id, assignment_cmid)
+        assignment_id = self.get_id_mapping_for_assignment(course_id, assignment_cmid)
         
         users = []
-        id_mappings = get_id_mappings_for_users(assignment_id)
+        id_mappings = self.get_id_mappings_for_users(assignment_id)
         
         for user in course_users:
             roles = ''
@@ -149,21 +150,24 @@ class Moodle:
         return users
 
         
-    def upload_passwords_to_moodle(assignment_id, course_id, login_data):
+    def upload_login_data_to_moodle(self, assignment_id, course_id, login_data):
         """
-        Uploads passwords to a Moodle assignment for a given course.
-        Parameters:
-        assignment_id (int): The ID of the assignment to upload passwords to.
-        course_id (int): The ID of the course containing the assignment.
-        passwords (list of dict): A list of dictionaries containing user IDs and passwords. 
-                                Each dictionary should have the keys 'id' and 'password'.
-        MOODLE_API_KEY (str): The API key for authenticating with the Moodle API.
-        MOODLE_URL (str): The URL of the Moodle instance.
-        Returns:
-        None
+        This method uploads the login data for a list of users to a specific assignment in a Moodle course as feedback.
+        Args:
+            assignment_id (int): The ID of the assignment to upload data for.
+            course_id (int): The ID of the course containing the assignment.
+            login_data (list of dict): A list of dictionaries containing login data. Each dictionary
+                                       should have the keys 'id', 'username', and 'password'.
+        Example:
+            login_data = [
+                {'id': 1, 'username': 'user1', 'password': 'pass1'},
+                {'id': 2, 'username': 'user2', 'password': 'pass2'}
+            ]
+            upload_login_data_to_moodle(assignment_id=123, course_id=456, login_data=login_data)
         """
         
-        assignment_id = get_id_mapping_for_assignment(course_id, assignment_id)
+        
+        assignment_id = self.get_id_mapping_for_assignment(course_id, assignment_id)
         
         for entry in login_data:
             parameters = {}
@@ -181,7 +185,7 @@ class Moodle:
                 
             
         
-    def get_submission_infos_from_assignment(course_id, assignment_cmid, options):
+    def get_submission_infos_from_assignment(self, course_id, assignment_cmid, options):
         """
         Retrieves submission information from a specific assignment in a Moodle course.
         Args:
@@ -202,7 +206,7 @@ class Moodle:
         # Get users from the course
         course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
 
-        assignment_id = get_id_mapping_for_assignment(course_id, assignment_cmid)
+        assignment_id = self.get_id_mapping_for_assignment(course_id, assignment_cmid)
         
         users = []
         

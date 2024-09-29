@@ -18,7 +18,6 @@ describe('Test RPC call to moodle API', () => {
         // call rpc and check response
         testData = {
             "courseID": "",
-            "assignmentName": "",
             "options": 
             {
                 "apiKey": "1234",
@@ -26,11 +25,11 @@ describe('Test RPC call to moodle API', () => {
             }
         }
 
-        const response = await server.rpcs["MoodleRPC"].test(testData)
-        expect(response).toEqual("Changed Passwords!")
+        const response = await server.rpcs["MoodleRPC"].getUsersFromCourse(testData)
+        expect(response.success).toEqual(false)
         
-        //Rückgabe Objekt von Usern oder Fehlermeldung
-        //Objekt vergleichen und schauen ob es richtig ist
+        //Info: The response is false because the courseID is empty. The response should be true if the courseID is not empty. 
+        //To test an a successful response, the courseID should be set to a valid value and the correct apiKey and url should be used.
 
         server.stop();
     })
