@@ -86,7 +86,55 @@ module.exports = class UserSocket extends Socket {
     }
   }
 
+  async getUsersFromCourse(courseData) {
+    try {
+      return await this.server.rpcs["MoodleRPC"].getUsersFromCourse(courseData);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  async uploadDataToMoodle(data) {
+    try {
+      return await this.server.rpcs["MoodleRPC"].uploadPasswordsToMoodle;
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
   init() {
+    this.socket.on("userUploadToMoodle", async (courseData, callback) => {
+      try {
+        const { success, data } = await this.uploadDataToMoodle(courseData);
+        callback({
+          success,
+          users: data,
+        });
+      } catch (error) {
+        this.logger.error(error);
+        callback({
+          success: false,
+          message: "Failed to upload to Moodle",
+        });
+      }
+    });
+
+    this.socket.on("userGetMoodleData", async (courseData, callback) => {
+      try {
+        const { success, data } = await this.getUsersFromCourse(courseData);
+        callback({
+          success,
+          users: data,
+        });
+      } catch (error) {
+        this.logger.error(error);
+        callback({
+          success: false,
+          message: "Failed to get users from Moodle",
+        });
+      }
+    });
+
     this.socket.on("userGetData", async (data) => {
       try {
         await this.sendUserData();
@@ -233,7 +281,7 @@ module.exports = class UserSocket extends Socket {
           success: true,
           message: "Users successfully created",
           csvInfo,
-          userCount
+          userCount,
         });
       } catch (error) {
         this.logger.error(error);
