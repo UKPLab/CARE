@@ -58,6 +58,12 @@
             v-model="currentData[field.key]"
             :options="field"
           />
+          <FormChoice
+            v-else-if="field.type === 'choice'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]"
+            :options="field"
+          />
           <FormPassword
             v-else-if="field.type === 'password'"
             :ref="'ref_' + field.key"
@@ -87,6 +93,7 @@ import FormPassword from "@/basic/form/Password.vue";
 import FormTextarea from "@/basic/form/Textarea.vue";
 import FormEditor from "@/basic/form/Editor.vue";
 import FormTable from "@/basic/form/DataTable.vue";
+import FormChoice from "@/basic/form/Choice.vue";
 import deepEqual from "deep-equal";
 
 /**
@@ -107,6 +114,7 @@ export default {
     FormTextarea,
     FormEditor,
     FormTable,
+    FormChoice
   },
   props: {
     modelValue: {

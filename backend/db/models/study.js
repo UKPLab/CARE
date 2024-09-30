@@ -25,15 +25,23 @@ module.exports = (sequelize, DataTypes) => {
             {
                 key: "workflowId", 
                 label: "Select Workflow for Study:",
-                type: "select",
-                options: {
-                    table: "workflow", 
-                    name: "name", 
-                    value: "id"  
-                },
+                type: "select", 
+                options: [
+                    { value: 1, label: "Peer Review Workflow" },  
+                    { value: 2, label: "Rummels Project" }        
+                ],
                 icon: "list", 
-                required: false,
+                required: true,
                 help: "Choose a workflow template for the study steps."
+            },
+            {
+                key: "stepDocuments",
+                label: "Assign Documents to Workflow Steps:",
+                type: "table",
+                options: {
+                    table: "study_step", id: "documentId" //TODO info mitgeben, dass bei selection referenzDatenbank angelegt ist - wäre workflowStep in study
+                },
+                required: true,
             },
             {
                 key: "description",
@@ -72,7 +80,7 @@ module.exports = (sequelize, DataTypes) => {
                 type: "datetime",
                 size: 6,
                 default: null,
-                },
+            },
             {
                 key: "end",
                 label: "Study sessions can't start after:",
@@ -80,7 +88,7 @@ module.exports = (sequelize, DataTypes) => {
                 size: 6,
                 default: null,
             },
-        ]
+        ];
 
         /**
          * Helper method for defining associations.
@@ -89,10 +97,28 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
-               Study.belongsTo(models["user"], {
-                foreignKey: "userId", 
-                as: "userId", 
-              });
+            Study.belongsTo(models["user"], {
+                foreignKey: "userId",
+                as: "user"
+            });
+
+            // Association with the workflow model
+            Study.belongsTo(models["workflow"], {
+                foreignKey: "workflowId",
+                as: "workflow"
+            });
+
+            // Association with study sessions
+            Study.hasMany(models["study_session"], {
+                foreignKey: "studyId",
+                as: "sessions"
+            });
+
+            // Association with study steps
+            Study.hasMany(models["study_step"], {
+                foreignKey: "studyId",
+                as: "steps"
+            });
         }
     }
 
@@ -120,35 +146,31 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'study',
         tableName: 'study',
         hooks: {
-            /*
             afterCreate: async (study, options) => {
                 const transaction = options.transaction || await sequelize.transaction();
-        
-                try {
-                  const document = await sequelize.models.document.findByPk(study.documentId, { transaction });
-                  if (!document) throw new Error('Document not found');
-        
-                  // HTML document type, copy the document
-                  if (document.type === sequelize.models.document.docTypes.DOC_TYPE_HTML) {
-                    const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
-                    const newDocumentHash = `${document.hash}` + '_' + `${study.hash}`; 
-                    const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);                    
-                    
-                    await fs.copyFile(originalFilePath, newFilePath);
 
-                    study.documentId = document.id;
-                  } 
-        
-                  await transaction.commit();
+                try {
+                    const workflowSteps = await sequelize.models.workflow_step.findAll({
+                        where: { workflowId: study.workflowId },
+                        order: [['id', 'ASC']],
+                        transaction
+                    });
+
+                    for (const step of workflowSteps) {
+                        await sequelize.models.study_step.create({
+                            studyId: study.id,
+                            workflowStepId: step.id,
+                            documentId: null 
+                        }, { transaction });
+                    }
+
+                    await transaction.commit();
                 } catch (error) {
-                  console.error("Failed during document processing:", error);
-                  await transaction.rollback();
-                  throw new Error(`Failed to process document for the study: ${error.message}`);
+                    console.error("Failed during study step creation:", error);
+                    await transaction.rollback();
+                    throw new Error(`Failed to create study steps for the study: ${error.message}`);
                 }
             }
-        }
-    });
-    */
         }
     });
 
