@@ -116,7 +116,21 @@
           v-if="currentStep === 3"
           class="result-container"
         >
-          <p v-if="updatedUserCount">
+          <p>Successfully created x users and overwrote y users</p>
+          <BasicForm
+            ref="form"
+            v-model="moodleData"
+            :fields="fields"
+          />
+          <div class="link-container">
+            <BasicButton
+              class="btn btn-outline-info"
+              title="Upload to Moodle"
+              @click="uploadToMoodle"
+            ></BasicButton>
+            <a class="btn btn-outline-primary"> Download Result CSV </a>
+          </div>
+          <!-- <p v-if="updatedUserCount">
             Successfully created {{ updatedUserCount.new }} users and overwrote {{ updatedUserCount.updated }} users
           </p>
           <a
@@ -125,7 +139,7 @@
             :download="csvInfo.filename"
           >
             Download Result CSV
-          </a>
+          </a> -->
         </div>
       </div>
     </template>
@@ -166,7 +180,7 @@ export default {
   data() {
     return {
       importType: "csv",
-      currentStep: 0,
+      currentStep: 3,
       file: {
         state: 0,
         name: "",
@@ -177,6 +191,7 @@ export default {
         url: "https://moodle.informatik.tu-darmstadt.de",
         apiKey: "REDACTED_SECRET",
         courseID: "1615",
+        assignment_id: "",
       },
       fields: [
         {
@@ -197,6 +212,12 @@ export default {
           type: "text",
           required: true,
         },
+        // {
+        //   key: "assignment_id",
+        //   label: "Assignment ID:",
+        //   type: "text",
+        //   required: true,
+        // },
       ],
       users: [],
       selectedUsers: [],
@@ -263,27 +284,6 @@ export default {
       return false;
     },
   },
-  sockets: {
-    courseUsersCSV: async function (response) {
-      let parsedData;
-      Papa.parse(response.data, {
-        header: true,
-        complete: function (results) {
-          const { data, errors } = results;
-          // TODO: Temporary fix, remove the problematic one directly.
-          if (errors.length > 0) {
-            errors.forEach(({ row }) => {
-              data.splice(row, 1);
-            });
-          }
-          parsedData = data;
-        },
-      });
-
-      this.users = parsedData;
-      this.checkDuplicateUsers();
-    },
-  },
   methods: {
     open(type) {
       this.importType = type;
@@ -334,7 +334,25 @@ export default {
         if (!this.$refs.form.validate()) return;
         const { courseID, apiKey, url } = this.moodleData;
         const options = { apiKey, url };
-        this.$socket.emit("getUsersFromCourse", { courseID, options });
+        this.$socket.emit("userGetMoodleData", { courseID, options }, (res) => {
+          console.log({ res });
+          let parsedData;
+          Papa.parse(res.users, {
+            header: true,
+            complete: function (results) {
+              const { data, errors } = results;
+              // TODO: Temporary fix, remove the problematic one directly.
+              if (errors.length > 0) {
+                errors.forEach(({ row }) => {
+                  data.splice(row, 1);
+                });
+              }
+              parsedData = data;
+            },
+          });
+          this.users = parsedData;
+          this.checkDuplicateUsers();
+        });
       } else {
         this.checkDuplicateUsers();
       }
@@ -468,6 +486,26 @@ export default {
         }
       });
     },
+    uploadToMoodle() {
+      // FIXME: Parameter inconsistency.
+      const { courseID, apiKey, url, assignment_id } = this.moodleData;
+      const passwords = [ {
+        id: '1234',
+        password: 'password'
+      }]
+      const options = { apiKey, url };
+      const courseData = {
+        courseID,
+        assignment_id,
+        passwords,
+        options,
+      };
+      this.$socket.emit("userUploadToMoodle", courseData, (res) => {
+        if (res.success) {
+          this.users = res.users;
+        }
+      });
+    },
   },
 };
 </script>
@@ -569,10 +607,18 @@ export default {
 .confirm-container,
 .result-container {
   /* FIXME: Do not hard code the height */
-  height: 350px;
+  /* outline: 1px solid red; */
+  /* height: 350px; */
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
+}
+
+.link-container {
+  margin-top: 15px;
+  button:first-child {
+    margin-right: 0.5rem;
+  }
 }
 </style>
