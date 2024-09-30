@@ -1,7 +1,7 @@
 from requests import get, post
 # Module variables to connect to moodle api
-KEY = "REDACTED_SECRET"
-URL = "https://moodle.informatik.tu-darmstadt.de"
+KEY = "SECRET API KEY"
+URL = "https://moodle.site.com"
 ENDPOINT="/webservice/rest/server.php"
 
 def rest_api_parameters(in_args, prefix='', out_dict=None):
