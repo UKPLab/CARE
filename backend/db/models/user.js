@@ -415,27 +415,27 @@ module.exports = (sequelize, DataTypes) => {
             const pwdHash = await genPwdHash(password, salt);
 
             // Create the user
-            createdUser = await User.create(
-              {
-                firstName: user.firstname,
-                lastName: user.lastname,
-                // TODO: Generate random user name
-                userName: user.firstname + uuidv4().replace(/-/g, "").substring(0, 4),
-                email: user.email,
-                passwordHash: pwdHash,
-                salt,
-                acceptTerms: false,
-                acceptStats: false,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              }
-            );
+            createdUser = await User.create({
+              firstName: user.firstname,
+              lastName: user.lastname,
+              // TODO: Generate random user name
+              userName: user.firstname + uuidv4().replace(/-/g, "").substring(0, 4),
+              email: user.email,
+              passwordHash: pwdHash,
+              salt,
+              moodleId: user.id,
+              acceptTerms: false,
+              acceptStats: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
           } else {
             // Update the user's details
             await User.update(
               {
                 firstName: user.firstname,
                 lastName: user.lastname,
+                moodleId: user.id,
               },
               {
                 where: { email: user.email },
@@ -533,6 +533,10 @@ module.exports = (sequelize, DataTypes) => {
       acceptedAt: DataTypes.DATE,
       rolesUpdatedAt: {
         type: DataTypes.DATE,
+        allowNull: true,
+      },
+      moodleId: {
+        type: DataTypes.STRING,
         allowNull: true,
       },
     },
