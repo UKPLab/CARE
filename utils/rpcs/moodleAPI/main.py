@@ -5,7 +5,16 @@ from Moodle import Moodle
 __author__ = "Alexander Bürkle, Dennis Zyska"
 
 def create_app():
+    """
+    # Webservice API Documentation:
+    # https://docs.moodle.org/401/en/Using_web_services#Enable_capabilities
+    # List of available functions: https://docs.moodle.org/dev/Web_service_API_functions
 
+    # Implementation of externallib functions in Moodle source codes (for parameters and return values):
+    # https://github.com/moodle/moodle/blob/MOODLE_39_STABLE/mod/assign/externallib.php
+
+    :return:
+    """
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger('gunicorn.error')
     logger.setLevel(logging.INFO)
@@ -111,13 +120,7 @@ def create_app():
     app = socketio.WSGIApp(sio)
     return app
 
-# Webservice API Documentation:
-# https://docs.moodle.org/401/en/Using_web_services#Enable_capabilities
-# List of available functions: https://docs.moodle.org/dev/Web_service_API_functions
 
-# Implementation of externallib functions in Moodle source codes (for parameters and return values):
-# https://github.com/moodle/moodle/blob/MOODLE_39_STABLE/mod/assign/externallib.php
-    
 
 
 
