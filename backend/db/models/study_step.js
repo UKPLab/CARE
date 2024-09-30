@@ -4,6 +4,20 @@ const MetaModel = require("../MetaModel.js");
 module.exports = (sequelize, DataTypes) => {
   class StudyStep extends MetaModel {
     static autoTable = true;
+    // TODO documentId festlegen für einzelne Schritte, wenn id verlangt wird
+    static fields = [
+      {
+          key: "documentId",
+          label: "Select Document",
+          type: "choice",  
+          options: {
+              table: "document", 
+              id: "documentId",  
+          },
+          required: true,
+      },
+    ];
+    
 
     /**
      * Helper method for defining associations.
@@ -32,7 +46,11 @@ module.exports = (sequelize, DataTypes) => {
   StudyStep.init({
       studyId: DataTypes.INTEGER,
       workflowStepId: DataTypes.INTEGER,
-      documentId: DataTypes.INTEGER
+      documentId: DataTypes.INTEGER,
+      deleted: DataTypes.BOOLEAN,
+      deletedAt: DataTypes.DATE,
+      createdAt: DataTypes.DATE,
+      updatedAt: DataTypes.DATE
     }, {
       sequelize,
       modelName: 'study_step',
