@@ -140,31 +140,56 @@ If you want to add new functionality to the Moodle API, these links might be hel
     The API url is usually the standard moodle url.
 
 
-Course configuration
-~~~~~~~~~~~~~~~~~~~~
-
-To get the course ID from a moodle course, just navigate to the homepage of the course and you will see 'id=xxxx' in the URL.
-The number after the 'id=' is the course ID.
-
-To get the assignment ID from a moodle assignment,
-just navigate to the assignment and you will see 'id=xxxx' in the URL.
-The number after the 'id=' is the assignment ID.
-
 Assignment creation
 ~~~~~~~~~~~~~~~~~~~~
 
 Creating an assignment that is compatible with functionalities like downloading submissions or uploading login data as feedback, is really simple. Just follow these steps:
 
-1. **Create an assignment in Moodle**
+1. **Navigate to the right course in Moodle**
 
-   Add an activity on the homepage and choose the assignment option.
+    Login to your Moodle account and click on 'My courses' in the upper left corner. Click on the course you want to create the assignment in. If you can't see the course, you can use the search bar at the top.
 
-2. **Configure the assignment**
+2. **Activate the edit mode**
 
-   You don't need to change anything in the assignment settings. The default settings are already compatible with the functionalities. If you want to change something, make sure that
-   the 'Submission types' are set to 'File submissions' and the 'Feedback types' are set to 'Feedback comments'. If you want students to be able to submit multiple files, just increase 'Maximum number of uploaded files' under 'Submission types'. 
-   If you download the submissions of a student, all files will be retrieved.
-   Other settings can be adjusted as needed.
+    Now you should be on the homepage of the course. Make sure that you have the right to edit the course. To find out, look at the upper right corner and check if you see 'Edit mode' and a switch next to it. If you see it, click on the switch, so it shifts to the right. 
+    Now you are in edit mode. If you can't see 'Edit mode', you need to ask the course administrator for the right to edit the course. If you are assigned multiple roles, make sure that you are in the right role. 
+    You can change your role by clicking on your name in the upper right corner and then on 'Switch role to...'.
+
+3. **Create an assignment**
+
+    With 'edit mode' activated, navigate to the right section (e.g. 'General') where you want to create the assignment. Click on '+ Add an activity or resource'. A new window will open. Click on 'Assignment'. If you can't find it, you can use the search bar at the top. 
+
+4. **Configure the assignment**
+
+    Now you are in the assignment settings. Choose a name for the assignment and write a description if needed.
+    You don't need to change any other settings in the assignment settings. The default settings are already compatible with the functionalities. 
+    
+    **Submissions allowed**
+    If you want students to be able to make submission and download them afterwards, make sure that the 'Submission types' are set to 'File submissions' and the 'Feedback types' are set to 'Feedback comments'. If you want students to be able to submit multiple files, just increase 'Maximum number of uploaded files' under 'Submission types'. 
+    If you download the submissions of a student, all files will be retrieved.
+
+    **No submissions**
+    If you don't want students to submit files, you need to deselect 'File submissions' under 'Submission types'. You can still upload feedback commentary and grades. This is useful if you want to use the functionality to upload login data as feedback.
+
+    Other settings can be adjusted as needed.
+
+5. **Test the assignment**
+
+    To test if the configuration is correct, you can create a test submission. Just click on the assignment and then on 'Add submission'. Upload a file and click on 'Save changes'. Now you can use the functionalities to retrieve the submissions. Note that you may need to change your role to 'student' to be able to submit a file.
+
+Findind the course and assignment IDs
+~~~~~~~~~~~~~~~~~~~~
+
+For almost all functionalities, you need the course ID and the assignment ID. This is how you can find them:
+
+**Course ID**
+To get the course ID from a moodle course, just navigate to the homepage of the course and you will see 'id=xxxx' in the URL.
+The number after the 'id=' is the course ID.
+
+**Assignment ID**
+To get the assignment ID from a moodle assignment,
+just navigate to the assignment page and you will see 'id=xxxx' in the URL.
+The number after the 'id=' is the assignment ID.
 
 Implementing new functionality
 ------------------------------
