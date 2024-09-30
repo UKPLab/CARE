@@ -77,17 +77,11 @@ export default {
           }
         },
         {
-          name: "Navigation",
-          key: "allowNavigation",
-          type: "badge",
-          typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
-            classMapping: {true: "bg-success", false: "bg-danger"}
-          }
+          name: "Chosen Workflow",  
+          key: "workflowName",      
         },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
-
     }
   },
   computed: {
@@ -101,7 +95,7 @@ export default {
       return this.studies.filter(study => study.userId === this.userId)
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
-            let study = {...st};
+          let study = {...st};
             // dates
             if (study.start === null) {
               study.start = "-"
@@ -119,7 +113,9 @@ export default {
 
             const doc = this.$store.getters["table/document/get"](study.documentId)
             study.documentName = doc ? doc.name : "-";
-            study.allowNavigation = study.allowNavigation !== undefined ? study.allowNavigation : false;
+            
+            const workflow = this.$store.getters["table/workflow/get"](study.workflowId);
+            study.workflowName = workflow ? workflow.name : "Unknown Workflow";
 
             study.manage = [
               {

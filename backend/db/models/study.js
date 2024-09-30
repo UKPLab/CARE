@@ -37,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
             {
                 key: "stepDocuments",
                 label: "Assign Documents to Workflow Steps:",
-                type: "table",
+                type: "choice",
                 options: {
                     table: "study_step", id: "documentId" //TODO info mitgeben, dass bei selection referenzDatenbank angelegt ist - wäre workflowStep in study
                 },
