@@ -33,3 +33,7 @@ nodesource_setup.sh
 # docs
 docs/build
 docs/api
+
+# pycache
+utils/rpcs/moodleAPI/__pycache__
+utils/rpcs/moodleAPI/moodle_api/__pycache__
