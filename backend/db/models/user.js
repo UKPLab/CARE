@@ -3,8 +3,7 @@ const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
 const { genSalt, genPwdHash } = require("../../utils/auth.js");
 const { v4: uuidv4 } = require("uuid");
-const fs = require("fs").promises;
-const path = require("path");
+const { generateMarvelUsername } = require("../../utils/nameGenerator");
 
 module.exports = (sequelize, DataTypes) => {
   class User extends MetaModel {
@@ -398,7 +397,7 @@ module.exports = (sequelize, DataTypes) => {
 
     static async bulkCreateUsers(users) {
       try {
-        // NOTE: Moodle's role names are subject to change.
+        // Moodle's role names are subject to change.
         const moodleCareRoleMap = {
           "Dozent*in": "teacher",
           "Betreuer*in": "teacher",
@@ -414,21 +413,40 @@ module.exports = (sequelize, DataTypes) => {
             const salt = genSalt();
             const pwdHash = await genPwdHash(password, salt);
 
-            // Create the user
-            createdUser = await User.create({
-              firstName: user.firstname,
-              lastName: user.lastname,
-              // TODO: Generate random user name
-              userName: user.firstname + uuidv4().replace(/-/g, "").substring(0, 4),
-              email: user.email,
-              passwordHash: pwdHash,
-              salt,
-              moodleId: user.id,
-              acceptTerms: false,
-              acceptStats: false,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            });
+            let username;
+            let retries = 0;
+            const maxRetries = 5;
+
+            while (retries < maxRetries) {
+              username = generateMarvelUsername();
+              try {
+                // Attempt to create the user
+                createdUser = await User.create({
+                  firstName: user.firstname,
+                  lastName: user.lastname,
+                  userName: username,
+                  email: user.email,
+                  passwordHash: pwdHash,
+                  salt,
+                  moodleId: user.id,
+                  acceptTerms: false,
+                  acceptStats: false,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                });
+                break;
+              } catch (error) {
+                if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "userName") {
+                  retries++;
+                } else {
+                  throw error;
+                }
+              }
+            }
+
+            if (!createdUser) {
+              throw new Error("Failed to create user with unique username");
+            }
           } else {
             // Update the user's details
             await User.update(
