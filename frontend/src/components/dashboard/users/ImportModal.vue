@@ -44,6 +44,7 @@
               />
               <p>Drag and drop CSV file here<br />or click to upload</p>
             </div>
+            <!-- TODO: To be implemented-->
             <p>Please check the format or <a href="">download the template</a> here.</p>
             <template v-if="file.state === 1">
               <div
@@ -116,7 +117,10 @@
           v-if="currentStep === 3"
           class="result-container"
         >
-          <p>Successfully created x users and overwrote y users</p>
+          <p v-if="updatedUserCount">
+            Successfully created {{ updatedUserCount.new }} users and overwrote {{ updatedUserCount.updated }} users
+          </p>
+
           <BasicForm
             ref="form"
             v-model="moodleData"
@@ -127,19 +131,13 @@
               class="btn btn-outline-info"
               title="Upload to Moodle"
               @click="uploadToMoodle"
-            ></BasicButton>
-            <a class="btn btn-outline-primary"> Download Result CSV </a>
+            />
+            <BasicButton
+              class="btn btn-outline-primary"
+              title="Download Result CSV"
+              @click="downloadFileAsCSV"
+            />
           </div>
-          <!-- <p v-if="updatedUserCount">
-            Successfully created {{ updatedUserCount.new }} users and overwrote {{ updatedUserCount.updated }} users
-          </p>
-          <a
-            v-if="csvInfo"
-            :href="csvInfo.url"
-            :download="csvInfo.filename"
-          >
-            Download Result CSV
-          </a> -->
         </div>
       </div>
     </template>
@@ -167,7 +165,7 @@ import BasicTable from "@/basic/table/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import Papa from "papaparse";
 import { testData } from "./testData";
-import getServerURL from "@/assets/serverUrl";
+import { downloadObjectsAs } from "@/assets/utils.js";
 
 /**
  * Modal for bulk creating users through csv file
@@ -180,7 +178,7 @@ export default {
   data() {
     return {
       importType: "csv",
-      currentStep: 3,
+      currentStep: 0,
       file: {
         state: 0,
         name: "",
@@ -245,10 +243,9 @@ export default {
         { name: "Last Name", key: "lastname" },
         { name: "Email", key: "email" },
         { name: "Roles", key: "roles" },
-        // { name: "User", key: "username" },
       ],
-      csvInfo: null,
       updatedUserCount: null,
+      createdUsers: [],
     };
   },
   computed: {
@@ -285,6 +282,37 @@ export default {
     },
   },
   methods: {
+    downloadFileAsCSV() {
+      const filename = `users_${Date.now()}`;
+      const users = this.createdUsers.map((user) => {
+        delete user.status;
+        return user;
+      });
+      downloadObjectsAs(users, filename, "csv");
+    },
+    uploadToMoodle() {
+      // FIXME: Parameter inconsistency.
+      const { courseID, apiKey, url, assignment_id } = this.moodleData;
+      // FIXME: username
+      const passwords = this.createdUsers.map(({ id, username, password }) => {
+        id, username, password;
+      });
+      const options = { apiKey, url };
+      const courseData = {
+        courseID,
+        assignment_id,
+        passwords,
+        options,
+      };
+      this.$socket.emit("userUploadToMoodle", courseData, (res) => {
+        console.log("userUploadToMoodle");
+        if (res.success) {
+          console.log("userUploadToMoodle success");
+        } else {
+          console.log({ res });
+        }
+      });
+    },
     open(type) {
       this.importType = type;
       this.$refs.modal.open();
@@ -301,7 +329,6 @@ export default {
       this.selectedUsers = [];
       if (this.updatedUserCount) {
         this.updatedUserCount = null;
-        this.csvInfo = null;
         this.$emit("updateUser");
       }
       // this.eventBus.emit("resetFormField");
@@ -364,10 +391,12 @@ export default {
       this.$socket.emit("userBulkCreate", this.selectedUsers, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
-          const { userCount, csvInfo } = res;
-          this.csvInfo = csvInfo;
-          this.csvInfo.url = getServerURL() + this.csvInfo.url;
-          this.updatedUserCount = userCount;
+          const { createdUsers } = res;
+          this.createdUsers = createdUsers;
+          this.updatedUserCount = {
+            new: this.createdUsers.filter((u) => u.status === "new").length,
+            updated: this.createdUsers.filter((u) => u.status === "duplicate").length,
+          };
         } else {
           console.log(res);
         }
@@ -481,26 +510,6 @@ export default {
     checkDuplicateUsers() {
       this.$socket.emit("userCheckDuplicates", this.users, (res) => {
         this.$refs.modal.waiting = false;
-        if (res.success) {
-          this.users = res.users;
-        }
-      });
-    },
-    uploadToMoodle() {
-      // FIXME: Parameter inconsistency.
-      const { courseID, apiKey, url, assignment_id } = this.moodleData;
-      const passwords = [ {
-        id: '1234',
-        password: 'password'
-      }]
-      const options = { apiKey, url };
-      const courseData = {
-        courseID,
-        assignment_id,
-        passwords,
-        options,
-      };
-      this.$socket.emit("userUploadToMoodle", courseData, (res) => {
         if (res.success) {
           this.users = res.users;
         }
