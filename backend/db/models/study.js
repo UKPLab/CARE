@@ -27,8 +27,8 @@ module.exports = (sequelize, DataTypes) => {
                 label: "Select Workflow for Study:",
                 type: "select", 
                 options: [
-                    { value: 1, label: "Peer Review Workflow" },  
-                    { value: 2, label: "Rummels Project" }        
+                    { value: 1, name: "Peer Review Workflow" },  
+                    { value: 2, name: "Rummels Project" }        
                 ],
                 icon: "list", 
                 required: true,
@@ -39,7 +39,9 @@ module.exports = (sequelize, DataTypes) => {
                 label: "Assign Documents to Workflow Steps:",
                 type: "choice",
                 options: {
-                    table: "study_step", id: "documentId" //TODO info mitgeben, dass bei selection referenzDatenbank angelegt ist - wäre workflowStep in study
+                    table: "study_step", id: "documentId", filter: {
+                        table: "workflow_step"
+                    } //TODO info mitgeben, dass bei selection referenzDatenbank angelegt ist - wäre workflowStep in study
                 },
                 required: true,
             },

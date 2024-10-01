@@ -85,7 +85,7 @@
     name: "FormTable",
     components: {FormElement, FormDefault, FormSelect},
     props: {
-      options: {
+      options: { // hier bekommen wir workflowstepDocument - hier kann gefiltert werden, welche Dokumente gebraucht werden
         type: Object,
         required: true,
       },
