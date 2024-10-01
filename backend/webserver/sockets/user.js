@@ -96,7 +96,7 @@ module.exports = class UserSocket extends Socket {
 
   async uploadDataToMoodle(data) {
     try {
-      return await this.server.rpcs["MoodleRPC"].uploadPasswordsToMoodle;
+      return await this.server.rpcs["MoodleRPC"].uploadLoginDataToMoodle(data);
     } catch (error) {
       this.logger.error(error);
     }
