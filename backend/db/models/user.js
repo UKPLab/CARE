@@ -465,7 +465,7 @@ module.exports = (sequelize, DataTypes) => {
           }
 
           createdUsers.push({
-            id: createdUser.id,
+            id: createdUser.moodleId,
             firstname: createdUser.firstName,
             lastname: createdUser.lastName,
             username: createdUser.userName,
@@ -476,37 +476,7 @@ module.exports = (sequelize, DataTypes) => {
           });
         }
 
-        // FIXME: The count should follow the result of bulk user creation.
-        const userCount = {
-          new: createdUsers.filter((u) => u.status === "new").length,
-          updated: createdUsers.filter((u) => u.status === "duplicate").length,
-        };
-
-        // Generate CSV content
-        const headers = ["id", "firstname", "lastname", "username", "email", "roles", "password"];
-        let csvContent = headers.join(",") + "\n";
-        createdUsers.forEach((user) => {
-          csvContent += headers.map((header) => `"${user[header]}"`).join(",") + "\n";
-        });
-
-        // Generate a unique filename
-        const filename = `users_${Date.now()}.csv`;
-        const csvFilePath = path.join(__dirname, "..", "..", "temp", filename);
-
-        // Ensure the temp directory exists
-        await fs.mkdir(path.dirname(csvFilePath), { recursive: true });
-
-        // Write CSV content to file
-        await fs.writeFile(csvFilePath, csvContent, "utf8");
-
-        const csvInfo = {
-          filename,
-          url: `/download/temp/${filename}`,
-        };
-        return {
-          userCount,
-          csvInfo,
-        };
+        return createdUsers;
       } catch (error) {
         console.log({ error });
         this.logger.error("Failed to bulk update users: " + error);

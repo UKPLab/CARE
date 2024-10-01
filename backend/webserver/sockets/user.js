@@ -275,13 +275,11 @@ module.exports = class UserSocket extends Socket {
 
     this.socket.on("userBulkCreate", async (users, callback) => {
       try {
-        const { userCount, csvInfo } = await this.models["user"].bulkCreateUsers(users);
-        // TODO: Send back the number of created users and CSV file path
+        const createdUsers = await this.models["user"].bulkCreateUsers(users);
         callback({
           success: true,
           message: "Users successfully created",
-          csvInfo,
-          userCount,
+          createdUsers,
         });
       } catch (error) {
         this.logger.error(error);
