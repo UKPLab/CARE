@@ -1,14 +1,14 @@
 <template>
   <button
-      :title="title"
-      class="btn"
-      type="button"
-      @click="action"
+    :title="title"
+    class="btn"
+    type="button"
+    @click="action"
   >
-  <!-- class="btn btn-sm me-1" -->
+    <!-- class="btn btn-sm me-1" -->
     <LoadIcon
-        v-if="icon"
-        :icon-name="icon"
+      v-if="icon"
+      :icon-name="icon"
     />
     {{ buttonText }}
   </button>
@@ -20,6 +20,11 @@ import LoadIcon from "@/basic/Icon.vue";
 export default {
   name: "BasicButton",
   components: {LoadIcon},
+  inject: {
+    acceptStats: {
+      default: () => false
+    }
+  },
   props: {
     icon: {
       type: String,
@@ -51,10 +56,12 @@ export default {
   methods: {
     action() {
       this.$emit("click")
-      this.$socket.emit("stats", {
-        action: "clickCardButton",
-        data: {"title": this.title, "icon": this.icon, "props": this.props}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "clickCardButton",
+          data: {"title": this.title, "icon": this.icon, "props": this.props}
+        });
+      }
     }
   }
 }
