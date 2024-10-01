@@ -189,7 +189,7 @@ export default {
         url: "https://moodle.informatik.tu-darmstadt.de",
         apiKey: "REDACTED_SECRET",
         courseID: "1615",
-        assignment_id: "",
+        assignmentID: "69265",
       },
       fields: [
         {
@@ -291,17 +291,17 @@ export default {
       downloadObjectsAs(users, filename, "csv");
     },
     uploadToMoodle() {
-      // FIXME: Parameter inconsistency.
-      const { courseID, apiKey, url, assignment_id } = this.moodleData;
-      // FIXME: username
-      const passwords = this.createdUsers.map(({ id, username, password }) => {
-        id, username, password;
-      });
+      const { courseID, apiKey, url, assignmentID } = this.moodleData;
+      const loginData = this.createdUsers.map(({ id, username, password }) => ({
+        id,
+        username,
+        password,
+      }));
       const options = { apiKey, url };
       const courseData = {
         courseID,
-        assignment_id,
-        passwords,
+        assignmentID,
+        loginData,
         options,
       };
       this.$socket.emit("userUploadToMoodle", courseData, (res) => {
