@@ -28,7 +28,7 @@ module.exports = class MoodleRPC extends RPC {
     async request(eventName, data) {
         this.logger.info("Calling RPC service with request: " + eventName);
 
-        const response = this.emit(eventName, data);
+        const response = await this.emit(eventName, data);
         if (!response['success']) {
             this.logger.error("Error in request " + eventName + ": " + response['message']);
             throw new Error(response['message']);
