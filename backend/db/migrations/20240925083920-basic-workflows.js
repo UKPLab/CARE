@@ -35,7 +35,7 @@ module.exports = {
           { returning: true }
       );
 
-      const workflowMap = {};
+      let workflowMap = {};
       workflowInsertions.forEach((w, index) => {
           workflowMap[workflows[index].name] = w.id;
       });

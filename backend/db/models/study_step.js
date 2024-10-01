@@ -9,7 +9,7 @@ module.exports = (sequelize, DataTypes) => {
       {
           key: "documentId",
           label: "Select Document",
-          type: "choice",  
+          type: "select",  
           options: {
               table: "document", 
               id: "documentId",  
