@@ -44,8 +44,16 @@
               />
               <p>Drag and drop CSV file here<br />or click to upload</p>
             </div>
-            <!-- TODO: To be implemented-->
-            <p>Please check the format or <a href="">download the template</a> here.</p>
+            <p>
+              Please check the format or
+              <a
+                class="template-link"
+                @click="downloadTemplateCSV"
+              >
+                download the template
+              </a>
+              here.
+            </p>
             <template v-if="file.state === 1">
               <div
                 v-if="file.name !== '' && file.errors.length === 0"
@@ -98,7 +106,7 @@
           <BasicTable
             :columns="columns"
             :data="users"
-            :options="options"
+            :options="tableOptions"
             @row-selection="selectUsers"
           />
         </div>
@@ -215,13 +223,12 @@ export default {
       ],
       users: [],
       selectedUsers: [],
-      options: {
+      tableOptions: {
         striped: true,
         hover: true,
         bordered: false,
         borderless: false,
         small: false,
-        pagination: 10,
         selectableRows: true,
       },
       columns: [
@@ -295,6 +302,19 @@ export default {
         delete user.status;
         return user;
       });
+      downloadObjectsAs(users, filename, "csv");
+    },
+    downloadTemplateCSV() {
+      const filename = "users_template";
+      const users = [
+        {
+          id: "123456",
+          firstname: "Test",
+          lastname: "User",
+          email: "test.user@example.com",
+          roles: "Student*in",
+        },
+      ];
       downloadObjectsAs(users, filename, "csv");
     },
     uploadToMoodle() {
@@ -424,7 +444,7 @@ export default {
           complete: function (results) {
             const { data: rows, meta } = results;
             const { fields: fileHeaders } = meta;
-            const requiredHeaders = ["id", "firstname", "lastname", "username", "email", "roles", "password"];
+            const requiredHeaders = ["id", "firstname", "lastname", "email", "roles"];
             const seenIds = new Set();
             const seenEmails = new Set();
             // src: https://www.mailercheck.com/articles/email-validation-javascript
@@ -435,9 +455,9 @@ export default {
               errors.push("CSV does not contain all required headers");
             }
             rows.forEach((row, index) => {
-              // Check if every cell has value, except for username
+              // Check if every cell has value
               for (const [key, value] of Object.entries(row)) {
-                if (key !== "username" && (value === null || value === "")) {
+                if (value === null || value === "") {
                   errors.push(`Empty value found for ${key} at index ${index + 1}`);
                 }
               }
@@ -548,8 +568,7 @@ export default {
 }
 
 .content-container {
-  /* FIXME: */
-  min-height: 350px;
+  height: 400px;
 }
 
 /* Upload */
@@ -577,6 +596,10 @@ export default {
   margin: 0;
   font-size: 0.925rem;
   color: #666;
+}
+
+.template-link {
+  cursor: pointer;
 }
 
 .file-info-container {
@@ -616,15 +639,14 @@ export default {
 
 /* Preview */
 .preview-table-container {
+  height: 100%;
   white-space: nowrap;
   overflow-x: scroll;
 }
 
 .confirm-container,
 .result-container {
-  /* FIXME: Do not hard code the height */
-  /* outline: 1px solid red; */
-  /* height: 350px; */
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
