@@ -12,7 +12,7 @@ class Moodle:
         moodle_api.KEY = api_key
      
      
-    def create_users_from_course(self, course_id):
+    def get_users_from_course(self, course_id):
         """
         Create a list of user dictionaries from a given course.
         This method retrieves users enrolled in a specified course and returns a list of dictionaries containing user details.
@@ -104,23 +104,27 @@ class Moodle:
         
         return "Assignment not found."
             
-    def create_users_from_assignment(self, course_id, assignment_cmid, moodle_api_key, moodle_url):
+    def get_users_from_assignment(self, course_id, assignment_cmid):
         """
-        Create a list of user dictionaries from a given assignment in a course.
-        This method retrieves users enrolled in a specified assignment in a specific course and returns a list of dictionaries containing user details.
+        WARNING: This method only works, if at least one submission has been made to the assignment. If you need to use it before any students have submitted, you can submit a dummy file to the assignment.
+        
+        Creates a list of user dictionaries from a given course and assignment.
+        This method retrieves users enrolled in a specified course and maps their 
+        information to a list of dictionaries. Each dictionary contains user details 
+        such as id, firstname, lastname, email, and roles.
         Args:
             course_id (int): The ID of the course from which to retrieve users.
+            assignment_cmid (int): The course module ID of the assignment.
         Returns:
-            list: A list of dictionaries, each containing the following user details:
-                - id (int): The user's ID.
-                - firstname (str): The user's first name.
-                - lastname (str): The user's last name.
-                - username (str): The user's username (currently an empty string).
-                - email (str): The user's email address.
-                - roles (str): A comma-separated string of the user's roles.
+            list: A list of dictionaries, each representing a user with the following keys:
+            - id (int): The user's ID.
+            - firstname (str): The user's first name.
+            - lastname (str): The user's last name.
+            - username (str): The user's username (currently an empty string).
+            - email (str): The user's email address.
+            - roles (str): A comma-separated string of the user's roles.
         """
-        moodle_api.URL = moodle_url
-        moodle_api.KEY = moodle_api_key
+        
 
         # Get users from the course
         course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
@@ -130,22 +134,25 @@ class Moodle:
         id_mappings = self.get_id_mappings_for_users(assignment_id)
         
         for user in course_users:
-            roles = ''
-            for role in user['roles']:
-                roles += role['name'] + ', '
-            
-            email = user['email'] if 'email' in user else ''
-            
-            user_dict = {
-                'id': user['id'],
-                'firstname': user['firstname'],
-                'lastname': user['lastname'],
-                'username': "",  
-                'email': email,
-                'roles': roles[:-2]  
-            }
-            
-            users.append(user_dict)
+            for id in id_mappings:
+                if id['userid'] == user['id']:
+                    roles = ''
+                    for role in user['roles']:
+                        roles += role['name'] + ', '
+                    
+                    email = user['email'] if 'email' in user else ''
+                    
+                    user_dict = {
+                        'id': user['id'],
+                        'firstname': user['firstname'],
+                        'lastname': user['lastname'],
+                        'username': "",  
+                        'email': email,
+                        'roles': roles[:-2]  
+                    }
+                    
+                    users.append(user_dict)
+                    continue
         
         return users
 
@@ -178,20 +185,19 @@ class Moodle:
             parameters['addattempt'] = 1
             parameters['workflowstate'] = 'Graded'
             parameters['applytoall'] = 0
-            parameters['plugindata[assignfeedbackcomments_editor][text]'] = 'CARE Username: ' + entry['username'] + '\nCARE Password: ' + entry['password']
+            parameters['plugindata[assignfeedbackcomments_editor][text]'] = 'CARE Username: ' + entry['username'] + '\n Password: ' + entry['password']
             parameters['plugindata[assignfeedbackcomments_editor][format]'] = 0
             parameters['plugindata[files_filemanager]'] = 0
             moodle_api.call('mod_assign_save_grade', **parameters)
                 
             
         
-    def get_submission_infos_from_assignment(self, course_id, assignment_cmid, options):
+    def get_submission_infos_from_assignment(self, course_id, assignment_cmid):
         """
         Retrieves submission information from a specific assignment in a Moodle course.
         Args:
             course_id (int): The ID of the course.
             assignment_id (int): The ID of the assignment.
-            options (dict): A dictionary containing the 'url' and 'apiKey' for the Moodle API.
         Returns:
             list: A list of dictionaries, each containing:
                 - 'userid' (int): The ID of the user who made the submission.
@@ -199,9 +205,6 @@ class Moodle:
                     - 'filename' (str): The name of the submitted file.
                     - 'fileurl' (str): The URL to access the submitted file.
         """
-        moodle_api.URL = options['url']
-        moodle_api.KEY = options['apiKey']
-
         
         # Get users from the course
         course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
@@ -255,3 +258,4 @@ class Moodle:
             response = requests.get(file_url)
             files.append(response.content)
         return files   
+  

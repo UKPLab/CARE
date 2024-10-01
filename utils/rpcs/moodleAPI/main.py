@@ -55,7 +55,7 @@ def create_app():
         try:
             logger.info(f"Received call: {data} from {sid}")
             api = Moodle(data['options']['apiKey'], data['options']['url'])
-            users = api.create_users_from_course(data['courseID'])
+            users = api.get_users_from_course(data['courseID'])
             response = {"success": True, "data": users}
             return response
         except Exception as e:
@@ -68,7 +68,7 @@ def create_app():
         try:
             logger.info(f"Received call: {data} from {sid}")
             api = Moodle(data['options']['apiKey'], data['options']['url'])
-            users = api.create_users_from_assignment(data['courseID'], data['assignmentID'])
+            users = api.get_users_from_assignment(data['courseID'], data['assignmentID'])
             response = {"success": True, "data": users}
             return response
         except Exception as e:
@@ -103,12 +103,12 @@ def create_app():
             response = {"success": False, "message": "error: " + str(e)}
             return response
         
-    @sio.on("uploadPasswordsToMoodle")
-    def uploadPasswordsToMoodle(sid, data):
+    @sio.on("uploadLoginDataToMoodle")
+    def uploadLoginDataToMoodle(sid, data):
         try:
             logger.info(f"Received call: {data} from {sid}")
             api = Moodle(data['options']['apiKey'], data['options']['url'])
-            api.upload_passwords_to_moodle(course_id=data['courseID'], assignment_id=data['assignmentID'], login_data=data['loginData'])
+            api.upload_login_data_to_moodle(course_id=data['courseID'], assignment_id=data['assignmentID'], login_data=data['loginData'])
             response = {"success": True, "data": "Passwords uploaded successfully."}
             return response
         except Exception as e:
