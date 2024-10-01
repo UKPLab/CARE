@@ -86,7 +86,7 @@
             <BasicForm
               ref="form"
               v-model="moodleData"
-              :fields="fields"
+              :fields="baseFields"
             />
           </template>
         </div>
@@ -122,12 +122,14 @@
           </p>
 
           <BasicForm
+            v-if="importType === 'moodle'"
             ref="form"
             v-model="moodleData"
-            :fields="fields"
+            :fields="finalFields"
           />
           <div class="link-container">
             <BasicButton
+              v-if="importType === 'moodle'"
               class="btn btn-outline-info"
               title="Upload to Moodle"
               @click="uploadToMoodle"
@@ -191,7 +193,7 @@ export default {
         courseID: "1615",
         assignmentID: "69265",
       },
-      fields: [
+      baseFields: [
         {
           key: "courseID",
           label: "Course ID:",
@@ -210,12 +212,6 @@ export default {
           type: "text",
           required: true,
         },
-        // {
-        //   key: "assignment_id",
-        //   label: "Assignment ID:",
-        //   type: "text",
-        //   required: true,
-        // },
       ],
       users: [],
       selectedUsers: [],
@@ -279,6 +275,17 @@ export default {
         return true;
       }
       return false;
+    },
+    finalFields() {
+      return [
+        ...this.baseFields,
+        {
+          key: "assignmentID",
+          label: "Assignment ID:",
+          type: "text",
+          required: true,
+        },
+      ];
     },
   },
   methods: {
