@@ -23,7 +23,7 @@ Architectural Paradigms
 Communication Paradigms
 -----------------------
 
-The the socket communication we follow the following conventions:
+For the socket communication we follow the following conventions:
 
 *   All messages are JSON objects.
 *   All events use the `camelCase <https://en.wikipedia.org/wiki/Camel_case>`_ naming convention.
@@ -32,6 +32,6 @@ The the socket communication we follow the following conventions:
 *   Additional specifier can be added to the event name, if necessary.
     For example, the request of an annotation by a user ``annotationGetByUser``.
 
-Additionally, all socket events defined in the Backend must surrounded by a try-catch block.
+Additionally, all socket events defined in the Backend must be surrounded by a try-catch block.
 Inside the try block, maximum four lines of code should be executed. If more lines are necessary,
 an additional method should be created and documented.

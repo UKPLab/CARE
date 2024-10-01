@@ -42,3 +42,9 @@ services:
       dockerfile: Dockerfile
     command: gunicorn --workers 1 --threads 100 --bind 0.0.0.0:8080 'main:create_app()' --access-logfile '-' --error-logfile '-'
     restart: unless-stopped
+  rpc_moodle:
+    build:
+      context: ./utils/rpcs/moodleAPI
+      dockerfile: Dockerfile
+    command: gunicorn --workers 1 --threads 100 --bind 0.0.0.0:8081 'main:create_app()' --access-logfile '-' --error-logfile '-'
+    restart: unless-stopped

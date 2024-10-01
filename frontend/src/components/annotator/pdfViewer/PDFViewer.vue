@@ -54,6 +54,9 @@ export default {
       required: false,
       default: false,
     },
+    acceptStats: {
+      default: () => false
+    },
   },
   provide() {
     return {
@@ -121,15 +124,17 @@ export default {
           this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
         }
       }
-      this.$socket.emit("stats", {
-        action: "pdfPageVisibilityChange",
-        data: {
-          documentId: this.documentId,
-          readonly: this.readonly,
-          visibility: page,
-          studySessionId: this.studySessionId
-        }
-      })
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "pdfPageVisibilityChange",
+          data: {
+            documentId: this.documentId,
+            readonly: this.readonly,
+            visibility: page,
+            studySessionId: this.studySessionId
+          }
+        })
+      }
     },
   },
 

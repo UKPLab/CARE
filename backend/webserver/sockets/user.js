@@ -99,6 +99,23 @@ module.exports = class UserSocket extends Socket {
       }
     });
 
+    // Update user's consent
+    this.socket.on("userUpdateConsent", async (consentData, callback) => {
+      try {
+        await this.models["user"].updateUserConsent(this.userId, consentData);
+        callback({
+          success: true,
+          message: "Successfully updated user consent!",
+        });
+      } catch (error) {
+        callback({
+          success: false,
+          message: "Failed to updated user consent!",
+        });
+        this.logger.error(error);
+      }
+    });
+
     // Get users by their role
     this.socket.on("userGetByRole", async (role) => {
       try {

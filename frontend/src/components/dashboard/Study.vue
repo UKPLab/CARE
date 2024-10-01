@@ -39,6 +39,11 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 export default {
   name: "DashboardStudy",
   components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal},
+  inject: {
+    acceptStats: {
+      default: () => false
+    }
+  },
   props: {},
   fetchData: ['study','study_session'],
   data() {

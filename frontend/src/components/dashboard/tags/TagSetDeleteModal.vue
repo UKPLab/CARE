@@ -1,8 +1,8 @@
 <template>
   <Modal
-      ref="tagSetDeleteModal"
-      :props="{tagSetId: id}"
-      name="tagSetDelete">
+    ref="tagSetDeleteModal"
+    :props="{tagSetId: id}"
+    name="tagSetDelete">
     <template #title>
       Delete Tagset
     </template>
@@ -12,16 +12,16 @@
 
     <template #footer>
       <button
-          class="btn btn-secondary"
-          type="button"
-          @click="cancel"
+        class="btn btn-secondary"
+        type="button"
+        @click="cancel"
       >
         Abort
       </button>
       <button
-          class="btn btn-danger me-2"
-          type="button"
-          @click="remove"
+        class="btn btn-danger me-2"
+        type="button"
+        @click="remove"
       >
         Yes, delete it!
       </button>
@@ -42,6 +42,11 @@ Source: -
 export default {
   name: "TagSetDeleteModal",
   components: {Modal},
+  inject: {
+    acceptStats: {
+      default: () => false
+    }
+  },
   data() {
     return {
       id: 0,
@@ -51,10 +56,12 @@ export default {
     open(id) {
       this.id = id;
       this.$refs.tagSetDeleteModal.openModal();
-      this.$socket.emit("stats", {
-        action: "openModalDeleteTagSet",
-        data: {id: this.id}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "openModalDeleteTagSet",
+          data: {id: this.id}
+        });
+      }
     },
     remove() {
       this.sockets.subscribe("tagSetDeleted", (data) => {
@@ -75,10 +82,12 @@ export default {
     },
     cancel() {
       this.$refs.tagSetDeleteModal.close();
-      this.$socket.emit("stats", {
-        action: "cancelModalDeleteTagSet",
-        data: {id: this.id}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "cancelModalDeleteTagSet",
+          data: {id: this.id}
+        });
+      }
     },
   }
 }
