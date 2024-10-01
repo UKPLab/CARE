@@ -55,10 +55,10 @@ module.exports = class MoodleSocket extends Socket {
         this.socket.emit("downloadSubmissions", response);
     }
 
-    async uploadPasswordsToMoodle(data) {
+    async uploadLoginDataTomoodle(data) {
         this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
 
-        const response = await this.server.rpcs["MoodleRPC"].uploadPasswordsToMoodle(data);
+        const response = await this.server.rpcs["MoodleRPC"].uploadLoginDataTomoodle(data);
 
         this.logger.info("Response: " + response);
         

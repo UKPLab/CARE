@@ -44,7 +44,7 @@ module.exports = class MoodleRPC extends RPC {
      * @param {number} data.courseID - The ID of the course to fetch users from.
      * @param {string} data.options.apiKey - The API token for the Moodle instance
      * @param {string} data.options.url - The URL of the Moodle instance.
-     * @returns {Promise<Object>} - User information in csv format. (Columns: id, firstname, lastname, email, username, roles)
+     * @returns {Promise<List>} - List of dictionaries, each containing the following keys: id, firstname, lastname, email, username, roles
      * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
      */
     async getUsersFromCourse(data) {
@@ -57,13 +57,16 @@ module.exports = class MoodleRPC extends RPC {
 
     /**
      * Retrieves users from a specified assignemtn in a moodle course and returns the data as an array.
+     * 
+     * WARNING: This method only works, if at least one submission has been made to the assignment. 
+     * If you need to use it before any students have submitted, you can submit a dummy file to the assignment.
      *
      * @param {Object} data - The data object containing the course ID, assignment ID, Moodle URL and the API token.
      * @param {number} data.courseID - The ID of the course to fetch users from.
      * @param {number} data.assignmentID - The ID of the assignment to fetch users from.
      * @param {string} data.options.apiKey - The API token for the Moodle instance
      * @param {string} data.options.url - The URL of the Moodle instance.
-     * @returns {Promise<Object>} - User information in csv format. (Columns: id, firstname, lastname, email, username, roles)
+     * @returns {Promise<List>} - List of dictionaries, each containing the following keys: id, firstname, lastname, email, username, roles@
      * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
      */
     async getUsersFromAssignment(data) {
@@ -123,9 +126,9 @@ module.exports = class MoodleRPC extends RPC {
      * @param {string} data.options.url - The URL of the Moodle instance.
      * @returns {Promise<void>} - A promise that resolves when the passwords have been uploaded.
      */
-    async uploadPasswordsToMoodle(data) {
+    async uploadLoginDataToMoodle(data) {
         try {
-            return this.request("uploadPasswordsToMoodle", data);
+            return this.request("uploadLoginDataToMoodle", data);
         } catch (err) {
             throw err;
         }
