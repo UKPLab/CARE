@@ -120,8 +120,8 @@ module.exports = class MoodleRPC extends RPC {
      *
      * @param {Object} data - The data required for uploading passwords.
      * @param {number} data.courseID - The ID of the course to fetch users from.
-     * @param {number} data.assignment_id - The ID of the Moodle assignment.
-     * @param {Array<Object>} data.passwords - A list of dictionaries containing user IDs and passwords.
+     * @param {number} data.assignmentID - The ID of the Moodle assignment.
+     * @param {Array<Object>} data.loginData - A list of dictionaries containing user IDs and passwords.
      * @param {string} data.options.apiKey - The API token for the Moodle instance
      * @param {string} data.options.url - The URL of the Moodle instance.
      * @returns {Promise<void>} - A promise that resolves when the passwords have been uploaded.

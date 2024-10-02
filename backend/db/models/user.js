@@ -395,6 +395,11 @@ module.exports = (sequelize, DataTypes) => {
       }
     }
 
+    /**
+     * Bulk create or update users
+     * @param {*} users - Users to be created or updated
+     * @returns {Promise<array>} - A list of created or updated users
+     */
     static async bulkCreateUsers(users) {
       try {
         // Moodle's role names are subject to change.

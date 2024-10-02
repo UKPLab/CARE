@@ -86,6 +86,15 @@ module.exports = class UserSocket extends Socket {
     }
   }
 
+  /**
+   * Retrieves users from a specified moodle course and returns the data as an array.
+   *
+   * @param {Object} courseData - The data object containing the course ID, Moodle URL and the API token.
+   * @param {number} courseData.courseID - The ID of the course to fetch users from.
+   * @param {string} courseData.options.apiKey - The API token for the Moodle instance
+   * @param {string} courseData.options.url - The URL of the Moodle instance.
+   * @returns {Promise<Array>} - An array of objects, each containing the following keys: id, firstname, lastname, email, username, roles
+   */
   async getUsersFromCourse(courseData) {
     try {
       return await this.server.rpcs["MoodleRPC"].getUsersFromCourse(courseData);
@@ -94,18 +103,29 @@ module.exports = class UserSocket extends Socket {
     }
   }
 
-  async uploadDataToMoodle(data) {
+  /**
+   * Uploads login data to a Moodle assignment as feedback comments.
+   * @param {Object} moodleData - The data required for uploading login data.
+   * @param {number} moodleData.courseID - The ID of the course to fetch users from.
+   * @param {number} moodleData.assignmentID - The ID of the Moodle assignment.
+   * @param {Array<Object>} moodleData.loginData - An array of objects containing user IDs, usernames and passwords.
+   * @param {string} moodleData.options.apiKey - The API token for the Moodle instance
+   * @param {string} moodleData.options.url - The URL of the Moodle instance.
+   * @returns {Promise<void>} - A promise that resolves when the passwords have been uploaded.
+   */
+  async uploadDataToMoodle(moodleData) {
     try {
-      return await this.server.rpcs["MoodleRPC"].uploadLoginDataToMoodle(data);
+      return await this.server.rpcs["MoodleRPC"].uploadLoginDataToMoodle(moodleData);
     } catch (error) {
       this.logger.error(error);
     }
   }
 
   init() {
-    this.socket.on("userUploadToMoodle", async (courseData, callback) => {
+    // Upload moodleIDs, usernames and passwords to Moodle
+    this.socket.on("userUploadToMoodle", async (moodleData, callback) => {
       try {
-        const { success, data } = await this.uploadDataToMoodle(courseData);
+        const { success, data } = await this.uploadDataToMoodle(moodleData);
         callback({
           success,
           users: data,
@@ -252,6 +272,7 @@ module.exports = class UserSocket extends Socket {
       }
     });
 
+    // Send in users to check against the DB if the users are already in the DB
     this.socket.on("userCheckDuplicates", async (users, callback) => {
       try {
         const emails = users.map((user) => user.email);
@@ -273,6 +294,7 @@ module.exports = class UserSocket extends Socket {
       }
     });
 
+    // Bulk create users
     this.socket.on("userBulkCreate", async (users, callback) => {
       try {
         const createdUsers = await this.models["user"].bulkCreateUsers(users);
