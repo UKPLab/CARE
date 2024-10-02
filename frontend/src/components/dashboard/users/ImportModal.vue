@@ -107,7 +107,7 @@
             :columns="columns"
             :data="users"
             :options="tableOptions"
-            @row-selection="selectUsers"
+            @row-selection="(users) => (selectedUsers = users)"
           />
         </div>
         <!-- Step2:  -->
@@ -174,7 +174,6 @@ import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import Papa from "papaparse";
-import { testData } from "./testData";
 import { downloadObjectsAs } from "@/assets/utils.js";
 
 /**
@@ -332,11 +331,18 @@ export default {
         options,
       };
       this.$socket.emit("userUploadToMoodle", courseData, (res) => {
-        console.log("userUploadToMoodle");
         if (res.success) {
-          console.log("userUploadToMoodle success");
+          this.eventBus.emit("toast", {
+            title: "Uploading completed",
+            message: "Please go to Moodle to check out your username and password!",
+            variant: "success",
+          });
         } else {
-          console.log({ res });
+          this.eventBus.emit("toast", {
+            title: "Uploading failed",
+            message: "Please contact CARE staff to resolve the issue",
+            type: "error",
+          });
         }
       });
     },
@@ -356,9 +362,12 @@ export default {
       this.selectedUsers = [];
       if (this.updatedUserCount) {
         this.updatedUserCount = null;
+        this.createdUsers = [];
         this.$emit("updateUser");
       }
-      // this.eventBus.emit("resetFormField");
+      if (this.importType === "moodle") {
+        this.eventBus.emit("resetFormField");
+      }
     },
     prevStep() {
       if (this.currentStep > 0) {
@@ -375,7 +384,7 @@ export default {
           this.handleStepZero();
           break;
         case 1:
-          this.handleStepOne();
+          this.$refs.modal.waiting = false;
           break;
         case 2:
           this.handleStepTwo();
@@ -389,30 +398,13 @@ export default {
         const { courseID, apiKey, url } = this.moodleData;
         const options = { apiKey, url };
         this.$socket.emit("userGetMoodleData", { courseID, options }, (res) => {
-          console.log({ res });
-          let parsedData;
-          Papa.parse(res.users, {
-            header: true,
-            complete: function (results) {
-              const { data, errors } = results;
-              // TODO: Temporary fix, remove the problematic one directly.
-              if (errors.length > 0) {
-                errors.forEach(({ row }) => {
-                  data.splice(row, 1);
-                });
-              }
-              parsedData = data;
-            },
-          });
-          this.users = parsedData;
+          const { users } = res;
+          this.users = users;
           this.checkDuplicateUsers();
         });
       } else {
         this.checkDuplicateUsers();
       }
-    },
-    handleStepOne() {
-      this.$refs.modal.waiting = false;
     },
     handleStepTwo() {
       this.$socket.emit("userBulkCreate", this.selectedUsers, (res) => {
@@ -425,7 +417,11 @@ export default {
             updated: this.createdUsers.filter((u) => u.status === "duplicate").length,
           };
         } else {
-          console.log(res);
+          this.eventBus.emit("toast", {
+            title: "Failed to bulk create users",
+            message: "Please contact CARE staff to resolve the issue",
+            type: "error",
+          });
         }
       });
     },
@@ -531,14 +527,17 @@ export default {
       };
       this.$refs.fileInput.value = "";
     },
-    selectUsers(users) {
-      this.selectedUsers = users;
-    },
     checkDuplicateUsers() {
       this.$socket.emit("userCheckDuplicates", this.users, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
           this.users = res.users;
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to check duplicate users",
+            message: "Please contact CARE staff to resolve the issue",
+            type: "error",
+          });
         }
       });
     },
