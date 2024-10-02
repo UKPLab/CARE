@@ -178,7 +178,7 @@ import Papa from "papaparse";
 import { downloadObjectsAs } from "@/assets/utils.js";
 
 /**
- * Modal for bulk creating users through csv file
+ * Modal for bulk creating users through csv file and Moodle API
  * @author: Linyin Huang
  */
 export default {
