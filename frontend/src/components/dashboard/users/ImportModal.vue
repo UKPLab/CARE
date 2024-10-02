@@ -12,6 +12,7 @@
         <div
           v-for="(step, index) in steps"
           :key="index"
+          :data-index="index + 1"
           :class="{ active: currentStep === index }"
         >
           {{ step.title }}
@@ -551,19 +552,50 @@ export default {
   display: flex;
   justify-content: space-between;
   margin-bottom: 1.25rem;
+  position: relative;
+  &:after {
+    content: "";
+    position: absolute;
+    top: 15px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #ccc;
+  }
 }
 
 .stepper div {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  z-index: 1;
+  background-color: white;
+  padding: 0 5px;
+  &:before {
+    --dimension: 30px;
+    content: attr(data-index);
+    margin-right: 6px;
+    display: inline-flex;
+    width: var(--dimension);
+    height: var(--dimension);
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #6c6b6b;
+  }
+  &:first-child {
+    padding-left: 0;
+  }
+  &:last-child {
+    padding-right: 0;
+  }
 }
 
 .stepper div.active {
   --btn-color: #0d6efd;
-  background-color: var(--btn-color);
-  color: white;
   border-color: var(--btn-color);
+  &:before {
+    color: white;
+    background-color: var(--btn-color);
+    border-color: var(--btn-color);
+  }
 }
 
 .content-container {
