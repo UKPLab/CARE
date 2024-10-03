@@ -206,7 +206,7 @@ This can be done by running the following command:
 
 .. code-block:: bash
 
-    
+    docker compose -f docker-compose.yml build rpc_moodle
 .. code-block:: bash
 
     docker compose -f docker-compose.yml run rpc_moodle
