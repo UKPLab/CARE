@@ -4,7 +4,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn("user", "moodleId", {
       allowNull: true,
-      type: Sequelize.STRING,
+      type: Sequelize.INTEGER,
       unique: true
     });
   },

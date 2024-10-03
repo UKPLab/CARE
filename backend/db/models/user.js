@@ -433,7 +433,7 @@ module.exports = (sequelize, DataTypes) => {
                   email: user.email,
                   passwordHash: pwdHash,
                   salt,
-                  moodleId: user.id,
+                  moodleId: Number(user.id),
                   acceptTerms: false,
                   acceptStats: false,
                   createdAt: new Date(),
@@ -529,7 +529,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       moodleId: {
-        type: DataTypes.STRING,
+        type: DataTypes.INTEGER,
         allowNull: true,
       },
     },

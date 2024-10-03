@@ -96,8 +96,11 @@ module.exports = class UserSocket extends Socket {
    * @returns {Promise<Array>} - An array of objects, each containing the following keys: id, firstname, lastname, email, username, roles
    */
   async getUsersFromCourse(courseData) {
+    const { courseID } = courseData;
+    const convertedCourseID = Number(courseID);
+    const updatedCourseData = { ...courseData, convertedCourseID };
     try {
-      return await this.server.rpcs["MoodleRPC"].getUsersFromCourse(courseData);
+      return await this.server.rpcs["MoodleRPC"].getUsersFromCourse(updatedCourseData);
     } catch (error) {
       this.logger.error(error);
     }
@@ -114,8 +117,12 @@ module.exports = class UserSocket extends Socket {
    * @returns {Promise<void>} - A promise that resolves when the passwords have been uploaded.
    */
   async uploadDataToMoodle(moodleData) {
+    const { courseID, assignmentID } = moodleData;
+    const convertedCourseID = Number(courseID);
+    const convertedAsgID = Number(assignmentID);
+    const updatedMoodleData = { ...moodleData, convertedCourseID, convertedAsgID };
     try {
-      return await this.server.rpcs["MoodleRPC"].uploadLoginDataToMoodle(moodleData);
+      return await this.server.rpcs["MoodleRPC"].uploadLoginDataToMoodle(updatedMoodleData);
     } catch (error) {
       this.logger.error(error);
     }
