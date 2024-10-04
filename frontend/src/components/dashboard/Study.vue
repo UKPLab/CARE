@@ -45,7 +45,7 @@ export default {
     }
   },
   props: {},
-  fetchData: ['study','study_session'],
+  fetchData: ['study','study_session','workflow','workflow_step'],
   data() {
     return {
       options: {
@@ -58,11 +58,20 @@ export default {
       },
       columns: [
         {name: "Name", key: "name"},
-        {name: "Document", key: "documentName"},
         {name: "Start", key: "start", sortable: true},
         {name: "End", key: "end", sortable: true},
         {name: "Created", key: "createdAt", sortable: true},
         {name: "Time Limit", key: "timeLimit", sortable: true},
+        {name: "Session Limit", key: "sessionLimit"},
+        {
+          name: "Status", 
+          key: "closed",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {null: "Open", true: "Closed"},
+            classMapping: {null: "bg-warning", true: "bg-secondary"}
+          }
+        },
         {
           name: "Resumable",
           key: "resumable",
@@ -75,6 +84,15 @@ export default {
         {
           name: "Collaborative",
           key: "collab",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", false: "No"},
+            classMapping: {true: "bg-success", false: "bg-danger"}
+          }
+        },
+        {
+          name: "Multiple Submissions",  
+          key: "multipleSubmit",
           type: "badge",
           typeOptions: {
             keyMapping: {true: "Yes", false: "No"},
@@ -116,8 +134,10 @@ export default {
 
             study.createdAt = new Date(study.createdAt).toLocaleString()
 
-            const doc = this.$store.getters["table/document/get"](study.documentId)
-            study.documentName = doc ? doc.name : "-";
+            study.closed = study.closed ? true : null;
+
+            // TODO Session Limit als Slider festlegen + Calculate current open sessions and display the limitSessions
+            // TODO when and where will multipleSubmit be set to true?
             
             const workflow = this.$store.getters["table/workflow/get"](study.workflowId);
             study.workflowName = workflow ? workflow.name : "Unknown Workflow";
