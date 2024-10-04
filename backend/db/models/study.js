@@ -65,6 +65,19 @@ module.exports = (sequelize, DataTypes) => {
                 default: 0,
             },
             {
+                key: "limitSessions",
+                type: "slider",
+                label: "Limit the number of sessions for the study:",
+                // help: "0 = disable time limitation", Usefull?
+                size: 12,
+                unit: "Sessions",
+                min: 1,
+                max: 200,  
+                step: 1,
+                default: 100, 
+                help: "Set the maximum number of times participants can start or resume the study. Each attempt to complete the study is called a session."
+            },
+            {
                 key: "collab",
                 label: "Should the study be collaborative?",
                 type: "switch",
@@ -75,6 +88,13 @@ module.exports = (sequelize, DataTypes) => {
                 label: "Should the study be resumable?",
                 type: "switch",
                 default: false,
+            },
+            {
+                key: "multipleSubmit",
+                label: "Allow multiple submissions?",
+                type: "switch",
+                default: false,
+                help: "Specify whether participants can submit their study multiple times."
             },
             {
                 key: "start",
