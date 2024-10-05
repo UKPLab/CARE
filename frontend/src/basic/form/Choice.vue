@@ -138,11 +138,16 @@
     },
     methods: {
       add() {
-        this.currentData.push(
-          Object.assign({}, ...this.fields.map(f => ({
-            [f.key]: ("default" in f) ? f.default : this.defaults[f.type]
-          })))
-        );
+        const newEntry = {};
+        this.fields.forEach(f => {
+          newEntry[f.key] = "default" in f 
+            ? f.default 
+            : null
+        });
+
+        if (Object.keys(newEntry).length) {
+          this.currentData.push(newEntry);
+        }
       },
       deleteEntry(index) {
         if (this.currentData[index].id) {

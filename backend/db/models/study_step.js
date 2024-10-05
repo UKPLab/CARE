@@ -12,7 +12,8 @@ module.exports = (sequelize, DataTypes) => {
           type: "select",  
           options: {
               table: "document", 
-              id: "documentId",  
+              id: "documentId",
+              name: "name"  
           },
           required: true,
       },
