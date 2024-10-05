@@ -26,10 +26,9 @@ module.exports = (sequelize, DataTypes) => {
                 key: "workflowId", 
                 label: "Select Workflow for Study:",
                 type: "select", 
-                options: [
-                    { value: 1, name: "Peer Review Workflow" },  
-                    { value: 2, name: "Rummels Project" }        
-                ],
+                options: {
+                    table: "workflow", name: "name", value: "id"
+                },
                 icon: "list", 
                 required: true,
                 help: "Choose a workflow template for the study steps."
