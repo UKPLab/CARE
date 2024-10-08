@@ -196,10 +196,10 @@ export default {
         errors: [],
       },
       moodleData: {
-        url: "https://moodle.informatik.tu-darmstadt.de",
-        apiKey: "REDACTED_SECRET",
-        courseID: "1615",
-        assignmentID: "69265",
+        url: "",
+        apiKey: "",
+        courseID: "",
+        assignmentID: "",
       },
       baseFields: [
         {
@@ -207,18 +207,21 @@ export default {
           label: "Course ID:",
           type: "text",
           required: true,
+          placeholder: "course-id-placeholder",
         },
         {
           key: "apiKey",
           label: "Moodle API Key:",
           type: "text",
           required: true,
+          placeholder: "api-key-placeholder",
         },
         {
           key: "url",
           label: "Moodle URL:",
           type: "text",
           required: true,
+          placeholder: "https://example.moodle.com",
         },
       ],
       users: [],
@@ -291,6 +294,7 @@ export default {
           label: "Assignment ID:",
           type: "text",
           required: true,
+          placeholder: "assignment-id-placeholder",
         },
       ];
     },
@@ -399,9 +403,18 @@ export default {
         const { courseID, apiKey, url } = this.moodleData;
         const options = { apiKey, url };
         this.$socket.emit("userGetMoodleData", { courseID, options }, (res) => {
-          const { users } = res;
-          this.users = users;
-          this.checkDuplicateUsers();
+          this.$refs.modal.waiting = false;
+          if (res.success) {
+            const { users } = res;
+            this.users = users;
+            this.checkDuplicateUsers();
+          } else {
+            this.eventBus.emit("toast", {
+              title: "Failed to get users from Moodle",
+              message: "Please contact CARE staff to resolve the issue",
+              type: "error",
+            });
+          }
         });
       } else {
         this.checkDuplicateUsers();
@@ -529,7 +542,7 @@ export default {
       this.$refs.fileInput.value = "";
     },
     checkDuplicateUsers() {
-      this.$socket.emit("userCheckDuplicates", this.users, (res) => {
+      this.$socket.emit("userCheckDuplicatesByEmail", this.users, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
           this.users = res.users;

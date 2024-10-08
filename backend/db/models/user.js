@@ -2,8 +2,6 @@
 const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
 const { genSalt, genPwdHash } = require("../../utils/auth.js");
-const { v4: uuidv4 } = require("uuid");
-const { generateMarvelUsername } = require("../../utils/nameGenerator");
 
 module.exports = (sequelize, DataTypes) => {
   class User extends MetaModel {
@@ -111,11 +109,11 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
-     * Get users' email
-     * @param {string[]} emails a list of emails
+     * Filter and return existing emails from a given list
+     * @param {string[]} emails a list of emails to check
      * @returns {Promise<array>} a list of emails
      */
-    static async getUsersEmail(emails) {
+    static async filterExistingEmails(emails) {
       return await User.findAll({
         where: {
           email: {
@@ -392,117 +390,6 @@ module.exports = (sequelize, DataTypes) => {
         }
       } catch (error) {
         this.logger.error("Failed to update user: " + error);
-      }
-    }
-
-    /**
-     * Bulk create or update users
-     * @param {*} users - Users to be created or updated
-     * @returns {Promise<array>} - A list of created or updated users
-     */
-    static async bulkCreateUsers(users) {
-      try {
-        // Moodle's role names are subject to change.
-        const moodleCareRoleMap = {
-          "Dozent*in": "teacher",
-          "Betreuer*in": "teacher",
-          "Tutor*in": "mentor",
-          "Student*in": "student",
-        };
-        const createdUsers = [];
-        for (const user of users) {
-          let createdUser, password;
-          if (user.status === "new") {
-            // Generate a password using UUID (8 characters)
-            password = uuidv4().replace(/-/g, "").substring(0, 8);
-            const salt = genSalt();
-            const pwdHash = await genPwdHash(password, salt);
-
-            let username;
-            let retries = 0;
-            const maxRetries = 5;
-
-            while (retries < maxRetries) {
-              username = generateMarvelUsername();
-              try {
-                // Attempt to create the user
-                createdUser = await User.create({
-                  firstName: user.firstname,
-                  lastName: user.lastname,
-                  userName: username,
-                  email: user.email,
-                  passwordHash: pwdHash,
-                  salt,
-                  moodleId: Number(user.id),
-                  acceptTerms: false,
-                  acceptStats: false,
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                });
-                break;
-              } catch (error) {
-                if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "userName") {
-                  retries++;
-                } else {
-                  throw error;
-                }
-              }
-            }
-
-            if (!createdUser) {
-              throw new Error("Failed to create user with unique username");
-            }
-          } else {
-            // Update the user's details
-            await User.update(
-              {
-                firstName: user.firstname,
-                lastName: user.lastname,
-                moodleId: user.id,
-              },
-              {
-                where: { email: user.email },
-              }
-            );
-
-            // Fetch the updated user
-            createdUser = await User.findOne({ where: { email: user.email } });
-          }
-
-          // Find and assign roles
-          const assignedRoles = [];
-          const userRoles = user.roles.split(", ");
-          for (const roleName of userRoles) {
-            const userRole = await this.sequelize.models["user_role"].findOne({
-              where: { name: moodleCareRoleMap[roleName] },
-            });
-            if (!userRole) {
-              continue;
-            }
-
-            await this.sequelize.models["user_role_matching"].create({
-              userId: createdUser.id,
-              userRoleId: userRole.id,
-            });
-            assignedRoles.push(roleName);
-          }
-
-          createdUsers.push({
-            id: createdUser.moodleId,
-            firstname: createdUser.firstName,
-            lastname: createdUser.lastName,
-            username: createdUser.userName,
-            email: createdUser.email,
-            roles: assignedRoles.join(", "),
-            password: user.status === "new" ? password : "",
-            status: user.status,
-          });
-        }
-
-        return createdUsers;
-      } catch (error) {
-        console.log({ error });
-        this.logger.error("Failed to bulk update users: " + error);
       }
     }
   }
