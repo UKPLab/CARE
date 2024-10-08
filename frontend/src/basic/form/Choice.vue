@@ -82,7 +82,7 @@
    * @author Dennis Zyska
    */
   export default {
-    name: "FormTable",
+    name: "FormChoice",
     components: {FormElement, FormDefault, FormSelect},
     props: {
       options: { // hier bekommen wir workflowstepDocument - hier kann gefiltert werden, welche Dokumente gebraucht werden
@@ -95,6 +95,11 @@
         default: () => [],
       },
   
+    },
+    inject: {
+    formData: {
+      default: () => null
+    },
     },
     emits: ["update:modelValue"],
     data() {

@@ -95,6 +95,7 @@ import FormEditor from "@/basic/form/Editor.vue";
 import FormTable from "@/basic/form/DataTable.vue";
 import FormChoice from "@/basic/form/Choice.vue";
 import deepEqual from "deep-equal";
+import {computed} from "vue";
 
 /**
  * Basic form component for rendering form fields provided by fields prop
@@ -115,6 +116,11 @@ export default {
     FormEditor,
     FormTable,
     FormChoice
+  },
+  provide() { //Gibt Daten an Unterkomponenten weiter
+    return {
+      formData: computed(() => this.currentData),
+    };
   },
   props: {
     modelValue: {
