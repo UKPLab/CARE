@@ -1,4 +1,7 @@
 const Socket = require("../Socket.js");
+const { v4: uuidv4 } = require("uuid");
+const { genSalt, genPwdHash } = require("../../utils/auth.js");
+const { generateMarvelUsername } = require("../../utils/generator.js");
 
 /**
  * Handle user through websocket
@@ -126,6 +129,116 @@ module.exports = class UserSocket extends Socket {
     } catch (error) {
       this.logger.error(error);
     }
+  }
+
+  /**
+   * Bulk create or update users
+   * @param {*} users - Users to be created or updated
+   * @returns {Promise<array>} - A list of created or updated users
+   */
+  async bulkCreateUsers(users) {
+    try {
+      // Moodle's role names are subject to change.
+      const moodleCareRoleMap = {
+        "Dozent*in": "teacher",
+        "Betreuer*in": "teacher",
+        "Tutor*in": "mentor",
+        "Student*in": "student",
+      };
+      const createdUsers = [];
+      for (const user of users) {
+        let createdUser, password;
+        if (user.status === "new") {
+          // Generate a password using UUID (8 characters)
+          password = uuidv4().replace(/-/g, "").substring(0, 8);
+          const salt = genSalt();
+          const pwdHash = await genPwdHash(password, salt);
+
+          let username;
+          let retries = 0;
+          const maxRetries = 5;
+
+          while (retries < maxRetries) {
+            username = generateMarvelUsername();
+            try {
+              // Attempt to create the user
+              createdUser = await this.models["user"].create({
+                firstName: user.firstname,
+                lastName: user.lastname,
+                userName: username,
+                email: user.email,
+                passwordHash: pwdHash,
+                salt,
+                moodleId: Number(user.id),
+                acceptTerms: false,
+                acceptStats: false,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              });
+              break;
+            } catch (error) {
+              if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "userName") {
+                retries++;
+              } else {
+                throw error;
+              }
+            }
+          }
+
+          if (!createdUser) {
+            throw new Error("Failed to create user with unique username");
+          }
+        } else {
+          // Update the user's details
+          await this.models["user"].update(
+            {
+              firstName: user.firstname,
+              lastName: user.lastname,
+              moodleId: user.id,
+            },
+            {
+              where: { email: user.email },
+            }
+          );
+
+          // Fetch the updated user
+          createdUser = await this.models["user"].findOne({ where: { email: user.email } });
+        }
+
+        // Find and assign roles
+        const assignedRoles = [];
+        const userRoles = user.roles.split(", ");
+        for (const roleName of userRoles) {
+          const userRole = await this.models["user_role"].findOne({
+            where: { name: moodleCareRoleMap[roleName] },
+          });
+          if (!userRole) {
+            continue;
+          }
+
+          await this.models["user_role_matching"].create({
+            userId: createdUser.id,
+            userRoleId: userRole.id,
+          });
+          assignedRoles.push(roleName);
+        }
+
+        createdUsers.push({
+          id: createdUser.moodleId,
+          firstname: createdUser.firstName,
+          lastname: createdUser.lastName,
+          username: createdUser.userName,
+          email: createdUser.email,
+          roles: assignedRoles.join(", "),
+          password: user.status === "new" ? password : "",
+          status: user.status,
+        });
+      }
+
+      return createdUsers;
+    } catch (error) {
+      this.logger.error("Failed to bulk update users: " + error);
+    } 
   }
 
   init() {
@@ -280,10 +393,10 @@ module.exports = class UserSocket extends Socket {
     });
 
     // Send in users to check against the DB if the users are already in the DB
-    this.socket.on("userCheckDuplicates", async (users, callback) => {
+    this.socket.on("userCheckDuplicatesByEmail", async (users, callback) => {
       try {
         const emails = users.map((user) => user.email);
-        const existingEmails = await this.models["user"].getUsersEmail(emails);
+        const existingEmails = await this.models["user"].filterExistingEmails(emails);
         const duplicateEmails = existingEmails.map((item) => item.email);
         users.forEach((user) => {
           user.status = duplicateEmails.includes(user.email) ? "duplicate" : "new";
@@ -304,7 +417,7 @@ module.exports = class UserSocket extends Socket {
     // Bulk create users
     this.socket.on("userBulkCreate", async (users, callback) => {
       try {
-        const createdUsers = await this.models["user"].bulkCreateUsers(users);
+        const createdUsers = await this.bulkCreateUsers(users);
         callback({
           success: true,
           message: "Users successfully created",
