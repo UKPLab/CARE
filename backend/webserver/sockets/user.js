@@ -134,17 +134,11 @@ module.exports = class UserSocket extends Socket {
   /**
    * Bulk create or update users
    * @param {*} users - Users to be created or updated
+   * @param {Object} roleMap - A role map that maps an external platform roles to CARE roles
    * @returns {Promise<array>} - A list of created or updated users
    */
-  async bulkCreateUsers(users) {
+  async bulkCreateUsers(users, roleMap) {
     try {
-      // Moodle's role names are subject to change.
-      const moodleCareRoleMap = {
-        "Dozent*in": "teacher",
-        "Betreuer*in": "teacher",
-        "Tutor*in": "mentor",
-        "Student*in": "student",
-      };
       const createdUsers = [];
       for (const user of users) {
         let createdUser, password;
@@ -208,9 +202,10 @@ module.exports = class UserSocket extends Socket {
         // Find and assign roles
         const assignedRoles = [];
         const userRoles = user.roles.split(", ");
-        for (const roleName of userRoles) {
+        for (let roleName of userRoles) {
+          roleName = roleName.trim();
           const userRole = await this.models["user_role"].findOne({
-            where: { name: moodleCareRoleMap[roleName] },
+            where: { name: roleMap[roleName] },
           });
           if (!userRole) {
             continue;
@@ -238,7 +233,7 @@ module.exports = class UserSocket extends Socket {
       return createdUsers;
     } catch (error) {
       this.logger.error("Failed to bulk update users: " + error);
-    } 
+    }
   }
 
   init() {
@@ -415,9 +410,10 @@ module.exports = class UserSocket extends Socket {
     });
 
     // Bulk create users
-    this.socket.on("userBulkCreate", async (users, callback) => {
+    this.socket.on("userBulkCreate", async (userData, callback) => {
+      const { users, moodleCareRoleMap } = userData;
       try {
-        const createdUsers = await this.bulkCreateUsers(users);
+        const createdUsers = await this.bulkCreateUsers(users, moodleCareRoleMap);
         callback({
           success: true,
           message: "Users successfully created",

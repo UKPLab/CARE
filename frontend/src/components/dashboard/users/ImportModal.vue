@@ -421,7 +421,17 @@ export default {
       }
     },
     handleStepTwo() {
-      this.$socket.emit("userBulkCreate", this.selectedUsers, (res) => {
+      const userData = {
+        users: this.selectedUsers,
+        // Moodle's role names are subject to change
+        moodleCareRoleMap: {
+          "Dozent*in": "teacher",
+          "Betreuer*in": "teacher",
+          "Tutor*in": "mentor",
+          "Student*in": "student",
+        },
+      };
+      this.$socket.emit("userBulkCreate", userData, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
           const { createdUsers } = res;
