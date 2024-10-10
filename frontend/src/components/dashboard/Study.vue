@@ -63,6 +63,7 @@ export default {
         {name: "Created", key: "createdAt", sortable: true},
         {name: "Time Limit", key: "timeLimit", sortable: true},
         {name: "Session Limit", key: "limitSessions", sortable: true},
+        {name: "Session Limit per User", key: "limitSessionsPerUser", sortable: true},
         {
           name: "Status", 
           key: "closed",
@@ -136,7 +137,7 @@ export default {
 
             study.closed = study.closed ? true : null;
 
-            // TODO Calculate current open sessions and display the with limitSessions in this format: 2 | 100
+            // TODO: Calculate current open sessions and display the with limitSessions in this format: 2 | 100
             
             const workflow = this.$store.getters["table/workflow/get"](study.workflowId);
             study.workflowName = workflow ? workflow.name : "Unknown Workflow";

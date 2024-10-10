@@ -23,6 +23,11 @@ module.exports = {
       allowNull: true,
     });
 
+    await queryInterface.addColumn("study", "limitSessionsPerUser", {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    });
+
     await queryInterface.addColumn("study", "closed", {
       type: Sequelize.DATE,
       allowNull: true,
@@ -55,6 +60,7 @@ module.exports = {
     await queryInterface.removeColumn("study", "workflowId");
     await queryInterface.removeColumn("study", "multipleSubmit");
     await queryInterface.removeColumn("study", "limitSessions");
+    await queryInterface.removeColumn("study", "limitSessionsPerUser");
     await queryInterface.removeColumn("study", "closed");
     await queryInterface.removeColumn("study", "userIdClosed");
   },

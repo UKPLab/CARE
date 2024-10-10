@@ -233,6 +233,10 @@ export default {
       }
       return [];
     },
+    numberOfOpenedSessionsPerUser() {
+      return this.$store.getters["table/study_session/getByKey"]("userId", this.userId)
+      .filter(s => s.studyID === this.studyID).length;
+    },
     started() {
       if (this.study && this.study.start !== null) {
         return (new Date(this.study.start) < new Date());
@@ -240,6 +244,10 @@ export default {
       return true;
     },
     ended() {
+
+      //TODO: if end date ist not smaller than current date, the study has ended
+      
+
       if (this.study && this.study.end !== null) {
         return !(new Date() < new Date(this.study.end));
       }
@@ -262,6 +270,21 @@ export default {
     start() {
       // needed, otherwise the ref in the callback can become null
       const modal = this.$refs.modal;
+
+      let openedSessionsPerUser = this.numberOfOpenedSessionsPerUser;   
+      
+      const limitSessionsPerUser = this.$store.getters["table/study/get"](this.studyId).limitSessionsPerUser;
+      
+      if(limitSessionsPerUser != null){
+        if (openedSessionsPerUser >= limitSessionsPerUser) {
+          this.eventBus.emit('toast', {
+            title: "Study cannot be started!",
+            message: "You have already started the maximum number of sessions for this study.",
+            variant: "danger"
+          });
+          return;
+        }
+      }
 
       this.sockets.subscribe("studySessionStarted", (data) => {
         if (data.success) {
