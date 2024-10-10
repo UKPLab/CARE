@@ -50,6 +50,7 @@ module.exports = (sequelize, DataTypes) => {
             beforeCreate: async (studySession, options) => {
 
                 try{
+
                 const study = await sequelize.models.study.findOne({ where:
                      { id: studySession.studyId } 
                     });
@@ -58,7 +59,20 @@ module.exports = (sequelize, DataTypes) => {
                     throw new Error('Study not found');
                 }
 
+                const limitSessions = study.limitSessions;
                 const limitSessionsPerUser = study.limitSessionsPerUser;
+
+                if (limitSessions != null) {
+                    const totalexistingSessionCount = await StudySession.count({
+                        where: {
+                            studyId: studySession.studyId
+                        }
+                    });
+
+                    if (totalexistingSessionCount >= limitSessions) {
+                        throw new Error(`Cannot create more than ${limitSessions} sessions for this study.`);
+                    }
+                }
 
                 if (limitSessionsPerUser != null) {
                     const existingSessionCountPerUser = await StudySession.count({
