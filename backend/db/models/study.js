@@ -77,6 +77,19 @@ module.exports = (sequelize, DataTypes) => {
                 help: "Set the maximum number of times participants can start or resume the study. Each attempt to complete the study is called a session."
             },
             {
+                key: "limitSessionsPerUser",
+                type: "slider",
+                label: "Limit the number of sessions for the study:",
+                // help: "0 = disable time limitation", Usefull?
+                size: 12,
+                unit: "Sessions",
+                min: 1,
+                max: 200,  
+                step: 1,
+                default: 100, 
+                help: "Set the maximum number of times each participant can start or resume the study. Each attempt to complete the study is called a session."
+            },
+            {
                 key: "collab",
                 label: "Should the study be collaborative?",
                 type: "switch",
@@ -154,6 +167,7 @@ module.exports = (sequelize, DataTypes) => {
         timeLimit: DataTypes.INTEGER,
         multipleSubmit: DataTypes.BOOLEAN,
         limitSessions: DataTypes.INTEGER,
+        limitSessionsPerUser: DataTypes.INTEGER,
         closed: DataTypes.DATE,
         userIdClosed: DataTypes.INTEGER,
         start: DataTypes.DATE,
