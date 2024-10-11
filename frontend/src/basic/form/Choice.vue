@@ -3,37 +3,38 @@
     <template #element>
       <table class="table table-hover">
         <thead>
-          <tr>
-            <th v-for="f in fields" :key="f.name" scope="col">
-              {{ f.label }}
-            </th>
-            <th scope="col">
-              Actions
+          <tr v-for="(step, index) in workflowSteps" :key="'step_' + index">
+            <th :colspan="fields.length + 1" class="font-weight-bold">
+              Select Document for Workflow Step {{ index + 1 }}
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(step, stepIndex) in workflowSteps" :key="'step_' + stepIndex">
-            <td :colspan="fields.length + 2" class="font-weight-bold">
-              Select Document for Workflow Step {{ stepIndex + 1 }}: {{ step.name }}
-            </td>
-          </tr>
-          <tr v-for="(currentData, index) in currentData" :key="'entry_' + index">
-            <td>
+          <tr v-for="(step, index) in workflowSteps" :key="'entry_' + index">
+            <td v-for="f in fields" :key="f.name">
               <FormSelect
-                v-if="allDocumentOptions"
-                :ref="index"
-                v-model="currentData.document"
-                :options="allDocumentOptions"
+                v-if="f.type === 'select'"
+                :ref="'ref_' + f.key"
+                v-model="step.document"
+                :data-table="true"
+                :options="{ options: step.documentOptions, value: 'value', name: 'name' }"
                 placeholder="Select a Document"
               />
-          </td>
+              <FormDefault
+                v-else
+                :ref="'ref_' + f.key"
+                v-model="step[f.key]"
+                :data-table="true"
+                :options="f"
+              />
+            </td>
           </tr>
-          </tbody>
-        </table>
-      </template>
-    </FormElement>
-  </template>
+        </tbody>
+      </table>
+    </template>
+  </FormElement>
+</template>
+
   <script>
   import FormElement from "@/basic/form/Element.vue"
   import FormDefault from "@/basic/form/Default.vue"
@@ -70,21 +71,6 @@
         currentData: [],
       }
     },
-    watch: {
-      modelValue: {
-        handler() {
-          this.currentData = (this.modelValue) ? this.modelValue : [];
-        }, deep: true
-      }
-    },
-      workflowSteps: {
-        handler() {
-          console.log("WorkflowSteps changed: updating currentData");
-          this.updateCurrentData();
-        },
-        immediate: true,
-        deep: true,
-      },
     computed: {
       fields() {
         return this.$store.getters["table/" + this.options.options.table + "/getFields"];
@@ -92,50 +78,30 @@
       workflowSteps() {
         const workflowId = this.formData?.workflowId;
         const allSteps = this.$store.getters["table/workflow_step/getAll"];
-        const steps = allSteps.filter((step) => step.workflowId === workflowId && step.workflowStepDocument === null);
-        return steps;
-      },
-      allDocumentOptions() {
-        console.log("Computed: Fetching all document options.");
-        if (!this.options || !this.options.options) {
-          console.log("Options are not fully available yet.");
-          return [];
-        }
+        const filteredSteps = allSteps.filter(step => step.workflowId === workflowId && step.workflowStepDocument === null);
         const allDocuments = this.$store.getters["table/document/getAll"];
-        console.log("Computed: All Documents: ", allDocuments);
-        return allDocuments;
-      },
-      tableIndices() {
-        return this.currentData.map((e, i) => ({
-          index: i,
-          deleted: e.deleted
-        })).filter((e) => !e.deleted).map(e => e.index)
-      },
-      data() {
-        return this.$store.getters["table/" + this.options.options.table + "/getAll"].filter(
-          d => d[this.options.options.id] === this.options.options.value
-        );
-      },
+        
+        return filteredSteps.map(step => {
+          const filteredDocuments = allDocuments.filter(doc => {
+            if (step.stepType === 1) return doc.type === 0; // For PDF steps
+            if (step.stepType === 2) return doc.type === 1; // For HTML steps
+            return false;
+          });
+
+          return {
+            ...step,
+            documentOptions: filteredDocuments.map(doc => ({
+              value: doc.id,
+              name: doc.name || doc.title
+            }))
+          };
+        });
+      }
     },
     mounted() {
       this.currentData = (this.modelValue) ? this.modelValue : [];
     },
     methods: {
-      updateCurrentData() {
-        console.log("Updating currentData based on workflowSteps.");
-        const newData = this.workflowSteps.map((step) => {
-          const newEntry = {};
-          this.fields.forEach((f) => {
-            newEntry[f.key] = "default" in f ? f.default : null;
-          });
-          newEntry.stepId = step.id;
-          newEntry.stepName = step.name;
-          newEntry.document = null;
-          return newEntry;
-        });
-        this.currentData = newData;
-        console.log("Updated currentData: ", this.currentData);
-      },
       validate() {
         return Object.keys(this.$refs)
           .filter(child => typeof this.$refs[child][0].validate === 'function')
