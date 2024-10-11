@@ -6,7 +6,7 @@ const workflows = [
     description: "EiWA Project: Review a PDF document and write free text.",
     steps: [
       { stepType: 1, allowBackward: true, workflowStepDocument: null },
-      { stepType: 2, allowBackward: true, workflowStepDocument: null }
+      { stepType: 2, allowBackward: true, workflowStepDocument: 1 }
     ]
   },
   {
