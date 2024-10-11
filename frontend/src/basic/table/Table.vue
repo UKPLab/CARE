@@ -4,18 +4,27 @@
     class="table"
   >
     <thead>
-    <tr>
-      <th v-if="selectableRows"/>
-      <th
-        v-for="c in columns"
-        :key="c.key"
-        :class="'width' in c ? 'col-' + c.width : 'col-auto'"
-      >
-        {{ c.name }}
-        <span
-          v-if="c.sortable"
-          title="Sort By"
+      <tr>
+        <th v-if="selectableRows">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              :checked="isAllRowsSelected"
+              @change="selectAllRows"
+            />
+          </div>
+        </th>
+        <th
+          v-for="c in columns"
+          :key="c.key"
+          :class="'width' in c ? 'col-' + c.width : 'col-auto'"
         >
+          {{ c.name }}
+          <span
+            v-if="c.sortable"
+            title="Sort By"
+          >
             <LoadIcon
               v-if="c.sortable"
               :class="{
@@ -30,7 +39,7 @@
               @click="sort('sortKey' in c ? c.sortKey : c.key)"
             />
           </span>
-        <span v-if="filter && c.filter">
+          <span v-if="filter && c.filter">
             <span
               aria-expanded="true"
               aria-haspopup="true"
@@ -63,49 +72,50 @@
                 <label
                   :for="'filterDropDown_' + c.key + '_label_' + f.key"
                   class="form-check-label"
-                >{{ f.name }}</label
+                  >{{ f.name }}</label
                 >
               </li>
             </ul>
           </span>
-      </th>
-    </tr>
+        </th>
+      </tr>
     </thead>
     <tbody>
-    <tr v-if="serverSidePagination && total > 0 && data.length === 0">
-      <td
-        :colspan="columns.length"
-        class="text-center"
+      <tr v-if="serverSidePagination && total > 0 && data.length === 0">
+        <td
+          :colspan="columns.length"
+          class="text-center"
+        >
+          Loading data from server...
+        </td>
+      </tr>
+      <tr v-else-if="!data || data.length === 0">
+        <td
+          :colspan="columns.length"
+          class="text-center"
+        >
+          No data
+        </td>
+      </tr>
+      <tr
+        v-for="r in tableData"
+        v-else
+        :key="r"
       >
-        Loading data from server...
-      </td>
-    </tr>
-    <tr v-else-if="!data || data.length === 0">
-      <td
-        :colspan="columns.length"
-        class="text-center"
-      >
-        No data
-      </td>
-    </tr>
-    <tr
-      v-for="r in tableData"
-      v-else
-      :key="r"
-    >
-      <td v-if="selectableRows">
-        <div class="form-check">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            @input="(e) => selectRow(e.target.checked, r)"
-          />
-        </div>
-      </td>
-      <td
-        v-for="c in columns"
-        :key="c"
-      >
+        <td v-if="selectableRows">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              :checked="selectedRows.some((row) => deepEqual(row, r))"
+              @change="(e) => selectRow(e.target.checked, r)"
+            />
+          </div>
+        </td>
+        <td
+          v-for="c in columns"
+          :key="c"
+        >
           <span v-if="c.key in r">
             <TIcon
               v-if="c.type === 'icon'"
@@ -167,9 +177,9 @@
               {{ r[c.key] }}
             </span>
           </span>
-        <span v-else> - </span>
-      </td>
-    </tr>
+          <span v-else> - </span>
+        </td>
+      </tr>
     </tbody>
   </table>
   <Pagination
@@ -193,7 +203,7 @@ import TBadge from "./Badge.vue";
 import TIcon from "./Icon.vue";
 import Pagination from "./Pagination.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import {tooltip} from "@/assets/tooltip.js";
+import { tooltip } from "@/assets/tooltip.js";
 import deepEqual from "deep-equal";
 
 /**
@@ -214,11 +224,11 @@ export default {
     TToggle,
     LoadIcon,
   },
-  directives: {tooltip},
+  directives: { tooltip },
   inject: {
     acceptStats: {
-      default: () => false
-    }
+      default: () => false,
+    },
   },
   props: {
     data: {
@@ -233,8 +243,7 @@ export default {
     options: {
       type: Object,
       required: false,
-      default: () => {
-      },
+      default: () => {},
     },
     count: {
       type: Number,
@@ -261,6 +270,7 @@ export default {
       itemsPerPageList: [10, 25, 50, 100],
       paginationShowPages: 3,
       filter: null,
+      isAllRowsSelected: false,
     };
   },
   computed: {
@@ -313,19 +323,11 @@ export default {
       if (this.sortColumn) {
         if (this.sortDirection === "ASC") {
           data = data.sort((a, b) =>
-            a[this.sortColumn] > b[this.sortColumn]
-              ? 1
-              : b[this.sortColumn] > a[this.sortColumn]
-                ? -1
-                : 0
+            a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0
           );
         } else {
           data = data.sort((a, b) =>
-            a[this.sortColumn] < b[this.sortColumn]
-              ? 1
-              : b[this.sortColumn] < a[this.sortColumn]
-                ? -1
-                : 0
+            a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0
           );
         }
       }
@@ -347,10 +349,7 @@ export default {
       }
 
       if (this.options && this.options.pagination) {
-        data = data.slice(
-          (this.currentPage - 1) * this.limit,
-          this.currentPage * this.limit
-        );
+        data = data.slice((this.currentPage - 1) * this.limit, this.currentPage * this.limit);
       }
       return data;
     },
@@ -367,7 +366,7 @@ export default {
         {},
         ...Object.entries(sequelizeFilter)
           .filter(([k, v]) => v.length > 0)
-          .map(([k, v]) => ({[k]: v}))
+          .map(([k, v]) => ({ [k]: v }))
       );
     },
   },
@@ -403,10 +402,7 @@ export default {
       ...this.columns
         .filter((c) => "filter" in c)
         .map((c) => ({
-          [c.key]: Object.assign(
-            {},
-            ...c.filter.map((f) => ({[f.key]: false}))
-          ),
+          [c.key]: Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))),
         }))
     );
   },
@@ -429,20 +425,31 @@ export default {
         });
       }
     },
-    selectRow(action, row) {
+    selectRow(isSelected, row) {
       if (this.selectableRows) {
-        if (action) {
-          this.selectedRows.push(row);
+        if (isSelected) {
+          // Check if the row is already in the selectedRows array; if not, add it
+          if (!this.selectedRows.some((r) => deepEqual(r, row))) {
+            this.selectedRows.push(row);
+          }
         } else {
-          const toRemove = this.selectedRows.findIndex((r) =>
-            deepEqual(r, row)
-          );
+          const toRemove = this.selectedRows.findIndex((r) => deepEqual(r, row));
           if (toRemove >= 0) {
             this.selectedRows.splice(toRemove, 1);
           }
         }
+        this.isAllRowsSelected = this.selectedRows.length === this.tableData.length;
         this.$emit("rowSelection", this.selectedRows);
       }
+    },
+    selectAllRows() {
+      this.isAllRowsSelected = !this.isAllRowsSelected;
+      if (this.isAllRowsSelected) {
+        this.selectedRows = [...this.tableData];
+      } else {
+        this.selectedRows = [];
+      }
+      this.$emit("rowSelection", this.selectedRows);
     },
     paginationPageChange(page) {
       this.currentPage = page;
@@ -453,9 +460,7 @@ export default {
         this.$emit("paginationUpdate", {
           page: this.currentPage - 1,
           limit: this.limit,
-          order: this.sortColumn
-            ? [[this.sortColumn, this.sortDirection]]
-            : null,
+          order: this.sortColumn ? [[this.sortColumn, this.sortDirection]] : null,
           filter: this.sequelizeFilter,
         });
       }
@@ -464,6 +469,11 @@ export default {
       this.itemsPerPage = value;
       this.currentPage = 1;
       this.paginationUpdate();
+    },
+    // NOTE: Because deepEqual is imported after its reference in the template.
+    // Therefore, add this wrapper function here to prevent reference error.
+    deepEqual(row1, row2) {
+      return deepEqual(row1, row2);
     },
   },
 };
