@@ -1,0 +1,179 @@
+<template>
+  <BasicModal
+    ref="uploadModal"
+    name="assignmentModal"
+  >
+    <template #title> Upload Assignment</template>
+    <template #body>
+      <div class="form-field">
+        <label
+          for="userList"
+          class="form-label"
+          >Select User:</label
+        >
+        <input
+          id="userList"
+          class="form-control"
+          list="userOptions"
+          placeholder="Type to search..."
+          @input="handleUserChange"
+        />
+        <datalist id="userOptions">
+          <option
+            v-for="(user, index) in users"
+            :key="index"
+            :value="user.id"
+          >
+            {{ user.firstName }} {{ user.lastName }}
+          </option>
+        </datalist>
+      </div>
+      <div class="form-field">
+        <div
+          v-if="isUploading"
+          class="spinner-border m-5"
+          role="status"
+        >
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <div
+          v-else
+          class="flex-grow-1"
+        >
+          <input
+            id="fileInput"
+            class="form-control"
+            name="file"
+            type="file"
+            accept=".pdf"
+          />
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div
+        v-if="!isUploading"
+        class="btn-group"
+      >
+        <BasicButton
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+          type="button"
+          title="Close"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          type="button"
+          title="Upload"
+          @click="upload"
+        />
+      </div>
+    </template>
+  </BasicModal>
+</template>
+
+<script>
+import BasicModal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
+
+/**
+ * Moodle assignment upload component
+ *
+ * This component provides the functionality for uploading a document
+ * to the server for a selected user.
+ *
+ * @author: Linyin Huang
+ */
+export default {
+  name: "MoodleUploadModal",
+  components: { BasicModal, BasicButton },
+  // inject: {
+  //   acceptStats: {
+  //     default: () => false,
+  //   },
+  // },
+  data() {
+    return {
+      isUploading: false,
+      show: false,
+    };
+  },
+  computed: {
+    users() {
+      return this.$store.getters["admin/getUsersByRole"];
+    },
+  },
+  sockets: {
+    uploadResult: function (data) {
+      this.$refs.uploadModal.close();
+      this.isUploading = false;
+      if (data.success) {
+        this.eventBus.emit("toast", { message: "File successfully uploaded!", variant: "success", delay: 3000 });
+      } else {
+        this.eventBus.emit("toast", { message: "Error during upload of file!", variant: "danger", delay: 3000 });
+      }
+    },
+  },
+  methods: {
+    handleUserChange(event) {
+      console.log({ event });
+    },
+    fetchUsers() {
+      this.$socket.emit("userGetByRole", "all");
+    },
+
+    open() {
+      let fileElement = document.getElementById("fileInput");
+      try {
+        fileElement.value = null;
+      } catch (err) {
+        if (fileElement.value) {
+          fileElement.parentNode.replaceChild(fileElement.cloneNode(true), fileElement);
+        }
+      }
+      this.$refs.uploadModal.openModal();
+      this.fetchUsers();
+      // if (this.acceptStats) {
+      //   this.$socket.emit("stats", { action: "openUploadModal", data: {} });
+      // }
+    },
+    upload() {
+      const fileElement = document.getElementById("fileInput");
+
+      // check if user had selected a file
+      if (fileElement.files.length === 0) {
+        alert("please choose a file");
+        return;
+      }
+
+      const fileName = fileElement.files[0].name;
+      const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+
+      switch (fileType) {
+        case ".delta":
+          this.$socket.emit("uploadFile", { type: "deltaDocument", file: fileElement.files[0], name: fileName });
+          break;
+
+        default:
+          this.$socket.emit("uploadFile", { type: "document", file: fileElement.files[0], name: fileName });
+          break;
+      }
+
+      this.isUploading = true;
+    },
+  },
+};
+</script>
+
+<style scoped>
+.form-field {
+  display: flex;
+  align-items: center;
+  margin: 25px 0;
+  .form-label {
+    flex-shrink: 0;
+    margin-bottom: 0;
+    margin-right: 0.5rem;
+  }
+}
+</style>
