@@ -15,7 +15,7 @@
               <FormSelect
                 v-if="f.type === 'select'"
                 :ref="'ref_' + f.key"
-                v-model="currentData[index].document"
+                v-model="currentData[index].documentId"
                 :data-table="true"
                 :options="{ options: step.documentOptions, value: 'value', name: 'name' }"
                 placeholder="Select a Document"
@@ -43,12 +43,12 @@ import FormSelect from "@/basic/form/Select.vue"
 /**
  * Show a table to insert new elements
  *
- * @autor Dennis Zyska
+ * @autor Dennis Zyska, Juliane Bechert
  */
 export default {
   name: "FormChoice",
   components: {FormElement, FormDefault, FormSelect},
-  fetchData: ["workflow","workflow_step","document"],
+  fetchData: ["workflow","workflow_step","document","study_step"],
   props: {
     options: { 
       type: Object,
@@ -103,7 +103,7 @@ export default {
       if (!this.currentData.length) {
         this.currentData = steps.map(step => ({
           stepId: step.id,
-          document: null,
+          documentId: null, 
         }));
       }
       
@@ -122,7 +122,7 @@ export default {
       deep: true,
     },
     currentData: {
-      handler() {
+      handler() { 
         this.$emit("update:modelValue", this.currentData);
       },
       deep: true,
@@ -136,12 +136,12 @@ export default {
       } else {
         this.currentData = this.workflowSteps.map(step => ({
           stepId: step.id,
-          document: null, 
+          documentId: null, 
         }));
       }
     },
     validate() {
-      const allValid = this.currentData.every(entry => entry.document);
+      const allValid = this.currentData.every(entry => entry.documentId !== null);
       if (!allValid) {
         this.$socket.emit('#toast', {
           message: 'Required field missing',
