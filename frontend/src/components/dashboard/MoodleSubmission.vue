@@ -6,69 +6,50 @@
         class="btn-secondary btn-sm me-1"
         text="Manual Import"
         title="Manual Import"
-        @click="exportAll()"
+        @click="$refs.uploadModal.open()"
       />
-      <BasicButton
+      <!-- <BasicButton
         class="btn-primary btn-sm"
         title="Import via Moodle"
         text="Import via Moodle"
-        @click="$refs.uploadModal.open()"
-      />
+      /> -->
     </template>
     <!-- Header Ends -->
     <!-- Body Starts -->
     <template #body>
       <BasicTable
-        :columns="columns"
+        :columns="tableColumns"
         :data="docs"
         :options="options"
         @action="action"
       />
-      <EditorDownload ref="editorDownload" />
     </template>
     <!-- Body Ends -->
   </Card>
-  <PublishModal ref="publishModal" />
-  <StudyModal ref="studyCoordinator" />
-  <ExportAnnos ref="export" />
-  <ConfirmModal ref="deleteConf" />
   <UploadModal ref="uploadModal" />
-  <EditModal ref="editModal" />
 </template>
 
 <script>
-import PublishModal from "./documents/PublishModal.vue";
-import ExportAnnos from "@/basic/download/ExportAnnos.vue";
 import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
-import StudyModal from "./coordinator/Study.vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BasicButton from "@/basic/Button.vue";
-import UploadModal from "./documents/UploadModal.vue";
-import EditModal from "./documents/EditModal.vue";
-import EditorDownload from "@/components/editor/EditorDownload.vue";
+import UploadModal from "./moodle/UploadModal.vue";
 
 /**
  * Submission list component
- * 
+ *
  * NOTE: description to be provided
- * 
+ *
  * @author Linyin Huang
  */
 export default {
   name: "MoodleSubmission",
   fetchData: ["document", "study"],
   components: {
-    StudyModal,
-    ExportAnnos,
     UploadModal,
     Card,
     BasicTable,
     BasicButton,
-    PublishModal,
-    ConfirmModal,
-    EditModal,
-    EditorDownload,
   },
   data() {
     return {
@@ -80,7 +61,7 @@ export default {
         small: false,
         pagination: 10,
       },
-      columns: [
+      tableColumns: [
         { name: "Title", key: "name" },
         { name: "Created At", key: "createdAt" },
         { name: "Type", key: "type" },
@@ -274,10 +255,6 @@ export default {
     },
     publishDoc(row) {
       this.$refs.publishModal.open(row.id);
-    },
-    exportAll() {
-      const docIds = this.docs.map((i) => i.id);
-      this.$refs.export.requestExport(docIds, "json");
     },
     studyCoordinator(row) {
       this.$refs.studyCoordinator.open(0, row.id);
