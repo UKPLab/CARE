@@ -1,13 +1,16 @@
 <template>
   <Card title="Users">
     <template #headerElements>
-      <button
-            class="btn btn-primary"
-            type="button"
-            @click="this.$refs.peerReviewModal.open()"
-        >
-          Create Peer Reviews
-        </button>
+      <BasicButton
+        class="btn-secondary btn-sm me-1"
+        title="Import via Moodle"
+        @click="$refs.importModal.open('moodle')"
+      />
+      <BasicButton
+        class="btn btn-primary btn-sm"
+        title="Import via CSV"
+        @click="$refs.importModal.open('csv')"
+      />
     </template>
     <template #body>
       <BasicTable
@@ -25,22 +28,26 @@
       />
     </template>
   </Card>
-  <DetailsModal ref="detailsModal" @update-user="fetchUsers"/>
+  <DetailsModal
+    ref="detailsModal"
+    @update-user="fetchUsers"
+  />
   <RightsModal ref="rightsModal" />
   <PasswordModal ref="passwordModal" />
-  <PeerReviewModal ref="peerReviewModal" @createPeerReviews="updatePeerReviews"/>
-  <EditPeerReviewsModal ref = "editPeerReviewsModal" @updateReviews="overridePeerReviews"/>
+  <ImportModal
+    ref="importModal"
+    @update-user="fetchUsers"
+  />
 </template>
 
 <script>
 import BasicTable from "@/basic/table/Table.vue";
 import Card from "@/basic/Card.vue";
+import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import PasswordModal from "./users/PasswordModal.vue";
 import RightsModal from "./users/RightsModal.vue";
-import PeerReviewModal from "./users/PeerReviewModal.vue";
-import EditPeerReviewsModal from "./users/EditPeerReviewsModal.vue";
-
+import ImportModal from "./users/ImportModal.vue";
 
 /**
  * Display user list by users' role
@@ -55,8 +62,8 @@ export default {
     DetailsModal,
     PasswordModal,
     RightsModal,
-    PeerReviewModal,
-    EditPeerReviewsModal
+    BasicButton,
+    ImportModal,
   },
   props: {
     admin: {
