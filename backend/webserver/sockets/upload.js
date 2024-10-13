@@ -4,7 +4,7 @@ const path = require("path");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const Socket = require("../Socket.js");
-const docTypes = require("../../db/models/document.js").docTypes;
+const { docTypes } = require("../../db/models/document.js");
 
 /**
  * Handle all uploads through websocket
