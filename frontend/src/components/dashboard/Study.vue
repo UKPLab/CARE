@@ -197,6 +197,17 @@ export default {
                 },
                 title: "Inspect sessions",
                 action: "inspectSessions",
+              },
+              {
+                icon:"close",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  }
+                },
+                title: "Close study",
+                action: "closeStudy"
               }
             ];
             return study
@@ -222,6 +233,14 @@ export default {
         this.$socket.emit("stats", {action: "inspectSessions", data: {studyId: data.params.id}});
 
         this.$refs.studySessionModal.open(data.params.id);
+      }
+      else if (data.action === "closeStudy") {
+        this.$socket.emit("stats", {action: "closeStudy", data: {studyId: data.params.id}});
+        
+        this.$socket.emit("studyUpdate", {
+          studyId: data.params.id, 
+          closed: true
+        });
       }
     },
     async copyLink(studyId) {

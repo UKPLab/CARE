@@ -8,7 +8,7 @@
   />
   <FinishModal
     ref="studyFinishModal"
-    :closeable="!timeUp"
+    :closeable="!timeUp && !studyClosed"
     :finished="finished"
     :study-session-id="studySessionId"
     @finish="finalFinish"
@@ -152,6 +152,15 @@ export default {
       if (this.studySession) {
         return this.studySession.end !== null;
       }
+      
+      if (this.study.end !== null){
+          return Date.now() > new Date(this.study.end);
+      }
+
+      if(this.study.closed !== null) {
+        return Date.now() > new Date(this.study.closed);
+      }
+
       return false;
     },
     timeUp() {
@@ -160,6 +169,16 @@ export default {
           return true;
         }
       }
+      return false;
+    },
+    studyClosed() {
+      if(this.study.closed !== null) {
+        return Date.now > new Date(this.study.closed);
+      }
+
+      if(this.study.end !== null) {
+        return Date.now() > new Date(this.study.end);
+      }        
       return false;
     },
     timeLeftHuman() {
@@ -235,20 +254,6 @@ export default {
       if (this.finished && !this.study.multipleSubmit) {
         this.$refs.studyFinishModal.open();
         return;
-      }
-
-      if (this.study.closed === null && 
-          (this.study.end === null || Date.now() < new Date(this.study.end))) {
-        
-        this.finalFinish(data);
-        this.$refs.studyFinishModal.open();
-
-      } else {
-        this.eventBus.emit('toast', {
-          title: "Study Closed",
-          message: "This study is closed and cannot be submitted anymore.",
-          variant: "danger"
-        });
       }
     },
     calcTimeLeft() {
