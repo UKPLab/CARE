@@ -1,19 +1,17 @@
-<template>
-    <Teleport to="#topbarCustomPlaceholder">   
-        <button
-        :title="title"
-        class="btn"
-        type="button"
-        :disabled="disabled"
-        @click="action"
-        >
-        <LoadIcon
-            v-if="icon"
-            :icon-name="icon"
-        />
-        <span><slot>{{ buttonText }}</slot></span>
-        </button>
-    </Teleport>
+  <template> 
+      <button
+      :title="title"
+      class="btn"
+      type="button"
+      :disabled="disabled"
+      @click="action"
+      >
+      <LoadIcon
+          v-if="icon"
+          :icon-name="icon"
+      />
+      <span><slot>{{ buttonText }}</slot></span>
+      </button>
   </template>
   
   <script>

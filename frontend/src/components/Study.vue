@@ -13,35 +13,51 @@
     :study-session-id="studySessionId"
     @finish="finalFinish"
   />
+
+  <Teleport to="#topbarCustomPlaceholder">  
   <div class="d-flex justify-content-between align-items-center w-100">
     <TopBarButton
       class="btn btn-outline-primary me-3"
       title = "Previous"
       :disabled="currentStep === 0"
       @click="previousStep"
-    />
+    >
+    Previous
+    </TopBarButton>
 
     <TopBarbutton
       class="btn btn-outline-secondary mx-3"
       title="Finish Study"
       @click="finish"
-    />
+    >
+    Finish Study
+    </TopBarButton>
 
     <TopBarbutton
       class="btn btn-outline-primary ms-3"
       title="Next"
       :disabled="currentStep === maxSteps - 1"
       @click="nextStep"
-    />
+    >
+    Next
+    </TopBarButton>
 
     <TopbarButton
       v-if="timeLeft > 0"
       class="btn mb-1"
-      :title="'Time Left: ' + timeLeftHuman"
-      icon="stopwatch"
-      :class="{'text-danger': timeLeft < (5 * 60)}"
-    />
+    >
+    <LoadIcon
+        :size="21"
+        class="me-1 middle"
+        icon-name="stopwatch"
+      />
+      <span
+        :class="{'text-danger':timeLeft < (5 * 60)}"
+        class="middle"
+      ><b>Time Left:</b> {{ timeLeftHuman }}</span>
+    </TopbarButton>
   </div>
+  </Teleport>
 
   <Annotator
     v-if="documentId !== 0 && documentType === 0 && studySessionId !== 0"
