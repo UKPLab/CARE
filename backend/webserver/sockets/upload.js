@@ -25,22 +25,24 @@ module.exports = class UploadSocket extends Socket {
    */
   async uploadDocument(data) {
     try {
+      let doc = null;
+      let target = "";
       if (data.type === "document") {
-        const doc = await this.models["document"].add({
+        doc = await this.models["document"].add({
           name: data.name.replace(/.pdf$/, ""),
           userId: this.userId,
           type: docTypes.DOC_TYPE_PDF,
         });
 
-        const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+        target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
       } else if (data.type === "deltaDocument") {
-        const doc = await this.models["document"].add({
+        doc = await this.models["document"].add({
           name: data.name.replace(/.delta$/, ""),
           userId: this.userId,
           type: docTypes.DOC_TYPE_HTML,
         });
 
-        const target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
+        target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
       }
 
       fs.writeFile(target, data.file, (err) => {
