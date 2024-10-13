@@ -13,51 +13,36 @@
     :study-session-id="studySessionId"
     @finish="finalFinish"
   />
-  <Teleport to="#topbarCustomPlaceholder">
-    <div class="d-flex justify-content-between align-items-center w-100">
-      <button
-        class="btn btn-outline-primary me-3"
-        type="button"
-        @click="previousStep"
-        :disabled="currentStep === 0"
-      >
-        Previous
-      </button>
+  <div class="d-flex justify-content-between align-items-center w-100">
+    <TopBarButton
+      class="btn btn-outline-primary me-3"
+      title = "Previous"
+      :disabled="currentStep === 0"
+      @click="previousStep"
+    />
 
-      <button
-        class="btn btn-outline-secondary mx-3"
-        type="button"
-        @click="finish"
-      >
-        Finish Study
-      </button>
+    <TopBarbutton
+      class="btn btn-outline-secondary mx-3"
+      title="Finish Study"
+      @click="finish"
+    />
 
-      <button
-        class="btn btn-outline-primary ms-3"
-        type="button"
-        @click="nextStep"
-        :disabled="currentStep === maxSteps - 1"
-      >
-        Next
-      </button>
+    <TopBarbutton
+      class="btn btn-outline-primary ms-3"
+      title="Next"
+      :disabled="currentStep === maxSteps - 1"
+      @click="nextStep"
+    />
 
-      <button
+    <TopbarButton
       v-if="timeLeft > 0"
       class="btn mb-1"
-      type="button"
-    >
-      <LoadIcon
-        :size="21"
-        class="me-1 middle"
-        icon-name="stopwatch"
-      />
-      <span
-        :class="{'text-danger':timeLeft < (5 * 60)}"
-        class="middle"
-      ><b>Time Left:</b> {{ timeLeftHuman }}</span>
-    </button>
+      :title="'Time Left: ' + timeLeftHuman"
+      icon="stopwatch"
+      :class="{'text-danger': timeLeft < (5 * 60)}"
+    />
   </div>
-  </Teleport>
+
   <Annotator
     v-if="documentId !== 0 && documentType === 0 && studySessionId !== 0"
   />
@@ -81,6 +66,7 @@ import Annotator from "./annotator/Annotator.vue";
 import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import { computed } from "vue";
 
 export default {
@@ -229,7 +215,25 @@ export default {
       if (data.studySessionId) {
         this.studySessionId = data.studySessionId;
       }
-      this.$refs.studyFinishModal.open();
+
+      if (this.finished && !this.study.multipleSubmit) {
+        this.$refs.studyFinishModal.open();
+        return;
+      }
+
+      if (this.study.closed === null && 
+          (this.study.end === null || Date.now() < new Date(this.study.end))) {
+        
+        this.finalFinish(data);
+        this.$refs.studyFinishModal.open();
+
+      } else {
+        this.eventBus.emit('toast', {
+          title: "Study Closed",
+          message: "This study is closed and cannot be submitted anymore.",
+          variant: "danger"
+        });
+      }
     },
     calcTimeLeft() {
       const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
