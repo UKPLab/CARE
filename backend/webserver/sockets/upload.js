@@ -15,7 +15,6 @@ const { docTypes } = require("../../db/models/document.js");
  * @type {UploadSocket}
  */
 module.exports = class UploadSocket extends Socket {
-
   /**
    * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
    * an entry in the database.
@@ -26,28 +25,24 @@ module.exports = class UploadSocket extends Socket {
    */
   async uploadDocument(data) {
     try {
+      if (data.type === "document") {
+        const doc = await this.models["document"].add({
+          name: data.name.replace(/.pdf$/, ""),
+          userId: this.userId,
+          type: docTypes.DOC_TYPE_PDF,
+        });
 
-      if(data.type === "document") {
-          const doc = await this.models["document"].add({
-            name: data.name.replace(/.pdf$/, ""),
-            userId: this.userId,
-            type: docTypes.DOC_TYPE_PDF
-          });
-      
-          const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+        const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+      } else if (data.type === "deltaDocument") {
+        const doc = await this.models["document"].add({
+          name: data.name.replace(/.delta$/, ""),
+          userId: this.userId,
+          type: docTypes.DOC_TYPE_HTML,
+        });
 
-      } else if(data.type === "deltaDocument") {
-          const doc = await this.models["document"].add({
-            name: data.name.replace(/.delta$/, ""),
-            userId: this.userId,
-            type: docTypes.DOC_TYPE_HTML
-          });
-
-          const target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
-          
+        const target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
       }
- 
-  
+
       fs.writeFile(target, data.file, (err) => {
         if (err) {
           this.socket.emit("uploadResult", { success: false, error: err.message });
@@ -55,10 +50,10 @@ module.exports = class UploadSocket extends Socket {
           this.socket.emit("uploadResult", { success: true, documentId: doc.id });
         }
       });
-  
+
       this.emit("documentRefresh", doc);
     } catch (error) {
-      console.error("Error uploading document:", error);
+      this.logger.error("Error uploading document:", error);
       this.socket.emit("uploadResult", { success: false, error: error.message });
     }
   }
