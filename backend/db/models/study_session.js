@@ -85,12 +85,51 @@ module.exports = (sequelize, DataTypes) => {
                         throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
                     }
                 }
+
+                if(study.close !== null){    
+
+                    if(Date.now() > study.close || (studySession.end !== null && studySession.end > study.end)){
+                        throw new Error('This study is closed');                        
+                    }              
+
+                }
+
               }catch (error) {
                     console.error(error);
                     throw new Error('Failed to create study session');
                 }
                 
-            }
+            },
+
+            beforeUpdate: async (studySession, options) => {
+                try {
+                    const study = await sequelize.models.study.findOne({
+                        where: { id: studySession.studyId }
+                    });
+
+                    if (!study) {
+                        throw new Error('Study not found');
+                    }
+
+                    if (studySession.end !== null && !study.multipleSubmit) {
+                        throw new Error('This study does not allow multiple submissions.');
+                    }
+
+                    const now = Date.now();
+
+                    if (study.closed !== null && now > study.closed || (studySession.end !== null && studySession.end > study.end)) {
+                        throw new Error('Study is closed');
+                    }
+
+                    if (study.end !== null && now > new Date(study.end) || (studySession.end !== null && studySession.end > study.end)) {
+                        throw new Error('Study has ended');
+                    }
+
+                } catch (error) {
+                    console.error(error);
+                    throw new Error('Cannot submit study session');
+                }
+            },
         }
             
     });

@@ -274,6 +274,17 @@ export default {
       // needed, otherwise the ref in the callback can become null
       const modal = this.$refs.modal;
 
+      const studyClosed = this.$store.getters["table/study/get"](this.studyId).closed;
+
+      if(studyClosed){
+        this.eventBus.emit('toast', {
+          title: "Study cannot be started!",
+          message: "The study is closed.",
+          variant: "danger"
+        });
+        return;
+      }
+
       let totalopenedSessions = this.totalNumberOfOpenedSessions;
       let openedSessionsPerUser = this.numberOfOpenedSessionsPerUser;   
       
