@@ -160,7 +160,7 @@ module.exports = class MetaModel extends Model {
      * @param {Object} data
      * @return {Promise<object|undefined>}
      */
-    static async add(data) {
+    static async add(data, options = {}) {
         try {
             const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt'].includes(key));
 
@@ -170,7 +170,7 @@ module.exports = class MetaModel extends Model {
             }
 
 
-            return (await this.create(this.subselectFields(data, possibleFields))).get({plain: true});
+            return (await this.create(this.subselectFields(data, possibleFields), options)).get({plain: true});
         } catch (err) {
             console.log(err);
         }
@@ -191,7 +191,7 @@ module.exports = class MetaModel extends Model {
      * @param {Object} data new data object
      * @return {Promise<*>}
      */
-    static async updateById(id, data) {
+    static async updateById(id, data, additionalOptions={}) {
         const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
 
         if (data.deleted) {
@@ -199,14 +199,16 @@ module.exports = class MetaModel extends Model {
         }
 
         try {
-            const updatedObject = await this.update(this.subselectFields(data, possibleFields), {
-                    where: {
-                        id: id
-                    },
-                    returning: true,
-                    plain: true
-                }
-            );
+            const options = Object.assign({}, {
+                where: {
+                    id: id
+                },
+                returning: true,
+                plain: true
+            }, additionalOptions);
+
+            const updatedObject = await this.update(this.subselectFields(data, possibleFields), options);
+
             if (updatedObject) {
                 if (updatedObject[1]) {
                     return updatedObject[1].dataValues;
