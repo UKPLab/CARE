@@ -1,6 +1,17 @@
 <template>
   <Card title="Users">
-    <template #headerElements></template>
+    <template #headerElements>
+      <BasicButton
+        class="btn-secondary btn-sm me-1"
+        title="Import via Moodle"
+        @click="$refs.importModal.open('moodle')"
+      />
+      <BasicButton
+        class="btn btn-primary btn-sm"
+        title="Import via CSV"
+        @click="$refs.importModal.open('csv')"
+      />
+    </template>
     <template #body>
       <BasicTable
         :columns="columns"
@@ -10,17 +21,26 @@
       />
     </template>
   </Card>
-  <DetailsModal ref="detailsModal" @update-user="fetchUsers"/>
+  <DetailsModal
+    ref="detailsModal"
+    @update-user="fetchUsers"
+  />
   <RightsModal ref="rightsModal" />
   <PasswordModal ref="passwordModal" />
+  <ImportModal
+    ref="importModal"
+    @update-user="fetchUsers"
+  />
 </template>
 
 <script>
 import BasicTable from "@/basic/table/Table.vue";
 import Card from "@/basic/Card.vue";
+import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import PasswordModal from "./users/PasswordModal.vue";
 import RightsModal from "./users/RightsModal.vue";
+import ImportModal from "./users/ImportModal.vue";
 
 /**
  * Display user list by users' role
@@ -35,6 +55,8 @@ export default {
     DetailsModal,
     PasswordModal,
     RightsModal,
+    BasicButton,
+    ImportModal,
   },
   props: {
     admin: {
