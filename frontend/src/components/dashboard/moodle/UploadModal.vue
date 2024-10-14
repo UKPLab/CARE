@@ -16,13 +16,14 @@
           class="form-control"
           list="userOptions"
           placeholder="Type to search..."
+          :value="selectedUserName"
           @input="handleUserChange"
         />
         <datalist id="userOptions">
           <option
             v-for="(user, index) in users"
             :key="index"
-            :value="user.id"
+            :value="user.firstName + ' ' + user.lastName"
           >
             {{ user.firstName }} {{ user.lastName }}
           </option>
@@ -65,7 +66,7 @@
           class="btn btn-primary"
           type="button"
           title="Upload"
-          @click="upload"
+          @click="uploadDocument"
         />
       </div>
     </template>
@@ -87,6 +88,7 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "MoodleUploadModal",
   components: { BasicModal, BasicButton },
+  // TODO: Check if the statistics is to be recorded
   // inject: {
   //   acceptStats: {
   //     default: () => false,
@@ -94,8 +96,9 @@ export default {
   // },
   data() {
     return {
+      selectedUserName: "",
+      selectedUserId: null,
       isUploading: false,
-      show: false,
     };
   },
   computed: {
@@ -115,14 +118,11 @@ export default {
     },
   },
   methods: {
-    handleUserChange(event) {
-      console.log({ event });
-    },
     fetchUsers() {
       this.$socket.emit("userGetByRole", "all");
     },
-
     open() {
+      // Reset fileInput state
       let fileElement = document.getElementById("fileInput");
       try {
         fileElement.value = null;
@@ -133,32 +133,42 @@ export default {
       }
       this.$refs.uploadModal.openModal();
       this.fetchUsers();
+      // TODO: Check if the statistics is to be recorded
       // if (this.acceptStats) {
       //   this.$socket.emit("stats", { action: "openUploadModal", data: {} });
       // }
     },
-    upload() {
+    handleUserChange(event) {
+      this.selectedUserName = event.target.value;
+      const selectedUser = this.users.find((user) => `${user.firstName} ${user.lastName}` === this.selectedUserName);
+
+      if (selectedUser) {
+        this.selectedUserId = selectedUser.id;
+      } else {
+        this.selectedUserId = null;
+      }
+    },
+    uploadDocument() {
       const fileElement = document.getElementById("fileInput");
 
-      // check if user had selected a file
-      if (fileElement.files.length === 0) {
-        alert("please choose a file");
+      if (!this.selectedUserId || fileElement.files.length === 0) {
+        alert("Please select a user and choose a file");
         return;
       }
 
       const fileName = fileElement.files[0].name;
       const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
 
-      switch (fileType) {
-        case ".delta":
-          this.$socket.emit("uploadFile", { type: "deltaDocument", file: fileElement.files[0], name: fileName });
-          break;
-
-        default:
-          this.$socket.emit("uploadFile", { type: "document", file: fileElement.files[0], name: fileName });
-          break;
+      if (fileType !== ".pdf") {
+        alert("Please choose a PDF file");
+        return;
       }
-
+      this.$socket.emit("uploadFile", {
+        type: "document",
+        file: fileElement.files[0],
+        name: fileName,
+        userId: this.selectedUserId,
+      });
       this.isUploading = true;
     },
   },

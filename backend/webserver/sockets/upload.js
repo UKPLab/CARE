@@ -30,7 +30,8 @@ module.exports = class UploadSocket extends Socket {
       if (data.type === "document") {
         doc = await this.models["document"].add({
           name: data.name.replace(/.pdf$/, ""),
-          userId: this.userId,
+          // If data includes userId, it means the document is uploaded by an admin
+          userId: data.userId ?? this.userId,
           type: docTypes.DOC_TYPE_PDF,
         });
 
@@ -38,7 +39,8 @@ module.exports = class UploadSocket extends Socket {
       } else if (data.type === "deltaDocument") {
         doc = await this.models["document"].add({
           name: data.name.replace(/.delta$/, ""),
-          userId: this.userId,
+          // If data includes userId, it means the document is uploaded by an admin
+          userId: data.userId ?? this.userId,
           type: docTypes.DOC_TYPE_HTML,
         });
 
