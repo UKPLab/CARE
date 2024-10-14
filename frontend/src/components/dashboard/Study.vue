@@ -199,7 +199,7 @@ export default {
                 action: "inspectSessions",
               },
               {
-                icon:"close",
+                icon:"x-octagon",
                 options: {
                   iconOnly: true,
                   specifiers: {

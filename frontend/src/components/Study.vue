@@ -87,7 +87,7 @@ import { computed } from "vue";
 
 export default {
   name: "StudyRoute",
-  components: { LoadIcon, FinishModal, StudyModal, Annotator, Editor },
+  components: { LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton },
   provide() {
     return {
       documentId: computed(() => this.documentId),
