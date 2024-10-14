@@ -439,8 +439,51 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    /**
+     * Retrieves submission information from a specified moodle assignment. This includes a list of users and their corresponding submission files (name and url).
+     *
+     * @param {Object} data - The data object containing the course ID, assignment ID, Moodle URL and the API token.
+     * @param {number} data.courseID - The ID of the course to fetch users from.
+     * @param {number} data.assignmentID - The ID of the assignment to fetch users from.
+     * @param {string} data.options.apiKey - The API token for the Moodle instance
+     * @param {string} data.options.url - The URL of the Moodle instance.
+     * @returns {Promise<List>} - A list of dictionaries, each containing:
+     - 'userid' (int): The ID of the user who made the submission.
+     - 'submissionURLs' (list): A list of dictionaries, each containing:
+     - 'filename' (str): The name of the submitted file.
+     - 'fileurl' (str): The URL to access the submitted file.
+     * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
+     */
+    async getSubmissionInfosFromAssignment(moodleData) {
+        const { courseID, assignmentID } = moodleData;
+        const convertedCourseID = Number(courseID);
+        const convertedAsgID = Number(assignmentID);
+        const updatedMoodleData = { ...moodleData, convertedCourseID, convertedAsgID };
+        try {
+            return await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment(updatedMoodleData);
+        } catch (error) {
+            this.logger.error(error);
+        }
+    }
+
     init() {
-        fs.mkdirSync(UPLOAD_PATH, {recursive: true});
+        fs.mkdirSync(UPLOAD_PATH, { recursive: true });
+
+        this.socket.on("documentGetMoodleData", async (moodleData, callback) => {
+            try {
+                const { success, data } = await this.getSubmissionInfosFromAssignment(moodleData);
+                callback({
+                    success,
+                    users: data,
+                });
+            } catch (error) {
+                this.logger.error(error);
+                callback({
+                    success: false,
+                    message: "Failed to get student assignments from Moodle",
+                });
+            }
+        });
 
         this.socket.on("documentGet", async (data) => {
             try {
