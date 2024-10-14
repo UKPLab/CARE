@@ -5,7 +5,7 @@
     :options="options"
     @action="action"
   />
-  <ConfirmModal ref="confirmModal" />
+  <ConfirmModal ref="deleteConf" />
 </template>
 
 <script>
@@ -135,7 +135,7 @@ export default {
           this.$router.push("/session/" + data.params.hash);
           break;
         case "deleteSession":
-          this.$refs["confirmModal"].open(
+          this.$refs.deleteConf.open(
               "Delete Session",
               "You are about to delete a session; if you just want to finish the session, please access the session and abort the delete.",
               null,

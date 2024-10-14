@@ -51,6 +51,10 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
+            Document.belongsTo(models["document"], {
+                foreignKey: 'parentDocumentId',
+                as: 'parentDocument',
+            });
         }
     }
 
@@ -64,6 +68,7 @@ module.exports = (sequelize, DataTypes) => {
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         type: DataTypes.INTEGER, // 0 is for pdf and 1 is for html
+        parentDocumentId: DataTypes.INTEGER 
     }, {
         sequelize: sequelize,
         modelName: 'document',
