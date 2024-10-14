@@ -1,5 +1,10 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const fs = require('fs').promises;
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+
+const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {
@@ -18,13 +23,25 @@ module.exports = (sequelize, DataTypes) => {
                 maxlength: 5
             },
             {
-                key: "documentId",
-                label: "Selected document for the study:",
-                type: "select",
+                key: "workflowId", 
+                label: "Select Workflow for Study:",
+                type: "select", 
                 options: {
-                    table: "document", name: "name", value: "id"
+                    table: "workflow", name: "name", value: "id"
                 },
-                icon: "file-earmark",
+                icon: "list", 
+                required: true,
+                help: "Choose a workflow template for the study steps."
+            },
+            {
+                key: "stepDocuments",
+                label: "Assign Documents to Workflow Steps:",
+                type: "choice",
+                options: {
+                    table: "study_step", id: "documentId", filter: {
+                        table: "workflow_step"
+                    } 
+                },
                 required: true,
             },
             {
@@ -47,6 +64,32 @@ module.exports = (sequelize, DataTypes) => {
                 default: 0,
             },
             {
+                key: "limitSessions",
+                type: "slider",
+                label: "Limit the number of sessions for the study:",
+                // help: "0 = disable time limitation", Usefull?
+                size: 12,
+                unit: "Sessions",
+                min: 1,
+                max: 200,  
+                step: 1,
+                default: 100, 
+                help: "Set the maximum number of times participants can start or resume the study. Each attempt to complete the study is called a session."
+            },
+            {
+                key: "limitSessionsPerUser",
+                type: "slider",
+                label: "Limit the number of sessions for the study:",
+                // help: "0 = disable time limitation", Usefull?
+                size: 12,
+                unit: "Sessions",
+                min: 1,
+                max: 200,  
+                step: 1,
+                default: 100, 
+                help: "Set the maximum number of times each participant can start or resume the study. Each attempt to complete the study is called a session."
+            },
+            {
                 key: "collab",
                 label: "Should the study be collaborative?",
                 type: "switch",
@@ -59,12 +102,19 @@ module.exports = (sequelize, DataTypes) => {
                 default: false,
             },
             {
+                key: "multipleSubmit",
+                label: "Allow multiple submissions?",
+                type: "switch",
+                default: false,
+                help: "Specify whether participants can submit their study multiple times."
+            },
+            {
                 key: "start",
                 label: "Study sessions can't start before",
                 type: "datetime",
                 size: 6,
                 default: null,
-                },
+            },
             {
                 key: "end",
                 label: "Study sessions can't start after:",
@@ -72,7 +122,7 @@ module.exports = (sequelize, DataTypes) => {
                 size: 6,
                 default: null,
             },
-        ]
+        ];
 
         /**
          * Helper method for defining associations.
@@ -81,6 +131,28 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
+            Study.belongsTo(models["user"], {
+                foreignKey: "userId",
+                as: "user"
+            });
+
+            // Association with the workflow model
+            Study.belongsTo(models["workflow"], {
+                foreignKey: "workflowId",
+                as: "workflow"
+            });
+
+            // Association with study sessions
+            Study.hasMany(models["study_session"], {
+                foreignKey: "studyId",
+                as: "sessions"
+            });
+
+            // Association with study steps
+            Study.hasMany(models["study_step"], {
+                foreignKey: "studyId",
+                as: "steps"
+            });
         }
     }
 
@@ -88,11 +160,16 @@ module.exports = (sequelize, DataTypes) => {
         name: DataTypes.STRING,
         hash: DataTypes.STRING,
         userId: DataTypes.INTEGER,
-        documentId: DataTypes.INTEGER,
+        workflowId: DataTypes.INTEGER,
         collab: DataTypes.BOOLEAN,
         resumable: DataTypes.BOOLEAN,
         description: DataTypes.TEXT,
         timeLimit: DataTypes.INTEGER,
+        multipleSubmit: DataTypes.BOOLEAN,
+        limitSessions: DataTypes.INTEGER,
+        limitSessionsPerUser: DataTypes.INTEGER,
+        closed: DataTypes.DATE,
+        userIdClosed: DataTypes.INTEGER,
         start: DataTypes.DATE,
         end: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
@@ -102,7 +179,64 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize: sequelize,
         modelName: 'study',
-        tableName: 'study'
+        tableName: 'study',
+        hooks: {
+            afterCreate: async (study, options) => {
+                const transaction = options.transaction || await sequelize.transaction();
+
+                try {
+                    const workflowSteps = await sequelize.models.workflow_step.findAll({
+                        where: { workflowId: study.workflowId },
+                        order: [['id', 'ASC']],
+                        transaction
+                    });
+
+                    for (const step of workflowSteps) {
+                        const stepDocument = options.context.stepDocuments.find(doc => doc.stepId === step.id);
+                        let documentId = null;
+            
+                        if (stepDocument && stepDocument.documentId) {
+                            const document = await sequelize.models.document.findByPk(stepDocument.documentId, { transaction });
+                            if (document) {
+                                documentId = stepDocument.documentId;
+                                if (step.stepType === 2 && document.type === 1) { // Editor && HTML
+                                    const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
+                                    const newDocumentHash = `${document.hash}` + '_' + `${study.hash}`; 
+                                    const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
+        
+                                    await fs.copyFile(originalFilePath, newFilePath);
+                                    const newDocument = await sequelize.models.document.create({ //Saving in document database, because study_step refers to documentId
+                                        name: `${document.name}_copy`,
+                                        type: document.type,
+                                        hash: newDocumentHash,
+                                        userId: study.userId,
+                                    }, { transaction });
+            
+                                    documentId = newDocument.id; 
+                                }
+                            } else {
+                                console.warn(`Warning: documentId ${stepDocument.documentId} not found for step ${step.id}. Skipping this document.`);
+                            }
+                        } else {
+                            console.warn(`Warning: No document found in stepDocuments for step ${step.id}.`);
+                        }
+            
+                        await sequelize.models.study_step.create({
+                            studyId: study.id,
+                            workflowStepId: step.id,
+                            documentId: documentId 
+                        }, { transaction });
+                    }
+
+                    await transaction.commit();
+                } catch (error) {
+                    console.error("Failed during study step creation:", error);
+                    await transaction.rollback();
+                    throw new Error(`Failed to create study steps for the study: ${error.message}`);
+                }
+            }
+        }
     });
+
     return Study;
 };

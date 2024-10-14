@@ -107,7 +107,8 @@ export default {
     }
   },
   mounted() {
-    this.$socket.emit("documentGet", {documentId: this.documentId});
+    // TODO: add ssid
+    this.$socket.emit("documentGet", {documentId: this.documentId, studySessionId: this.studySessionId});
   },
   unmounted() {
     this.pdf = null;
