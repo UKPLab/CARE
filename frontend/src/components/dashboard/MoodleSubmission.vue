@@ -19,14 +19,15 @@
     <template #body>
       <BasicTable
         :columns="tableColumns"
-        :data="docs"
-        :options="options"
+        :data="documents"
+        :options="tableOptions"
         @action="action"
       />
     </template>
     <!-- Body Ends -->
   </Card>
   <UploadModal ref="uploadModal" />
+  <ConfirmModal ref="deleteConf" />
 </template>
 
 <script>
@@ -34,11 +35,12 @@ import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./moodle/UploadModal.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
  * Submission list component
  *
- * NOTE: description to be provided
+ * TODO: description to be provided
  *
  * @author Linyin Huang
  */
@@ -47,13 +49,14 @@ export default {
   fetchData: ["document", "study"],
   components: {
     UploadModal,
+    ConfirmModal,
     Card,
     BasicTable,
     BasicButton,
   },
   data() {
     return {
-      options: {
+      tableOptions: {
         striped: true,
         hover: true,
         bordered: false,
@@ -76,120 +79,39 @@ export default {
   },
   computed: {
     documents() {
-      return this.$store.getters["table/document/getAll"];
-    },
-    userId() {
-      return this.$store.getters["auth/getUserId"];
-    },
-    docs() {
-      return this.documents
-        .filter((doc) => doc.userId === this.userId)
-        .map((d) => {
-          let newD = { ...d };
-          newD.type = d.type === 0 ? "PDF" : "HTML";
-          newD.publicBadge = {
-            class: newD.public ? "bg-success" : "bg-danger",
-            text: newD.public ? "Yes" : "No",
-          };
-          newD.manage = [
-            {
-              icon: "box-arrow-in-right",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
+      return this.$store.getters["table/document/getAll"].map((d) => {
+        let newD = { ...d };
+        newD.type = d.type === 0 ? "PDF" : "HTML";
+        newD.publicBadge = {
+          class: newD.public ? "bg-success" : "bg-danger",
+          text: newD.public ? "Yes" : "No",
+        };
+        newD.manage = [
+          {
+            icon: "box-arrow-in-right",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
               },
-              title: "Access document...",
-              action: "accessDoc",
             },
-            {
-              icon: "trash",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
+            title: "Access document...",
+            action: "accessDoc",
+          },
+          {
+            icon: "trash",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
               },
-              title: "Delete document...",
-              action: "deleteDoc",
             },
-            {
-              icon: "cloud-arrow-up",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Publish document...",
-              action: "publicDoc",
-            },
-            {
-              icon: "pencil",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Rename document...",
-              action: "renameDoc",
-            },
-          ];
-          if (this.studiesEnabled && d.type === 0) {
-            //PDF document type
-            newD.manage.push({
-              icon: "person-workspace",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Open study coordinator...",
-              action: "studyCoordinator",
-            });
-          }
-
-          if (d.type === 1 && this.showDeltaDownloadButton) {
-            //HTML document type
-            newD.manage.push({
-              icon: "download",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Export delta to a local file",
-              action: "exportDeltaDoc",
-            });
-          }
-          if (d.type === 1 && this.showHTMLDownloadButton) {
-            newD.manage.push({
-              icon: "download",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Export HTML to a local file",
-              action: "exportHTMLDoc",
-            });
-          }
-          return newD;
-        });
-    },
-    studiesEnabled() {
-      return this.$store.getters["settings/getValue"]("app.study.enabled") === "true";
-    },
-    showDeltaDownloadButton() {
-      return this.$store.getters["settings/getValue"]("editor.document.showButtonDeltaDownload") === "true";
-    },
-    showHTMLDownloadButton() {
-      return this.$store.getters["settings/getValue"]("editor.document.showButtonHTMLDownload") === "true";
+            title: "Delete document...",
+            action: "deleteDoc",
+          },
+        ];
+        return newD;
+      });
     },
   },
   methods: {
@@ -200,21 +122,6 @@ export default {
           break;
         case "deleteDoc":
           this.deleteDoc(data.params);
-          break;
-        case "publicDoc":
-          this.$refs.publishModal.open(data.params.id);
-          break;
-        case "renameDoc":
-          this.renameDoc(data.params);
-          break;
-        case "studyCoordinator":
-          this.studyCoordinator(data.params);
-          break;
-        case "exportDeltaDoc":
-          this.$refs.editorDownload.exportDeltaDoc(data.params);
-          break;
-        case "exportHTMLDoc":
-          this.$refs.editorDownload.exportHTMLDoc(data.params);
           break;
       }
     },
@@ -244,20 +151,11 @@ export default {
         }
       );
     },
-    renameDoc(row) {
-      this.$refs.editModal.open(row.id);
-    },
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);
     },
     onAddedDoc() {
       this.load();
-    },
-    publishDoc(row) {
-      this.$refs.publishModal.open(row.id);
-    },
-    studyCoordinator(row) {
-      this.$refs.studyCoordinator.open(0, row.id);
     },
   },
 };
