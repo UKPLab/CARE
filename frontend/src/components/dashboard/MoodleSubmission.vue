@@ -8,11 +8,12 @@
         title="Manual Import"
         @click="$refs.uploadModal.open()"
       />
-      <!-- <BasicButton
+      <BasicButton
         class="btn-primary btn-sm"
         title="Import via Moodle"
         text="Import via Moodle"
-      /> -->
+        @click="$refs.importModal.openModal()"
+      />
     </template>
     <!-- Header Ends -->
     <!-- Body Starts -->
@@ -28,6 +29,7 @@
   </Card>
   <UploadModal ref="uploadModal" />
   <ConfirmModal ref="deleteConf" />
+  <ImportModal ref="importModal" />
 </template>
 
 <script>
@@ -35,6 +37,7 @@ import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./moodle/UploadModal.vue";
+import ImportModal from "./moodle/ImportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
@@ -49,6 +52,7 @@ export default {
   fetchData: ["document", "study"],
   components: {
     UploadModal,
+    ImportModal,
     ConfirmModal,
     Card,
     BasicTable,
@@ -68,11 +72,7 @@ export default {
         { name: "Title", key: "name" },
         { name: "Created At", key: "createdAt" },
         { name: "Type", key: "type" },
-        {
-          name: "Public",
-          key: "publicBadge",
-          type: "badge",
-        },
+        { name: "Public", key: "publicBadge", type: "badge" },
         { name: "Manage", key: "manage", type: "button-group" },
       ],
     };
