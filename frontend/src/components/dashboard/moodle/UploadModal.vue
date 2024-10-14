@@ -111,9 +111,18 @@ export default {
       this.$refs.uploadModal.close();
       this.isUploading = false;
       if (data.success) {
-        this.eventBus.emit("toast", { message: "File successfully uploaded!", variant: "success", delay: 3000 });
+        this.eventBus.emit("toast", {
+          message: "File successfully uploaded!",
+          variant: "success",
+          delay: 3000,
+        });
       } else {
-        this.eventBus.emit("toast", { message: "Error during upload of file!", variant: "danger", delay: 3000 });
+        this.eventBus.emit("toast", {
+          title: "Failed to upload the file",
+          message: "Please contact CARE staff to resolve the issue",
+          variant: "danger",
+          delay: 3000,
+        });
       }
     },
   },
