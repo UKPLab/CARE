@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
                 options: {
                     table: "study_step", id: "documentId", filter: {
                         table: "workflow_step"
-                    } //TODO info mitgeben, dass bei selection referenzDatenbank angelegt ist - wäre workflowStep in study
+                    } 
                 },
                 required: true,
             },
@@ -192,10 +192,39 @@ module.exports = (sequelize, DataTypes) => {
                     });
 
                     for (const step of workflowSteps) {
+                        const stepDocument = options.context.stepDocuments.find(doc => doc.stepId === step.id);
+                        let documentId = null;
+            
+                        if (stepDocument && stepDocument.documentId) {
+                            const document = await sequelize.models.document.findByPk(stepDocument.documentId, { transaction });
+                            if (document) {
+                                documentId = stepDocument.documentId;
+                                if (step.stepType === 2 && document.type === 1) { // Editor && HTML
+                                    const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
+                                    const newDocumentHash = `${document.hash}` + '_' + `${study.hash}`; 
+                                    const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
+        
+                                    await fs.copyFile(originalFilePath, newFilePath);
+                                    const newDocument = await sequelize.models.document.create({ //Saving in document database, because study_step refers to documentId
+                                        name: `${document.name}_copy`,
+                                        type: document.type,
+                                        hash: newDocumentHash,
+                                        userId: study.userId,
+                                    }, { transaction });
+            
+                                    documentId = newDocument.id; 
+                                }
+                            } else {
+                                console.warn(`Warning: documentId ${stepDocument.documentId} not found for step ${step.id}. Skipping this document.`);
+                            }
+                        } else {
+                            console.warn(`Warning: No document found in stepDocuments for step ${step.id}.`);
+                        }
+            
                         await sequelize.models.study_step.create({
                             studyId: study.id,
                             workflowStepId: step.id,
-                            documentId: null 
+                            documentId: documentId 
                         }, { transaction });
                     }
 

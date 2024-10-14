@@ -85,11 +85,12 @@ module.exports = class AppSocket extends Socket {
         // update data
         let newEntry = null;
         if (!("id" in data.data) || data.data.id === 0) {
-          newEntry = await this.models[data.table].add(data.data);
+          newEntry = await this.models[data.table].add(data.data, {context: data.data});
         } else {
           newEntry = await this.models[data.table].updateById(
             data.data.id,
-            data.data
+            data.data,
+            {context:data.data}
           );
         }
         // check if table has a field with table options
