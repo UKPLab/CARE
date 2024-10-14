@@ -109,6 +109,23 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     /**
+     * Filter and return existing emails from a given list
+     * @param {string[]} emails a list of emails to check
+     * @returns {Promise<array>} a list of emails
+     */
+    static async filterExistingEmails(emails) {
+      return await User.findAll({
+        where: {
+          email: {
+            [Op.in]: emails,
+          },
+        },
+        attributes: ["email"],
+        raw: true,
+      });
+    }
+
+    /**
      * Register a new login
      * @param {string} userId user id
      * @returns {Promise<boolean>}} true if successful
@@ -396,6 +413,10 @@ module.exports = (sequelize, DataTypes) => {
       acceptedAt: DataTypes.DATE,
       rolesUpdatedAt: {
         type: DataTypes.DATE,
+        allowNull: true,
+      },
+      moodleId: {
+        type: DataTypes.INTEGER,
         allowNull: true,
       },
     },

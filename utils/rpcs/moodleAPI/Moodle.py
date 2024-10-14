@@ -2,6 +2,7 @@ from moodle_api import moodle_api
 import requests
 from User import User
 
+__author__ = "Alexander Bürkle, Dennis Zyska"
 
 class Moodle:
     def __init__(self, api_key, url, endpoint="/webservice/rest/server.php"):
