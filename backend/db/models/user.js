@@ -165,7 +165,7 @@ module.exports = (sequelize, DataTypes) => {
      * @param {string} roleName - The role of the users to fetch.
      * @returns {string[]} An array of users with the specified role.
      */
-    async getUsersByRole(roleName) {
+    static async getUsersByRole(roleName) {
       try {
         const roleIdMap = await User.getRoleIdMap();
         const roleId = roleIdMap[roleName];
@@ -194,6 +194,59 @@ module.exports = (sequelize, DataTypes) => {
         console.error(error);
       }
     }
+
+    static async getStudentsWithAssignments() {
+      try {
+        const roleIdMap = await User.getRoleIdMap();
+        const roleId = roleIdMap["student"];
+
+        if (!roleId) {
+          console.error(`Role not found: ${roleName}`);
+          return [];
+        }
+
+        const documentUserIds = await this.sequelize.models["document"].findAll({
+          where: { readyForReview: true },
+          attributes: ["userId", "name"],
+          raw: true,
+        });
+
+        const docUserIds = documentUserIds.map((doc) => doc.userId);
+
+        const matchedUsers = await this.sequelize.models["user_role_matching"].findAll({
+          where: { userRoleId: roleId },
+          attributes: ["userId"],
+          raw: true,
+        });
+        const userIds = matchedUsers
+        .map((user) => user.userId)
+        .filter((userId) => docUserIds.includes(userId));
+        let users = await User.findAll({
+          attributes: {
+            exclude: ["passwordHash", "salt"],
+          },
+          where: {
+            id: { [Op.in]: userIds }, // Filter by matched user IDs
+          },
+          raw: true,
+        });
+
+        const usersWithDocumentNames = users.map(user => {
+          // Find the corresponding document entry for this user
+          const document = documentUserIds.find(doc => doc.userId === user.id);
+          return {
+            ...user,           // Spread user details
+            documentName: document ? document.name : null,  // Add the document's 'name'
+          };
+        });
+
+        return usersWithDocumentNames;
+
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
 
     /**
      * Gets the rights associated with the user

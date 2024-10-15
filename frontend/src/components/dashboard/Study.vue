@@ -2,12 +2,19 @@
   <span>
     <StudyModal ref="studyCoordinator"/>
     <StudySessionModal ref="studySessionModal"/>
+    <BulkCreateAssignmentsModal ref="bulkCreateAssignmentsModal"/>
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
           class="btn-primary btn-sm"
           title="Add"
           @click="add()"
+        />
+        <BasicButton
+          class="btn-secondary btn-sm"
+          title="Add Bulk Assignments"
+          @click="addBulkAssignment()"
+          :style="{ margin: '10px 10px' }"
         />
       </template>
       <template #body>
@@ -28,6 +35,8 @@ import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 import BasicButton from "@/basic/Button.vue";
+import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
+
 
 /**
  * Dashboard component for handling studies
@@ -36,7 +45,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, BulkCreateAssignmentsModal},
   inject: {
     acceptStats: {
       default: () => false
@@ -227,6 +236,9 @@ export default {
     },
     add() {
       this.$refs.studyCoordinator.open(0);
+    },
+    addBulkAssignment() {
+      this.$refs.bulkCreateAssignmentsModal.open();
     },
     studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
