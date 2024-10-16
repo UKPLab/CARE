@@ -49,56 +49,56 @@ module.exports = (sequelize, DataTypes) => {
 
             beforeCreate: async (studySession, options) => {
 
-                try{
-
-                const study = await sequelize.models.study.findOne({ where:
-                     { id: studySession.studyId } 
-                    });
-
-                if (!study) {
-                    throw new Error('Study not found');
-                }
-
-                const limitSessions = study.limitSessions;
-                const limitSessionsPerUser = study.limitSessionsPerUser;
-
-                if (limitSessions != null) {
-                    const totalexistingSessionCount = await StudySession.count({
-                        where: {
-                            studyId: studySession.studyId
-                        }
-                    });
-
-                    if (totalexistingSessionCount >= limitSessions) {
-                        throw new Error(`Cannot create more than ${limitSessions} sessions for this study.`);
-                    }
-                }
-
-                if (limitSessionsPerUser != null) {
-                    const existingSessionCountPerUser = await StudySession.count({
-                        where: {
-                            studyId: studySession.studyId, userId: studySession.userId
-                        }
-                    });
-
-                    if (existingSessionCountPerUser >= limitSessionsPerUser) {
-                        throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
-                    }
-                }
-
-                if(study.close !== null){    
-
-                    if(Date.now() > study.close || (studySession.end !== null && studySession.end > study.end)){
-                        throw new Error('This study is closed');                        
-                    }              
-
-                }
-
-              }catch (error) {
-                    console.error(error);
-                    throw new Error('Failed to create study session');
-                }
+            try{
                 
+                    const study = await sequelize.models.study.findOne({ where:
+                        { id: studySession.studyId } 
+                        });
+
+                    if (!study) {
+                        throw new Error('Study not found');
+                    }
+
+                    const limitSessions = study.limitSessions;
+                    const limitSessionsPerUser = study.limitSessionsPerUser;
+
+                    if (limitSessions != null) {
+                        const totalexistingSessionCount = await StudySession.count({
+                            where: {
+                                studyId: studySession.studyId,
+                            }
+                        });
+
+                        if (totalexistingSessionCount >= limitSessions) {
+                            throw new Error(`Cannot create more than ${limitSessions} sessions for this study.`);
+                        }
+                    }
+
+                    if (limitSessionsPerUser != null) {
+                        const existingSessionCountPerUser = await StudySession.count({
+                            where: {
+                                studyId: studySession.studyId, userId: studySession.userId
+                            }
+                        });
+
+                        if (existingSessionCountPerUser >= limitSessionsPerUser) {
+                            throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
+                        }
+                    }
+
+                    if(study.close !== null || studySession.end !== null){    
+
+                        if(Date.now() > study.close || studySession.end > study.end){
+                            throw new Error('This study is closed');                        
+                        }              
+
+                    }
+
+                }catch (error) {
+                        console.error(error);
+                        throw new Error('Failed to create study session');
+                }
+                    
             },
 
             beforeUpdate: async (studySession, options) => {
@@ -117,12 +117,14 @@ module.exports = (sequelize, DataTypes) => {
 
                     const now = Date.now();
 
-                    if (study.closed !== null && now > study.closed || (studySession.end !== null && studySession.end > study.end)) {
-                        throw new Error('Study is closed');
+                    if (study.closed !== null || studySession.end !== null) {
+                        if(now > study.closed || studySession.end > study.end)
+                            throw new Error('Study is closed');
                     }
 
-                    if (study.end !== null && now > new Date(study.end) || (studySession.end !== null && studySession.end > study.end)) {
-                        throw new Error('Study has ended');
+                    if (study.end !== null || studySession.end !== null) {
+                        if(now > new Date(study.end) || studySession.end > study.end)
+                            throw new Error('Study has ended');
                     }
 
                 } catch (error) {

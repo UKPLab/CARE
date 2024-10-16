@@ -153,11 +153,11 @@ export default {
         return this.studySession.end !== null;
       }
       
-      if (this.study.end !== null){
+      if (this.study.end !== null && this.study.end !== undefined) {
           return Date.now() > new Date(this.study.end);
       }
 
-      if(this.study.closed !== null) {
+      if(this.study.closed !== null && this.study.closed !== undefined) {
         return Date.now() > new Date(this.study.closed);
       }
 
@@ -172,11 +172,11 @@ export default {
       return false;
     },
     studyClosed() {
-      if(this.study.closed !== null) {
+      if(this.study.closed !== null && this.study.closed !== undefined) {
         return Date.now > new Date(this.study.closed);
       }
 
-      if(this.study.end !== null) {
+      if(this.study.end !== null && this.study.end !== undefined) {
         return Date.now() > new Date(this.study.end);
       }        
       return false;
@@ -216,6 +216,7 @@ export default {
     console.log("studySessionId send from mounted:",this.studySessionId);
     if (this.studySessionId === 0) {
       this.$refs.studyModal.open();
+      //TODO: check this part
       this.$socket.emit("studyGetByHash", { studyHash: this.studyHash });
     }
   },
