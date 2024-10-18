@@ -2,7 +2,6 @@
 const MetaModel = require("../MetaModel.js");
 const fs = require('fs').promises;
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -67,27 +66,25 @@ module.exports = (sequelize, DataTypes) => {
                 key: "limitSessions",
                 type: "slider",
                 label: "Limit the number of sessions for the study:",
-                // help: "0 = disable time limitation", Usefull?
+                help: "Set the maximum number of times participants can start or resume the study. Each attempt to complete the study is called a session. 0 = unlimited number of sessions.",
                 size: 12,
                 unit: "Sessions",
-                min: 1,
+                min: 0, 
                 max: 200,  
                 step: 1,
                 default: 100, 
-                help: "Set the maximum number of times participants can start or resume the study. Each attempt to complete the study is called a session."
             },
             {
                 key: "limitSessionsPerUser",
                 type: "slider",
-                label: "Limit the number of sessions for the study:",
-                // help: "0 = disable time limitation", Usefull?
+                label: "Limit the number of sessions per user for the study:",
+                help: "Set the maximum number of times each participant can start or resume the study. Each attempt to complete the study is called a session. 0 = unlimited number of sessions per user.",
                 size: 12,
                 unit: "Sessions",
-                min: 1,
+                min: 0, 
                 max: 200,  
                 step: 1,
                 default: 100, 
-                help: "Set the maximum number of times each participant can start or resume the study. Each attempt to complete the study is called a session."
             },
             {
                 key: "collab",
@@ -182,6 +179,7 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'study',
         hooks: {
             afterCreate: async (study, options) => {
+                console.log("afterCreate was called!!!");
                 const transaction = options.transaction || await sequelize.transaction();
 
                 try {
@@ -197,42 +195,107 @@ module.exports = (sequelize, DataTypes) => {
             
                         if (stepDocument && stepDocument.documentId) {
                             const document = await sequelize.models.document.findByPk(stepDocument.documentId, { transaction });
-                            if (document) {
-                                documentId = stepDocument.documentId;
-                                if (step.stepType === 2 && document.type === 1) { // Editor && HTML
-                                    const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
-                                    const newDocumentHash = `${document.hash}` + '_' + `${study.hash}`; 
-                                    const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
-        
-                                    await fs.copyFile(originalFilePath, newFilePath);
-                                    const newDocument = await sequelize.models.document.create({ //Saving in document database, because study_step refers to documentId
-                                        name: `${document.name}_copy`,
-                                        type: document.type,
-                                        hash: newDocumentHash,
-                                        userId: study.userId,
-                                    }, { transaction });
-            
-                                    documentId = newDocument.id; 
-                                }
-                            } else {
-                                console.warn(`Warning: documentId ${stepDocument.documentId} not found for step ${step.id}. Skipping this document.`);
+
+                            if (!document) {
+                                 throw new Error(`Document not found: documentId ${stepDocument.documentId} is missing for step ${step.id}. Cancelling transaction.`);
                             }
-                        } else {
-                            console.warn(`Warning: No document found in stepDocuments for step ${step.id}.`);
+                            documentId = stepDocument.documentId;
+
+                            if (step.stepType === 2) { // Editor
+                                if (document.type !== 1) { // HTML
+                                    throw new Error(`Document type mismatch: step ${step.id} expects an Editor document (type 1), but found type ${document.type}.`);
+                                }
+
+                                const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
+                                const newDocumentHash = `${document.hash}` + '_' + `${study.hash}`; 
+                                const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
+    
+                                await fs.copyFile(originalFilePath, newFilePath);
+                                const newDocument = await sequelize.models.document.create({
+                                    name: `${document.name}_study`,
+                                    type: document.type,
+                                    hash: newDocumentHash,
+                                    userId: study.userId,
+                                    parentDocumentId: document.id
+                                }, { transaction });
+        
+                                documentId = newDocument.id; 
+                            } 
                         }
-            
                         await sequelize.models.study_step.create({
                             studyId: study.id,
                             workflowStepId: step.id,
                             documentId: documentId 
                         }, { transaction });
                     }
-
                     await transaction.commit();
                 } catch (error) {
                     console.error("Failed during study step creation:", error);
                     await transaction.rollback();
                     throw new Error(`Failed to create study steps for the study: ${error.message}`);
+                }
+            },
+            afterUpdate: async (study, options) => {
+                console.log("afterUpdate was called!!!");
+                const transaction = options.transaction || await sequelize.transaction();
+    
+                try {
+                    const workflowSteps = await sequelize.models.workflow_step.findAll({
+                        where: { workflowId: study.workflowId },
+                        order: [['id', 'ASC']],
+                        transaction
+                    });
+            
+                    for (const step of workflowSteps) {
+                        console.log("steps",step);
+                        const stepDocument = options.context.stepDocuments.find(doc => doc.stepId === step.id);
+                        console.log("stepDocument",stepDocument);
+                        let documentId = null;
+            
+                        if (stepDocument && stepDocument.documentId) {
+                            const document = await sequelize.models.document.findByPk(stepDocument.documentId, { transaction });
+            
+                            if (!document) {
+                                throw new Error(`Document not found: documentId ${stepDocument.documentId} is missing for step ${step.id}. Cancelling transaction.`);
+                            }
+            
+                            documentId = stepDocument.documentId;
+            
+                            if (step.stepType === 2) { // Editor
+                                if (document.type !== 1) { // HTML
+                                    throw new Error(`Document type mismatch: step ${step.id} expects an Editor document (type 1), but found type ${document.type}.`);
+                                }
+            
+                                const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
+                                const newDocumentHash = `${document.hash}_${study.hash}`;
+                                const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
+            
+                                await fs.copyFile(originalFilePath, newFilePath);
+            
+                                const newDocument = await sequelize.models.document.create({
+                                    name: `${document.name}_study`,
+                                    type: document.type,
+                                    hash: newDocumentHash,
+                                    userId: study.userId,
+                                    parentDocumentId: document.id
+                                }, { transaction });
+            
+                                documentId = newDocument.id; 
+                            }
+                        }
+            
+                        await sequelize.models.study_step.upsert({
+                            studyId: study.id,
+                            workflowStepId: step.id,
+                            documentId: documentId
+                        }, { transaction });
+                    }
+            
+                    await transaction.commit();
+                } catch (error) {
+                    console.error("Failed during study update:", error);
+                    await transaction.rollback();
+                    throw new Error(`Failed to update study steps for the study: ${error.message}`);
                 }
             }
         }
