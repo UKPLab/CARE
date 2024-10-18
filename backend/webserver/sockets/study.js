@@ -80,6 +80,8 @@ module.exports = class StudySocket extends Socket {
      */
     async sendStudyByHash(studyHash) {
         const study = await this.models['study'].getByHash(studyHash);
+        // TODO: study db info, workflows in study where the studies are referenced , workflow steps, study step 
+         
         if (study) {
             const document = await this.models['document'].getById(study.documentId);  
             
