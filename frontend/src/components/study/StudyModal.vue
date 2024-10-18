@@ -242,16 +242,20 @@ export default {
     },    
     started() {
       if (this.study && this.study.start !== null) {
+        if (!(this.study.start instanceof Date)) {
+          throw new Error("Invalid type for study start date. Expected a Date object.");
+        }
         return (new Date(this.study.start) < new Date());
       }
       return true;
     },
     ended() {
-
       //TODO: if end date ist not smaller than current date, the study has ended
-      
 
       if (this.study && this.study.end !== null) {
+        if (!(this.study.end instanceof Date)) {
+          throw new Error("Invalid type for study end date. Expected a Date object.");
+        }
         return !(new Date() < new Date(this.study.end));
       }
       return false;
@@ -292,7 +296,7 @@ export default {
       const limitSessionsPerUser = this.$store.getters["table/study/get"](this.studyId).limitSessionsPerUser;
       
 
-      if(limitSessions != null){
+      if(limitSessions !== null){
         if (totalopenedSessions >= limitSessions) {
           this.eventBus.emit('toast', {
             title: "Study cannot be started!",
@@ -303,7 +307,7 @@ export default {
         }
       }
 
-      if(limitSessionsPerUser != null){
+      if(limitSessionsPerUser !== null){
         if (openedSessionsPerUser >= limitSessionsPerUser) {
           this.eventBus.emit('toast', {
             title: "Study cannot be started!",
