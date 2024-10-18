@@ -46,18 +46,7 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'study_session',
         hooks:{
             beforeCreate: async (studySession, options) => {
-                try {
-                    const existingSession = await sequelize.models.StudySession.findOne({
-                        where: {
-                            studyId: studySession.studyId,
-                            userId: studySession.userId
-                        }
-                    });
-            
-                    if (existingSession) {
-                        throw new Error('A session for this user and study already exists');
-                    }
-            
+            try {   
                     const study = await sequelize.models.study.findOne({ where:
                         { id: studySession.studyId } 
                         });
@@ -93,16 +82,16 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    if(study.close !== null){    
-                        if(Date.now() > study.close || (studySession.end !== null && studySession.end > study.end)){
+                    if(study.close !== null || studySession.end !== null){    
+                        if(Date.now() > study.close || studySession.end > study.end){
                             throw new Error('This study is closed');                        
                         }              
                     }
                 } catch (error) {
                         console.error(error);
                         throw new Error('Failed to create study session');
-                    }        
-                },
+                }        
+            },
             beforeUpdate: async (studySession, options) => {
                 try {
                     const study = await sequelize.models.study.findOne({
@@ -119,12 +108,14 @@ module.exports = (sequelize, DataTypes) => {
 
                     const now = Date.now();
 
-                    if (study.closed !== null && now > study.closed || (studySession.end !== null && studySession.end > study.end)) {
-                        throw new Error('Study is closed');
+                    if (study.closed !== null || studySession.end !== null) {
+                        if(now > study.closed || studySession.end > study.end)
+                            throw new Error('Study is closed');
                     }
 
-                    if (study.end !== null && now > new Date(study.end) || (studySession.end !== null && studySession.end > study.end)) {
-                        throw new Error('Study has ended');
+                    if (study.end !== null || studySession.end !== null) {
+                        if(now > new Date(study.end) || studySession.end > study.end)
+                            throw new Error('Study has ended');
                     }
                 } catch (error) {
                     console.error(error);
