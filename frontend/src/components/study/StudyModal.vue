@@ -250,8 +250,6 @@ export default {
       return true;
     },
     ended() {
-      //TODO: if end date ist not smaller than current date, the study has ended
-
       if (this.study && this.study.end !== null) {
         if (!(this.study.end instanceof Date)) {
           throw new Error("Invalid type for study end date. Expected a Date object.");

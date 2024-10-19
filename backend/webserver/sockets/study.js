@@ -82,26 +82,40 @@ module.exports = class StudySocket extends Socket {
         const study = await this.models['study'].getByHash(studyHash);
         // TODO: study db info, workflows in study where the studies are referenced , workflow steps, study step 
          
-        if (study) {
-            const document = await this.models['document'].getById(study.documentId);  
-            
-            const workflow = await this.models['workflow'].findByPk(study.workflowId, {
-                include: [{
-                    model: this.models['workflow_step'],
-                    as: 'steps',
-                    order: [['order', 'ASC']],  
-                }]
-            });
+        if (study) {            
+            const workflow = await this.models['workflow'].findByPk(study.workflowId);
+
+            const workflowSteps = await this.models['workflow_step'].getAllByKey('workflowId', workflow.id);
+            const studySteps = await this.models['study_step'].getAllByKey('studyId', study.id);
 
             const responseData = {
                 ...study,
-                documentType: document.type,
                 workflow: workflow ? {
                     id: workflow.id,
                     name: workflow.name,
-                    description: workflow.description,
-                    steps: workflow.steps,
+                    description: workflow.description
                 } : null,
+                workflowSteps: workflowSteps? workflowSteps.map(step => {
+                    return {
+                        id: step.id,
+                        workflowId: step.workflowId,
+                        stepType: step.stepType,
+                        workflowStepPrevious: step.workflowStepPrevious,
+                        allowBackward: step.allowBackward,
+                        workflowStepDocument: step.workflowStepDocument,
+                        configuration: step.configuration,
+                    }
+                })
+                : null,
+                studySteps: studySteps? studySteps.map(step => {
+                    return {
+                        id: step.id,
+                        studyId: step.study,
+                        workflowStepId: step.workflowStepId,
+                        documentId: step.documentId,
+                    }
+                })
+                : null
             };
 
             this.emit("study_sessionRefresh", await this.models['study_session'].getAllByKey('userId', this.userId));

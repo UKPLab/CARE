@@ -81,8 +81,11 @@ export default {
       }
     },
     studyRefresh(data) {
-      this.documentId = data.documentId;
-      this.documentType = data.documentType;
+      const documentId = data[0]["studySteps"][0]["documentId"];
+      this.$store.getters['table/study_session/get'](this.studySessionId)
+      const documentType = this.$store.getters['table/document/get'](documentId)["type"];
+      this.documentId = documentId;      
+      this.documentType = documentType;
     }
   },
   computed: {
@@ -102,10 +105,11 @@ export default {
   watch: {
     study(newVal) {
       if (newVal) {
-        this.documentId = newVal.documentId;
-        this.documentType = newVal.documentType; // Fetch document type when study changes
+        const documentId = newVal["studySteps"][0]["documentId"];;
+        const documentType = this.$store.getters['table/document/get'](documentId)["type"];
+        this.documentType = documentType; // Fetch document type when study changes
       } else {
-        this.documentId = 0
+        this.documentId = 0;
       }
     },
     studySession(newVal) {

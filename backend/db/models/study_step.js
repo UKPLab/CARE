@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
           options: {
               table: "document", 
               id: "documentId",
-              name: "name"  ,
+              name: "name",
               relatedTable: {
                 table: "workflow_step", 
                 foreignKey: "workflowId", 
