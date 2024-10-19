@@ -112,6 +112,7 @@ export default {
       default: false,
     }
   },
+  fetchData: ['study', 'study_session', 'document'],
   data() {
     return {
       studySessionId: 0,
@@ -172,7 +173,7 @@ export default {
       return false;
     },
     studyClosed() {
-      if(this.study.closed !== null && this.study.closed !== undefined) {
+      if(this.study["closed"] !== null && this.study["closed"] !== undefined) {
         return Date.now > new Date(this.study.closed);
       }
 
@@ -204,8 +205,10 @@ export default {
     },
     study(newVal) {
       if (newVal) {
-        this.documentId = newVal.documentId;
-        this.documentType = newVal.documentType; // Fetch document type when study changes
+        const documentId = newVal["studySteps"][0]["documentId"];
+        const documentType = this.$store.getters['table/document/get'](documentId)["type"];        
+        this.documentId = documentId;
+        this.documentType = documentType; // Fetch document type when study changes
       } else {
         this.documentId = 0;
       }
@@ -232,8 +235,11 @@ export default {
       }
     },
     studyRefresh(data) {
-      this.documentId = data.documentId;
-      this.documentType = data.documentType;
+      const documentId = data[0]["studySteps"][0]["documentId"];
+      this.$store.getters['table/study_session/get'](this.studySessionId)
+      const documentType = this.$store.getters['table/document/get'](documentId)["type"];
+      this.documentId = documentId;      
+      this.documentType = documentType;
     }
   },
   methods: {
