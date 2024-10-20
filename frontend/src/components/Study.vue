@@ -112,7 +112,7 @@ export default {
       default: false,
     }
   },
-  fetchData: ['study', 'study_session', 'document'],
+  fetchData: ['study', 'study_session', 'document', 'study_step'],
   data() {
     return {
       studySessionId: 0,
@@ -259,7 +259,6 @@ export default {
     studyRefresh(data) {
       //HARD CODED FOR NOW
       const documentId = data[0]["studySteps"][0]["documentId"];
-      this.$store.getters['table/study_session/get'](this.studySessionId)
       const documentType = this.$store.getters['table/document/get'](documentId)["type"];
       this.documentId = documentId;      
       this.documentType = documentType;

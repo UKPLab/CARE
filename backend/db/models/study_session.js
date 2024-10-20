@@ -83,10 +83,7 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    if(study.close !== null || studySession.end !== null){
-                        if(!(studySession.end instanceof Date)){
-                            throw new Error('Invalid type for study session end date. Expected a Date object.');
-                        }    
+                    if(study.close !== null || studySession.end !== null){    
                         if(Date.now() > study.close || studySession.end > study.end){
                             throw new Error('This study is closed');                        
                         }              
@@ -119,24 +116,12 @@ module.exports = (sequelize, DataTypes) => {
 
                     const now = Date.now();
 
-                    if (study.closed !== null || studySession.end !== null) {
-                        if (!(this.studySession.end instanceof Date)) {
-                            throw new Error("Invalid type for study session end date. Expected a Date object.");
-                          }
-                        if (!(this.study.closed instanceof Date)) {
-                            throw new Error("Invalid type for study close date. Expected a Date object.");
-                        } 
+                    if (study.closed !== null || studySession.end !== null) { 
                         if(now > study.closed || studySession.end > study.closed)
                             throw new Error('Study is closed');
                     }
 
-                    if (study.end !== null || studySession.end !== null) {
-                        if (!(this.studySession.end instanceof Date)) {
-                            throw new Error("Invalid type for study session end date. Expected a Date object.");
-                         }
-                        if (!(this.study.end instanceof Date)) {
-                            throw new Error("Invalid type for study end date. Expected a Date object.");
-                         }  
+                    if (study.end !== null || studySession.end !== null) { 
                         if(now > new Date(study.end) || studySession.end > study.end)
                             throw new Error('Study has ended');
                     }
