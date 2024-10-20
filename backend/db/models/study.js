@@ -2,6 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const fs = require('fs').promises;
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -167,6 +168,7 @@ module.exports = (sequelize, DataTypes) => {
         limitSessionsPerUser: DataTypes.INTEGER,
         closed: DataTypes.DATE,
         userIdClosed: DataTypes.INTEGER,
+        template: DataTypes.BOOLEAN,
         start: DataTypes.DATE,
         end: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
@@ -179,8 +181,12 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'study',
         hooks: {
             afterCreate: async (study, options) => {
-                console.log("afterCreate was called!!!");
                 const transaction = options.transaction || await sequelize.transaction();
+
+                if (study.template) {
+                    console.log("Study is a template, skipping step update.");
+                    return;
+                }
 
                 try {
                     const workflowSteps = await sequelize.models.workflow_step.findAll({
@@ -236,7 +242,6 @@ module.exports = (sequelize, DataTypes) => {
                 }
             },
             afterUpdate: async (study, options) => {
-                console.log("afterUpdate was called!!!");
                 const transaction = options.transaction || await sequelize.transaction();
     
                 try {
@@ -247,9 +252,7 @@ module.exports = (sequelize, DataTypes) => {
                     });
             
                     for (const step of workflowSteps) {
-                        console.log("steps",step);
                         const stepDocument = options.context.stepDocuments.find(doc => doc.stepId === step.id);
-                        console.log("stepDocument",stepDocument);
                         let documentId = null;
             
                         if (stepDocument && stepDocument.documentId) {
@@ -258,7 +261,6 @@ module.exports = (sequelize, DataTypes) => {
                             if (!document) {
                                 throw new Error(`Document not found: documentId ${stepDocument.documentId} is missing for step ${step.id}. Cancelling transaction.`);
                             }
-            
                             documentId = stepDocument.documentId;
             
                             if (step.stepType === 2) { // Editor
@@ -267,7 +269,7 @@ module.exports = (sequelize, DataTypes) => {
                                 }
             
                                 const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
-                                const newDocumentHash = `${document.hash}_${study.hash}`;
+                                const newDocumentHash = `${document.hash}_${study.hash}_${uuidv4()}`;
                                 const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
             
                                 await fs.copyFile(originalFilePath, newFilePath);
@@ -284,17 +286,21 @@ module.exports = (sequelize, DataTypes) => {
                             }
                         }
             
-                        await sequelize.models.study_step.upsert({
-                            studyId: study.id,
-                            workflowStepId: step.id,
-                            documentId: documentId
-                        }, { transaction });
+                        await sequelize.models.study_step.update(
+                            { documentId: documentId },
+                            {
+                                where: {
+                                    studyId: study.id,
+                                    workflowStepId: step.id
+                                },
+                                transaction
+                            }
+                        );
                     }
-            
                     await transaction.commit();
                 } catch (error) {
-                    console.error("Failed during study update:", error);
-                    await transaction.rollback();
+                    console.error("Failed during document update:", error);
+                    if (transaction) await transaction.rollback();
                     throw new Error(`Failed to update study steps for the study: ${error.message}`);
                 }
             }
