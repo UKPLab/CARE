@@ -256,6 +256,14 @@ export default {
         }
         return !(new Date() < new Date(this.study.end));
       }
+
+      if (this.study && this.study.closed !== null) {
+        if (!(this.study.closed instanceof Date)) {
+          throw new Error("Invalid type for study closed date. Expected a Date object.");
+        }
+        return !(new Date() < new Date(this.study.closed));
+      }
+      
       return false;
     },
     available() {
@@ -295,7 +303,7 @@ export default {
       
 
       if(limitSessions !== null){
-        if (totalopenedSessions >= limitSessions) {
+        if (totalopenedSessions > limitSessions) {
           this.eventBus.emit('toast', {
             title: "Study cannot be started!",
             message: "The maximum number of sessions for this study has been reached.",
@@ -306,7 +314,7 @@ export default {
       }
 
       if(limitSessionsPerUser !== null){
-        if (openedSessionsPerUser >= limitSessionsPerUser) {
+        if (openedSessionsPerUser > limitSessionsPerUser) {
           this.eventBus.emit('toast', {
             title: "Study cannot be started!",
             message: "You have already started the maximum number of sessions for assigned to you.",

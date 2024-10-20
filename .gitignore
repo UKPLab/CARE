@@ -11,10 +11,12 @@ backend/sessions
 backend/node_modules
 backend/logs
 backend/coverage
+backend/package-lock.json
 
 # ignore build files
 dist/
 frontend/node_modules
+frontend/package-lock.json
 
 #modules
 utils/modules/editor-delta-conversion/node_modules

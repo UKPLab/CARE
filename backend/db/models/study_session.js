@@ -46,10 +46,11 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'study_session',
         hooks:{
             beforeCreate: async (studySession, options) => {
-            try {   
+                const transaction = options.transaction || await sequelize.transaction();
+            try {                 
                     const study = await sequelize.models.study.findOne({ where:
-                        { id: studySession.studyId } 
-                        });
+                        { id: studySession.studyId },
+                        }, {transaction});
 
                     if (!study) {
                         throw new Error('Study not found');
@@ -59,44 +60,54 @@ module.exports = (sequelize, DataTypes) => {
                     const limitSessionsPerUser = study.limitSessionsPerUser;
 
                     if (limitSessions !== null) {
-                        const totalexistingSessionCount = await StudySession.count({
+                        let totalexistingSessionCount = await StudySession.count({
                             where: {
                                 studyId: studySession.studyId
-                            }
-                        });
+                            },
+                        }, {transaction});
 
-                        if (totalexistingSessionCount >= limitSessions) {
+                        if (totalexistingSessionCount > limitSessions) {
                             throw new Error(`Cannot create more than ${limitSessions} sessions for this study.`);
                         }
                     }
 
                     if (limitSessionsPerUser !== null) {
-                        const existingSessionCountPerUser = await StudySession.count({
+                        let existingSessionCountPerUser = await StudySession.count({
                             where: {
                                 studyId: studySession.studyId, userId: studySession.userId
-                            }
-                        });
+                            },
+                        }, {transaction});
 
-                        if (existingSessionCountPerUser >= limitSessionsPerUser) {
+                        if (existingSessionCountPerUser > limitSessionsPerUser) {
                             throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
                         }
                     }
 
-                    if(study.close !== null || studySession.end !== null){    
+                    if(study.close !== null || studySession.end !== null){
+                        if(!(studySession.end instanceof Date)){
+                            throw new Error('Invalid type for study session end date. Expected a Date object.');
+                        }    
                         if(Date.now() > study.close || studySession.end > study.end){
                             throw new Error('This study is closed');                        
                         }              
                     }
+
+                    await transaction.commit();
                 } catch (error) {
+                        await transaction.rollback();
                         console.error(error);
                         throw new Error('Failed to create study session');
                 }        
             },
             beforeUpdate: async (studySession, options) => {
-                try {
+                const transaction = options.transaction || await sequelize.transaction();
+
+                try {                   
+
                     const study = await sequelize.models.study.findOne({
                         where: { id: studySession.studyId }
-                    });
+                    },
+                    {transaction});
 
                     if (!study) {
                         throw new Error('Study not found');
@@ -109,15 +120,30 @@ module.exports = (sequelize, DataTypes) => {
                     const now = Date.now();
 
                     if (study.closed !== null || studySession.end !== null) {
-                        if(now > study.closed || studySession.end > study.end)
+                        if (!(this.studySession.end instanceof Date)) {
+                            throw new Error("Invalid type for study session end date. Expected a Date object.");
+                          }
+                        if (!(this.study.closed instanceof Date)) {
+                            throw new Error("Invalid type for study close date. Expected a Date object.");
+                        } 
+                        if(now > study.closed || studySession.end > study.closed)
                             throw new Error('Study is closed');
                     }
 
                     if (study.end !== null || studySession.end !== null) {
+                        if (!(this.studySession.end instanceof Date)) {
+                            throw new Error("Invalid type for study session end date. Expected a Date object.");
+                         }
+                        if (!(this.study.end instanceof Date)) {
+                            throw new Error("Invalid type for study end date. Expected a Date object.");
+                         }  
                         if(now > new Date(study.end) || studySession.end > study.end)
                             throw new Error('Study has ended');
                     }
+
+                    await transaction.commit();
                 } catch (error) {
+                    await transaction.rollback();
                     console.error(error);
                     throw new Error('Cannot submit study session');
                 }

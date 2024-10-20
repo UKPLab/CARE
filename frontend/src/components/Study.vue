@@ -153,13 +153,23 @@ export default {
       if (this.studySession) {
         return this.studySession.end !== null;
       }
-      
-      if (this.study.end !== null && this.study.end !== undefined) {
+
+      if(this.study && this.study.end) {     
+        if (this.study.end !== null && this.study.end !== undefined) {
+          if (!(this.study.end instanceof Date)) {
+            throw new Error("Invalid type for study end date. Expected a Date object.");
+          }
           return Date.now() > new Date(this.study.end);
+        }
       }
 
-      if(this.study.closed !== null && this.study.closed !== undefined) {
-        return Date.now() > new Date(this.study.closed);
+      if(this.study && this.study.closed){
+          if(this.study.closed !== null && this.study.closed !== undefined) {
+            if (!(this.study.closed instanceof Date)) {
+              throw new Error("Invalid type for study close date. Expected a Date object.");
+            }
+            return Date.now() > new Date(this.study.closed);
+          }
       }
 
       return false;
@@ -173,13 +183,24 @@ export default {
       return false;
     },
     studyClosed() {
-      if(this.study["closed"] !== null && this.study["closed"] !== undefined) {
-        return Date.now > new Date(this.study.closed);
-      }
+      if(this.study && this.study.closed) {
+        if(this.study["closed"] !== null && this.study["closed"] !== undefined) {
+          if(!(this.study["closed"] instanceof Date)) {
+            throw new Error("Invalid type for study close date. Expected a Date object.");
+          }
+          return Date.now > new Date(this.study.closed);
+        }
+     }
 
-      if(this.study.end !== null && this.study.end !== undefined) {
-        return Date.now() > new Date(this.study.end);
-      }        
+     if(this.study && this.study.end) {
+        if(this.study.end !== null && this.study.end !== undefined) {
+          if(!(this.study.end instanceof Date)) {
+            throw new Error("Invalid type for study end date. Expected a Date object.");
+          }
+          return Date.now() > new Date(this.study.end);
+        }
+      } 
+             
       return false;
     },
     timeLeftHuman() {
@@ -205,6 +226,7 @@ export default {
     },
     study(newVal) {
       if (newVal) {
+        //HARD CODED FOR NOW
         const documentId = newVal["studySteps"][0]["documentId"];
         const documentType = this.$store.getters['table/document/get'](documentId)["type"];        
         this.documentId = documentId;
@@ -235,6 +257,7 @@ export default {
       }
     },
     studyRefresh(data) {
+      //HARD CODED FOR NOW
       const documentId = data[0]["studySteps"][0]["documentId"];
       this.$store.getters['table/study_session/get'](this.studySessionId)
       const documentType = this.$store.getters['table/document/get'](documentId)["type"];
