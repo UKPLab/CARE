@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const { v4: uuidv4 } = require('uuid'); 
 
 /**
  * Handle all studies through websocket
@@ -173,6 +174,41 @@ module.exports = class StudySocket extends Socket {
         }
     }
 
+    /**
+     * Save the current study as a template (create a new study with template: true)
+     * @param {number} studyId - The ID of the study to be saved as a template
+     * @returns {Promise<*>}
+     */
+    async saveStudyAsTemplate(studyId) {
+        try {
+            const currentStudy = await this.models['study'].getById(studyId);
+
+            if (this.checkUserAccess(currentStudy.userId)) {
+
+                const newStudyData = {
+                    ...currentStudy,        
+                    id: undefined,      
+                    hash: uuidv4(),      
+                    template: true,         
+                    name: `${currentStudy.name}_template`, 
+                    createdAt: new Date(),   
+                    updatedAt: new Date(),   
+                };
+
+                const newStudy = await this.models['study'].create(newStudyData);
+
+                this.emit("studyRefresh", newStudy);
+
+                return newStudy;
+            } else {
+                this.sendToast("You are not allowed to save this study as a template", "Error", "Danger");
+            }
+        } catch (error) {
+            this.logger.error("Error saving study as template:", error);
+            throw error;  
+        }
+    }
+
     async init() {
 
         this.socket.on("studyGet", async (data) => {
@@ -220,6 +256,17 @@ module.exports = class StudySocket extends Socket {
                     success: false, message: "Error while publishing study"
                 });
 
+            }
+        });
+
+        this.socket.on("studySaveAsTemplate", async (data) => {
+            try {
+                if (data.studyId && data.studyId !== 0) {
+                    await this.saveStudyAsTemplate(data.studyId);
+                }
+            } catch (err) {
+                this.logger.error(err);
+                this.sendToast(err, "Error saving study as template", "Danger");
             }
         });
 

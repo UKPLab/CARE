@@ -201,13 +201,15 @@ module.exports = class MetaModel extends Model {
         }
 
         try {
+            const individualHooks = (this.tableName === 'study' || 'study_session') ? { individualHooks: true } : {};
+
             const options = Object.assign({}, {
                 where: {
                     id: id
                 },
                 returning: true,
                 plain: true
-            }, additionalOptions);
+            }, additionalOptions, individualHooks);
 
             const updatedObject = await this.update(this.subselectFields(data, possibleFields), options);
 

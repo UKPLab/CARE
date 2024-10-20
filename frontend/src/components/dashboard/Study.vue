@@ -45,7 +45,7 @@ export default {
     }
   },
   props: {},
-  fetchData: ['study','study_session','workflow','workflow_step'],
+  fetchData: ['study','study_session','workflow','workflow_step','study_step'],
   data() {
     return {
       options: {
@@ -116,7 +116,7 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     studs() {
-      return this.studies.filter(study => study.userId === this.userId)
+      return this.studies.filter(study => study.userId === this.userId && study.template === false)
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
           let study = {...st};
@@ -208,6 +208,17 @@ export default {
                 },
                 title: "Close study",
                 action: "closeStudy"
+              },
+              {
+                icon: "save",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  }
+                },
+                title: "Save as Template",
+                action: "saveAsTemplate",
               }
             ];
             return study
@@ -233,15 +244,16 @@ export default {
         this.$socket.emit("stats", {action: "inspectSessions", data: {studyId: data.params.id}});
 
         this.$refs.studySessionModal.open(data.params.id);
-      }
-      else if (data.action === "closeStudy") {
+      } else if (data.action === "closeStudy") {
         this.$socket.emit("stats", {action: "closeStudy", data: {studyId: data.params.id}});
         
         this.$socket.emit("studyUpdate", {
           studyId: data.params.id, 
           closed: true
         });
-      }
+      } else if (data.action === "saveAsTemplate") {
+        this.saveAsTemplate(data.params);
+      }    
     },
     async copyLink(studyId) {
       const study = this.$store.getters["table/study/get"](studyId);
@@ -307,6 +319,15 @@ export default {
           }
         }
       );
+    },
+    saveAsTemplate(study) {
+      this.$socket.emit("studySaveAsTemplate", { studyId: study.id });
+
+      this.eventBus.emit('toast', {
+        title: "Template Saved",
+        message: "This study has been saved as a template.",
+        variant: "success",
+      });
     }
   }
 }

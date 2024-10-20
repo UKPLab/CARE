@@ -44,6 +44,12 @@ module.exports = {
       onDelete: 'SET NULL',
     });
 
+    await queryInterface.addColumn("study", "template", {
+      type: Sequelize.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    });
+
     await queryInterface.removeColumn("study", "documentId");
   },
 
@@ -63,5 +69,6 @@ module.exports = {
     await queryInterface.removeColumn("study", "limitSessionsPerUser");
     await queryInterface.removeColumn("study", "closed");
     await queryInterface.removeColumn("study", "userIdClosed");
+    await queryInterface.removeColumn("study", "template");
   },
 };
