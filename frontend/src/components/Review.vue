@@ -81,6 +81,7 @@ export default {
       }
     },
     studyRefresh(data) {
+      //HARD CODED FOR NOW
       const documentId = data[0]["studySteps"][0]["documentId"];
       this.$store.getters['table/study_session/get'](this.studySessionId)
       const documentType = this.$store.getters['table/document/get'](documentId)["type"];
@@ -105,6 +106,7 @@ export default {
   watch: {
     study(newVal) {
       if (newVal) {
+        //HARD CODED FOR NOW
         const documentId = newVal["studySteps"][0]["documentId"];;
         const documentType = this.$store.getters['table/document/get'](documentId)["type"];
         this.documentType = documentType; // Fetch document type when study changes
