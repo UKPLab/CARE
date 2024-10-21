@@ -1,5 +1,5 @@
 <template>
-  <Card title="Moodle Submission">
+  <Card title="Review Documents">
     <!-- Header Starts -->
     <template #headerElements>
       <BasicButton
@@ -36,8 +36,8 @@
 import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import BasicButton from "@/basic/Button.vue";
-import UploadModal from "./moodle/UploadModal.vue";
-import ImportModal from "./moodle/ImportModal.vue";
+import UploadModal from "./review/UploadModal.vue";
+import ImportModal from "./review/ImportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
@@ -48,7 +48,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  * @author Linyin Huang
  */
 export default {
-  name: "MoodleSubmission",
+  name: "ReviewDocuments",
   fetchData: ["document", "study"],
   components: {
     UploadModal,
@@ -72,7 +72,6 @@ export default {
         { name: "Title", key: "name" },
         { name: "Created At", key: "createdAt" },
         { name: "Type", key: "type" },
-        { name: "Public", key: "publicBadge", type: "badge" },
         { name: "Manage", key: "manage", type: "button-group" },
       ],
     };

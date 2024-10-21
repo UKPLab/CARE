@@ -93,7 +93,7 @@ export default {
   emits: ["updateUser"],
   data() {
     return {
-      currentStep: 1,
+      currentStep: 0,
       moodleData: {
         url: "",
         apiKey: "",
@@ -236,7 +236,6 @@ export default {
     handleStepTwo() {
       const { apiKey, url } = this.moodleData;
       const options = { apiKey, url };
-
       const files = this.selectedAsgs.map(({ userId, fileName, fileUrl }) => ({ userId, fileName, fileUrl }));
       const data = { options, files };
       this.$socket.emit("uploadMoodleSubmission", data, (res) => {
@@ -251,7 +250,7 @@ export default {
           // };
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to bulk create users",
+            title: "Failed to import submission from Moodle",
             message: "Please contact CARE staff to resolve the issue",
             type: "error",
           });
