@@ -233,6 +233,13 @@ export default {
       }
       return [];
     },
+    totalNumberOfOpenedSessions() {
+      return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId).length;
+    },
+    numberOfOpenedSessionsPerUser() {
+      return this.$store.getters["table/study_session/getByKey"]("userId", this.userId)
+      .filter(s => s.studyID === this.studyID).length;
+    },    
     started() {
       if (this.study && this.study.start !== null) {
         return (new Date(this.study.start) < new Date());
@@ -240,6 +247,10 @@ export default {
       return true;
     },
     ended() {
+
+      //TODO: if end date ist not smaller than current date, the study has ended
+      
+
       if (this.study && this.study.end !== null) {
         return !(new Date() < new Date(this.study.end));
       }
@@ -262,6 +273,46 @@ export default {
     start() {
       // needed, otherwise the ref in the callback can become null
       const modal = this.$refs.modal;
+
+      const studyClosed = this.$store.getters["table/study/get"](this.studyId).closed;
+
+      if(studyClosed){
+        this.eventBus.emit('toast', {
+          title: "Study cannot be started!",
+          message: "The study is closed.",
+          variant: "danger"
+        });
+        return;
+      }
+
+      let totalopenedSessions = this.totalNumberOfOpenedSessions;
+      let openedSessionsPerUser = this.numberOfOpenedSessionsPerUser;   
+      
+      const limitSessions = this.$store.getters["table/study/get"](this.studyId).limitSessions;
+      const limitSessionsPerUser = this.$store.getters["table/study/get"](this.studyId).limitSessionsPerUser;
+      
+
+      if(limitSessions != null){
+        if (totalopenedSessions >= limitSessions) {
+          this.eventBus.emit('toast', {
+            title: "Study cannot be started!",
+            message: "The maximum number of sessions for this study has been reached.",
+            variant: "danger"
+          });
+          return;
+        }
+      }
+
+      if(limitSessionsPerUser != null){
+        if (openedSessionsPerUser >= limitSessionsPerUser) {
+          this.eventBus.emit('toast', {
+            title: "Study cannot be started!",
+            message: "You have already started the maximum number of sessions for assigned to you.",
+            variant: "danger"
+          });
+          return;
+        }
+      }
 
       this.sockets.subscribe("studySessionStarted", (data) => {
         if (data.success) {
