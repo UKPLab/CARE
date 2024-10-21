@@ -8,25 +8,45 @@
   />
   <FinishModal
     ref="studyFinishModal"
-    :closeable="!timeUp"
+    :closeable="!timeUp && !studyClosed"
     :finished="finished"
     :study-session-id="studySessionId"
     @finish="finalFinish"
   />
-  <Teleport to="#topbarCustomPlaceholder">
-    <button
-      class="btn btn-outline-secondary"
-      type="button"
+
+  <Teleport to="#topbarCustomPlaceholder">  
+  <div class="d-flex justify-content-between align-items-center w-100">
+    <TopBarButton
+      class="btn btn-outline-primary me-3"
+      title = "Previous"
+      :disabled="currentStep === 0"
+      @click="previousStep"
+    >
+    Previous
+    </TopBarButton>
+
+    <TopBarbutton
+      class="btn btn-outline-secondary mx-3"
+      title="Finish Study"
       @click="finish"
     >
-      Finish Study
-    </button>
-    <button
+    Finish Study
+    </TopBarButton>
+
+    <TopBarbutton
+      class="btn btn-outline-primary ms-3"
+      title="Next"
+      :disabled="currentStep === maxSteps - 1"
+      @click="nextStep"
+    >
+    Next
+    </TopBarButton>
+
+    <TopbarButton
       v-if="timeLeft > 0"
       class="btn mb-1"
-      type="button"
     >
-      <LoadIcon
+    <LoadIcon
         :size="21"
         class="me-1 middle"
         icon-name="stopwatch"
@@ -35,13 +55,18 @@
         :class="{'text-danger':timeLeft < (5 * 60)}"
         class="middle"
       ><b>Time Left:</b> {{ timeLeftHuman }}</span>
-    </button>
+    </TopbarButton>
+  </div>
   </Teleport>
+
   <Annotator
-    v-if="documentId !== 0"
-    :study-session-id="studySessionId"
+    v-if="documentId !== 0 && documentType === 0 && studySessionId !== 0"
+  />
+  <Editor
+    v-if="documentId !== 0 && documentType === 1 && studySessionId !== 0"
   />
 </template>
+
 
 <script>
 /**
@@ -54,19 +79,21 @@
  */
 import StudyModal from "@/components/study/StudyModal.vue";
 import Annotator from "./annotator/Annotator.vue";
+import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import {computed} from "vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
+import { computed } from "vue";
 
 export default {
   name: "StudyRoute",
-  components: {LoadIcon, FinishModal, StudyModal, Annotator},
+  components: { LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton },
   provide() {
     return {
       documentId: computed(() => this.documentId),
       studySessionId: computed(() => this.studySessionId),
       readonly: this.readonly,
-    }
+    };
   },
   props: {
     'studyHash': {
@@ -91,9 +118,15 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       documentId: 0,
-    }
+      documentType: null,
+      currentStep: 0, //dummy code for allowNaviagtion
+      maxSteps: 2 //dummy code for allowNaviagtion
+    };
   },
   computed: {
+    allowNavigation() {
+      return this.study ? this.study.allowNavigation : false;
+    },
     studySession() {
       if (this.studySessionId !== 0) {
         return this.$store.getters['table/study_session/get'](this.studySessionId);
@@ -119,6 +152,15 @@ export default {
       if (this.studySession) {
         return this.studySession.end !== null;
       }
+      
+      if (this.study.end !== null){
+          return Date.now() > new Date(this.study.end);
+      }
+
+      if(this.study.closed !== null) {
+        return Date.now() > new Date(this.study.closed);
+      }
+
       return false;
     },
     timeUp() {
@@ -127,6 +169,16 @@ export default {
           return true;
         }
       }
+      return false;
+    },
+    studyClosed() {
+      if(this.study.closed !== null) {
+        return Date.now > new Date(this.study.closed);
+      }
+
+      if(this.study.end !== null) {
+        return Date.now() > new Date(this.study.end);
+      }        
       return false;
     },
     timeLeftHuman() {
@@ -153,16 +205,18 @@ export default {
     study(newVal) {
       if (newVal) {
         this.documentId = newVal.documentId;
+        this.documentType = newVal.documentType; // Fetch document type when study changes
       } else {
-        this.documentId = 0
+        this.documentId = 0;
       }
     }
   },
   mounted() {
     this.studySessionId = this.initStudySessionId;
+    console.log("studySessionId send from mounted:",this.studySessionId);
     if (this.studySessionId === 0) {
       this.$refs.studyModal.open();
-      this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
+      this.$socket.emit("studyGetByHash", { studyHash: this.studyHash });
     }
   },
   sockets: {
@@ -175,6 +229,10 @@ export default {
         });
         this.$router.push("/");
       }
+    },
+    studyRefresh(data) {
+      this.documentId = data.documentId;
+      this.documentType = data.documentType;
     }
   },
   methods: {
@@ -186,25 +244,52 @@ export default {
         sessionId: this.studySessionId,
         comment: data.comment,
         end: Date.now()
-      })
+      });
     },
     finish(data) {
       if (data.studySessionId) {
         this.studySessionId = data.studySessionId;
       }
-      this.$refs.studyFinishModal.open();
+
+      if (this.finished && !this.study.multipleSubmit) {
+        this.$refs.studyFinishModal.open();
+        return;
+      }
     },
     calcTimeLeft() {
       const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
       this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
       if (this.timeLeft < 0) {
-        this.finish({studySessionId: this.studySessionId});
+        this.finish({ studySessionId: this.studySessionId });
+      }
+    },
+    previousStep() {
+      if (this.currentStep > 0) {
+        this.currentStep--;
+      }
+    },
+    nextStep() {
+      if (this.currentStep < this.maxSteps - 1) {
+        this.currentStep++;
       }
     }
   }
-}
+};
 </script>
 
 <style scoped>
+.d-flex {
+  width: 100%; 
+}
+.mx-auto {
+  margin-left: auto; 
+  margin-right: auto;
+}
+.me-3 {
+  margin-right: 1rem; 
+}
+.ms-3 {
+  margin-left: 1rem;
+}
 </style>

@@ -22,7 +22,7 @@ module.exports = class StudySocket extends Socket {
         if (this.checkUserAccess(currentStudy.userId)) {
             const study = await this.models['study'].updateById(studyId, data);
 
-            if (study.deleted) {
+            if (currentStudy.deleted && !study.deleted) {
                 const sessions = await this.models['study_session'].getAllByKey('studyId', study.id);
                 for (const session of sessions) {
                     await this.models['study_session'].deleteById(session.id);
@@ -43,10 +43,12 @@ module.exports = class StudySocket extends Socket {
      */
     async addStudy(study) {
         study.userId = this.userId;
-
+        // TODO: that all existing deltas are saved, use documentSocket(saveDocument)
+            if (this.getSocket("DocumentSocket")) {
+                this.getSocket("DocumentSocket").saveDocument(study.documentId);
+            }        
         const newStudy = await this.models['study'].add(study);
         this.emit("studyRefresh", newStudy);
-
         return newStudy;
     }
 
@@ -79,9 +81,29 @@ module.exports = class StudySocket extends Socket {
     async sendStudyByHash(studyHash) {
         const study = await this.models['study'].getByHash(studyHash);
         if (study) {
-            const sessions = await this.models['study_session'].getAllByKey('userId', this.userId);
-            this.emit("study_sessionRefresh", sessions.filter(s => s.studyId === study.id));
-            this.emit("studyRefresh", study);
+            const document = await this.models['document'].getById(study.documentId);  
+            
+            const workflow = await this.models['workflow'].findByPk(study.workflowId, {
+                include: [{
+                    model: this.models['workflow_step'],
+                    as: 'steps',
+                    order: [['order', 'ASC']],  
+                }]
+            });
+
+            const responseData = {
+                ...study,
+                documentType: document.type,
+                workflow: workflow ? {
+                    id: workflow.id,
+                    name: workflow.name,
+                    description: workflow.description,
+                    steps: workflow.steps,
+                } : null,
+            };
+
+            this.emit("study_sessionRefresh", await this.models['study_session'].getAllByKey('userId', this.userId));
+            this.emit("studyRefresh", responseData);  
         } else {
             this.socket.emit("studyError", {
                 studyHash: studyHash, message: "Not found!"
@@ -165,8 +187,6 @@ module.exports = class StudySocket extends Socket {
             try {
                 if (data.studyId && data.studyId !== 0) {
                     await this.updateStudy(data.studyId, data);
-                } else {
-                    await this.addStudy(data);
                 }
             } catch (err) {
                 this.logger.error(err);
@@ -177,6 +197,7 @@ module.exports = class StudySocket extends Socket {
         this.socket.on("studyPublish", async (data) => {
             try {
                 await this.publishStudy(data)
+                console.log("Publishing this data;",data);
             } catch (e) {
                 this.logger.error(e);
                 this.socket.emit("studyPublished", {
