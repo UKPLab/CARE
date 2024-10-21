@@ -88,59 +88,17 @@ module.exports = class UserSocket extends Socket {
     }
   }
 
-  async getStudentsWithAssignments() {
+
+
+  async getAllUsersWithRoleAndNumberOfAssignments() {
     try {
-      return await this.models["user"].getStudentsWithAssignments()
+      return await this.models["user"].getAllUsersWithRoleAndNumberOfAssignments()
     } catch (error) {
       this.logger.error(error);
     }
   }
 
-  async assignPeerReviews(assignments, students, tutors, studentReviewsPerPerson, tutorReviewsPerPerson) {
-    const assignmentCount = assignments.length;
   
-    function shuffleArray(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-    }
-  
-    const shuffledStudents = shuffleArray([...students]);
-    const shuffledTutors = shuffleArray([...tutors]);
-  
-    const peerReviewAssignments = {
-      students: {},
-      tutors: {}
-    };
-  
-    shuffledStudents.forEach(student => {
-      const shuffledAssignments = shuffleArray([...assignments]);
-      peerReviewAssignments.students[student] = shuffledAssignments.slice(0, studentReviewsPerPerson);
-    });
-  
-    
-    shuffledTutors.forEach(tutor => {     
-      const shuffledAssignments = shuffleArray([...assignments]);  
-      peerReviewAssignments.tutors[tutor] = shuffledAssignments.slice(0, tutorReviewsPerPerson);
-    });
-  
-    assignments.forEach(assignment => {
-      const assignedTutors = Object.keys(peerReviewAssignments.tutors).filter(tutor => 
-        peerReviewAssignments.tutors[tutor].includes(assignment)
-      );
-  
-      // If no tutor is assigned to this assignment, assign one randomly
-      if (assignedTutors.length === 0) {
-        const randomTutor = shuffledTutors[Math.floor(Math.random() * shuffledTutors.length)];
-        peerReviewAssignments.tutors[randomTutor].push(assignment);
-      }
-    });
-  
-    console.log(peerReviewAssignments)
-    return peerReviewAssignments;
-  }
 
 
   /**
@@ -375,50 +333,25 @@ module.exports = class UserSocket extends Socket {
       }
     });
 
-    this.socket.on("getStudentsWithAssignment", async (callback) => {
+    
+
+    this.socket.on("getAllUsersWithRoleAndNumberOfAssignments", async (callback) => {
       try {
-        console.log("Assignemnts")
-        const users = await this.getStudentsWithAssignments();
-        console.log(users)
+        const users = await this.getAllUsersWithRoleAndNumberOfAssignments();
         callback({
           success: true,
           users: users,
         });
-        this.socket.emit("userByRole", {
+        this.socket.emit("usersWithRolesAndAssignments", {
           success: true,
           users,
         });
       } catch (error) {
-        const errorMsg = "User rights and request parameter mismatch";
-        this.socket.emit("userByRole", {
-          success: false,
-          message: errorMsg,
-        });
         this.logger.error(errorMsg);
       }
     });
 
-    this.socket.on("assignPeerReviews", async (data, callback) => {
-      try {
-        console.log(data)
-        const assignments = await this.assignPeerReviews(data.assignments, data.students, data.tutors, data.reviewsPerStudent, data.reviewsPerTutor);
-        callback({
-          success: true,
-          assignments: assignments,
-        });
-        this.socket.emit("peerReview", {
-          success: true,
-          users,
-        });
-      } catch (error) {
-        const errorMsg = "User rights and request parameter mismatch";
-        this.socket.emit("userByRole", {
-          success: false,
-          message: errorMsg,
-        });
-        this.logger.error(errorMsg + error);
-      }
-    });
+    
 
     // Get specific user's details
     this.socket.on("userGetDetails", async (userId) => {

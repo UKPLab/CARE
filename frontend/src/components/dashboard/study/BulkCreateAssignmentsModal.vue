@@ -27,10 +27,10 @@
             v-if="currentStep === 0"
             class="file-upload-container"
           >
-          <h4>Select Students</h4>
+          <h4>Select assignments to review!</h4>
           <div class="table-scroll-container">
             <BasicTable
-              :columns="columns"
+              :columns="columnsStepOne"
               :data="users"
               :options="tableOptions"
               @row-selection="(users) => (selectedUsers = users)"
@@ -43,7 +43,7 @@
             v-if="currentStep === 1"
             class="preview-table-container"
           >
-          <h4>Select Tutors</h4>
+          <h4>Select reviewers!</h4>
           <div class="table-scroll-container">
             <BasicTable
               :columns="columns"
@@ -72,7 +72,16 @@
             v-if="currentStep === 3"
             class="result-container"
           >
-            <h3>Peer Reviews created!</h3>
+
+            <h3>Choose a template for the assignment creation!</h3>
+            <div>
+            <label for="template-dropdown">Choose a template:</label>
+            <select v-model="selectedTemplate" id="template-dropdown">
+              <option v-for="template in templates" :key="template" :value="template">{{ template }}</option>
+            </select>
+
+            <!-- Display the selected role -->
+          </div>
               
             
           </div>
@@ -84,12 +93,21 @@
           class="btn btn-secondary"
           @click="prevStep"
         />
+        <div v-if="currentStep != 3" >
         <BasicButton
           title="Next"
           class="btn btn-primary"
           :disabled="isDisabled"
           @click="nextStep"
         />
+      </div>
+      <div v-if="currentStep === 3" >
+        <BasicButton
+          title="Create Assignments"
+          class="btn btn-primary"
+          @click="createAssignments()"
+        />
+      </div>
       </template>
     </BasicModal>
   </template>
@@ -101,6 +119,7 @@
   import BasicTable from "@/basic/table/Table.vue";
   import BasicForm from "@/basic/Form.vue";
   import FormSlider from "@/basic/form/Slider.vue";
+import { forEach } from "lodash";
   
   /**
    * Modal for bulk creating users through csv file and Moodle API
@@ -108,13 +127,13 @@
    */
   export default {
     name: "ImportModal",
+    fetch_data: ["document_edit"],
     components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider},
     emits: ["updateUser"],
     data() {
       return {
         sliders: [
-        { key: 'slider1', min: 0, max: this.sliderMaxValue, step: 1, class: 'custom-slider-class', unit: '' , label: "Number of reviews per student"},
-        { key: 'slider2', min: 0, max: this.sliderMaxValue, step: 1, class: 'custom-slider-class', unit: '', label: "Number of reviews per mentor" },
+        
       ],
         sliderOptions: {
           key: "my-slider",
@@ -136,6 +155,7 @@
         selectedMentors: [],
         userData: {},
         selectedUsers: [],
+        selectedTemplate: '',
         tableOptions: {
           striped: true,
           hover: true,
@@ -147,20 +167,56 @@
           scrollX: true
         },
         columns: [
-          {
-            name: "Status",
-            key: "status",
+        {
+            name: "Role",
+            key: "role",
             width: "1",
             filter: [
-              { key: "new", name: "New" },
-              { key: "duplicate", name: "Duplicate" },
+              { key: "student", name: "Student" },
+              { key: "mentor", name: "Mentor" },
+              { key: "teacher", name: "Teacher" },
+              { key: "admin", name: "Admin" },
+              { key: "guest", name: "Guest" },
+              { key: "user", name: "User" },
+            ],
+          },
+          {
+            name: "Has Assignments",
+            key: "hasAssignments",
+            width: "1",
+            filter: [
+              { key: "true", name: "With Assignments" },
+              { key: "false", name: "No Assignments" },
             ],
           },
           { name: "ID", key: "id" },
           { name: "First Name", key: "firstName" },
           { name: "Last Name", key: "lastName" },
-          { name: "Email", key: "email" },
+          {
+            name: "Number of Assignments",
+            key: "numberAssignments"
+          },
+        ],
+        columnsStepOne: [
+        {
+            name: "Role",
+            key: "role",
+            width: "1",
+            filter: [
+              { key: "student", name: "Student" },
+              { key: "mentor", name: "Mentor" },
+              { key: "teacher", name: "Teacher" },
+              { key: "admin", name: "Admin" },
+              { key: "guest", name: "Guest" },
+              { key: "user", name: "User" },
+            ],
+          },
+          { name: "ID", key: "id" },
           { name: "Assignment", key: "documentName" },
+          { name: "First Name", key: "firstName" },
+          { name: "Last Name", key: "lastName" },
+          
+          
         ],
         updatedUserCount: null,
         createdUsers: [],
@@ -175,16 +231,20 @@
       },
       steps() {
         return [
-          { title: "Student Selection" },
-          { title: "Tutor Selection" },
+          { title: "Assignment Selection" },
+          { title: "Reviewer Selection" },
           { title: "Review Count" },
-          { title: "Confirm" },
+          { title: "Template Selection" },
         ];
       },
       isDisabled() {
         if (this.currentStep === 0) {
           return !this.selectedUsers.length > 0;
         }
+        if (this.currentStep === 1) {
+          return !this.selectedMentors.length > 0;
+        }
+          
           
         return false;
       },
@@ -208,6 +268,9 @@
         values.push(parseInt(this.$store.getters["settings/getValue"]('assignment_role_slider_student_default')))
         values.push(parseInt(this.$store.getters["settings/getValue"]('assignment_role_slider_tutor_default')))
         return values;
+      },
+      templates() {
+        return this.$store.getters["table/document/getAll"].map((item) => item.name)
       }
       
     },
@@ -225,26 +288,25 @@
       },
       resetModal() {
         this.currentStep = 0;
-        this.file = {
-          state: 0,
-          name: "",
-          size: 0,
-          errors: [],
-        };
         this.users = [];
         this.selectedUsers = [];
-        if (this.updatedUserCount) {
-          this.updatedUserCount = null;
-          this.createdUsers = [];
-          this.$emit("updateUser");
-        }
-        if (this.importType === "moodle") {
-          this.eventBus.emit("resetFormField");
-        }
       },
       prevStep() {
         if (this.currentStep > 0) {
           this.currentStep--;
+        }
+
+        switch(this.currentStep) {
+          case 0:
+            this.selectedUsers = []
+            break;
+          case 1:
+            this.selectedMentors = []
+            this.sliders = []
+            break;
+          case 2:
+            
+            break;
         }
       },
       nextStep() {
@@ -268,25 +330,28 @@
         
       },
       handleStepZero() {
-        /*this.$socket.emit("userGetByRole", "student", (response) => {
-          console.log(response.users)
+        this.$socket.emit("getReviewableAssignments", (response) => {
           this.users = response.users
-        console.log(this.users)})
-        */
-        this.$socket.emit("getStudentsWithAssignment", (response) => {
-          this.users = response.users
-      
       })
+       
       },
       handleStepOne() {
-        this.$socket.emit("userGetByRole", "mentor", (response) => {
-          this.mentors = response.users })
-      },
+        this.$socket.emit("getAllUsersWithRoleAndNumberOfAssignments", (response) => {
+          this.mentors = response.users.map(user => ({
+  ...user,  
+  hasAssignments: user.numberAssignments > 0 
+}))})},
       handleStepTwo() {
-        
+        const uniqueRoles = [...new Set(this.selectedMentors.map(item => item.role))];
+
+        for(let i = 0; i < uniqueRoles.length; i++) {
+          this.sliders.push({ key: uniqueRoles[i], min: 0, max: this.sliderMaxValue, step: 1, class: 'custom-slider-class', unit: '' , label: "Number of reviews per " + uniqueRoles[i]})
+        }
       },
       handleStepThree() {
-        console.log(this.sliderValues)
+        
+      },
+      createAssignments() {
         let data = {}
         data.assignments = this.selectedUsers.map(col => col.documentName);
         data.students = this.selectedUsers.map(col => col.id);
@@ -300,7 +365,7 @@
         this.$socket.emit("assignPeerReviews", data, (response) => {
             console.log(response)
         }) 
-      },
+      }
       },
       
   };
@@ -360,6 +425,7 @@
   
   .content-container {
     height: 500px;
+    margin-bottom: 20px;
   }
 
 
@@ -380,8 +446,6 @@
   .file-upload-container {
     width: 100%;
     margin: 0 auto;
-    overflow-x: scroll;
-    overflow-y: auto;
   }
   
   .drag-drop-area {
@@ -447,7 +511,6 @@
   .preview-table-container {
     height: 100%;
     white-space: nowrap;
-    overflow-x: scroll;
   }
 
   .review-count-container {
@@ -461,8 +524,8 @@
   .result-container {
     height: 100%;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-start;
+    align-items: flex-start;
     flex-direction: column;
   }
   
@@ -472,5 +535,20 @@
       margin-right: 0.5rem;
     }
   }
+
+  .result-container h3 {
+  font-size: 2rem; /* Adjust this value to change the font size of the h3 */
+  margin-bottom: 20px; /* Adds space below the h3 heading */
+}
+
+.result-container label {
+  font-size: 1.2rem; /* Adjust this to change the label font size */
+  margin-right: 10px; /* Adds space between the label and the dropdown */
+}
+
+.result-container select {
+  margin-top: 10px; /* Adds space between the label and dropdown */
+  padding: 5px; /* Optional: Adds padding to the dropdown for better spacing */
+}
   </style>
   
