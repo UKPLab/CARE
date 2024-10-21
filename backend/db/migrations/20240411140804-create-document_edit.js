@@ -25,6 +25,14 @@ module.exports = {
             key: "id"
         }
       },
+      studySessionId: { 
+        type: Sequelize.INTEGER,
+        references: {
+            model: "study_session",
+            key: "id"
+        },
+        allowNull: true
+      },
       draft: {
         type: Sequelize.BOOLEAN,
         defaultValue: true,

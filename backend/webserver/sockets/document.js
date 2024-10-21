@@ -28,8 +28,13 @@ module.exports = class DocumentSocket extends Socket {
      */
     async checkDocumentAccess(documentId) {
         const doc = await this.models['document'].getById(documentId);
+
+        const studyStepAssociationExists = await this.models['study_step'].count({
+            where: { documentId: documentId }
+        });
+        
         if (doc && (doc.public
-                || (await this.models['study'].getAllByKey('documentId', documentId)).length > 0)
+                || studyStepAssociationExists > 0)
             || (this.checkUserAccess(doc.userId))
         ) {
             return true;
@@ -145,17 +150,39 @@ module.exports = class DocumentSocket extends Socket {
      * @param {number} documentId
      * @returns {Promise<Delta|void>}
      */
-    async sendDocument(documentId) {
+    async sendDocument(documentId, studySessionId) {
         try {
             const doc = await this.models['document'].getById(documentId);
+
             if (this.checkDocumentAccess(doc.id)) {
-                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
-                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                const documentType = doc.type;
+                if (documentType === this.models['document'].docTypes.DOC_TYPE_HTML) {
+                    //TODO: if ssid not null, get new copy of hash 
+                    let deltaFilePath;
+                    if(studySessionId === null){
+                        deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                    }else{
+                        const studyId = await this.models['study_session'].getById(studySessionId)['studyId'];
+                        const studyHash = await this.models['study'].getById(studyId)['hash'];
+                        
+                        deltaFilePath = `${UPLOAD_PATH}/${doc.hash}`+ '_' + `${studyHash}.delta.json`;
+                    }
+
                     if (fs.existsSync(deltaFilePath)) {
-                        const delta = await this.loadDocument(deltaFilePath);
-                        this.socket.emit("documentFile", {document: doc, deltas: delta});
+                        let delta = await this.loadDocument(deltaFilePath);
+                        
+                        // TODO: check db if draft exists, and merge it.. filtered by ssid
+                        const edits = await this.models['document_edit'].findAll({
+                            where: {documentId: documentId, studySessionId: studySessionId, draft: true}
+                        });
+
+                        let dbDelta = dbToDelta(edits);
+                        delta = delta.compose(dbDelta);
+                        
+
+                        this.socket.emit("documentFile", {document: doc, deltas: delta, documentType });
                     } else {
-                        this.socket.emit("documentFile", {document: doc, deltas: new Delta()});
+                        this.socket.emit("documentFile", {document: doc, deltas: new Delta(), documentType });
                     }
                 } else { // Non-HTML document type, send file
                     const filePath = `${UPLOAD_PATH}/${doc.hash}.pdf`;
@@ -164,7 +191,7 @@ module.exports = class DocumentSocket extends Socket {
                             if (err) {
                                 throw new Error("Failed to read PDF");
                             }
-                            this.socket.emit("documentFile", {document: doc, file: data});
+                            this.socket.emit("documentFile", {document: doc, file: data, documentType });
                         });
                     } else {
                         throw new Error("PDF file not found");
@@ -195,13 +222,13 @@ module.exports = class DocumentSocket extends Socket {
                     let delta = new Delta();
 
                     if (fs.existsSync(deltaFilePath)) {
-                        let delta = await this.loadDocument(deltaFilePath);
+                        delta = await this.loadDocument(deltaFilePath);
                     } else {
                         this.logger.warn("No delta file found for document: " + documentId);
                     }
 
                     const edits = await this.models['document_edit'].findAll({
-                        where: {documentId: documentId, draft: true},
+                        where: {documentId: documentId, studySessionId: null, draft: true},
                         raw: true
                     });
 
@@ -209,6 +236,7 @@ module.exports = class DocumentSocket extends Socket {
                     delta = delta.compose(dbDelta);
 
                     this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
+                    return delta;
                 } else {
                     throw new Error("Non-HTML documents are not supported for this operation");
                 }
@@ -267,34 +295,41 @@ module.exports = class DocumentSocket extends Socket {
                 return;
             }
 
-            const edits = await this.models['document_edit'].findAll({
-                where: {documentId: documentId, draft: true},
-                raw: true
-            });
+            // TODO: Check if document type is HTML
+                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
 
-            const newDelta = new Delta(dbToDelta(edits));
-            const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
-
-            let oldDelta = new Delta();
-            try {
-                const oldDeltaContent = await fs.promises.readFile(deltaFilePath, 'utf8');
-                oldDelta = new Delta(JSON.parse(oldDeltaContent));
-            } catch (err) {
-                if (err.code !== 'ENOENT') {
-                    throw err;
+                    const edits = await this.models['document_edit'].findAll({
+                        where: {documentId: documentId, studySessionId: null, draft: true},
+                        raw: true
+                    });
+        
+                    const newDelta = new Delta(dbToDelta(edits));
+                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+        
+                    let oldDelta = new Delta();
+                    try {
+                        const oldDeltaContent = await fs.promises.readFile(deltaFilePath, 'utf8');
+                        oldDelta = new Delta(JSON.parse(oldDeltaContent));
+                    } catch (err) {
+                        if (err.code !== 'ENOENT') {
+                            throw err;
+                        }
+                    }
+        
+                    const mergedDelta = oldDelta.compose(newDelta);
+        
+                    await fs.promises.writeFile(deltaFilePath, JSON.stringify(mergedDelta, null, 2), 'utf8');
+        
+                    await this.models['document_edit'].update(
+                        {draft: false},
+                        {where: {id: edits.map(edit => edit.id)}}
+                    );
+        
+                    this.logger.info("Deltas file updated successfully.");
+                } else {
+                    throw new Error("Non-HTML documents are not supported for this operation");
                 }
-            }
-
-            const mergedDelta = oldDelta.compose(newDelta);
-
-            await fs.promises.writeFile(deltaFilePath, JSON.stringify(mergedDelta, null, 2), 'utf8');
-
-            await this.models['document_edit'].update(
-                {draft: false},
-                {where: {id: edits.map(edit => edit.id)}}
-            );
-
-            this.logger.info("Deltas file updated successfully.");
+                                  
         } catch (err) {
             this.logger.error("Failed to read/write delta file:", err);
         }
@@ -383,10 +418,9 @@ module.exports = class DocumentSocket extends Socket {
      * @param {object} data {documentId: number, "ops" array consisting of [offset: number, operationType: number, span: number, text: string, attributes: Object]}
      */
     async editDocument(data) {
-
         const transaction = await database.sequelize.transaction();
         try {
-            const {userId, documentId, ops} = data;
+            const { documentId, studySessionId, ops } = data;
             let appliedEdits = [];
 
             await ops.reduce(async (promise, op) => {
@@ -395,6 +429,7 @@ module.exports = class DocumentSocket extends Socket {
                     userId: this.userId,
                     draft: true,
                     documentId,
+                    studySessionId: studySessionId || null,
                     ...op
                 };
 
@@ -407,9 +442,14 @@ module.exports = class DocumentSocket extends Socket {
             }, Promise.resolve());
 
             await transaction.commit();
-
+    
+            // Check if studySessionId is not null or zero
+            if (studySessionId !== null) {
+                this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+                return;
+            }
+    
             this.emit("document_editRefresh", appliedEdits);
-
         } catch (error) {
             await transaction.rollback();
             this.logger.error("Error editing document: " + error.message);
@@ -518,8 +558,12 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentGet", async (data) => {
             try {
-                await this.sendDocument(data.documentId);
-                await this.openDocument(data.documentId);
+                
+                await this.sendDocument(data.documentId, data.studySessionId);
+                //TODO : if null - ssid 
+                if(data.studySessionId === null){               
+                    await this.openDocument(data.documentId);
+                }
             } catch (e) {
                 this.logger.error("Error handling document request: ", e);
                 this.sendToast("Error handling document request!", "Error", "danger");
@@ -527,9 +571,11 @@ module.exports = class DocumentSocket extends Socket {
         });
 
         this.socket.on("documentClose", async (data) => {
-
             try {
-                await this.saveDocument(data.documentId); // Save the document before closing	
+                if (data.studySessionId === null) {
+                    await this.saveDocument(data.documentId);
+                } 
+                
                 const index = this.socket.openComponents.editor.indexOf(data.documentId);
                 if (index > -1) {
                     this.socket.openComponents.editor[index] = undefined; // Remove the document ID
