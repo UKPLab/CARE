@@ -88,12 +88,6 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "MoodleUploadModal",
   components: { BasicModal, BasicButton },
-  // TODO: Check if the statistics is to be recorded
-  // inject: {
-  //   acceptStats: {
-  //     default: () => false,
-  //   },
-  // },
   data() {
     return {
       selectedUserName: "",
@@ -142,10 +136,6 @@ export default {
       }
       this.$refs.uploadModal.openModal();
       this.fetchUsers();
-      // TODO: Check if the statistics is to be recorded
-      // if (this.acceptStats) {
-      //   this.$socket.emit("stats", { action: "openUploadModal", data: {} });
-      // }
     },
     handleUserChange(event) {
       this.selectedUserName = event.target.value;

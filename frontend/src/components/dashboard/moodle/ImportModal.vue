@@ -37,7 +37,7 @@
             :data="assignments"
             :columns="tableColumns"
             :options="tableOptions"
-            @row-selection="(users) => (selectedUsers = users)"
+            @row-selection="(asg) => (selectedAsgs = asg)"
           />
         </div>
         <!-- Step2:  -->
@@ -46,8 +46,7 @@
           class="confirm-container"
         >
           <p>
-            Are you sure you want to bulk create <strong>{{ userCount.new }}</strong> users <br />
-            and overwrite <strong>{{ userCount.duplicate }}</strong> users?
+            Are you sure you want to import <strong>{{ selectedAsgs.length }}</strong> student assignment?
           </p>
         </div>
         <!-- Step3:  -->
@@ -140,33 +139,26 @@ export default {
         selectableRows: true,
       },
       tableColumns: [
-        { name: "ID", key: "userid" },
-        { name: "First Name", key: "firstname" },
-        { name: "Last Name", key: "lastname" },
-        { name: "Assignment", key: "filename" },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        { name: "File Name", key: "fileName" },
         {
           name: "File Type",
-          key: "status",
+          key: "type",
           width: "1",
           filter: [
-            { key: "new", name: "PDF" },
-            { key: "duplicate", name: "LaTex" },
+            { key: "pdf", name: "PDF" },
+            { key: "other", name: "Other" },
           ],
         },
       ],
-      assignments: testData,
-      selectedUsers: [],
+      assignments: [],
+      selectedAsgs: [],
       updatedUserCount: null,
       createdUsers: [],
     };
   },
   computed: {
-    userCount() {
-      return {
-        new: this.selectedUsers.filter((u) => u.status === "new").length,
-        duplicate: this.selectedUsers.filter((u) => u.status === "duplicate").length,
-      };
-    },
     steps() {
       return [{ title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }];
     },
@@ -176,7 +168,7 @@ export default {
         return !courseID || !url || !apiKey || !assignmentID;
       }
       if (this.currentStep === 1) {
-        return !this.selectedUsers.length > 0;
+        return !this.selectedAsgs.length > 0;
       }
       if (this.currentStep === 3) {
         return true;
@@ -191,7 +183,7 @@ export default {
     resetModal() {
       this.currentStep = 0;
       this.assignments = [];
-      this.selectedUsers = [];
+      this.selectedAsgs = [];
       if (this.updatedUserCount) {
         this.updatedUserCount = null;
         this.createdUsers = [];
@@ -227,14 +219,14 @@ export default {
       const { courseID, assignmentID, apiKey, url } = this.moodleData;
       const options = { apiKey, url };
       this.$socket.emit("documentGetMoodleData", { courseID, assignmentID, options }, (res) => {
-        console.log({ res });
         this.$refs.modal.waiting = false;
         if (res.success) {
           const { users } = res;
+
           this.assignments = users;
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to get users from Moodle",
+            title: "Failed to get student assignments from Moodle",
             message: "Please contact CARE staff to resolve the issue",
             type: "error",
           });
@@ -242,25 +234,21 @@ export default {
       });
     },
     handleStepTwo() {
-      const userData = {
-        users: this.selectedUsers,
-        // Moodle's role names are subject to change
-        moodleCareRoleMap: {
-          "Dozent*in": "teacher",
-          "Betreuer*in": "teacher",
-          "Tutor*in": "mentor",
-          "Student*in": "student",
-        },
-      };
-      this.$socket.emit("userBulkCreate", userData, (res) => {
+      const { apiKey, url } = this.moodleData;
+      const options = { apiKey, url };
+
+      const files = this.selectedAsgs.map(({ userId, fileName, fileUrl }) => ({ userId, fileName, fileUrl }));
+      const data = { options, files };
+      this.$socket.emit("uploadMoodleSubmission", data, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
-          const { createdUsers } = res;
-          this.createdUsers = createdUsers;
-          this.updatedUserCount = {
-            new: this.createdUsers.filter((u) => u.status === "new").length,
-            updated: this.createdUsers.filter((u) => u.status === "duplicate").length,
-          };
+          console.log({ res });
+          // const { createdUsers } = res;
+          // this.createdUsers = createdUsers;
+          // this.updatedUserCount = {
+          //   new: this.createdUsers.filter((u) => u.status === "new").length,
+          //   updated: this.createdUsers.filter((u) => u.status === "duplicate").length,
+          // };
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to bulk create users",

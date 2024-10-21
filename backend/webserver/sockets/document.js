@@ -471,10 +471,41 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentGetMoodleData", async (moodleData, callback) => {
             try {
+                // TODO: Think about whether should write all the logic here or not.
                 const { success, data } = await this.getSubmissionInfosFromAssignment(moodleData);
+                const usersData = await Promise.all(
+                    data.map(async (user) => {
+                        const moodleId = user.userid;
+                        const userInfo = await this.models["user"].findOne({ where: { moodleId } });
+
+                        if (!userInfo) {
+                            this.logger.error(`Failed to find the user with ${moodleId}`);
+                            return null;
+                        }
+
+                        return user.submissionURLs.map((submission) => {
+                            const fileType = submission.filename
+                                .substring(submission.filename.lastIndexOf("."))
+                                .toLowerCase();
+
+                            return {
+                                moodleId,
+                                userId: userInfo.userId,
+                                firstName: userInfo.firstName,
+                                lastName: userInfo.lastName,
+                                fileName: submission.filename,
+                                fileUrl: submission.fileurl,
+                                type: fileType === ".pdf" ? "pdf" : "other",
+                            };
+                        });
+                    })
+                );
+
+                const formattedData = usersData.flat().filter(Boolean);
+
                 callback({
                     success,
-                    users: data,
+                    users: formattedData,
                 });
             } catch (error) {
                 this.logger.error(error);

@@ -62,6 +62,67 @@ module.exports = class UploadSocket extends Socket {
     }
   }
 
+  /**
+   * Downloads submissions from a user by their id.
+   *
+   * @param {List<String>} data.fileUrls - Containing the urls of the submissions to download. The urls can be retrieved from the 'submissionURLs' field of the response from 'getSubmissionInfosFromAssignment'.
+   * @param {Object} data.options
+   * @returns {Promise<Object>} The submission file data in binary format.
+   * @throws {Error} If the RPC service returns a failure response or an error occurs during the process.
+   */
+  async downloadSubmissionsFromUser(data) {
+    try {
+      return await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUser(data);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  async bulkDownloadSubmission(data) {
+    const { options, files } = data;
+    const results = [];
+
+    for (const file of files) {
+      try {
+        // Download the submission
+        const binaryData = await this.downloadSubmissionsFromUser({
+          fileUrls: [file.fileUrl],
+          options,
+        });
+
+        if (!binaryData) {
+          throw new Error(`Failed to download submission from Moodle for user with ${file.userId}`);
+        }
+
+        const uploadData = {
+          type: "document",
+          file: binaryData,
+          name: file.fileName,
+          userId: file.userId,
+        };
+
+        // Upload the document and create a database entry
+        await this.uploadDocument(uploadData);
+
+        results.push({
+          userId: file.userId,
+          fileName: file.fileName,
+          success: true,
+        });
+      } catch (error) {
+        this.logger.error(`Failed to download submission from Moodle for user with ${file.userId}`);
+        results.push({
+          userId: file.userId,
+          fileName: file.fileName,
+          success: false,
+          error: error.message,
+        });
+      }
+    }
+
+    return results;
+  }
+
   init() {
     //Make sure upload directory exists
     fs.mkdirSync(UPLOAD_PATH, { recursive: true });
@@ -74,6 +135,16 @@ module.exports = class UploadSocket extends Socket {
       } catch (err) {
         this.logger.error("Upload error: " + err);
         this.socket.emit("uploadResult", { success: false });
+      }
+    });
+
+    this.socket.on("uploadMoodleSubmission", async (data, callback) => {
+      try {
+        const results = await this.bulkDownloadSubmission(data);
+        callback({ success: true, results });
+      } catch (error) {
+        this.logger.error("Error in method bulkDownloadSubmission:", error);
+        callback({ success: false, error: error.message });
       }
     });
   }
