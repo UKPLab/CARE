@@ -165,7 +165,7 @@ module.exports = (sequelize, DataTypes) => {
      * @param {string} roleName - The role of the users to fetch.
      * @returns {string[]} An array of users with the specified role.
      */
-    async getUsersByRole(roleName) {
+    static async getUsersByRole(roleName) {
       try {
         const roleIdMap = await User.getRoleIdMap();
         const roleId = roleIdMap[roleName];
