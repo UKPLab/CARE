@@ -19,6 +19,13 @@
         :options="options"
         @action="chooseAction"
       />
+      <h4>Manage Peer Reviews</h4>
+      <BasicTable
+        :columns="peerColoumns"
+        :data="reviews"
+        :options="options"
+        @action="chooseAction"
+      />
     </template>
   </Card>
   <DetailsModal
@@ -88,6 +95,49 @@ export default {
       ],
       // Possible values for role are "all", "student", "mentor", "teacher"
       role: "all",
+      peerColoumns: [
+        { name: "Review ID", key: "id", sortable: true },
+        { name: "Document Name", key: "docName" },
+        { name: "Moderators", key: "mods" },
+        { name: "Students", key: "students" },
+        { name: "Finished", key: "finished", sortable: true },
+        { name: "Manage", key: "manage", type: "button-group" },
+      ],
+      reviews: [{id: 10, docName: "Hello", mods: ["Steven Bauer", "John Bauer"], finished: true,  students: ["John Bauer", "Lukas Müller"], manage: [
+        {
+          title: "Edit User",
+          action: "editReviews",
+          icon: "pencil",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+        },
+        {
+          title: "View Rights",
+          action: "viewRights",
+          icon: "card-list",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+        },
+        {
+          title: "Reset Password",
+          action: "resetPassword",
+          icon: "person-lock",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+        },
+      ]}]
     };
   },
   computed: {
@@ -101,14 +151,23 @@ export default {
     this.fetchUsers();
   },
   methods: {
+    overridePeerReviews(data) {
+      const index = this.reviews.findIndex(item => item.id === data.id);
+      this.reviews[index] = data;
+      
+    },
+    updatePeerReviews(data)
+    {
+      this.reviews = data;
+    },
     fetchUsers() {
       this.$socket.emit("userGetByRole", this.role);
     },
     formatUserData(user) {
       user.manage = [
         {
-          title: "Edit User",
-          action: "editUser",
+          title: "Edit Review",
+          action: "editReviews",
           icon: "pencil",
           options: {
             iconOnly: true,
@@ -159,6 +218,10 @@ export default {
         case "resetPassword":
           this.openResetPasswordModal(data.params);
           break;
+        case "editReviews":
+          this.openEditReviewsModal(data.params)
+          break;
+
       }
     },
     openUserDetailsModal(user) {
@@ -170,6 +233,11 @@ export default {
     openResetPasswordModal(user) {
       this.$refs.passwordModal.open(user.id);
     },
+    openEditReviewsModal(review) {
+      console.log(review)
+      this.$refs.editPeerReviewsModal.open(review);
+
+    }
   },
 };
 </script>
