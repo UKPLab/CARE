@@ -195,16 +195,62 @@ module.exports = (sequelize, DataTypes) => {
       }
     }
 
-    static async getStudentsWithAssignments() {
+    static async getAllUsersWithRoleAndNumberOfAssignments() {
       try {
-        const roleIdMap = await User.getRoleIdMap();
-        const roleId = roleIdMap["student"];
+      const documentUserIds = await this.sequelize.models["document"].findAll({
+          where: { readyForReview: true },
+          attributes: ["userId"],
+          raw: true,
+        });
 
-        if (!roleId) {
-          console.error(`Role not found: ${roleName}`);
-          return [];
-        }
+        const docUserIds = documentUserIds.map((doc) => doc.userId);
 
+        const matchedUsers = await this.sequelize.models["user_role_matching"].findAll({
+          //where: {userRoleId: roleId},
+          attributes: ["userId", "userRoleId"],
+          raw: true,
+        });
+
+        const userIds = matchedUsers
+        .map((user) => user.userId)
+
+        let users = await User.findAll({
+          attributes: {
+            exclude: ["passwordHash", "salt"],
+          },
+          where: {
+            id: { [Op.in]: userIds }, 
+          },
+          raw: true,
+        });
+
+        const roleIdMap = await this.sequelize.models["user_role"].findAll({
+          attributes: ["id", "name"],
+          raw: true,
+        })
+
+        const idToNameMap = new Map(roleIdMap.map(item => [item.id, item.name]));
+
+        const usersWithDocumentNamesAndRoles = users.flatMap(user => {
+          const documents = documentUserIds.filter((doc) => doc.userId === user.id);
+          const matchedUser = matchedUsers.find((matched) => matched.userId === user.id);
+          const roleName = matchedUser ? idToNameMap.get(matchedUser.userRoleId) : null;
+          return {
+            ...user,          
+            numberAssignments: documents.length,
+            role: roleName,    
+          };
+        });
+
+        return usersWithDocumentNamesAndRoles;
+
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    static async getReviewableAssignments() {
+      try {
         const documentUserIds = await this.sequelize.models["document"].findAll({
           where: { readyForReview: true },
           attributes: ["userId", "name"],
@@ -214,33 +260,44 @@ module.exports = (sequelize, DataTypes) => {
         const docUserIds = documentUserIds.map((doc) => doc.userId);
 
         const matchedUsers = await this.sequelize.models["user_role_matching"].findAll({
-          where: { userRoleId: roleId },
-          attributes: ["userId"],
+          //where: {userRoleId: roleId},
+          attributes: ["userId", "userRoleId"],
           raw: true,
         });
+
         const userIds = matchedUsers
         .map((user) => user.userId)
         .filter((userId) => docUserIds.includes(userId));
+
         let users = await User.findAll({
           attributes: {
             exclude: ["passwordHash", "salt"],
           },
           where: {
-            id: { [Op.in]: userIds }, // Filter by matched user IDs
+            id: { [Op.in]: userIds }, 
           },
           raw: true,
         });
 
-        const usersWithDocumentNames = users.map(user => {
-          // Find the corresponding document entry for this user
-          const document = documentUserIds.find(doc => doc.userId === user.id);
-          return {
-            ...user,           // Spread user details
-            documentName: document ? document.name : null,  // Add the document's 'name'
-          };
+        const roleIdMap = await this.sequelize.models["user_role"].findAll({
+          attributes: ["id", "name"],
+          raw: true,
+        })
+
+        const idToNameMap = new Map(roleIdMap.map(item => [item.id, item.name]));
+
+        const usersWithDocumentNamesAndRoles = users.flatMap(user => {
+          const documents = documentUserIds.filter((doc) => doc.userId === user.id);
+          const matchedUser = matchedUsers.find((matched) => matched.userId === user.id);
+          const roleName = matchedUser ? idToNameMap.get(matchedUser.userRoleId) : null;
+          return documents.map((document) => ({
+            ...user,           
+            documentName: document ? document.name : null, 
+            role: roleName,    
+          }));
         });
 
-        return usersWithDocumentNames;
+        return usersWithDocumentNamesAndRoles;
 
       } catch (error) {
         console.error(error);
