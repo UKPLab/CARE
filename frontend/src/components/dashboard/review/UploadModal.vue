@@ -86,7 +86,7 @@ import BasicButton from "@/basic/Button.vue";
  * @author: Linyin Huang
  */
 export default {
-  name: "MoodleUploadModal",
+  name: "ReviewUploadModal",
   components: { BasicModal, BasicButton },
   data() {
     return {

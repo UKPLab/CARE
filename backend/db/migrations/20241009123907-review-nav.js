@@ -2,13 +2,13 @@
 
 const navElements = [
   {
-    name: "Moodle Submission",
+    name: "Review Documents",
     groupId: "Admin",
     icon: "file-earmark-richtext",
     order: 9,
     admin: true,
-    path: "moodle_submission",
-    component: "MoodleSubmission",
+    path: "review_documents",
+    component: "ReviewDocuments",
   },
 ];
 
