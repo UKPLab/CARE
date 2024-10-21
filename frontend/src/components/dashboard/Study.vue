@@ -2,6 +2,7 @@
   <span>
     <StudyModal ref="studyCoordinator"/>
     <StudySessionModal ref="studySessionModal"/>
+    <BulkCreateAssignmentsModal ref="bulkCreateAssignmentsModal"/>
     <ConfirmModal ref="deleteConf"/>
     <Card title="Studies">
       <template #headerElements>
@@ -9,6 +10,12 @@
           class="btn-primary btn-sm"
           title="Add"
           @click="add()"
+        />
+        <BasicButton
+          class="btn-secondary btn-sm"
+          title="Add Bulk Assignments"
+          @click="addBulkAssignment()"
+          :style="{ margin: '10px 10px' }"
         />
       </template>
       <template #body>
@@ -30,6 +37,8 @@ import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
+
 
 /**
  * Dashboard component for handling studies
@@ -38,7 +47,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, BulkCreateAssignmentsModal, ConfirmModal},
   inject: {
     acceptStats: {
       default: () => false
@@ -65,7 +74,7 @@ export default {
         {name: "Session Limit", key: "limitSessions", sortable: true},
         {name: "Session Limit per User", key: "limitSessionsPerUser", sortable: true},
         {
-          name: "Status", 
+          name: "Status",
           key: "closed",
           type: "badge",
           typeOptions: {
@@ -92,7 +101,7 @@ export default {
           }
         },
         {
-          name: "Multiple Submissions",  
+          name: "Multiple Submissions",
           key: "multipleSubmit",
           type: "badge",
           typeOptions: {
@@ -101,11 +110,12 @@ export default {
           }
         },
         {
-          name: "Chosen Workflow",  
-          key: "workflowName",      
+          name: "Chosen Workflow",
+          key: "workflowName",
         },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
+
     }
   },
   computed: {
@@ -138,7 +148,7 @@ export default {
             study.closed = study.closed ? true : null;
 
             // TODO: Calculate current open sessions and display the with limitSessions in this format: 2 | 100
-            
+
             const workflow = this.$store.getters["table/workflow/get"](study.workflowId);
             study.workflowName = workflow ? workflow.name : "Unknown Workflow";
 
@@ -236,9 +246,9 @@ export default {
       }
       else if (data.action === "closeStudy") {
         this.$socket.emit("stats", {action: "closeStudy", data: {studyId: data.params.id}});
-        
+
         this.$socket.emit("studyUpdate", {
-          studyId: data.params.id, 
+          studyId: data.params.id,
           closed: true
         });
       }
@@ -273,6 +283,9 @@ export default {
     add() {
       this.$refs.studyCoordinator.open(0);
     },
+    addBulkAssignment() {
+      this.$refs.bulkCreateAssignmentsModal.open();
+    },
     studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
     },
@@ -301,7 +314,7 @@ export default {
             this.$socket.emit("stats", {action: "studyDelete", data: {studyId: row.id}});
 
             this.$socket.emit("studyUpdate", {
-              studyId: row.id, 
+              studyId: row.id,
               deleted: true
             });
           }

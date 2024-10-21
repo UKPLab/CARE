@@ -82,12 +82,24 @@ module.exports = class UserSocket extends Socket {
         this.logger.error("This user does not have the right to load users by their role.");
         return;
       }
-
       return role === "all" ? await this.models["user"].getAllUsers() : await this.models["user"].getUsersByRole(role);
     } catch (error) {
       this.logger.error(error);
     }
   }
+
+
+
+  async getAllUsersWithRoleAndNumberOfAssignments() {
+    try {
+      return await this.models["user"].getAllUsersWithRoleAndNumberOfAssignments()
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  
+
 
   /**
    * Retrieves users from a specified moodle course and returns the data as an array.
@@ -300,9 +312,13 @@ module.exports = class UserSocket extends Socket {
     });
 
     // Get users by their role
-    this.socket.on("userGetByRole", async (role) => {
+    this.socket.on("userGetByRole", async (role, callback) => {
       try {
         const users = await this.getUsers(role);
+        callback({
+          success: true,
+          users: users,
+        });
         this.socket.emit("userByRole", {
           success: true,
           users,
@@ -316,6 +332,26 @@ module.exports = class UserSocket extends Socket {
         this.logger.error(errorMsg);
       }
     });
+
+    
+
+    this.socket.on("getAllUsersWithRoleAndNumberOfAssignments", async (callback) => {
+      try {
+        const users = await this.getAllUsersWithRoleAndNumberOfAssignments();
+        callback({
+          success: true,
+          users: users,
+        });
+        this.socket.emit("usersWithRolesAndAssignments", {
+          success: true,
+          users,
+        });
+      } catch (error) {
+        this.logger.error(errorMsg);
+      }
+    });
+
+    
 
     // Get specific user's details
     this.socket.on("userGetDetails", async (userId) => {
