@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
                 label: "Assign Documents to Workflow Steps:",
                 type: "choice",
                 options: {
-                    table: "study_step", id: "documentId", filter: {
+                    table: "study_step", id: "studyId", filter: {
                         table: "workflow_step"
                     } 
                 },
@@ -252,15 +252,27 @@ module.exports = (sequelize, DataTypes) => {
                     });
             
                     for (const step of workflowSteps) {
-                        const stepDocument = options.context.stepDocuments.find(doc => doc.stepId === step.id);
-                        let documentId = null;
+                        const studyStep = await sequelize.models.study_step.findOne({
+                            where: { workflowStepId: step.id, studyId: study.id },
+                            transaction
+                        });
             
+                        if (!studyStep) {
+                            console.log(`No study_step found for workflowStepId: ${step.id}`);
+                            continue;  
+                        }
+
+                        const stepDocument = options.context.stepDocuments.find(doc => doc.id === studyStep.id);
+
+                        let documentId = null;
+
                         if (stepDocument && stepDocument.documentId) {
                             const document = await sequelize.models.document.findByPk(stepDocument.documentId, { transaction });
             
                             if (!document) {
-                                throw new Error(`Document not found: documentId ${stepDocument.documentId} is missing for step ${step.id}. Cancelling transaction.`);
+                                throw new Error(`Document not found: documentId ${stepDocument.documentId} is missing for study_step ${studyStep.id}. Cancelling transaction.`);
                             }
+            
                             documentId = stepDocument.documentId;
             
                             if (step.stepType === 2) { // Editor
@@ -288,13 +300,7 @@ module.exports = (sequelize, DataTypes) => {
             
                         await sequelize.models.study_step.update(
                             { documentId: documentId },
-                            {
-                                where: {
-                                    studyId: study.id,
-                                    workflowStepId: step.id
-                                },
-                                transaction
-                            }
+                            { where: { id: studyStep.id }, transaction }
                         );
                     }
                     await transaction.commit();

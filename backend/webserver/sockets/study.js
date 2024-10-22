@@ -190,7 +190,7 @@ module.exports = class StudySocket extends Socket {
                     id: undefined,      
                     hash: uuidv4(),      
                     template: true,         
-                    name: `${currentStudy.name}_template`, 
+                    name: `${currentStudy.name}`, 
                     createdAt: new Date(),   
                     updatedAt: new Date(),   
                 };

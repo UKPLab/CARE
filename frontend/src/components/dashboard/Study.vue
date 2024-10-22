@@ -3,6 +3,7 @@
     <StudyModal ref="studyCoordinator"/>
     <StudySessionModal ref="studySessionModal"/>
     <ConfirmModal ref="deleteConf"/>
+    <ConfirmModal ref="confirmModal"/>
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
@@ -321,14 +322,25 @@ export default {
       );
     },
     saveAsTemplate(study) {
-      this.$socket.emit("studySaveAsTemplate", { studyId: study.id });
+      const warningMessage = "Document associations will not be saved in templates, as we do not create study steps.";
 
-      this.eventBus.emit('toast', {
-        title: "Template Saved",
-        message: "This study has been saved as a template.",
-        variant: "success",
-      });
-    }
+      this.$refs.confirmModal.open(
+        "Save Study as Template",
+        "Are you sure you want to save this study as a template?",
+        warningMessage,
+        (confirmed) => {
+          if (confirmed) {
+            this.$socket.emit("studySaveAsTemplate", { studyId: study.id });
+
+            this.eventBus.emit('toast', {
+              title: "Template Saved",
+              message: "This study has been saved as a template.",
+              variant: "success",
+            });
+          }
+        }
+      );
+    },
   }
 }
 </script>
