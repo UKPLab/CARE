@@ -151,7 +151,7 @@ export default {
     }
   },
     validate() {
-      const allValid = this.currentData.every(entry => entry.documentId !== null);
+      const allValid = this.currentData.every(entry => entry.studyId !== null);
       if (!allValid) {
         this.$socket.emit("#toast", {
           message: "Required field missing",
