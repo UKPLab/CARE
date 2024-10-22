@@ -21,10 +21,14 @@ module.exports = (sequelize, DataTypes) => {
                 as: "user",
               });
 
-            StudySession.belongsTo(models["workflow_step"], {
-                foreignKey: "workflowStepId",
-                as: "workflowStep",
+            StudySession.belongsTo(models["study_step"], {
+                foreignKey: "studyStepId",
+                as: "studyStep",
               });
+
+            StudySession.belongsTo(models["study_step"], {
+                foreignKey: "studyStepIdMax"
+            });  
         }
     }
 
@@ -32,8 +36,9 @@ module.exports = (sequelize, DataTypes) => {
         hash: DataTypes.STRING,
         studyId: DataTypes.INTEGER,
         userId: DataTypes.INTEGER,
-        workflowStepId: DataTypes.INTEGER,
-        currentStep: DataTypes.INTEGER,
+        studyStepId: DataTypes.INTEGER,
+        numberSteps: DataTypes.INTEGER,
+        studyStepIdMax: DataTypes.INTEGER,
         start: DataTypes.DATE,
         end: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
