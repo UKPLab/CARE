@@ -58,7 +58,8 @@
     </TopbarButton>
   </div>
   </Teleport>
-
+  <!-- TODO: Recheck below code, all the worklfow stuff should be here, for each iteration for the to-build component -->
+    <!-- TODO: use v-show/v-if for PDF or Editor, checkout v-show and also allowBackward flag  -->
   <Annotator
     v-if="documentId !== 0 && documentType === 0 && studySessionId !== 0"
   />
@@ -120,8 +121,9 @@ export default {
       timerInterval: null,
       documentId: 0,
       documentType: null,
-      currentStep: 0, //dummy code for allowNaviagtion
-      maxSteps: 2 //dummy code for allowNaviagtion
+      currentStep: 0, //dummy code for allowNavigation
+      maxSteps: 2, //dummy code for allowNavigation
+      allowBackward: false
     };
   },
   computed: {
@@ -208,6 +210,17 @@ export default {
         return Math.round(this.timeLeft) + "s";
       }
       return Math.round(this.timeLeft / 60) + "min";
+    },
+    currentStudyStep(){
+      if(this.studySession){
+        const currentStep = this.$store.getters['table/study_step/get'](this.studySession.studyStepId);
+        this.currentStep = currentStep;
+        return currentStep;
+      }
+      return 0;
+    },
+    allowBackward(){
+      //in study step; to find the study steps related use workflowId and then in each of the studyStep Id the allowBackward is set
     }
   },
   watch: {
@@ -225,14 +238,14 @@ export default {
       }
     },
     study(newVal) {
-      if (newVal) {
-        //HARD CODED FOR NOW
-        const documentId = newVal["studySteps"][0]["documentId"];
-        const documentType = this.$store.getters['table/document/get'](documentId)["type"];        
-        this.documentId = documentId;
-        this.documentType = documentType; // Fetch document type when study changes
-      } else {
-        this.documentId = 0;
+      
+    },
+    //TODO: check this part when forward and backward are implemented
+    currentStudyStep(newVal){
+      if(newVal){
+        this.currentStep = newVal.studyStepId; //Doubtful step
+        this.documentId = data.filter(step => step.id === this.currentStudyStep)[0].documentId;
+        this.documentType = this.$store.getters['table/document/get'](this.documentId)["type"];
       }
     }
   },
@@ -257,12 +270,15 @@ export default {
       }
     },
     studyRefresh(data) {
-      //HARD CODED FOR NOW
-      const documentId = data[0]["studySteps"][0]["documentId"];
-      const documentType = this.$store.getters['table/document/get'](documentId)["type"];
-      this.documentId = documentId;      
-      this.documentType = documentType;
-    }
+    },
+    worflowRefresh(data){},
+    workflow_stepRefresh(data){},
+    study_stepRefresh(data){
+      if(this.currentStudyStep){
+        this.documentId = data.filter(step => step.id === this.currentStudyStep)[0].documentId;
+        this.documentType = this.$store.getters['table/document/get'](this.documentId)["type"];
+      }
+    },
   },
   methods: {
     start(data) {

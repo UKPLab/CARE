@@ -86,9 +86,31 @@ module.exports = class StudySocket extends Socket {
         if (study) {            
             const workflow = await this.models['workflow'].findByPk(study.workflowId);
 
+            if(workflow){
             const workflowSteps = await this.models['workflow_step'].getAllByKey('workflowId', workflow.id);
-            const studySteps = await this.models['study_step'].getAllByKey('studyId', study.id);
+            
+                if(workflowSteps){
+                    const studySteps = await this.models['study_step'].getAllByKey('studyId', study.id);
+                    const studySession = await this.models['study_session'].getAllByKey('userId', this.userId).filter((session) => session.studyId === study.id);
+                    
+                    this.emit("study_sessionRefresh", studySession);
+                    this.emit("studyRefresh", study);
+                    this.emit("workflowRefresh", workflow);
+                    this.emit("workflow_stepRefresh", workflowSteps);
+                    this.emit("study_stepRefresh", studySteps);
 
+                }else{
+                    this.socket.emit("studyError", {
+                        studyHash: studyHash, message: "No workflow steps found!"
+                    });
+                }
+            }else{
+                this.socket.emit("studyError", {
+                    studyHash: studyHash, message: "No workflow found!"
+                });
+            }
+
+            /*
             const responseData = {
                 ...study,
                 workflow: workflow ? {
@@ -118,9 +140,8 @@ module.exports = class StudySocket extends Socket {
                 })
                 : null
             };
+            */
 
-            this.emit("study_sessionRefresh", await this.models['study_session'].getAllByKey('userId', this.userId));
-            this.emit("studyRefresh", responseData);  
         } else {
             this.socket.emit("studyError", {
                 studyHash: studyHash, message: "Not found!"
