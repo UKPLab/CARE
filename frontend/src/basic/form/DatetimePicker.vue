@@ -52,7 +52,7 @@ export default {
   watch: {
     modelValue(oldVal, newVal) {
       if (oldVal !== newVal) {
-        if (this.modelValue !== null) {
+        if (this.modelValue !== null && this.modelValue !== undefined) {
           this.currentDate = new Date(this.modelValue);
         } else {
           this.date = null;
@@ -82,8 +82,11 @@ export default {
     }
   },
   mounted() {
-    if (this.modelValue)
+    if (this.modelValue && this.modelValue !== undefined) {
       this.currentDate = new Date(this.modelValue);
+    } else {
+      this.currentDate = null;
+    }
   },
   methods: {
     parse() {
