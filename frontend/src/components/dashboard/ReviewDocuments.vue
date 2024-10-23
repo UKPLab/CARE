@@ -153,8 +153,11 @@ export default {
           this.$socket.emit("documentUpdate", {
             documentId: row.id,
             deleted: true,
-          });
-          this.fetchReviewDocuments();
+          }, (res) => {
+            if(res) {
+              this.fetchReviewDocuments();
+            }
+          } );
         }
       });
     },
