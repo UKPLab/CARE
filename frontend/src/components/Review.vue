@@ -1,15 +1,15 @@
 <template>
-  <Loader 
-    v-if="studySessionId === 0 || documentId === 0" 
-    :loading="true" 
+  <Loader
+    v-if="studySessionId === 0 || documentId === 0"
+    :loading="true"
     />
   <span v-else>
     <Annotator
-     v-if="documentType === 0" 
+     v-if="documentType === 0"
      />
     <Editor
-     v-if="documentType === 1" 
-     :readonly="readonly" 
+     v-if="documentType === 1"
+     :readonly="readonly"
      />
     <ReviewModal ref="reviewModal" />
     <ReportModal ref="reportModal" />
@@ -81,8 +81,12 @@ export default {
       }
     },
     studyRefresh(data) {
-      this.documentId = data.documentId;
-      this.documentType = data.documentType;
+      //HARD CODED FOR NOW
+      const documentId = data[0]["studySteps"][0]["documentId"];
+      this.$store.getters['table/study_session/get'](this.studySessionId)
+      const documentType = this.$store.getters['table/document/get'](documentId)["type"];
+      this.documentId = documentId;
+      this.documentType = documentType;
     }
   },
   computed: {
@@ -102,10 +106,12 @@ export default {
   watch: {
     study(newVal) {
       if (newVal) {
-        this.documentId = newVal.documentId;
-        this.documentType = newVal.documentType; // Fetch document type when study changes
+        //HARD CODED FOR NOW
+        const documentId = newVal["studySteps"][0]["documentId"];;
+        const documentType = this.$store.getters['table/document/get'](documentId)["type"];
+        this.documentType = documentType; // Fetch document type when study changes
       } else {
-        this.documentId = 0
+        this.documentId = 0;
       }
     },
     studySession(newVal) {

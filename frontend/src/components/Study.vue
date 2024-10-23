@@ -14,7 +14,7 @@
     @finish="finalFinish"
   />
 
-  <Teleport to="#topbarCustomPlaceholder">  
+  <Teleport to="#topbarCustomPlaceholder">
   <div class="d-flex justify-content-between align-items-center w-100">
     <TopBarButton
       class="btn btn-outline-primary me-3"
@@ -58,7 +58,8 @@
     </TopbarButton>
   </div>
   </Teleport>
-
+  <!-- TODO: Recheck below code, all the worklfow stuff should be here, for each iteration for the to-build component -->
+    <!-- TODO: use v-show/v-if for PDF or Editor, checkout v-show and also allowBackward flag  -->
   <Annotator
     v-if="documentId !== 0 && documentType === 0 && studySessionId !== 0"
   />
@@ -112,6 +113,7 @@ export default {
       default: false,
     }
   },
+  fetchData: ['study', 'study_session', 'document', 'study_step'],
   data() {
     return {
       studySessionId: 0,
@@ -119,8 +121,9 @@ export default {
       timerInterval: null,
       documentId: 0,
       documentType: null,
-      currentStep: 0, //dummy code for allowNaviagtion
-      maxSteps: 2 //dummy code for allowNaviagtion
+      currentStep: 0, //dummy code for allowNavigation
+      maxSteps: 2, //dummy code for allowNavigation
+      allowBackward: false
     };
   },
   computed: {
@@ -152,13 +155,23 @@ export default {
       if (this.studySession) {
         return this.studySession.end !== null;
       }
-      
-      if (this.study.end !== null){
+
+      if(this.study && this.study.end) {
+        if (this.study.end !== null && this.study.end !== undefined) {
+          if (!(this.study.end instanceof Date)) {
+            throw new Error("Invalid type for study end date. Expected a Date object.");
+          }
           return Date.now() > new Date(this.study.end);
+        }
       }
 
-      if(this.study.closed !== null) {
-        return Date.now() > new Date(this.study.closed);
+      if(this.study && this.study.closed){
+          if(this.study.closed !== null && this.study.closed !== undefined) {
+            if (!(this.study.closed instanceof Date)) {
+              throw new Error("Invalid type for study close date. Expected a Date object.");
+            }
+            return Date.now() > new Date(this.study.closed);
+          }
       }
 
       return false;
@@ -172,13 +185,24 @@ export default {
       return false;
     },
     studyClosed() {
-      if(this.study.closed !== null) {
-        return Date.now > new Date(this.study.closed);
+      if(this.study && this.study.closed) {
+        if(this.study["closed"] !== null && this.study["closed"] !== undefined) {
+          if(!(this.study["closed"] instanceof Date)) {
+            throw new Error("Invalid type for study close date. Expected a Date object.");
+          }
+          return Date.now > new Date(this.study.closed);
+        }
+     }
+
+     if(this.study && this.study.end) {
+        if(this.study.end !== null && this.study.end !== undefined) {
+          if(!(this.study.end instanceof Date)) {
+            throw new Error("Invalid type for study end date. Expected a Date object.");
+          }
+          return Date.now() > new Date(this.study.end);
+        }
       }
 
-      if(this.study.end !== null) {
-        return Date.now() > new Date(this.study.end);
-      }        
       return false;
     },
     timeLeftHuman() {
@@ -186,6 +210,17 @@ export default {
         return Math.round(this.timeLeft) + "s";
       }
       return Math.round(this.timeLeft / 60) + "min";
+    },
+    currentStudyStep(){
+      if(this.studySession){
+        const currentStep = this.$store.getters['table/study_step/get'](this.studySession.studyStepId);
+        this.currentStep = currentStep;
+        return currentStep;
+      }
+      return 0;
+    },
+    allowBackward(){
+      //in study step; to find the study steps related use workflowId and then in each of the studyStep Id the allowBackward is set
     }
   },
   watch: {
@@ -203,11 +238,14 @@ export default {
       }
     },
     study(newVal) {
-      if (newVal) {
-        this.documentId = newVal.documentId;
-        this.documentType = newVal.documentType; // Fetch document type when study changes
-      } else {
-        this.documentId = 0;
+
+    },
+    //TODO: check this part when forward and backward are implemented
+    currentStudyStep(newVal){
+      if(newVal){
+        this.currentStep = newVal.studyStepId; //Doubtful step
+        this.documentId = data.filter(step => step.id === this.currentStudyStep)[0].documentId;
+        this.documentType = this.$store.getters['table/document/get'](this.documentId)["type"];
       }
     }
   },
@@ -216,6 +254,7 @@ export default {
     console.log("studySessionId send from mounted:",this.studySessionId);
     if (this.studySessionId === 0) {
       this.$refs.studyModal.open();
+      //TODO: check this part
       this.$socket.emit("studyGetByHash", { studyHash: this.studyHash });
     }
   },
@@ -231,9 +270,15 @@ export default {
       }
     },
     studyRefresh(data) {
-      this.documentId = data.documentId;
-      this.documentType = data.documentType;
-    }
+    },
+    worflowRefresh(data){},
+    workflow_stepRefresh(data){},
+    study_stepRefresh(data){
+      if(this.currentStudyStep){
+        this.documentId = data.filter(step => step.id === this.currentStudyStep)[0].documentId;
+        this.documentType = this.$store.getters['table/document/get'](this.documentId)["type"];
+      }
+    },
   },
   methods: {
     start(data) {
@@ -280,14 +325,14 @@ export default {
 
 <style scoped>
 .d-flex {
-  width: 100%; 
+  width: 100%;
 }
 .mx-auto {
-  margin-left: auto; 
+  margin-left: auto;
   margin-right: auto;
 }
 .me-3 {
-  margin-right: 1rem; 
+  margin-right: 1rem;
 }
 .ms-3 {
   margin-left: 1rem;

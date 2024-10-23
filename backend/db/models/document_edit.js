@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
+            
+            DocumentEdit.belongsTo(models["study_step"], {
+                foreignKey: 'studyStepId',
+                as: 'studyStep',
+            });
         }
     }
 
@@ -20,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
             userId: DataTypes.INTEGER,
             documentId: DataTypes.INTEGER,
             studySessionId: DataTypes.INTEGER,
+            studyStepId: DataTypes.INTEGER,
             draft: DataTypes.BOOLEAN,
             offset: DataTypes.INTEGER,
             operationType: DataTypes.INTEGER, // 0: Insert, 1: Delete, 2: Attribute-Change (only retain)

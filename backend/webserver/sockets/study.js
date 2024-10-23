@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const { v4: uuidv4 } = require('uuid'); 
 
 /**
  * Handle all studies through websocket
@@ -80,30 +81,67 @@ module.exports = class StudySocket extends Socket {
      */
     async sendStudyByHash(studyHash) {
         const study = await this.models['study'].getByHash(studyHash);
-        if (study) {
-            const document = await this.models['document'].getById(study.documentId);  
-            
-            const workflow = await this.models['workflow'].findByPk(study.workflowId, {
-                include: [{
-                    model: this.models['workflow_step'],
-                    as: 'steps',
-                    order: [['order', 'ASC']],  
-                }]
-            });
+        // TODO: study db info, workflows in study where the studies are referenced , workflow steps, study step 
+         
+        if (study) {            
+            const workflow = await this.models['workflow'].findByPk(study.workflowId);
 
+            if(workflow){
+            const workflowSteps = await this.models['workflow_step'].getAllByKey('workflowId', workflow.id);
+            
+                if(workflowSteps){
+                    const studySteps = await this.models['study_step'].getAllByKey('studyId', study.id);
+                    const studySession = await this.models['study_session'].getAllByKey('userId', this.userId).filter((session) => session.studyId === study.id);
+                    
+                    this.emit("study_sessionRefresh", studySession);
+                    this.emit("studyRefresh", study);
+                    this.emit("workflowRefresh", workflow);
+                    this.emit("workflow_stepRefresh", workflowSteps);
+                    this.emit("study_stepRefresh", studySteps);
+
+                }else{
+                    this.socket.emit("studyError", {
+                        studyHash: studyHash, message: "No workflow steps found!"
+                    });
+                }
+            }else{
+                this.socket.emit("studyError", {
+                    studyHash: studyHash, message: "No workflow found!"
+                });
+            }
+
+            /*
             const responseData = {
                 ...study,
-                documentType: document.type,
                 workflow: workflow ? {
                     id: workflow.id,
                     name: workflow.name,
-                    description: workflow.description,
-                    steps: workflow.steps,
+                    description: workflow.description
                 } : null,
+                workflowSteps: workflowSteps? workflowSteps.map(step => {
+                    return {
+                        id: step.id,
+                        workflowId: step.workflowId,
+                        stepType: step.stepType,
+                        workflowStepPrevious: step.workflowStepPrevious,
+                        allowBackward: step.allowBackward,
+                        workflowStepDocument: step.workflowStepDocument,
+                        configuration: step.configuration,
+                    }
+                })
+                : null,
+                studySteps: studySteps? studySteps.map(step => {
+                    return {
+                        id: step.id,
+                        studyId: step.study,
+                        workflowStepId: step.workflowStepId,
+                        documentId: step.documentId,
+                    }
+                })
+                : null
             };
+            */
 
-            this.emit("study_sessionRefresh", await this.models['study_session'].getAllByKey('userId', this.userId));
-            this.emit("studyRefresh", responseData);  
         } else {
             this.socket.emit("studyError", {
                 studyHash: studyHash, message: "Not found!"
@@ -157,6 +195,41 @@ module.exports = class StudySocket extends Socket {
         }
     }
 
+    /**
+     * Save the current study as a template (create a new study with template: true)
+     * @param {number} studyId - The ID of the study to be saved as a template
+     * @returns {Promise<*>}
+     */
+    async saveStudyAsTemplate(studyId) {
+        try {
+            const currentStudy = await this.models['study'].getById(studyId);
+
+            if (this.checkUserAccess(currentStudy.userId)) {
+
+                const newStudyData = {
+                    ...currentStudy,        
+                    id: undefined,      
+                    hash: uuidv4(),      
+                    template: true,         
+                    name: `${currentStudy.name}`, 
+                    createdAt: new Date(),   
+                    updatedAt: new Date(),   
+                };
+
+                const newStudy = await this.models['study'].create(newStudyData);
+
+                this.emit("studyRefresh", newStudy);
+
+                return newStudy;
+            } else {
+                this.sendToast("You are not allowed to save this study as a template", "Error", "Danger");
+            }
+        } catch (error) {
+            this.logger.error("Error saving study as template:", error);
+            throw error;  
+        }
+    }
+
     async init() {
 
         this.socket.on("studyGet", async (data) => {
@@ -204,6 +277,17 @@ module.exports = class StudySocket extends Socket {
                     success: false, message: "Error while publishing study"
                 });
 
+            }
+        });
+
+        this.socket.on("studySaveAsTemplate", async (data) => {
+            try {
+                if (data.studyId && data.studyId !== 0) {
+                    await this.saveStudyAsTemplate(data.studyId);
+                }
+            } catch (err) {
+                this.logger.error(err);
+                this.sendToast(err, "Error saving study as template", "Danger");
             }
         });
 
