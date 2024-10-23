@@ -117,7 +117,7 @@ export default {
     FormTable,
     FormChoice
   },
-  provide() { 
+  provide() {
     return {
       formData: computed(() => this.currentData),
     };

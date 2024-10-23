@@ -1,15 +1,15 @@
 <template>
-  <Loader 
-    v-if="studySessionId === 0 || documentId === 0" 
-    :loading="true" 
+  <Loader
+    v-if="studySessionId === 0 || documentId === 0"
+    :loading="true"
     />
   <span v-else>
     <Annotator
-     v-if="documentType === 0" 
+     v-if="documentType === 0"
      />
     <Editor
-     v-if="documentType === 1" 
-     :readonly="readonly" 
+     v-if="documentType === 1"
+     :readonly="readonly"
      />
     <ReviewModal ref="reviewModal" />
     <ReportModal ref="reportModal" />
@@ -85,7 +85,7 @@ export default {
       const documentId = data[0]["studySteps"][0]["documentId"];
       this.$store.getters['table/study_session/get'](this.studySessionId)
       const documentType = this.$store.getters['table/document/get'](documentId)["type"];
-      this.documentId = documentId;      
+      this.documentId = documentId;
       this.documentType = documentType;
     }
   },
