@@ -165,7 +165,7 @@ module.exports = (sequelize, DataTypes) => {
      * @param {string} roleName - The role of the users to fetch.
      * @returns {string[]} An array of users with the specified role.
      */
-    async getUsersByRole(roleName) {
+    static async getUsersByRole(roleName) {
       try {
         const roleIdMap = await User.getRoleIdMap();
         const roleId = roleIdMap[roleName];
@@ -194,6 +194,116 @@ module.exports = (sequelize, DataTypes) => {
         console.error(error);
       }
     }
+
+    static async getAllUsersWithRoleAndNumberOfAssignments() {
+      try {
+      const documentUserIds = await this.sequelize.models["document"].findAll({
+          where: { readyForReview: true },
+          attributes: ["userId"],
+          raw: true,
+        });
+
+        const docUserIds = documentUserIds.map((doc) => doc.userId);
+
+        const matchedUsers = await this.sequelize.models["user_role_matching"].findAll({
+          //where: {userRoleId: roleId},
+          attributes: ["userId", "userRoleId"],
+          raw: true,
+        });
+
+        const userIds = matchedUsers
+        .map((user) => user.userId)
+
+        let users = await User.findAll({
+          attributes: {
+            exclude: ["passwordHash", "salt"],
+          },
+          where: {
+            id: { [Op.in]: userIds }, 
+          },
+          raw: true,
+        });
+
+        const roleIdMap = await this.sequelize.models["user_role"].findAll({
+          attributes: ["id", "name"],
+          raw: true,
+        })
+
+        const idToNameMap = new Map(roleIdMap.map(item => [item.id, item.name]));
+
+        const usersWithDocumentNamesAndRoles = users.flatMap(user => {
+          const documents = documentUserIds.filter((doc) => doc.userId === user.id);
+          const matchedUser = matchedUsers.find((matched) => matched.userId === user.id);
+          const roleName = matchedUser ? idToNameMap.get(matchedUser.userRoleId) : null;
+          return {
+            ...user,          
+            numberAssignments: documents.length,
+            role: roleName,    
+          };
+        });
+
+        return usersWithDocumentNamesAndRoles;
+
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    static async getReviewableAssignments() {
+      try {
+        const documentUserIds = await this.sequelize.models["document"].findAll({
+          where: { readyForReview: true },
+          attributes: ["userId", "name"],
+          raw: true,
+        });
+
+        const docUserIds = documentUserIds.map((doc) => doc.userId);
+
+        const matchedUsers = await this.sequelize.models["user_role_matching"].findAll({
+          //where: {userRoleId: roleId},
+          attributes: ["userId", "userRoleId"],
+          raw: true,
+        });
+
+        const userIds = matchedUsers
+        .map((user) => user.userId)
+        .filter((userId) => docUserIds.includes(userId));
+
+        let users = await User.findAll({
+          attributes: {
+            exclude: ["passwordHash", "salt"],
+          },
+          where: {
+            id: { [Op.in]: userIds }, 
+          },
+          raw: true,
+        });
+
+        const roleIdMap = await this.sequelize.models["user_role"].findAll({
+          attributes: ["id", "name"],
+          raw: true,
+        })
+
+        const idToNameMap = new Map(roleIdMap.map(item => [item.id, item.name]));
+
+        const usersWithDocumentNamesAndRoles = users.flatMap(user => {
+          const documents = documentUserIds.filter((doc) => doc.userId === user.id);
+          const matchedUser = matchedUsers.find((matched) => matched.userId === user.id);
+          const roleName = matchedUser ? idToNameMap.get(matchedUser.userRoleId) : null;
+          return documents.map((document) => ({
+            ...user,           
+            documentName: document ? document.name : null, 
+            role: roleName,    
+          }));
+        });
+
+        return usersWithDocumentNamesAndRoles;
+
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
 
     /**
      * Gets the rights associated with the user

@@ -42,6 +42,13 @@ module.exports = (sequelize, DataTypes) => {
                 required: false,
                 default: false
             },
+            {
+                key: "readyForReview",
+                label: "Is this a document that should be reviewed?",
+                type: "switch",
+                required: false,
+                default: false
+            },
         ]
 
         /**
@@ -63,6 +70,7 @@ module.exports = (sequelize, DataTypes) => {
         hash: DataTypes.STRING,
         userId: DataTypes.INTEGER,
         public: DataTypes.BOOLEAN,
+        readyForReview: DataTypes.BOOLEAN,
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,

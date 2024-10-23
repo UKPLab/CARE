@@ -239,7 +239,7 @@ export default {
     numberOfOpenedSessionsPerUser() {
       return this.$store.getters["table/study_session/getByKey"]("userId", this.userId)
       .filter(s => s.studyID === this.studyID).length;
-    },    
+    },
     started() {
       if (this.study && this.study.start !== null) {
         if (!(this.study.start instanceof Date)) {
@@ -263,7 +263,7 @@ export default {
         }
         return !(new Date() < new Date(this.study.closed));
       }
-      
+
       return false;
     },
     available() {
@@ -296,11 +296,11 @@ export default {
       }
 
       let totalopenedSessions = this.totalNumberOfOpenedSessions;
-      let openedSessionsPerUser = this.numberOfOpenedSessionsPerUser;   
-      
+      let openedSessionsPerUser = this.numberOfOpenedSessionsPerUser;
+
       const limitSessions = this.$store.getters["table/study/get"](this.studyId).limitSessions;
       const limitSessionsPerUser = this.$store.getters["table/study/get"](this.studyId).limitSessionsPerUser;
-      
+
 
       if(limitSessions !== null){
         if (totalopenedSessions > limitSessions) {

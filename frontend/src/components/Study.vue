@@ -14,7 +14,7 @@
     @finish="finalFinish"
   />
 
-  <Teleport to="#topbarCustomPlaceholder">  
+  <Teleport to="#topbarCustomPlaceholder">
   <div class="d-flex justify-content-between align-items-center w-100">
     <TopBarButton
       class="btn btn-outline-primary me-3"
@@ -156,7 +156,7 @@ export default {
         return this.studySession.end !== null;
       }
 
-      if(this.study && this.study.end) {     
+      if(this.study && this.study.end) {
         if (this.study.end !== null && this.study.end !== undefined) {
           if (!(this.study.end instanceof Date)) {
             throw new Error("Invalid type for study end date. Expected a Date object.");
@@ -201,8 +201,8 @@ export default {
           }
           return Date.now() > new Date(this.study.end);
         }
-      } 
-             
+      }
+
       return false;
     },
     timeLeftHuman() {
@@ -238,7 +238,7 @@ export default {
       }
     },
     study(newVal) {
-      
+
     },
     //TODO: check this part when forward and backward are implemented
     currentStudyStep(newVal){
@@ -325,14 +325,14 @@ export default {
 
 <style scoped>
 .d-flex {
-  width: 100%; 
+  width: 100%;
 }
 .mx-auto {
-  margin-left: auto; 
+  margin-left: auto;
   margin-right: auto;
 }
 .me-3 {
-  margin-right: 1rem; 
+  margin-right: 1rem;
 }
 .ms-3 {
   margin-left: 1rem;
