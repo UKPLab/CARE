@@ -21,10 +21,14 @@ module.exports = (sequelize, DataTypes) => {
                 as: "user",
               });
 
-            StudySession.belongsTo(models["workflow_step"], {
-                foreignKey: "workflowStepId",
-                as: "workflowStep",
+            StudySession.belongsTo(models["study_step"], {
+                foreignKey: "studyStepId",
+                as: "studyStep",
               });
+
+            StudySession.belongsTo(models["study_step"], {
+                foreignKey: "studyStepIdMax"
+            });  
         }
     }
 
@@ -32,8 +36,9 @@ module.exports = (sequelize, DataTypes) => {
         hash: DataTypes.STRING,
         studyId: DataTypes.INTEGER,
         userId: DataTypes.INTEGER,
-        workflowStepId: DataTypes.INTEGER,
-        currentStep: DataTypes.INTEGER,
+        studyStepId: DataTypes.INTEGER,
+        numberSteps: DataTypes.INTEGER,
+        studyStepIdMax: DataTypes.INTEGER,
         start: DataTypes.DATE,
         end: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
@@ -44,68 +49,67 @@ module.exports = (sequelize, DataTypes) => {
         sequelize: sequelize,
         modelName: 'study_session',
         tableName: 'study_session',
-
         hooks:{
-
             beforeCreate: async (studySession, options) => {
+                const transaction = options.transaction || await sequelize.transaction();
+            try {                 
+                    const study = await sequelize.models.study.findOne({ where:
+                        { id: studySession.studyId },
+                        }, {transaction});
 
-                try{
-
-                const study = await sequelize.models.study.findOne({ where:
-                     { id: studySession.studyId } 
-                    });
-
-                if (!study) {
-                    throw new Error('Study not found');
-                }
-
-                const limitSessions = study.limitSessions;
-                const limitSessionsPerUser = study.limitSessionsPerUser;
-
-                if (limitSessions != null) {
-                    const totalexistingSessionCount = await StudySession.count({
-                        where: {
-                            studyId: studySession.studyId
-                        }
-                    });
-
-                    if (totalexistingSessionCount >= limitSessions) {
-                        throw new Error(`Cannot create more than ${limitSessions} sessions for this study.`);
+                    if (!study) {
+                        throw new Error('Study not found');
                     }
-                }
 
-                if (limitSessionsPerUser != null) {
-                    const existingSessionCountPerUser = await StudySession.count({
-                        where: {
-                            studyId: studySession.studyId, userId: studySession.userId
+                    const limitSessions = study.limitSessions;
+                    const limitSessionsPerUser = study.limitSessionsPerUser;
+
+                    if (limitSessions !== null) {
+                        let totalexistingSessionCount = await StudySession.count({
+                            where: {
+                                studyId: studySession.studyId
+                            },
+                        }, {transaction});
+
+                        if (totalexistingSessionCount > limitSessions) {
+                            throw new Error(`Cannot create more than ${limitSessions} sessions for this study.`);
                         }
-                    });
-
-                    if (existingSessionCountPerUser >= limitSessionsPerUser) {
-                        throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
                     }
-                }
 
-                if(study.close !== null){    
+                    if (limitSessionsPerUser !== null) {
+                        let existingSessionCountPerUser = await StudySession.count({
+                            where: {
+                                studyId: studySession.studyId, userId: studySession.userId
+                            },
+                        }, {transaction});
 
-                    if(Date.now() > study.close || (studySession.end !== null && studySession.end > study.end)){
-                        throw new Error('This study is closed');                        
-                    }              
+                        if (existingSessionCountPerUser > limitSessionsPerUser) {
+                            throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
+                        }
+                    }
 
-                }
+                    if(study.close !== null || studySession.end !== null){    
+                        if(Date.now() > study.close || studySession.end > study.end){
+                            throw new Error('This study is closed');                        
+                        }              
+                    }
 
-              }catch (error) {
-                    console.error(error);
-                    throw new Error('Failed to create study session');
-                }
-                
+                    await transaction.commit();
+                } catch (error) {
+                        await transaction.rollback();
+                        console.error(error);
+                        throw new Error('Failed to create study session');
+                }        
             },
-
             beforeUpdate: async (studySession, options) => {
-                try {
+                const transaction = options.transaction || await sequelize.transaction();
+
+                try {                   
+
                     const study = await sequelize.models.study.findOne({
                         where: { id: studySession.studyId }
-                    });
+                    },
+                    {transaction});
 
                     if (!study) {
                         throw new Error('Study not found');
@@ -117,15 +121,19 @@ module.exports = (sequelize, DataTypes) => {
 
                     const now = Date.now();
 
-                    if (study.closed !== null && now > study.closed || (studySession.end !== null && studySession.end > study.end)) {
-                        throw new Error('Study is closed');
+                    if (study.closed !== null || studySession.end !== null) { 
+                        if(now > study.closed || studySession.end > study.closed)
+                            throw new Error('Study is closed');
                     }
 
-                    if (study.end !== null && now > new Date(study.end) || (studySession.end !== null && studySession.end > study.end)) {
-                        throw new Error('Study has ended');
+                    if (study.end !== null || studySession.end !== null) { 
+                        if(now > new Date(study.end) || studySession.end > study.end)
+                            throw new Error('Study has ended');
                     }
 
+                    await transaction.commit();
                 } catch (error) {
+                    await transaction.rollback();
                     console.error(error);
                     throw new Error('Cannot submit study session');
                 }

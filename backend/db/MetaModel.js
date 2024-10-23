@@ -157,7 +157,8 @@ module.exports = class MetaModel extends Model {
 
     /**
      * Add new db entry
-     * @param {Object} data
+     * @param {Object} data - The data to be added to the database.
+     * @param {Object} [options={}] - Optional Sequelize query options. See: https://sequelize.org/api/v7/interfaces/_sequelize_core.index.queryoptions
      * @return {Promise<object|undefined>}
      */
     static async add(data, options = {}) {
@@ -189,6 +190,7 @@ module.exports = class MetaModel extends Model {
      * Update db entry by id
      * @param {number} id
      * @param {Object} data new data object
+     * @param {Object} [additionalOptions={}] - Optional Sequelize query options. See: https://sequelize.org/api/v7/interfaces/_sequelize_core.index.queryoptions
      * @return {Promise<*>}
      */
     static async updateById(id, data, additionalOptions={}) {
@@ -199,13 +201,15 @@ module.exports = class MetaModel extends Model {
         }
 
         try {
+            const individualHooks = (this.tableName === 'study' || 'study_session') ? { individualHooks: true } : {};
+
             const options = Object.assign({}, {
                 where: {
                     id: id
                 },
                 returning: true,
                 plain: true
-            }, additionalOptions);
+            }, additionalOptions, individualHooks);
 
             const updatedObject = await this.update(this.subselectFields(data, possibleFields), options);
 

@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
+            
+            Comment.belongsTo(models["study_step"], {
+                foreignKey: 'studyStepId',
+                as: 'studyStep',
+            });
         }
     }
 
@@ -20,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
         text: DataTypes.STRING(4096),
         draft: DataTypes.BOOLEAN,
         studySessionId: DataTypes.INTEGER,
+        studyStepId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
         annotationId: DataTypes.INTEGER,
         parentCommentId: DataTypes.INTEGER,
