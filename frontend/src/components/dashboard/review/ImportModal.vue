@@ -46,6 +46,7 @@
           class="confirm-container"
         >
           <p>
+            <!-- FIXME: Assignment in plural form -->
             Are you sure you want to import <strong>{{ selectedAsgs.length }}</strong> student assignment?
           </p>
         </div>
@@ -55,7 +56,8 @@
           class="result-container"
         >
           <p>
-            Successfully imported {{ importedAsgs.length }} assignment. <br />
+            <!-- FIXME: Assignment in plural form -->
+            Successfully imported <strong>{{ importedAsgs.length }}</strong> assignment. <br />
             The modal can be closed now.
           </p>
         </div>
@@ -63,15 +65,23 @@
     </template>
     <template #footer>
       <BasicButton
+        v-if="currentStep !== 3"
         title="Previous"
         class="btn btn-secondary"
         @click="prevStep"
       />
       <BasicButton
+        v-if="currentStep !== 3"
         title="Next"
         class="btn btn-primary"
         :disabled="isDisabled"
         @click="nextStep"
+      />
+      <BasicButton
+        v-if="currentStep === 3"
+        class="btn btn-primary"
+        title="Close"
+        @click="$refs.modal.close()"
       />
     </template>
   </BasicModal>
