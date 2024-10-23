@@ -129,6 +129,7 @@ module.exports = class DocumentSocket extends Socket {
      * @return {Promise<void>}
      */
     async cascadeDelete(documentId) {
+        // FIXME: "study" table no longer has documentId column, so the following codes won't get any data back
         const studies = await this.models['study'].getAllByKey("documentId", documentId);
 
         studies.filter(async s => this.checkUserAccess(s.userId))
@@ -674,9 +675,10 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("documentUpdate", async (data) => {
+        this.socket.on("documentUpdate", async (data, callback) => {
             try {
                 await this.updateDocument(data.documentId, data);
+                callback(true);
             } catch (err) {
                 this.logger.error(err);
                 this.sendToast(err, "Error updating document", "Error", "danger");
