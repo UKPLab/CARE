@@ -19,7 +19,7 @@ module.exports = class UploadSocket extends Socket {
    * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
    * an entry in the database.
    * TODO: Rewrite the params here
-   * @author Zheyu Zhang
+   * @author Zheyu Zhang, Linyin Huang
    * @param data the data including name and pdf binary file
    * @returns {Promise<void>}
    */
@@ -87,18 +87,18 @@ module.exports = class UploadSocket extends Socket {
     for (const file of files) {
       try {
         // Download the submission
-        const binaryData = await this.downloadSubmissionsFromUser({
+        const response = await this.downloadSubmissionsFromUser({
           fileUrls: [file.fileUrl],
           options,
         });
 
-        if (!binaryData) {
+        if (!response.success) {
           throw new Error(`Failed to download submission from Moodle for user with ${file.userId}`);
         }
 
         const uploadData = {
           type: "document",
-          file: binaryData,
+          file: response.data[0],
           name: file.fileName,
           userId: file.userId,
           isUploaded: true,

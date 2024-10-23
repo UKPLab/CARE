@@ -54,8 +54,9 @@
           v-if="currentStep === 3"
           class="result-container"
         >
-          <p v-if="updatedUserCount">
-            Successfully created {{ updatedUserCount.new }} users and overwrote {{ updatedUserCount.updated }} users
+          <p>
+            Successfully imported {{ importedAsgs.length }} assignment. <br />
+            The modal can be closed now.
           </p>
         </div>
       </div>
@@ -81,7 +82,6 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import BasicForm from "@/basic/Form.vue";
-import { testData } from "./testData";
 
 /**
  * Modal for importing students' submission for a specific assignment from a Moodle course
@@ -90,7 +90,7 @@ import { testData } from "./testData";
 export default {
   name: "ImportModal",
   components: { BasicModal, BasicButton, BasicTable, BasicForm },
-  emits: ["updateUser"],
+  emits: ["updateDocuments"],
   data() {
     return {
       currentStep: 0,
@@ -154,8 +154,7 @@ export default {
       ],
       assignments: [],
       selectedAsgs: [],
-      updatedUserCount: null,
-      createdUsers: [],
+      importedAsgs: [],
     };
   },
   computed: {
@@ -184,10 +183,9 @@ export default {
       this.currentStep = 0;
       this.assignments = [];
       this.selectedAsgs = [];
-      if (this.updatedUserCount) {
-        this.updatedUserCount = null;
-        this.createdUsers = [];
-        this.$emit("updateUser");
+      if (this.importedAsgs.length > 0) {
+        this.importedAsgs = [];
+        this.$emit("updateDocuments");
       }
       this.eventBus.emit("resetFormField");
     },
@@ -222,7 +220,6 @@ export default {
         this.$refs.modal.waiting = false;
         if (res.success) {
           const { users } = res;
-
           this.assignments = users;
         } else {
           this.eventBus.emit("toast", {
@@ -241,13 +238,8 @@ export default {
       this.$socket.emit("uploadMoodleSubmission", data, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
-          console.log({ res });
-          // const { createdUsers } = res;
-          // this.createdUsers = createdUsers;
-          // this.updatedUserCount = {
-          //   new: this.createdUsers.filter((u) => u.status === "new").length,
-          //   updated: this.createdUsers.filter((u) => u.status === "duplicate").length,
-          // };
+          const { results } = res;
+          this.importedAsgs = results;
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to import submission from Moodle",

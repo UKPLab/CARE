@@ -27,9 +27,15 @@
     </template>
     <!-- Body Ends -->
   </Card>
-  <UploadModal ref="uploadModal" />
+  <UploadModal
+    ref="uploadModal"
+    @update-documents="fetchReviewDocuments"
+  />
   <ConfirmModal ref="deleteConf" />
-  <ImportModal ref="importModal" />
+  <ImportModal
+    ref="importModal"
+    @update-documents="fetchReviewDocuments"
+  />
 </template>
 
 <script>
@@ -142,19 +148,15 @@ export default {
         warning = "";
       }
 
-      this.$refs.deleteConf.open(
-        "Delete Document",
-        "Are you sure you want to delete the document?",
-        warning,
-        function (val) {
-          if (val) {
-            this.$socket.emit("documentUpdate", {
-              documentId: row.id,
-              deleted: true,
-            });
-          }
+      this.$refs.deleteConf.open("Delete Document", "Are you sure you want to delete the document?", warning, (val) => {
+        if (val) {
+          this.$socket.emit("documentUpdate", {
+            documentId: row.id,
+            deleted: true,
+          });
+          this.fetchReviewDocuments();
         }
-      );
+      });
     },
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);
