@@ -515,7 +515,7 @@ module.exports = class DocumentSocket extends Socket {
                     uploaded: true,
                     deleted: false,
                 },
-                attributes: ["id", "name", "type", "userId", "createdAt"],
+                attributes: ["id", "name", "type", "userId", "hash", "createdAt"],
                 raw: true,
             });
 
