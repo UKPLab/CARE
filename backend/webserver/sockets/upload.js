@@ -18,7 +18,7 @@ module.exports = class UploadSocket extends Socket {
   /**
    * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
    * an entry in the database.
-   *
+   * TODO: Rewrite the params here
    * @author Zheyu Zhang
    * @param data the data including name and pdf binary file
    * @returns {Promise<void>}
@@ -30,9 +30,11 @@ module.exports = class UploadSocket extends Socket {
       if (data.type === "document") {
         doc = await this.models["document"].add({
           name: data.name.replace(/.pdf$/, ""),
+          type: docTypes.DOC_TYPE_PDF,
           // If data includes userId, it means the document is uploaded by an admin
           userId: data.userId ?? this.userId,
-          type: docTypes.DOC_TYPE_PDF,
+          uploaded: data.isUploaded ?? false,
+          readyForReview: data.isUploaded ?? false,
         });
 
         target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
@@ -99,6 +101,7 @@ module.exports = class UploadSocket extends Socket {
           file: binaryData,
           name: file.fileName,
           userId: file.userId,
+          isUploaded: true,
         };
 
         // Upload the document and create a database entry

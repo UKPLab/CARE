@@ -167,6 +167,7 @@ export default {
         file: fileElement.files[0],
         name: fileName,
         userId: this.selectedUserId,
+        isUploaded: true,
       });
       this.isUploading = true;
     },

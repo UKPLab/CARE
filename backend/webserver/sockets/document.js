@@ -506,6 +506,60 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    async getReviewDocuments() {
+        try {
+            // Get documents that are ready for review
+            const reviewReadyDocuments = await this.models["document"].findAll({
+                where: {
+                    readyForReview: true,
+                    uploaded: true,
+                    deleted: false,
+                },
+                attributes: ["id", "name", "type", "userId", "createdAt"],
+                raw: true,
+            });
+
+            // Process each document to get additional information
+            const processedDocuments = await Promise.all(
+                reviewReadyDocuments.map(async (doc) => {
+                    // Find associated studyIds for this document
+                    const associatedStudies = await this.models["study_step"].findAll({
+                        where: { documentId: doc.id },
+                        attributes: ["studyId"],
+                        raw: true,
+                    });
+
+                    const studyIds = associatedStudies.map((study) => study.studyId);
+
+                    // Count the number of study sessions for these studyIds
+                    const sessionCount = await this.models["study_session"].count({
+                        where: {
+                            studyId: studyIds,
+                        },
+                    });
+
+                    // Get the document owner's information
+                    const owner = await this.models["user"].findOne({
+                        where: { id: doc.userId },
+                        attributes: ["firstName", "lastName"],
+                        raw: true,
+                    });
+
+                    return {
+                        ...doc,
+                        sessionCount,
+                        firstName: owner.firstName,
+                        lastName: owner.lastName,
+                    };
+                })
+            );
+
+            return processedDocuments;
+        } catch (error) {
+            this.logger.error("Error in getReviewDocuments:", error);
+        }
+    }
+
     init() {
         fs.mkdirSync(UPLOAD_PATH, { recursive: true });
 
@@ -552,6 +606,22 @@ module.exports = class DocumentSocket extends Socket {
                 callback({
                     success: false,
                     message: "Failed to get student assignments from Moodle",
+                });
+            }
+        });
+
+        this.socket.on("documentGetReviews", async (callback) => {
+            try {
+                const reviewDocuments = await this.getReviewDocuments();
+                callback({
+                    success: true,
+                    documents: reviewDocuments
+                });
+            } catch (e) {
+                this.logger.error(e);
+                callback({
+                    success: false,
+                    message: "Error retrieving review documents"
                 });
             }
         });
