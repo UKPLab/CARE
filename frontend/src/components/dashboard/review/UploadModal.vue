@@ -88,6 +88,7 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "ReviewUploadModal",
   components: { BasicModal, BasicButton },
+  emits: ["updateDocuments"],
   data() {
     return {
       selectedUserName: "",
@@ -110,6 +111,7 @@ export default {
           variant: "success",
           delay: 3000,
         });
+        this.$emit("updateDocuments");
       } else {
         this.eventBus.emit("toast", {
           title: "Failed to upload the file",
