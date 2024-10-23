@@ -60,6 +60,7 @@ export default {
   },
   data() {
     return {
+      documents: [],
       tableOptions: {
         striped: true,
         hover: true,
@@ -70,50 +71,55 @@ export default {
       },
       tableColumns: [
         { name: "Title", key: "name" },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        { name: "Session Count", key: "sessionCount" },
         { name: "Created At", key: "createdAt" },
         { name: "Type", key: "type" },
         { name: "Manage", key: "manage", type: "button-group" },
       ],
     };
   },
-  computed: {
-    documents() {
-      return this.$store.getters["table/document/getAll"].map((d) => {
-        let newD = { ...d };
-        newD.type = d.type === 0 ? "PDF" : "HTML";
-        newD.publicBadge = {
-          class: newD.public ? "bg-success" : "bg-danger",
-          text: newD.public ? "Yes" : "No",
-        };
-        newD.manage = [
-          {
-            icon: "box-arrow-in-right",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
-            title: "Access document...",
-            action: "accessDoc",
-          },
-          {
-            icon: "trash",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
-            title: "Delete document...",
-            action: "deleteDoc",
-          },
-        ];
-        return newD;
-      });
-    },
+  mounted() {
+    this.fetchReviewDocuments();
   },
   methods: {
+    fetchReviewDocuments() {
+      this.$socket.emit("documentGetReviews", (res) => {
+        if (res.success) {
+          const { documents } = res;
+          this.documents = documents.map((d) => {
+            let newD = { ...d };
+            newD.type = d.type === 0 ? "PDF" : "HTML";
+            newD.manage = [
+              {
+                icon: "box-arrow-in-right",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  },
+                },
+                title: "Access document...",
+                action: "accessDoc",
+              },
+              {
+                icon: "trash",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  },
+                },
+                title: "Delete document...",
+                action: "deleteDoc",
+              },
+            ];
+            return newD;
+          });
+        }
+      });
+    },
     action(data) {
       switch (data.action) {
         case "accessDoc":
