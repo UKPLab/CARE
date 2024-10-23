@@ -73,6 +73,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         public: DataTypes.BOOLEAN,
         readyForReview: DataTypes.BOOLEAN,
+        uploaded: DataTypes.BOOLEAN,
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
