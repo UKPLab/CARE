@@ -47,6 +47,11 @@ module.exports = (sequelize, DataTypes) => {
           foreignKey: "documentId",
           as: "document",
         });
+
+        StudyStep.belongsTo(models["study_step"], {
+        foreignKey: "studyStepPrevious",
+        as: "previousStep",
+      });
     }
   }
 
@@ -54,6 +59,7 @@ module.exports = (sequelize, DataTypes) => {
       studyId: DataTypes.INTEGER,
       workflowStepId: DataTypes.INTEGER,
       documentId: DataTypes.INTEGER,
+      studyStepPrevious: DataTypes.INTEGER,
       deleted: DataTypes.BOOLEAN,
       deletedAt: DataTypes.DATE,
       createdAt: DataTypes.DATE,
