@@ -4,7 +4,7 @@ const path = require("path");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const Socket = require("../Socket.js");
-const docTypes = require("../../db/models/document.js").docTypes;
+const { docTypes } = require("../../db/models/document.js");
 
 /**
  * Handle all uploads through websocket
@@ -15,39 +15,40 @@ const docTypes = require("../../db/models/document.js").docTypes;
  * @type {UploadSocket}
  */
 module.exports = class UploadSocket extends Socket {
-
   /**
    * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
    * an entry in the database.
-   *
-   * @author Zheyu Zhang
+   * TODO: Rewrite the params here
+   * @author Zheyu Zhang, Linyin Huang
    * @param data the data including name and pdf binary file
    * @returns {Promise<void>}
    */
   async uploadDocument(data) {
     try {
+      let doc = null;
+      let target = "";
+      if (data.type === "document") {
+        doc = await this.models["document"].add({
+          name: data.name.replace(/.pdf$/, ""),
+          type: docTypes.DOC_TYPE_PDF,
+          // If data includes userId, it means the document is uploaded by an admin
+          userId: data.userId ?? this.userId,
+          uploaded: data.isUploaded ?? false,
+          readyForReview: data.isUploaded ?? false,
+        });
 
-      if(data.type === "document") {
-          const doc = await this.models["document"].add({
-            name: data.name.replace(/.pdf$/, ""),
-            userId: this.userId,
-            type: docTypes.DOC_TYPE_PDF
-          });
-      
-          const target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+        target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+      } else if (data.type === "deltaDocument") {
+        doc = await this.models["document"].add({
+          name: data.name.replace(/.delta$/, ""),
+          // If data includes userId, it means the document is uploaded by an admin
+          userId: data.userId ?? this.userId,
+          type: docTypes.DOC_TYPE_HTML,
+        });
 
-      } else if(data.type === "deltaDocument") {
-          const doc = await this.models["document"].add({
-            name: data.name.replace(/.delta$/, ""),
-            userId: this.userId,
-            type: docTypes.DOC_TYPE_HTML
-          });
-
-          const target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
-          
+        target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
       }
- 
-  
+
       fs.writeFile(target, data.file, (err) => {
         if (err) {
           this.socket.emit("uploadResult", { success: false, error: err.message });
@@ -55,12 +56,74 @@ module.exports = class UploadSocket extends Socket {
           this.socket.emit("uploadResult", { success: true, documentId: doc.id });
         }
       });
-  
+
       this.emit("documentRefresh", doc);
     } catch (error) {
-      console.error("Error uploading document:", error);
+      this.logger.error("Error uploading document:", error);
       this.socket.emit("uploadResult", { success: false, error: error.message });
     }
+  }
+
+  /**
+   * Downloads submissions from a user by their id.
+   *
+   * @param {List<String>} data.fileUrls - Containing the urls of the submissions to download. The urls can be retrieved from the 'submissionURLs' field of the response from 'getSubmissionInfosFromAssignment'.
+   * @param {Object} data.options
+   * @returns {Promise<Object>} The submission file data in binary format.
+   * @throws {Error} If the RPC service returns a failure response or an error occurs during the process.
+   */
+  async downloadSubmissionsFromUser(data) {
+    try {
+      return await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUser(data);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  async bulkDownloadSubmission(data) {
+    const { options, files } = data;
+    const results = [];
+
+    for (const file of files) {
+      try {
+        // Download the submission
+        const response = await this.downloadSubmissionsFromUser({
+          fileUrls: [file.fileUrl],
+          options,
+        });
+
+        if (!response.success) {
+          throw new Error(`Failed to download submission from Moodle for user with ${file.userId}`);
+        }
+
+        const uploadData = {
+          type: "document",
+          file: response.data[0],
+          name: file.fileName,
+          userId: file.userId,
+          isUploaded: true,
+        };
+
+        // Upload the document and create a database entry
+        await this.uploadDocument(uploadData);
+
+        results.push({
+          userId: file.userId,
+          fileName: file.fileName,
+          success: true,
+        });
+      } catch (error) {
+        this.logger.error(`Failed to download submission from Moodle for user with ${file.userId}`);
+        results.push({
+          userId: file.userId,
+          fileName: file.fileName,
+          success: false,
+          error: error.message,
+        });
+      }
+    }
+
+    return results;
   }
 
   init() {
@@ -75,6 +138,16 @@ module.exports = class UploadSocket extends Socket {
       } catch (err) {
         this.logger.error("Upload error: " + err);
         this.socket.emit("uploadResult", { success: false });
+      }
+    });
+
+    this.socket.on("uploadMoodleSubmission", async (data, callback) => {
+      try {
+        const results = await this.bulkDownloadSubmission(data);
+        callback({ success: true, results });
+      } catch (error) {
+        this.logger.error("Error in method bulkDownloadSubmission:", error);
+        callback({ success: false, error: error.message });
       }
     });
   }

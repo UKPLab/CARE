@@ -94,7 +94,7 @@ def create_app():
         try:
             logger.info(f"Received call: {data} from {sid}")
             api = Moodle(data['options']['apiKey'], data['options']['url'])
-            files = api.download_submissions_from_user(data)
+            files = api.download_submissions_from_user(file_urls=data['fileUrls'])
             response = {"success": True, "data": files}
             return response
         except Exception as e:

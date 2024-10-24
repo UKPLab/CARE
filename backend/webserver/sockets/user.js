@@ -460,13 +460,9 @@ module.exports = class UserSocket extends Socket {
     });
 
     // Get users by their role
-    this.socket.on("userGetByRole", async (role, callback) => {
+    this.socket.on("userGetByRole", async (role) => {
       try {
         const users = await this.getUsers(role);
-        callback({
-          success: true,
-          users: users,
-        });
         this.socket.emit("userByRole", {
           success: true,
           users,
