@@ -1,5 +1,6 @@
 const Socket = require("../Socket.js");
-const { v4: uuidv4 } = require('uuid'); 
+const { v4: uuidv4 } = require('uuid');
+const {Op} = require("sequelize");
 
 /**
  * Handle all studies through websocket
@@ -82,22 +83,21 @@ module.exports = class StudySocket extends Socket {
     async sendStudyByHash(studyHash) {
         const study = await this.models['study'].getByHash(studyHash);
         // TODO: study db info, workflows in study where the studies are referenced , workflow steps, study step 
-         
+        console.log(study)
         if (study) {            
             const workflow = await this.models['workflow'].findByPk(study.workflowId);
-
             if(workflow){
-            const workflowSteps = await this.models['workflow_step'].getAllByKey('workflowId', workflow.id);
-            
+                const workflowSteps = await this.models['workflow_step'].getAllByKey('workflowId', workflow.id);
                 if(workflowSteps){
                     const studySteps = await this.models['study_step'].getAllByKey('studyId', study.id);
-                    const studySession = await this.models['study_session'].getAllByKey('userId', this.userId).filter((session) => session.studyId === study.id);
-                    
-                    this.emit("study_sessionRefresh", studySession);
-                    this.emit("studyRefresh", study);
+                    const studySession = await this.models['study_session'].findAll({where:
+                        {"userId":this.userId, "studyId":study.id}, raw:true,
+                    });
                     this.emit("workflowRefresh", workflow);
                     this.emit("workflow_stepRefresh", workflowSteps);
                     this.emit("study_stepRefresh", studySteps);
+                    this.emit("study_sessionRefresh", studySession);
+                    this.emit("studyRefresh", study);
 
                 }else{
                     this.socket.emit("studyError", {
