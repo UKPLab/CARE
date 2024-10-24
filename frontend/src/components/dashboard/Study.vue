@@ -13,6 +13,7 @@
           @click="add()"
         />
         <BasicButton
+          v-if="isAdmin"
           class="btn-secondary btn-sm"
           title="Add Bulk Assignments"
           @click="addBulkAssignment()"
@@ -120,6 +121,9 @@ export default {
     }
   },
   computed: {
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
+    },
     studies() {
       return this.$store.getters["table/study/getAll"];
     },
