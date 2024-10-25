@@ -1,23 +1,19 @@
 'use strict';
 
 const settings = [{
-  key: "assignment_role_slider_max",
+  key: "assignment.role.slider.max",
   value: 10,
   type: "integer",
   description: "The maximum number of assignments to peer review per role"
 },
 {
-  key: "assignment_role_slider_student_default",
+  key: "assignment.role.slider.default",
   value: 3,
   type: "integer",
-  description: "The default number of assignments to peer review per student"
+  description: "The default number of assignments to peer review per role"
 },
-{
-  key: "assignment_role_slider_tutor_default",
-  value: 3,
-  type: "integer",
-  description: "The default number of assignments to peer review per tutor"
-}]
+]
+
 
 module.exports = {
   async up(queryInterface, Sequelize) {

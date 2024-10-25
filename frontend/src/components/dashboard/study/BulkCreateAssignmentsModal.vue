@@ -21,8 +21,7 @@
         </div>
         <!-- Content -->
         <div class="content-container">
-          <!-- Step0: Upload -->
-           
+          <!-- Step0: Choose Assignments -->
           <div
             v-if="currentStep === 0"
             class="file-upload-container"
@@ -30,15 +29,15 @@
           <h4>Select assignments to review!</h4>
           <div class="table-scroll-container">
             <BasicTable
-              :columns="columnsStepOne"
-              :data="users"
+              :columns="columnsStepZero"
+              :data="assignments"
               :options="tableOptions"
-              @row-selection="(users) => (selectedUsers = users)"
+              @row-selection="(assignments) => (selectedAssignments = assignments)"
             />
           </div>
           
           </div>
-          <!-- Step1: Preview -->
+          <!-- Step1: Choose Reviewers -->
           <div
             v-if="currentStep === 1"
             class="preview-table-container"
@@ -46,28 +45,27 @@
           <h4>Select reviewers!</h4>
           <div class="table-scroll-container">
             <BasicTable
-              :columns="columns"
-              :data="mentors"
+              :columns="columnsStepOne"
+              :data="reviewers"
               :options="tableOptions"
-              @row-selection="(mentors) => (selectedMentors = mentors)"
+              @row-selection="(reviewers) => (selectedReviewers = reviewers)"
             />
           </div>
           
           </div>
-          <!-- Step2:  -->
+          <!-- Step2: Choose number of reviewers per assignment -->
           <div
             v-if="currentStep === 2"
             class="review-count-container"
           >
-          <div v-for="(slider, index) in sliders" :key="slider.key">
-      <FormSlider
-        v-model="sliderValues[index]" 
-        :options="getSliderOptions(slider, index)"
-      />
-
+          <BasicForm
+            ref="form"
+            :fields="sliders"
+            v-model="sliderValues"
+            
+            />
           </div>
-          </div>
-          <!-- Step3:  -->
+          <!-- Step3: Choose template to create assignment -->
           <div
             v-if="currentStep === 3"
             class="result-container"
@@ -79,8 +77,6 @@
             <select v-model="selectedTemplate" id="template-dropdown">
               <option v-for="template in templates" :key="template" :value="template">{{ template }}</option>
             </select>
-
-            <!-- Display the selected role -->
           </div>
               
             
@@ -119,67 +115,50 @@
   import BasicTable from "@/basic/table/Table.vue";
   import BasicForm from "@/basic/Form.vue";
   import FormSlider from "@/basic/form/Slider.vue";
-import { forEach } from "lodash";
   
   /**
-   * Modal for bulk creating users through csv file and Moodle API
-   * @author: Linyin Huang
+   * Modal for bulk creating assignments
+   * @author: Alexander Bürkle, Linyin Huang
    */
   export default {
     name: "ImportModal",
-    fetch_data: ["document_edit"],
+    fetch_data: ["study"],
     components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider},
     emits: ["updateUser"],
-    data() {
-      return {
-        sliders: [
+    mounted() {
+    this.fetchUsers();
+  },
+    computed: {
+      steps() {
+        return [
+          { title: "Assignment Selection" },
+          { title: "Reviewer Selection" },
+          { title: "Review Count" },
+          { title: "Template Selection" },
+        ];
+      },
+      isDisabled() {
+        if (this.currentStep === 0) {
+          return !this.selectedAssignments.length > 0;
+        }
+        if (this.currentStep === 1) {
+          return !this.selectedReviewers.length > 0;
+        }
+          
+          
+        return false;
+      },
+      columnsStepOne() { 
+        const uniqueRoles = [...new Set(this.users.map((user) => user.role).filter((role) => role != null))];
+        const roleFilterColumn = {
+          name: "Role",
+          key: "role",
+          width: "1",
+          filter: uniqueRoles.map((role) => ({ key: role, name: role })),
+        };
         
-      ],
-        sliderOptions: {
-          key: "my-slider",
-          min: 0,
-          max: this.sliderMaxValue,
-          step: 1,
-          class: "custom-slider-class",
-          unit: "px", 
-        },
-        currentStep: 0,
-        file: {
-          state: 0,
-          name: "",
-          size: 0,
-          errors: [],
-        },
-        users: [],
-        mentors: [],
-        selectedMentors: [],
-        userData: {},
-        selectedUsers: [],
-        selectedTemplate: '',
-        tableOptions: {
-          striped: true,
-          hover: true,
-          bordered: false,
-          borderless: false,
-          small: false,
-          selectableRows: true,
-          scrollY: true,
-          scrollX: true
-        },
-        columns: [
-        {
-            name: "Role",
-            key: "role",
-            width: "1",
-            filter: [
-              { key: "student", name: "Student" },
-              { key: "mentor", name: "Mentor" },
-              { key: "teacher", name: "Teacher" },
-              { key: "admin", name: "Admin" },
-              { key: "guest", name: "Guest" },
-              { key: "user", name: "User" },
-            ],
-          },
+        return [
+        roleFilterColumn,
           {
             name: "Has Assignments",
             key: "hasAssignments",
@@ -194,92 +173,65 @@ import { forEach } from "lodash";
           { name: "Last Name", key: "lastName" },
           {
             name: "Number of Assignments",
-            key: "numberAssignments"
+            key: "numberAssignments",
           },
-        ],
-        columnsStepOne: [
-        {
-            name: "Role",
-            key: "role",
-            width: "1",
-            filter: [
-              { key: "student", name: "Student" },
-              { key: "mentor", name: "Mentor" },
-              { key: "teacher", name: "Teacher" },
-              { key: "admin", name: "Admin" },
-              { key: "guest", name: "Guest" },
-              { key: "user", name: "User" },
-            ],
-          },
+        ]
+      },
+      columnsStepZero() { 
+        const usersWithAssignments = this.users.filter((user) => user.numberAssignments > 0);
+        const roles = usersWithAssignments.map((user) => user.role);
+        const uniqueRoles = [...new Set(roles)];
+        const roleFilterColumn = {
+          name: "Role",
+          key: "role",
+          width: "1",
+          filter: uniqueRoles.map((role) => ({ key: role, name: role })),
+        };
+        
+        return [
+        roleFilterColumn,
           { name: "ID", key: "id" },
           { name: "Assignment", key: "documentName" },
           { name: "First Name", key: "firstName" },
           { name: "Last Name", key: "lastName" },
           
           
-        ],
-        updatedUserCount: null,
-        createdUsers: [],
-      };
-    },
-    computed: {
-      userCount() {
-        return {
-          new: this.selectedUsers.filter((u) => u.status === "new").length,
-          duplicate: this.selectedUsers.filter((u) => u.status === "duplicate").length,
-        };
-      },
-      steps() {
-        return [
-          { title: "Assignment Selection" },
-          { title: "Reviewer Selection" },
-          { title: "Review Count" },
-          { title: "Template Selection" },
-        ];
-      },
-      isDisabled() {
-        if (this.currentStep === 0) {
-          return !this.selectedUsers.length > 0;
-        }
-        if (this.currentStep === 1) {
-          return !this.selectedMentors.length > 0;
-        }
-          
-          
-        return false;
-      },
-      finalFields() {
-        return [
-          ...this.baseFields,
-          {
-            key: "assignmentID",
-            label: "Assignment ID:",
-            type: "text",
-            required: true,
-            placeholder: "assignment-id-placeholder",
-          },
-        ];
-      },
+        ]},
       sliderMaxValue() {
-        return parseInt(this.$store.getters["settings/getValue"]('assignment_role_slider_max'));
-      },
-      sliderValues() {
-        const values = []
-        values.push(parseInt(this.$store.getters["settings/getValue"]('assignment_role_slider_student_default')))
-        values.push(parseInt(this.$store.getters["settings/getValue"]('assignment_role_slider_tutor_default')))
-        return values;
+        return parseInt(this.$store.getters["settings/getValue"]('assignment.role.slider.max'));
       },
       templates() {
-        return this.$store.getters["table/document/getAll"].map((item) => item.name)
+        return this.$store.getters["table/study/getAll"].map((item) => item.name)
       }
       
     },
-    methods: {
-      getSliderOptions(slider) {
+    data() {
       return {
-        ...slider,
-        max: this.sliderMaxValue, 
-      }},
+        sliders: [
+        
+      ],
+        currentStep: 0,
+        users: [],
+        assignments: [],
+        selectedAssignments: [],
+        reviewers: [],
+        selectedReviewers: [],
+        selectedTemplate: '',
+        sliderValues: [],
+        tableOptions: {
+          striped: true,
+          hover: true,
+          bordered: false,
+          borderless: false,
+          small: false,
+          selectableRows: true,
+          scrollY: true,
+          scrollX: true
+        },
+      };
+    },
+    
+    methods: {
       open(type) {
         this.importType = type;
         this.$refs.modal.open();
@@ -288,20 +240,21 @@ import { forEach } from "lodash";
       },
       resetModal() {
         this.currentStep = 0;
-        this.users = [];
-        this.selectedUsers = [];
+        this.selectedAssignments = [];
+        this.selectedReviewers = [];
+        this.assignments = [];
+        this.reviewers = [];
       },
       prevStep() {
         if (this.currentStep > 0) {
           this.currentStep--;
         }
-
         switch(this.currentStep) {
           case 0:
-            this.selectedUsers = []
+            this.selectedAssignments = []
             break;
           case 1:
-            this.selectedMentors = []
+            this.selectedReviewers = []
             this.sliders = []
             break;
           case 2:
@@ -329,39 +282,63 @@ import { forEach } from "lodash";
         }
         
       },
+      fetchUsers() {
+        this.$socket.emit("assignmentGetReviewableDocs")
+        this.users = this.$store.getters["admin/getAssignmentUserInfos"];
+        this.users = this.users.filter(user => user.role != null)
+      },
       handleStepZero() {
-        this.$socket.emit("getReviewableAssignments", (response) => {
-          this.users = response.users
-      })
-       
+        const assignment = this.users.filter((user) => user.numberAssignments > 0);
+        this.assignments = this.splitUsersByDocuments(assignment);
       },
       handleStepOne() {
-        this.$socket.emit("getAllUsersWithRoleAndNumberOfAssignments", (response) => {
-          this.mentors = response.users.map(user => ({
-  ...user,  
-  hasAssignments: user.numberAssignments > 0 
-}))})},
+        this.reviewers = this.createReviewers(this.users)
+        this.reviewers.forEach(rev => {
+              rev.hasAssignments = rev.numberAssignments > 0 ? "Has Assignments" : "No Assignment";
+            });
+        ;
+        },
       handleStepTwo() {
-        const uniqueRoles = [...new Set(this.selectedMentors.map(item => item.role))];
+        const uniqueRoles = [...new Set(this.selectedReviewers.map(item => item.role))];
 
         for(let i = 0; i < uniqueRoles.length; i++) {
-          this.sliders.push({ key: uniqueRoles[i], min: 0, max: this.sliderMaxValue, step: 1, class: 'custom-slider-class', unit: '' , label: "Number of reviews per " + uniqueRoles[i]})
+          this.sliders.push({ key: uniqueRoles[i], min: 0, max: this.sliderMaxValue, step: 1, class: 'custom-slider-class', unit: '' ,
+           label: "Number of reviews per " + uniqueRoles[i], type:"slider", default: (this.$store.getters["settings/getValue"]('assignment.role.slider.default')).toString()})
         }
       },
       handleStepThree() {
-        
+        console.log(this.sliderValues)
+      },
+      splitUsersByDocuments(users) {
+        const result = [];
+        users.forEach(user => {
+          if (user.documents.length > 1) {
+            user.documents.forEach(doc => {
+              const newUser = { ...user, documentName: doc.name }; 
+              result.push(newUser);
+            });
+          } else {
+            user.documentName = user.documents[0].name;
+            result.push(user);
+          }
+        });
+        return result;
+            },
+      createReviewers(users) {
+        return users
       },
       createAssignments() {
         let data = {}
-        data.assignments = this.selectedUsers.map(col => col.documentName);
-        data.students = this.selectedUsers.map(col => col.id);
-        data.tutors = this.selectedMentors.map(col => col.id);
-        data.reviewsPerStudent = this.sliderValues[0]
-        data.reviewsPerTutor = this.sliderValues[1]
-        data.assignmentCreators = this.selectedUsers.map(col => ({
-          documentName: col.documentName,
-          id: col.id
-        }));
+        data.assignments = this.selectedAssignments
+        data.reviewers = this.selectedReviewers
+        let dictionary = {}
+        Object.keys(this.sliderValues).forEach(key => {
+      if (!Number.isInteger(+key) && key !== 'length') {
+        dictionary[key] = this.sliderValues[key];
+      }
+    });
+        data.reviewsPerRole = dictionary
+        console.log(data)
         this.$socket.emit("assignPeerReviews", data, (response) => {
             console.log(response)
         }) 
@@ -442,70 +419,7 @@ import { forEach } from "lodash";
   padding: 2px; /* Add padding to ensure the border is visible */
 }
   
-  /* Upload */
-  .file-upload-container {
-    width: 100%;
-    margin: 0 auto;
-  }
   
-  .drag-drop-area {
-    margin-bottom: 0.5rem;
-    border: 2px dashed #ccc;
-    border-radius: 4px;
-    padding: 1.25rem;
-    text-align: center;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .drag-drop-area:hover {
-    background-color: #f0f0f0;
-  }
-  
-  .drag-drop-area p {
-    margin: 0;
-    font-size: 0.925rem;
-    color: #666;
-  }
-  
-  .template-link {
-    cursor: pointer;
-  }
-  
-  .file-info-container {
-    margin-top: 0.9375rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border: 1px solid #dee2e6;
-    background: #f2f2f2;
-    border-radius: 4px;
-  }
-  
-  .file-info {
-    margin-left: 0.5rem;
-    font-size: 0.925rem;
-  }
-  
-  .file-info-container strong {
-    margin: 0 0.5rem;
-    color: #333;
-  }
-  
-  .file-info-container button {
-    background-color: transparent;
-    color: firebrick;
-    border: none;
-    padding: 5px 10px;
-    cursor: pointer;
-  }
-  
-  .file-error-container {
-    color: firebrick;
-    > p {
-      margin-bottom: 0.5rem;
-    }
-  }
   
   /* Preview */
   .preview-table-container {
