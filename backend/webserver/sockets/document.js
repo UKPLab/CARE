@@ -481,19 +481,7 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Retrieves submission information from a specified moodle assignment. This includes a list of users and their corresponding submission files (name and url).
-     *
-     * @param {Object} data - The data object containing the course ID, assignment ID, Moodle URL and the API token.
-     * @param {number} data.courseID - The ID of the course to fetch users from.
-     * @param {number} data.assignmentID - The ID of the assignment to fetch users from.
-     * @param {string} data.options.apiKey - The API token for the Moodle instance
-     * @param {string} data.options.url - The URL of the Moodle instance.
-     * @returns {Promise<List>} - A list of dictionaries, each containing:
-     - 'userid' (int): The ID of the user who made the submission.
-     - 'submissionURLs' (list): A list of dictionaries, each containing:
-     - 'filename' (str): The name of the submitted file.
-     - 'fileurl' (str): The URL to access the submitted file.
-     * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
+     * @borrows MoodleRPC.getSubmissionInfosFromAssignment as getSubmissionInfosFromAssignment
      */
     async getSubmissionInfosFromAssignment(moodleData) {
         const { courseID, assignmentID } = moodleData;
@@ -507,6 +495,52 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    /**
+     * Transforms Moodle submission information to meet the frontend format
+     * @param {Object} moodleData - The Moodle data containing course and assignment information.
+     * @returns {Promise<Array<Object>>} An array of objects. Each contains a student's submission info such as fileUrl, fileName, etc.
+     */
+    async transformMoodleSubmissionInfo(moodleData) {
+        try {
+            const { data } = await this.getSubmissionInfosFromAssignment(moodleData);
+            if (!data) {
+                throw new Error("Failed to get student assignments from Moodle");
+            }
+            const usersData = await Promise.all(
+                data.map(async (user) => {
+                    const moodleId = user.userid;
+                    const userInfo = await this.models["user"].findOne({ where: { moodleId } });
+
+                    if (!userInfo) {
+                        this.logger.error(`Failed to find the user with ${moodleId}`);
+                        return null;
+                    }
+
+                    return user.submissionURLs.map((submission) => {
+                        const fileType = submission.filename.substring(submission.filename.lastIndexOf(".")).toLowerCase();
+
+                        return {
+                            moodleId,
+                            userId: userInfo.userId,
+                            firstName: userInfo.firstName,
+                            lastName: userInfo.lastName,
+                            fileName: submission.filename,
+                            fileUrl: submission.fileurl,
+                            type: fileType === ".pdf" ? "pdf" : "other",
+                        };
+                    });
+                })
+            );
+            return usersData.flat().filter(Boolean);
+        } catch (error) {
+            this.logger.error(error);
+        }
+    }
+
+    /**
+     * Retrieve documents that are ready for review
+     * @returns {Promise<Array<Object>>} An array of objects. Each contains a document's info such as name, hash, etc.
+     */
     async getReviewDocuments() {
         try {
             // Get documents that are ready for review
@@ -566,41 +600,10 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentGetMoodleData", async (moodleData, callback) => {
             try {
-                // TODO: Think about whether should write all the logic here or not.
-                const { success, data } = await this.getSubmissionInfosFromAssignment(moodleData);
-                const usersData = await Promise.all(
-                    data.map(async (user) => {
-                        const moodleId = user.userid;
-                        const userInfo = await this.models["user"].findOne({ where: { moodleId } });
-
-                        if (!userInfo) {
-                            this.logger.error(`Failed to find the user with ${moodleId}`);
-                            return null;
-                        }
-
-                        return user.submissionURLs.map((submission) => {
-                            const fileType = submission.filename
-                                .substring(submission.filename.lastIndexOf("."))
-                                .toLowerCase();
-
-                            return {
-                                moodleId,
-                                userId: userInfo.userId,
-                                firstName: userInfo.firstName,
-                                lastName: userInfo.lastName,
-                                fileName: submission.filename,
-                                fileUrl: submission.fileurl,
-                                type: fileType === ".pdf" ? "pdf" : "other",
-                            };
-                        });
-                    })
-                );
-
-                const formattedData = usersData.flat().filter(Boolean);
-
+                const assignments = await this.transformMoodleSubmissionInfo(moodleData);
                 callback({
-                    success,
-                    users: formattedData,
+                    success: true,
+                    assignments,
                 });
             } catch (error) {
                 this.logger.error(error);

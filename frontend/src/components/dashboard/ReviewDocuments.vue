@@ -49,8 +49,9 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 /**
  * Submission list component
  *
- * TODO: description to be provided
- *
+ * This component loads the documents for review from the server
+ * and provide two ways to import documents: one is via manually importing;
+ * the other is via importing from Moodle API.
  * @author Linyin Huang
  */
 export default {
@@ -163,9 +164,6 @@ export default {
     },
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);
-    },
-    onAddedDoc() {
-      this.load();
     },
   },
 };
