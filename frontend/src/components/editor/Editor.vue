@@ -1,8 +1,8 @@
 <template>
-  <Loader
-    v-if="documentId && documentId === 0"
-    :loading="true"
-    class="pageLoader"
+  <Loader 
+  v-if="documentId && documentId === 0" 
+  :loading="true" 
+  class="pageLoader" 
   />
   <span v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
@@ -64,11 +64,14 @@ export default {
       default: 0
     },
     studySessionId: {
-      default: null
+      default: null // Allows for null if not in a study session
     },
     userId: {
       default: null
-    }
+    },
+    readonly: {
+      default: false, // Default to false if not provided
+    },
   },
   data() {
     return {
@@ -83,57 +86,62 @@ export default {
     this.documentHash = this.$route.params.documentHash;
   },
   mounted() {
-      const editorContainer = document.getElementById('editor-container');
+    const editorContainer = document.getElementById('editor-container');
 
-      if (editorContainer) {
-        this.editor = new Editor(editorContainer, this.editorOptions);
+    if (editorContainer) {
+      this.editor = new Editor(editorContainer, this.editorOptions);
 
-        if (this.toolbarVisible) {
-          const toolbarButtons = document.querySelectorAll('.ql-toolbar button');
-          toolbarButtons.forEach(button => {
-            const format = button.className.match(/ql-(\w+)/);
-            if (format) {
-              button.setAttribute('title', format[1]);
-            }
-          });
-        }
-
-        this.editor.getEditor().on('text-change', this.handleTextChange);
+      if (this.toolbarVisible) {
+        const toolbarButtons = document.querySelectorAll('.ql-toolbar button');
+        toolbarButtons.forEach(button => {
+          const format = button.className.match(/ql-(\w+)/);
+          if (format) {
+            button.setAttribute('title', format[1]);
+          }
+        });
       }
-      this.$socket.emit("documentGet", { documentId: this.documentId });
 
-      this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
+      this.editor.getEditor().on('text-change', this.handleTextChange);
+
+      // Set editor to readonly if the prop is true
+      if (this.readonly) {
+        this.editor.getEditor().enable(false);
+      }
+    }
+
+    this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId });
+
+    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
   },
   sockets: {
-      connect() {
-        console.log("Socket connected:", this.$socket.id);
-        this.$socket.emit("documentOpen", { documentId: this.documentId });
-      },
-      documentFile(data) {
-        this.initializeEditorWithContent(data["deltas"]);
-      },
-      documentError(error) {
-        console.error("Document error:", error.message);
-        this.handleDocumentError(error);
-      }
+    connect() {
+      console.log("Socket connected:", this.$socket.id);
+      this.$socket.emit("documentOpen", { documentId: this.documentId });
     },
+    documentFile(data) {
+      this.initializeEditorWithContent(data['deltas']);
+    },
+    documentError(error) {
+      console.error("Document error:", error.message);
+      this.handleDocumentError(error);
+    }
+  },
   unmounted() {
-    this.$socket.emit("documentClose", { documentId: this.documentId });
+    this.$socket.emit("documentClose", { documentId: this.documentId, studySessionId: this.studySessionId });
   },
   computed: {
-      unappliedEdits() {
-        return this.$store.getters["table/document_edit/getFiltered"](
-          e => e.applied === false
-        ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      },
-      debounceTimeForEdits() {
-        return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
-      },
-      toolbarVisible() {
-        return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true";
-      },
-      editorOptions() {
-
+    unappliedEdits() {
+      return this.$store.getters["table/document_edit/getFiltered"](
+        (e) => e.applied === false
+      ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    },
+    debounceTimeForEdits() {
+      return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
+    },
+    toolbarVisible() {
+      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true";
+    },
+    editorOptions() {
       const toolsMap = {
         "editor.toolbar.tools.font": { font: [] },
         "editor.toolbar.tools.size": { size: [] },
@@ -149,12 +157,12 @@ export default {
         "editor.toolbar.tools.subscript": { script: "sub" },
         "editor.toolbar.tools.superscript": { script: "super" },
         "editor.toolbar.tools.indent": [{ indent: "-1" }, { indent: "+1" }],
-        "editor.toolbar.tools.direction": { direction: [] },      
+        "editor.toolbar.tools.direction": { direction: [] },
         "editor.toolbar.tools.color": { color: [] },
         "editor.toolbar.tools.background": { background: [] },
         "editor.toolbar.tools.orderedList": { list: "ordered" },
         "editor.toolbar.tools.unorderedList": { list: "bullet" },
-        "editor.toolbar.tools.checkList": { list: "check" },   
+        "editor.toolbar.tools.checkList": { list: "check" },
         "editor.toolbar.tools.link": "link",
         "editor.toolbar.tools.image": "image",
         "editor.toolbar.tools.video": "video",
@@ -162,9 +170,8 @@ export default {
       };
 
       const toolbarTools = [];
-
       // hide some tools, because the functionalities have not been handled: formula, link, image, video
-      const hiddenTools = ["editor.toolbar.tools.formula",  "editor.toolbar.tools.link", "editor.toolbar.tools.image","editor.toolbar.tools.video"];
+      const hiddenTools = ['editor.toolbar.tools.formula', 'editor.toolbar.tools.link', 'editor.toolbar.tools.image', 'editor.toolbar.tools.video'];
 
       for (const [key, tool] of Object.entries(toolsMap)) {
         if (hiddenTools.includes(key)) {
@@ -175,10 +182,10 @@ export default {
           toolbarTools.push(tool);
         }
       }
-      
+
       return {
         modules: {
-          toolbar: this.toolbarVisible ? {container: toolbarTools} : false
+          toolbar: this.toolbarVisible ? { container: toolbarTools } : false
         },
         theme: "snow"
       };
@@ -209,7 +216,11 @@ export default {
         const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
         const dbOps = deltaToDb(combinedDelta.ops);
         if (dbOps.length > 0) {
-          this.$socket.emit("documentEdit", { documentId: this.documentId, ops: dbOps });
+          this.$socket.emit("documentEdit", {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId || null,
+            ops: dbOps
+          });
         }
 
         this.deltaBuffer = [];
@@ -235,7 +246,7 @@ export default {
       this.content = deltas;
 
       if (this.editor) {
-        this.editor.getEditor().setContents(deltas); 
+        this.editor.getEditor().setContents(deltas);
       }
       this.documentLoaded = true;
       this.applyAdditionalEdits();
@@ -244,15 +255,15 @@ export default {
       if (this.unappliedEdits.length > 0) {
         const delta = dbToDelta(this.unappliedEdits);
         this.editor.getEditor().updateContents(delta, "api");
-        this.$store.commit("table/document_edit/applyEdits", edits.map(edit => edit.id));
+        this.$store.commit("table/document_edit/applyEdits", this.unappliedEdits.map((edit) => edit.id));
       }
     },
     handleDocumentError(error) {
       this.eventBus.emit('toast', {
-          title: "Document error",
-          message: error.message,
-          variant: "danger"
-        });
+        title: "Document error",
+        message: error.message,
+        variant: "danger"
+      });
     },
     downloadDocumentAsHTML() {
       const editorContent = this.editor.getEditor().root.innerHTML;

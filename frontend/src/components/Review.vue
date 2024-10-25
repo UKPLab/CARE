@@ -1,10 +1,16 @@
 <template>
-  <Loader
-    v-if="studySessionId === 0 || documentId === 0"
-    :loading="true"
-  />
+  <Loader 
+    v-if="studySessionId === 0 || documentId === 0" 
+    :loading="true" 
+    />
   <span v-else>
-    <Annotator/>
+    <Annotator
+     v-if="documentType === 0" 
+     />
+    <Editor
+     v-if="documentType === 1" 
+     :readonly="readonly" 
+     />
     <ReviewModal ref="reviewModal" />
     <ReportModal ref="reportModal" />
     <Teleport to="#topbarCustomPlaceholder">
@@ -23,11 +29,12 @@
 </template>
 
 <script>
-import Loader from "@/basic/Loading.vue"
+import Loader from "@/basic/Loading.vue";
 import Annotator from "@/components/annotator/Annotator.vue";
 import ReviewModal from "@/components/study/ReviewModal.vue";
 import ReportModal from "@/components/study/ReportModal.vue";
-import {computed} from "vue";
+import { computed } from "vue";
+import Editor from "./editor/Editor.vue";
 
 /**
  *  Document view in reviewing mode
@@ -39,12 +46,12 @@ import {computed} from "vue";
  */
 export default {
   name: "ReviewRoute",
-  components: {ReviewModal, Loader, Annotator, ReportModal},
+  components: { ReviewModal, Loader, Annotator, ReportModal, Editor },
   provide() {
     return {
       documentId: computed(() => this.documentId),
       studySessionId: computed(() => this.studySessionId),
-      readonly: this.readonly
+      readonly: this.readonly,
     }
   },
   props: {
@@ -52,12 +59,14 @@ export default {
       type: String,
       required: true,
     },
+
   },
   data() {
     return {
       documentId: 0,
       readonly: true,
       studySessionId: 0,
+      documentType: null,
     }
   },
   sockets: {
@@ -70,9 +79,16 @@ export default {
         });
         this.$router.push("/");
       }
+    },
+    studyRefresh(data) {
+      this.documentId = data.documentId;
+      this.documentType = data.documentType;
     }
   },
   computed: {
+    document() {
+      return this.$store.getters['table/document/getByHash'](this.documentHash);
+    },
     studySession() {
       return this.$store.getters['table/study_session/getByHash'](this.studySessionHash);
     },
@@ -87,6 +103,7 @@ export default {
     study(newVal) {
       if (newVal) {
         this.documentId = newVal.documentId;
+        this.documentType = newVal.documentType; // Fetch document type when study changes
       } else {
         this.documentId = 0
       }
@@ -100,7 +117,9 @@ export default {
     }
   },
   mounted() {
-    this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
+    this.$socket.emit("studySessionGetByHash", {
+      studySessionHash: this.studySessionHash
+    });
   },
   methods: {
     evaluate() {
