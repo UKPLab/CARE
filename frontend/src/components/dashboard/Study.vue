@@ -2,8 +2,9 @@
   <span>
     <StudyModal ref="studyCoordinator"/>
     <StudySessionModal ref="studySessionModal"/>
-    <BulkCreateAssignmentsModal ref="bulkCreateAssignmentsModal"/>
     <ConfirmModal ref="deleteConf"/>
+    <ConfirmModal ref="confirmModal"/>
+    <BulkCreateAssignmentsModal ref="bulkCreateAssignmentsModal"/>
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
@@ -12,6 +13,7 @@
           @click="add()"
         />
         <BasicButton
+          v-if="isAdmin"
           class="btn-secondary btn-sm"
           title="Add Bulk Assignments"
           @click="addBulkAssignment()"
@@ -47,14 +49,14 @@ import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, BulkCreateAssignmentsModal, ConfirmModal},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal, BulkCreateAssignmentsModal},
   inject: {
     acceptStats: {
       default: () => false
     }
   },
   props: {},
-  fetchData: ['study','study_session','workflow','workflow_step'],
+  fetchData: ['study','study_session','workflow','workflow_step','study_step'],
   data() {
     return {
       options: {
@@ -119,6 +121,9 @@ export default {
     }
   },
   computed: {
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
+    },
     studies() {
       return this.$store.getters["table/study/getAll"];
     },
@@ -126,7 +131,7 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     studs() {
-      return this.studies.filter(study => study.userId === this.userId)
+      return this.studies.filter(study => study.userId === this.userId && study.template === false)
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
           let study = {...st};
@@ -207,17 +212,6 @@ export default {
                 },
                 title: "Inspect sessions",
                 action: "inspectSessions",
-              },
-              {
-                icon:"x-octagon",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  }
-                },
-                title: "Close study",
-                action: "closeStudy"
               }
             ];
             return study
@@ -243,14 +237,15 @@ export default {
         this.$socket.emit("stats", {action: "inspectSessions", data: {studyId: data.params.id}});
 
         this.$refs.studySessionModal.open(data.params.id);
-      }
-      else if (data.action === "closeStudy") {
+      } else if (data.action === "closeStudy") {
         this.$socket.emit("stats", {action: "closeStudy", data: {studyId: data.params.id}});
 
         this.$socket.emit("studyUpdate", {
           studyId: data.params.id,
           closed: true
         });
+      } else if (data.action === "saveAsTemplate") {
+        this.saveAsTemplate(data.params);
       }
     },
     async copyLink(studyId) {
@@ -320,7 +315,27 @@ export default {
           }
         }
       );
-    }
+    },
+    saveAsTemplate(study) {
+      const warningMessage = "Document associations will not be saved in templates, as we do not create study steps.";
+
+      this.$refs.confirmModal.open(
+        "Save Study as Template",
+        "Are you sure you want to save this study as a template?",
+        warningMessage,
+        (confirmed) => {
+          if (confirmed) {
+            this.$socket.emit("studySaveAsTemplate", { studyId: study.id });
+
+            this.eventBus.emit('toast', {
+              title: "Template Saved",
+              message: "This study has been saved as a template.",
+              variant: "success",
+            });
+          }
+        }
+      );
+    },
   }
 }
 </script>

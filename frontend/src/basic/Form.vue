@@ -117,7 +117,7 @@ export default {
     FormTable,
     FormChoice
   },
-  provide() { //Gibt Daten an Unterkomponenten weiter
+  provide() {
     return {
       formData: computed(() => this.currentData),
     };

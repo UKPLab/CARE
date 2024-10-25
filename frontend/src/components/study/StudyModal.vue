@@ -239,21 +239,31 @@ export default {
     numberOfOpenedSessionsPerUser() {
       return this.$store.getters["table/study_session/getByKey"]("userId", this.userId)
       .filter(s => s.studyID === this.studyID).length;
-    },    
+    },
     started() {
       if (this.study && this.study.start !== null) {
+        if (!(this.study.start instanceof Date)) {
+          throw new Error("Invalid type for study start date. Expected a Date object.");
+        }
         return (new Date(this.study.start) < new Date());
       }
       return true;
     },
     ended() {
-
-      //TODO: if end date ist not smaller than current date, the study has ended
-      
-
       if (this.study && this.study.end !== null) {
+        if (!(this.study.end instanceof Date)) {
+          throw new Error("Invalid type for study end date. Expected a Date object.");
+        }
         return !(new Date() < new Date(this.study.end));
       }
+
+      if (this.study && this.study.closed !== null) {
+        if (!(this.study.closed instanceof Date)) {
+          throw new Error("Invalid type for study closed date. Expected a Date object.");
+        }
+        return !(new Date() < new Date(this.study.closed));
+      }
+
       return false;
     },
     available() {
@@ -286,14 +296,14 @@ export default {
       }
 
       let totalopenedSessions = this.totalNumberOfOpenedSessions;
-      let openedSessionsPerUser = this.numberOfOpenedSessionsPerUser;   
-      
+      let openedSessionsPerUser = this.numberOfOpenedSessionsPerUser;
+
       const limitSessions = this.$store.getters["table/study/get"](this.studyId).limitSessions;
       const limitSessionsPerUser = this.$store.getters["table/study/get"](this.studyId).limitSessionsPerUser;
-      
 
-      if(limitSessions != null){
-        if (totalopenedSessions >= limitSessions) {
+
+      if(limitSessions !== null){
+        if (totalopenedSessions > limitSessions) {
           this.eventBus.emit('toast', {
             title: "Study cannot be started!",
             message: "The maximum number of sessions for this study has been reached.",
@@ -303,8 +313,8 @@ export default {
         }
       }
 
-      if(limitSessionsPerUser != null){
-        if (openedSessionsPerUser >= limitSessionsPerUser) {
+      if(limitSessionsPerUser !== null){
+        if (openedSessionsPerUser > limitSessionsPerUser) {
           this.eventBus.emit('toast', {
             title: "Study cannot be started!",
             message: "You have already started the maximum number of sessions for assigned to you.",

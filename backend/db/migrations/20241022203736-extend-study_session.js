@@ -2,19 +2,29 @@
 
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.addColumn("study_session", "workflowStepId", {
+    await queryInterface.addColumn("study_session", "studyStepId", {
       type: Sequelize.INTEGER,
       references: {
-        model: "workflow_step",
+        model: "study_step",
         key: "id"
       },
       allowNull: true,
       onDelete: 'SET NULL'
     });
 
-    await queryInterface.addColumn("study_session", "currentStep", {
+    await queryInterface.addColumn("study_session", "numberSteps", {
       type: Sequelize.INTEGER,
       allowNull: true,
+    });
+
+    await queryInterface.addColumn('study_session', 'studyStepIdMax', {
+      type: Sequelize.INTEGER,
+      references: {
+        model: 'study_step',
+        key: 'id'
+      },
+      allowNull: true, 
+      onDelete: 'SET NULL', 
     });
 
     await queryInterface.removeColumn("study_session", "reviewUserId");
@@ -65,7 +75,8 @@ module.exports = {
       defaultValue: false,
     });
 
-    await queryInterface.removeColumn("study_session", "workflowStepId");
-    await queryInterface.removeColumn("study_session", "currentStep");
-  },
+    await queryInterface.removeColumn("study_session", "studyStepId");
+    await queryInterface.removeColumn("study_session", "numberSteps");
+    await queryInterface.removeColumn('study_session', 'studyStepIdMax');
+  }
 };
