@@ -1,12 +1,14 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 
+const docTypes = Object.freeze({
+    DOC_TYPE_PDF: 0,
+    DOC_TYPE_HTML: 1
+  });
+
 module.exports = (sequelize, DataTypes) => {
     class Document extends MetaModel {
-        static docTypes = Object.freeze({
-            DOC_TYPE_PDF: 0,
-            DOC_TYPE_HTML: 1
-        });
+        static docTypes = docTypes;
 
         static autoTable = true;
 
@@ -71,6 +73,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         public: DataTypes.BOOLEAN,
         readyForReview: DataTypes.BOOLEAN,
+        uploaded: DataTypes.BOOLEAN,
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
@@ -84,3 +87,5 @@ module.exports = (sequelize, DataTypes) => {
     });
     return Document;
 };
+
+module.exports.docTypes = docTypes;

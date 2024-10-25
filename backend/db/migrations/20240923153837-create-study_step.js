@@ -27,6 +27,15 @@ module.exports = {
         onDelete: 'CASCADE',
         allowNull: false
       },
+      studyStepPrevious:{
+      type: Sequelize.INTEGER,
+        references: {
+          model: 'study_step',
+          key: 'id'
+        },
+        allowNull: true,
+        onDelete: 'SET NULL'
+      },
       documentId: {
         type: Sequelize.INTEGER,
         references: {

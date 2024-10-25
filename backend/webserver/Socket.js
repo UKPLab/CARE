@@ -314,7 +314,7 @@ module.exports = class Socket {
 
           // send all foreign keys of table that are in autoTables
           foreignKeys
-            .filter((fk) => this.autoTables.includes(fk.referencedTableName))
+            .filter((fk) => this.autoTables.includes(fk.referencedTableName) && fk.referencedTableName !== table)
             .map(async (fk) => {
               const uniqueIds = data
                 .map((d) => d[fk.columnName])

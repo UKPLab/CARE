@@ -129,6 +129,7 @@ module.exports = class DocumentSocket extends Socket {
      * @return {Promise<void>}
      */
     async cascadeDelete(documentId) {
+        // FIXME: "study" table no longer has documentId column, so the following codes won't get any data back
         const studies = await this.models['study'].getAllByKey("documentId", documentId);
 
         studies.filter(async s => this.checkUserAccess(s.userId))
@@ -479,8 +480,152 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    /**
+     * Retrieves submission information from a specified moodle assignment. This includes a list of users and their corresponding submission files (name and url).
+     *
+     * @param {Object} data - The data object containing the course ID, assignment ID, Moodle URL and the API token.
+     * @param {number} data.courseID - The ID of the course to fetch users from.
+     * @param {number} data.assignmentID - The ID of the assignment to fetch users from.
+     * @param {string} data.options.apiKey - The API token for the Moodle instance
+     * @param {string} data.options.url - The URL of the Moodle instance.
+     * @returns {Promise<List>} - A list of dictionaries, each containing:
+     - 'userid' (int): The ID of the user who made the submission.
+     - 'submissionURLs' (list): A list of dictionaries, each containing:
+     - 'filename' (str): The name of the submitted file.
+     - 'fileurl' (str): The URL to access the submitted file.
+     * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
+     */
+    async getSubmissionInfosFromAssignment(moodleData) {
+        const { courseID, assignmentID } = moodleData;
+        const convertedCourseID = Number(courseID);
+        const convertedAsgID = Number(assignmentID);
+        const updatedMoodleData = { ...moodleData, convertedCourseID, convertedAsgID };
+        try {
+            return await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment(updatedMoodleData);
+        } catch (error) {
+            this.logger.error(error);
+        }
+    }
+
+    async getReviewDocuments() {
+        try {
+            // Get documents that are ready for review
+            const reviewReadyDocuments = await this.models["document"].findAll({
+                where: {
+                    readyForReview: true,
+                    uploaded: true,
+                    deleted: false,
+                },
+                attributes: ["id", "name", "type", "userId", "hash", "createdAt"],
+                raw: true,
+            });
+
+            // Process each document to get additional information
+            const processedDocuments = await Promise.all(
+                reviewReadyDocuments.map(async (doc) => {
+                    // Find associated studyIds for this document
+                    const associatedStudies = await this.models["study_step"].findAll({
+                        where: { documentId: doc.id },
+                        attributes: ["studyId"],
+                        raw: true,
+                    });
+
+                    const studyIds = associatedStudies.map((study) => study.studyId);
+
+                    // Count the number of study sessions for these studyIds
+                    const sessionCount = await this.models["study_session"].count({
+                        where: {
+                            studyId: studyIds,
+                        },
+                    });
+
+                    // Get the document owner's information
+                    const owner = await this.models["user"].findOne({
+                        where: { id: doc.userId },
+                        attributes: ["firstName", "lastName"],
+                        raw: true,
+                    });
+
+                    return {
+                        ...doc,
+                        sessionCount,
+                        firstName: owner.firstName,
+                        lastName: owner.lastName,
+                    };
+                })
+            );
+
+            return processedDocuments;
+        } catch (error) {
+            this.logger.error("Error in getReviewDocuments:", error);
+        }
+    }
+
     init() {
-        fs.mkdirSync(UPLOAD_PATH, {recursive: true});
+        fs.mkdirSync(UPLOAD_PATH, { recursive: true });
+
+        this.socket.on("documentGetMoodleData", async (moodleData, callback) => {
+            try {
+                // TODO: Think about whether should write all the logic here or not.
+                const { success, data } = await this.getSubmissionInfosFromAssignment(moodleData);
+                const usersData = await Promise.all(
+                    data.map(async (user) => {
+                        const moodleId = user.userid;
+                        const userInfo = await this.models["user"].findOne({ where: { moodleId } });
+
+                        if (!userInfo) {
+                            this.logger.error(`Failed to find the user with ${moodleId}`);
+                            return null;
+                        }
+
+                        return user.submissionURLs.map((submission) => {
+                            const fileType = submission.filename
+                                .substring(submission.filename.lastIndexOf("."))
+                                .toLowerCase();
+
+                            return {
+                                moodleId,
+                                userId: userInfo.userId,
+                                firstName: userInfo.firstName,
+                                lastName: userInfo.lastName,
+                                fileName: submission.filename,
+                                fileUrl: submission.fileurl,
+                                type: fileType === ".pdf" ? "pdf" : "other",
+                            };
+                        });
+                    })
+                );
+
+                const formattedData = usersData.flat().filter(Boolean);
+
+                callback({
+                    success,
+                    users: formattedData,
+                });
+            } catch (error) {
+                this.logger.error(error);
+                callback({
+                    success: false,
+                    message: "Failed to get student assignments from Moodle",
+                });
+            }
+        });
+
+        this.socket.on("documentGetReviews", async (callback) => {
+            try {
+                const reviewDocuments = await this.getReviewDocuments();
+                callback({
+                    success: true,
+                    documents: reviewDocuments
+                });
+            } catch (e) {
+                this.logger.error(e);
+                callback({
+                    success: false,
+                    message: "Error retrieving review documents"
+                });
+            }
+        });
 
         this.socket.on("documentGet", async (data) => {
             try {
@@ -530,9 +675,10 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("documentUpdate", async (data) => {
+        this.socket.on("documentUpdate", async (data, callback) => {
             try {
                 await this.updateDocument(data.documentId, data);
+                callback(true);
             } catch (err) {
                 this.logger.error(err);
                 this.sendToast(err, "Error updating document", "Error", "danger");

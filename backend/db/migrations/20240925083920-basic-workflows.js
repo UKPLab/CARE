@@ -5,7 +5,7 @@ const workflows = [
     name: "Peer Review Workflow",
     description: "EiWA Project: Review a PDF document and write free text.",
     steps: [
-      { stepType: 1, allowBackward: true, workflowStepDocument: null },
+      { stepType: 1, allowBackward: false, workflowStepDocument: null },
       { stepType: 2, allowBackward: true, workflowStepDocument: 1 }
     ]
   },
@@ -14,9 +14,9 @@ const workflows = [
     description: "Rummels Project: Correct a document over two revisions with edits overview.",
     steps: [
       { stepType: 2, allowBackward: false, workflowStepDocument: null },
-      { stepType: 3, allowBackward: false, workflowStepDocument: 3 },
-      { stepType: 2, allowBackward: false, workflowStepDocument: 3 },
-      { stepType: 3, allowBackward: false, workflowStepDocument: 5 }
+      { stepType: 3, allowBackward: false, workflowStepDocument: 1 },
+      { stepType: 2, allowBackward: false, workflowStepDocument: 1 },
+      { stepType: 3, allowBackward: false, workflowStepDocument: 3 }
     ]
   }
 ];
