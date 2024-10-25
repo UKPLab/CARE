@@ -3,6 +3,7 @@
     <StudyModal ref="studyCoordinator"/>
     <StudySessionModal ref="studySessionModal"/>
     <BulkCreateAssignmentsModal ref="bulkCreateAssignmentsModal"/>
+    <ConfirmModal ref="deleteConf"/>
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
@@ -35,6 +36,7 @@ import BasicTable from "@/basic/table/Table.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 import BasicButton from "@/basic/Button.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
 
 
@@ -45,14 +47,14 @@ import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, BulkCreateAssignmentsModal},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, BulkCreateAssignmentsModal, ConfirmModal},
   inject: {
     acceptStats: {
       default: () => false
     }
   },
   props: {},
-  fetchData: ['study'],
+  fetchData: ['study','study_session','workflow','workflow_step'],
   data() {
     return {
       options: {
@@ -65,11 +67,21 @@ export default {
       },
       columns: [
         {name: "Name", key: "name"},
-        {name: "Document", key: "documentName"},
         {name: "Start", key: "start", sortable: true},
         {name: "End", key: "end", sortable: true},
         {name: "Created", key: "createdAt", sortable: true},
         {name: "Time Limit", key: "timeLimit", sortable: true},
+        {name: "Session Limit", key: "limitSessions", sortable: true},
+        {name: "Session Limit per User", key: "limitSessionsPerUser", sortable: true},
+        {
+          name: "Status",
+          key: "closed",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {null: "Open", true: "Closed"},
+            classMapping: {null: "bg-warning", true: "bg-secondary"}
+          }
+        },
         {
           name: "Resumable",
           key: "resumable",
@@ -88,6 +100,19 @@ export default {
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
+        {
+          name: "Multiple Submissions",
+          key: "multipleSubmit",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", false: "No"},
+            classMapping: {true: "bg-success", false: "bg-danger"}
+          }
+        },
+        {
+          name: "Chosen Workflow",
+          key: "workflowName",
+        },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
 
@@ -104,7 +129,7 @@ export default {
       return this.studies.filter(study => study.userId === this.userId)
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
-            let study = {...st};
+          let study = {...st};
             // dates
             if (study.start === null) {
               study.start = "-"
@@ -120,8 +145,12 @@ export default {
 
             study.createdAt = new Date(study.createdAt).toLocaleString()
 
-            const doc = this.$store.getters["table/document/get"](study.documentId)
-            study.documentName = doc ? doc.name : "-";
+            study.closed = study.closed ? true : null;
+
+            // TODO: Calculate current open sessions and display the with limitSessions in this format: 2 | 100
+
+            const workflow = this.$store.getters["table/workflow/get"](study.workflowId);
+            study.workflowName = workflow ? workflow.name : "Unknown Workflow";
 
             study.manage = [
               {
@@ -178,6 +207,17 @@ export default {
                 },
                 title: "Inspect sessions",
                 action: "inspectSessions",
+              },
+              {
+                icon:"x-octagon",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  }
+                },
+                title: "Close study",
+                action: "closeStudy"
               }
             ];
             return study
@@ -192,9 +232,7 @@ export default {
 
         this.studyCoordinator(data.params);
       } else if (data.action === "deleteStudy") {
-        this.$socket.emit("stats", {action: "studyDelete", data: {studyId: data.params.id}});
-
-        this.$socket.emit("studyDelete", {studyId: data.params.id})
+        this.deleteStudy(data.params);
       } else if (data.action === "openStudy") {
         this.$router.push("/study/" + data.params.hash);
       } else if (data.action === "linkStudy") {
@@ -205,6 +243,14 @@ export default {
         this.$socket.emit("stats", {action: "inspectSessions", data: {studyId: data.params.id}});
 
         this.$refs.studySessionModal.open(data.params.id);
+      }
+      else if (data.action === "closeStudy") {
+        this.$socket.emit("stats", {action: "closeStudy", data: {studyId: data.params.id}});
+
+        this.$socket.emit("studyUpdate", {
+          studyId: data.params.id,
+          closed: true
+        });
       }
     },
     async copyLink(studyId) {
@@ -242,6 +288,38 @@ export default {
     },
     studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
+    },
+    async deleteStudy(row) {
+      const studySessions = this.$store.getters["table/study_session/getFiltered"](
+        (e) => e.studyId === row.id
+      );
+      let warning;
+      if (studySessions && studySessions.length > 0) {
+        warning = ` There ${studySessions.length !== 1 ? "are" : "is"} currently ${
+          studySessions.length
+        } ${studySessions.length !== 1 ? "study session" : "study sessions"}
+         existing for this study. Deleting it will delete the ${
+          studySessions.length !== 1 ? "study session" : "study sessions"
+         }!`;
+      } else {
+        warning = "";
+      }
+
+      this.$refs.deleteConf.open(
+        "Delete Study",
+        "Are you sure you want to delete the study?",
+        warning,
+        function (val) {
+          if (val) {
+            this.$socket.emit("stats", {action: "studyDelete", data: {studyId: row.id}});
+
+            this.$socket.emit("studyUpdate", {
+              studyId: row.id,
+              deleted: true
+            });
+          }
+        }
+      );
     }
   }
 }
