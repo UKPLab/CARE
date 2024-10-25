@@ -312,13 +312,9 @@ module.exports = class UserSocket extends Socket {
     });
 
     // Get users by their role
-    this.socket.on("userGetByRole", async (role, callback) => {
+    this.socket.on("userGetByRole", async (role) => {
       try {
         const users = await this.getUsers(role);
-        callback({
-          success: true,
-          users: users,
-        });
         this.socket.emit("userByRole", {
           success: true,
           users,
@@ -335,16 +331,12 @@ module.exports = class UserSocket extends Socket {
 
     
 
-    this.socket.on("getAllUsersWithRoleAndNumberOfAssignments", async (callback) => {
+    this.socket.on("userGetWithRoleAndNumberOfAssignments", async (callback) => {
       try {
         const users = await this.getAllUsersWithRoleAndNumberOfAssignments();
         callback({
           success: true,
           users: users,
-        });
-        this.socket.emit("usersWithRolesAndAssignments", {
-          success: true,
-          users,
         });
       } catch (error) {
         this.logger.error(errorMsg);
