@@ -37,7 +37,7 @@
             :data="assignments"
             :columns="tableColumns"
             :options="tableOptions"
-            @row-selection="(asg) => (selectedAsgs = asg)"
+            @row-selection="(asg) => (selectedAssignments = asg)"
           />
         </div>
         <!-- Step2:  -->
@@ -46,8 +46,7 @@
           class="confirm-container"
         >
           <p>
-            <!-- FIXME: Assignment in plural form -->
-            Are you sure you want to import <strong>{{ selectedAsgs.length }}</strong> student assignment?
+            Are you sure you want to import <strong>{{ selectedAssignments.length }}</strong> {{message}}?
           </p>
         </div>
         <!-- Step3:  -->
@@ -56,8 +55,7 @@
           class="result-container"
         >
           <p>
-            <!-- FIXME: Assignment in plural form -->
-            Successfully imported <strong>{{ importedAsgs.length }}</strong> assignment. <br />
+            Successfully imported <strong>{{ importedAssignments.length }}</strong> {{message}}. <br />
             The modal can be closed now.
           </p>
         </div>
@@ -104,6 +102,7 @@ export default {
   data() {
     return {
       currentStep: 0,
+      steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }],
       moodleData: {
         url: "",
         apiKey: "",
@@ -163,26 +162,32 @@ export default {
         },
       ],
       assignments: [],
-      selectedAsgs: [],
-      importedAsgs: [],
+      selectedAssignments: [],
+      importedAssignments: [],
     };
   },
   computed: {
-    steps() {
-      return [{ title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }];
-    },
     isDisabled() {
       if (this.currentStep === 0) {
         const { courseID, url, apiKey, assignmentID } = this.moodleData;
         return !courseID || !url || !apiKey || !assignmentID;
       }
       if (this.currentStep === 1) {
-        return !this.selectedAsgs.length > 0;
+        return !this.selectedAssignments.length > 0;
       }
       if (this.currentStep === 3) {
         return true;
       }
       return false;
+    },
+    message() {
+      if(this.currentStep === 2) {
+        return this.selectedAssignments.length > 1 ? "assignments" : "assignment";
+      }
+      if(this.currentStep === 3) {
+        return this.importedAssignments.length > 1 ? "assignments" : "assignment";
+      }
+      return "assignments";
     },
   },
   methods: {
@@ -192,9 +197,9 @@ export default {
     resetModal() {
       this.currentStep = 0;
       this.assignments = [];
-      this.selectedAsgs = [];
-      if (this.importedAsgs.length > 0) {
-        this.importedAsgs = [];
+      this.selectedAssignments = [];
+      if (this.importedAssignments.length > 0) {
+        this.importedAssignments = [];
         this.$emit("updateDocuments");
       }
       this.eventBus.emit("resetFormField");
@@ -229,8 +234,12 @@ export default {
       this.$socket.emit("documentGetMoodleData", { courseID, assignmentID, options }, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
-          const { users } = res;
-          this.assignments = users;
+          const { assignments } = res;
+          this.assignments = assignments.map(({ type, ...user }) => ({
+            type,
+            ...user,
+            isDisabled: type !== "pdf",
+          }));
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to get student assignments from Moodle",
@@ -243,13 +252,13 @@ export default {
     handleStepTwo() {
       const { apiKey, url } = this.moodleData;
       const options = { apiKey, url };
-      const files = this.selectedAsgs.map(({ userId, fileName, fileUrl }) => ({ userId, fileName, fileUrl }));
+      const files = this.selectedAssignments.map(({ userId, fileName, fileUrl }) => ({ userId, fileName, fileUrl }));
       const data = { options, files };
       this.$socket.emit("uploadMoodleSubmission", data, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
           const { results } = res;
-          this.importedAsgs = results;
+          this.importedAssignments = results;
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to import submission from Moodle",
