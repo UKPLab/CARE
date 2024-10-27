@@ -10,7 +10,7 @@ const { generateMarvelUsername } = require("../../utils/generator.js");
  * @type {AssignmentSocket}
  */
 module.exports = class AssignmentSocket extends Socket {
-  async getReviewableAssignments() {
+  async getAssignmentInfosFromUser() {
     try {
       const [documentUserIds, matchedUsers, users, roleIdMap] = await Promise.all([
         this.models["document"].findAll({
@@ -53,11 +53,16 @@ module.exports = class AssignmentSocket extends Socket {
       });
     } catch (error) {
       this.logger.error(error);
+      this.socket.emit("assignmentUserInfos", {
+        success: false,
+        message: error.message
+      });
     }
   }
 
 
-  async assignPeerReviews(assignments, reviewers, reviewsPerRole) {
+  async assignPeerReviews(assignments, reviewers, reviewsPerRole, template) {
+    console.log(template)
     // Helper function to shuffle an array
     const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
   
@@ -128,24 +133,33 @@ module.exports = class AssignmentSocket extends Socket {
       };
     });
 
-    result.forEach(async (assignment) => {
-      this.models["study"].add({
-        userId: assignment.userId,
-        documentId: assignment.documentId,
-        assignedReviewers: JSON.stringify(assignment.assignedReviewers),
-      });
+    result.forEach((assignment) => {
+      const study = this.models["study"].add({
+        userId: assignment.id,
+        template: false,
+        collab: template.collab,
+        description: template.description,
+        resumable: template.resumable,
+        timeLimit: template.timeLimit,
+        start: template.start,
+        end: template.end,
+        workflowId: template.workflowId,
+        multipleSubmit: template.multipleSubmit,
+        limitSessions: assignment.assignedReviewers.length,
+        limitSessionsPerUser: 1,
+      }, {context: {}});
 
-  
-      // Update the document with the assigned reviewers
-      await this.models["document"].update(
-        {
-          assignedReviewers: JSON.stringify(assignment.assignedReviewers),
-        },
-        {
-          where: { id: document.id },
-        }
-      );
+      assignment.assignedReviewers.forEach((reviewer) => {
+        this.models["study_session"].add({
+          studyId: study.id,
+          userId: reviewer,
     })
+  })
+})
+
+    console.log(result)
+    return result;
+
   }
   
   
@@ -154,15 +168,10 @@ module.exports = class AssignmentSocket extends Socket {
 
   init() {
 
-    this.socket.on("assignmentGetReviewableDocs", async (callback) => {
+    this.socket.on("assignmentGetAssignmentInfosFromUser", async () => {
       try {
-        await this.getReviewableAssignments();
-        const users = {}
-        //console.log(users)
-        callback({
-          success: true,
-          users: users,
-        });
+        console.log("assignmentGetAssignmentInfosFromUser")
+        this.getAssignmentInfosFromUser();
       } catch (error) {
         const errorMsg = "User rights and request parameter mismatch";
         this.logger.error(errorMsg);
@@ -172,7 +181,7 @@ module.exports = class AssignmentSocket extends Socket {
     this.socket.on("assignPeerReviews", async (data, callback) => {
       try {
         console.log(data)
-        const assignments = await this.assignPeerReviews(data.assignments, data.reviewers, data.reviewsPerRole);
+        const assignments = await this.assignPeerReviews(data.assignments, data.reviewers, data.reviewsPerRole, data.template);
         callback({
           success: true,
           assignments: assignments,

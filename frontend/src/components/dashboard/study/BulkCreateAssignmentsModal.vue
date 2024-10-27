@@ -75,7 +75,7 @@
             <div>
             <label for="template-dropdown">Choose a template:</label>
             <select v-model="selectedTemplate" id="template-dropdown">
-              <option v-for="template in templates" :key="template" :value="template">{{ template }}</option>
+              <option v-for="template in templateNames" :key="template" :value="template">{{ template }}</option>
             </select>
           </div>
               
@@ -126,9 +126,13 @@
     components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider},
     emits: ["updateUser"],
     mounted() {
-    this.fetchUsers();
+      console.log("MOUNTED")
+      this.$socket.emit("assignmentGetAssignmentInfosFromUser")
   },
     computed: {
+      users() {
+        return this.$store.getters["admin/getAssignmentUserInfos"].filter(user => user.role != null);
+      },
       steps() {
         return [
           { title: "Assignment Selection" },
@@ -142,7 +146,7 @@
           return !this.selectedAssignments.length > 0;
         }
         if (this.currentStep === 1) {
-          return !this.selectedReviewers.length > 0;
+          return !this.selectedReviewers.length > 0
         }
           
           
@@ -201,23 +205,23 @@
         return parseInt(this.$store.getters["settings/getValue"]('assignment.role.slider.max'));
       },
       templates() {
-        return this.$store.getters["table/study/getAll"].map((item) => item.name)
+        return this.$store.getters["table/study/getAll"].filter(item => item.template === true)
       }
       
     },
     data() {
       return {
+        templateNames: [],
         sliders: [
         
       ],
         currentStep: 0,
-        users: [],
         assignments: [],
         selectedAssignments: [],
         reviewers: [],
         selectedReviewers: [],
         selectedTemplate: '',
-        sliderValues: [],
+        sliderValues: {},
         tableOptions: {
           striped: true,
           hover: true,
@@ -235,7 +239,7 @@
       open(type) {
         this.importType = type;
         this.$refs.modal.open();
-        this.handleStepZero();
+        this.handleStepZero()
         
       },
       resetModal() {
@@ -244,6 +248,8 @@
         this.selectedReviewers = [];
         this.assignments = [];
         this.reviewers = [];
+        this.sliderValues = []
+        this.users = [];
       },
       prevStep() {
         if (this.currentStep > 0) {
@@ -282,11 +288,6 @@
         }
         
       },
-      fetchUsers() {
-        this.$socket.emit("assignmentGetReviewableDocs")
-        this.users = this.$store.getters["admin/getAssignmentUserInfos"];
-        this.users = this.users.filter(user => user.role != null)
-      },
       handleStepZero() {
         const assignment = this.users.filter((user) => user.numberAssignments > 0);
         this.assignments = this.splitUsersByDocuments(assignment);
@@ -294,7 +295,7 @@
       handleStepOne() {
         this.reviewers = this.createReviewers(this.users)
         this.reviewers.forEach(rev => {
-              rev.hasAssignments = rev.numberAssignments > 0 ? "Has Assignments" : "No Assignment";
+              rev.hasAssignments = rev.numberAssignments > 0 ? "Has Assignments" : "No Assignment"
             });
         ;
         },
@@ -303,11 +304,11 @@
 
         for(let i = 0; i < uniqueRoles.length; i++) {
           this.sliders.push({ key: uniqueRoles[i], min: 0, max: this.sliderMaxValue, step: 1, class: 'custom-slider-class', unit: '' ,
-           label: "Number of reviews per " + uniqueRoles[i], type:"slider", default: (this.$store.getters["settings/getValue"]('assignment.role.slider.default')).toString()})
+           label: "Number of reviews per " + uniqueRoles[i], type:"slider", default: parseInt(this.$store.getters["settings/getValue"]('assignment.role.slider.default'), 3)})
         }
       },
       handleStepThree() {
-        console.log(this.sliderValues)
+        this.templateNames = this.templates.map(template => template.name)
       },
       splitUsersByDocuments(users) {
         const result = [];
@@ -331,6 +332,7 @@
         let data = {}
         data.assignments = this.selectedAssignments
         data.reviewers = this.selectedReviewers
+        data.template = this.templates.find(template => template.name === this.selectedTemplate)
         let dictionary = {}
         Object.keys(this.sliderValues).forEach(key => {
       if (!Number.isInteger(+key) && key !== 'length') {
