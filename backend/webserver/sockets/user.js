@@ -131,113 +131,6 @@ module.exports = class UserSocket extends Socket {
     }
   }
 
-  /**
-   * Bulk create or update users
-   * @param {*} users - Users to be created or updated
-   * @param {Object} roleMap - A role map that maps an external platform roles to CARE roles
-   * @returns {Promise<array>} - A list of created or updated users
-   */
-  async bulkCreateUsers(users, roleMap) {
-    try {
-      const createdUsers = [];
-      for (const user of users) {
-        let createdUser, password;
-        if (user.status === "new") {
-          // Generate a password using UUID (8 characters)
-          password = uuidv4().replace(/-/g, "").substring(0, 8);
-          const salt = genSalt();
-          const pwdHash = await genPwdHash(password, salt);
-
-          let username;
-          let retries = 0;
-          const maxRetries = 5;
-
-          while (retries < maxRetries) {
-            username = generateMarvelUsername();
-            try {
-              // Attempt to create the user
-              createdUser = await this.models["user"].create({
-                firstName: user.firstname,
-                lastName: user.lastname,
-                userName: username,
-                email: user.email,
-                passwordHash: pwdHash,
-                salt,
-                moodleId: Number(user.id),
-                acceptTerms: false,
-                acceptStats: false,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              });
-              break;
-            } catch (error) {
-              if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "userName") {
-                retries++;
-              } else {
-                throw error;
-              }
-            }
-          }
-
-          if (!createdUser) {
-            throw new Error("Failed to create user with unique username");
-          }
-        } else {
-          // Update the user's details
-          await this.models["user"].update(
-            {
-              firstName: user.firstname,
-              lastName: user.lastname,
-              moodleId: user.id,
-            },
-            {
-              where: { email: user.email },
-            }
-          );
-
-          // Fetch the updated user
-          createdUser = await this.models["user"].findOne({ where: { email: user.email } });
-        }
-
-        // Find and assign roles
-        const assignedRoles = [];
-        const userRoles = user.roles.split(", ");
-        for (let roleName of userRoles) {
-          roleName = roleName.trim();
-          const userRole = await this.models["user_role"].findOne({
-            where: { name: roleMap[roleName] },
-          });
-          if (!userRole) {
-            continue;
-          }
-
-          await this.models["user_role_matching"].create({
-            userId: createdUser.id,
-            userRoleId: userRole.id,
-          });
-          assignedRoles.push(roleName);
-        }
-
-        createdUsers.push({
-          id: createdUser.moodleId,
-          firstname: createdUser.firstName,
-          lastname: createdUser.lastName,
-          username: createdUser.userName,
-          email: createdUser.email,
-          roles: assignedRoles.join(", "),
-          password: user.status === "new" ? password : "",
-          status: user.status,
-        });
-      }
-
-      return createdUsers;
-    } catch (error) {
-      this.logger.error("Failed to bulk update users: " + error);
-    }
-  }
-
-
-
   async getAllUsersWithRoleAndNumberOfAssignments() {
     try {
       return await this.models["user"].getAllUsersWithRoleAndNumberOfAssignments()
@@ -245,9 +138,6 @@ module.exports = class UserSocket extends Socket {
       this.logger.error(error);
     }
   }
-
-
-
 
   /**
    * Retrieves users from a specified moodle course and returns the data as an array.
