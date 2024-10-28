@@ -273,17 +273,6 @@ export default {
           this.timerInterval = setInterval(this.calcTimeLeft, 1000);
         }
       }
-    },
-    study(newVal) {
-
-    },
-    //TODO: check this part when forward and backward are implemented
-    currentStudyStep(newVal) {
-      if (newVal) {
-        this.currentStep = newVal.studyStepId; //Doubtful step
-        this.documentId = data.filter(step => step.id === this.currentStudyStep)[0].documentId;
-        this.documentType = this.$store.getters['table/document/get'](this.documentId)["type"];
-      }
     }
   },
   mounted() {

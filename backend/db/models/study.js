@@ -73,7 +73,7 @@ module.exports = (sequelize, DataTypes) => {
                 min: 0, 
                 max: 200,  
                 step: 1,
-                default: 100, 
+                default: 0, 
             },
             {
                 key: "limitSessionsPerUser",
@@ -85,7 +85,7 @@ module.exports = (sequelize, DataTypes) => {
                 min: 0, 
                 max: 200,  
                 step: 1,
-                default: 100, 
+                default: 0, 
             },
             {
                 key: "collab",

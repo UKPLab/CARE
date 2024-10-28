@@ -271,6 +271,9 @@ export default {
     },
     link() {
       return window.location.origin + "/study/" + this.hash;
+    },
+    studyClosed(){
+      return this.$store.getters["table/study/get"](this.studyId).closed;
     }
   },
   methods: {
@@ -283,10 +286,8 @@ export default {
     start() {
       // needed, otherwise the ref in the callback can become null
       const modal = this.$refs.modal;
-
-      const studyClosed = this.$store.getters["table/study/get"](this.studyId).closed;
-
-      if(studyClosed){
+      
+      if(this.studyClosed){
         this.eventBus.emit('toast', {
           title: "Study cannot be started!",
           message: "The study is closed.",
