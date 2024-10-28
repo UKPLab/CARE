@@ -133,6 +133,8 @@ module.exports = class AssignmentSocket extends Socket {
       };
     });
 
+    console.log(result.documents)
+
     result.forEach((assignment) => {
       const study = this.models["study"].add({
         userId: assignment.id,
@@ -147,7 +149,7 @@ module.exports = class AssignmentSocket extends Socket {
         multipleSubmit: template.multipleSubmit,
         limitSessions: assignment.assignedReviewers.length,
         limitSessionsPerUser: 1,
-      }, {context: {}});
+      }, {context: {data: assignment.documents[0].id}});
 
       assignment.assignedReviewers.forEach((reviewer) => {
         this.models["study_session"].add({
