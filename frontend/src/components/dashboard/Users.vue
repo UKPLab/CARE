@@ -21,7 +21,7 @@
       />
       <h4>Manage Peer Reviews</h4>
       <BasicTable
-        :columns="peerColoumns"
+        :columns="peerColumns"
         :data="reviews"
         :options="options"
         @action="chooseAction"
@@ -95,7 +95,7 @@ export default {
       ],
       // Possible values for role are "all", "student", "mentor", "teacher"
       role: "all",
-      peerColoumns: [
+      peerColumns: [
         { name: "Review ID", key: "id", sortable: true },
         { name: "Document Name", key: "docName" },
         { name: "Moderators", key: "mods" },
