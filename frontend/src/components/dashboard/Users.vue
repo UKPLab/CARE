@@ -2,14 +2,19 @@
   <Card title="Users">
     <template #headerElements>
       <BasicButton
-        class="btn-secondary btn-sm me-1"
-        title="Import via Moodle"
-        @click="$refs.importModal.open('moodle')"
+        class="btn btn-secondary btn-sm me-1"
+        title="Upload Password"
+        @click="$refs.uploadModal.open()"
+      />
+      <BasicButton
+        class="btn btn-secondary btn-sm me-1"
+        title="Import via CSV"
+        @click="$refs.importModal.open('csv')"
       />
       <BasicButton
         class="btn btn-primary btn-sm"
-        title="Import via CSV"
-        @click="$refs.importModal.open('csv')"
+        title="Import via Moodle"
+        @click="$refs.importModal.open('moodle')"
       />
     </template>
     <template #body>
@@ -38,6 +43,7 @@
     ref="importModal"
     @update-user="fetchUsers"
   />
+  <UploadModal ref="uploadModal" />
 </template>
 
 <script>
@@ -48,6 +54,7 @@ import DetailsModal from "./users/DetailsModal.vue";
 import PasswordModal from "./users/PasswordModal.vue";
 import RightsModal from "./users/RightsModal.vue";
 import ImportModal from "./users/ImportModal.vue";
+import UploadModal from "./users/UploadModal.vue";
 
 /**
  * Display user list by users' role
@@ -64,6 +71,7 @@ export default {
     RightsModal,
     BasicButton,
     ImportModal,
+    UploadModal,
   },
   props: {
     admin: {
@@ -234,10 +242,8 @@ export default {
       this.$refs.passwordModal.open(user.id);
     },
     openEditReviewsModal(review) {
-      console.log(review)
       this.$refs.editPeerReviewsModal.open(review);
-
-    }
+    },
   },
 };
 </script>

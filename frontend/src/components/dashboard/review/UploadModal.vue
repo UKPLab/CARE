@@ -29,6 +29,7 @@
           </option>
         </datalist>
       </div>
+      <!-- TODO: Turn this file uploading functionality into a component -->
       <div class="form-field">
         <div
           v-if="isUploading"
