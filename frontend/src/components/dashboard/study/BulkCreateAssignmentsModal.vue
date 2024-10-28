@@ -300,11 +300,15 @@
         ;
         },
       handleStepTwo() {
-        const uniqueRoles = [...new Set(this.selectedReviewers.map(item => item.role))];
+        const roleCounts = this.selectedReviewers.reduce((acc, obj) => {
+          const role = obj.role;
+          acc[role] = (acc[role] || 0) + 1;
+          return acc;
+        }, {});
 
-        for(let i = 0; i < uniqueRoles.length; i++) {
-          this.sliders.push({ key: uniqueRoles[i], min: 0, max: this.sliderMaxValue, step: 1, class: 'custom-slider-class', unit: '' ,
-           label: "Number of reviews per " + uniqueRoles[i], type:"slider", default: parseInt(this.$store.getters["settings/getValue"]('assignment.role.slider.default'), 3)})
+        for(const role in roleCounts) {
+          this.sliders.push({ key: role, min: 0, max: roleCounts[role], step: 1, class: 'custom-slider-class', unit: '' ,
+           label: "Number of " + role + "s per review", type:"slider", default: parseInt(this.$store.getters["settings/getValue"]('assignment.role.slider.default'), 3)})
         }
       },
       handleStepThree() {
