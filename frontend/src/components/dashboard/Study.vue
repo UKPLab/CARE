@@ -212,6 +212,17 @@ export default {
                 },
                 title: "Inspect sessions",
                 action: "inspectSessions",
+              },
+              {
+                icon:"x-octagon",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  }
+                },
+                title: "Close study",
+                action: "closeStudy"
               }
             ];
             return study
