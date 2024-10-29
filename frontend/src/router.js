@@ -46,6 +46,7 @@ const routes = [
         meta: {requireAuth: true}
     },
     {
+        //use path for studysession.vue and send meta data readOnly is true, similar to register check its pathat App.vue
         path: "/review/:studySessionHash",
         component: () => import('@/components/Review.vue'),
         props: true,

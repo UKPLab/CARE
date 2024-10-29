@@ -349,6 +349,7 @@ module.exports = class DocumentSocket extends Socket {
             if (data.studySessionId && data.studySessionId !== 0) {
                 const studySession = await this.models['study_session'].getById(data.studySessionId);
                 const study = await this.models['study'].getById(studySession.studyId);
+
                 if (study.collab) {
 
                     // send studySessions
@@ -356,17 +357,31 @@ module.exports = class DocumentSocket extends Socket {
                     this.emit("study_sessionRefresh", studySessions);
 
                     // send annotations
-                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByKey('studySessionId', s.id)));
+                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
+                        {where: {'studySessionId': s.id, 'studyStepId': s.studyStepId },
+                        raw: true
+                    })
+                ));
                     this.emit("annotationRefresh", annotations.flat(1));
 
                     // send comments
-                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].getAllByKey('studySessionId', s.id)));
+                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
+                        {where: {'studySessionId': s.id, 'studyStepId': s.studyStepId },
+                        raw: true
+                    })
+                ));
                     this.emit("commentRefresh", comments.flat(1));
                 } else {
-                    const annotations = await this.models['annotation'].getAllByKey('studySessionId', data.studySessionId)
+                    const annotations = await this.models['annotation'].findAll(
+                        {where: {'studySessionId': data.id, 'studyStepId': data.studyStepId },
+                        raw: true
+                    });
                     this.emit("annotationRefresh", annotations);
 
-                    const comments = await this.models['comment'].getAllByKey('studySessionId', data.studySessionId)
+                    const comments = await this.models['comment'].findAll(
+                        {where: {'studySessionId': data.id, 'studyStepId': data.studyStepId },
+                        raw: true
+                    });
                     this.emit("commentRefresh", comments);
                 }
             } else {

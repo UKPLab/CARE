@@ -152,8 +152,6 @@ export default {
 
             study.closed = study.closed ? true : null;
 
-            // TODO: Calculate current open sessions and display the with limitSessions in this format: 2 | 100
-
             const workflow = this.$store.getters["table/workflow/get"](study.workflowId);
             study.workflowName = workflow ? workflow.name : "Unknown Workflow";
 

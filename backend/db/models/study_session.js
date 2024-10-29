@@ -64,7 +64,7 @@ module.exports = (sequelize, DataTypes) => {
                     const limitSessions = study.limitSessions;
                     const limitSessionsPerUser = study.limitSessionsPerUser;
 
-                    if (limitSessions !== null) {
+                    if (limitSessions !== null && limitSessions > 0) {
                         let totalexistingSessionCount = await StudySession.count({
                             where: {
                                 studyId: studySession.studyId
@@ -76,7 +76,7 @@ module.exports = (sequelize, DataTypes) => {
                         }
                     }
 
-                    if (limitSessionsPerUser !== null) {
+                    if (limitSessionsPerUser !== null && limitSessionsPerUser > 0) {
                         let existingSessionCountPerUser = await StudySession.count({
                             where: {
                                 studyId: studySession.studyId, userId: studySession.userId
