@@ -303,7 +303,7 @@ export default {
       const limitSessionsPerUser = this.$store.getters["table/study/get"](this.studyId).limitSessionsPerUser;
 
 
-      if(limitSessions !== null){
+      if(limitSessions !== null && limitSessions > 0){
         if (totalopenedSessions > limitSessions) {
           this.eventBus.emit('toast', {
             title: "Study cannot be started!",
@@ -314,7 +314,7 @@ export default {
         }
       }
 
-      if(limitSessionsPerUser !== null){
+      if(limitSessionsPerUser !== null && limitSessionsPerUser > 0){
         if (openedSessionsPerUser > limitSessionsPerUser) {
           this.eventBus.emit('toast', {
             title: "Study cannot be started!",
