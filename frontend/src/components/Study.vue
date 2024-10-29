@@ -18,7 +18,7 @@
     <div class="d-flex justify-content-between align-items-center w-100">
 
       <TopBarButton
-          v-if="currentWorkflowStep.allowBackward && currentStudyStep.studyStepPrevious !== null"
+          v-if="currentWorkflowStep && currentWorkflowStep.allowBackward && currentStudyStep && currentStudyStep.studyStepPrevious !== null"
           class="btn btn-outline-primary me-3"
           title="Previous"
           @click="updateStep(currentStudyStep.studyStepPrevious)"
@@ -27,7 +27,7 @@
       </TopBarButton>
 
       <TopBarButton
-          v-if="studySession.studyStepId === lastStep.id && currentWorkflowStep.stepType !== 3"
+          v-if="studySession && lastStep && currentWorkflowStep && currentWorkflowStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
           class="btn btn-outline-secondary mx-3"
           title="Finish Study"
           @click="finish"
@@ -36,7 +36,7 @@
       </TopBarButton>
 
       <TopBarButton
-          v-if="currentStudyStep.id !== lastStep.id"
+          v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
           class="btn btn-outline-primary ms-3"
           title="Next"
           @click="updateStep(nextStudyStep.id)"
@@ -60,7 +60,7 @@
       </TopBarButton>
     </div>
   </Teleport>
-  <div v-if="studySessionId !== 0">
+    <div v-if="studySessionId !== 0 && studySession.studyStepId">
     <div v-for="(s, index) in studySteps" :key="index">
       <div v-show="s.id === studySession.studyStepId">
         <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)"/>
@@ -157,37 +157,43 @@ export default {
       }
     },
     currentStudyStep() {
-      return this.$store.getters['table/study_step/get'](this.studySession.studyStepId);
+      const step = this.studySession && this.studySession.studyStepId
+            ? this.$store.getters['table/study_step/get'](this.studySession.studyStepId)
+            : null;
+        return step;
     },
     nextStudyStep(){
-      return this.$store.getters['table/study_step/getByKey']("studyStepPrevious",this.currentStudyStep.id);
+        const step = this.studySession && this.studySession.studyStepId
+            ? this.$store.getters['table/study_step/get'](this.studySession.studyStepId)
+            : null;
+        return step;
     },
     currentWorkflowStep() {
-      return this.$store.getters['table/workflow_step/get'](this.currentStudyStep.workflowStepId);
+      return this.currentStudyStep && this.currentStudyStep.workflowStepId
+            ? this.$store.getters['table/workflow_step/get'](this.currentStudyStep.workflowStepId)
+            : null
     },
     lastStep() {
       const previousStepIds = this.studySteps.map(step => step.studyStepPrevious);
       return this.studySteps.find(step => previousStepIds.includes(step.id));
     },
     workflowSteps() {
-      if (this.studySteps.length > 0) {
-        return this.studySteps.map(studyStep => this.$store.getters['table/workflow_step/get'](studyStep.workflowStepId));
-      } else {
-        return [];
-      }
+      const steps = this.studySteps.length > 0
+            ? this.studySteps.map(studyStep => this.$store.getters['table/workflow_step/get'](studyStep.workflowStepId))
+            : [];
+      return steps;
     },
     studyTrajectory() {
-      let studyTrajectory = [];
-      const studyStepIdMax = this.studySession.studyStepIdMax;
-      let studyStep = this.$store.getters['table/study_step/get'](studyStepIdMax);
-      studyTrajectory.push(studyStep.id);
-
-      while (studyStep.studyStepPrevious !== null) {
-        studyStep = this.$store.getters['table/study_step/get'](studyStep.studyStepPrevious);
-        studyTrajectory.push(studyStep.id);
-      }
-
-      return studyTrajectory;
+      if (!this.studySession || !this.studySession.studyStepIdMax) return [];
+        let studyTrajectory = [];
+        let studyStep = this.$store.getters['table/study_step/get'](this.studySession.studyStepIdMax);
+        while (studyStep) {
+            studyTrajectory.push(studyStep.id);
+            studyStep = studyStep.studyStepPrevious
+                ? this.$store.getters['table/study_step/get'](studyStep.studyStepPrevious)
+                : null;
+        }
+        return studyTrajectory;
     },
     studyId() {
       if (this.study) {
@@ -278,7 +284,6 @@ export default {
   mounted() {
     this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
     this.studySessionId = this.initStudySessionId;
-    console.log("studySessionId send from mounted:", this.studySessionId);
     if (this.studySessionId === 0) {
       this.$refs.studyModal.open();
     }
@@ -298,6 +303,7 @@ export default {
   methods: {
     start(data) {
       this.studySessionId = data.studySessionId;
+      this.documentId = this.currentStudyStep ? this.currentStudyStep.documentId : 0;
     },
 
     calcTimeLeft() {

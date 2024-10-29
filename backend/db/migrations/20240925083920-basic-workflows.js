@@ -21,7 +21,7 @@ const workflows = [
   }
 ];
 
-module.exports = {
+module.exports = { // TODO Code anpassen, workflowStepDocuments neue Werte - soll dann auch korrekt neu gesetzt werden
   async up(queryInterface, Sequelize) {
       // Insert workflows
       const workflowInsertions = await queryInterface.bulkInsert(
@@ -79,3 +79,4 @@ module.exports = {
       }, {});
   }
 };
+
