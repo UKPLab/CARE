@@ -49,97 +49,99 @@ module.exports = (sequelize, DataTypes) => {
         sequelize: sequelize,
         modelName: 'study_session',
         tableName: 'study_session',
-        hooks:{
+        hooks: { // abfragen, ob documentId null ist
             beforeCreate: async (studySession, options) => {
                 const transaction = options.transaction || await sequelize.transaction();
-            try {                 
-                    const study = await sequelize.models.study.findOne({ where:
-                        { id: studySession.studyId },
-                        }, {transaction});
+                console.log("beforeCreate hook started.");
+
+                try {
+                    const study = await sequelize.models.study.findOne({ 
+                        where: { id: studySession.studyId }
+                    }, { transaction });
 
                     if (!study) {
                         throw new Error('Study not found');
                     }
+
+                    // Retrieve the first step in the workflow
+                    const firstStep = await sequelize.models.study_step.findOne({
+                        where: { studyId: studySession.studyId },
+                        order: [['id', 'ASC']]
+                    }, { transaction });
+                    
+                    if (!firstStep) throw new Error('First step not found in the workflow');
+
+                    // Set initial values based on the first step
+                    studySession.studyStepId = firstStep.workflowStepId;
+                    studySession.numberSteps = 1;
+                    studySession.studyStepIdMax = firstStep.workflowStepId;
 
                     const limitSessions = study.limitSessions;
                     const limitSessionsPerUser = study.limitSessionsPerUser;
 
-                    if (limitSessions !== null && limitSessions > 0) {
-                        let totalexistingSessionCount = await StudySession.count({
-                            where: {
-                                studyId: studySession.studyId
-                            },
-                        }, {transaction});
+                    if (limitSessions > null) {
+                        const totalExistingSessionCount = await StudySession.count({
+                            where: { studyId: studySession.studyId }
+                        }, { transaction });
 
-                        if (totalexistingSessionCount > limitSessions) {
+                        if (totalExistingSessionCount >= limitSessions) {
                             throw new Error(`Cannot create more than ${limitSessions} sessions for this study.`);
                         }
                     }
 
-                    if (limitSessionsPerUser !== null && limitSessionsPerUser > 0) {
-                        let existingSessionCountPerUser = await StudySession.count({
-                            where: {
-                                studyId: studySession.studyId, userId: studySession.userId
-                            },
-                        }, {transaction});
+                    if (limitSessionsPerUser > null) {
+                        const existingSessionCountPerUser = await StudySession.count({
+                            where: { studyId: studySession.studyId, userId: studySession.userId }
+                        }, { transaction });
 
-                        if (existingSessionCountPerUser > limitSessionsPerUser) {
+                        if (existingSessionCountPerUser >= limitSessionsPerUser) {
                             throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
                         }
                     }
 
-                    if(study.close !== null || studySession.end !== null){    
-                        if(Date.now() > study.close || studySession.end > study.end){
-                            throw new Error('This study is closed');                        
-                        }              
+                    // Ensure study is open and not ended
+                    const now = Date.now();
+                    if (study.closed && now > study.closed || studySession.end && now > studySession.end) {
+                        throw new Error('This study is closed');
                     }
 
                     await transaction.commit();
                 } catch (error) {
-                        await transaction.rollback();
-                        console.error(error);
-                        throw new Error('Failed to create study session');
-                }        
+                    console.error("Error in beforeCreate hook:", error);
+                    await transaction.rollback();
+                    throw new Error('Failed to create study session');
+                }
             },
             beforeUpdate: async (studySession, options) => {
                 const transaction = options.transaction || await sequelize.transaction();
 
-                try {                   
-
+                try {
                     const study = await sequelize.models.study.findOne({
                         where: { id: studySession.studyId }
-                    },
-                    {transaction});
+                    }, { transaction });
 
-                    if (!study) {
-                        throw new Error('Study not found');
+                    if (!study) throw new Error('Study not found');
+
+                    // Update number of steps and studyStepIdMax
+                    studySession.numberSteps += 1;
+                    if (studySession.studyStepId > studySession.studyStepIdMax) { // workflow hier laden und schauen, ob es wirklich der nächste step ist - siehe code in Study.vue
+                        studySession.studyStepIdMax = studySession.studyStepId;
                     }
 
-                    if (studySession.end !== null && !study.multipleSubmit) {
-                        throw new Error('This study does not allow multiple submissions.');
-                    }
-
+                    // Check study open/close constraints
                     const now = Date.now();
-
-                    if (study.closed !== null || studySession.end !== null) { 
-                        if(now > study.closed || studySession.end > study.closed)
-                            throw new Error('Study is closed');
-                    }
-
-                    if (study.end !== null || studySession.end !== null) { 
-                        if(now > new Date(study.end) || studySession.end > study.end)
-                            throw new Error('Study has ended');
+                    if (study.closed && now > study.closed || studySession.end && now > studySession.end) {
+                        throw new Error('This study is closed');
                     }
 
                     await transaction.commit();
                 } catch (error) {
+                    console.error("Error in beforeUpdate hook:", error);
                     await transaction.rollback();
-                    console.error(error);
                     throw new Error('Cannot submit study session');
                 }
             },
         }
-            
     });
     return StudySession;
 };
