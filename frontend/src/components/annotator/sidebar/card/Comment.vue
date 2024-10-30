@@ -181,6 +181,11 @@ export default {
       required: false,
       default: null,
     },
+    studyStepId: {
+      type: String,
+      required: false,
+      default: null,
+    },
     readonly: {
       type: Boolean,
       required: false,

@@ -66,6 +66,9 @@ export default {
     studySessionId: {
       default: null // Allows for null if not in a study session
     },
+    studyStepId: {
+      default: null
+    },
     userId: {
       default: null
     },
