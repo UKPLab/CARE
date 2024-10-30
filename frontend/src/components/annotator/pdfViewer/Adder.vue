@@ -43,6 +43,11 @@ export default {
       required: false,
       default: null,
     },
+    studyStepID: {
+      type: String,
+      required: false,
+      default: null,
+    },
     pdf: {
       type: Object,
       required: true,

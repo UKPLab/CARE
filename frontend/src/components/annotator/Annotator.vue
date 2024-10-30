@@ -166,6 +166,9 @@ export default {
     studySessionId: {
       default: null
     },
+    studyStepId: {
+      default: null
+    },
     acceptStats: {
       default: () => false
     },
