@@ -252,7 +252,12 @@ export default {
       if (oldVal !== newVal) {
         this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
       }
-    }
+    },
+    studyStepId(newVal, oldVal) {
+      if (oldVal !== newVal) {
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+      }
+    },
   },
   mounted() {
     this.eventBus.on('pdfScroll', (anno_id) => {
@@ -383,7 +388,8 @@ export default {
     },
     load() {
       if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0)) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+        if (this.studyStepId === null || (this.studyStepId && this.studyStepId !== 0))
+            this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
       }
 
       // Join Room for document updates
