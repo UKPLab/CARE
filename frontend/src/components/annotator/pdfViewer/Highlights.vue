@@ -54,7 +54,7 @@ export default {
     studySessionIds() {
       if (this.study) {
         return this.$store.getters["table/study_session/getByKey"]("studyId", this.studySession.studyId)
-          .map(s => s.id);
+          .map(s => ({ "id": s.id, "studyStepId": s.studyStepId }));
       } else {
         return null;
       }
@@ -68,10 +68,11 @@ export default {
         && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageId
         && e.anchors !== null)
         .filter(anno => {
-          if (this.studySessionId) {
-            return anno.studySessionId === this.studySessionId;
+          if (this.studySessionId && this.studyStepId) {
+            return anno.studySessionId === this.studySessionId && anno.studyStepId === this.studyStepId;
           } else if (this.studySessionIds) {
-            return this.studySessionIds.includes(anno.studySessionId);
+            return this.studySessionIds.some(session =>
+                   session.id === anno.studySessionId && session.studyStepId === anno.studyStepId);
           } else {
             if (this.showAll) {
               return true;

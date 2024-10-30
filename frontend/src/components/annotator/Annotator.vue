@@ -244,8 +244,8 @@ export default {
       return this.$store.getters["settings/getValue"]('service.nlp.enabled') === "true";
     },
     numStudyComments() {
-      return this.comments.filter(c => c.studySessionId).length;
-    },
+      return this.comments.filter(c => c.studySessionId === this.studySessionId && c.studyStepId === this.studyStepId).length;
+    }
   },
   watch: {
     studySessionId(newVal, oldVal) {
