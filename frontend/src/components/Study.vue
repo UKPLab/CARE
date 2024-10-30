@@ -98,6 +98,7 @@ export default {
     return {
       documentId: computed(() => this.documentId),
       studySessionId: computed(() => this.studySessionId),
+      studyStepId: computed(() => this.studyStepId),
       readonly: this.readonly,
     };
   },
@@ -124,10 +125,7 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       documentId: 0,
-      documentType: null,
-      currentStep: 0, //dummy code for allowNavigation
-      maxSteps: 2, //dummy code for allowNavigation
-      allowBackward: false
+      studyStepId: 0,
     };
   },
   computed: {
@@ -262,9 +260,6 @@ export default {
       }
       return Math.round(this.timeLeft / 60) + "min";
     },
-    allowBackward() {
-      //in study step; to find the study steps related use workflowId and then in each of the studyStep Id the allowBackward is set
-    }
   },
   watch: {
     studySession(newVal) {
@@ -303,6 +298,7 @@ export default {
   methods: {
     start(data) {
       this.studySessionId = data.studySessionId;
+      this.studyStepId = this.currentStudyStep ? this.currentStudyStep.id : 0;
       this.documentId = this.currentStudyStep ? this.currentStudyStep.documentId : 0;
     },
 
