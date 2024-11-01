@@ -1,7 +1,5 @@
 const Socket = require("../Socket.js");
 const { v4: uuidv4 } = require("uuid");
-const { genSalt, genPwdHash } = require("../../utils/auth.js");
-const { generateMarvelUsername } = require("../../utils/generator.js");
 
 /**
  * Handle user through websocket
@@ -10,6 +8,18 @@ const { generateMarvelUsername } = require("../../utils/generator.js");
  * @type {AssignmentSocket}
  */
 module.exports = class AssignmentSocket extends Socket {
+  /**
+   * Retrieves assignment information for users and emits the data through a socket.
+   * 
+   * This function fetches data from multiple models including documents, user-role matching, users, and user roles.
+   * It then processes this data to create a comprehensive list of user information, including their documents,
+   * number of assignments, and role names. The resulting data is emitted through a socket event.
+   * 
+   * @async
+   * @function getAssignmentInfosFromUser
+   * @returns {Promise<void>} Emits the user information through a socket event.
+   * @throws Will emit an error message through the socket if any error occurs during data retrieval or processing.
+   */
   async getAssignmentInfosFromUser() {
     try {
       const [documentUserIds, matchedUsers, users, roleIdMap] = await Promise.all([
@@ -61,21 +71,25 @@ module.exports = class AssignmentSocket extends Socket {
   }
 
 
+  /**
+   * Assigns peer reviews to assignments based on the specified number of reviewers per role.
+   *
+   * @param {Array<Object>} assignments - The list of assignments to be reviewed. Each assignment should have a `userId` and `documentName`.
+   * @param {Array<Object>} reviewers - The list of reviewers available for assignments. Each reviewer should have an `id` and `role`.
+   * @param {Object} reviewsPerRole - An object specifying the number of reviewers needed per role. Keys are role names and values are the number of reviewers.
+   * @param {Object} template - A template object containing properties for creating study sessions.
+   *
+   * @returns {Array<Object>} - The list of assignments with their assigned reviewers grouped by role.
+   */
   async assignPeerReviews(assignments, reviewers, reviewsPerRole, template) {
-    console.log(template)
-    // Helper function to shuffle an array
     const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
-  
-    // Track the assignments that reviewers have been assigned
     const assignmentTracker = new Map();
   
-    // Initialize the assignment tracker for each assignment, using a combination of userId and documentName
     assignments.forEach((assignment) => {
       const uniqueAssignmentKey = `${assignment.userId}_${assignment.documentName}`;
       assignmentTracker.set(uniqueAssignmentKey, new Map(Object.keys(reviewsPerRole).map(role => [role, []])));
     });
   
-    // Create a map of reviewers by their role
     const reviewersByRole = reviewers.reduce((acc, reviewer) => {
       const role = reviewer.role;
       if (!acc[role]) acc[role] = [];
@@ -83,46 +97,32 @@ module.exports = class AssignmentSocket extends Socket {
       return acc;
     }, {});
   
-    // Assign reviewers to assignments based on reviewsPerRole
     assignments.forEach((assignment) => {
       const uniqueAssignmentKey = `${assignment.userId}_${assignment.documentName}`;
       for (const [role, numReviewersStr] of Object.entries(reviewsPerRole)) {
-        const numReviewersNeeded = parseInt(numReviewersStr, 10); // Convert string to number
+        const numReviewersNeeded = parseInt(numReviewersStr, 10); 
   
-        // Skip roles that have 0 reviewers specified in reviewsPerRole
         if (numReviewersNeeded === 0) continue;
   
-        // If the role isn't present in reviewersByRole, continue to the next role
         const availableReviewers = reviewersByRole[role] || [];
-  
-        // Shuffle reviewers to randomize the assignments
         const shuffledReviewers = shuffleArray(availableReviewers);
-  
-        // Track the assigned reviewers for the current role
         let assignedReviewersCount = assignmentTracker.get(uniqueAssignmentKey).get(role).length;
   
         for (const reviewer of shuffledReviewers) {
-          // Ensure that a reviewer is not assigned to review their own assignment
           if (assignment.userId !== reviewer.id && !assignmentTracker.get(uniqueAssignmentKey).get(role).includes(reviewer.id)) {
-            // Add the reviewer to the assignment under the correct role if not exceeding the limit
             if (assignedReviewersCount < numReviewersNeeded) {
               assignmentTracker.get(uniqueAssignmentKey).get(role).push(reviewer.id);
               assignedReviewersCount++;
             }
           }
-  
-          // Stop assigning if we have enough reviewers for this role
           if (assignedReviewersCount >= numReviewersNeeded) break;
         }
       }
     });
-  
-    // Return assignments with their assigned reviewers grouped by role
     const result = assignments.map((assignment) => {
       const uniqueAssignmentKey = `${assignment.userId}_${assignment.documentName}`;
       const assignedReviewers = {};
       
-      // Flatten the role-reviewer map for easier use
       for (const [role, reviewers] of assignmentTracker.get(uniqueAssignmentKey)) {
         assignedReviewers[role] = reviewers;
       }
@@ -132,8 +132,6 @@ module.exports = class AssignmentSocket extends Socket {
         assignedReviewers,
       };
     });
-
-    console.log(result.documents)
 
     result.forEach((assignment) => {
       const study = this.models["study"].add({
@@ -149,6 +147,7 @@ module.exports = class AssignmentSocket extends Socket {
         multipleSubmit: template.multipleSubmit,
         limitSessions: assignment.assignedReviewers.length,
         limitSessionsPerUser: 1,
+        stepDocuments: [{documentId: assignment.documents[0].id}],
       }, {context: {data: assignment.documents[0].id}});
 
       assignment.assignedReviewers.forEach((reviewer) => {
@@ -158,16 +157,65 @@ module.exports = class AssignmentSocket extends Socket {
     })
   })
 })
+    return result;
 
-    console.log(result)
+  }
+
+  /**
+   * Assigns a peer review task to a list of reviewers based on a given template.
+   *
+   * @param {Object} assignment - The assignment object containing details of the assignment.
+   * @param {Array} reviewers - An array of reviewer IDs who will be assigned to the peer review.
+   * @param {Object} template - The template object containing the configuration for the peer review.
+   *
+   * @returns {Promise<Object>} The result of the peer review assignment.
+   */
+  async assignPeerReview(assignment, reviewers, template) {
+    const study = this.models["study"].add({
+      userId: assignment.id,
+      template: false,
+      collab: template.collab,
+      description: template.description,
+      resumable: template.resumable,
+      timeLimit: template.timeLimit,
+      start: template.start,
+      end: template.end,
+      workflowId: template.workflowId,
+      multipleSubmit: template.multipleSubmit,
+      limitSessions: reviewers.length,
+      limitSessionsPerUser: 1,
+      stepDocuments: [{documentId: assignment.documents[0].id}],
+    });
+
+      reviewers.forEach((reviewer) => {
+        this.models["study_session"].add({
+          studyId: study.id,
+          userId: reviewer,
+    })
+  })
+    return result;
+
+  }
+
+  /**
+   * Adds new reviewers to an assignment.
+   *
+   * @param {Object} study - The study object containing the study details.
+   * @param {Array} newReviewers - An array of reviewer IDs to be added to the study session.
+   * @returns {Promise} - A promise that resolves when the reviewers have been added.
+   */
+  async addReviewer(study, newReviewers) {
+    let result =[];
+    newReviewers.forEach((reviewer) => {
+      result.push(this.models["study_session"].add({
+        studyId: study,
+        userId: reviewer,
+    }))
+  })
     return result;
 
   }
   
-  
-  
-
-
   init() {
 
     this.socket.on("assignmentGetAssignmentInfosFromUser", async () => {
@@ -175,32 +223,58 @@ module.exports = class AssignmentSocket extends Socket {
         console.log("assignmentGetAssignmentInfosFromUser")
         this.getAssignmentInfosFromUser();
       } catch (error) {
-        const errorMsg = "User rights and request parameter mismatch";
-        this.logger.error(errorMsg);
+        this.logger.error(error);
       }
     });
 
-    this.socket.on("assignPeerReviews", async (data, callback) => {
+    this.socket.on("assignmentPeerReviews", async (data, callback) => {
       try {
-        console.log(data)
-        const assignments = await this.assignPeerReviews(data.assignments, data.reviewers, data.reviewsPerRole, data.template);
-        callback({
-          success: true,
-          assignments: assignments,
-        });
+        const reviews = await this.assignPeerReviews(data.assignments, data.reviewers, data.reviewsPerRole, data.template);
         this.socket.emit("peerReview", {
           success: true,
-          users,
+          reviews,
         });
       } catch (error) {
-        const errorMsg = "User rights and request parameter mismatch";
-        this.socket.emit("userByRole", {
+        this.socket.emit("peerReview", {
           success: false,
-          message: errorMsg,
+          message: error.message,
         });
-        this.logger.error(errorMsg + error);
+        this.logger.error(error);
       }
     });
+
+    this.socket.on("assignmentPeerReview", async (data) => {
+      try {
+        const review = await this.assignPeerReview(data.assignment, data.reviewers, data.template);
+        this.socket.emit("peerReview", {
+          success: true,
+          review,
+        });
+      } catch (error) {
+        this.socket.emit("peerReview", {
+          success: false,
+          message: error.message,
+        });
+        this.logger.error(error);
+      }
+    });
+
+    this.socket.on("assignmentAddReviewer", async (data) => {
+      try {
+        const assignment = await this.addReviewer(data.studyId, data.newReviewers);
+        this.socket.emit("peerReview", {
+          success: true,
+          assignment,
+        });
+      } catch (error) {
+        this.socket.emit("peerReview", {
+          success: false,
+          message: error.message,
+        });
+        this.logger.error(error);
+      }
+    });
+
 
   }
 };

@@ -102,6 +102,7 @@
           title="Create Assignments"
           class="btn btn-primary"
           @click="createAssignments()"
+          :disabled="isDisabledAssignments"
         />
       </div>
       </template>
@@ -148,9 +149,15 @@
         if (this.currentStep === 1) {
           return !this.selectedReviewers.length > 0
         }
+        if (this.currentStep === 2) {
+          return !Object.values(this.sliderValues).some(value => value > 0);
+        }
           
           
         return false;
+      },
+      isDisabledAssignments() {
+        return this.selectedTemplate === '';
       },
       columnsStepOne() { 
         const uniqueRoles = [...new Set(this.users.map((user) => user.role).filter((role) => role != null))];
@@ -345,9 +352,10 @@
     });
         data.reviewsPerRole = dictionary
         console.log(data)
-        this.$socket.emit("assignPeerReviews", data, (response) => {
+        this.$socket.emit("assignmentPeerReviews", data, (response) => {
             console.log(response)
         }) 
+        this.$refs.modal.close();
       }
       },
       

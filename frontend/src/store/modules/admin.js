@@ -76,6 +76,12 @@ export default {
     getUserRight: (state) => {
       return state["userRight"];
     },
+
+    /**
+     * Fetch all user's with their assignment information and roles
+     * @param {Object} state 
+     * @returns {Array}
+     */
     getAssignmentUserInfos: (state) => {
       return state["assignmentUserInfos"];
     }
