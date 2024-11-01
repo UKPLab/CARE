@@ -234,7 +234,7 @@ export default {
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "sidebarScroll",
-          data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}
+          data: {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId, anno_id: anno_id}
         });
       }
     })
@@ -284,6 +284,7 @@ export default {
       this.$socket.emit('commentUpdate', {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
         annotationId: null,
         commentId: null
       });

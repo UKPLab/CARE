@@ -250,12 +250,12 @@ export default {
   watch: {
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId , studyStepId: this.studyStepId});
       }
     },
     studyStepId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId , studyStepId: this.studyStepId});
       }
     },
   },
@@ -265,7 +265,7 @@ export default {
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "pdfScroll",
-          data: {documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
+          data: {documentId: this.documentId, study_session_id: this.studySessionId, studyStepID: this.studyStepId, anno_id: anno_id}
         });
       }
     });
@@ -387,9 +387,8 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0)) {
-        if (this.studyStepId === null || (this.studyStepId && this.studyStepId !== 0))
-            this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+      if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0 && this.studyStepId !== 0)) {
+            this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
       }
 
       // Join Room for document updates
@@ -420,6 +419,7 @@ export default {
             data: {
               documentId: this.documentId,
               studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               copiedText: copiedText,
             }
           });

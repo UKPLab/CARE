@@ -136,7 +136,8 @@ export default {
             documentId: this.documentId,
             readonly: this.readonly,
             visibility: page,
-            studySessionId: this.studySessionId
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
           }
         })
       }

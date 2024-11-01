@@ -378,6 +378,7 @@ export default {
         "documentId": this.documentId,
         "parentCommentId": this.commentId,
         "studySessionId": this.studySessionId,
+        "studyStepId": this.studyStepId,
       });
     },
     saveCard() {
@@ -404,6 +405,7 @@ export default {
           data: {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
             pastedText: pastedText
           }
         })
