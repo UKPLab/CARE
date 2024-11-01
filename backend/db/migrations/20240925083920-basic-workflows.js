@@ -21,7 +21,7 @@ const workflows = [
   }
 ];
 
-module.exports = { // TODO Code anpassen, workflowStepDocuments neue Werte - soll dann auch korrekt neu gesetzt werden
+module.exports = { 
   async up(queryInterface, Sequelize) {
       // Insert workflows
       const workflowInsertions = await queryInterface.bulkInsert(
@@ -35,7 +35,7 @@ module.exports = { // TODO Code anpassen, workflowStepDocuments neue Werte - sol
           { returning: true }
       );
 
-      let workflowMap = {};
+      const workflowMap = {};
       workflowInsertions.forEach((w, index) => {
           workflowMap[workflows[index].name] = w.id;
       });
@@ -68,14 +68,16 @@ module.exports = { // TODO Code anpassen, workflowStepDocuments neue Werte - sol
   },
 
   async down(queryInterface, Sequelize) {
+      const workflowNames = workflows.map(w => w.name);
+
       await queryInterface.bulkDelete('workflow_step', {
           workflowId: {
-              [Sequelize.Op.in]: workflows.map(w => workflowMap[w.name])
+              [Sequelize.Op.in]: workflowNames.map(name => workflowMap[name])
           }
       }, {});
 
       await queryInterface.bulkDelete('workflow', {
-          name: workflows.map(w => w.name)
+          name: workflowNames
       }, {});
   }
 };

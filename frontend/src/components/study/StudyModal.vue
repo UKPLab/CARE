@@ -237,8 +237,8 @@ export default {
       return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId).length;
     },
     numberOfOpenedSessionsPerUser() {
-      return this.$store.getters["table/study_session/getByKey"]("userId", this.userId)
-      .filter(s => s.studyID === this.studyID).length;
+      return this.$store.getters["table/study_session/getByKey"]("userId", this.study.userId)
+      .filter(s => s.studyId === this.studyId).length;
     },
     started() {
       if (this.study && this.study.start !== null) {

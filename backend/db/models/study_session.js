@@ -1,5 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const { v4: uuidv4 } = require('uuid');
 
 module.exports = (sequelize, DataTypes) => {
     class StudySession extends MetaModel {
@@ -49,10 +50,9 @@ module.exports = (sequelize, DataTypes) => {
         sequelize: sequelize,
         modelName: 'study_session',
         tableName: 'study_session',
-        hooks: { // abfragen, ob documentId null ist
+        hooks: { 
             beforeCreate: async (studySession, options) => {
                 const transaction = options.transaction || await sequelize.transaction();
-                console.log("beforeCreate hook started.");
 
                 try {
                     const study = await sequelize.models.study.findOne({ 
@@ -63,18 +63,37 @@ module.exports = (sequelize, DataTypes) => {
                         throw new Error('Study not found');
                     }
 
-                    // Retrieve the first step in the workflow
                     const firstStep = await sequelize.models.study_step.findOne({
-                        where: { studyId: studySession.studyId },
+                        where: { 
+                            studyId: studySession.studyId,
+                            studyStepPrevious: null 
+                        },
                         order: [['id', 'ASC']]
                     }, { transaction });
-                    
                     if (!firstStep) throw new Error('First step not found in the workflow');
-
-                    // Set initial values based on the first step
-                    studySession.studyStepId = firstStep.workflowStepId;
+     
+                    studySession.studyStepId = firstStep.id;
                     studySession.numberSteps = 1;
-                    studySession.studyStepIdMax = firstStep.workflowStepId;
+                    studySession.studyStepIdMax = firstStep.id
+
+                    let documentId = firstStep.documentId;
+
+                    if (!documentId) {
+                        const newDocument = await sequelize.models.document.create({
+                            name: `Document for study ${studySession.studyId}, step ${studySession.studyStepId}`,
+                            type: 1, 
+                            hash: uuidv4(), 
+                            userId: study.userId,
+                            content: "<html><body></body></html>"
+                        }, { transaction });
+
+                        documentId = newDocument.id;
+
+                        await sequelize.models.study_step.update(
+                            { documentId },
+                            { where: { id: firstStep.id }, transaction }
+                        );
+                    }
 
                     const limitSessions = study.limitSessions;
                     const limitSessionsPerUser = study.limitSessionsPerUser;
@@ -98,7 +117,7 @@ module.exports = (sequelize, DataTypes) => {
                             throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
                         }
                     }
-
+                        
                     // Ensure study is open and not ended
                     const now = Date.now();
                     if (study.closed && now > study.closed || studySession.end && now > studySession.end) {
@@ -122,9 +141,19 @@ module.exports = (sequelize, DataTypes) => {
 
                     if (!study) throw new Error('Study not found');
 
-                    // Update number of steps and studyStepIdMax
                     studySession.numberSteps += 1;
-                    if (studySession.studyStepId > studySession.studyStepIdMax) { // workflow hier laden und schauen, ob es wirklich der nächste step ist - siehe code in Study.vue
+
+                    const workflowSteps = await sequelize.models.study_step.findAll({
+                        where: { studyId: studySession.studyId },
+                        order: [['workflowStepId', 'ASC']]
+                    }, { transaction });
+            
+                    const currentMaxStepIndex = workflowSteps.findIndex(step => step.id === studySession.studyStepIdMax);
+            
+                    const isNextStepValid = workflowSteps[currentMaxStepIndex + 1] && 
+                                            workflowSteps[currentMaxStepIndex + 1].id === studySession.studyStepId;
+            
+                    if (isNextStepValid) {
                         studySession.studyStepIdMax = studySession.studyStepId;
                     }
 
