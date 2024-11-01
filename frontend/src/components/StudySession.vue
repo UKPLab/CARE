@@ -6,7 +6,7 @@
   <Study
     v-else
     :init-study-session-id="studySessionId"
-    :readonly="readonly"
+    :readonly="readonly || readOnlySwitch"
     :study-hash="studySessionHash"
   />
 </template>
@@ -59,10 +59,13 @@ export default {
       } else
         return 0;
     },
+    readOnlySwitch() {
+      return this.$route.meta.readonly !== undefined && this.$route.meta.readonly          
+    },
   },
   watch: {
     studySession(newVal) {
-      if (newVal && newVal.end) {
+      if (newVal && (newVal.end || newVal.close)) {
         this.readonly = true;
       }
     },

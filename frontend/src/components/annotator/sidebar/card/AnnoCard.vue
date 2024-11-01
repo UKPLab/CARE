@@ -402,6 +402,7 @@ export default {
         "documentId": this.documentId,
         "parentCommentId": this.commentId,
         "studySessionId": this.studySessionId,
+        "studyStepId": this.studyStepId,
         "text": "Summarization: " + data[0]['summary_text'],
         "userId": "Bot"
       });

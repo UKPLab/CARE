@@ -43,7 +43,7 @@ export default {
       required: false,
       default: null,
     },
-    studyStepID: {
+    studyStepId: {
       type: String,
       required: false,
       default: null,
@@ -113,6 +113,7 @@ export default {
       this.$socket.emit('annotationUpdate', {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
         selectors: {target},
         tagId: tag.id
       });
@@ -164,6 +165,7 @@ export default {
           data: {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
             eventClientX: event.clientX, eventClientY: event.clientY
           }
         });
