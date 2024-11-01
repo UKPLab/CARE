@@ -1,5 +1,4 @@
 <template>
-  <ConsentModal ref="consentModal" />
   <Loader
     v-if="documentId && documentId === 0"
     :loading="true"
@@ -55,7 +54,6 @@ import LoadIcon from "@/basic/Icon.vue";
 import { dbToDelta, deltaToDb } from "editor-delta-conversion";
 import { Editor } from './editorStore.js';
 import { downloadDocument } from "@/assets/utils.js";
-import ConsentModal from "@/auth/ConsentModal.vue";
 
 const Delta = Quill.import('delta');
 
@@ -64,7 +62,6 @@ export default {
   fetch_data: ["document_edit"],
   components: {
     LoadIcon,
-    ConsentModal
   },
   inject: {
     documentId: {
@@ -73,9 +70,9 @@ export default {
     studySessionId: {
       default: null
     },
-    /*userId: {
+    userId: {
       default: null
-    } */
+    } 
   },
   data() {
     return {
@@ -93,7 +90,6 @@ export default {
     
   },
   mounted() {
-    this.$refs.consentModal.open();
       const editorContainer = document.getElementById('editor-container');
 
       if (editorContainer) {
