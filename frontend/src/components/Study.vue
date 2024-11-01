@@ -160,11 +160,12 @@ export default {
             : null;
         return step;
     },
-    nextStudyStep(){
-        const step = this.studySession && this.studySession.studyStepId
-            ? this.$store.getters['table/study_step/get'](this.studySession.studyStepId)
-            : null;
-        return step;
+    nextStudyStep() {
+      if (this.currentStudyStep) {
+        // Find the next step by looking for a step where `studyStepPrevious` matches `currentStudyStep.id`
+        const nextStep = this.studySteps.find(step => step.studyStepPrevious === this.currentStudyStep.id);
+        return nextStep;
+      }
     },
     currentWorkflowStep() {
       return this.currentStudyStep && this.currentStudyStep.workflowStepId
@@ -172,8 +173,11 @@ export default {
             : null
     },
     lastStep() {
-      const previousStepIds = this.studySteps.map(step => step.studyStepPrevious);
-      return this.studySteps.find(step => previousStepIds.includes(step.id));
+      const previousStepIds = this.studySteps
+            .map(step => step.studyStepPrevious)
+            .filter(id => id !== null); // Excluding null to avoid the first step
+        const lastStep = this.studySteps.find(step => !previousStepIds.includes(step.id));
+        return lastStep;
     },
     workflowSteps() {
       const steps = this.studySteps.length > 0
@@ -280,6 +284,7 @@ export default {
     this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
     this.studySessionId = this.initStudySessionId;
     if (this.studySessionId === 0) {
+      console.log("StudyRoute studyId before rendering StudyModal:", this.studyId);
       this.$refs.studyModal.open();
     }
   },
@@ -298,10 +303,13 @@ export default {
   methods: {
     start(data) {
       this.studySessionId = data.studySessionId;
-      this.studyStepId = this.currentStudyStep ? this.currentStudyStep.id : 0;
-      this.documentId = this.currentStudyStep ? this.currentStudyStep.documentId : 0;
+      if (this.currentStudyStep) {
+        this.studyStepId = this.currentStudyStep.id;
+        this.documentId = this.currentStudyStep.documentId;  // Should not be null here
+      } else {
+        console.error("currentStudyStep is null, cannot set documentId");
+      }
     },
-
     calcTimeLeft() {
       const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
       this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;

@@ -157,22 +157,15 @@ module.exports = class DocumentSocket extends Socket {
 
             if (this.checkDocumentAccess(doc.id)) {
                 const documentType = doc.type;
+
                 if (documentType === this.models['document'].docTypes.DOC_TYPE_HTML) {
-                    //TODO: if ssid not null, get new copy of hash 
-                    let deltaFilePath;
-                    if(studySessionId === null){
-                        deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
-                    }else{
-                        const studyId = await this.models['study_session'].getById(studySessionId)['studyId'];
-                        const studyHash = await this.models['study'].getById(studyId)['hash'];
-                        
-                        deltaFilePath = `${UPLOAD_PATH}/${doc.hash}`+ '_' + `${studyHash}.delta.json`;
-                    }
+                    let deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
 
                     if (fs.existsSync(deltaFilePath)) {
                         let delta = await this.loadDocument(deltaFilePath);
                         
-                        // TODO: check db if draft exists, and merge it.. filtered by ssid
+                        // TODO: check db if draft exists, and merge it.. filtered by ssid 
+                        // Is that TODO still necessary? @Manu, @Dennis
                         const edits = await this.models['document_edit'].findAll({
                             where: {documentId: documentId, studySessionId: studySessionId, draft: true}
                         });
@@ -713,8 +706,9 @@ module.exports = class DocumentSocket extends Socket {
         });
 
         this.socket.on("documentGetData", async (data) => {
+            console.log("Data in documentGet:",data); // Retrieves: Data in documentGet: { documentId: 1, studySessionId: 13 }
             try {
-                await this.getData(data);
+                await this.getData(data); // TODO No clue why info: Error loading document data: Error: WHERE parameter "studySessionId" has invalid "undefined" value {"timestamp":"2024-11-01T09:35:59.893Z","userId":1}
             } catch (e) {
                 this.logger.info("Error loading document data: " + e);
                 this.sendToast("Internal server error. Error loading document data.", "Internal server error", "danger");
