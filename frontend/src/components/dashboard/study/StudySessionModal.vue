@@ -121,19 +121,22 @@ export default {
               title: "Copy session link",
               action: "copyStudySessionLink",
             },
-            {
+            
+          ];
+          if (this.$store.getters["auth/getUserId"] === this.study.createdByUserId) {
+            session.manage.push({
               icon: "trash",
               options: {
                 iconOnly: true,
                 specifiers: {
-                  "btn-outline-secondary": true,
+                  "btn-outline-danger": true,
                   "btn-sm": true,
                 }
               },
-              title: "Delete Study Session",
+              title: "Delete session",
               action: "deleteStudySession",
-            },
-          ];
+            });
+          }
 
           return session;
         });
