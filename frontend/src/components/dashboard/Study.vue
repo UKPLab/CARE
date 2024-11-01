@@ -231,7 +231,7 @@ export default {
                     "btn-outline-secondary": true,
                   }
                 },
-                title: "Edit reviweres",
+                title: "Edit reviewers",
                 action: "editReviewers",
               },
             ];

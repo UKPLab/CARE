@@ -175,7 +175,6 @@ module.exports = (sequelize, DataTypes) => {
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
-        createdByUserId: DataTypes.INTEGER
     }, {
         sequelize: sequelize,
         modelName: 'study',

@@ -238,13 +238,7 @@ module.exports = class UserSocket extends Socket {
 
 
 
-  async getAllUsersWithRoleAndNumberOfAssignments() {
-    try {
-      return await this.models["user"].getAllUsersWithRoleAndNumberOfAssignments()
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
+  
 
 
 
@@ -476,22 +470,6 @@ module.exports = class UserSocket extends Socket {
         this.logger.error(errorMsg);
       }
     });
-
-
-
-    this.socket.on("userGetWithRoleAndNumberOfAssignments", async (callback) => {
-      try {
-        const users = await this.getAllUsersWithRoleAndNumberOfAssignments();
-        callback({
-          success: true,
-          users: users,
-        });
-      } catch (error) {
-        this.logger.error(errorMsg);
-      }
-    });
-
-
 
     // Get specific user's details
     this.socket.on("userGetDetails", async (userId) => {
