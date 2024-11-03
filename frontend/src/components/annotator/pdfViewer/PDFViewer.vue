@@ -113,7 +113,7 @@ export default {
   },
   mounted() {
     // TODO: add ssid
-    this.$socket.emit("documentGet", {documentId: this.documentId, studySessionId: this.studySessionId});
+    this.$socket.emit("documentGet", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
   },
   unmounted() {
     this.pdf = null;

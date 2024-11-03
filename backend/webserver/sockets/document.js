@@ -12,7 +12,7 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * Loading the document through websocket
  *
- * @author Dennis Zyska, Juliane Bechert
+ * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal
  * @type {DocumentSocket}
  */
 module.exports = class DocumentSocket extends Socket {
@@ -151,7 +151,7 @@ module.exports = class DocumentSocket extends Socket {
      * @param {number} documentId
      * @returns {Promise<Delta|void>}
      */
-    async sendDocument(documentId, studySessionId) {
+    async sendDocument(documentId, studySessionId, studyStepId) {
         try {
             const doc = await this.models['document'].getById(documentId);
 
@@ -163,20 +163,17 @@ module.exports = class DocumentSocket extends Socket {
 
                     if (fs.existsSync(deltaFilePath)) {
                         let delta = await this.loadDocument(deltaFilePath);
-                        
-                        // TODO: check db if draft exists, and merge it.. filtered by ssid 
-                        // Is that TODO still necessary? @Manu, @Dennis
                         const edits = await this.models['document_edit'].findAll({
-                            where: {documentId: documentId, studySessionId: studySessionId, draft: true}
+                            where: {documentId: documentId, studySessionId: studySessionId, studyStepId: studyStepId, draft: true}
                         });
 
                         let dbDelta = dbToDelta(edits);
                         delta = delta.compose(dbDelta);
                         
 
-                        this.socket.emit("documentFile", {document: doc, deltas: delta, documentType });
+                        this.socket.emit("documentFile", {document: doc, deltas: delta });
                     } else {
-                        this.socket.emit("documentFile", {document: doc, deltas: new Delta(), documentType });
+                        this.socket.emit("documentFile", {document: doc, deltas: new Delta() });
                     }
                 } else { // Non-HTML document type, send file
                     const filePath = `${UPLOAD_PATH}/${doc.hash}.pdf`;
@@ -185,7 +182,7 @@ module.exports = class DocumentSocket extends Socket {
                             if (err) {
                                 throw new Error("Failed to read PDF");
                             }
-                            this.socket.emit("documentFile", {document: doc, file: data, documentType });
+                            this.socket.emit("documentFile", {document: doc, file: data});
                         });
                     } else {
                         throw new Error("PDF file not found");
@@ -641,7 +638,7 @@ module.exports = class DocumentSocket extends Socket {
         this.socket.on("documentGet", async (data) => {
             try {
                 
-                await this.sendDocument(data.documentId, data.studySessionId);
+                await this.sendDocument(data.documentId, data.studySessionId, data.studyStepId);
                 //TODO : if null - ssid 
                 if(data.studySessionId === null){               
                     await this.openDocument(data.documentId);
