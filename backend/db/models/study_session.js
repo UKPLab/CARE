@@ -55,12 +55,41 @@ module.exports = (sequelize, DataTypes) => {
                 const transaction = options.transaction || await sequelize.transaction();
 
                 try {
+                    
+                    const limitSessions = study.limitSessions;
+                    const limitSessionsPerUser = study.limitSessionsPerUser;
+
+                    if (limitSessions > null) {
+                        const totalExistingSessionCount = await StudySession.count({
+                            where: { studyId: studySession.studyId }
+                        }, { transaction });
+
+                        if (totalExistingSessionCount >= limitSessions) {
+                            throw new Error(`Cannot create more than ${limitSessions} sessions for this study.`);
+                        }
+                    }
+
+                    if (limitSessionsPerUser > null) {
+                        const existingSessionCountPerUser = await StudySession.count({
+                            where: { studyId: studySession.studyId, userId: studySession.userId }
+                        }, { transaction });
+
+                        if (existingSessionCountPerUser >= limitSessionsPerUser) {
+                            throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
+                        }
+                    }
+                                            
                     const study = await sequelize.models.study.findOne({ 
                         where: { id: studySession.studyId }
                     }, { transaction });
 
                     if (!study) {
                         throw new Error('Study not found');
+                    }
+                    
+                    const now = Date.now();
+                    if (study.closed && now > study.closed || studySession.end && now > studySession.end) {
+                        throw new Error('This study is closed');
                     }
 
                     const firstStep = await sequelize.models.study_step.findOne({
@@ -95,35 +124,6 @@ module.exports = (sequelize, DataTypes) => {
                         );
                     }
 
-                    const limitSessions = study.limitSessions;
-                    const limitSessionsPerUser = study.limitSessionsPerUser;
-
-                    if (limitSessions > null) {
-                        const totalExistingSessionCount = await StudySession.count({
-                            where: { studyId: studySession.studyId }
-                        }, { transaction });
-
-                        if (totalExistingSessionCount >= limitSessions) {
-                            throw new Error(`Cannot create more than ${limitSessions} sessions for this study.`);
-                        }
-                    }
-
-                    if (limitSessionsPerUser > null) {
-                        const existingSessionCountPerUser = await StudySession.count({
-                            where: { studyId: studySession.studyId, userId: studySession.userId }
-                        }, { transaction });
-
-                        if (existingSessionCountPerUser >= limitSessionsPerUser) {
-                            throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
-                        }
-                    }
-                        
-                    // Ensure study is open and not ended
-                    const now = Date.now();
-                    if (study.closed && now > study.closed || studySession.end && now > studySession.end) {
-                        throw new Error('This study is closed');
-                    }
-
                     await transaction.commit();
                 } catch (error) {
                     console.error("Error in beforeCreate hook:", error);
@@ -140,27 +140,26 @@ module.exports = (sequelize, DataTypes) => {
                     }, { transaction });
 
                     if (!study) throw new Error('Study not found');
+                    
+                    const now = Date.now();
+                    if (study.closed && now > study.closed || studySession.end && now > studySession.end) {
+                        throw new Error('This study is closed');
+                    }
 
                     studySession.numberSteps += 1;
 
-                    const workflowSteps = await sequelize.models.study_step.findAll({
+                    const studySteps = await sequelize.models.study_step.findAll({
                         where: { studyId: studySession.studyId },
                         order: [['workflowStepId', 'ASC']]
                     }, { transaction });
             
-                    const currentMaxStepIndex = workflowSteps.findIndex(step => step.id === studySession.studyStepIdMax);
+                    const currentMaxStepIndex = studySteps.findIndex(step => step.id === studySession.studyStepIdMax);
             
-                    const isNextStepValid = workflowSteps[currentMaxStepIndex + 1] && 
-                                            workflowSteps[currentMaxStepIndex + 1].id === studySession.studyStepId;
+                    const isNextStepValid = studySteps[currentMaxStepIndex + 1] && 
+                                            studySteps[currentMaxStepIndex + 1].id === studySession.studyStepId;
             
                     if (isNextStepValid) {
                         studySession.studyStepIdMax = studySession.studyStepId;
-                    }
-
-                    // Check study open/close constraints
-                    const now = Date.now();
-                    if (study.closed && now > study.closed || studySession.end && now > studySession.end) {
-                        throw new Error('This study is closed');
                     }
 
                     await transaction.commit();
