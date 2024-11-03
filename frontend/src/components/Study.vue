@@ -81,7 +81,7 @@
  * Loads a document in study mode; if a study session is provided, the session is loaded instead. Otherwise,
  * the user is prompted to start a study (or resume an existing session).
  *
- * @author Dennis Zyska
+ * @author Dennis Zyska, Manu Sundar Raj Nandyal
  */
 import StudyModal from "@/components/study/StudyModal.vue";
 import Annotator from "./annotator/Annotator.vue";
