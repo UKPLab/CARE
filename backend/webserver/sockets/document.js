@@ -348,7 +348,7 @@ module.exports = class DocumentSocket extends Socket {
 
                     // send annotations
                     const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
-                        {where: {'studySessionId': s.id, 'studyStepId': s.studyStepId },
+                        {where: {'studySessionId': s.id, 'studyStepId': data.studyStepId },
                         raw: true
                     })
                 ));
@@ -356,20 +356,20 @@ module.exports = class DocumentSocket extends Socket {
 
                     // send comments
                     const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
-                        {where: {'studySessionId': s.id, 'studyStepId': s.studyStepId },
+                        {where: {'studySessionId': s.id, 'studyStepId': data.studyStepId },
                         raw: true
                     })
                 ));
                     this.emit("commentRefresh", comments.flat(1));
                 } else {
                     const annotations = await this.models['annotation'].findAll(
-                        {where: {'studySessionId': data.id, 'studyStepId': data.studyStepId },
+                        {where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId },
                         raw: true
                     });
                     this.emit("annotationRefresh", annotations);
 
                     const comments = await this.models['comment'].findAll(
-                        {where: {'studySessionId': data.id, 'studyStepId': data.studyStepId },
+                        {where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId },
                         raw: true
                     });
                     this.emit("commentRefresh", comments);
@@ -703,9 +703,8 @@ module.exports = class DocumentSocket extends Socket {
         });
 
         this.socket.on("documentGetData", async (data) => {
-            console.log("Data in documentGet:",data); // Retrieves: Data in documentGet: { documentId: 1, studySessionId: 13 }
             try {
-                await this.getData(data); // TODO No clue why info: Error loading document data: Error: WHERE parameter "studySessionId" has invalid "undefined" value {"timestamp":"2024-11-01T09:35:59.893Z","userId":1}
+                await this.getData(data); 
             } catch (e) {
                 this.logger.info("Error loading document data: " + e);
                 this.sendToast("Internal server error. Error loading document data.", "Internal server error", "danger");

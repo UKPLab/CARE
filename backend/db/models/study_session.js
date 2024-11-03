@@ -55,7 +55,14 @@ module.exports = (sequelize, DataTypes) => {
                 const transaction = options.transaction || await sequelize.transaction();
 
                 try {
-                    
+                    const study = await sequelize.models.study.findOne({ 
+                        where: { id: studySession.studyId }
+                    }, { transaction });
+
+                    if (!study) {
+                        throw new Error('Study not found');
+                    }
+
                     const limitSessions = study.limitSessions;
                     const limitSessionsPerUser = study.limitSessionsPerUser;
 
@@ -78,15 +85,7 @@ module.exports = (sequelize, DataTypes) => {
                             throw new Error(`Cannot create more than ${limitSessionsPerUser} sessions for this user.`);
                         }
                     }
-                                            
-                    const study = await sequelize.models.study.findOne({ 
-                        where: { id: studySession.studyId }
-                    }, { transaction });
-
-                    if (!study) {
-                        throw new Error('Study not found');
-                    }
-                    
+                                                            
                     const now = Date.now();
                     if (study.closed && now > study.closed || studySession.end && now > studySession.end) {
                         throw new Error('This study is closed');
