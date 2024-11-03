@@ -41,7 +41,7 @@
  *
  * This component provides a Quill editor to edit the document.
  *
- * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska
+ * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska, Manu Sundar Raj Nandyal
  */
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -112,7 +112,7 @@ export default {
       }
     }
 
-    this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId });
+    this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId, studyStepId: this.studyStepId });
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
   },
