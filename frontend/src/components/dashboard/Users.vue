@@ -174,8 +174,8 @@ export default {
     formatUserData(user) {
       user.manage = [
         {
-          title: "Edit Review",
-          action: "editReviews",
+          title: "Edit User",
+          action: "editUser",
           icon: "pencil",
           options: {
             iconOnly: true,
