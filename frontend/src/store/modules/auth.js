@@ -16,6 +16,14 @@ const getDefaultState = () => {
     };
 };
 
+// TODO: Check if it's okay to place rights here.
+export const rights = {
+    FRONTEND_DASHBOARD_STUDIES_ADDBULKASSIGNMENTS: "frontend.dashboard.studies.addBulkAssignments",
+    FRONTEND_DASHBOARD_STUDIES_VIEW: "frontend.dashboard.studies.view",
+    FRONTEND_DASHBOARD_STUDIES_VIEW_READONLY: "frontend.dashboard.studies.view.readOnly",
+    FRONTEND_DASHBOARD_STUDIES_VIEW_USERINFO: "frontend.dashboard.studies.view.userInfo",
+};
+
 export default {
     namespaced: true,
     strict: true,
@@ -71,7 +79,20 @@ export default {
             if (state.user) {
                 return state.user["id"];
             }
-        }
+        },
+        
+        /**
+         * Checks if the user has a specific right
+         * 
+         * @param state
+         * @returns {Function} Function that takes a rightName as the parameter and returns boolean
+         */
+        checkUserRight: (state) => (rightName) => {
+            const { user } = state;
+            if (!user) return false;
+            if (user.isAdmin) return true;
+            return user.rights.includes(rightName);
+        },
     },
     mutations: {
         /**
