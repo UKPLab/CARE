@@ -167,7 +167,9 @@ export default {
       default: null
     },
     studyStepId: {
-      default: null
+      type: String,
+      required: false,
+      default: null,
     },
     acceptStats: {
       default: () => false
