@@ -67,7 +67,9 @@ export default {
       default: null // Allows for null if not in a study session
     },
     studyStepId: {
-      default: null
+      type: String,
+      required: false,
+      default: null,
     },
     userId: {
       default: null
