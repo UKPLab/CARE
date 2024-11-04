@@ -13,11 +13,11 @@
           @click="add()"
         />
         <BasicButton
-          v-if="isAdmin"
+          v-if="checkUserRight(rights.FRONTEND_DASHBOARD_STUDIES_ADDBULKASSIGNMENTS)"
           class="btn-secondary btn-sm"
           title="Add Bulk Assignments"
-          @click="addBulkAssignment()"
           :style="{ margin: '10px 10px' }"
+          @click="addBulkAssignment()"
         />
       </template>
       <template #body>
@@ -40,7 +40,7 @@ import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vu
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
-
+import { rights } from '@/store/modules/auth';
 
 /**
  * Dashboard component for handling studies
@@ -121,9 +121,6 @@ export default {
     }
   },
   computed: {
-    isAdmin() {
-      return this.$store.getters['auth/isAdmin'];
-    },
     studies() {
       return this.$store.getters["table/study/getAll"];
     },
@@ -218,6 +215,12 @@ export default {
           }
         );
     },
+    rights() {
+      return rights;
+    },
+    checkUserRight() {
+      return (rightName) => this.$store.getters["auth/checkUserRight"](rightName);
+    }
   },
   methods: {
     action(data) {
