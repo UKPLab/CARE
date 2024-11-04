@@ -22,6 +22,7 @@ module.exports = class AssignmentSocket extends Socket {
    */
   async getAssignmentInfosFromUser() {
     try {
+      if(this.isAdmin()) {
       const [documentUserIds, matchedUsers, users, roleIdMap] = await Promise.all([
         this.models["document"].findAll({
           where: { readyForReview: true },
@@ -60,8 +61,13 @@ module.exports = class AssignmentSocket extends Socket {
       this.socket.emit("assignmentUserInfos", {
         success: true,
         userInfos,
-      });
-    } catch (error) {
+      }); 
+      
+    }
+    else {
+      throw new Error("You are not authorized to access this information. Please log in as an admin.");
+    }
+  } catch (error) {
       this.logger.error(error);
       this.socket.emit("assignmentUserInfos", {
         success: false,
@@ -134,28 +140,7 @@ module.exports = class AssignmentSocket extends Socket {
     });
 
     result.forEach((assignment) => {
-      const study = this.models["study"].add({
-        userId: assignment.id,
-        template: false,
-        collab: template.collab,
-        description: template.description,
-        resumable: template.resumable,
-        timeLimit: template.timeLimit,
-        start: template.start,
-        end: template.end,
-        workflowId: template.workflowId,
-        multipleSubmit: template.multipleSubmit,
-        limitSessions: assignment.assignedReviewers.length,
-        limitSessionsPerUser: 1,
-        stepDocuments: [{documentId: assignment.documents[0].id}],
-      }, {context: {data: assignment.documents[0].id}});
-
-      assignment.assignedReviewers.forEach((reviewer) => {
-        this.models["study_session"].add({
-          studyId: study.id,
-          userId: reviewer,
-    })
-  })
+      this.assignPeerReview(assignment, assignment.assignedReviewers, template);
 })
     return result;
 
@@ -184,15 +169,12 @@ module.exports = class AssignmentSocket extends Socket {
       multipleSubmit: template.multipleSubmit,
       limitSessions: reviewers.length,
       limitSessionsPerUser: 1,
-      stepDocuments: [{documentId: assignment.documents[0].id}],
+      stepDocuments: [{documentId: assignment.documents[0].id,
+        id: 1
+      }],
     });
 
-      reviewers.forEach((reviewer) => {
-        this.models["study_session"].add({
-          studyId: study.id,
-          userId: reviewer,
-    })
-  })
+      this.addReviewer(study.id, reviewers);
     return result;
 
   }
