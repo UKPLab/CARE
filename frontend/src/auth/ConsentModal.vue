@@ -131,16 +131,6 @@ export default {
   methods: {
     open() {
       this.$refs.modal.open();
-      if(this.$store.getters["auth/getUserId"] === 3) {
-        this.acceptDataSharing = true;
-        this.acceptStats = true;
-        this.acceptTerms = true;
-      }
-      else {
-        this.acceptDataSharing = false;
-        this.acceptStats = false;
-        this.acceptTerms = false;
-      }
     },
     async handleDecline() {
       this.resetForm();

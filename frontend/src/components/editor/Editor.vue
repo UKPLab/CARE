@@ -45,7 +45,7 @@
  *
  * This component provides a Quill editor to edit the document.
  *
- * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska
+ * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska, Alexander Bürkle
  */
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -81,8 +81,6 @@ export default {
       deltaBuffer: [],
       editor: null,
       documentLoaded: false,
-      showConsentModal: false
-
     };
   },
   created() {
