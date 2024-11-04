@@ -208,9 +208,6 @@
           
           
         ]},
-      sliderMaxValue() {
-        return parseInt(this.$store.getters["settings/getValue"]('assignment.role.slider.max'));
-      },
       templates() {
         return this.$store.getters["table/study/getAll"].filter(item => item.template === true)
       }
@@ -315,7 +312,7 @@
 
         for(const role in roleCounts) {
           this.sliders.push({ key: role, min: 0, max: roleCounts[role], step: 1, class: 'custom-slider-class', unit: '' ,
-           label: "Number of " + role + "s per review", type:"slider", default: parseInt(this.$store.getters["settings/getValue"]('assignment.role.slider.default'), 3)})
+           label: "Number of " + role + "s per review", type:"slider"})
         }
       },
       handleStepThree() {

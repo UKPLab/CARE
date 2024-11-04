@@ -6,7 +6,7 @@
     <ConfirmModal ref="confirmModal"/>
     <BulkCreateAssignmentsModal ref="bulkCreateAssignmentsModal"/>
     <CreateSingleAssignmentModal ref="createSingleAssignmentModal"/>
-    <EdtiReviewerModal ref="editReviewerModal"/>
+    <EditReviewerModal ref="editReviewerModal"/>
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
@@ -49,7 +49,7 @@ import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
 import CreateSingleAssignmentModal from "./study/CreateSingleAssignmentModal.vue";
-import EdtiReviewerModal from "./study/EdtiReviewerModal.vue";
+import EditReviewerModal from "./study/EditReviewerModal.vue";
 
 
 /**
@@ -59,7 +59,7 @@ import EdtiReviewerModal from "./study/EdtiReviewerModal.vue";
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal, BulkCreateAssignmentsModal, CreateSingleAssignmentModal, EdtiReviewerModal},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal, BulkCreateAssignmentsModal, CreateSingleAssignmentModal, EditReviewerModal},
   inject: {
     acceptStats: {
       default: () => false
