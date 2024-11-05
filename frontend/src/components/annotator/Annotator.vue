@@ -148,6 +148,7 @@ import debounce from 'lodash.debounce';
 import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
+import {computed} from "vue";
 
 export default {
   name: "AnnotatorView",
@@ -159,10 +160,12 @@ export default {
     Loader,
     ExportAnnos
   },
+  provide() {
+    return {
+      documentId: computed(() => this.documentId)
+    }
+  },
   inject: {
-    documentId: {
-      default: 0
-    },
     studySessionId: {
       default: null
     },
@@ -191,6 +194,11 @@ export default {
       required: false,
       default: false,
     },
+    documentId: {
+      type: Number,
+      required: true,
+      default: null,
+    }
   },
   data() {
     return {

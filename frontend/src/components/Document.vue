@@ -5,8 +5,8 @@
       class="pageLoader"
   />
   <span v-else>
-    <Editor v-if="document.type === 1" ref="editor"/>
-    <Annotator v-else ref="annotator"/>
+    <Editor v-if="document.type === 1" ref="editor" :document-id = "documentId"/>
+    <Annotator v-else ref="annotator" :document-id = "documentId"/>
   </span>
 </template>
 
@@ -29,11 +29,6 @@ import Editor from "@/components/editor/Editor.vue"
 export default {
   name: "DocumentRoute",
   components: {Annotator, Loader, Editor},
-  provide() {
-    return {
-      documentId: computed(() => this.documentId),
-    }
-  },
   async beforeRouteLeave(to, from) {
     return await this.confirmLeave();
   },
