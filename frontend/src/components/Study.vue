@@ -60,13 +60,13 @@
       </TopBarButton>
     </div>
   </Teleport>
-    <div v-if="studySessionId !== 0 && studySession.studyStepId">
+    <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
       <div v-show="s.id === studySession.studyStepId">
-        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)"/>
+        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId"/>
       </div>
       <div v-show="s.id === studySession.studyStepId">
-        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)"/>
+        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id = "s.documentId"/>
       </div>
       <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
     </div>
@@ -96,7 +96,6 @@ export default {
   components: {LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton},
   provide() {
     return {
-      documentId: computed(() => this.documentId),
       studySessionId: computed(() => this.studySessionId),
       studyStepId: computed(() => this.studyStepId),
       readonly: this.readonly,
@@ -167,7 +166,7 @@ export default {
         return nextStep;
       }
     },
-    currentWorkflowStep() {
+    currentWorkflowStep() { // TODO think about what will happen if we have af one_step workflow
       return this.currentStudyStep && this.currentStudyStep.workflowStepId
             ? this.$store.getters['table/workflow_step/get'](this.currentStudyStep.workflowStepId)
             : null
@@ -186,7 +185,7 @@ export default {
       return steps;
     },
     studyTrajectory() {
-      if (!this.studySession || !this.studySession.studyStepIdMax) return [];
+      if (!this.studySession) return [];
         let studyTrajectory = [];
         let studyStep = this.$store.getters['table/study_step/get'](this.studySession.studyStepIdMax);
         while (studyStep) {
@@ -303,12 +302,6 @@ export default {
   methods: {
     start(data) {
       this.studySessionId = data.studySessionId;
-      if (this.currentStudyStep) {
-        this.studyStepId = this.currentStudyStep.id;
-        this.documentId = this.currentStudyStep.documentId;  // Should not be null here
-      } else {
-        console.error("currentStudyStep is null, cannot set documentId");
-      }
     },
     calcTimeLeft() {
       const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
@@ -337,10 +330,10 @@ export default {
     },
     updateStep(step) {
       this.$socket.emit("appDataUpdate", {
-          id: this.studySessionId,
           table: "study_session",
           data: {
-            studyStepId: step
+            id: this.studySessionId,
+            studyStepId: step 
           },
         });
     },

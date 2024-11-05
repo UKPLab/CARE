@@ -50,6 +50,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import { dbToDelta, deltaToDb } from "editor-delta-conversion";
 import { Editor } from './editorStore.js';
 import { downloadDocument } from "@/assets/utils.js";
+import {computed} from "vue";
 
 const Delta = Quill.import('delta');
 
@@ -59,10 +60,12 @@ export default {
   components: {
     LoadIcon
   },
+  provide() {
+    return {
+      documentId: computed(() => this.documentId)
+    }
+  },
   inject: {
-    documentId: {
-      default: 0
-    },
     studySessionId: {
       default: null // Allows for null if not in a study session
     },
@@ -77,6 +80,13 @@ export default {
     readonly: {
       default: false, // Default to false if not provided
     },
+  },
+  props: {
+    documentId: {
+      type: Number,
+      required: true,
+      default: null,
+    }
   },
   data() {
     return {

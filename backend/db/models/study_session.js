@@ -104,25 +104,6 @@ module.exports = (sequelize, DataTypes) => {
                     studySession.numberSteps = 1;
                     studySession.studyStepIdMax = firstStep.id
 
-                    let documentId = firstStep.documentId;
-
-                    if (!documentId) {
-                        const newDocument = await sequelize.models.document.create({
-                            name: `Document for study ${studySession.studyId}, step ${studySession.studyStepId}`,
-                            type: 1, 
-                            hash: uuidv4(), 
-                            userId: study.userId,
-                            content: "<html><body></body></html>"
-                        }, { transaction });
-
-                        documentId = newDocument.id;
-
-                        await sequelize.models.study_step.update(
-                            { documentId },
-                            { where: { id: firstStep.id }, transaction }
-                        );
-                    }
-
                     await transaction.commit();
                 } catch (error) {
                     console.error("Error in beforeCreate hook:", error);
@@ -132,35 +113,41 @@ module.exports = (sequelize, DataTypes) => {
             },
             beforeUpdate: async (studySession, options) => {
                 const transaction = options.transaction || await sequelize.transaction();
-
+            
                 try {
-                    const study = await sequelize.models.study.findOne({
-                        where: { id: studySession.studyId }
-                    }, { transaction });
-
-                    if (!study) throw new Error('Study not found');
-                    
-                    const now = Date.now();
-                    if (study.closed && now > study.closed || studySession.end && now > studySession.end) {
-                        throw new Error('This study is closed');
+                    const currentSession = await sequelize.models.study_session.findOne({
+                        where: { id: studySession.id },
+                        transaction,
+                    });
+            
+                    if (!currentSession) {
+                        throw new Error('Study session not found');
                     }
-
-                    studySession.numberSteps += 1;
+            
+                    const currentMaxStepId = currentSession.studyStepIdMax;
 
                     const studySteps = await sequelize.models.study_step.findAll({
                         where: { studyId: studySession.studyId },
-                        order: [['workflowStepId', 'ASC']]
-                    }, { transaction });
-            
-                    const currentMaxStepIndex = studySteps.findIndex(step => step.id === studySession.studyStepIdMax);
-            
-                    const isNextStepValid = studySteps[currentMaxStepIndex + 1] && 
-                                            studySteps[currentMaxStepIndex + 1].id === studySession.studyStepId;
-            
-                    if (isNextStepValid) {
+                        transaction,
+                    });
+
+                    let stepInPreviousStepPath = false;
+                    let studyStep = studySteps.find(step => step.id === studySession.studyStepId); 
+
+                    while (studyStep && studyStep.studyStepPrevious !== null && !stepInPreviousStepPath) {
+                        if (studyStep.studyStepPrevious === currentMaxStepId) {
+                            stepInPreviousStepPath = true; 
+                        } else {
+                            studyStep = studySteps.find(step => step.id === studyStep.studyStepPrevious);
+                        }
+                    }
+
+                    if (stepInPreviousStepPath) {
                         studySession.studyStepIdMax = studySession.studyStepId;
                     }
 
+                    studySession.numberSteps = (studySession.numberSteps || 0) + 1;
+            
                     await transaction.commit();
                 } catch (error) {
                     console.error("Error in beforeUpdate hook:", error);

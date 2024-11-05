@@ -229,6 +229,19 @@ module.exports = (sequelize, DataTypes) => {
         
                                 documentId = newDocument.id;
                             }
+                        } else if (step.stepType === 2) { // Editor steps without an existing document, create a new empty document
+                            const emptyDocumentHash = uuidv4();
+                            const emptyFilePath = path.join(UPLOAD_PATH, `${emptyDocumentHash}.delta.json`);
+                            await fs.writeFile(emptyFilePath, JSON.stringify({ content: "<html><body></body></html>" }));
+
+                            const newEmptyDocument = await sequelize.models.document.create({
+                                name: `Document for study ${study.id}, step ${step.id}`,
+                                type: 1, 
+                                hash: emptyDocumentHash,
+                                userId: study.userId
+                            }, { transaction });
+
+                            documentId = newEmptyDocument.id;
                         }
                         const studyStep = await sequelize.models.study_step.create({
                             studyId: study.id,
