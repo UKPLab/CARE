@@ -237,7 +237,7 @@ export default {
       return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId).length;
     },
     numberOfOpenedSessionsPerUser() {
-      return this.$store.getters["table/study_session/getByKey"]("userId", this.study.userId)
+      return this.$store.getters["table/study_session/getByKey"]("userId", this.userId)
       .filter(s => s.studyId === this.studyId).length;
     },
     started() {
@@ -274,7 +274,10 @@ export default {
     },
     studyClosed(){
       return this.$store.getters["table/study/get"](this.studyId).closed;
-    }
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
   },
   methods: {
     open() {
