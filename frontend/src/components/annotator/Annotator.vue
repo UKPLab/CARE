@@ -167,10 +167,12 @@ export default {
   },
   inject: {
     studySessionId: {
+      type: Number,
+      required: false,
       default: null
     },
     studyStepId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
     },

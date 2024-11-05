@@ -67,17 +67,23 @@ export default {
   },
   inject: {
     studySessionId: {
+      type: Number,
+      required: false,
       default: null // Allows for null if not in a study session
     },
     studyStepId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
     },
     userId: {
+      type: Number,
+      required: false,
       default: null
     },
     readonly: {
+      type: Boolean,
+      required: false,
       default: false, // Default to false if not provided
     },
   },

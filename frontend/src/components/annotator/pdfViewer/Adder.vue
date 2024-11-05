@@ -35,16 +35,16 @@ export default {
   name: "PDFAdder",
   inject: {
     documentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studySessionId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
     },
     studyStepId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
     },

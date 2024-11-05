@@ -169,16 +169,16 @@ export default {
   components: {NLPService, Collaboration, SideCard, Comment, SidebarButton},
   inject: {
     documentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studySessionId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
     },
     studyStepId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
     },
