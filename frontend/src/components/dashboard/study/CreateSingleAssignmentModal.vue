@@ -51,63 +51,17 @@
         <!-- Step1: Choose Reviewers -->
         <div
           v-if="currentStep === 1"
-          class="table-scroll-container"
+          class="file-upload-container"
         >
         <h4>Select reviewers!</h4>
-        <div class="form-group">
-        <label for="firstName">First Name:</label>
-        <input
-          type="text"
-          id="firstName"
-          v-model="firstNameInput"
-          @input="filterUsers"
-          placeholder="Filter by First Name"
-          class="form-control"
-        />
-        <label for="lastName">Last Name:</label>
-        <input
-          type="text"
-          id="lastName"
-          v-model="lastNameInput"
-          @input="filterUsers"
-          placeholder="Filter by Last Name"
-          class="form-control"
-        />
-        <label for="userName">Username:</label>
-        <input
-          type="text"
-          id="userName"
-          v-model="userNameInput"
-          @input="filterUsers"
-          placeholder="Filter by Username"
-          class="form-control"
-        />
-
-        <!-- Display Filtered Users -->
-        <ul v-if="filteredUsers.length > 0" class="list-group mt-2">
-          <li
-            v-for="user in filteredUsers"
-            :key="user.id"
-            @click="selectUser(user)"
-            class="list-group-item list-group-item-action"
-          >
-            {{ user.firstName }} {{ user.lastName }} ({{ user.userName }})
-          </li>
-        </ul>
-      </div>
-
-      <!-- Display Selected Users -->
-      <div v-if="selectedUsers.length > 0" class="selected-users mt-3">
-        <h5>Selected Reviewers:</h5>
-      <div class="tabel-flex">
-        <BasicTable
-            :columns="columnsStepOne"
-            :data="selectedUsers"
-            :options="tableOptionsOne"
-            @action="action"
-          />
-        </div>
-      </div>
+      <div class="table-scroll-container">
+            <BasicTable
+              :columns="columnsStepOne"
+              :data="reviewers"
+              :options="tableOptionsOne"
+              @row-selection="(reviewers) => (selectedUsers = reviewers)"
+            />
+          </div>
       </div>
     </div>
     </template>
@@ -155,7 +109,6 @@ export default {
   components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider},
   emits: ["updateUser"],
   mounted() {
-    console.log("MOUNTED")
     this.$socket.emit("assignmentGetAssignmentInfosFromUser")
     this.filteredUsers = this.users
 },
@@ -205,6 +158,35 @@ export default {
         
         
       ]},
+      columnsStepOne() { 
+        const uniqueRoles = [...new Set(this.users.map((user) => user.role).filter((role) => role != null))];
+        const roleFilterColumn = {
+          name: "Role",
+          key: "role",
+          width: "1",
+          filter: uniqueRoles.map((role) => ({ key: role, name: role })),
+        };
+        
+        return [
+        roleFilterColumn,
+          {
+            name: "Has Assignments",
+            key: "hasAssignments",
+            width: "1",
+            filter: [
+              { key: "true", name: "With Assignments" },
+              { key: "false", name: "No Assignments" },
+            ],
+          },
+          { name: "ID", key: "id" },
+          { name: "First Name", key: "firstName" },
+          { name: "Last Name", key: "lastName" },
+          {
+            name: "Number of Assignments",
+            key: "numberAssignments",
+          },
+        ]
+      },
   },
   data() {
     return {
@@ -212,7 +194,6 @@ export default {
       selectedTemplate: "",
       showInputFields: false,
       selectedUsers: [],
-      filteredUsers: [],
       firstNameInput: "",
       lastNameInput: "",
       userNameInput: "",
@@ -229,7 +210,8 @@ export default {
         small: false,
         selectableRows: true,
         scrollY: true,
-        scrollX: true
+        scrollX: true,
+        onlyOneRowSelectable: true,
       },
       tableOptionsOne: {
         striped: true,
@@ -237,7 +219,7 @@ export default {
         bordered: false,
         borderless: false,
         small: false,
-        selectableRows: false,
+        selectableRows: true,
         scrollY: true,
         scrollX: true
       },
@@ -374,14 +356,12 @@ export default {
       data.reviewers = this.selectedReviewers
       data.template = this.selectedTemplate
       this.$socket.emit("assignmentPeerReview", data, (response) => {
-          console.log(response)
       }) 
       this.$refs.modal.close();
     },
     action(data) {
       switch(data.action) {
         case "deleteDoc":
-          console.log(data.params)
           this.selectedUsers.splice(data.params, 1);
           this.selectedUsers.
           break;
@@ -449,65 +429,11 @@ export default {
   margin-bottom: 20px;
 }
 
-
-/* Set max-height and enable scrolling for the table */
 .table-scroll-container {
-max-height: 500px; /* Set your desired height */
-overflow-y: auto;  /* Enable vertical scrolling */
+  height: 500px;
+  overflow-y: auto;
 }
 
-.custom-slider-class {
-width: 100%;
-border: 2px solid #3498db; /* Add a visible blue border */
-border-radius: 8px; /* Add rounded corners */
-padding: 2px; /* Add padding to ensure the border is visible */
-}
-
-
-
-/* Preview */
-.preview-table-container {
-  max-height: 500px; /* Set your desired height */
-overflow-y: auto;
-}
-
-.review-count-container {
-  height: 100%;
-  white-space: nowrap;
-  overflow-x: scroll;
-  max-width: 50%;
-}
-
-.confirm-container,
-.result-container {
-  height: 100%;
-  display: flex;
-  justify-content: flex-start;
-  align-items: flex-start;
-  flex-direction: column;
-}
-
-.link-container {
-  margin-top: 15px;
-  button:first-child {
-    margin-right: 0.5rem;
-  }
-}
-
-.result-container h3 {
-font-size: 2rem; /* Adjust this value to change the font size of the h3 */
-margin-bottom: 20px; /* Adds space below the h3 heading */
-}
-
-.result-container label {
-font-size: 1.2rem; /* Adjust this to change the label font size */
-margin-right: 10px; /* Adds space between the label and the dropdown */
-}
-
-.result-container select {
-margin-top: 10px; /* Adds space between the label and dropdown */
-padding: 5px; /* Optional: Adds padding to the dropdown for better spacing */
-}
 
 input {
   display: block;
@@ -536,15 +462,6 @@ button {
 
 .tabel-flex {
   display: flex;
-}
-
-button.btn-danger {
-  height: 100%; /* Make the button fill the height of the table row */
-  line-height: 2; /* Adjust this value as needed for vertical text alignment */
-  padding: 0; /* Remove extra padding for better fit */
-  display: flex;
-  align-items: center; /* Center the text vertically */
-  justify-content: center; /* Center the text horizontally */
 }
 
 .template-container {

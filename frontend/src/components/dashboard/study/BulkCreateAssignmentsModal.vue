@@ -127,7 +127,6 @@
     components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider},
     emits: ["updateUser"],
     mounted() {
-      console.log("MOUNTED")
       this.$socket.emit("assignmentGetAssignmentInfosFromUser")
   },
     computed: {
@@ -150,7 +149,7 @@
           return !this.selectedReviewers.length > 0
         }
         if (this.currentStep === 2) {
-          return !Object.values(this.sliderValues).some(value => value > 0);
+          return false//return !Object.values(this.sliderValues).some(value => value > 0);
         }
           
           
@@ -234,7 +233,7 @@
           small: false,
           selectableRows: true,
           scrollY: true,
-          scrollX: true
+          scrollX: true,
         },
       };
     },
@@ -253,6 +252,8 @@
         this.assignments = [];
         this.reviewers = [];
         this.sliderValues = []
+        this.sliders = []
+        this.selectedTemplate = ''
         this.users = [];
       },
       prevStep() {
@@ -265,7 +266,6 @@
             break;
           case 1:
             this.selectedReviewers = []
-            this.sliders = []
             break;
           case 2:
             
@@ -338,6 +338,7 @@
       },
       createAssignments() {
         let data = {}
+        data.createdByUserId = this.$store.getters["auth/getUserId"]
         data.assignments = this.selectedAssignments
         data.reviewers = this.selectedReviewers
         data.template = this.templates.find(template => template.name === this.selectedTemplate)
@@ -348,9 +349,7 @@
       }
     });
         data.reviewsPerRole = dictionary
-        console.log(data)
         this.$socket.emit("assignmentPeerReviews", data, (response) => {
-            console.log(response)
         }) 
         this.$refs.modal.close();
       }
@@ -416,64 +415,48 @@
     margin-bottom: 20px;
   }
 
-
-/* Set max-height and enable scrolling for the table */
 .table-scroll-container {
-  max-height: 500px; /* Set your desired height */
-  overflow-y: auto;  /* Enable vertical scrolling */
+  max-height: 500px; 
+  overflow-y: auto;  
 }
 
 .custom-slider-class {
   width: 100%;
-  border: 2px solid #3498db; /* Add a visible blue border */
-  border-radius: 8px; /* Add rounded corners */
-  padding: 2px; /* Add padding to ensure the border is visible */
+  border: 2px solid #3498db; 
+  border-radius: 8px; 
+  padding: 2px; 
 }
   
-  
-  
-  /* Preview */
-  .preview-table-container {
-    height: 100%;
-    white-space: nowrap;
-  }
 
-  .review-count-container {
-    height: 100%;
-    white-space: nowrap;
-    overflow-x: scroll;
-    max-width: 50%;
-  }
-  
-  .confirm-container,
-  .result-container {
-    height: 100%;
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  
-  .link-container {
-    margin-top: 15px;
-    button:first-child {
-      margin-right: 0.5rem;
-    }
-  }
+.review-count-container {
+  height: 100%;
+  white-space: nowrap;
+  overflow-x: scroll;
+  max-width: 50%;
+}
 
-  .result-container h3 {
-  font-size: 2rem; /* Adjust this value to change the font size of the h3 */
-  margin-bottom: 20px; /* Adds space below the h3 heading */
+.confirm-container,
+.result-container {
+  height: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.result-container h3 {
+font-size: 2rem; 
+margin-bottom: 20px;
 }
 
 .result-container label {
-  font-size: 1.2rem; /* Adjust this to change the label font size */
-  margin-right: 10px; /* Adds space between the label and the dropdown */
+font-size: 1.2rem; 
+margin-right: 10px; 
 }
 
 .result-container select {
-  margin-top: 10px; /* Adds space between the label and dropdown */
-  padding: 5px; /* Optional: Adds padding to the dropdown for better spacing */
+margin-top: 10px;
+padding: 5px; 
 }
   </style>
   

@@ -6,7 +6,6 @@
     <ConfirmModal ref="confirmModal"/>
     <BulkCreateAssignmentsModal ref="bulkCreateAssignmentsModal"/>
     <CreateSingleAssignmentModal ref="createSingleAssignmentModal"/>
-    <EditReviewerModal ref="editReviewerModal"/>
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
@@ -49,7 +48,6 @@ import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
 import CreateSingleAssignmentModal from "./study/CreateSingleAssignmentModal.vue";
-import EditReviewerModal from "./study/EditReviewerModal.vue";
 
 
 /**
@@ -59,7 +57,7 @@ import EditReviewerModal from "./study/EditReviewerModal.vue";
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal, BulkCreateAssignmentsModal, CreateSingleAssignmentModal, EditReviewerModal},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal, BulkCreateAssignmentsModal, CreateSingleAssignmentModal},
   inject: {
     acceptStats: {
       default: () => false
@@ -223,17 +221,6 @@ export default {
                 title: "Inspect sessions",
                 action: "inspectSessions",
               },
-              {
-                icon: "pencil-square",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  }
-                },
-                title: "Edit reviewers",
-                action: "editReviewers",
-              },
             ];
             return study
           }
@@ -267,9 +254,6 @@ export default {
         });
       } else if (data.action === "saveAsTemplate") {
         this.saveAsTemplate(data.params);
-      }
-      else if (data.action === "editReviewers") {
-        this.$refs.editReviewerModal.open(data.params.id);
       }
     },
     async copyLink(studyId) {

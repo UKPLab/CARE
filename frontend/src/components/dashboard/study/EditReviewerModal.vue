@@ -92,6 +92,7 @@ import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import FormSlider from "@/basic/form/Slider.vue";
+import StudySessionModal from "./StudySessionModal.vue";
 
 /**
  * Modal for bulk creating assignments
@@ -100,7 +101,7 @@ import FormSlider from "@/basic/form/Slider.vue";
 export default {
   name: "ImportModal",
   fetch_data: ["study"],
-  components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider},
+  components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider },
   emits: ["updateUser"],
   mounted() {
     this.$socket.emit("assignmentGetAssignmentInfosFromUser")
@@ -166,10 +167,11 @@ export default {
   },
   
   methods: {
-    open(id) {
+    open(id, modal) {
       this.$refs.modal.open();
       this.handleStepZero(id)
       this.idStudy = id
+
     },
     resetModal() {
       this.selectedUsers = [];
@@ -248,14 +250,13 @@ export default {
     save() {
       let data = {}
       data.newReviewers = this.newUsers
-      data.deleteReviewers = this.deleteUsers
+      data.deletedReviewers = this.deleteUsers
       data.studyId = this.idStudy
-      this.$socket.emit("assignmentAddReviewer", data)
+      this.$socket.emit("assignmentEditReviewer", data)
     },
     action(data) {
       switch(data.action) {
         case "deleteDoc":
-          console.log(data.params)
           this.selectedUsers.splice(data.params, 1);
           const element = this.newUsers.splice(data.params, 1);
           if(!element.length > 0) {
@@ -328,63 +329,10 @@ export default {
 }
 
 
-/* Set max-height and enable scrolling for the table */
+
 .table-scroll-container {
-max-height: 500px; /* Set your desired height */
-overflow-y: auto;  /* Enable vertical scrolling */
-}
-
-.custom-slider-class {
-width: 100%;
-border: 2px solid #3498db; /* Add a visible blue border */
-border-radius: 8px; /* Add rounded corners */
-padding: 2px; /* Add padding to ensure the border is visible */
-}
-
-
-
-/* Preview */
-.preview-table-container {
-  max-height: 500px; /* Set your desired height */
-overflow-y: auto;
-}
-
-.review-count-container {
-  height: 100%;
-  white-space: nowrap;
-  overflow-x: scroll;
-  max-width: 50%;
-}
-
-.confirm-container,
-.result-container {
-  height: 100%;
-  display: flex;
-  justify-content: flex-start;
-  align-items: flex-start;
-  flex-direction: column;
-}
-
-.link-container {
-  margin-top: 15px;
-  button:first-child {
-    margin-right: 0.5rem;
-  }
-}
-
-.result-container h3 {
-font-size: 2rem; /* Adjust this value to change the font size of the h3 */
-margin-bottom: 20px; /* Adds space below the h3 heading */
-}
-
-.result-container label {
-font-size: 1.2rem; /* Adjust this to change the label font size */
-margin-right: 10px; /* Adds space between the label and the dropdown */
-}
-
-.result-container select {
-margin-top: 10px; /* Adds space between the label and dropdown */
-padding: 5px; /* Optional: Adds padding to the dropdown for better spacing */
+max-height: 500px; 
+overflow-y: auto;  
 }
 
 input {
@@ -415,24 +363,4 @@ button {
 .tabel-flex {
   display: flex;
 }
-
-button.btn-danger {
-  height: 100%; /* Make the button fill the height of the table row */
-  line-height: 2; /* Adjust this value as needed for vertical text alignment */
-  padding: 0; /* Remove extra padding for better fit */
-  display: flex;
-  align-items: center; /* Center the text vertically */
-  justify-content: center; /* Center the text horizontally */
-}
-
-.template-container {
-  margin-bottom: 20px;
-  margin-top: 20px;
-  display: flex;
-}
-
-.template-dropdown {
-  margin-left: 10px;
-}
-
 </style>

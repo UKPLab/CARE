@@ -1,10 +1,12 @@
 <template>
+  <EditReviewerModal ref="editReviewerModal"/>
   <Modal
     ref="studySessionModal"
     :props="{studyId: studyId}"
     lg
     name="studySessionModal"
     remove-close
+    @hide=""
   >
     <template #title>
       <span>
@@ -27,6 +29,11 @@
           title="Close"
         />
       </span>
+      <BasicButton
+          class="btn btn-primary"
+          @click="add"
+          title="Add"
+        />
     </template>
   </Modal>
 </template>
@@ -35,6 +42,8 @@
 import Modal from "@/basic/Modal.vue";
 import DTable from "@/basic/table/Table.vue";
 import BasicButton from "@/basic/Button.vue";
+import EditReviewerModal from "./EditReviewerModal.vue";
+import { add } from "lodash";
 
 /**
  * Details of study session for a given study in a modal
@@ -45,7 +54,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "StudySessionModal",
-  components: {Modal, DTable, BasicButton},
+  components: {Modal, DTable, BasicButton, EditReviewerModal},
   data() {
     return {
       studyId: 0,
@@ -152,6 +161,9 @@ export default {
     close() {
       this.$socket.emit("studySessionUnsubscribe", {studyId: this.studyId});
       this.$refs.studySessionModal.close();
+    },
+    add() {
+      this.$refs.editReviewerModal.open(this.studyId, this.$refs.studySessionModal);
     },
     load() {
       if (!this.study) {
