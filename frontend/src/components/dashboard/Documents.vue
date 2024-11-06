@@ -113,7 +113,7 @@ export default {
         .filter((doc) => doc.userId === this.userId && !doc.name.includes("_study"))
         .map((d) => {
           let newD = { ...d };
-          newD.type = d.type === 0 ? 'PDF' : 'HTML';
+          newD.type = d.type === 0 ? "PDF" : "HTML";
           newD.publicBadge = {
             class: newD.public ? "bg-success" : "bg-danger",
             text: newD.public ? "Yes" : "No",
@@ -130,41 +130,46 @@ export default {
               title: "Access document...",
               action: "accessDoc",
             },
-            {
-              icon: "trash",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Delete document...",
-              action: "deleteDoc",
-            },
-            {
-              icon: "cloud-arrow-up",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Publish document...",
-              action: "publicDoc",
-            },
-            {
-              icon: "pencil",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Rename document...",
-              action: "renameDoc",
-            },
+            ...(newD.uploaded
+              ? []
+              : [
+                  {
+                    icon: "trash",
+                    options: {
+                      iconOnly: true,
+                      specifiers: {
+                        "btn-outline-secondary": true,
+                      },
+                    },
+                    title: "Delete document...",
+                    action: "deleteDoc",
+                  },
+                  {
+                    icon: "cloud-arrow-up",
+                    options: {
+                      iconOnly: true,
+                      specifiers: {
+                        "btn-outline-secondary": true,
+                      },
+                    },
+                    title: "Publish document...",
+                    action: "publicDoc",
+                  },
+                  {
+                    icon: "pencil",
+                    options: {
+                      iconOnly: true,
+                      specifiers: {
+                        "btn-outline-secondary": true,
+                      },
+                    },
+                    title: "Rename document...",
+                    action: "renameDoc",
+                  },
+                ]),
           ];
-          if (this.studiesEnabled && d.type === 0) { //PDF document type
+          //PDF document type
+          if (this.studiesEnabled && d.type === 0) {
             newD.manage.push({
               icon: "person-workspace",
               options: {
@@ -178,7 +183,8 @@ export default {
             });
           }
 
-          if (d.type === 1 && this.showDeltaDownloadButton) { //HTML document type
+          //HTML document type
+          if (d.type === 1 && this.showDeltaDownloadButton) {
             newD.manage.push({
               icon: "download",
               options: {
