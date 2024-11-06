@@ -270,6 +270,7 @@ export default {
       itemsPerPageList: [10, 25, 50, 100],
       paginationShowPages: 3,
       filter: null,
+      onlyOneRowSelectable: this.options && this.options.onlyOneRowSelectable,
       isAllRowsSelected: false,
     };
   },
@@ -378,6 +379,13 @@ export default {
         this.currentPage = val;
       }
     },
+    selectedRows: {
+      handler(newVal, oldVal) {
+      if (this.onlyOneRowSelectable && newVal.length > 1) {
+        this.selectedRows = [newVal[newVal.length - 1]];
+      }
+    },
+      deep: true,},
     filter: {
       handler() {
         this.paginationUpdate();
