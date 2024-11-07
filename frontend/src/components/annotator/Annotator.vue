@@ -174,7 +174,7 @@ export default {
     studyStepId: {
       type: Number,
       required: false,
-      default: null,
+      default: 0,
     },
     acceptStats: {
       default: () => false
@@ -399,7 +399,7 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0 && this.studyStepId !== 0)) {
+      if (this.studySessionId && this.studyStepId && this.studySessionId !== 0 && this.studyStepId !== 0) {
             this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
       }
 

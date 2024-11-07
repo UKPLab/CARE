@@ -52,7 +52,7 @@ export default {
     studyStepId: {
       type: Number,
       required: false,
-      default: null,
+      default: 0,
     },
     readonly: {
       type: Boolean,
