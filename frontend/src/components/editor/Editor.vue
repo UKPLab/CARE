@@ -91,7 +91,7 @@ export default {
     documentId: {
       type: Number,
       required: true,
-      default: null,
+      default: 0,
     }
   },
   data() {

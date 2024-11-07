@@ -199,7 +199,7 @@ export default {
     documentId: {
       type: Number,
       required: true,
-      default: null,
+      default: 0,
     }
   },
   data() {
@@ -272,12 +272,12 @@ export default {
     },
   },
   mounted() {
-    this.eventBus.on('pdfScroll', (anno_id) => {
-      this.scrollTo(anno_id);
+    this.eventBus.on('pdfScroll', (annotationId) => {
+      this.scrollTo(annotationId);
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "pdfScroll",
-          data: {documentId: this.documentId, study_session_id: this.studySessionId, studyStepID: this.studyStepId, anno_id: anno_id}
+          data: {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId, annotationId: annotationId}
         });
       }
     });
