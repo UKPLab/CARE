@@ -224,7 +224,8 @@ module.exports = (sequelize, DataTypes) => {
                                     type: document.type,
                                     hash: newDocumentHash,
                                     userId: study.userId,
-                                    parentDocumentId: document.id
+                                    parentDocumentId: document.id,
+                                    hideInFrontend: true
                                 }, { transaction });
         
                                 documentId = newDocument.id;
@@ -238,7 +239,8 @@ module.exports = (sequelize, DataTypes) => {
                                 name: `Document for study ${study.id}, step ${step.id}`,
                                 type: 1, 
                                 hash: emptyDocumentHash,
-                                userId: study.userId
+                                userId: study.userId,
+                                hideInFrontend: true
                             }, { transaction });
 
                             documentId = newEmptyDocument.id;
@@ -280,7 +282,8 @@ module.exports = (sequelize, DataTypes) => {
                             continue;  
                         }
 
-                        const stepDocument = options.context.stepDocuments.find(doc => doc.id === studyStep.id);
+                        const stepDocuments = options.context && options.context.stepDocuments ? options.context.stepDocuments : [];
+                        const stepDocument = stepDocuments.find(doc => doc.id === studyStep.id);
 
                         let documentId = null;
 
@@ -309,7 +312,8 @@ module.exports = (sequelize, DataTypes) => {
                                     type: document.type,
                                     hash: newDocumentHash,
                                     userId: study.userId,
-                                    parentDocumentId: document.id
+                                    parentDocumentId: document.id,
+                                    hideInFrontend: true
                                 }, { transaction });
             
                                 documentId = newDocument.id; 

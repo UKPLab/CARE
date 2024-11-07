@@ -30,7 +30,7 @@
           v-if="studySession && lastStep && currentWorkflowStep && currentWorkflowStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
           class="btn btn-outline-secondary mx-3"
           title="Finish Study"
-          @click="finish"
+          @click="finish({ studySessionId: studySession.id })"
       >
         Finish Study
       </TopBarButton>
@@ -205,9 +205,6 @@ export default {
     },
     finished() {
       if (this.studySession) {
-        return this.studySession.end !== null;
-      }
-
       if (this.study && this.study.end) {
         if (this.study.end !== null && this.study.end !== undefined) {
           if (!(this.study.end instanceof Date)) {
@@ -224,6 +221,8 @@ export default {
           }
           return Date.now() > new Date(this.study.closed);
         }
+      }
+        return this.studySession.end !== null;
       }
 
       return false;
@@ -323,7 +322,7 @@ export default {
         this.studySessionId = data.studySessionId;
       }
 
-      if (this.finished && !this.study.multipleSubmit) {
+      if (!this.finished && !this.study.multipleSubmit) {
         this.$refs.studyFinishModal.open();
         return;
       }
