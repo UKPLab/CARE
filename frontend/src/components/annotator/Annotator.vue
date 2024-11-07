@@ -162,7 +162,8 @@ export default {
   },
   provide() {
     return {
-      documentId: computed(() => this.documentId)
+      documentId: computed(() => this.documentId),
+      studyStepId: computed(() => this.studyStepId)
     }
   },
   inject: {
@@ -170,11 +171,6 @@ export default {
       type: Number,
       required: false,
       default: null
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: 0,
     },
     acceptStats: {
       default: () => false
@@ -200,7 +196,12 @@ export default {
       type: Number,
       required: true,
       default: 0,
-    }
+    },    
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
   },
   data() {
     return {

@@ -63,10 +63,10 @@
     <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
       <div v-show="s.id === studySession.studyStepId">
-        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId"/>
+        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id"/>
       </div>
       <div v-show="s.id === studySession.studyStepId">
-        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id = "s.documentId"/>
+        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id"/>
       </div>
       <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
     </div>
@@ -97,7 +97,6 @@ export default {
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
-      studyStepId: computed(() => this.studyStepId),
       readonly: this.readonly,
     };
   },
@@ -123,8 +122,6 @@ export default {
       studySessionId: 0,
       timeLeft: 0,
       timerInterval: null,
-      documentId: 0,
-      studyStepId: 0,
     };
   },
   computed: {
