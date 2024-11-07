@@ -110,7 +110,7 @@ export default {
     },
     docs() {
       return this.documents
-        .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null)
+        .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false)
         .map((d) => {
           let newD = { ...d };
           newD.type = d.type === 0 ? 'PDF' : 'HTML';
