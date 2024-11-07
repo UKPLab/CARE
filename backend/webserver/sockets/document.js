@@ -426,7 +426,7 @@ module.exports = class DocumentSocket extends Socket {
     async editDocument(data) {
         const transaction = await database.sequelize.transaction();
         try {
-            const { documentId, studySessionId, ops } = data;
+            const { documentId, studySessionId, studyStepId, ops } = data;
             let appliedEdits = [];
 
             await ops.reduce(async (promise, op) => {
@@ -436,6 +436,7 @@ module.exports = class DocumentSocket extends Socket {
                     draft: true,
                     documentId,
                     studySessionId: studySessionId || null,
+                    studyStepId: studyStepId || null,
                     ...op
                 };
 

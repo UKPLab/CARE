@@ -241,6 +241,7 @@ export default {
           this.$socket.emit("documentEdit", {
             documentId: this.documentId,
             studySessionId: this.studySessionId || null,
+            studyStepId: this.studyStepId || null,
             ops: dbOps
           });
         }
