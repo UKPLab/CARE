@@ -200,7 +200,12 @@ module.exports = class MetaModel extends Model {
         }
 
         try {
-            const individualHooks = (this.tableName === 'study' || 'study_session') ? { individualHooks: true } : {};
+            let individualHooks = {};
+            if ('hooks' in this.options) {
+                if ('afterUpdate' in this.options.hooks || 'beforeUpdate' in this.options.hooks) {
+                   individualHooks = { individualHooks: true };
+                }
+            }
 
             const options = Object.assign({}, {
                 where: {
@@ -214,9 +219,9 @@ module.exports = class MetaModel extends Model {
 
             if (updatedObject) {
                 if (updatedObject[1]) {
-                    return updatedObject[1].dataValues;
+                    return updatedObject[1][0].dataValues;
                 } else {
-                    return updatedObject;
+                    return updatedObject[0];
                 }
             }
         } catch (err) {

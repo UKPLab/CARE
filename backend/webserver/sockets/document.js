@@ -12,7 +12,7 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * Loading the document through websocket
  *
- * @author Dennis Zyska, Juliane Bechert
+ * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal
  * @type {DocumentSocket}
  */
 module.exports = class DocumentSocket extends Socket {
@@ -151,39 +151,29 @@ module.exports = class DocumentSocket extends Socket {
      * @param {number} documentId
      * @returns {Promise<Delta|void>}
      */
-    async sendDocument(documentId, studySessionId) {
+    async sendDocument(documentId, studySessionId, studyStepId) {
         try {
             const doc = await this.models['document'].getById(documentId);
 
             if (this.checkDocumentAccess(doc.id)) {
                 const documentType = doc.type;
+
                 if (documentType === this.models['document'].docTypes.DOC_TYPE_HTML) {
-                    //TODO: if ssid not null, get new copy of hash 
-                    let deltaFilePath;
-                    if(studySessionId === null){
-                        deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
-                    }else{
-                        const studyId = await this.models['study_session'].getById(studySessionId)['studyId'];
-                        const studyHash = await this.models['study'].getById(studyId)['hash'];
-                        
-                        deltaFilePath = `${UPLOAD_PATH}/${doc.hash}`+ '_' + `${studyHash}.delta.json`;
-                    }
+                    let deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
 
                     if (fs.existsSync(deltaFilePath)) {
                         let delta = await this.loadDocument(deltaFilePath);
-                        
-                        // TODO: check db if draft exists, and merge it.. filtered by ssid
                         const edits = await this.models['document_edit'].findAll({
-                            where: {documentId: documentId, studySessionId: studySessionId, draft: true}
+                            where: {documentId: documentId, studySessionId: studySessionId, studyStepId: studyStepId, draft: true}
                         });
 
                         let dbDelta = dbToDelta(edits);
                         delta = delta.compose(dbDelta);
                         
 
-                        this.socket.emit("documentFile", {document: doc, deltas: delta, documentType });
+                        this.socket.emit("documentFile", {document: doc, deltas: delta });
                     } else {
-                        this.socket.emit("documentFile", {document: doc, deltas: new Delta(), documentType });
+                        this.socket.emit("documentFile", {document: doc, deltas: new Delta() });
                     }
                 } else { // Non-HTML document type, send file
                     const filePath = `${UPLOAD_PATH}/${doc.hash}.pdf`;
@@ -192,7 +182,7 @@ module.exports = class DocumentSocket extends Socket {
                             if (err) {
                                 throw new Error("Failed to read PDF");
                             }
-                            this.socket.emit("documentFile", {document: doc, file: data, documentType });
+                            this.socket.emit("documentFile", {document: doc, file: data});
                         });
                     } else {
                         throw new Error("PDF file not found");
@@ -349,6 +339,7 @@ module.exports = class DocumentSocket extends Socket {
             if (data.studySessionId && data.studySessionId !== 0) {
                 const studySession = await this.models['study_session'].getById(data.studySessionId);
                 const study = await this.models['study'].getById(studySession.studyId);
+
                 if (study.collab) {
 
                     // send studySessions
@@ -356,17 +347,31 @@ module.exports = class DocumentSocket extends Socket {
                     this.emit("study_sessionRefresh", studySessions);
 
                     // send annotations
-                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByKey('studySessionId', s.id)));
+                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
+                        {where: {'studySessionId': s.id, 'studyStepId': data.studyStepId },
+                        raw: true
+                    })
+                ));
                     this.emit("annotationRefresh", annotations.flat(1));
 
                     // send comments
-                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].getAllByKey('studySessionId', s.id)));
+                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
+                        {where: {'studySessionId': s.id, 'studyStepId': data.studyStepId },
+                        raw: true
+                    })
+                ));
                     this.emit("commentRefresh", comments.flat(1));
                 } else {
-                    const annotations = await this.models['annotation'].getAllByKey('studySessionId', data.studySessionId)
+                    const annotations = await this.models['annotation'].findAll(
+                        {where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId },
+                        raw: true
+                    });
                     this.emit("annotationRefresh", annotations);
 
-                    const comments = await this.models['comment'].getAllByKey('studySessionId', data.studySessionId)
+                    const comments = await this.models['comment'].findAll(
+                        {where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId },
+                        raw: true
+                    });
                     this.emit("commentRefresh", comments);
                 }
             } else {
@@ -481,19 +486,7 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Retrieves submission information from a specified moodle assignment. This includes a list of users and their corresponding submission files (name and url).
-     *
-     * @param {Object} data - The data object containing the course ID, assignment ID, Moodle URL and the API token.
-     * @param {number} data.courseID - The ID of the course to fetch users from.
-     * @param {number} data.assignmentID - The ID of the assignment to fetch users from.
-     * @param {string} data.options.apiKey - The API token for the Moodle instance
-     * @param {string} data.options.url - The URL of the Moodle instance.
-     * @returns {Promise<List>} - A list of dictionaries, each containing:
-     - 'userid' (int): The ID of the user who made the submission.
-     - 'submissionURLs' (list): A list of dictionaries, each containing:
-     - 'filename' (str): The name of the submitted file.
-     - 'fileurl' (str): The URL to access the submitted file.
-     * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
+     * @borrows MoodleRPC.getSubmissionInfosFromAssignment as getSubmissionInfosFromAssignment
      */
     async getSubmissionInfosFromAssignment(moodleData) {
         const { courseID, assignmentID } = moodleData;
@@ -507,6 +500,52 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
+    /**
+     * Transforms Moodle submission information to meet the frontend format
+     * @param {Object} moodleData - The Moodle data containing course and assignment information.
+     * @returns {Promise<Array<Object>>} An array of objects. Each contains a student's submission info such as fileUrl, fileName, etc.
+     */
+    async transformMoodleSubmissionInfo(moodleData) {
+        try {
+            const { data } = await this.getSubmissionInfosFromAssignment(moodleData);
+            if (!data) {
+                throw new Error("Failed to get student assignments from Moodle");
+            }
+            const usersData = await Promise.all(
+                data.map(async (user) => {
+                    const moodleId = user.userid;
+                    const userInfo = await this.models["user"].findOne({ where: { moodleId } });
+
+                    if (!userInfo) {
+                        this.logger.error(`Failed to find the user with ${moodleId}`);
+                        return null;
+                    }
+
+                    return user.submissionURLs.map((submission) => {
+                        const fileType = submission.filename.substring(submission.filename.lastIndexOf(".")).toLowerCase();
+
+                        return {
+                            moodleId,
+                            userId: userInfo.userId,
+                            firstName: userInfo.firstName,
+                            lastName: userInfo.lastName,
+                            fileName: submission.filename,
+                            fileUrl: submission.fileurl,
+                            type: fileType === ".pdf" ? "pdf" : "other",
+                        };
+                    });
+                })
+            );
+            return usersData.flat().filter(Boolean);
+        } catch (error) {
+            this.logger.error(error);
+        }
+    }
+
+    /**
+     * Retrieve documents that are ready for review
+     * @returns {Promise<Array<Object>>} An array of objects. Each contains a document's info such as name, hash, etc.
+     */
     async getReviewDocuments() {
         try {
             // Get documents that are ready for review
@@ -566,41 +605,10 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentGetMoodleData", async (moodleData, callback) => {
             try {
-                // TODO: Think about whether should write all the logic here or not.
-                const { success, data } = await this.getSubmissionInfosFromAssignment(moodleData);
-                const usersData = await Promise.all(
-                    data.map(async (user) => {
-                        const moodleId = user.userid;
-                        const userInfo = await this.models["user"].findOne({ where: { moodleId } });
-
-                        if (!userInfo) {
-                            this.logger.error(`Failed to find the user with ${moodleId}`);
-                            return null;
-                        }
-
-                        return user.submissionURLs.map((submission) => {
-                            const fileType = submission.filename
-                                .substring(submission.filename.lastIndexOf("."))
-                                .toLowerCase();
-
-                            return {
-                                moodleId,
-                                userId: userInfo.userId,
-                                firstName: userInfo.firstName,
-                                lastName: userInfo.lastName,
-                                fileName: submission.filename,
-                                fileUrl: submission.fileurl,
-                                type: fileType === ".pdf" ? "pdf" : "other",
-                            };
-                        });
-                    })
-                );
-
-                const formattedData = usersData.flat().filter(Boolean);
-
+                const assignments = await this.transformMoodleSubmissionInfo(moodleData);
                 callback({
-                    success,
-                    users: formattedData,
+                    success: true,
+                    assignments,
                 });
             } catch (error) {
                 this.logger.error(error);
@@ -630,7 +638,7 @@ module.exports = class DocumentSocket extends Socket {
         this.socket.on("documentGet", async (data) => {
             try {
                 
-                await this.sendDocument(data.documentId, data.studySessionId);
+                await this.sendDocument(data.documentId, data.studySessionId, data.studyStepId);
                 //TODO : if null - ssid 
                 if(data.studySessionId === null){               
                     await this.openDocument(data.documentId);
@@ -696,7 +704,7 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentGetData", async (data) => {
             try {
-                await this.getData(data);
+                await this.getData(data); 
             } catch (e) {
                 this.logger.info("Error loading document data: " + e);
                 this.sendToast("Internal server error. Error loading document data.", "Internal server error", "danger");
