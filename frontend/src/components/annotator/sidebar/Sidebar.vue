@@ -221,8 +221,8 @@ export default {
     this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
     this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
     this.originalWidth = this.width;
-    this.eventBus.on('sidebarScroll', (anno_id) => {
-      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", anno_id)
+    this.eventBus.on('sidebarScroll', (annotationId) => {
+      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
         .find(comm => comm.parentCommentId === null);
       // in case the comment might not be loaded yet
       if (!comment) {
@@ -233,7 +233,7 @@ export default {
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "sidebarScroll",
-          data: {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId, anno_id: anno_id}
+          data: {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId, annotationId: annotationId}
         });
       }
     })

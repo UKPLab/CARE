@@ -340,8 +340,8 @@ export default {
       }
       return false;
     },
-    scrollTo(anno_id) {
-      this.eventBus.emit('pdfScroll', anno_id);
+    scrollTo(annotationId) {
+      this.eventBus.emit('pdfScroll', annotationId);
     },
     save() {
       if (this.annotationId) {
