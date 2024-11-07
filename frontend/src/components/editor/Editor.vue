@@ -62,7 +62,8 @@ export default {
   },
   provide() {
     return {
-      documentId: computed(() => this.documentId)
+      documentId: computed(() => this.documentId),
+      studyStepId: computed(()=> this.studyStepId)
     }
   },
   inject: {
@@ -70,11 +71,6 @@ export default {
       type: Number,
       required: false,
       default: null // Allows for null if not in a study session
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: 0,
     },
     userId: {
       type: Number,
@@ -92,7 +88,12 @@ export default {
       type: Number,
       required: true,
       default: 0,
-    }
+    },    
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
   },
   data() {
     return {
