@@ -79,11 +79,16 @@ export default {
   components: {AnnoCard, ConfirmModal},
   inject: {
     documentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studySessionId: {
-      type: String,
+      type: Number,
+      required: false,
+      default: null,
+    },
+    studyStepId: {
+      type: Number,
       required: false,
       default: null,
     },
@@ -130,7 +135,7 @@ export default {
     studySessionIds() {
       if (this.study) {
         return this.$store.getters["table/study_session/getByKey"]("studyId", this.studySession.studyId)
-            .map(s => s.id);
+        .map(s => s.id);
       }
       return null;
     },
@@ -143,7 +148,7 @@ export default {
         .filter(comment => {
           // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
-            return comment.studySessionId === this.studySessionId;
+            return comment.studySessionId === this.studySessionId && comment.studyStepId === this.studyStepId;
           } else if (this.studySessionIds) {
             return this.studySessionIds.includes(comment.studySessionId);
           } else {
@@ -216,8 +221,8 @@ export default {
     this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
     this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
     this.originalWidth = this.width;
-    this.eventBus.on('sidebarScroll', (anno_id) => {
-      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", anno_id)
+    this.eventBus.on('sidebarScroll', (annotationId) => {
+      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
         .find(comm => comm.parentCommentId === null);
       // in case the comment might not be loaded yet
       if (!comment) {
@@ -228,7 +233,7 @@ export default {
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "sidebarScroll",
-          data: {documentId: this.documentId, studySessionId: this.studySessionId, anno_id: anno_id}
+          data: {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId, annotationId: annotationId}
         });
       }
     })
@@ -278,6 +283,7 @@ export default {
       this.$socket.emit('commentUpdate', {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
         annotationId: null,
         commentId: null
       });

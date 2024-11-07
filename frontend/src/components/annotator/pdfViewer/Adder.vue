@@ -35,11 +35,16 @@ export default {
   name: "PDFAdder",
   inject: {
     documentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studySessionId: {
-      type: String,
+      type: Number,
+      required: false,
+      default: null,
+    },
+    studyStepId: {
+      type: Number,
       required: false,
       default: null,
     },
@@ -108,6 +113,7 @@ export default {
       this.$socket.emit('annotationUpdate', {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
         selectors: {target},
         tagId: tag.id
       });
@@ -159,6 +165,7 @@ export default {
           data: {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
             eventClientX: event.clientX, eventClientY: event.clientY
           }
         });

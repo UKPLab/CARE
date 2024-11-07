@@ -82,7 +82,13 @@ import ReportItem from "./ReportItem.vue";
 export default {
   name: "ReportModal",
   components: {Modal, ReportItem},
-  inject: ['studySessionId'],
+  inject: {
+   studySessionId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+  },
   emits: ['decisionSubmit'],
   computed: {
     studySession() {

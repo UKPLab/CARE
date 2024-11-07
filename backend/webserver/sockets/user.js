@@ -240,9 +240,6 @@ module.exports = class UserSocket extends Socket {
 
   
 
-
-
-
   /**
    * Retrieves users from a specified moodle course and returns the data as an array.
    *

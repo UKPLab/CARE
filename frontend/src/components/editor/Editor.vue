@@ -41,7 +41,7 @@
  *
  * This component provides a Quill editor to edit the document.
  *
- * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska
+ * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska, Manu Sundar Raj Nandyal
  */
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -50,6 +50,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import { dbToDelta, deltaToDb } from "editor-delta-conversion";
 import { Editor } from './editorStore.js';
 import { downloadDocument } from "@/assets/utils.js";
+import {computed} from "vue";
 
 const Delta = Quill.import('delta');
 
@@ -59,19 +60,39 @@ export default {
   components: {
     LoadIcon
   },
+  provide() {
+    return {
+      documentId: computed(() => this.documentId)
+    }
+  },
   inject: {
-    documentId: {
-      default: 0
-    },
     studySessionId: {
+      type: Number,
+      required: false,
       default: null // Allows for null if not in a study session
     },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
     userId: {
+      type: Number,
+      required: false,
       default: null
     },
     readonly: {
+      type: Boolean,
+      required: false,
       default: false, // Default to false if not provided
     },
+  },
+  props: {
+    documentId: {
+      type: Number,
+      required: true,
+      default: 0,
+    }
   },
   data() {
     return {
@@ -109,7 +130,7 @@ export default {
       }
     }
 
-    this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId });
+    this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId, studyStepId: this.studyStepId });
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
   },
