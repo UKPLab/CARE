@@ -36,7 +36,7 @@
       >
         <label class="consent-label">
           <input
-            v-model="acceptDataStats"
+            v-model="acceptStats"
             class="consent-input"
             type="checkbox"
           />
