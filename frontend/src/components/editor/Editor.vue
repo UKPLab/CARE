@@ -13,7 +13,10 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll;"
         >
-          <div id="editor-container"></div>
+          <div id="editor-container"
+          @paste="onPaste"
+          @copy="onCopy">
+          </div>
         </div>
       </div>
     </div>
@@ -33,6 +36,7 @@
       />
     </button>
   </Teleport>
+  
 </template>
 
 <script>
@@ -41,7 +45,7 @@
  *
  * This component provides a Quill editor to edit the document.
  *
- * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska
+ * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska, Alexander Bürkle
  */
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -57,7 +61,7 @@ export default {
   name: "EditorView",
   fetch_data: ["document_edit"],
   components: {
-    LoadIcon
+    LoadIcon,
   },
   inject: {
     documentId: {
@@ -68,7 +72,7 @@ export default {
     },
     userId: {
       default: null
-    }
+    } 
   },
   data() {
     return {
@@ -76,11 +80,12 @@ export default {
       documentHash: this.$route.params.documentHash,
       deltaBuffer: [],
       editor: null,
-      documentLoaded: false
+      documentLoaded: false,
     };
   },
   created() {
     this.documentHash = this.$route.params.documentHash;
+    
   },
   mounted() {
       const editorContainer = document.getElementById('editor-container');
@@ -121,6 +126,9 @@ export default {
     this.$socket.emit("documentClose", { documentId: this.documentId });
   },
   computed: {
+    user() {
+      return this.$store.getters["auth/getUser"];
+    },
       unappliedEdits() {
         return this.$store.getters["table/document_edit/getFiltered"](
           e => e.applied === false
@@ -198,6 +206,32 @@ export default {
     }
   },
   methods: {
+    onPaste(event) {
+      if(this.user.acceptStats) {
+      const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+      if (pastedText) {
+        this.$socket.emit("stats", {
+          action: "textPasted",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            pastedText: pastedText,
+            acceptDataSharing: this.user.acceptDataSharing
+          }})
+    }}},
+    onCopy(event) {
+      if(this.user.acceptStats) {
+      const copiedText = (event.clipboardData || window.clipboardData).getData('text');
+      if (copiedText) {
+        this.$socket.emit("stats", {
+          action: "textCopied",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            copiedText: copiedText,
+            acceptDataSharing: this.user.acceptDataSharing
+          }})
+    }}},
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
         this.deltaBuffer.push(delta);
