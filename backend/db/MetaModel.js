@@ -170,7 +170,6 @@ module.exports = class MetaModel extends Model {
                 data.hash = uuidv4();
             }
 
-
             return (await this.create(this.subselectFields(data, possibleFields), options)).get({plain: true});
         } catch (err) {
             console.log(err);
