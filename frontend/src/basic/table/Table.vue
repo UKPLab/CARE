@@ -107,6 +107,7 @@
             <input
               class="form-check-input"
               type="checkbox"
+              :disabled="r.isDisabled"
               :checked="selectedRows.some((row) => deepEqual(row, r))"
               @change="(e) => selectRow(e.target.checked, r)"
             />
@@ -446,14 +447,14 @@ export default {
             this.selectedRows.splice(toRemove, 1);
           }
         }
-        this.isAllRowsSelected = this.selectedRows.length === this.tableData.length;
+        this.isAllRowsSelected = this.selectedRows.length === this.tableData.filter((r) => !r.isDisabled).length;
         this.$emit("rowSelection", this.selectedRows);
       }
     },
     selectAllRows() {
       this.isAllRowsSelected = !this.isAllRowsSelected;
       if (this.isAllRowsSelected) {
-        this.selectedRows = [...this.tableData];
+        this.selectedRows = [...this.tableData].filter((t) => !t.isDisabled);
       } else {
         this.selectedRows = [];
       }
@@ -487,4 +488,12 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: initial;
+  opacity: 0.5;
+  background-color: #d8d8d8;
+  border: 1px solid gray;
+}
+</style>
