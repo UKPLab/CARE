@@ -17,6 +17,7 @@ const getDefaultState = () => {
     userStats: {},
     user: {},
     userRight: {},
+    systemRoles: [],
   };
 };
 
@@ -72,6 +73,14 @@ export default {
      */
     getUserRight: (state) => {
       return state["userRight"];
+    },
+
+    /**
+     * Fetches the system roles in the store.
+     * @returns {Array} An array of system roles.
+     */
+    getSystemRoles: (state) => {
+      return state["systemRoles"];
     },
   },
   mutations: {
@@ -130,6 +139,17 @@ export default {
     SOCKET_userRight: (state, message) => {
       if (message.success) {
         state.userRight = message.userRight;
+      }
+    },
+
+    /**
+     * Update the system roles
+     * @param {*} state
+     * @param {*} roles
+     */
+    setSystemRoles: (state, roles) => {
+      if (roles) {
+        state.systemRoles = roles;
       }
     },
   },

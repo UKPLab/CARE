@@ -101,7 +101,7 @@ export default {
         { name: "Last Login", key: "lastLoginAt", sortable: true },
         { name: "Manage", key: "manage", type: "button-group" },
       ],
-      // Possible values for role are "all", "student", "mentor", "teacher"
+      // Possible values for role here are all the roles in the DB.
       role: "all",
       peerColumns: [
         { name: "Review ID", key: "id", sortable: true },

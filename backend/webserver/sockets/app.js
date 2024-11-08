@@ -208,6 +208,23 @@ module.exports = class AppSocket extends Socket {
   }
 
   /**
+   * Sends all the roles CARE has from the DB.
+   *
+   * @returns {Promise<void>}
+   */
+  async sendSystemRoles() {
+    try {
+      const roles = await this.models["user_role"].findAll({
+        attributes: ["id", "name"],
+        raw: true,
+      });
+      this.socket.emit("appSystemRoles", roles);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  /**
    * Send all data needed for the frontend app for initialization
    * @param {[object]} data
    * @return {Promise<void>}
@@ -217,6 +234,7 @@ module.exports = class AppSocket extends Socket {
       await this.sendUser();
       await this.sendTables();
       await this.sendSettings();
+      await this.sendSystemRoles();
     } catch (error) {
       this.logger.error(error);
     }
