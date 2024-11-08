@@ -18,9 +18,12 @@ module.exports = class UploadSocket extends Socket {
   /**
    * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
    * an entry in the database.
-   * TODO: Rewrite the params here
    * @author Zheyu Zhang, Linyin Huang
-   * @param data the data including name and pdf binary file
+   * @param {Object} data - The data object containing the document details.
+   * @param {string} data.name - The name of the document.
+   * @param {Buffer} data.file - The binary content of the document.
+   * @param {string} [data.userId] - The ID of the user who owns the document (optional).
+   * @param {boolean} [data.isUploaded] - Indicates if the document is uploaded by an admin (optional).
    * @returns {Promise<void>}
    */
   async uploadDocument(data) {
@@ -65,12 +68,7 @@ module.exports = class UploadSocket extends Socket {
   }
 
   /**
-   * Downloads submissions from a user by their id.
-   *
-   * @param {List<String>} data.fileUrls - Containing the urls of the submissions to download. The urls can be retrieved from the 'submissionURLs' field of the response from 'getSubmissionInfosFromAssignment'.
-   * @param {Object} data.options
-   * @returns {Promise<Object>} The submission file data in binary format.
-   * @throws {Error} If the RPC service returns a failure response or an error occurs during the process.
+   * @borrows MoodleRPC.downloadSubmissionsFromUser as downloadSubmissionsFromUser
    */
   async downloadSubmissionsFromUser(data) {
     try {
@@ -80,7 +78,14 @@ module.exports = class UploadSocket extends Socket {
     }
   }
 
-  async bulkDownloadSubmission(data) {
+  /**
+   * Download Moodle Submission and then upload them to CARE server
+   * @param {*} data
+   * @param {*} data.options - Contains Moodle info such as apiKey and url
+   * @param {*} data.files - Contains files to be downloaded from Moodle
+   * @returns
+   */
+  async bulkUploadSubmissionToServer(data) {
     const { options, files } = data;
     const results = [];
 
@@ -143,11 +148,11 @@ module.exports = class UploadSocket extends Socket {
 
     this.socket.on("uploadMoodleSubmission", async (data, callback) => {
       try {
-        const results = await this.bulkDownloadSubmission(data);
+        const results = await this.bulkUploadSubmissionToServer(data);
         callback({ success: true, results });
       } catch (error) {
-        this.logger.error("Error in method bulkDownloadSubmission:", error);
-        callback({ success: false, error: error.message });
+        this.logger.error("Error in method bulkUploadSubmissionToServer:", error);
+        callback({ success: false, error: "Failed to bulk download students' submissions" });
       }
     });
   }
