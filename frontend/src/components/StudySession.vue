@@ -7,7 +7,7 @@
     v-else
     :init-study-session-id="studySessionId"
     :readonly= "readonly"
-    :study-hash="studySessionHash"
+    :study-hash="studyHash"
   />
 </template>
 
@@ -56,6 +56,9 @@ export default {
     },
     readonly() {
       return this.$route.meta.readonly !== undefined && this.$route.meta.readonly          
+    },
+    studyHash(){
+      return this.$store.getters['table/study/get'](this.studySession.studyId)["hash"]; 
     },
   },
   mounted() {
