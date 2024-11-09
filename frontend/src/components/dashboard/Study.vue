@@ -5,6 +5,7 @@
     <ConfirmModal ref="deleteConf"/>
     <ConfirmModal ref="confirmModal"/>
     <BulkCreateAssignmentsModal ref="bulkCreateAssignmentsModal"/>
+    <CreateSingleAssignmentModal ref="createSingleAssignmentModal"/>
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
@@ -18,6 +19,12 @@
           title="Add Bulk Assignments"
           :style="{ margin: '10px 10px' }"
           @click="addBulkAssignment()"
+        />
+        <BasicButton
+          v-if="isAdmin"
+          class="btn-secondary btn-sm"
+          title="Add Single Assignment"
+          @click="addSingleAssignment()"
         />
       </template>
       <template #body>
@@ -40,6 +47,7 @@ import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vu
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
+import CreateSingleAssignmentModal from "./study/CreateSingleAssignmentModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -48,7 +56,7 @@ import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal, BulkCreateAssignmentsModal},
+  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal, BulkCreateAssignmentsModal, CreateSingleAssignmentModal},
   inject: {
     acceptStats: {
       default: () => false
@@ -125,9 +133,9 @@ export default {
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
-    },
+    },  
     studs() {
-      return this.studies.filter(study => study.userId === this.userId && study.template === false)
+      return this.studies.filter(study => study.createdByUserId === this.userId && study.template === false)
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
           let study = {...st};
@@ -208,7 +216,7 @@ export default {
                 },
                 title: "Inspect sessions",
                 action: "inspectSessions",
-              }
+              },
             ];
             return study
           }
@@ -288,6 +296,9 @@ export default {
     },
     addBulkAssignment() {
       this.$refs.bulkCreateAssignmentsModal.open();
+    },
+    addSingleAssignment() {
+      this.$refs.createSingleAssignmentModal.open();
     },
     studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);

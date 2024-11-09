@@ -158,6 +158,7 @@ module.exports = (sequelize, DataTypes) => {
         name: DataTypes.STRING,
         hash: DataTypes.STRING,
         userId: DataTypes.INTEGER,
+        createdByUserId: DataTypes.INTEGER,
         workflowId: DataTypes.INTEGER,
         collab: DataTypes.BOOLEAN,
         resumable: DataTypes.BOOLEAN,
@@ -187,7 +188,6 @@ module.exports = (sequelize, DataTypes) => {
                     console.log("Study is a template, skipping step update.");
                     return;
                 }
-
                 try {
                     const workflowSteps = await sequelize.models.workflow_step.findAll({
                         where: { workflowId: study.workflowId },

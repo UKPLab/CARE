@@ -18,6 +18,7 @@ const getDefaultState = () => {
     user: {},
     userRight: {},
     systemRoles: [],
+    assignmentUserInfos: [],
   };
 };
 
@@ -82,6 +83,15 @@ export default {
     getSystemRoles: (state) => {
       return state["systemRoles"];
     },
+
+    /*
+     * Fetch all user's with their assignment information and roles
+     * @param {Object} state
+     * @returns {Array}
+     */
+    getAssignmentUserInfos: (state) => {
+      return state["assignmentUserInfos"];
+    },
   },
   mutations: {
     /**
@@ -117,6 +127,19 @@ export default {
     SOCKET_userByRole: (state, message) => {
       if (message.success) {
         state.userRecords = message.users;
+      }
+    },
+
+    /**
+     * On "assignmentUserInfos", update the list of userInfos
+     *
+     * @param state
+     * @param message
+     */
+    SOCKET_assignmentUserInfos: (state, message) => {
+      if (message.success) {
+        console.log(message, "HELLLOOO");
+        state.assignmentUserInfos = message.userInfos;
       }
     },
 
