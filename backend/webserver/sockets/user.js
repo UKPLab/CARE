@@ -69,7 +69,6 @@ module.exports = class UserSocket extends Socket {
       this.logger.error("User right and request parameter mismatch");
     }
   }
-
   /**
    * Get users by their role
    * @param {string} role - The role of the users to fetch. Possible values: "student", "mentor", "all"
@@ -109,51 +108,9 @@ module.exports = class UserSocket extends Socket {
     }
   }
 
-  /**
-   * Uploads login data to a Moodle assignment as feedback comments.
-   * @param {Object} moodleData - The data required for uploading login data.
-   * @param {number} moodleData.courseID - The ID of the course to fetch users from.
-   * @param {number} moodleData.assignmentID - The ID of the Moodle assignment.
-   * @param {Array<Object>} moodleData.loginData - An array of objects containing user IDs, usernames and passwords.
-   * @param {string} moodleData.options.apiKey - The API token for the Moodle instance
-   * @param {string} moodleData.options.url - The URL of the Moodle instance.
-   * @returns {Promise<void>} - A promise that resolves when the passwords have been uploaded.
-   */
-  async uploadDataToMoodle(moodleData) {
-    const { courseID, assignmentID } = moodleData;
-    const convertedCourseID = Number(courseID);
-    const convertedAsgID = Number(assignmentID);
-    const updatedMoodleData = { ...moodleData, convertedCourseID, convertedAsgID };
-    try {
-      return await this.server.rpcs["MoodleRPC"].uploadLoginDataToMoodle(updatedMoodleData);
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
   async getAllUsersWithRoleAndNumberOfAssignments() {
     try {
       return await this.models["user"].getAllUsersWithRoleAndNumberOfAssignments();
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
-  /**
-   * Retrieves users from a specified moodle course and returns the data as an array.
-   *
-   * @param {Object} courseData - The data object containing the course ID, Moodle URL and the API token.
-   * @param {number} courseData.courseID - The ID of the course to fetch users from.
-   * @param {string} courseData.options.apiKey - The API token for the Moodle instance
-   * @param {string} courseData.options.url - The URL of the Moodle instance.
-   * @returns {Promise<Array>} - An array of objects, each containing the following keys: id, firstname, lastname, email, username, roles
-   */
-  async getUsersFromCourse(courseData) {
-    const { courseID } = courseData;
-    const convertedCourseID = Number(courseID);
-    const updatedCourseData = { ...courseData, convertedCourseID };
-    try {
-      return await this.server.rpcs["MoodleRPC"].getUsersFromCourse(updatedCourseData);
     } catch (error) {
       this.logger.error(error);
     }
@@ -359,26 +316,6 @@ module.exports = class UserSocket extends Socket {
         this.logger.error(errorMsg);
       }
     });
-
-
-
-    this.socket.on("getAllUsersWithRoleAndNumberOfAssignments", async (callback) => {
-      try {
-        const users = await this.getAllUsersWithRoleAndNumberOfAssignments();
-        callback({
-          success: true,
-          users: users,
-        });
-        this.socket.emit("usersWithRolesAndAssignments", {
-          success: true,
-          users,
-        });
-      } catch (error) {
-        this.logger.error(errorMsg);
-      }
-    });
-
-
 
     // Get specific user's details
     this.socket.on("userGetDetails", async (userId) => {
