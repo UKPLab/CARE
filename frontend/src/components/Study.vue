@@ -97,7 +97,10 @@ export default {
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
-      readonly: this.readonly,
+      readonly: (this.study.multipleSubmit 
+                  && ((this.study.closed ? new Date(this.study.closed) > Date.now() : false) 
+                  || (this.study.end ? new Date(this.study.end) > Date.now() : false)))?
+                            computed(() => this.readonly): false,
     };
   },
   props: {
@@ -271,9 +274,11 @@ export default {
         this.calcTimeLeft();
         if (!newVal.end) {
           this.timerInterval = setInterval(this.calcTimeLeft, 1000);
+        }else{
+          this.readonly = true;
         }
       }
-    }
+    },
   },
   mounted() {
     this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
