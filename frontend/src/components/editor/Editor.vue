@@ -13,7 +13,10 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll;"
         >
-          <div id="editor-container"></div>
+          <div id="editor-container"
+          @paste="onPaste"
+          @copy="onCopy">
+          </div>
         </div>
       </div>
     </div>
@@ -33,6 +36,7 @@
       />
     </button>
   </Teleport>
+  
 </template>
 
 <script>
@@ -41,7 +45,7 @@
  *
  * This component provides a Quill editor to edit the document.
  *
- * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska
+ * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska, Manu Sundar Raj Nandyal, Alexander Bürkle
  */
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -50,6 +54,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import { dbToDelta, deltaToDb } from "editor-delta-conversion";
 import { Editor } from './editorStore.js';
 import { downloadDocument } from "@/assets/utils.js";
+import {computed} from "vue";
 
 const Delta = Quill.import('delta');
 
@@ -57,20 +62,41 @@ export default {
   name: "EditorView",
   fetch_data: ["document_edit"],
   components: {
-    LoadIcon
+    LoadIcon,
+  },
+  provide() {
+    return {
+      documentId: computed(() => this.documentId),
+      studyStepId: computed(()=> this.studyStepId)
+    }
   },
   inject: {
-    documentId: {
-      default: 0
-    },
     studySessionId: {
+      type: Number,
+      required: false,
       default: null // Allows for null if not in a study session
     },
     userId: {
+      type: Number,
+      required: false,
       default: null
     },
     readonly: {
+      type: Boolean,
+      required: false,
       default: false, // Default to false if not provided
+    },
+  },
+  props: {
+    documentId: {
+      type: Number,
+      required: true,
+      default: 0,
+    },    
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: 0,
     },
   },
   data() {
@@ -79,11 +105,12 @@ export default {
       documentHash: this.$route.params.documentHash,
       deltaBuffer: [],
       editor: null,
-      documentLoaded: false
+      documentLoaded: false,
     };
   },
   created() {
     this.documentHash = this.$route.params.documentHash;
+    
   },
   mounted() {
     const editorContainer = document.getElementById('editor-container');
@@ -109,7 +136,7 @@ export default {
       }
     }
 
-    this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId });
+    this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId, studyStepId: this.studyStepId });
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
   },
@@ -130,6 +157,9 @@ export default {
     this.$socket.emit("documentClose", { documentId: this.documentId, studySessionId: this.studySessionId });
   },
   computed: {
+    user() {
+      return this.$store.getters["auth/getUser"];
+    },
     unappliedEdits() {
       return this.$store.getters["table/document_edit/getFiltered"](
         (e) => e.applied === false
@@ -205,6 +235,32 @@ export default {
     }
   },
   methods: {
+    onPaste(event) {
+      if(this.user.acceptStats) {
+      const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+      if (pastedText) {
+        this.$socket.emit("stats", {
+          action: "textPasted",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            pastedText: pastedText,
+            acceptDataSharing: this.user.acceptDataSharing
+          }})
+    }}},
+    onCopy(event) {
+      if(this.user.acceptStats) {
+      const copiedText = (event.clipboardData || window.clipboardData).getData('text');
+      if (copiedText) {
+        this.$socket.emit("stats", {
+          action: "textCopied",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            copiedText: copiedText,
+            acceptDataSharing: this.user.acceptDataSharing
+          }})
+    }}},
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
         this.deltaBuffer.push(delta);
@@ -219,6 +275,7 @@ export default {
           this.$socket.emit("documentEdit", {
             documentId: this.documentId,
             studySessionId: this.studySessionId || null,
+            studyStepId: this.studyStepId || null,
             ops: dbOps
           });
         }

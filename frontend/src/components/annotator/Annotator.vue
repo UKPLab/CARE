@@ -148,6 +148,7 @@ import debounce from 'lodash.debounce';
 import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
+import {computed} from "vue";
 
 export default {
   name: "AnnotatorView",
@@ -159,11 +160,16 @@ export default {
     Loader,
     ExportAnnos
   },
+  provide() {
+    return {
+      documentId: computed(() => this.documentId),
+      studyStepId: computed(() => this.studyStepId)
+    }
+  },
   inject: {
-    documentId: {
-      default: 0
-    },
     studySessionId: {
+      type: Number,
+      required: false,
       default: null
     },
     acceptStats: {
@@ -185,6 +191,16 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    documentId: {
+      type: Number,
+      required: true,
+      default: 0,
+    },    
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: 0,
     },
   },
   data() {
@@ -241,23 +257,28 @@ export default {
       return this.$store.getters["settings/getValue"]('service.nlp.enabled') === "true";
     },
     numStudyComments() {
-      return this.comments.filter(c => c.studySessionId).length;
-    },
+      return this.comments.filter(c => c.studySessionId === this.studySessionId && c.studyStepId === this.studyStepId).length;
+    }
   },
   watch: {
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId , studyStepId: this.studyStepId});
       }
-    }
+    },
+    studyStepId(newVal, oldVal) {
+      if (oldVal !== newVal) {
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId , studyStepId: this.studyStepId});
+      }
+    },
   },
   mounted() {
-    this.eventBus.on('pdfScroll', (anno_id) => {
-      this.scrollTo(anno_id);
+    this.eventBus.on('pdfScroll', (annotationId) => {
+      this.scrollTo(annotationId);
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "pdfScroll",
-          data: {documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
+          data: {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId, annotationId: annotationId}
         });
       }
     });
@@ -379,8 +400,8 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0)) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+      if (this.studySessionId && this.studyStepId && this.studySessionId !== 0 && this.studyStepId !== 0) {
+            this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
       }
 
       // Join Room for document updates
@@ -411,6 +432,7 @@ export default {
             data: {
               documentId: this.documentId,
               studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               copiedText: copiedText,
             }
           });

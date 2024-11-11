@@ -82,7 +82,13 @@ Source: -
 export default {
   name: "ReviewModal",
   components: {Modal, BasicButton},
-  inject: ['studySessionId'],
+  inject: {
+   studySessionId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+  },
   data() {
     return {
       comment: "",

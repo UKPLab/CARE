@@ -12,7 +12,7 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * Loading the document through websocket
  *
- * @author Dennis Zyska, Juliane Bechert
+ * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal
  * @type {DocumentSocket}
  */
 module.exports = class DocumentSocket extends Socket {
@@ -151,39 +151,29 @@ module.exports = class DocumentSocket extends Socket {
      * @param {number} documentId
      * @returns {Promise<Delta|void>}
      */
-    async sendDocument(documentId, studySessionId) {
+    async sendDocument(documentId, studySessionId, studyStepId) {
         try {
             const doc = await this.models['document'].getById(documentId);
 
             if (this.checkDocumentAccess(doc.id)) {
                 const documentType = doc.type;
+
                 if (documentType === this.models['document'].docTypes.DOC_TYPE_HTML) {
-                    //TODO: if ssid not null, get new copy of hash 
-                    let deltaFilePath;
-                    if(studySessionId === null){
-                        deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
-                    }else{
-                        const studyId = await this.models['study_session'].getById(studySessionId)['studyId'];
-                        const studyHash = await this.models['study'].getById(studyId)['hash'];
-                        
-                        deltaFilePath = `${UPLOAD_PATH}/${doc.hash}`+ '_' + `${studyHash}.delta.json`;
-                    }
+                    let deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
 
                     if (fs.existsSync(deltaFilePath)) {
                         let delta = await this.loadDocument(deltaFilePath);
-                        
-                        // TODO: check db if draft exists, and merge it.. filtered by ssid
                         const edits = await this.models['document_edit'].findAll({
-                            where: {documentId: documentId, studySessionId: studySessionId, draft: true}
+                            where: {documentId: documentId, studySessionId: studySessionId, studyStepId: studyStepId, draft: true}
                         });
 
                         let dbDelta = dbToDelta(edits);
                         delta = delta.compose(dbDelta);
                         
 
-                        this.socket.emit("documentFile", {document: doc, deltas: delta, documentType });
+                        this.socket.emit("documentFile", {document: doc, deltas: delta });
                     } else {
-                        this.socket.emit("documentFile", {document: doc, deltas: new Delta(), documentType });
+                        this.socket.emit("documentFile", {document: doc, deltas: new Delta() });
                     }
                 } else { // Non-HTML document type, send file
                     const filePath = `${UPLOAD_PATH}/${doc.hash}.pdf`;
@@ -192,7 +182,7 @@ module.exports = class DocumentSocket extends Socket {
                             if (err) {
                                 throw new Error("Failed to read PDF");
                             }
-                            this.socket.emit("documentFile", {document: doc, file: data, documentType });
+                            this.socket.emit("documentFile", {document: doc, file: data});
                         });
                     } else {
                         throw new Error("PDF file not found");
@@ -349,6 +339,7 @@ module.exports = class DocumentSocket extends Socket {
             if (data.studySessionId && data.studySessionId !== 0) {
                 const studySession = await this.models['study_session'].getById(data.studySessionId);
                 const study = await this.models['study'].getById(studySession.studyId);
+
                 if (study.collab) {
 
                     // send studySessions
@@ -356,17 +347,31 @@ module.exports = class DocumentSocket extends Socket {
                     this.emit("study_sessionRefresh", studySessions);
 
                     // send annotations
-                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByKey('studySessionId', s.id)));
+                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
+                        {where: {'studySessionId': s.id, 'studyStepId': data.studyStepId },
+                        raw: true
+                    })
+                ));
                     this.emit("annotationRefresh", annotations.flat(1));
 
                     // send comments
-                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].getAllByKey('studySessionId', s.id)));
+                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
+                        {where: {'studySessionId': s.id, 'studyStepId': data.studyStepId },
+                        raw: true
+                    })
+                ));
                     this.emit("commentRefresh", comments.flat(1));
                 } else {
-                    const annotations = await this.models['annotation'].getAllByKey('studySessionId', data.studySessionId)
+                    const annotations = await this.models['annotation'].findAll(
+                        {where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId },
+                        raw: true
+                    });
                     this.emit("annotationRefresh", annotations);
 
-                    const comments = await this.models['comment'].getAllByKey('studySessionId', data.studySessionId)
+                    const comments = await this.models['comment'].findAll(
+                        {where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId },
+                        raw: true
+                    });
                     this.emit("commentRefresh", comments);
                 }
             } else {
@@ -421,7 +426,7 @@ module.exports = class DocumentSocket extends Socket {
     async editDocument(data) {
         const transaction = await database.sequelize.transaction();
         try {
-            const { documentId, studySessionId, ops } = data;
+            const { documentId, studySessionId, studyStepId, ops } = data;
             let appliedEdits = [];
 
             await ops.reduce(async (promise, op) => {
@@ -431,6 +436,7 @@ module.exports = class DocumentSocket extends Socket {
                     draft: true,
                     documentId,
                     studySessionId: studySessionId || null,
+                    studyStepId: studyStepId || null,
                     ...op
                 };
 
@@ -633,7 +639,7 @@ module.exports = class DocumentSocket extends Socket {
         this.socket.on("documentGet", async (data) => {
             try {
                 
-                await this.sendDocument(data.documentId, data.studySessionId);
+                await this.sendDocument(data.documentId, data.studySessionId, data.studyStepId);
                 //TODO : if null - ssid 
                 if(data.studySessionId === null){               
                     await this.openDocument(data.documentId);
@@ -699,7 +705,7 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentGetData", async (data) => {
             try {
-                await this.getData(data);
+                await this.getData(data); 
             } catch (e) {
                 this.logger.info("Error loading document data: " + e);
                 this.sendToast("Internal server error. Error loading document data.", "Internal server error", "danger");
