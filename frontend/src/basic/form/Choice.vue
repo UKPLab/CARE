@@ -75,7 +75,9 @@ export default {
   watch: {
     modelValue: {
       handler(newValue) {
-        this.currentData = newValue && newValue.length > 0 ? [...newValue] : this.currentData;
+        if (JSON.stringify(newValue) !== JSON.stringify(this.currentData)) {
+          this.currentData = [...newValue];
+        }
       },
       immediate: true,
       deep: true,

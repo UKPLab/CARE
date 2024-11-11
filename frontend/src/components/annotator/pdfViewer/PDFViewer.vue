@@ -41,13 +41,18 @@ export default {
   components: {PDFPage, Adder},
   inject: {
     documentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studySessionId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
+    },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: 0,
     },
     readonly: {
       type: Boolean,
@@ -108,7 +113,7 @@ export default {
   },
   mounted() {
     // TODO: add ssid
-    this.$socket.emit("documentGet", {documentId: this.documentId, studySessionId: this.studySessionId});
+    this.$socket.emit("documentGet", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
   },
   unmounted() {
     this.pdf = null;
@@ -131,7 +136,8 @@ export default {
             documentId: this.documentId,
             readonly: this.readonly,
             visibility: page,
-            studySessionId: this.studySessionId
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
           }
         })
       }

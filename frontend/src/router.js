@@ -46,10 +46,10 @@ const routes = [
         meta: {requireAuth: true}
     },
     {
-        path: "/review/:studySessionHash",
-        component: () => import('@/components/Review.vue'),
+        path: "/review/:studySessionHash", // Review link
+        component: () => import('@/components/StudySession.vue'),
         props: true,
-        meta: {requireAuth: true}
+        meta: {requireAuth: true, readonly: true}
     },
     {
         path: "/study/:studyHash",
@@ -61,7 +61,7 @@ const routes = [
         path: "/session/:studySessionHash",
         component: () => import("@/components/StudySession.vue"),
         props: true,
-        meta: {requireAuth: true}
+        meta: {requireAuth: true, readonly: false}
     },
     {
         path: "/:catchAll(.*)",
