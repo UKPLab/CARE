@@ -27,14 +27,8 @@
           v-if="!closeable"
           class="text-center text-danger h6"
         >
-          The time has expired, no more changes are possible.
+         The time has expired, no more changes are possible.
         </div>
-
-        <label class="form-label">Comment</label>
-        <textarea
-          v-model="comment"
-          class="form-control"
-        />
       </div>
     </template>
     <template #footer>
@@ -73,7 +67,7 @@ import BasicButton from "@/basic/Button.vue";
 
 /* FinishModal.vue - modal to confirm to finish a study
 
-Prompts the user to confirm finishing a study (allowing to submit a comment).
+Prompts the user to confirm finishing a study.
 
 Author: Nils Dycke, Dennis Zyska
 Source: -
@@ -98,9 +92,7 @@ export default {
   },
   emits: ["finish"],
   data() {
-    return {
-      comment: "",
-    }
+    return {};
   },
   mounted() {
     if (this.finished) {
@@ -115,7 +107,7 @@ export default {
       this.$refs.modal.close();
     },
     finish() {
-      this.$emit("finish", {"comment": this.comment});
+      this.$emit("finish");
     },
     toDashboard() {
       this.close();

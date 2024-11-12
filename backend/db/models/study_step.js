@@ -4,7 +4,6 @@ const MetaModel = require("../MetaModel.js");
 module.exports = (sequelize, DataTypes) => {
   class StudyStep extends MetaModel {
     static autoTable = true;
-    // TODO documentId festlegen für einzelne Schritte, wenn id verlangt wird
     static fields = [
       {
           key: "documentId",
@@ -14,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
               table: "document", 
               id: "documentId",
               name: "name",
+              filter: [
+                { key: "hideInFrontend", value: true },
+                // Additional filter objects can be added as needed
+              ],
               relatedTable: {
                 table: "workflow_step", 
                 foreignKey: "workflowId", 
