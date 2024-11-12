@@ -135,12 +135,6 @@ module.exports = function (server) {
                 acceptedAt: data.acceptedAt
             });
 
-            const userRole = await server.db.models['user_role'].findOne({ where: { name: 'user' }});
-            await server.db.models['user_role_matching'].create({
-                userId: user.id,
-                userRoleId: userRole.id
-            });
-
             res.status(201).send("User was successfully created");
         } catch (err) {
             server.logger.error("Cannot create user:", err);

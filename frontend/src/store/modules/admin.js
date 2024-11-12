@@ -8,8 +8,6 @@
  * @author Dennis Zyska, Nils Dycke
  */
 
-import { get } from "lodash";
-
 const getDefaultState = () => {
   return {
     docs: [],
@@ -19,6 +17,7 @@ const getDefaultState = () => {
     userStats: {},
     user: {},
     userRight: {},
+    systemRoles: [],
     assignmentUserInfos: [],
   };
 };
@@ -78,13 +77,21 @@ export default {
     },
 
     /**
+     * Fetches the system roles in the store.
+     * @returns {Array} An array of system roles.
+     */
+    getSystemRoles: (state) => {
+      return state["systemRoles"];
+    },
+
+    /*
      * Fetch all user's with their assignment information and roles
-     * @param {Object} state 
+     * @param {Object} state
      * @returns {Array}
      */
     getAssignmentUserInfos: (state) => {
       return state["assignmentUserInfos"];
-    }
+    },
   },
   mutations: {
     /**
@@ -131,7 +138,7 @@ export default {
      */
     SOCKET_assignmentUserInfos: (state, message) => {
       if (message.success) {
-        console.log(message, "HELLLOOO")
+        console.log(message, "HELLLOOO");
         state.assignmentUserInfos = message.userInfos;
       }
     },
@@ -155,6 +162,17 @@ export default {
     SOCKET_userRight: (state, message) => {
       if (message.success) {
         state.userRight = message.userRight;
+      }
+    },
+
+    /**
+     * Update the system roles
+     * @param {*} state
+     * @param {*} roles
+     */
+    setSystemRoles: (state, roles) => {
+      if (roles) {
+        state.systemRoles = roles;
       }
     },
   },

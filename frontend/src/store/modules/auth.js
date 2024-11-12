@@ -71,7 +71,19 @@ export default {
             if (state.user) {
                 return state.user["id"];
             }
-        }
+        },
+
+        /**
+         * Gets the user's rights
+         * 
+         * @param state
+         * @returns {string[]} Array of right
+         */
+        getUserRights: state => {
+            if (state.user) {
+                return state.user["rights"];
+            }
+        },
     },
     mutations: {
         /**

@@ -187,13 +187,38 @@ module.exports = class AppSocket extends Socket {
         where: { userId: this.userId },
         raw: true,
       });
-      const userRoles = matchedRoles.map((role) => role.userRoleId);
+      const userRoleIds = matchedRoles.map((role) => role.userRoleId);
+      
+      const roleRights = await this.models["role_right_matching"].findAll({
+        where: { userRoleId: userRoleIds },
+        raw: true,
+      });
+      const userRights = roleRights.map((right) => right.userRightName);
+
       const userWithRoleInfo = {
         ...user,
-        roles: userRoles,
+        roles: userRoleIds,
+        rights: userRights,
         isAdmin: await this.isAdmin(),
       };
       this.socket.emit("appUser", userWithRoleInfo);
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
+
+  /**
+   * Sends all the roles CARE has from the DB.
+   *
+   * @returns {Promise<void>}
+   */
+  async sendSystemRoles() {
+    try {
+      const roles = await this.models["user_role"].findAll({
+        attributes: ["id", "name"],
+        raw: true,
+      });
+      this.socket.emit("appSystemRoles", roles);
     } catch (error) {
       this.logger.error(error);
     }
@@ -209,6 +234,7 @@ module.exports = class AppSocket extends Socket {
       await this.sendUser();
       await this.sendTables();
       await this.sendSettings();
+      await this.sendSystemRoles();
     } catch (error) {
       this.logger.error(error);
     }
