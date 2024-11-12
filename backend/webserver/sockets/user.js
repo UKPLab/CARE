@@ -69,7 +69,6 @@ module.exports = class UserSocket extends Socket {
       this.logger.error("User right and request parameter mismatch");
     }
   }
-
   /**
    * Get users by their role
    * @param {string} role - The role of the users to fetch. Possible values: "student", "mentor", "all"
@@ -306,20 +305,28 @@ module.exports = class UserSocket extends Socket {
           while (retries < maxRetries) {
             username = generateMarvelUsername();
             try {
-              // Attempt to create the user
-              createdUser = await this.models["user"].create({
-                firstName: user.firstname,
-                lastName: user.lastname,
-                userName: username,
-                email: user.email,
-                passwordHash: pwdHash,
-                salt,
-                moodleId: Number(user.id),
-                acceptTerms: false,
-                acceptStats: false,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              });
+              // Create the user
+              createdUser = await this.models["user"].create(
+                {
+                  firstName: user.firstname,
+                  lastName: user.lastname,
+                  userName: username,
+                  email: user.email,
+                  passwordHash: pwdHash,
+                  salt,
+                  moodleId: Number(user.id),
+                  acceptTerms: false,
+                  acceptStats: false,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+                {
+                  hooks: true,
+                  individualHooks: true,
+                  userRoles: user.roles,
+                  roleMap,
+                }
+              );
               break;
             } catch (error) {
               if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "userName") {
@@ -343,30 +350,15 @@ module.exports = class UserSocket extends Socket {
             },
             {
               where: { email: user.email },
+              hooks: true,
+              individualHooks: true,
+              userRoles: user.roles,
+              roleMap,
             }
           );
 
           // Fetch the updated user
           createdUser = await this.models["user"].findOne({ where: { email: user.email } });
-        }
-
-        // Find and assign roles
-        const assignedRoles = [];
-        const userRoles = user.roles.split(", ");
-        for (let roleName of userRoles) {
-          roleName = roleName.trim();
-          const userRole = await this.models["user_role"].findOne({
-            where: { name: roleMap[roleName] },
-          });
-          if (!userRole) {
-            continue;
-          }
-
-          await this.models["user_role_matching"].create({
-            userId: createdUser.id,
-            userRoleId: userRole.id,
-          });
-          assignedRoles.push(roleName);
         }
 
         createdUsers.push({
@@ -375,7 +367,7 @@ module.exports = class UserSocket extends Socket {
           lastname: createdUser.lastName,
           username: createdUser.userName,
           email: createdUser.email,
-          roles: assignedRoles.join(", "),
+          roles: user.roles,
           password: user.status === "new" ? password : "",
           status: user.status,
         });

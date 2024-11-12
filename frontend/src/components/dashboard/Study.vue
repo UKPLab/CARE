@@ -14,11 +14,11 @@
           @click="add()"
         />
         <BasicButton
-          v-if="isAdmin"
+          v-if="canAddBulkAssignments"
           class="btn-secondary btn-sm"
           title="Add Bulk Assignments"
-          @click="addBulkAssignment()"
           :style="{ margin: '10px 10px' }"
+          @click="addBulkAssignment()"
         />
         <BasicButton
           v-if="isAdmin"
@@ -48,7 +48,6 @@ import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
 import CreateSingleAssignmentModal from "./study/CreateSingleAssignmentModal.vue";
-
 
 /**
  * Dashboard component for handling studies
@@ -129,9 +128,6 @@ export default {
     }
   },
   computed: {
-    isAdmin() {
-      return this.$store.getters['auth/isAdmin'];
-    },
     studies() {
       return this.$store.getters["table/study/getAll"];
     },
@@ -234,6 +230,18 @@ export default {
             return study
           }
         );
+    },
+    isAdmin() {
+      return this.$store.getters["auth/isAdmin"];
+    },
+    userRights() {
+      return this.$store.getters["auth/getUserRights"];
+    },
+    canAddBulkAssignments() {
+      if (this.isAdmin) {
+        return true;
+      }
+      return this.userRights.includes("frontend.dashboard.studies.addBulkAssignments")
     },
   },
   methods: {
