@@ -139,7 +139,7 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },  
     studs() {
-      return this.studies.filter(study => study.createdByUserId === this.userId && study.template === false)
+      return this.studies.filter(study => ((study.createdByUserId === null && study.userId === this.userId) || (study.createdByUserId === this.userId)) && study.template === false)
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
           let study = {...st};
@@ -326,11 +326,13 @@ export default {
         warning,
         function (val) {
           if (val) {
-            this.$socket.emit("stats", {action: "studyDelete", data: {studyId: row.id}});
 
-            this.$socket.emit("studyUpdate", {
+            this.$socket.emit("addDataUpdate", {
+              table: "study",
+              data: {
               studyId: row.id,
               deleted: true
+              }
             });
           }
         }

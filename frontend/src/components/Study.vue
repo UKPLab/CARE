@@ -315,7 +315,6 @@ export default {
     finalFinish(data) {
       this.$socket.emit("studySessionUpdate", {
         sessionId: this.studySessionId,
-        comment: data.comment,
         end: Date.now()
       });
     },
