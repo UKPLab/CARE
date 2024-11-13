@@ -62,10 +62,10 @@
   </Teleport>
     <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
-      <div v-show="s.id === studySession.studyStepId">
+      <div v-show="s.id === currenStudyStepId">
         <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id"/>
       </div>
-      <div v-show="s.id === studySession.studyStepId">
+      <div v-show="s.id === currenStudyStepId">
         <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id"/>
       </div>
       <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
@@ -97,10 +97,7 @@ export default {
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
-      readonly: (this.study.multipleSubmit 
-                  && ((this.study.closed ? new Date(this.study.closed) > Date.now() : false) 
-                  || (this.study.end ? new Date(this.study.end) > Date.now() : false)))?
-                            computed(() => this.readonly): false,
+      readonly: this.readonlyComputed,
     };
   },
   props: {
@@ -125,6 +122,7 @@ export default {
       studySessionId: 0,
       timeLeft: 0,
       timerInterval: null,
+      localStudyStepId: 0,
     };
   },
   computed: {
@@ -262,6 +260,28 @@ export default {
       }
       return Math.round(this.timeLeft / 60) + "min";
     },
+    currenStudyStepId(){
+      if(this.readonly){
+        return this.localStudyStepId === 0 ? this.studySteps[0].id : this.localStudyStepId;        
+      }      
+        
+      return this.studySession.studyStepId;
+    },
+    readonlyComputed(){
+      if(this.study && this.study.multipleSubmit && !this.readonly){
+        if(this.study.closed){
+          return this.study.closed instanceof Date && new Date(this.study.closed) < Date.now();
+        }  
+        if(this.study.end){
+          return this.study.end instanceof Date && new Date(this.study.end) < Date.now();
+        }
+      } else{
+        const sessionEnded = this.studySession.end;
+        return sessionEnded !== null && (sessionEnded instanceof Date);
+      }
+
+      return this.readonly;
+    }
   },
   watch: {
     studySession(newVal) {
@@ -329,6 +349,9 @@ export default {
       }
     },
     updateStep(step) {
+      if(this.readonly){
+        this.localStudyStepId = step;
+      } else {   
       this.$socket.emit("appDataUpdate", {
           table: "study_session",
           data: {
@@ -336,6 +359,7 @@ export default {
             studyStepId: step 
           },
         });
+      }  
     },
   }
 };
