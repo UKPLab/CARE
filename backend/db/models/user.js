@@ -498,7 +498,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         afterUpdate: async (user, options) => {
           const { userRoles, roleMap, transaction } = options;
-          if (userRoles && roleMap) {
+          if (userRoles && roleMap && transaction) {
             try {
               await assignUserRoles(user, userRoles, roleMap, true, transaction);
               await transaction.commit();
