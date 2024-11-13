@@ -87,8 +87,12 @@ module.exports = (sequelize, DataTypes) => {
                     }
                                                             
                     const now = Date.now();
-                    if (study.closed && now > study.closed || studySession.end && now > studySession.end) {
+                    if (study.closed && now > new Date(study.closed)) {
                         throw new Error('This study is closed');
+                    }
+
+                    if (study.end && now > new Date(study.end)) {
+                        throw new Error('This study has ended');
                     }
 
                     const firstStep = await sequelize.models.study_step.findOne({
@@ -122,6 +126,25 @@ module.exports = (sequelize, DataTypes) => {
             
                     if (!currentSession) {
                         throw new Error('Study session not found');
+                    }
+
+                    const study = await sequelize.models.study.findOne({ 
+                        where: { id: studySession.studyId }
+                    }, { transaction });
+
+                    const now = Date.now();
+                    if (study.closed && now > new Date(study.closed)) {
+                        throw new Error('This study is closed');
+                    }
+
+                    if (study.end && now > new Date(study.end)) {
+                        throw new Error('This study has ended');
+                    }             
+                                         
+                    if(study && !study.multipleSubmit){
+                        if(currentSession.end !== studySession.end){
+                            throw new Error(`Cannot submit this study session multiple times`);                        
+                        }
                     }
             
                     const currentMaxStepId = currentSession.studyStepIdMax;
