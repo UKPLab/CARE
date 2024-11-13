@@ -6,8 +6,8 @@
   <Study
     v-else
     :init-study-session-id="studySessionId"
-    :readonly="readonly"
-    :study-hash="studySessionHash"
+    :readonly= "readonly"
+    :study-hash="studyHash"
   />
 </template>
 
@@ -32,11 +32,6 @@ export default {
       required: true,
     },
   },
-  data() {
-    return {
-      readonly: false,
-    }
-  },
   sockets: {
     studySessionError: function (data) {
       if (data.studySessionHash === this.studySessionHash) {
@@ -59,12 +54,11 @@ export default {
       } else
         return 0;
     },
-  },
-  watch: {
-    studySession(newVal) {
-      if (newVal && newVal.end) {
-        this.readonly = true;
-      }
+    readonly() {
+      return this.$route.meta.readonly !== undefined && this.$route.meta.readonly          
+    },
+    studyHash(){
+      return this.$store.getters['table/study/get'](this.studySession.studyId)["hash"]; 
     },
   },
   mounted() {

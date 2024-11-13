@@ -169,13 +169,18 @@ export default {
   components: {NLPService, Collaboration, SideCard, Comment, SidebarButton},
   inject: {
     documentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studySessionId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
+    },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: 0,
     },
     readonly: {
       type: Boolean,
@@ -335,8 +340,8 @@ export default {
       }
       return false;
     },
-    scrollTo(anno_id) {
-      this.eventBus.emit('pdfScroll', anno_id);
+    scrollTo(annotationId) {
+      this.eventBus.emit('pdfScroll', annotationId);
     },
     save() {
       if (this.annotationId) {
@@ -397,6 +402,7 @@ export default {
         "documentId": this.documentId,
         "parentCommentId": this.commentId,
         "studySessionId": this.studySessionId,
+        "studyStepId": this.studyStepId,
         "text": "Summarization: " + data[0]['summary_text'],
         "userId": "Bot"
       });

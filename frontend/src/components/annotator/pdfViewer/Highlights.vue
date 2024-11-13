@@ -20,13 +20,18 @@ export default {
   name: "PDFHighlights",
   inject: {
     documentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studySessionId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
+    },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: 0,
     },
   },
   props: {
@@ -63,8 +68,8 @@ export default {
         && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageId
         && e.anchors !== null)
         .filter(anno => {
-          if (this.studySessionId) {
-            return anno.studySessionId === this.studySessionId;
+          if (this.studySessionId && this.studyStepId) {
+            return anno.studySessionId === this.studySessionId && anno.studyStepId === this.studyStepId;
           } else if (this.studySessionIds) {
             return this.studySessionIds.includes(anno.studySessionId);
           } else {

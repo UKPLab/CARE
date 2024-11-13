@@ -173,13 +173,18 @@ export default {
   components: {TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration},
   inject: {
     documentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studySessionId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
+    },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: 0,
     },
     readonly: {
       type: Boolean,
@@ -373,6 +378,7 @@ export default {
         "documentId": this.documentId,
         "parentCommentId": this.commentId,
         "studySessionId": this.studySessionId,
+        "studyStepId": this.studyStepId,
       });
     },
     saveCard() {
@@ -399,6 +405,7 @@ export default {
           data: {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
             pastedText: pastedText
           }
         })

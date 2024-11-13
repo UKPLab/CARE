@@ -73,7 +73,7 @@ module.exports = (sequelize, DataTypes) => {
                 min: 0, 
                 max: 200,  
                 step: 1,
-                default: 100, 
+                default: 0, 
             },
             {
                 key: "limitSessionsPerUser",
@@ -85,7 +85,7 @@ module.exports = (sequelize, DataTypes) => {
                 min: 0, 
                 max: 200,  
                 step: 1,
-                default: 100, 
+                default: 0, 
             },
             {
                 key: "collab",
@@ -194,7 +194,9 @@ module.exports = (sequelize, DataTypes) => {
                         order: [['id', 'ASC']],
                         transaction
                     });
-
+            
+                    let previousStepId = null;
+            
                     for (const step of workflowSteps) {
                         const stepDocument = options.context.stepDocuments.find(doc => doc.stepId === step.id);
                         let documentId = null;
@@ -213,7 +215,7 @@ module.exports = (sequelize, DataTypes) => {
                                 }
 
                                 const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
-                                const newDocumentHash = `${document.hash}` + '_' + `${study.hash}`; 
+                                const newDocumentHash = `${document.hash}_${study.hash}`;
                                 const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
     
                                 await fs.copyFile(originalFilePath, newFilePath);
@@ -222,17 +224,35 @@ module.exports = (sequelize, DataTypes) => {
                                     type: document.type,
                                     hash: newDocumentHash,
                                     userId: study.userId,
-                                    parentDocumentId: document.id
+                                    parentDocumentId: document.id,
+                                    hideInFrontend: true
                                 }, { transaction });
         
-                                documentId = newDocument.id; 
-                            } 
+                                documentId = newDocument.id;
+                            }
+                        } else if (step.stepType === 2) { // Editor steps without an existing document, create a new empty document
+                            const emptyDocumentHash = uuidv4();
+                            const emptyFilePath = path.join(UPLOAD_PATH, `${emptyDocumentHash}.delta.json`);
+                            await fs.writeFile(emptyFilePath, JSON.stringify({ content: "<html><body></body></html>" }));
+
+                            const newEmptyDocument = await sequelize.models.document.create({
+                                name: `Document for study ${study.id}, step ${step.id}`,
+                                type: 1, 
+                                hash: emptyDocumentHash,
+                                userId: study.userId,
+                                hideInFrontend: true
+                            }, { transaction });
+
+                            documentId = newEmptyDocument.id;
                         }
-                        await sequelize.models.study_step.create({
+                        const studyStep = await sequelize.models.study_step.create({
                             studyId: study.id,
                             workflowStepId: step.id,
-                            documentId: documentId 
+                            documentId: documentId,
+                            studyStepPrevious: previousStepId  
                         }, { transaction });
+            
+                        previousStepId = studyStep.id;
                     }
                     await transaction.commit();
                 } catch (error) {
@@ -262,7 +282,8 @@ module.exports = (sequelize, DataTypes) => {
                             continue;  
                         }
 
-                        const stepDocument = options.context.stepDocuments.find(doc => doc.id === studyStep.id);
+                        const stepDocuments = options.context && options.context.stepDocuments ? options.context.stepDocuments : [];
+                        const stepDocument = stepDocuments.find(doc => doc.id === studyStep.id);
 
                         let documentId = null;
 
@@ -291,7 +312,8 @@ module.exports = (sequelize, DataTypes) => {
                                     type: document.type,
                                     hash: newDocumentHash,
                                     userId: study.userId,
-                                    parentDocumentId: document.id
+                                    parentDocumentId: document.id,
+                                    hideInFrontend: true
                                 }, { transaction });
             
                                 documentId = newDocument.id; 
