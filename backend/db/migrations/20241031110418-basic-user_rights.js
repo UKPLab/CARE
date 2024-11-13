@@ -14,8 +14,8 @@ const userRights = [
     description: "access to open sessions in a read-only mode",
   },
   {
-    name: "frontend.dashboard.studies.view.userInfo",
-    description: "access to view user's information",
+    name: "frontend.dashboard.studies.view.userPrivateInfo",
+    description: "access to view user's private information such as first name and last name",
   },
 ];
 

@@ -234,14 +234,8 @@ export default {
     isAdmin() {
       return this.$store.getters["auth/isAdmin"];
     },
-    userRights() {
-      return this.$store.getters["auth/getUserRights"];
-    },
     canAddBulkAssignments() {
-      if (this.isAdmin) {
-        return true;
-      }
-      return this.userRights.includes("frontend.dashboard.studies.addBulkAssignments")
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addBulkAssignments");
     },
   },
   methods: {
