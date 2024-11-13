@@ -21,7 +21,8 @@ module.exports = class AnnotationSocket extends Socket {
             "documentId",
             "createdAt",
             "updatedAt",
-            "studySessionId"
+            "studySessionId",
+            "studyStepId"
         ]
 
         let copied = pickObjectAttributeSubset(annotation, copyFields);
@@ -99,6 +100,7 @@ module.exports = class AnnotationSocket extends Socket {
             selectors: data.selectors,
             tagId: data.tagId,
             studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
             text: (data.selectors && data.selectors.target) ? data.selectors.target[0].selector[1].exact : null,
             draft: true,
             userId: this.userId
@@ -109,6 +111,7 @@ module.exports = class AnnotationSocket extends Socket {
         await this.getSocket("CommentSocket").addComment({
             documentId: annotation.documentId,
             studySessionId: annotation.studySessionId,
+            studyStepId: annotation.studyStepId,
             annotationId: annotation.id
         });
 

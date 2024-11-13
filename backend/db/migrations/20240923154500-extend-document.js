@@ -11,9 +11,16 @@ module.exports = {
       allowNull: true, 
       onDelete: 'SET NULL', 
     });
+
+    await queryInterface.addColumn('document', 'hideInFrontend', {
+      type: Sequelize.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    });
   },
 
   async down (queryInterface, Sequelize) {
     await queryInterface.removeColumn('document', 'parentDocumentId');
+    await queryInterface.removeColumn('document', 'hideInFrontend');
   }
 };

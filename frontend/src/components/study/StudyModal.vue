@@ -238,7 +238,7 @@ export default {
     },
     numberOfOpenedSessionsPerUser() {
       return this.$store.getters["table/study_session/getByKey"]("userId", this.userId)
-      .filter(s => s.studyID === this.studyID).length;
+      .filter(s => s.studyId === this.studyId).length;
     },
     started() {
       if (this.study && this.study.start !== null) {
@@ -271,7 +271,13 @@ export default {
     },
     link() {
       return window.location.origin + "/study/" + this.hash;
-    }
+    },
+    studyClosed(){
+      return this.$store.getters["table/study/get"](this.studyId).closed;
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
   },
   methods: {
     open() {
@@ -283,10 +289,8 @@ export default {
     start() {
       // needed, otherwise the ref in the callback can become null
       const modal = this.$refs.modal;
-
-      const studyClosed = this.$store.getters["table/study/get"](this.studyId).closed;
-
-      if(studyClosed){
+      
+      if(this.studyClosed){
         this.eventBus.emit('toast', {
           title: "Study cannot be started!",
           message: "The study is closed.",
@@ -302,7 +306,7 @@ export default {
       const limitSessionsPerUser = this.$store.getters["table/study/get"](this.studyId).limitSessionsPerUser;
 
 
-      if(limitSessions !== null){
+      if(limitSessions !== null && limitSessions > 0){
         if (totalopenedSessions > limitSessions) {
           this.eventBus.emit('toast', {
             title: "Study cannot be started!",
@@ -313,7 +317,7 @@ export default {
         }
       }
 
-      if(limitSessionsPerUser !== null){
+      if(limitSessionsPerUser !== null && limitSessionsPerUser > 0){
         if (openedSessionsPerUser > limitSessionsPerUser) {
           this.eventBus.emit('toast', {
             title: "Study cannot be started!",

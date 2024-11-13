@@ -79,7 +79,8 @@ module.exports = (sequelize, DataTypes) => {
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         type: DataTypes.INTEGER, // 0 is for pdf and 1 is for html
-        parentDocumentId: DataTypes.INTEGER 
+        parentDocumentId: DataTypes.INTEGER,
+        hideInFrontend: DataTypes.BOOLEAN 
     }, {
         sequelize: sequelize,
         modelName: 'document',

@@ -71,13 +71,18 @@ export default {
   },
   inject: {
     documentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studySessionId: {
-      type: String,
+      type: Number,
       required: false,
       default: null,
+    },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: 0,
     },
     pdf: {
       type: Object,

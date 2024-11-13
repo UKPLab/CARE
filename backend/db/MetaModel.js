@@ -110,13 +110,13 @@ module.exports = class MetaModel extends Model {
             if (includeDeleted) {
                 return await this.findAll({
                     raw: true,
-                    attributes: { exclude }
+                    attributes: {exclude}
                 });
             } else {
                 return await this.findAll({
-                    where: {deleted: false}, 
+                    where: {deleted: false},
                     raw: true,
-                    attributes: { exclude }
+                    attributes: {exclude}
                 });
             }
 
@@ -192,35 +192,33 @@ module.exports = class MetaModel extends Model {
      * @param {Object} [additionalOptions={}] - Optional Sequelize query options. See: https://sequelize.org/api/v7/interfaces/_sequelize_core.index.queryoptions
      * @return {Promise<*>}
      */
-    static async updateById(id, data, additionalOptions={}) {
+    static async updateById(id, data, additionalOptions = {}) {
         const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
 
         if (data.deleted) {
             data.deletedAt = Date.now();
         }
 
-        try {
-            const individualHooks = (this.tableName === 'study' || 'study_session') ? { individualHooks: true } : {};
-
-            const options = Object.assign({}, {
-                where: {
-                    id: id
-                },
-                returning: true,
-                plain: true
-            }, additionalOptions, individualHooks);
-
-            const updatedObject = await this.update(this.subselectFields(data, possibleFields), options);
-
-            if (updatedObject) {
-                if (updatedObject[1]) {
-                    return updatedObject[1].dataValues;
-                } else {
-                    return updatedObject;
-                }
+        let individualHooks = {};
+        if ('hooks' in this.options) {
+            if ('afterUpdate' in this.options.hooks || 'beforeUpdate' in this.options.hooks) {
+                individualHooks = { individualHooks: true };
             }
-        } catch (err) {
-            console.log(err);
+        }
+
+        const options = Object.assign({}, {
+            where: {
+                id: id
+            },
+            plain: true
+        }, additionalOptions, individualHooks);
+
+        const updatedObjects = await this.update(this.subselectFields(data, possibleFields), options);
+
+        if (updatedObjects[0] === 1) {
+            return await this.getById(id);
+        } else {
+            throw new Error("Update failed");
         }
 
     }
