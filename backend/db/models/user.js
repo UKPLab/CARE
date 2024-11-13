@@ -402,10 +402,10 @@ module.exports = (sequelize, DataTypes) => {
    * @param {string|undefined} roles A string list of user roles with each role separated by a comma
    * @param {Object|undefined} roleMap A role map of external roles to CARE system roles
    * @param {boolean} isUpdated Whether the operation is to update the existing user
+   * @param {Object} transaction Sequelize transaction
    * @returns {Promise<void>}
    */
-  async function assignUserRoles(user, roles, roleMap, isUpdated = false) {
-    const transaction = await user.sequelize.transaction();
+  async function assignUserRoles(user, roles, roleMap, isUpdated = false, transaction) {
     try {
       // User created via CARE registration procedure
       if (!roles) {
@@ -420,7 +420,6 @@ module.exports = (sequelize, DataTypes) => {
           },
           { transaction }
         );
-        await transaction.commit();
         return;
       }
 
@@ -451,9 +450,7 @@ module.exports = (sequelize, DataTypes) => {
           );
         }
       }
-      await transaction.commit();
     } catch (error) {
-      await transaction.rollback();
       throw error;
     }
   }
@@ -490,17 +487,23 @@ module.exports = (sequelize, DataTypes) => {
       tableName: "user",
       hooks: {
         afterCreate: async (user, options) => {
+          const { userRoles, roleMap, transaction } = options;
           try {
-            await assignUserRoles(user, options.userRoles, options.roleMap);
+            await assignUserRoles(user, userRoles, roleMap, false, transaction);
+            await transaction.commit();
           } catch (error) {
+            await transaction.rollback();
             this.logger.error(error);
           }
         },
         afterUpdate: async (user, options) => {
-          if (options.userRoles && options.roleMap) {
+          const { userRoles, roleMap, transaction } = options;
+          if (userRoles && roleMap) {
             try {
-              await assignUserRoles(user, options.userRoles, options.roleMap, true);
+              await assignUserRoles(user, userRoles, roleMap, true, transaction);
+              await transaction.commit();
             } catch (error) {
+              await transaction.rollback();
               this.logger.error(error);
             }
           }
