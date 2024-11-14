@@ -35,7 +35,7 @@
         >The study has not started yet! <br>
           Start: {{ new Date(study.start).toLocaleString() }}</div>
         <div
-          v-else-if="ended"
+          v-else-if="studyClosed"
           class="text-xxl-center text-danger fs-5"
         >This study has finished on
           {{ new Date(study.end).toLocaleString() }}</div>
@@ -137,6 +137,10 @@ export default {
       type: Number,
       required: true,
       default: 0,
+    },
+    studyClosed: {
+      type: Boolean,
+      required: true,
     }
   },
   emits: ["start", "finish"],
@@ -249,25 +253,8 @@ export default {
       }
       return true;
     },
-    ended() {
-      if (this.study && this.study.end !== null) {
-        if (!(this.study.end instanceof Date)) {
-          throw new Error("Invalid type for study end date. Expected a Date object.");
-        }
-        return !(new Date() < new Date(this.study.end));
-      }
-
-      if (this.study && this.study.closed !== null) {
-        if (!(this.study.closed instanceof Date)) {
-          throw new Error("Invalid type for study closed date. Expected a Date object.");
-        }
-        return !(new Date() < new Date(this.study.closed));
-      }
-
-      return false;
-    },
     available() {
-      return (this.started && !this.ended);
+      return (this.started && !this.studyClosed);
     },
     link() {
       return window.location.origin + "/study/" + this.hash;

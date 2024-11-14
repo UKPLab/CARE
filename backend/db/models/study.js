@@ -265,67 +265,70 @@ module.exports = (sequelize, DataTypes) => {
                 const transaction = options.transaction || await sequelize.transaction();
     
                 try {
-                    const workflowSteps = await sequelize.models.workflow_step.findAll({
-                        where: { workflowId: study.workflowId },
-                        order: [['id', 'ASC']],
-                        transaction
-                    });
-            
-                    for (const step of workflowSteps) {
-                        const studyStep = await sequelize.models.study_step.findOne({
-                            where: { workflowStepId: step.id, studyId: study.id },
+                    if (study.closed == null) {
+
+                        const workflowSteps = await sequelize.models.workflow_step.findAll({
+                            where: {workflowId: study.workflowId},
+                            order: [['id', 'ASC']],
                             transaction
                         });
-            
-                        if (!studyStep) {
-                            console.log(`No study_step found for workflowStepId: ${step.id}`);
-                            continue;  
-                        }
 
-                        const stepDocuments = options.context && options.context.stepDocuments ? options.context.stepDocuments : [];
-                        const stepDocument = stepDocuments.find(doc => doc.id === studyStep.id);
+                        for (const step of workflowSteps) {
+                            const studyStep = await sequelize.models.study_step.findOne({
+                                where: {workflowStepId: step.id, studyId: study.id},
+                                transaction
+                            });
 
-                        let documentId = null;
-
-                        if (stepDocument && stepDocument.documentId) {
-                            const document = await sequelize.models.document.findByPk(stepDocument.documentId, { transaction });
-            
-                            if (!document) {
-                                throw new Error(`Document not found: documentId ${stepDocument.documentId} is missing for study_step ${studyStep.id}. Cancelling transaction.`);
+                            if (!studyStep) {
+                                console.log(`No study_step found for workflowStepId: ${step.id}`);
+                                continue;
                             }
-            
-                            documentId = stepDocument.documentId;
-            
-                            if (step.stepType === 2) { // Editor
-                                if (document.type !== 1) { // HTML
-                                    throw new Error(`Document type mismatch: step ${step.id} expects an Editor document (type 1), but found type ${document.type}.`);
+
+                            const stepDocuments = options.context && options.context.stepDocuments ? options.context.stepDocuments : [];
+                            const stepDocument = stepDocuments.find(doc => doc.id === studyStep.id);
+
+                            let documentId = null;
+
+                            if (stepDocument && stepDocument.documentId) {
+                                const document = await sequelize.models.document.findByPk(stepDocument.documentId, {transaction});
+
+                                if (!document) {
+                                    throw new Error(`Document not found: documentId ${stepDocument.documentId} is missing for study_step ${studyStep.id}. Cancelling transaction.`);
                                 }
-            
-                                const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
-                                const newDocumentHash = `${document.hash}_${study.hash}_${uuidv4()}`;
-                                const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
-            
-                                await fs.copyFile(originalFilePath, newFilePath);
-            
-                                const newDocument = await sequelize.models.document.create({
-                                    name: `${document.name}_study`,
-                                    type: document.type,
-                                    hash: newDocumentHash,
-                                    userId: study.userId,
-                                    parentDocumentId: document.id,
-                                    hideInFrontend: true
-                                }, { transaction });
-            
-                                documentId = newDocument.id; 
+
+                                documentId = stepDocument.documentId;
+
+                                if (step.stepType === 2) { // Editor
+                                    if (document.type !== 1) { // HTML
+                                        throw new Error(`Document type mismatch: step ${step.id} expects an Editor document (type 1), but found type ${document.type}.`);
+                                    }
+
+                                    const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
+                                    const newDocumentHash = `${document.hash}_${study.hash}_${uuidv4()}`;
+                                    const newFilePath = path.join(UPLOAD_PATH, `${newDocumentHash}.delta.json`);
+
+                                    await fs.copyFile(originalFilePath, newFilePath);
+
+                                    const newDocument = await sequelize.models.document.create({
+                                        name: `${document.name}_study`,
+                                        type: document.type,
+                                        hash: newDocumentHash,
+                                        userId: study.userId,
+                                        parentDocumentId: document.id,
+                                        hideInFrontend: true
+                                    }, {transaction});
+
+                                    documentId = newDocument.id;
+                                }
                             }
+
+                            await sequelize.models.study_step.update(
+                                {documentId: documentId},
+                                {where: {id: studyStep.id}, transaction}
+                            );
                         }
-            
-                        await sequelize.models.study_step.update(
-                            { documentId: documentId },
-                            { where: { id: studyStep.id }, transaction }
-                        );
+                        await transaction.commit();
                     }
-                    await transaction.commit();
                 } catch (error) {
                     console.error("Failed during document update:", error);
                     if (transaction) await transaction.rollback();

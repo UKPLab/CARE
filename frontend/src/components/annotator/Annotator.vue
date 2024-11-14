@@ -400,9 +400,7 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      if (this.studySessionId && this.studyStepId && this.studySessionId !== 0 && this.studyStepId !== 0) {
-            this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
-      }
+      this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
 
       // Join Room for document updates
       this.$socket.emit("documentSubscribe", {documentId: this.documentId});
