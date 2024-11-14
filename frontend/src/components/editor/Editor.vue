@@ -130,9 +130,6 @@ export default {
 
       this.editor.getEditor().on('text-change', this.handleTextChange);
       this.editor.getEditor().enable(!this.readonly);
-
-      const toolbar = this.editor.getEditor().getModule('toolbar')
-      console.log("Toolbar", toolbar);
     }
 
     this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId, studyStepId: this.studyStepId });

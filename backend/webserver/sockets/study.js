@@ -1,6 +1,7 @@
 const Socket = require("../Socket.js");
-const { v4: uuidv4 } = require('uuid');
+const {v4: uuidv4} = require('uuid');
 const {Op} = require("sequelize");
+const {inject} = require("../../utils/generic");
 
 /**
  * Handle all studies through websocket
@@ -46,9 +47,9 @@ module.exports = class StudySocket extends Socket {
     async addStudy(study) {
         study.userId = this.userId;
         // TODO: that all existing deltas are saved, use documentSocket(saveDocument)
-            if (this.getSocket("DocumentSocket")) {
-                this.getSocket("DocumentSocket").saveDocument(study.documentId);
-            }        
+        if (this.getSocket("DocumentSocket")) {
+            this.getSocket("DocumentSocket").saveDocument(study.documentId);
+        }
         const newStudy = await this.models['study'].add(study);
         this.emit("studyRefresh", newStudy);
         return newStudy;
@@ -84,27 +85,35 @@ module.exports = class StudySocket extends Socket {
         const study = await this.models['study'].getByHash(studyHash);
         // TODO: study db info, workflows in study where the studies are referenced , workflow steps, study step 
         console.log(study)
-        if (study) {            
-            const workflow = await this.models['workflow'].findByPk(study.workflowId);
-            if(workflow){
+        if (study) {
+            const workflow = await this.models['workflow'].getById(study.workflowId);
+            if (workflow) {
                 const workflowSteps = await this.models['workflow_step'].getAllByKey('workflowId', workflow.id);
-                if(workflowSteps){
+                if (workflowSteps) {
                     const studySteps = await this.models['study_step'].getAllByKey('studyId', study.id);
-                    const studySession = await this.models['study_session'].findAll({where:
-                        {"userId":this.userId, "studyId":study.id}, raw:true,
+                    const studySession = await this.models['study_session'].findAll({
+                        where:
+                            {"userId": this.userId, "studyId": study.id}, raw: true,
                     });
                     this.emit("workflowRefresh", workflow);
                     this.emit("workflow_stepRefresh", workflowSteps);
                     this.emit("study_stepRefresh", studySteps);
                     this.emit("study_sessionRefresh", studySession);
-                    this.emit("studyRefresh", study);
+                    this.emit("studyRefresh", await inject(study, async (x) => {
+                            return await this.models['study_session'].count({
+                                where: {
+                                    studyId: x
+                                }
+                            });
+                        }, "totalNumberOfOpenedSessions", "id")
+                    );
 
-                }else{
+                } else {
                     this.socket.emit("studyError", {
                         studyHash: studyHash, message: "No workflow steps found!"
                     });
                 }
-            }else{
+            } else {
                 this.socket.emit("studyError", {
                     studyHash: studyHash, message: "No workflow found!"
                 });
@@ -174,7 +183,7 @@ module.exports = class StudySocket extends Socket {
         const doc = await this.models['document'].getById(data.documentId);
         if (this.checkUserAccess(doc.userId)) {
             let study;
-            if(data.id){
+            if (data.id) {
                 study = await this.updateStudy(data.id, data);
             } else {
                 study = await this.addStudy(data);
@@ -207,13 +216,13 @@ module.exports = class StudySocket extends Socket {
             if (this.checkUserAccess(currentStudy.userId)) {
 
                 const newStudyData = {
-                    ...currentStudy,        
-                    id: undefined,      
-                    hash: uuidv4(),      
-                    template: true,         
-                    name: `${currentStudy.name}`, 
-                    createdAt: new Date(),   
-                    updatedAt: new Date(),   
+                    ...currentStudy,
+                    id: undefined,
+                    hash: uuidv4(),
+                    template: true,
+                    name: `${currentStudy.name}`,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
                 };
 
                 const newStudy = await this.models['study'].create(newStudyData);
@@ -226,7 +235,7 @@ module.exports = class StudySocket extends Socket {
             }
         } catch (error) {
             this.logger.error("Error saving study as template:", error);
-            throw error;  
+            throw error;
         }
     }
 
@@ -270,7 +279,7 @@ module.exports = class StudySocket extends Socket {
         this.socket.on("studyPublish", async (data) => {
             try {
                 await this.publishStudy(data)
-                console.log("Publishing this data;",data);
+                console.log("Publishing this data;", data);
             } catch (e) {
                 this.logger.error(e);
                 this.socket.emit("studyPublished", {

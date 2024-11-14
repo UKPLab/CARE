@@ -265,7 +265,7 @@ module.exports = (sequelize, DataTypes) => {
                 const transaction = options.transaction || await sequelize.transaction();
     
                 try {
-                    if (study.closed == null) {
+                    if (study.closed === null && study.deleted === false) {
 
                         const workflowSteps = await sequelize.models.workflow_step.findAll({
                             where: {workflowId: study.workflowId},

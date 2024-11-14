@@ -24,7 +24,7 @@
           Thank you for joining this study!
         </div>
         <div
-          v-if="!closeable"
+          v-if="showTimeUp"
           class="text-center text-danger h6"
         >
          The time has expired, no more changes are possible.
@@ -82,6 +82,10 @@ export default {
       default: 0,
     },
     closeable: {
+      type: Boolean,
+      required: true,
+    },
+    showTimeUp: {
       type: Boolean,
       required: true,
     },
