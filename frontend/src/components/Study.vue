@@ -275,9 +275,8 @@ export default {
         if(this.study.end){
           return this.study.end instanceof Date && new Date(this.study.end) < Date.now();
         }
-      } else{
-        const sessionEnded = this.studySession.end;
-        return sessionEnded !== null && (sessionEnded instanceof Date);
+      } else if(this.studySession && this.studySession.end){
+        return this.studySession.end !== null && (this.studySession.end instanceof Date);
       }
 
       return this.readonly;
