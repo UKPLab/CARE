@@ -129,11 +129,10 @@ export default {
       }
 
       this.editor.getEditor().on('text-change', this.handleTextChange);
+      this.editor.getEditor().enable(!this.readonly);
 
-      // Set editor to readonly if the prop is true
-      if (this.readonly) {
-        this.editor.getEditor().enable(false);
-      }
+      const toolbar = this.editor.getEditor().getModule('toolbar')
+      console.log("Toolbar", toolbar);
     }
 
     this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId, studyStepId: this.studyStepId });
@@ -232,6 +231,11 @@ export default {
         }
       },
       deep: true
+    },
+    readonly: {
+      handler(newReadOnly) {
+        this.editor.getEditor().enable(!newReadOnly);
+      }
     }
   },
   methods: {

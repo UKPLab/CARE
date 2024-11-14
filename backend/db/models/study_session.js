@@ -142,7 +142,7 @@ module.exports = (sequelize, DataTypes) => {
                     }             
                                          
                     if(study && !study.multipleSubmit){
-                        if(currentSession.end !== studySession.end){
+                        if(currentSession.end) {
                             throw new Error(`Cannot submit this study session multiple times`);                        
                         }
                     }

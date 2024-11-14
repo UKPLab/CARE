@@ -261,7 +261,7 @@ export default {
 
         this.$socket.emit("studyUpdate", {
           studyId: data.params.id,
-          closed: true
+          closed: Date.now()
         });
       } else if (data.action === "saveAsTemplate") {
         this.saveAsTemplate(data.params);

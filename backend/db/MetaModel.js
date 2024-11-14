@@ -29,10 +29,11 @@ module.exports = class MetaModel extends Model {
     /**
      * Get db entry by id
      * @param {number} id
+     * @param {boolean} includeDeleted include deleted db entries
      * @return {Promise<object|undefined>}
      */
-    static async getById(id) {
-        return await this.getByKey('id', id);
+    static async getById(id, includeDeleted = false) {
+        return await this.getByKey('id', id, includeDeleted);
     }
 
     /**
@@ -48,15 +49,23 @@ module.exports = class MetaModel extends Model {
      * Get db entry by key
      * @param {string} key
      * @param {string} id
+     * @param {boolean} includeDeleted include deleted db entries
      * @return {Promise<object|undefined>}
      */
-    static async getByKey(key, id) {
+    static async getByKey(key, id, includeDeleted = false) {
         if (key in this.getAttributes()) {
             try {
-                return await this.findOne({
-                    where: {[key]: id, 'deleted': false},
-                    raw: true
-                });
+                if (includeDeleted) {
+                    return await this.findOne({
+                        where: {[key]: id},
+                        raw: true
+                    });
+                } else {
+                    return await this.findOne({
+                        where: {[key]: id, 'deleted': false},
+                        raw: true
+                    })
+                }
             } catch (err) {
                 console.log(err);
             }
@@ -216,7 +225,7 @@ module.exports = class MetaModel extends Model {
         const updatedObjects = await this.update(this.subselectFields(data, possibleFields), options);
 
         if (updatedObjects[0] === 1) {
-            return await this.getById(id);
+            return await this.getById(id, true);
         } else {
             throw new Error("Update failed");
         }
