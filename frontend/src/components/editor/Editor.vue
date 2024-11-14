@@ -96,7 +96,7 @@ export default {
     studyStepId: {
       type: Number,
       required: false,
-      default: 0,
+      default: null,
     },
   },
   data() {
