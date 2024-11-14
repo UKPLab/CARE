@@ -2,6 +2,7 @@ const Socket = require("../Socket.js");
 const { v4: uuidv4 } = require("uuid");
 const { genSalt, genPwdHash } = require("../../utils/auth.js");
 const { generateMarvelUsername } = require("../../utils/generator.js");
+const { inject } = require("../../utils/generic");
 
 /**
  * Handle user through websocket
@@ -22,18 +23,7 @@ module.exports = class UserSocket extends Socket {
    * @returns {Promise<Awaited<*&{creator_name: string|*|undefined}>[]>}
    */
   async updateCreatorName(data, key = "userId", targetName = "creator_name") {
-    if (!Array.isArray(data)) {
-      data = [data];
-    }
-
-    return Promise.all(
-      data.map(async (x) => {
-        return {
-          ...x,
-          [targetName]: await this.models["user"].getUserName(x[key]),
-        };
-      })
-    );
+    return await inject(data, async (userId) => await this.models["user"].getUserName(userId), targetName, key);
   }
 
   /**

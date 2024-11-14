@@ -4,14 +4,14 @@
       ref="studyModal"
       :study-id="studyId"
       :study-closed="studyClosed"
-      @finish="finish"
+      @finish="finalFinish"
       @start="start"
   />
   <FinishModal
       ref="studyFinishModal"
-      :closeable="!timeUp && !studyClosed"
       :study-session-id="studySessionId"
-      @finish="finalFinish"
+      :show-time-up="timeUp"
+      @finish="finalFinish({studySessionId: this.studySessionId})"
   />
 
   <Teleport to="#topbarCustomPlaceholder">
@@ -27,7 +27,7 @@
       </TopBarButton>
 
       <TopBarButton
-          v-if="!readonlyComputed && studySession && lastStep && currentWorkflowStep && currentWorkflowStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
+          v-if="!readOnlyComputed && studySession && lastStep && currentWorkflowStep && currentWorkflowStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
           class="btn btn-outline-secondary mx-3"
           title="Finish Study"
           @click="finish"
@@ -97,7 +97,7 @@ export default {
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
-      readonly: computed(() => this.readonlyComputed),
+      readonly: computed(() => this.readOnlyComputed),
     };
   },
   props: {
@@ -111,7 +111,7 @@ export default {
       required: false,
       default: 0,
     },
-    'readonly': {
+    'readOnly': {
       type: Boolean,
       required: false,
       default: false,
@@ -123,7 +123,6 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       localStudyStepId: 0,
-      readonlyTimer: false,
     };
   },
   computed: {
@@ -220,7 +219,7 @@ export default {
             : null;
     },
     currentStudyStepId(){
-      if(this.readonlyComputed && this.firstStep){
+      if(this.readOnlyComputed && this.firstStep){
         return this.localStudyStepId === 0 ? this.firstStep.id : this.localStudyStepId;
       }      
       if (this.studySession && this.studySession.studyStepId) {
@@ -232,17 +231,17 @@ export default {
         if (this.study.closed) {
           return true;
         }
-        if (!this.study.multipleSubmit && this.study.end && this.study.end < Date.now()) {
+        if (!this.study.multipleSubmit && this.study.end && new Date(this.study.end) < Date.now()) {
           return true;
         }
       }
       return false;
     },
-    readonlyComputed(){
-      if (this.readonly) {
-        return this.readonly;
+    readOnlyComputed(){
+      if (this.readOnly) {
+        return this.readOnly;
       }
-      if (this.studyClosed || this.readonlyTimer) {
+      if (this.studyClosed || this.timeUp) {
         return true;
       }
       if (this.studySession && this.studySession.end && !this.study.multipleSubmit) {
@@ -252,19 +251,16 @@ export default {
     }
   },
   watch: {
-    studySession(newVal) {
+    studySession() {
       if (this.study.timeLimit > 0 && this.studySession) {  //studySession required, otherwise not all data may be there yet
-        this.readonlyTimer = false;
         if (this.timerInterval) {
           clearInterval(this.timerInterval);
           this.timerInterval = null;
         }
 
         this.calcTimeLeft();
-        if (!newVal.end) {
+        if (!this.studyClosed) {
           this.timerInterval = setInterval(this.calcTimeLeft, 1000);
-        }else{
-          this.readonlyTimer = true;
         }
       }
     },
@@ -304,7 +300,7 @@ export default {
     },
     finalFinish(data) {
       this.$socket.emit("studySessionUpdate", {
-        sessionId: this.studySessionId,
+        sessionId: data.studySessionId,
         end: Date.now()
       });
       this.$refs.studyFinishModal.close();
@@ -313,7 +309,7 @@ export default {
       this.$refs.studyFinishModal.open();
     },
     updateStep(step) {
-      if(this.readonlyComputed){
+      if(this.readOnlyComputed){
         this.localStudyStepId = step;
       } else {   
       this.$socket.emit("appDataUpdate", {
