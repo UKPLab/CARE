@@ -64,6 +64,7 @@ export default {
         users: false,
         tables: false,
         settings: false,
+        systemRoles: false,
       },
       disconnected: false,
       isTermsConsented: false,
@@ -102,6 +103,10 @@ export default {
     appSettings: function (data) {
       this.$store.commit("settings/setSettings", data);
       this.loaded.settings = true;
+    },
+    appSystemRoles: function(data) {
+      this.$store.commit("admin/setSystemRoles", data);
+      this.loaded.systemRoles = true;
     },
   },
   computed: {

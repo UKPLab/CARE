@@ -396,6 +396,65 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
 
+  /**
+   * Assigns roles to a user, either default user role ('user') or other specific roles
+   * @param {Object} user Sequelize user model instance
+   * @param {string|undefined} roles A string list of user roles with each role separated by a comma
+   * @param {Object|undefined} roleMap A role map of external roles to CARE system roles
+   * @param {boolean} isUpdated Whether the operation is to update the existing user
+   * @param {Object} transaction Sequelize transaction
+   * @returns {Promise<void>}
+   */
+  async function assignUserRoles(user, roles, roleMap, isUpdated = false, transaction) {
+    try {
+      // User created via CARE registration procedure
+      if (!roles) {
+        const userRole = await user.sequelize.models["user_role"].findOne({
+          where: { name: "user" },
+          transaction,
+        });
+        await user.sequelize.models["user_role_matching"].create(
+          {
+            userId: user.id,
+            userRoleId: userRole.id,
+          },
+          { transaction }
+        );
+        return;
+      }
+
+      // User updated via import procedure
+      // To ensure user roles are consistent across different platforms, delete the existing roles first.
+      if (isUpdated) {
+        await user.sequelize.models["user_role_matching"].destroy({
+          where: { userId: user.id },
+          transaction,
+        });
+      }
+
+      // User created via import procedure
+      const userRoles = roles.split(", ").map((role) => role.trim());
+      for (let roleName of userRoles) {
+        const userRole = await user.sequelize.models["user_role"].findOne({
+          where: { name: roleMap[roleName] },
+          transaction,
+        });
+
+        if (userRole) {
+          await user.sequelize.models["user_role_matching"].create(
+            {
+              userId: user.id,
+              userRoleId: userRole.id,
+            },
+            { transaction }
+          );
+        }
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
   User.init(
     {
       firstName: DataTypes.STRING,
@@ -426,6 +485,30 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: "user",
       tableName: "user",
+      hooks: {
+        afterCreate: async (user, options) => {
+          const { userRoles, roleMap, transaction } = options;
+          try {
+            await assignUserRoles(user, userRoles, roleMap, false, transaction);
+            await transaction.commit();
+          } catch (error) {
+            await transaction.rollback();
+            this.logger.error(error);
+          }
+        },
+        afterUpdate: async (user, options) => {
+          const { userRoles, roleMap, transaction } = options;
+          if (userRoles && roleMap && transaction) {
+            try {
+              await assignUserRoles(user, userRoles, roleMap, true, transaction);
+              await transaction.commit();
+            } catch (error) {
+              await transaction.rollback();
+              this.logger.error(error);
+            }
+          }
+        },
+      },
     }
   );
 

@@ -122,8 +122,10 @@ module.exports = function (server) {
         // create user if all checks passed
         const salt = genSalt();
         let pwdHash = await genPwdHash(data.password, salt);
+        let transaction;
         try {
-            const user = await server.db.models['user'].add({
+            transaction = await server.db.models['user'].sequelize.transaction();
+            await server.db.models['user'].add({
                 firstName: data.firstName,
                 lastName: data.lastName,
                 userName: data.userName,
@@ -133,13 +135,7 @@ module.exports = function (server) {
                 acceptTerms: data.acceptTerms,
                 acceptStats: data.acceptStats,
                 acceptedAt: data.acceptedAt
-            });
-
-            const userRole = await server.db.models['user_role'].findOne({ where: { name: 'user' }});
-            await server.db.models['user_role_matching'].create({
-                userId: user.id,
-                userRoleId: userRole.id
-            });
+            }, { transaction });
 
             res.status(201).send("User was successfully created");
         } catch (err) {
