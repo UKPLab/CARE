@@ -118,10 +118,6 @@ export default {
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
-        {
-          name: "Chosen Workflow",
-          key: "workflowName",
-        },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
 
@@ -133,33 +129,9 @@ export default {
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
-    },  
-    studs() {
-      return this.studies.filter(study => ((study.createdByUserId === null && study.userId === this.userId) || (study.createdByUserId === this.userId)) && study.template === false)
-        .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
-        .map(st => {
-          let study = {...st};
-            // dates
-            if (study.start === null) {
-              study.start = "-"
-            } else {
-              study.start = new Date(study.start).toLocaleString()
-            }
-
-            if (study.end === null) {
-              study.end = "-"
-            } else {
-              study.end = new Date(study.end).toLocaleString()
-            }
-
-            study.createdAt = new Date(study.createdAt).toLocaleString()
-
-            study.closed = study.closed ? true : null;
-
-            const workflow = this.$store.getters["table/workflow/get"](study.workflowId);
-            study.workflowName = workflow ? workflow.name : "Unknown Workflow";
-
-            study.manage = [
+    },
+    buttons() {
+      return [
               {
                 icon: "pencil-square",
                 options: {
@@ -227,6 +199,30 @@ export default {
                 action: "closeStudy"
               }
             ];
+    },
+    studs() {
+      return this.studies.filter(study => ((study.createdByUserId === null && study.userId === this.userId) || (study.createdByUserId === this.userId)) && study.template === false)
+        .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
+        .map(st => {
+          let study = {...st};
+            // dates
+            if (study.start === null) {
+              study.start = "-"
+            } else {
+              study.start = new Date(study.start).toLocaleString()
+            }
+
+            if (study.end === null) {
+              study.end = "-"
+            } else {
+              study.end = new Date(study.end).toLocaleString()
+            }
+
+            study.createdAt = new Date(study.createdAt).toLocaleString()
+
+            study.closed = study.closed ? true : null;
+
+            study.manage = this.buttons;
             return study
           }
         );

@@ -27,18 +27,23 @@ module.exports = class DocumentSocket extends Socket {
      * @returns boolean
      */
     async checkDocumentAccess(documentId) {
-        const doc = await this.models['document'].getById(documentId);
+        try {
+            const doc = await this.models['document'].getById(documentId);
 
-        const studyStepAssociationExists = await this.models['study_step'].count({
-            where: { documentId: documentId }
-        });
-        
-        if (doc && (doc.public
-                || studyStepAssociationExists > 0)
-            || (this.checkUserAccess(doc.userId))
-        ) {
-            return true;
-        } else {
+            const studyStepAssociationExists = await this.models['study_step'].count({
+                where: {documentId: documentId}
+            });
+
+            if (doc && (doc.public
+                    || studyStepAssociationExists > 0)
+                || (this.checkUserAccess(doc.userId))
+            ) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch(e) {
+            this.logger.error(e);
             return false;
         }
     }
@@ -81,7 +86,7 @@ module.exports = class DocumentSocket extends Socket {
             }
         } catch (err) {
             this.logger.error(err);
-            this.sendToast(err, "Error loading documents", "Danger");
+            this.sendToast(err, "Error loading documents", "danger");
         }
     }
 
@@ -152,7 +157,6 @@ module.exports = class DocumentSocket extends Socket {
      * @returns {Promise<Delta|void>}
      */
     async sendDocument(documentId, studySessionId, studyStepId) {
-        try {
             const doc = await this.models['document'].getById(documentId);
 
             if (this.checkDocumentAccess(doc.id)) {
@@ -169,11 +173,10 @@ module.exports = class DocumentSocket extends Socket {
 
                         let dbDelta = dbToDelta(edits);
                         delta = delta.compose(dbDelta);
-                        
 
                         this.socket.emit("documentFile", {document: doc, deltas: delta });
                     } else {
-                        this.socket.emit("documentFile", {document: doc, deltas: new Delta() });
+                        throw new Error("Document not found");
                     }
                 } else { // Non-HTML document type, send file
                     const filePath = `${UPLOAD_PATH}/${doc.hash}.pdf`;
@@ -191,10 +194,6 @@ module.exports = class DocumentSocket extends Socket {
             } else {
                 throw new Error("You do not have access to this document");
             }
-        } catch (error) {
-            this.logger.error("An error occurred while sending the document:", error);
-            this.sendToast(error.message, "Error", "danger");
-        }
     }
 
     /**
@@ -638,15 +637,13 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentGet", async (data) => {
             try {
-                
                 await this.sendDocument(data.documentId, data.studySessionId, data.studyStepId);
-                //TODO : if null - ssid 
-                if(data.studySessionId === null){               
+                if(data.studySessionId === null){
                     await this.openDocument(data.documentId);
                 }
             } catch (e) {
-                this.logger.error("Error handling document request: ", e);
-                this.sendToast("Error handling document request!", "Error", "danger");
+                this.logger.error("Error handling document request documentGet: ", e);
+                this.sendToast(e.message, "Error", "danger");
             }
         });
 

@@ -58,21 +58,25 @@ module.exports = class StudySessionSocket extends Socket {
      * @param {object} data
      */
     async updateSession(sessionId, data) {
-        if (data.evaluation) {
-            const evaluatedStudySession = {
-                evaluation: data.evaluation, reviewUserId: this.userId, reviewComment: data.reviewComment
-            }
-            const studySession = await this.models['study_session'].updateById(data.sessionId, evaluatedStudySession)
-            await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
-        } else {
-            const currentStudySession = await this.models['study_session'].getById(sessionId)
-            const study = await this.models['study'].getById(currentStudySession.studyId);
-            if (this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
-                const studySession = await this.models['study_session'].updateById(data.sessionId, data);
+        try {
+            if (data.evaluation) {
+                const evaluatedStudySession = {
+                    evaluation: data.evaluation, reviewUserId: this.userId, reviewComment: data.reviewComment
+                }
+                const studySession = await this.models['study_session'].updateById(data.sessionId, evaluatedStudySession)
                 await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
             } else {
-                this.sendToast("You are not allowed to update this study session", "Error", "Danger");
+                const currentStudySession = await this.models['study_session'].getById(sessionId)
+                const study = await this.models['study'].getById(currentStudySession.studyId);
+                if (this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
+                    const studySession = await this.models['study_session'].updateById(data.sessionId, data);
+                    await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
+                } else {
+                    this.sendToast("You are not allowed to update this study session", "Error", "Danger");
+                }
             }
+        } catch (err) {
+            throw new Error(err.message);
         }
     }
 
@@ -171,8 +175,8 @@ module.exports = class StudySessionSocket extends Socket {
                     await this.updateSession(data.sessionId, data);
                 }
             } catch (err) {
-                this.logger.error(err);
-                this.sendToast(err, "Error updating study", "Danger");
+                this.logger.error(err.message);
+                this.sendToast(err.message, "Error updating study", "danger");
             }
         });
 
@@ -180,7 +184,7 @@ module.exports = class StudySessionSocket extends Socket {
             try {
                 await this.startStudySession(data.studyId);
             } catch (err) {
-                this.socket.emit("studySessionStarted", {success: false});
+                this.socket.emit("studySessionStarted", {success: false, message: err.message});
                 this.logger.error(err);
             }
         });

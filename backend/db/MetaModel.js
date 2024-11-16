@@ -174,24 +174,27 @@ module.exports = class MetaModel extends Model {
         try {
             const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt'].includes(key));
 
-
             if ("hash" in this.getAttributes()) {
                 data.hash = uuidv4();
             }
 
-            return (await this.create(this.subselectFields(data, possibleFields), options)).get({plain: true});
+            const createdObject = await this.create(this.subselectFields(data, possibleFields), options);
+            return createdObject.get({plain: true});
+
         } catch (err) {
-            console.log(err);
+            console.log("DB MetaModel Class " + this.constructor.name + " add error in creation: " + err.message);
+            throw new Error(err.message);
         }
     }
 
     /**
      * Delete db entry by id
      * @param {number} id
+     * @param {Object} [options={}] - Optional Sequelize query options
      * @return {Promise<object|undefined>}
      */
-    static async deleteById(id) {
-        return await this.updateById(id, {deleted: true});
+    static async deleteById(id, options = {}) {
+        return await this.updateById(id, {deleted: true}, options);
     }
 
     /**
@@ -202,32 +205,33 @@ module.exports = class MetaModel extends Model {
      * @return {Promise<*>}
      */
     static async updateById(id, data, additionalOptions = {}) {
-        const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
+        try {
+            const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
 
-        if (data.deleted) {
-            data.deletedAt = Date.now();
-        }
-
-        let individualHooks = {};
-        if ('hooks' in this.options) {
-            if ('afterUpdate' in this.options.hooks || 'beforeUpdate' in this.options.hooks) {
-                individualHooks = { individualHooks: true };
+            if (data.deleted) {
+                data.deletedAt = Date.now();
             }
-        }
 
-        const options = Object.assign({}, {
-            where: {
-                id: id
-            },
-            plain: true
-        }, additionalOptions, individualHooks);
+            let individualHooks = {};
+            if ('hooks' in this.options) {
+                if ('afterUpdate' in this.options.hooks || 'beforeUpdate' in this.options.hooks) {
+                    individualHooks = {individualHooks: true};
+                }
+            }
 
-        const updatedObjects = await this.update(this.subselectFields(data, possibleFields), options);
+            const options = Object.assign({}, {
+                where: {
+                    id: id
+                },
+                plain: true
+            }, additionalOptions, individualHooks);
 
-        if (updatedObjects[0] === 1) {
+            const updatedObjects = await this.update(this.subselectFields(data, possibleFields), options);
+
             return await this.getById(id, true);
-        } else {
-            throw new Error("Update failed");
+        } catch (err) {
+            console.log("DB MetaModel Class " + this.constructor.name + " update error in creation: " + err.message);
+            throw new Error(err.message);
         }
 
     }

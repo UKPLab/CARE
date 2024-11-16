@@ -126,9 +126,6 @@ export default {
     };
   },
   computed: {
-    allowNavigation() {
-      return this.study ? this.study.allowNavigation : false;
-    },
     studySession() {
       if (this.studySessionId !== 0) {
         return this.$store.getters['table/study_session/get'](this.studySessionId);
@@ -151,7 +148,6 @@ export default {
         return [];
       }
     },
-
     nextStudyStep() {
       if (this.currentStudyStep) {
         // Find the next step by looking for a step where `studyStepPrevious` matches `currentStudyStep.id`
@@ -268,9 +264,7 @@ export default {
   mounted() {
     this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
     this.studySessionId = this.initStudySessionId;
-    console.log("Studysessionid", this.studySessionId);
     if (this.studySessionId === 0) {
-      console.log("StudyRoute studyId before rendering StudyModal:", this.studyId);
       this.$refs.studyModal.open();
     }
   },
@@ -318,6 +312,14 @@ export default {
             id: this.studySessionId,
             studyStepId: step 
           },
+        }, (result) => {
+          if (!result.success) {
+            this.eventBus.emit('toast', {
+              title: "Study Step update failed",
+              message: result.message,
+              variant: "danger"
+            });
+          }
         });
       }  
     },

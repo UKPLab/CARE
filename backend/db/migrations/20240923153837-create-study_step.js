@@ -36,6 +36,10 @@ module.exports = {
         allowNull: true,
         onDelete: 'SET NULL'
       },
+      stepType: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
       documentId: {
         type: Sequelize.INTEGER,
         references: {
@@ -44,6 +48,11 @@ module.exports = {
         },
         onDelete: 'SET NULL',
         allowNull: true
+      },
+      configuration: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+        defaultValue: null
       },
       deleted: {
           type: Sequelize.BOOLEAN,

@@ -1,10 +1,15 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const path = require("path");
+const fs = require('fs')
+const UPLOAD_PATH = `${__dirname}/../../../files`;
+
 
 const docTypes = Object.freeze({
     DOC_TYPE_PDF: 0,
-    DOC_TYPE_HTML: 1
-  });
+    DOC_TYPE_HTML: 1,
+    DOC_TYPE_MODAL: 2,
+});
 
 module.exports = (sequelize, DataTypes) => {
     class Document extends MetaModel {
@@ -54,6 +59,24 @@ module.exports = (sequelize, DataTypes) => {
         ]
 
         /**
+         * Add a new document (and create a delta file for HTML documents)
+         * @param data
+         * @param options
+         * @returns {Promise<Object|undefined>}
+         */
+        static async add(data, options = {}) {
+            const newDocument = await super.add(data, options);
+
+            // Create a new delta file on disk for HTML documents
+            if (newDocument.type === this.docTypes.DOC_TYPE_HTML) {
+                fs.writeFileSync(path.join(UPLOAD_PATH, `${newDocument.hash}.delta.json`), JSON.stringify({}));
+            }
+            // TODO: what if transaction failes? --> need to delete the file again
+
+            return newDocument;
+        }
+
+        /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
          * The `models/index` file will call this method automatically.
@@ -80,7 +103,7 @@ module.exports = (sequelize, DataTypes) => {
         createdAt: DataTypes.DATE,
         type: DataTypes.INTEGER, // 0 is for pdf and 1 is for html
         parentDocumentId: DataTypes.INTEGER,
-        hideInFrontend: DataTypes.BOOLEAN 
+        hideInFrontend: DataTypes.BOOLEAN
     }, {
         sequelize: sequelize,
         modelName: 'document',
