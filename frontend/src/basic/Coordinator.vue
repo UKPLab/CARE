@@ -34,7 +34,7 @@
         class="btn-group"
       >
         <slot name="success-footer">
-          <slot name="buttons" />
+          <slot name="buttons"/>
           <button
             class="btn btn-secondary"
             @click="$refs.coordinatorModal.close()"
@@ -48,7 +48,7 @@
         class="btn-group"
       >
         <slot name="footer">
-          <slot name="buttons" />
+          <slot name="buttons"/>
           <button
             class="btn btn-secondary"
             type="button"
@@ -72,7 +72,8 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
-import { v4 as uuid } from "uuid";
+import {sorter} from "@/assets/utils.js";
+Array.prototype.sorter = sorter;
 
 /**
  * Basic Coordinator to add or edit database entries
@@ -94,7 +95,7 @@ import { v4 as uuid } from "uuid";
  */
 export default {
   name: "BasicCoordinator",
-  components: { BasicModal, BasicForm },
+  components: {BasicModal, BasicForm},
   props: {
     title: {
       type: String,
@@ -137,20 +138,7 @@ export default {
       data: {},
       success: false,
       overrideDefaultValues: {},
-      requestId: null,
     };
-  },
-  sockets: {
-    appDataUpdateSuccess(data) {
-      if (data.requestId === this.requestId) {
-        if (data.success) {
-          this.showSuccess();
-          this.$emit("success", data.id);
-        } else {
-          this.$refs.coordinatorModal.waiting = false;
-        }
-      }
-    },
   },
   computed: {
     fields() {
@@ -173,14 +161,13 @@ export default {
       if (this.fields) {
         this.reset();
         this.overrideDefaultValues = defaultValues;
-        this.requestId = uuid();
         this.data = this.getData(id, copy);
         this.$refs.coordinatorModal.open();
       } else {
         this.eventBus.emit("toast", {
           title: "Error",
           message: "The table " + this.table + " has no defined fields!",
-          type: "error",
+          variant: "danger",
         });
       }
     },
@@ -189,12 +176,23 @@ export default {
     },
     submit() {
       if (this.$refs.form.validate()) {
-        const data = { ...this.data };
+        const data = {...this.data};
         this.$emit("submit", data);
         this.$socket.emit("appDataUpdate", {
-          id: this.requestId,
           table: this.table,
           data: data,
+        }, (result) => {
+          if (result.success) {
+            this.showSuccess();
+            this.$emit("success", result.id);
+          } else {
+            this.$refs.coordinatorModal.waiting = false;
+            this.eventBus.emit("toast", {
+              title: "Could not save",
+              message: result.message,
+              variant: "danger",
+            });
+          }
         });
         this.$refs.coordinatorModal.waiting = true;
       }
@@ -212,7 +210,7 @@ export default {
     },
     getData(id, copy = false) {
       if (id === 0) {
-        return { ...this.defaultValue, ...this.overrideDefaultValues };
+        return {...this.defaultValue, ...this.overrideDefaultValues};
       } else {
         return this.getDataFromStore(id, this.table, this.fields, copy);
       }
@@ -234,17 +232,20 @@ export default {
           field.key in data
             ? data[field.key]
             : // if type is table, get the data from the store
-            ["table","choice"].includes(field.type) && this.$store.getters["table/" + field.options.table + "/hasFields"]
-            ? this.$store.getters["table/" + field.options.table + "/getFiltered"]((e) => e[field.options.id] === id).map((e) =>
+            ["table", "choice"].includes(field.type) && this.$store.getters["table/" + field.options.table + "/hasFields"]
+              ? this.$store.getters["table/" + field.options.table + "/getFiltered"]((e) => e[field.options.id] === id)
+                .sorter(field.options.sort)
+                .filter((e) => e[field.options.key] === data[field.key])
+                .map((e) =>
                 this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"], copy)
               )
-            : // else use the default value
+              : // else use the default value
               null;
         return acc;
       }, {});
 
       if (!copy) {
-        return_data = { ...return_data, ...{ id: data.id } };
+        return_data = {...return_data, ...{id: data.id}};
       }
 
       return return_data;

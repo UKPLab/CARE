@@ -162,7 +162,7 @@ module.exports = class AssignmentSocket extends Socket {
       template: false,
       collab: template.collab,
       description: template.description,
-      resumable: template.resumable,
+      resumable: true,
       timeLimit: template.timeLimit,
       start: template.start,
       end: template.end,
