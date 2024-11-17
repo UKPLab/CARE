@@ -22,6 +22,20 @@
     </div>
   </span>
 
+  <Teleport v-if="readonly" to="#topBarNavItems">
+    <button
+        title="Read-Only mode"
+        class="btn rounded-circle"
+        type="button"
+    >
+      <LoadIcon
+          :size="18"
+          :color="'#008000'"
+          icon-name="file-earmark-lock2-fill"
+      />
+    </button>
+  </Teleport>
+
   <Teleport v-if="showHTMLDownloadButton" to="#topBarNavItems">
     <button
       title="Download document"
@@ -165,7 +179,7 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
     },
     toolbarVisible() {
-      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true";
+      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.readonly;
     },
     editorOptions() {
       const toolsMap = {
