@@ -96,7 +96,7 @@
         class="btn-group"
       >
         <button
-          v-if="studySessions.length > 0"
+          v-if="studySessions.length > 0 && !studyClosed"
           class="btn btn-secondary"
           type="button"
           @click="showSessions=!showSessions"
