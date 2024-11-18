@@ -288,8 +288,8 @@ export default {
       const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
       this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
-      if (this.timeLeft < 0) {
-        this.finish({studySessionId: this.studySessionId});
+      if (this.timeLeft < 0 && !this.studySession.end) {
+        this.finish();
       }
     },
     finalFinish(data) {
