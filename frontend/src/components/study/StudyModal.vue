@@ -67,6 +67,12 @@
           >
             This is a <b>collaborative</b> user study, so everyone can join and proceed with this study simultaneously!
           </div>
+          <div
+            v-if="study.limitSessionsPerUser > 0"
+            class="mt-1"
+          >
+            You have <b> {{ study.limitSessionsPerUser - totalNumberOfOpenedSessions }} sessions </b> left for this study.
+          </div>
         </span>
       </span>
     </template>
