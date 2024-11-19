@@ -52,6 +52,7 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'study_session',
         hooks: { 
             beforeCreate: async (studySession, options) => {
+                console.log(studySession, "studySession, HOOK")
                 const transaction = options.transaction || await sequelize.transaction();
 
                 try {
@@ -62,6 +63,8 @@ module.exports = (sequelize, DataTypes) => {
                     if (!study) {
                         throw new Error('Study not found');
                     }
+
+                    console.log(study, "STUDY HOOK")
 
                     const limitSessions = study.limitSessions;
                     const limitSessionsPerUser = study.limitSessionsPerUser;

@@ -54,12 +54,18 @@
           class="file-upload-container"
         >
         <h4>Select reviewers!</h4>
+        <input
+      type="text"
+      v-model="searchTerm"
+      placeholder="Search reviewers"
+      class="search-input"
+    />
       <div class="table-scroll-container">
             <BasicTable
               :columns="columnsStepOne"
-              :data="reviewers"
+              :data="filteredReviewers"
               :options="tableOptionsOne"
-              @row-selection="(reviewers) => (selectedUsers = reviewers)"
+              @row-selection="(filteredReviewers) => (selectedUsers = filteredReviewers)"
             />
           </div>
       </div>
@@ -187,9 +193,15 @@ export default {
           },
         ]
       },
+      filteredReviewers() {
+        return this.reviewers.filter((reviewer) => {
+          return this.searchTerm === "" || reviewer.firstName.toLowerCase().includes(this.searchTerm.toLowerCase()) || reviewer.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) || reviewer.userName.toLowerCase().includes(this.searchTerm.toLowerCase());
+        });
+      }
   },
   data() {
     return {
+      searchTerm: "",
       templateNames: [],
       selectedTemplate: "",
       showInputFields: false,
@@ -352,9 +364,10 @@ export default {
     },
     createAssignment() {
       let data = {}
-      data.assignment = this.selectedAssignment
-      data.reviewers = this.selectedReviewers
-      data.template = this.selectedTemplate
+      data.assignment = this.selectedAssignment[0]
+      data.reviewers = this.selectedUsers.map(user => user.id)
+      data.template = this.templates.find(template => template.name === this.selectedTemplate)
+      data.createdByUserId = this.$store.getters["auth/getUserId"]
       this.$socket.emit("assignmentPeerReview", data, (response) => {
       }) 
       this.$refs.modal.close();
@@ -430,7 +443,7 @@ export default {
 }
 
 .table-scroll-container {
-  height: 500px;
+  height: 400px;
   overflow-y: auto;
 }
 

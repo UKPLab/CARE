@@ -21,7 +21,7 @@
           @click="addBulkAssignment()"
         />
         <BasicButton
-          v-if="isAdmin"
+          v-if="canAddBulkAssignments"
           class="btn-secondary btn-sm"
           title="Add Single Assignment"
           @click="addSingleAssignment()"
@@ -135,6 +135,8 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },  
     studs() {
+      if (this.userRights.includes('frontend.dashboard.studies.view'))
+    {
       return this.studies.filter(study => study.createdByUserId === this.userId && study.template === false)
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
@@ -230,6 +232,8 @@ export default {
             return study
           }
         );
+    }
+      
     },
     isAdmin() {
       return this.$store.getters["auth/isAdmin"];

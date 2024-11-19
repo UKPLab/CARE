@@ -17,6 +17,22 @@ const roleRights = [
     role: "mentor",
     userRightName: "frontend.dashboard.studies.view.userInfo",
   },
+  {
+    role: "admin",
+    userRightName: "frontend.dashboard.studies.addBulkAssignments",
+  },
+  {
+    role: "admin",
+    userRightName: "frontend.dashboard.studies.view",
+  },
+  {
+    role: "admin",
+    userRightName: "frontend.dashboard.studies.view.readOnly",
+  },
+  {
+    role: "admin",
+    userRightName: "frontend.dashboard.studies.view.userInfo",
+  },
 ];
 
 module.exports = {
