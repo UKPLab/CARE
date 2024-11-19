@@ -58,12 +58,31 @@
             v-if="currentStep === 2"
             class="review-count-container"
           >
-          <BasicForm
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+    <!-- Select Dropdown -->
+    <select v-model="selectedOption">
+      <option value="general">General</option>
+      <option value="hiwi">HiWi Selection</option>
+    </select>
+
+    <!-- Text on the Right -->
+    <span style="margin-left: 10px;">Remaining Assignments: {{ this.remainingAssignments }}</span>
+  </div>
+          <div v-if="selectedOption === 'general'">
+            <BasicForm
             ref="form"
             :fields="sliders"
             v-model="sliderValues"
-            
             />
+          
+          </div>
+          <div v-if="selectedOption === 'hiwi'">
+            <BasicForm
+            ref="form"
+            :fields="hiwiToggleField"
+            v-model="hiwiValues"
+            />
+          </div>
           </div>
           <!-- Step3: Choose template to create assignment -->
           <div
@@ -116,7 +135,8 @@
   import BasicTable from "@/basic/table/Table.vue";
   import BasicForm from "@/basic/Form.vue";
   import FormSlider from "@/basic/form/Slider.vue";
-  
+  import FormSwitch from "@/basic/form/Switch.vue";
+import { watch } from "vue";
   /**
    * Modal for bulk creating assignments
    * @author: Alexander Bürkle, Linyin Huang
@@ -124,7 +144,7 @@
   export default {
     name: "ImportModal",
     fetch_data: ["study"],
-    components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider},
+    components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider, FormSwitch },
     emits: ["updateUser"],
     mounted() {
       this.$socket.emit("assignmentGetAssignmentInfosFromUser")
@@ -209,11 +229,18 @@
         ]},
       templates() {
         return this.$store.getters["table/study/getAll"].filter(item => item.template === true)
+      },
+      remainingAssignments() {
+        return this.selectedAssignments.length - Object.keys(this.hiwiValues).reduce((total, key) => {const value = Number(this.hiwiValues[key]);return total + (isNaN(value) ? 0 : value);
+}, 0);
       }
-      
     },
     data() {
       return {
+        selectedOption: 'general',
+        hiwiToggleField: [],
+        hiwiValues: [],
+        perviousHiwiValues: [],
         templateNames: [],
         sliders: [
         
@@ -246,6 +273,8 @@
         
       },
       resetModal() {
+        this.hiwiToggleField = []
+        this.hiwiValues = []
         this.currentStep = 0;
         this.selectedAssignments = [];
         this.selectedReviewers = [];
@@ -268,7 +297,8 @@
             this.selectedReviewers = []
             break;
           case 2:
-            
+            this.hiwiToggleField = []
+            this.hiwiValues = []
             break;
         }
       },
@@ -314,6 +344,12 @@
           this.sliders.push({ key: role, min: 0, max: roleCounts[role], step: 1, class: 'custom-slider-class', unit: '' ,
            label: "Number of " + role + "s per review", type:"slider"})
         }
+
+        for (const user of this.selectedReviewers) {
+          this.hiwiToggleField.push({ key: user.id, label: user.firstName + " " + user.lastName, type: "slider", class: 'custom-slider-class', min: 0, max: this.selectedAssignments.length, step: 1, unit: '' })
+        }
+
+        
       },
       handleStepThree() {
         this.templateNames = this.templates.map(template => template.name)
@@ -340,7 +376,6 @@
         let data = {}
         data.createdByUserId = this.$store.getters["auth/getUserId"]
         data.assignments = this.selectedAssignments
-        data.reviewers = this.selectedReviewers
         data.template = this.templates.find(template => template.name === this.selectedTemplate)
         let dictionary = {}
         Object.keys(this.sliderValues).forEach(key => {
@@ -349,13 +384,72 @@
       }
     });
         data.reviewsPerRole = dictionary
-        this.$socket.emit("assignmentPeerReviews", data, (response) => {
-        }) 
+        if(this.selectedOption === 'hiwi') {
+          console.log(this.hiwiValues)
+          const convertedHiwiValues = Object.fromEntries(
+  Object.entries(this.hiwiValues).filter(([key, value]) => value !== undefined)
+);
+          data.reviewers = convertedHiwiValues
+          this.$socket.emit("assignmentAssignHiwis", data, (response) => {
+          }) 
+        }
+        else{
+          data.reviewers = this.selectedReviewers
+          this.$socket.emit("assignmentPeerReviews", data, (response) => {
+          }) 
+        }
+        
         this.$refs.modal.close();
       }
       },
+      watch: {
+        hiwiValues: {
+          handler(newValue, oldValue) {
+            //console.log(Object.keys(this.hiwiValues).map(key => this.hiwiValues[key]))
+            const differences = {};
+
+          // Get all unique keys from both objects
+          //const keys = new Set([...Object.keys(oldValue), ...Object.keys(newValue)]);
+          const oldValues = this.perviousHiwiValues;
+
+          for (const key in newValue) {
+            if (oldValues[key] > newValue[key]) {
+              const difference = Math.abs(oldValues[key] - newValue[key]);
+              console.log(difference, "difference")
+              for(let i = 0; i < this.hiwiToggleField.length; i++) {
+                if (this.hiwiToggleField[i].key != key) {
+                  this.hiwiToggleField[i].max = this.hiwiToggleField[i].max + difference
+                }
+                console.log(this.hiwiToggleField[i].max)
+              }
+              break;
+            //this.hiwiToggleField[i].max = this.remainingAssignments + Object.keys(oldValue).map(key => oldValue[key][i])
+          }
+          if (oldValues[key] < newValue[key]) {
+            const difference = Math.abs(oldValues[key] - newValue[key]);
+            console.log(difference, "difference")
+            for(let i = 0; i < this.hiwiToggleField.length; i++) {
+              if (this.hiwiToggleField[i].key != key) {
+                this.hiwiToggleField[i].max = this.hiwiToggleField[i].max - difference
+              }
+              console.log(this.hiwiToggleField[i].max)
+            }
+            break;
+          }
+            //JSON.parse(JSON.stringify(newValue));
+          }
+          this.perviousHiwiValues = {...newValue}
+
+          
+          
+          },
+          deep: true
+      },
       
-  };
+    }
+  }
+      
+  
   </script>
   
   <style scoped>

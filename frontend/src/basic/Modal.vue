@@ -1,55 +1,57 @@
 <template>
-  <div
-    ref="Modal"
-    :data-bs-keyboard="!disableKeyboard"
-    aria-hidden="true"
-    aria-labelledby="ModalLabel"
-    class="modal fade"
-    data-bs-backdrop="static"
-    role="dialog"
-    tabindex="-1"
-  >
+  <teleport to="body">
     <div
-      :class="xl && 'modal-xl' || lg && 'modal-lg'"
-      class="modal-dialog"
-      role="document"
+      ref="Modal"
+      :data-bs-keyboard="!disableKeyboard"
+      aria-hidden="true"
+      aria-labelledby="ModalLabel"
+      class="modal fade"
+      data-bs-backdrop="static"
+      role="dialog"
+      tabindex="-1"
     >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <slot name="title"/>
-          </h5>
-          <button
-            v-if="!removeClose"
-            aria-label="Close"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            type="button"
-          />
-        </div>
-        <div class="modal-body">
-          <div
-            v-if="waiting"
-            class="justify-content-center flex-grow-1 d-flex"
-            role="status"
-          >
-            <div class="spinner-border m-5">
-              <span class="visually-hidden">Loading...</span>
+      <div
+        :class="xl && 'modal-xl' || lg && 'modal-lg'"
+        class="modal-dialog"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <slot name="title"/>
+            </h5>
+            <button
+              v-if="!removeClose"
+              aria-label="Close"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              type="button"
+            />
+          </div>
+          <div class="modal-body">
+            <div
+              v-if="waiting"
+              class="justify-content-center flex-grow-1 d-flex"
+              role="status"
+            >
+              <div class="spinner-border m-5">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <div v-else>
+              <slot name="body"/>
             </div>
           </div>
-          <div v-else>
-            <slot name="body"/>
+          <div
+            v-if="!waiting"
+            class="modal-footer"
+          >
+            <slot name="footer"/>
           </div>
-        </div>
-        <div
-          v-if="!waiting"
-          class="modal-footer"
-        >
-          <slot name="footer"/>
         </div>
       </div>
     </div>
-  </div>
+  </teleport>
 </template>
 
 <script>
@@ -141,6 +143,7 @@ export default {
   },
   methods: {
     hideEvent() {
+      console.log("hide");
       this.$emit('hide');
       if (this.acceptStats) {
         this.$socket.emit("stats", {
@@ -161,13 +164,22 @@ export default {
     open() {
       this.openModal();
     },
+    show() {
+      this.openModal();
+    },
     openModal() {
       this.waiting = false;
       this.modal.show();
     },
     close() {
       this.modal.hide();
-    }
+    },
+    hide() {
+      this.modal.hide();
+    },
+    toggle() {
+      this.modal.toggle();
+    },
   }
 }
 </script>

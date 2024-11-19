@@ -1,6 +1,6 @@
 <template>
   <EditReviewerModal ref="editReviewerModal"/>
-  <Modal
+  <BasicModal
     ref="studySessionModal"
     :props="{studyId: studyId}"
     lg
@@ -35,7 +35,7 @@
           title="Add"
         />
     </template>
-  </Modal>
+  </BasicModal>
 </template>
 
 <script>
@@ -43,7 +43,10 @@ import Modal from "@/basic/Modal.vue";
 import DTable from "@/basic/table/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import EditReviewerModal from "./EditReviewerModal.vue";
+import BasicModal from "@/basic/Modal.vue";
 import { add } from "lodash";
+import { computed } from "vue";
+import {v4 as uuid} from "uuid";
 
 /**
  * Details of study session for a given study in a modal
@@ -54,7 +57,12 @@ import { add } from "lodash";
  */
 export default {
   name: "StudySessionModal",
-  components: {Modal, DTable, BasicButton, EditReviewerModal},
+  components: {Modal, DTable, BasicButton, EditReviewerModal, BasicModal},
+  provide() {
+    return {
+      mainModal: computed(() => this.$refs.studySessionModal)
+    }
+  },
   data() {
     return {
       studyId: 0,
@@ -151,7 +159,7 @@ export default {
         });
     },
   },
-  methods: {
+  methods: { 
     open(studyId) {
       this.studyId = studyId;
       this.load();

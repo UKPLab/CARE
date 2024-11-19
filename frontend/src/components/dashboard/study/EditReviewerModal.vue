@@ -92,7 +92,9 @@ import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import FormSlider from "@/basic/form/Slider.vue";
-import StudySessionModal from "./StudySessionModal.vue";
+import {defineAsyncComponent} from "vue";
+
+import { hide, main } from "@popperjs/core";
 
 /**
  * Modal for bulk creating assignments
@@ -101,11 +103,16 @@ import StudySessionModal from "./StudySessionModal.vue";
 export default {
   name: "ImportModal",
   fetch_data: ["study"],
-  components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider },
+  components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider, "StudySessionModal": defineAsyncComponent(() => import("./StudySessionModal.vue")) },
   emits: ["updateUser"],
   mounted() {
     this.$socket.emit("assignmentGetAssignmentInfosFromUser")
 },
+inject: {
+    mainModal: {
+      default: null
+    },
+  },
   computed: {
     users() {
       return this.$store.getters["admin/getAssignmentUserInfos"].filter(user => user.role != null);
@@ -167,11 +174,12 @@ export default {
   },
   
   methods: {
+    
     open(id, modal) {
       this.$refs.modal.open();
       this.handleStepZero(id)
       this.idStudy = id
-
+      //this.mainModal?.hide()
     },
     resetModal() {
       this.selectedUsers = [];
@@ -184,6 +192,8 @@ export default {
       this.filteredUsers = [];
     },
     handleStepZero(id) {
+      console.log(this.mainModal.studyId)
+      this.mainModal?.hide()
       const userIds = this.$store.getters["table/study_session/getFiltered"](e => e.studyId === id).map(session => session.userId);
       const users = this.users.filter(user => userIds.includes(user.id)).map(users => ({
       ...users, 
@@ -253,6 +263,8 @@ export default {
       data.deletedReviewers = this.deleteUsers
       data.studyId = this.idStudy
       this.$socket.emit("assignmentEditReviewer", data)
+      this.mainModal?.show()
+      this.$refs.modal.close()
     },
     action(data) {
       switch(data.action) {
