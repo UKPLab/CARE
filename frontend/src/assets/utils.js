@@ -1,3 +1,4 @@
+import { FileSaver } from "file-saver"; // required for window.saveAs to work
 import Papa from "papaparse";
 
 

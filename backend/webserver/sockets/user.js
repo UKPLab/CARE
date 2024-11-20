@@ -208,7 +208,6 @@ module.exports = class UserSocket extends Socket {
 
             createdUser = await this.models["user"].findOne({
               where: { email: user.email },
-              transaction,
             });
           }
 
