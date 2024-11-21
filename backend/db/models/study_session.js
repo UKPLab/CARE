@@ -89,7 +89,10 @@ module.exports = (sequelize, DataTypes) => {
                 studySession.numberSteps = 1;
                 studySession.studyStepIdMax = firstStep.id
 
-
+                // Set the start date if not already set
+                if (!studySession.start) {
+                    studySession.start = new Date();
+                }
             },
             beforeUpdate: async (studySession) => {
 

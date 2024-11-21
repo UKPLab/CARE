@@ -197,6 +197,17 @@ export default {
                 },
                 title: "Close study",
                 action: "closeStudy"
+              },
+              {
+                icon: "save",
+                options: {
+                  iconOnly: true,
+                  specifiers: {
+                    "btn-outline-secondary": true,
+                  }
+                },
+                title: "Save as Template",
+                action: "saveAsTemplate",
               }
             ];
     },
@@ -325,11 +336,19 @@ export default {
         function (val) {
           if (val) {
 
-            this.$socket.emit("addDataUpdate", {
+            this.$socket.emit("appDataUpdate", {
               table: "study",
               data: {
-              studyId: row.id,
+              id: row.id,
               deleted: true
+              }
+            }, (result) => {
+              if (!result.success) {
+                this.eventBus.emit('toast', {
+                  title: "Study delete failed",
+                  message: result.message,
+                  variant: "danger"
+                });
               }
             });
           }
