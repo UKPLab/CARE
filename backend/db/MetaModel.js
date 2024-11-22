@@ -29,10 +29,11 @@ module.exports = class MetaModel extends Model {
     /**
      * Get db entry by id
      * @param {number} id
+     * @param {boolean} includeDeleted include deleted db entries
      * @return {Promise<object|undefined>}
      */
-    static async getById(id) {
-        return await this.getByKey('id', id);
+    static async getById(id, includeDeleted = false) {
+        return await this.getByKey('id', id, includeDeleted);
     }
 
     /**
@@ -48,15 +49,23 @@ module.exports = class MetaModel extends Model {
      * Get db entry by key
      * @param {string} key
      * @param {string} id
+     * @param {boolean} includeDeleted include deleted db entries
      * @return {Promise<object|undefined>}
      */
-    static async getByKey(key, id) {
+    static async getByKey(key, id, includeDeleted = false) {
         if (key in this.getAttributes()) {
             try {
-                return await this.findOne({
-                    where: {[key]: id, 'deleted': false},
-                    raw: true
-                });
+                if (includeDeleted) {
+                    return await this.findOne({
+                        where: {[key]: id},
+                        raw: true
+                    });
+                } else {
+                    return await this.findOne({
+                        where: {[key]: id, 'deleted': false},
+                        raw: true
+                    })
+                }
             } catch (err) {
                 console.log(err);
             }
@@ -110,13 +119,13 @@ module.exports = class MetaModel extends Model {
             if (includeDeleted) {
                 return await this.findAll({
                     raw: true,
-                    attributes: { exclude }
+                    attributes: {exclude}
                 });
             } else {
                 return await this.findAll({
-                    where: {deleted: false}, 
+                    where: {deleted: false},
                     raw: true,
-                    attributes: { exclude }
+                    attributes: {exclude}
                 });
             }
 
@@ -165,24 +174,27 @@ module.exports = class MetaModel extends Model {
         try {
             const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt'].includes(key));
 
-
             if ("hash" in this.getAttributes()) {
                 data.hash = uuidv4();
             }
 
-            return (await this.create(this.subselectFields(data, possibleFields), options)).get({plain: true});
+            const createdObject = await this.create(this.subselectFields(data, possibleFields), options);
+            return createdObject.get({plain: true});
+
         } catch (err) {
-            console.log(err);
+            console.log("DB MetaModel Class " + this.constructor.name + " add error in creation: " + err.message);
+            throw new Error(err.message);
         }
     }
 
     /**
      * Delete db entry by id
      * @param {number} id
+     * @param {Object} [options={}] - Optional Sequelize query options
      * @return {Promise<object|undefined>}
      */
-    static async deleteById(id) {
-        return await this.updateById(id, {deleted: true});
+    static async deleteById(id, options = {}) {
+        return await this.updateById(id, {deleted: true}, options);
     }
 
     /**
@@ -192,18 +204,18 @@ module.exports = class MetaModel extends Model {
      * @param {Object} [additionalOptions={}] - Optional Sequelize query options. See: https://sequelize.org/api/v7/interfaces/_sequelize_core.index.queryoptions
      * @return {Promise<*>}
      */
-    static async updateById(id, data, additionalOptions={}) {
-        const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
-
-        if (data.deleted) {
-            data.deletedAt = Date.now();
-        }
-
+    static async updateById(id, data, additionalOptions = {}) {
         try {
+            const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
+
+            if (data.deleted) {
+                data.deletedAt = Date.now();
+            }
+
             let individualHooks = {};
             if ('hooks' in this.options) {
                 if ('afterUpdate' in this.options.hooks || 'beforeUpdate' in this.options.hooks) {
-                   individualHooks = { individualHooks: true };
+                    individualHooks = {individualHooks: true};
                 }
             }
 
@@ -211,21 +223,15 @@ module.exports = class MetaModel extends Model {
                 where: {
                     id: id
                 },
-                returning: true,
                 plain: true
             }, additionalOptions, individualHooks);
 
-            const updatedObject = await this.update(this.subselectFields(data, possibleFields), options);
+            const updatedObjects = await this.update(this.subselectFields(data, possibleFields), options);
 
-            if (updatedObject) {
-                if (updatedObject[1]) {
-                    return updatedObject[1][0].dataValues;
-                } else {
-                    return updatedObject[0];
-                }
-            }
+            return await this.getById(id, true);
         } catch (err) {
-            console.log(err);
+            console.log("DB MetaModel Class " + this.constructor.name + " update error in creation: " + err.message);
+            throw new Error(err.message);
         }
 
     }

@@ -83,6 +83,7 @@ module.exports = class AnnotationSocket extends Socket {
         const newAnno = await this.models['annotation'].updateById(annotationId, annotation)
 
         if (annotation.deleted) {
+            // TODO: do it with hooks!
             await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno.id);
         }
         this.emitDoc(newAnno.documentId, "annotationRefresh", newAnno);

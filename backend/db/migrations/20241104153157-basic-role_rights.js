@@ -15,7 +15,7 @@ const roleRights = [
   },
   {
     role: "mentor",
-    userRightName: "frontend.dashboard.studies.view.userInfo",
+    userRightName: "frontend.dashboard.studies.view.userPrivateInfo",
   },
   {
     role: "admin",

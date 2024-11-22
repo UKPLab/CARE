@@ -31,14 +31,19 @@
       <span v-else>
         <div
           v-if="!started"
-          class="text-xxl-center text-secondary fs-5"
-        >The study has not started yet! <br>
+          class="text-xxl-center text-secondary fs-5">
+          The study has not started yet! <br>
           Start: {{ new Date(study.start).toLocaleString() }}</div>
         <div
-          v-else-if="ended"
-          class="text-xxl-center text-danger fs-5"
-        >This study has finished on
-          {{ new Date(study.end).toLocaleString() }}</div>
+          v-else-if="studyClosed"
+          class="text-xxl-center text-danger fs-5">
+          This study has finished on
+          {{ studyEnd }}</div>
+        <div
+          v-else-if="!sessionsAvailable"
+          class="text-xxl-center text-danger fs-5">
+          No more sessions available for this study.
+        </div>
         <span v-else>
           <div
             v-if="study.description"
@@ -73,7 +78,7 @@
       >
         <span>Return to dashboard</span>
       </button>
-      <vr />
+      <vr/>
       <div
         v-if="showSessions"
         class="btn-group"
@@ -83,8 +88,7 @@
           type="button"
           @click="showSessions=!showSessions"
         >
-          <span v-if="studyId !== 0 && study.collab">Join Study Again</span>
-          <span v-else>Start Study Again</span>
+          <span>Back</span>
         </button>
       </div>
       <div
@@ -104,12 +108,13 @@
           <span>Open Sessions</span>
         </button>
         <button
-          :disabled="studyId === 0 && available"
+          v-if="studyId !== 0"
+          :disabled="!available"
           class="btn btn-primary"
           type="button"
           @click="start"
         >
-          <span v-if="studyId !== 0 && study.collab">Join Study</span>
+          <span v-if="study.collab">Join Study</span>
           <span v-else>Start Study</span>
         </button>
       </div>
@@ -136,7 +141,10 @@ export default {
     studyId: {
       type: Number,
       required: true,
-      default: 0,
+    },
+    studyClosed: {
+      type: Boolean,
+      required: true,
     }
   },
   emits: ["start", "finish"],
@@ -184,61 +192,72 @@ export default {
       }
       return null;
     },
+    studyEnd() {
+      if (this.study) {
+        if (this.study.closed) {
+          return new Date(this.study.closed).toLocaleString()
+        }
+        if (this.study.end) {
+          return new Date(this.study.end).toLocaleString()
+        }
+      }
+      return "";
+    },
     studySessions() {
       if (this.studyId) {
         return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
-            .filter(s => s.end === null)
-            .map(s => {
-              let study = {...s}
-              study.resumable = this.study.resumable;
-              study.startParsed = new Date(study.start).toLocaleString();
-              study.finished = study.end !== null
-              study.manage = []
-              if (!study.finished) {
+          .filter(s => s.end === null)
+          .map(s => {
+            let study = {...s}
+            study.resumable = this.study.resumable;
+            study.startParsed = new Date(study.start).toLocaleString();
+            study.finished = study.end !== null
+            study.manage = []
+            if (!study.finished) {
 
 
-                if (study.resumable) {
-                  study.manage.push({
-                    icon: "box-arrow-in-right",
-                    options: {
-                      iconOnly: true,
-                      specifiers: {
-                        "btn-outline-secondary": true,
-                        "btn-sm": true,
-                      }
-                    },
-                    title: "Resume session",
-                    action: "resumeSession",
-                  });
-                }
-                study.manage.push(
-                    {
-                      icon: "x-octagon",
-                      options: {
-                        iconOnly: true,
-                        specifiers: {
-                          "btn-outline-secondary": true,
-                          "btn-sm": true,
-                        }
-                      },
-                      title: "Finish session",
-                      action: "finishSession",
-                    })
-
-
+              if (study.resumable) {
+                study.manage.push({
+                  icon: "box-arrow-in-right",
+                  options: {
+                    iconOnly: true,
+                    specifiers: {
+                      "btn-outline-secondary": true,
+                      "btn-sm": true,
+                    }
+                  },
+                  title: "Resume session",
+                  action: "resumeSession",
+                });
               }
-              return study;
-            })
-            ;
+              study.manage.push(
+                {
+                  icon: "x-octagon",
+                  options: {
+                    iconOnly: true,
+                    specifiers: {
+                      "btn-outline-secondary": true,
+                      "btn-sm": true,
+                    }
+                  },
+                  title: "Finish session",
+                  action: "finishSession",
+                })
+
+
+            }
+            return study;
+          })
+          ;
       }
       return [];
     },
     totalNumberOfOpenedSessions() {
-      return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId).length;
+      return (this.study.totalNumberOfOpenedSessions) ? this.study.totalNumberOfOpenedSessions : 0;
     },
     numberOfOpenedSessionsPerUser() {
       return this.$store.getters["table/study_session/getByKey"]("userId", this.userId)
-      .filter(s => s.studyId === this.studyId).length;
+        .filter(s => s.studyId === this.studyId).length;
     },
     started() {
       if (this.study && this.study.start !== null) {
@@ -249,31 +268,22 @@ export default {
       }
       return true;
     },
-    ended() {
-      if (this.study && this.study.end !== null) {
-        if (!(this.study.end instanceof Date)) {
-          throw new Error("Invalid type for study end date. Expected a Date object.");
-        }
-        return !(new Date() < new Date(this.study.end));
-      }
-
-      if (this.study && this.study.closed !== null) {
-        if (!(this.study.closed instanceof Date)) {
-          throw new Error("Invalid type for study closed date. Expected a Date object.");
-        }
-        return !(new Date() < new Date(this.study.closed));
-      }
-
-      return false;
-    },
     available() {
-      return (this.started && !this.ended);
+      return (this.started && !this.studyClosed && this.sessionsAvailable);
+    },
+    sessionsAvailable() {
+      if (this.study) {
+        if (this.study.limitSessions !== null && this.study.limitSessions > 0) {
+          return this.totalNumberOfOpenedSessions < this.study.limitSessions;
+        }
+        if (this.study.limitSessionsPerUser !== null && this.study.limitSessionsPerUser > 0) {
+          return this.numberOfOpenedSessionsPerUser < this.study.limitSessionsPerUser;
+        }
+      }
+      return true;
     },
     link() {
       return window.location.origin + "/study/" + this.hash;
-    },
-    studyClosed(){
-      return this.$store.getters["table/study/get"](this.studyId).closed;
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -289,8 +299,8 @@ export default {
     start() {
       // needed, otherwise the ref in the callback can become null
       const modal = this.$refs.modal;
-      
-      if(this.studyClosed){
+
+      if (this.studyClosed) {
         this.eventBus.emit('toast', {
           title: "Study cannot be started!",
           message: "The study is closed.",
@@ -299,33 +309,13 @@ export default {
         return;
       }
 
-      let totalopenedSessions = this.totalNumberOfOpenedSessions;
-      let openedSessionsPerUser = this.numberOfOpenedSessionsPerUser;
-
-      const limitSessions = this.$store.getters["table/study/get"](this.studyId).limitSessions;
-      const limitSessionsPerUser = this.$store.getters["table/study/get"](this.studyId).limitSessionsPerUser;
-
-
-      if(limitSessions !== null && limitSessions > 0){
-        if (totalopenedSessions > limitSessions) {
-          this.eventBus.emit('toast', {
-            title: "Study cannot be started!",
-            message: "The maximum number of sessions for this study has been reached.",
-            variant: "danger"
-          });
-          return;
-        }
-      }
-
-      if(limitSessionsPerUser !== null && limitSessionsPerUser > 0){
-        if (openedSessionsPerUser > limitSessionsPerUser) {
-          this.eventBus.emit('toast', {
-            title: "Study cannot be started!",
-            message: "You have already started the maximum number of sessions for assigned to you.",
-            variant: "danger"
-          });
-          return;
-        }
+      if (!this.sessionsAvailable) {
+        this.eventBus.emit('toast', {
+          title: "Study cannot be started!",
+          message: "The maximum number of sessions for this study has been reached.",
+          variant: "danger"
+        });
+        return;
       }
 
       this.sockets.subscribe("studySessionStarted", (data) => {
@@ -350,7 +340,6 @@ export default {
     sessionAction(data) {
       if (data.action === "finishSession") {
         this.$emit("finish", {studySessionId: data.params.id});
-        this.$refs.modal.close();
       }
       if (data.action === "resumeSession") {
         this.$emit("start", {studySessionId: data.params.id});

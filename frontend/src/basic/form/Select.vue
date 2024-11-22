@@ -2,10 +2,10 @@
   <FormElement ref="formElement" :data-table="dataTable" :options="options">
     <template #element="{blur}">
       <select
-          v-if="Array.isArray(options.options)"
-          v-model="currentData"
-          :class="selectClass" class="form-select"
-          @blur="blur(currentData > -1)"
+        v-if="Array.isArray(options.options)"
+        v-model="currentData"
+        :class="selectClass" class="form-select"
+        @blur="blur(currentData > -1)"
 
       >
         <option v-for="option in selectOptions"
@@ -17,10 +17,10 @@
         </option>
       </select>
       <select
-          v-else
-          v-model="currentData"
-          class="form-select"
-          @blur="blur(currentData > 0)"
+        v-else
+        v-model="currentData"
+        class="form-select"
+        @blur="blur(currentData > 0)"
       >
         <option v-for="option in selectOptions"
                 :key="option.id"
@@ -39,6 +39,11 @@ import FormElement from "@/basic/form/Element.vue"
 export default {
   name: "FormSelect",
   components: {FormElement},
+  inject: {
+    formData: {
+      default: () => null,
+    },
+  },
   props: {
     options: {
       type: Object,
@@ -53,6 +58,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    parentValue: {
+      type: Object,
+      required: false,
+      default: () => null,
     }
   },
   emits: ["update:modelValue"],
@@ -71,6 +81,27 @@ export default {
     selectOptions() {
       if (Array.isArray(this.options.options)) {
         return this.options.options;
+      }
+      if (this.options.options.filter) {
+        return this.$store.getters["table/" + this.options.options.table + "/getFiltered"](
+          (e) => this.options.options.filter.every(
+            (f) => {
+              let sourceValue = e[f.key];
+              if (f.mapping) {
+                // create a mapping function to map the value to the key
+                sourceValue = f.mapping[e[f.key]];
+              }
+              console.log("sourceValue", sourceValue);
+              switch (f.type) {
+                case "formData":
+                  return sourceValue === this.formData[f.value];
+                case "parentData":
+                  return sourceValue === this.parentValue[f.value];
+                default:
+                  return sourceValue === f.value
+              }
+            }
+          ));
       }
       return this.$store.getters["table/" + this.options.options.table + "/getAll"];
     },

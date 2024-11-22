@@ -6,8 +6,8 @@
   <Study
     v-else
     :init-study-session-id="studySessionId"
-    :readonly= "readonly"
-    :study-hash="studySessionHash"
+    :read-only="readOnly"
+    :study-hash="studyHash"
   />
 </template>
 
@@ -54,11 +54,17 @@ export default {
       } else
         return 0;
     },
-    readonly() {
-      return this.$route.meta.readonly !== undefined && this.$route.meta.readonly          
+    readOnly() {
+      return this.$route.meta.readOnly !== undefined && this.$route.meta.readOnly
+    },
+    studyHash(){
+      if (this.studySession) {
+        return this.$store.getters['table/study/get'](this.studySession.studyId)["hash"];
+      }
     },
   },
   mounted() {
+    //Callback prüfen, ob Zugriff da oder nicht
     this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
   },
 }

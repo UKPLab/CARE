@@ -332,9 +332,38 @@ Using autotable:
 
     {
         options: {
-            table: <tableName>, id: <columnForForeignKey>
+            table: <tableName>,             // the name of the autotable in the vuex store
+            name: <keyOfDisplayName>,       // the key of the display text used in the table entries
+            value:<keyOfValueUsed>,         // the key of the value used in the table entries
+            filter: [                       // -- optional - list of filters to apply to the table entries
+                {
+                    type: <filterType>,    // the type of the filter
+                    key: <keyOfFilter>,     // the key in the table entries that should be filtered
+                    value: <valueOfFilter>  // the value that should be filtered for
+                    mapping: <mapObject>    // the real values will be used as key of this object, the output values as compared value
+                }
+            ],
         },
     }
+
+
+.. list-table:: Filter Table
+    :header-rows: 1
+
+    * - type
+      - key
+      - value
+    * - (default)
+      - the key in the table entries that should be filtered
+      - the value that should be filtered for
+    * - (formData)
+      - the key in the table entries that should be filtered
+      - the value of the formData with the key that should be filtered for
+    * - (parentData)
+      - the key in the table entries that should be filtered
+      - the value of the parentData with the key that should be filtered for (used for choices)
+
+
 
 Checkbox
 ^^^^^^^^

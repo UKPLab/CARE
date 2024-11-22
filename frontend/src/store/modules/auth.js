@@ -84,6 +84,19 @@ export default {
                 return state.user["rights"];
             }
         },
+
+        /**
+         * Checks if the user has a specific right
+         * If the user is admin, the user has full right
+         * @param state
+         * @returns {Function} Function that takes a right string and returns boolean
+         */
+        checkRight: (state, getters) => (right) => {
+            if (getters.isAdmin) {
+                return true;
+            }
+            return getters.getUserRights.includes(right);
+        }
     },
     mutations: {
         /**
