@@ -201,7 +201,61 @@ export default {
             ];
     },
     studs() {
-      return this.studies.filter(study => ((study.createdByUserId === null && study.userId === this.userId) || (study.createdByUserId === this.userId)) && study.template === false)
+      if(this.isAdmin === true || this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view")) {
+        return this.studies.filter(study => study.template === false)
+          .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
+          .map(st => {
+            let study = {...st};
+            // dates
+            if (study.start === null) {
+              study.start = "-"
+            } else {
+              study.start = new Date(study.start).toLocaleString()
+            }
+
+            if (study.end === null) {
+              study.end = "-"
+            } else {
+              study.end = new Date(study.end).toLocaleString()
+            }
+
+            study.createdAt = new Date(study.createdAt).toLocaleString()
+
+            study.closed = study.closed ? true : null;
+
+            study.manage = this.buttons;
+            return study
+          });
+      }
+      if(this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.readOnly")) {
+        return this.studies.filter(study => study.template === false)
+          .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
+          .map(st => {
+            let study = {...st};
+            // dates
+            if (study.start === null) {
+              study.start = "-"
+            } else {
+              study.start = new Date(study.start).toLocaleString()
+            }
+
+            if (study.end === null) {
+              study.end = "-"
+            } else {
+              study.end = new Date(study.end).toLocaleString()
+            }
+
+            study.createdAt = new Date(study.createdAt).toLocaleString()
+
+            study.closed = study.closed ? true : null;
+
+            study.manage = this.buttons.filter(button => button.action !== "editStudy" && button.action !== "deleteStudy" && button.action !== "closeStudy");
+            return study
+          });
+      }
+      else {
+        console.log("Eslse")
+        return this.studies.filter(study => ((study.createdByUserId === null && study.userId === this.userId) || (study.createdByUserId === this.userId)) && study.template === false)
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
           let study = {...st};
@@ -226,7 +280,8 @@ export default {
             return study
           }
         );
-    }
+      }
+      
       
     },
     isAdmin() {

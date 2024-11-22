@@ -21,7 +21,6 @@
       </div>
       <!-- Content -->
       <div class="content-container">
-        <!-- Step0: Choose Assignments -->
         <div
           v-if="currentStep === 0"
           class="file-upload-container"

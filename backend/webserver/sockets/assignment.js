@@ -22,52 +22,52 @@ module.exports = class AssignmentSocket extends Socket {
    */
   async getAssignmentInfosFromUser() {
     try {
-      if(this.isAdmin()) {
-      const [documentUserIds, matchedUsers, users, roleIdMap] = await Promise.all([
-        this.models["document"].findAll({
-          where: { readyForReview: true },
-          attributes: ["userId", "id", "name"],
-          raw: true,
-        }),
-        this.models["user_role_matching"].findAll({
-          attributes: ["userId", "userRoleId"],
-          raw: true,
-        }),
-        this.models["user"].findAll({
-          attributes: { exclude: ["passwordHash", "salt"] },
-          raw: true,
-        }),
-        this.models["user_role"].findAll({
-          attributes: ["id", "name"],
-          raw: true,
-        })
-      ]);
-  
-      const idToNameMap = new Map(roleIdMap.map(({ id, name }) => [id, name]));
-      const matchedUserMap = new Map(matchedUsers.map(({ userId, userRoleId }) => [userId, userRoleId]));
-  
-      const userInfos = users.map(user => {
-        const documents = documentUserIds.filter(doc => doc.userId === user.id);
-        const roleName = idToNameMap.get(matchedUserMap.get(user.id)) || null;
-  
-        return {
-          ...user,
-          documents,
-          numberAssignments: documents.length,
-          role: roleName,
-        };
-      });
-  
-      this.socket.emit("assignmentUserInfos", {
-        success: true,
-        userInfos,
-      }); 
-      
-    }
-    else {
-      throw new Error("You are not authorized to access this information. Please log in as an admin.");
-    }
-  } catch (error) {
+      if (this.isAdmin()) {
+        const [documentUserIds, matchedUsers, users, roleIdMap] = await Promise.all([
+          this.models["document"].findAll({
+            where: { readyForReview: true },
+            attributes: ["userId", "id", "name"],
+            raw: true,
+          }),
+          this.models["user_role_matching"].findAll({
+            attributes: ["userId", "userRoleId"],
+            raw: true,
+          }),
+          this.models["user"].findAll({
+            attributes: { exclude: ["passwordHash", "salt"] },
+            raw: true,
+          }),
+          this.models["user_role"].findAll({
+            attributes: ["id", "name"],
+            raw: true,
+          })
+        ]);
+
+        const idToNameMap = new Map(roleIdMap.map(({ id, name }) => [id, name]));
+        const matchedUserMap = new Map(matchedUsers.map(({ userId, userRoleId }) => [userId, userRoleId]));
+
+        const userInfos = users.map(user => {
+          const documents = documentUserIds.filter(doc => doc.userId === user.id);
+          const roleName = idToNameMap.get(matchedUserMap.get(user.id)) || null;
+
+          return {
+            ...user,
+            documents,
+            numberAssignments: documents.length,
+            role: roleName,
+          };
+        });
+
+        this.socket.emit("assignmentUserInfos", {
+          success: true,
+          userInfos,
+        });
+
+      }
+      else {
+        throw new Error("You are not authorized to access this information. Please log in as an admin.");
+      }
+    } catch (error) {
       this.logger.error(error);
       this.socket.emit("assignmentUserInfos", {
         success: false,
@@ -90,30 +90,30 @@ module.exports = class AssignmentSocket extends Socket {
   async assignPeerReviews(assignments, reviewers, reviewsPerRole, template, createdByUserId) {
     const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
     const assignmentTracker = new Map();
-  
+
     assignments.forEach((assignment) => {
       const uniqueAssignmentKey = `${assignment.userId}_${assignment.documentName}`;
       assignmentTracker.set(uniqueAssignmentKey, new Map(Object.keys(reviewsPerRole).map(role => [role, []])));
     });
-  
+
     const reviewersByRole = reviewers.reduce((acc, reviewer) => {
       const role = reviewer.role;
       if (!acc[role]) acc[role] = [];
       acc[role].push(reviewer);
       return acc;
     }, {});
-  
+
     assignments.forEach((assignment) => {
       const uniqueAssignmentKey = `${assignment.userId}_${assignment.documentName}`;
       for (const [role, numReviewersStr] of Object.entries(reviewsPerRole)) {
-        const numReviewersNeeded = parseInt(numReviewersStr, 10); 
-  
+        const numReviewersNeeded = parseInt(numReviewersStr, 10);
+
         if (numReviewersNeeded === 0) continue;
-  
+
         const availableReviewers = reviewersByRole[role] || [];
         const shuffledReviewers = shuffleArray(availableReviewers);
         let assignedReviewersCount = assignmentTracker.get(uniqueAssignmentKey).get(role).length;
-  
+
         for (const reviewer of shuffledReviewers) {
           if (assignment.userId !== reviewer.id && !assignmentTracker.get(uniqueAssignmentKey).get(role).includes(reviewer.id)) {
             if (assignedReviewersCount < numReviewersNeeded) {
@@ -128,11 +128,11 @@ module.exports = class AssignmentSocket extends Socket {
     const result = assignments.map((assignment) => {
       const uniqueAssignmentKey = `${assignment.userId}_${assignment.documentName}`;
       const assignedReviewers = [];
-      
+
       for (const [role, reviewers] of assignmentTracker.get(uniqueAssignmentKey)) {
         assignedReviewers.push(...reviewers);
       }
-  
+
       return {
         ...assignment,
         assignedReviewers,
@@ -147,8 +147,8 @@ module.exports = class AssignmentSocket extends Socket {
         createdByUserId
       );
     }
-    
-    
+
+
     return result;
 
   }
@@ -163,7 +163,6 @@ module.exports = class AssignmentSocket extends Socket {
    * @returns {Promise<Object>} The result of the peer review assignment.
    */
   async assignPeerReview(assignment, reviewers, template, createdByUserId) {
-    console.log(assignment, reviewers, template, createdByUserId, "ASSIGNMENT");
     let data = {
       userId: assignment.id,
       createdByUserId: createdByUserId,
@@ -183,31 +182,33 @@ module.exports = class AssignmentSocket extends Socket {
     //TODO: Hard coded ids for workflow peer review, should be set in frontend in the future
     let contextData = {
       ...data,
-      stepDocuments: [{documentId: assignment.documents[0].id,
+      stepDocuments: [{
+        documentId: assignment.documents[0].id,
         id: 1
       },
-    {
-      documentId: null,
-      id: 2
-    }]
+      {
+        documentId: null,
+        id: 2
+      }]
     }
     const study = await this.models["study"].add(
       data,
-      {context: contextData}
+      { context: contextData }
     )
-      await this.addReviewer(study.id, reviewers);
-
-      return { study, reviewers };
+    await this.addReviewer(study.id, reviewers);
   }
 
   /**
-   * Adds new reviewers to an assignment.
+   * Adds new sessions to a study.
    *
    * @param {Object} study - The study object containing the study details.
    * @param {Array} newReviewers - An array of reviewer IDs to be added to the study session.
    * @returns {Promise} - A promise that resolves when the reviewers have been added.
    */
   async addReviewer(study, newReviewers) {
+    let currentStudy = await this.models["study"].getById(study);
+    currentStudy.limitSessions = currentStudy.limitSessions + newReviewers.length;
+    await this.models["study"].updateById(study, currentStudy);
     const createdSessions = await Promise.all(newReviewers.map(reviewer => {
       return this.models["study_session"].add({
         studyId: study,
@@ -215,17 +216,61 @@ module.exports = class AssignmentSocket extends Socket {
       });
     }));
 
-    this.emit("study_sessionRefresh", session);
-     
-    
-    return createdSessions;
+    //TODO: Currently a deleted user can not be reassigned to the same study with a new session
+
+    for (const session of createdSessions) {
+      this.emit("study_sessionRefresh", session);
+    }
   }
 
+  /**
+   * Asynchronously removes sessions from a study and deletes their associated sessions.
+   * 
+   * @param {number} study - The ID of the study from which reviewers are to be removed.
+   * @param {Array<number>} deletedReviewers - An array of user IDs representing the reviewers to be removed.
+   * @returns {Promise<void>} - A promise that resolves when the reviewers and their sessions have been removed.
+   */
   async removeReviewer(study, deletedReviewers) {
-    const sessions = await this.models["study_session"].getAllByKey({"studyId": study});
+    const sessions = await this.models["study_session"].getAllByKey("studyId", study);
     const filteredSessions = sessions.filter(session => deletedReviewers.includes(session.userId));
+    const deletedSession = await Promise.all(filteredSessions.map(session => {
+      return this.models["study_session"].deleteById(session.id)
+    }))
+
+    for (const session of deletedSession) {
+      this.emit("study_sessionRefresh", session);
     }
-  
+  }
+
+  async assignHiwis(data) {
+    let reviewersPool = [];
+        for (const [reviewerId, count] of Object.entries(data.reviewers)) {
+          const numericCount = Number(count); // Convert count to a number
+          if (numericCount > 0) {
+            reviewersPool = reviewersPool.concat(Array(numericCount).fill(Number(reviewerId)));
+          }
+        }
+        const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
+        reviewersPool = shuffleArray(reviewersPool);
+
+
+        const assignmentsWithReviewers = data.assignments.map((assignment, index) => {
+          const reviewer = reviewersPool[index % reviewersPool.length];
+          return { ...assignment, reviewer }; // Assign a reviewer to the assignment
+        });
+
+        await Promise.all(
+          assignmentsWithReviewers.map(assignment =>
+            this.assignPeerReview(
+              assignment,
+              Array.of(assignment.reviewer),
+              data.template,
+              data.createdByUserId
+            )
+          )
+        );
+      }
+
   init() {
 
     this.socket.on("assignmentGetAssignmentInfosFromUser", async () => {
@@ -237,40 +282,9 @@ module.exports = class AssignmentSocket extends Socket {
     });
 
     this.socket.on("assignmentAssignHiwis", async (data) => {
-      
+
       try {
-        let reviewersPool = [];
-        console.log(data, "DATA");
-        for (const [reviewerId, count] of Object.entries(data.reviewers)) {
-          const numericCount = Number(count); // Convert count to a number
-          if (numericCount > 0) {
-            reviewersPool = reviewersPool.concat(Array(numericCount).fill(Number(reviewerId)));
-          }
-        }
-        const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
-  reviewersPool = shuffleArray(reviewersPool);
-
-  console.log(reviewersPool);
-
-  const assignmentsWithReviewers = data.assignments.map((assignment, index) => {
-    const reviewer = reviewersPool[index % reviewersPool.length];
-    return { ...assignment, reviewer }; // Assign a reviewer to the assignment
-  });
-
-  console.log(assignmentsWithReviewers);
-        
-  await Promise.all(
-    assignmentsWithReviewers.map(assignment =>
-      this.assignPeerReview(
-        assignment,
-        Array.of(assignment.reviewer),
-        data.template,
-        data.createdByUserId
-      )
-    )
-  );
-          
-        
+        this.assignHiwis(data);
         this.socket.emit("peerReview", {
           success: true,
           reviews,
@@ -284,7 +298,7 @@ module.exports = class AssignmentSocket extends Socket {
       }
     });
 
-    this.socket.on("assignmentPeerReviews", async (data, callback) => {
+    this.socket.on("assignmentPeerReviews", async (data) => {
       try {
         const reviews = await this.assignPeerReviews(data.assignments, data.reviewers, data.reviewsPerRole, data.template, data.createdByUserId);
         this.socket.emit("peerReview", {
@@ -330,7 +344,7 @@ module.exports = class AssignmentSocket extends Socket {
           success: false,
           message: error.message,
         });
-        this.logger.error(error);
+        this.logger.error(error, !"Error editing reviewer");
       }
     });
 

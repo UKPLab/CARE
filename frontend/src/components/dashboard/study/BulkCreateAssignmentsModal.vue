@@ -1,533 +1,478 @@
 <template>
-    <BasicModal
-      ref="modal"
-      @hide="resetModal"
-      xl
-    >
-      <template #title>
-        <span>Bulk Create Assignments</span>
-      </template>
-      <template #body>
-        <!-- Stepper -->
-        <div class="stepper">
-          <div
-            v-for="(step, index) in steps"
-            :key="index"
-            :data-index="index + 1"
-            :class="{ active: currentStep === index }"
-          >
-            {{ step.title }}
-          </div>
+  <BasicModal ref="modal" @hide="resetModal" xl>
+    <template #title>
+      <span>Bulk Create Assignments</span>
+    </template>
+    <template #body>
+      <!-- Stepper -->
+      <div class="stepper">
+        <div v-for="(step, index) in steps" :key="index" :data-index="index + 1"
+          :class="{ active: currentStep === index }">
+          {{ step.title }}
         </div>
-        <!-- Content -->
-        <div class="content-container">
-          <!-- Step0: Choose Assignments -->
-          <div
-            v-if="currentStep === 0"
-            class="file-upload-container"
-          >
+      </div>
+      <!-- Content -->
+      <div class="content-container">
+        <!-- Step0: Choose Assignments -->
+        <div v-if="currentStep === 0" class="file-upload-container">
           <h4>Select assignments to review!</h4>
           <div class="table-scroll-container">
-            <BasicTable
-              :columns="columnsStepZero"
-              :data="assignments"
-              :options="tableOptions"
-              @row-selection="(assignments) => (selectedAssignments = assignments)"
-            />
+            <BasicTable :columns="columnsStepZero" :data="assignments" :options="tableOptions"
+              @row-selection="(assignments) => (selectedAssignments = assignments)" />
           </div>
-          
-          </div>
-          <!-- Step1: Choose Reviewers -->
-          <div
-            v-if="currentStep === 1"
-            class="preview-table-container"
-          >
+
+        </div>
+        <!-- Step1: Choose Reviewers -->
+        <div v-if="currentStep === 1" class="preview-table-container">
           <h4>Select reviewers!</h4>
           <div class="table-scroll-container">
-            <BasicTable
-              :columns="columnsStepOne"
-              :data="reviewers"
-              :options="tableOptions"
-              @row-selection="(reviewers) => (selectedReviewers = reviewers)"
-            />
+            <BasicTable :columns="columnsStepOne" :data="reviewers" :options="tableOptions"
+              @row-selection="(reviewers) => (selectedReviewers = reviewers)" />
           </div>
-          
-          </div>
-          <!-- Step2: Choose number of reviewers per assignment -->
-          <div
-            v-if="currentStep === 2"
-            class="review-count-container"
-          >
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-    <!-- Select Dropdown -->
-    <select v-model="selectedOption">
-      <option value="general">General</option>
-      <option value="hiwi">HiWi Selection</option>
-    </select>
 
-    <!-- Text on the Right -->
-     <div
-    v-if="selectedOption === 'hiwi'">
-    <span style="margin-left: 10px;">Remaining Assignments: {{ this.remainingAssignments }}</span>
-  </div>
-  </div>
+        </div>
+        <!-- Step2: Choose number of reviewers per assignment -->
+        <div v-if="currentStep === 2" class="review-count-container">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <!-- Select Dropdown -->
+            <select v-model="selectedOption">
+              <option value="general">General</option>
+              <option value="hiwi">HiWi Selection</option>
+            </select>
+
+            <!-- Text on the Right -->
+            <div v-if="selectedOption === 'hiwi'">
+              <span style="margin-left: 10px;">Remaining Assignments: {{ this.remainingAssignments }}</span>
+            </div>
+          </div>
           <div v-if="selectedOption === 'general'">
-            <BasicForm
-            ref="form"
-            :fields="sliders"
-            v-model="sliderValues"
-            />
-          
+            <BasicForm ref="form" :fields="sliders" v-model="sliderValues" />
+
           </div>
           <div v-if="selectedOption === 'hiwi'">
-            <BasicForm
-            ref="form"
-            :fields="hiwiToggleField"
-            v-model="hiwiValues"
-            />
+            <BasicForm ref="form" :fields="hiwiToggleField" v-model="hiwiValues" />
           </div>
-          </div>
-          <!-- Step3: Choose template to create assignment -->
-          <div
-            v-if="currentStep === 3"
-            class="result-container"
-          >
+        </div>
+        <!-- Step3: Choose template to create assignment -->
+        <div v-if="currentStep === 3" class="result-container">
 
-            <h3>Choose a template for the assignment creation!</h3>
-            <div>
+          <h3>Choose a template for the assignment creation!</h3>
+          <div>
             <label for="template-dropdown">Choose a template:</label>
             <select v-model="selectedTemplate" id="template-dropdown">
               <option v-for="template in templateNames" :key="template" :value="template">{{ template }}</option>
             </select>
           </div>
-              
-            
-          </div>
+
+
         </div>
-      </template>
-      <template #footer>
-        <BasicButton
-          title="Previous"
-          class="btn btn-secondary"
-          @click="prevStep"
-        />
-        <div v-if="currentStep != 3" >
-        <BasicButton
-          title="Next"
-          class="btn btn-primary"
-          :disabled="isDisabled"
-          @click="nextStep"
-        />
       </div>
-      <div v-if="currentStep === 3" >
-        <BasicButton
-          title="Create Assignments"
-          class="btn btn-primary"
-          @click="createAssignments()"
-          :disabled="isDisabledAssignments"
-        />
+    </template>
+    <template #footer>
+      <BasicButton title="Previous" class="btn btn-secondary" @click="prevStep" />
+      <div v-if="currentStep != 3">
+        <BasicButton title="Next" class="btn btn-primary" :disabled="isDisabled" @click="nextStep" />
       </div>
-      </template>
-    </BasicModal>
-  </template>
-  
-  <script>
-  import BasicModal from "@/basic/Modal.vue";
-  import BasicButton from "@/basic/Button.vue";
-  import BasicIcon from "@/basic/Icon.vue";
-  import BasicTable from "@/basic/table/Table.vue";
-  import BasicForm from "@/basic/Form.vue";
-  import FormSlider from "@/basic/form/Slider.vue";
-  import FormSwitch from "@/basic/form/Switch.vue";
+      <div v-if="currentStep === 3">
+        <BasicButton title="Create Assignments" class="btn btn-primary" @click="createAssignments()"
+          :disabled="isDisabledAssignments" />
+      </div>
+    </template>
+  </BasicModal>
+</template>
+
+<script>
+import BasicModal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
+import BasicIcon from "@/basic/Icon.vue";
+import BasicTable from "@/basic/table/Table.vue";
+import BasicForm from "@/basic/Form.vue";
+import FormSlider from "@/basic/form/Slider.vue";
+import FormSwitch from "@/basic/form/Switch.vue";
 import { watch } from "vue";
-  /**
-   * Modal for bulk creating assignments
-   * @author: Alexander Bürkle, Linyin Huang
-   */
-  export default {
-    name: "ImportModal",
-    fetch_data: ["study"],
-    components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider, FormSwitch },
-    emits: ["updateUser"],
-    mounted() {
-      this.$socket.emit("assignmentGetAssignmentInfosFromUser")
+/**
+ * Modal for bulk creating assignments
+ * @author: Alexander Bürkle, Linyin Huang
+ */
+export default {
+  name: "ImportModal",
+  fetch_data: ["study"],
+  components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider, FormSwitch },
+  emits: ["updateUser"],
+  mounted() {
+    this.$socket.emit("assignmentGetAssignmentInfosFromUser")
   },
-    computed: {
-      users() {
-        return this.$store.getters["admin/getAssignmentUserInfos"].filter(user => user.role != null);
-      },
-      steps() {
-        return [
-          { title: "Assignment Selection" },
-          { title: "Reviewer Selection" },
-          { title: "Review Count" },
-          { title: "Template Selection" },
-        ];
-      },
-      isDisabled() {
-        if (this.currentStep === 0) {
-          return !this.selectedAssignments.length > 0;
-        }
-        if (this.currentStep === 1) {
-          return !this.selectedReviewers.length > 0
-        }
-        if (this.currentStep === 2) {
-          //return !Object.values(this.sliderValues).some(value => value > 0);
-        }
-          
-          
-        return false;
-      },
-      isDisabledAssignments() {
-        return this.selectedTemplate === '';
-      },
-      columnsStepOne() { 
-        const uniqueRoles = [...new Set(this.users.map((user) => user.role).filter((role) => role != null))];
-        const roleFilterColumn = {
-          name: "Role",
-          key: "role",
-          width: "1",
-          filter: uniqueRoles.map((role) => ({ key: role, name: role })),
-        };
-        
-        return [
-        roleFilterColumn,
-          {
-            name: "Has Assignments",
-            key: "hasAssignments",
-            width: "1",
-            filter: [
-              { key: "true", name: "With Assignments" },
-              { key: "false", name: "No Assignments" },
-            ],
-          },
-          { name: "ID", key: "id" },
-          { name: "First Name", key: "firstName" },
-          { name: "Last Name", key: "lastName" },
-          {
-            name: "Number of Assignments",
-            key: "numberAssignments",
-          },
-        ]
-      },
-      columnsStepZero() { 
-        const usersWithAssignments = this.users.filter((user) => user.numberAssignments > 0);
-        const roles = usersWithAssignments.map((user) => user.role);
-        const uniqueRoles = [...new Set(roles)];
-        const roleFilterColumn = {
-          name: "Role",
-          key: "role",
-          width: "1",
-          filter: uniqueRoles.map((role) => ({ key: role, name: role })),
-        };
-        
-        return [
-        roleFilterColumn,
-          { name: "ID", key: "id" },
-          { name: "Assignment", key: "documentName" },
-          { name: "First Name", key: "firstName" },
-          { name: "Last Name", key: "lastName" },
-          
-          
-        ]},
-      templates() {
-        return this.$store.getters["table/study/getAll"].filter(item => item.template === true)
-      },
-      remainingAssignments() {
-        return this.selectedAssignments.length - Object.keys(this.hiwiValues).reduce((total, key) => {const value = Number(this.hiwiValues[key]);return total + (isNaN(value) ? 0 : value);
-}, 0);
-      }
+  computed: {
+    users() {
+      return this.$store.getters["admin/getAssignmentUserInfos"].filter(user => user.role != null);
     },
-    data() {
-      return {
-        selectedOption: 'general',
-        hiwiToggleField: [],
-        hiwiValues: [],
-        perviousHiwiValues: [],
-        templateNames: [],
-        sliders: [
-        
-      ],
-        currentStep: 0,
-        assignments: [],
-        selectedAssignments: [],
-        reviewers: [],
-        selectedReviewers: [],
-        selectedTemplate: '',
-        sliderValues: {},
-        tableOptions: {
-          striped: true,
-          hover: true,
-          bordered: false,
-          borderless: false,
-          small: false,
-          selectableRows: true,
-          scrollY: true,
-          scrollX: true,
-        },
+    steps() {
+      return [
+        { title: "Assignment Selection" },
+        { title: "Reviewer Selection" },
+        { title: "Review Count" },
+        { title: "Template Selection" },
+      ];
+    },
+    isDisabled() {
+      if (this.currentStep === 0) {
+        return !this.selectedAssignments.length > 0;
+      }
+      if (this.currentStep === 1) {
+        return !this.selectedReviewers.length > 0
+      }
+      if (this.currentStep === 2) {
+        //return !Object.values(this.sliderValues).some(value => value > 0);
+      }
+
+
+      return false;
+    },
+    isDisabledAssignments() {
+      return this.selectedTemplate === '';
+    },
+    columnsStepOne() {
+      const uniqueRoles = [...new Set(this.users.map((user) => user.role).filter((role) => role != null))];
+      const roleFilterColumn = {
+        name: "Role",
+        key: "role",
+        width: "1",
+        filter: uniqueRoles.map((role) => ({ key: role, name: role })),
       };
-    },
-    
-    methods: {
-      open(type) {
-        this.importType = type;
-        this.$refs.modal.open();
-        this.handleStepZero()
-        
-      },
-      resetModal() {
-        this.hiwiToggleField = []
-        this.hiwiValues = []
-        this.currentStep = 0;
-        this.selectedAssignments = [];
-        this.selectedReviewers = [];
-        this.assignments = [];
-        this.reviewers = [];
-        this.sliderValues = []
-        this.sliders = []
-        this.selectedTemplate = ''
-        this.users = [];
-      },
-      prevStep() {
-        if (this.currentStep > 0) {
-          this.currentStep--;
-        }
-        switch(this.currentStep) {
-          case 0:
-            this.selectedAssignments = []
-            break;
-          case 1:
-            this.selectedReviewers = []
-            this.selectedOption = 'general'
-            this.hiwiToggleField = []
-            this.hiwiValues = []
-            this.sliderValues = []
-            this.sliders = []
-            break;
-          case 2:
-            
-            break;
-        }
-      },
-      nextStep() {
-        if (this.currentStep >= 4) return;
-  
-        this.currentStep++;
-        switch (this.currentStep) {
-          case 0:
-            this.handleStepZero();
-            break;
-          case 1:
-            this.handleStepOne()
-            break;
-          case 2:
-            this.handleStepTwo();
-            break;
-          case 3:
-            this.handleStepThree();
-            break;
-        }
-        
-      },
-      handleStepZero() {
-        const assignment = this.users.filter((user) => user.numberAssignments > 0);
-        this.assignments = this.splitUsersByDocuments(assignment);
-      },
-      handleStepOne() {
-        this.reviewers = this.createReviewers(this.users)
-        this.reviewers.forEach(rev => {
-              rev.hasAssignments = rev.numberAssignments > 0 ? "Has Assignments" : "No Assignment"
-            });
-        ;
+
+      return [
+        roleFilterColumn,
+        {
+          name: "Has Assignments",
+          key: "hasAssignments",
+          width: "1",
+          filter: [
+            { key: "true", name: "With Assignments" },
+            { key: "false", name: "No Assignments" },
+          ],
         },
-      handleStepTwo() {
-        const roleCounts = this.selectedReviewers.reduce((acc, obj) => {
-          const role = obj.role;
-          acc[role] = (acc[role] || 0) + 1;
-          return acc;
-        }, {});
+        { name: "ID", key: "id" },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        {
+          name: "Number of Assignments",
+          key: "numberAssignments",
+        },
+      ]
+    },
+    columnsStepZero() {
+      const usersWithAssignments = this.users.filter((user) => user.numberAssignments > 0);
+      const roles = usersWithAssignments.map((user) => user.role);
+      const uniqueRoles = [...new Set(roles)];
+      const roleFilterColumn = {
+        name: "Role",
+        key: "role",
+        width: "1",
+        filter: uniqueRoles.map((role) => ({ key: role, name: role })),
+      };
 
-        for(const role in roleCounts) {
-          this.sliders.push({ key: role, min: 0, max: roleCounts[role], step: 1, class: 'custom-slider-class', unit: '' ,
-           label: "Number of " + role + "s per review", type:"slider"})
-        }
+      return [
+        roleFilterColumn,
+        { name: "ID", key: "id" },
+        { name: "Assignment", key: "documentName" },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
 
-        for (const user of this.selectedReviewers) {
-          this.hiwiToggleField.push({ key: user.id, label: user.firstName + " " + user.lastName, type: "slider", class: 'custom-slider-class', min: 0, max: this.selectedAssignments.length, step: 1, unit: '' })
-        }
 
-        
+      ]
+    },
+    templates() {
+      return this.$store.getters["table/study/getAll"].filter(item => item.template === true)
+    },
+    remainingAssignments() {
+      return this.selectedAssignments.length - Object.keys(this.hiwiValues).reduce((total, key) => {
+        const value = Number(this.hiwiValues[key]); return total + (isNaN(value) ? 0 : value);
+      }, 0);
+    }
+  },
+  data() {
+    return {
+      selectedOption: 'general',
+      hiwiToggleField: [],
+      hiwiValues: [],
+      perviousHiwiValues: [],
+      templateNames: [],
+      sliders: [
+
+      ],
+      currentStep: 0,
+      assignments: [],
+      selectedAssignments: [],
+      reviewers: [],
+      selectedReviewers: [],
+      selectedTemplate: '',
+      sliderValues: {},
+      tableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        selectableRows: true,
+        scrollY: true,
+        scrollX: true,
       },
-      handleStepThree() {
-        this.templateNames = this.templates.map(template => template.name)
-      },
-      splitUsersByDocuments(users) {
-        const result = [];
-        users.forEach(user => {
-          if (user.documents.length > 1) {
-            user.documents.forEach(doc => {
-              const newUser = { ...user, documentName: doc.name }; 
-              result.push(newUser);
-            });
-          } else {
-            user.documentName = user.documents[0].name;
-            result.push(user);
-          }
-        });
-        return result;
-            },
-      createReviewers(users) {
-        return users
-      },
-      createAssignments() {
-        let data = {}
-        data.createdByUserId = this.$store.getters["auth/getUserId"]
-        data.assignments = this.selectedAssignments
-        data.template = this.templates.find(template => template.name === this.selectedTemplate)
-        let dictionary = {}
-        Object.keys(this.sliderValues).forEach(key => {
-      if (!Number.isInteger(+key) && key !== 'length') {
-        dictionary[key] = this.sliderValues[key];
+    };
+  },
+
+  methods: {
+    open(type) {
+      this.importType = type;
+      this.$refs.modal.open();
+      this.handleStepZero()
+
+    },
+    resetModal() {
+      this.hiwiToggleField = []
+      this.hiwiValues = []
+      this.currentStep = 0;
+      this.selectedAssignments = [];
+      this.selectedReviewers = [];
+      this.assignments = [];
+      this.reviewers = [];
+      this.sliderValues = []
+      this.sliders = []
+      this.selectedTemplate = ''
+      this.users = [];
+    },
+    prevStep() {
+      if (this.currentStep > 0) {
+        this.currentStep--;
       }
-    });
-        data.reviewsPerRole = dictionary
-        if(this.selectedOption === 'hiwi') {
-          console.log(this.hiwiValues)
-          const convertedHiwiValues = Object.fromEntries(
-  Object.entries(this.hiwiValues).filter(([key, value]) => value !== undefined)
-);
-          data.reviewers = convertedHiwiValues
-          this.$socket.emit("assignmentAssignHiwis", data, (response) => {
-          }) 
-        }
-        else{
-          data.reviewers = this.selectedReviewers
-          this.$socket.emit("assignmentPeerReviews", data, (response) => {
-          }) 
-        }
-        
-        this.$refs.modal.close();
+      switch (this.currentStep) {
+        case 0:
+          this.selectedAssignments = []
+          break;
+        case 1:
+          this.selectedReviewers = []
+          this.selectedOption = 'general'
+          this.hiwiToggleField = []
+          this.hiwiValues = []
+          this.sliderValues = []
+          this.sliders = []
+          break;
+        case 2:
+
+          break;
       }
-      },
-      watch: {
-        hiwiValues: {
-          handler(newValue, oldValue) {
-            //console.log(Object.keys(this.hiwiValues).map(key => this.hiwiValues[key]))
-            const differences = {};
+    },
+    nextStep() {
+      if (this.currentStep >= 4) return;
 
-          // Get all unique keys from both objects
-          //const keys = new Set([...Object.keys(oldValue), ...Object.keys(newValue)]);
-          const oldValues = this.perviousHiwiValues;
+      this.currentStep++;
+      switch (this.currentStep) {
+        case 0:
+          this.handleStepZero();
+          break;
+        case 1:
+          this.handleStepOne()
+          break;
+        case 2:
+          this.handleStepTwo();
+          break;
+        case 3:
+          this.handleStepThree();
+          break;
+      }
 
-          for (const key in newValue) {
-            if (oldValues[key] > newValue[key]) {
-              const difference = Math.abs(oldValues[key] - newValue[key]);
-              console.log(difference, "difference")
-              for(let i = 0; i < this.hiwiToggleField.length; i++) {
-                if (this.hiwiToggleField[i].key != key) {
-                  this.hiwiToggleField[i].max = this.hiwiToggleField[i].max + difference
-                }
-                console.log(this.hiwiToggleField[i].max)
-              }
-              break;
-            //this.hiwiToggleField[i].max = this.remainingAssignments + Object.keys(oldValue).map(key => oldValue[key][i])
-          }
-          if (oldValues[key] < newValue[key]) {
+    },
+    handleStepZero() {
+      const assignment = this.users.filter((user) => user.numberAssignments > 0);
+      this.assignments = this.splitUsersByDocuments(assignment);
+    },
+    handleStepOne() {
+      this.reviewers = this.createReviewers(this.users)
+      this.reviewers.forEach(rev => {
+        rev.hasAssignments = rev.numberAssignments > 0 ? "Has Assignments" : "No Assignment"
+      });
+      ;
+    },
+    handleStepTwo() {
+      const roleCounts = this.selectedReviewers.reduce((acc, obj) => {
+        const role = obj.role;
+        acc[role] = (acc[role] || 0) + 1;
+        return acc;
+      }, {});
+
+      for (const role in roleCounts) {
+        this.sliders.push({
+          key: role, min: 0, max: roleCounts[role], step: 1, class: 'custom-slider-class', unit: '',
+          label: "Number of " + role + "s per review", type: "slider"
+        })
+      }
+
+      for (const user of this.selectedReviewers) {
+        this.hiwiToggleField.push({ key: user.id, label: user.firstName + " " + user.lastName, type: "slider", class: 'custom-slider-class', min: 0, max: this.selectedAssignments.length, step: 1, unit: '' })
+      }
+
+
+    },
+    handleStepThree() {
+      this.templateNames = this.templates.map(template => template.name)
+    },
+    splitUsersByDocuments(users) {
+      const result = [];
+      users.forEach(user => {
+        if (user.documents.length > 1) {
+          user.documents.forEach(doc => {
+            const newUser = { ...user, documentName: doc.name };
+            result.push(newUser);
+          });
+        } else {
+          user.documentName = user.documents[0].name;
+          result.push(user);
+        }
+      });
+      return result;
+    },
+    createReviewers(users) {
+      return users
+    },
+    createAssignments() {
+      let data = {}
+      data.createdByUserId = this.$store.getters["auth/getUserId"]
+      data.assignments = this.selectedAssignments
+      data.template = this.templates.find(template => template.name === this.selectedTemplate)
+      let dictionary = {}
+      Object.keys(this.sliderValues).forEach(key => {
+        if (!Number.isInteger(+key) && key !== 'length') {
+          dictionary[key] = this.sliderValues[key];
+        }
+      });
+      data.reviewsPerRole = dictionary
+      if (this.selectedOption === 'hiwi') {
+        const convertedHiwiValues = Object.fromEntries(
+          Object.entries(this.hiwiValues).filter(([key, value]) => value !== undefined)
+        );
+        data.reviewers = convertedHiwiValues
+        this.$socket.emit("assignmentAssignHiwis", data, (response) => {
+        })
+      }
+      else {
+        data.reviewers = this.selectedReviewers
+        this.$socket.emit("assignmentPeerReviews", data, (response) => {
+        })
+      }
+
+      this.$refs.modal.close();
+    }
+  },
+  watch: {
+    hiwiValues: {
+      handler(newValue, oldValue) {
+        const oldValues = this.perviousHiwiValues;
+
+        for (const key in newValue) {
+          if (oldValues[key] > newValue[key]) {
             const difference = Math.abs(oldValues[key] - newValue[key]);
-            console.log(difference, "difference")
-            for(let i = 0; i < this.hiwiToggleField.length; i++) {
+            for (let i = 0; i < this.hiwiToggleField.length; i++) {
               if (this.hiwiToggleField[i].key != key) {
-                this.hiwiToggleField[i].max = this.hiwiToggleField[i].max - difference
+                this.hiwiToggleField[i].max = this.hiwiToggleField[i].max + difference
               }
-              console.log(this.hiwiToggleField[i].max)
             }
             break;
           }
-            //JSON.parse(JSON.stringify(newValue));
-          }
-          this.perviousHiwiValues = {...newValue}
+          if (oldValues[key] < newValue[key]) {
+            const difference = Math.abs(oldValues[key] - newValue[key]);
+            for (let i = 0; i < this.hiwiToggleField.length; i++) {
+              if (this.hiwiToggleField[i].key != key) {
+                this.hiwiToggleField[i].max = this.hiwiToggleField[i].max - difference
+              }
 
-          
-          
-          },
-          deep: true
+            }
+            break;
+          }
+        }
+        this.perviousHiwiValues = { ...newValue }
       },
-      
-    }
+      deep: true
+    },
+
   }
-      
-  
-  </script>
-  
-  <style scoped>
-  /* Stepper */
-  .stepper {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 1.25rem;
-    position: relative;
-    &:after {
-      content: "";
-      position: absolute;
-      top: 15px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background-color: #ccc;
-    }
+}
+
+
+</script>
+
+<style scoped>
+/* Stepper */
+.stepper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  position: relative;
+
+  &:after {
+    content: "";
+    position: absolute;
+    top: 15px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #ccc;
   }
-  
-  .stepper div {
-    z-index: 1;
-    background-color: white;
-    padding: 0 5px;
-    &:before {
-      --dimension: 30px;
-      content: attr(data-index);
-      margin-right: 6px;
-      display: inline-flex;
-      width: var(--dimension);
-      height: var(--dimension);
-      border-radius: 50%;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #6c6b6b;
-    }
-    &:first-child {
-      padding-left: 0;
-    }
-    &:last-child {
-      padding-right: 0;
-    }
+}
+
+.stepper div {
+  z-index: 1;
+  background-color: white;
+  padding: 0 5px;
+
+  &:before {
+    --dimension: 30px;
+    content: attr(data-index);
+    margin-right: 6px;
+    display: inline-flex;
+    width: var(--dimension);
+    height: var(--dimension);
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #6c6b6b;
   }
-  
-  .stepper div.active {
-    --btn-color: #0d6efd;
+
+  &:first-child {
+    padding-left: 0;
+  }
+
+  &:last-child {
+    padding-right: 0;
+  }
+}
+
+.stepper div.active {
+  --btn-color: #0d6efd;
+  border-color: var(--btn-color);
+
+  &:before {
+    color: white;
+    background-color: var(--btn-color);
     border-color: var(--btn-color);
-    &:before {
-      color: white;
-      background-color: var(--btn-color);
-      border-color: var(--btn-color);
-    }
   }
-  
-  .content-container {
-    height: 500px;
-    margin-bottom: 20px;
-  }
+}
+
+.content-container {
+  height: 500px;
+  margin-bottom: 20px;
+}
 
 .table-scroll-container {
-  max-height: 500px; 
-  overflow-y: auto;  
+  max-height: 500px;
+  overflow-y: auto;
 }
 
 .custom-slider-class {
   width: 100%;
-  border: 2px solid #3498db; 
-  border-radius: 8px; 
-  padding: 2px; 
+  border: 2px solid #3498db;
+  border-radius: 8px;
+  padding: 2px;
 }
-  
+
 
 .review-count-container {
   height: 100%;
@@ -546,18 +491,17 @@ import { watch } from "vue";
 }
 
 .result-container h3 {
-font-size: 2rem; 
-margin-bottom: 20px;
+  font-size: 2rem;
+  margin-bottom: 20px;
 }
 
 .result-container label {
-font-size: 1.2rem; 
-margin-right: 10px; 
+  font-size: 1.2rem;
+  margin-right: 10px;
 }
 
 .result-container select {
-margin-top: 10px;
-padding: 5px; 
+  margin-top: 10px;
+  padding: 5px;
 }
-  </style>
-  
+</style>

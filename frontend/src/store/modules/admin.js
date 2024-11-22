@@ -138,7 +138,6 @@ export default {
      */
     SOCKET_assignmentUserInfos: (state, message) => {
       if (message.success) {
-        console.log(message, "HELLLOOO");
         state.assignmentUserInfos = message.userInfos;
       }
     },
