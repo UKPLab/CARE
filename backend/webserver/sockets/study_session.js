@@ -167,6 +167,7 @@ module.exports = class StudySessionSocket extends Socket {
 
         this.socket.on("studySessionUpdate", async (data) => {
             try {
+                console.log(data, "DATA");
                 if (data.sessionId && data.sessionId !== 0) {
                     await this.updateSession(data.sessionId, data);
                 }
