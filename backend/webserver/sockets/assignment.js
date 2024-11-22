@@ -242,6 +242,16 @@ module.exports = class AssignmentSocket extends Socket {
     }
   }
 
+  /**
+   * Assigns reviewers (Hiwis) to assignments based on the provided data.
+   *
+   * @param {Object} data - The data for assigning reviewers.
+   * @param {Object} data.reviewers - An object where keys are reviewer IDs and values are the number of assignments they should review.
+   * @param {Array} data.assignments - An array of assignment objects to be reviewed.
+   * @param {string} data.template - The template to be used for the peer review.
+   * @param {string} data.createdByUserId - The ID of the user who created the assignments.
+   * @returns {Promise<void>} A promise that resolves when all assignments have been assigned reviewers.
+   */
   async assignHiwis(data) {
     let reviewersPool = [];
         for (const [reviewerId, count] of Object.entries(data.reviewers)) {
