@@ -171,9 +171,11 @@ module.exports = class UserSocket extends Socket {
                   {
                     hooks: true,
                     individualHooks: true,
-                    userRoles: user.roles,
-                    roleMap,
                     transaction,
+                    context: {
+                      userRoles: user.roles,
+                      roleMap,
+                    }
                   }
                 );
                 break;
@@ -200,9 +202,11 @@ module.exports = class UserSocket extends Socket {
                 where: { email: user.email },
                 hooks: true,
                 individualHooks: true,
-                userRoles: user.roles,
-                roleMap,
                 transaction,
+                context: {
+                  userRoles: user.roles,
+                  roleMap,
+                }
               }
             );
 
