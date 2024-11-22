@@ -193,7 +193,7 @@ module.exports = class Socket {
      * @param {number} userId The userId to check
      * @return {boolean}
      */
-    async checkUserAccess(userId) {
+    checkUserAccess(userId) {
         if (this.isAdmin()) {
             return true;
         }

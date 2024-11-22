@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require("uuid");
 const { genSalt, genPwdHash } = require("../../utils/auth.js");
 const { generateMarvelUsername } = require("../../utils/generator.js");
 const { inject } = require("../../utils/generic");
+const { inject } = require("../../utils/generic");
 
 /**
  * Handle user through websocket
@@ -23,6 +24,7 @@ module.exports = class UserSocket extends Socket {
    * @returns {Promise<Awaited<*&{creator_name: string|*|undefined}>[]>}
    */
   async updateCreatorName(data, key = "userId", targetName = "creator_name") {
+    return await inject(data, async (userId) => await this.models["user"].getUserName(userId), targetName, key);
     return await inject(data, async (userId) => await this.models["user"].getUserName(userId), targetName, key);
   }
 
@@ -77,157 +79,6 @@ module.exports = class UserSocket extends Socket {
       this.logger.error(error);
     }
   }
-
-  /**
-   * Retrieves users from a specified moodle course and returns the data as an array.
-   *
-   * @param {Object} courseData - The data object containing the course ID, Moodle URL and the API token.
-   * @param {number} courseData.courseID - The ID of the course to fetch users from.
-   * @param {string} courseData.options.apiKey - The API token for the Moodle instance
-   * @param {string} courseData.options.url - The URL of the Moodle instance.
-   * @returns {Promise<Array>} - An array of objects, each containing the following keys: id, firstname, lastname, email, username, roles
-   */
-  async getUsersFromCourse(courseData) {
-    const { courseID } = courseData;
-    const convertedCourseID = Number(courseID);
-    const updatedCourseData = { ...courseData, convertedCourseID };
-    try {
-      return await this.server.rpcs["MoodleRPC"].getUsersFromCourse(updatedCourseData);
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
-  /**
-   * Uploads login data to a Moodle assignment as feedback comments.
-   * @param {Object} moodleData - The data required for uploading login data.
-   * @param {number} moodleData.courseID - The ID of the course to fetch users from.
-   * @param {number} moodleData.assignmentID - The ID of the Moodle assignment.
-   * @param {Array<Object>} moodleData.loginData - An array of objects containing user IDs, usernames and passwords.
-   * @param {string} moodleData.options.apiKey - The API token for the Moodle instance
-   * @param {string} moodleData.options.url - The URL of the Moodle instance.
-   * @returns {Promise<void>} - A promise that resolves when the passwords have been uploaded.
-   */
-  async uploadDataToMoodle(moodleData) {
-    const { courseID, assignmentID } = moodleData;
-    const convertedCourseID = Number(courseID);
-    const convertedAsgID = Number(assignmentID);
-    const updatedMoodleData = { ...moodleData, convertedCourseID, convertedAsgID };
-    try {
-      return await this.server.rpcs["MoodleRPC"].uploadLoginDataToMoodle(updatedMoodleData);
-    } catch (error) {
-      this.logger.error(error);
-    }
-  }
-
-  /**
-   * Bulk create or update users
-   * @param {*} users - Users to be created or updated
-   * @param {Object} roleMap - A role map that maps an external platform roles to CARE roles
-   * @returns {Promise<array>} - A list of created or updated users
-   */
-  async bulkCreateUsers(users, roleMap) {
-    try {
-      const createdUsers = [];
-      for (const user of users) {
-        let createdUser, password;
-        if (user.status === "new") {
-          // Generate a password using UUID (8 characters)
-          password = uuidv4().replace(/-/g, "").substring(0, 8);
-          const salt = genSalt();
-          const pwdHash = await genPwdHash(password, salt);
-
-          let username;
-          let retries = 0;
-          const maxRetries = 5;
-
-          while (retries < maxRetries) {
-            username = generateMarvelUsername();
-            try {
-              // Attempt to create the user
-              createdUser = await this.models["user"].create({
-                firstName: user.firstname,
-                lastName: user.lastname,
-                userName: username,
-                email: user.email,
-                passwordHash: pwdHash,
-                salt,
-                moodleId: Number(user.id),
-                acceptTerms: false,
-                acceptStats: false,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              });
-              break;
-            } catch (error) {
-              if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "userName") {
-                retries++;
-              } else {
-                throw error;
-              }
-            }
-          }
-
-          if (!createdUser) {
-            throw new Error("Failed to create user with unique username");
-          }
-        } else {
-          // Update the user's details
-          await this.models["user"].update(
-            {
-              firstName: user.firstname,
-              lastName: user.lastname,
-              moodleId: user.id,
-            },
-            {
-              where: { email: user.email },
-            }
-          );
-
-          // Fetch the updated user
-          createdUser = await this.models["user"].findOne({ where: { email: user.email } });
-        }
-
-        // Find and assign roles
-        const assignedRoles = [];
-        const userRoles = user.roles.split(", ");
-        for (let roleName of userRoles) {
-          roleName = roleName.trim();
-          const userRole = await this.models["user_role"].findOne({
-            where: { name: roleMap[roleName] },
-          });
-          if (!userRole) {
-            continue;
-          }
-
-          await this.models["user_role_matching"].create({
-            userId: createdUser.id,
-            userRoleId: userRole.id,
-          });
-          assignedRoles.push(roleName);
-        }
-
-        createdUsers.push({
-          id: createdUser.moodleId,
-          firstname: createdUser.firstName,
-          lastname: createdUser.lastName,
-          username: createdUser.userName,
-          email: createdUser.email,
-          roles: assignedRoles.join(", "),
-          password: user.status === "new" ? password : "",
-          status: user.status,
-        });
-      }
-
-      return createdUsers;
-    } catch (error) {
-      this.logger.error("Failed to bulk update users: " + error);
-    }
-  }
-
-
-
-  
 
   /**
    * Retrieves users from a specified moodle course and returns the data as an array.

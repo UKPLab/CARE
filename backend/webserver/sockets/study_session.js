@@ -68,7 +68,7 @@ module.exports = class StudySessionSocket extends Socket {
             } else {
                 const currentStudySession = await this.models['study_session'].getById(sessionId)
                 const study = await this.models['study'].getById(currentStudySession.studyId);
-                if ( await this.checkUserAccess(currentStudySession.userId) || await this.checkUserAccess(study.userId)) {
+                if (this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
                     const studySession = await this.models['study_session'].updateById(data.sessionId, data);
                     await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
                 } else {
