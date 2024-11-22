@@ -104,7 +104,7 @@ module.exports = function (server) {
             }
         }
 
-        if (!data.acceptTerms) {
+        if (!data.acceptTerms && !data.isCreatedByAdmin) {
             return res.status(400).json({message: "Please agree to the terms of use."});
         }
 
