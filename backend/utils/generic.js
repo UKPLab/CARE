@@ -15,3 +15,30 @@ exports.pickObjectAttributeSubset =  function pickObjectAttributeSubset(obj, key
 exports.overrideObjectAttributes = function overrideObjectAttributes(obj_orig, obj_over) {
     return Object.fromEntries(Object.entries(obj_orig).map(([key, value]) => [key, key in obj_over ? obj_over[key] : value]));
 }
+
+/**
+ * Injects a new attribute into an object, based on the value of an existing attribute.
+ * @param data - object or array of objects
+ * @param func - async function to be applied to the value of the key
+ * @param targetName - name of the new attribute
+ * @param key - key to be used as input for the function - if not present, the object is returned as is
+ * @returns {Promise<Awaited<T|*>[]>}
+ */
+exports.inject = async function inject(data, func, targetName, key) {
+    if (!Array.isArray(data)) {
+      data = [data];
+    }
+
+    return Promise.all(
+      data.map(async (x) => {
+        if (!x[key]) { // If the user ID is not present, return the object as is
+          return x;
+        } else {
+          return {
+            ...x,
+            [targetName]: await func(x[key]),
+          };
+        }
+      })
+    );
+}

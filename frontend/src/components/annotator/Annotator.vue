@@ -162,7 +162,8 @@ export default {
   },
   provide() {
     return {
-      documentId: computed(() => this.documentId)
+      documentId: computed(() => this.documentId),
+      studyStepId: computed(() => this.studyStepId)
     }
   },
   inject: {
@@ -170,11 +171,6 @@ export default {
       type: Number,
       required: false,
       default: null
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: null,
     },
     acceptStats: {
       default: () => false
@@ -200,7 +196,12 @@ export default {
       type: Number,
       required: true,
       default: 0,
-    }
+    },    
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
   },
   data() {
     return {
@@ -399,9 +400,7 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0 && this.studyStepId !== 0)) {
-            this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
-      }
+      this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
 
       // Join Room for document updates
       this.$socket.emit("documentSubscribe", {documentId: this.documentId});

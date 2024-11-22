@@ -3,15 +3,15 @@
       v-if="studySessionId === 0"
       ref="studyModal"
       :study-id="studyId"
-      @finish="finish"
+      :study-closed="studyClosed"
+      @finish="finalFinish"
       @start="start"
   />
   <FinishModal
       ref="studyFinishModal"
-      :closeable="!timeUp && !studyClosed"
-      :finished="finished"
       :study-session-id="studySessionId"
-      @finish="finalFinish"
+      :show-time-up="timeUp"
+      @finish="finalFinish({studySessionId: this.studySessionId})"
   />
 
   <Teleport to="#topbarCustomPlaceholder">
@@ -27,7 +27,7 @@
       </TopBarButton>
 
       <TopBarButton
-          v-if="studySession && lastStep && currentWorkflowStep && currentWorkflowStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
+          v-if="!readOnlyComputed && studySession && lastStep && currentWorkflowStep && currentWorkflowStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
           class="btn btn-outline-secondary mx-3"
           title="Finish Study"
           @click="finish"
@@ -62,11 +62,11 @@
   </Teleport>
     <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
-      <div v-show="s.id === studySession.studyStepId">
-        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId"/>
+      <div v-show="s.id === currentStudyStepId">
+        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id"/>
       </div>
-      <div v-show="s.id === studySession.studyStepId">
-        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id = "s.documentId"/>
+      <div v-show="s.id === currentStudyStepId">
+        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id"/>
       </div>
       <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
     </div>
@@ -97,8 +97,7 @@ export default {
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
-      studyStepId: computed(() => this.studyStepId),
-      readonly: this.readonly,
+      readonly: computed(() => this.readOnlyComputed),
     };
   },
   props: {
@@ -112,7 +111,7 @@ export default {
       required: false,
       default: 0,
     },
-    'readonly': {
+    'readOnly': {
       type: Boolean,
       required: false,
       default: false,
@@ -123,14 +122,10 @@ export default {
       studySessionId: 0,
       timeLeft: 0,
       timerInterval: null,
-      documentId: 0,
-      studyStepId: 0,
+      localStudyStepId: 0,
     };
   },
   computed: {
-    allowNavigation() {
-      return this.study ? this.study.allowNavigation : false;
-    },
     studySession() {
       if (this.studySessionId !== 0) {
         return this.$store.getters['table/study_session/get'](this.studySessionId);
@@ -153,12 +148,6 @@ export default {
         return [];
       }
     },
-    currentStudyStep() {
-      const step = this.studySession && this.studySession.studyStepId
-            ? this.$store.getters['table/study_step/get'](this.studySession.studyStepId)
-            : null;
-        return step;
-    },
     nextStudyStep() {
       if (this.currentStudyStep) {
         // Find the next step by looking for a step where `studyStepPrevious` matches `currentStudyStep.id`
@@ -177,6 +166,9 @@ export default {
             .filter(id => id !== null); // Excluding null to avoid the first step
         const lastStep = this.studySteps.find(step => !previousStepIds.includes(step.id));
         return lastStep;
+    },
+    firstStep() {
+      return (this.studySteps) ? this.studySteps.find(step => step.studyStepPrevious === null) : null;
     },
     workflowSteps() {
       const steps = this.studySteps.length > 0
@@ -203,31 +195,6 @@ export default {
         return 0;
       }
     },
-    finished() {
-      if (this.studySession) {
-        return this.studySession.end !== null;
-      }
-
-      if (this.study && this.study.end) {
-        if (this.study.end !== null && this.study.end !== undefined) {
-          if (!(this.study.end instanceof Date)) {
-            throw new Error("Invalid type for study end date. Expected a Date object.");
-          }
-          return Date.now() > new Date(this.study.end);
-        }
-      }
-
-      if (this.study && this.study.closed) {
-        if (this.study.closed !== null && this.study.closed !== undefined) {
-          if (!(this.study.closed instanceof Date)) {
-            throw new Error("Invalid type for study close date. Expected a Date object.");
-          }
-          return Date.now() > new Date(this.study.closed);
-        }
-      }
-
-      return false;
-    },
     timeUp() {
       if (this.study && this.study.timeLimit > 0) {
         if (this.timeLeft < 0) {
@@ -236,36 +203,51 @@ export default {
       }
       return false;
     },
-    studyClosed() {
-      if (this.study && this.study.closed) {
-        if (this.study["closed"] !== null && this.study["closed"] !== undefined) {
-          if (!(this.study["closed"] instanceof Date)) {
-            throw new Error("Invalid type for study close date. Expected a Date object.");
-          }
-          return Date.now > new Date(this.study.closed);
-        }
-      }
-
-      if (this.study && this.study.end) {
-        if (this.study.end !== null && this.study.end !== undefined) {
-          if (!(this.study.end instanceof Date)) {
-            throw new Error("Invalid type for study end date. Expected a Date object.");
-          }
-          return Date.now() > new Date(this.study.end);
-        }
-      }
-
-      return false;
-    },
     timeLeftHuman() {
       if (this.timeLeft < 60) {
         return Math.round(this.timeLeft) + "s";
       }
       return Math.round(this.timeLeft / 60) + "min";
     },
+    currentStudyStep() {
+      return (this.currentStudyStepId)
+            ? this.$store.getters['table/study_step/get'](this.currentStudyStepId)
+            : null;
+    },
+    currentStudyStepId(){
+      if(this.readOnlyComputed && this.firstStep){
+        return this.localStudyStepId === 0 ? this.firstStep.id : this.localStudyStepId;
+      }      
+      if (this.studySession && this.studySession.studyStepId) {
+        return this.studySession.studyStepId;
+      }
+    },
+    studyClosed() {
+      if(this.study) {
+        if (this.study.closed) {
+          return true;
+        }
+        if (!this.study.multipleSubmit && this.study.end && new Date(this.study.end) < Date.now()) {
+          return true;
+        }
+      }
+      return false;
+    },
+    readOnlyComputed(){
+      if (this.readOnly) {
+        return this.readOnly;
+      }
+      if (this.studyClosed || this.timeUp) {
+        return true;
+      }
+      if (this.studySession && this.studySession.end && !this.study.multipleSubmit) {
+        return true;
+      }
+      return false;
+    }
   },
   watch: {
-    studySession(newVal) {
+    studySession() {
       if (this.study.timeLimit > 0 && this.studySession) {  //studySession required, otherwise not all data may be there yet
         if (this.timerInterval) {
           clearInterval(this.timerInterval);
@@ -273,17 +255,16 @@ export default {
         }
 
         this.calcTimeLeft();
-        if (!newVal.end) {
+        if (!this.studyClosed) {
           this.timerInterval = setInterval(this.calcTimeLeft, 1000);
         }
       }
-    }
+    },
   },
   mounted() {
     this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
     this.studySessionId = this.initStudySessionId;
     if (this.studySessionId === 0) {
-      console.log("StudyRoute studyId before rendering StudyModal:", this.studyId);
       this.$refs.studyModal.open();
     }
   },
@@ -313,29 +294,34 @@ export default {
     },
     finalFinish(data) {
       this.$socket.emit("studySessionUpdate", {
-        sessionId: this.studySessionId,
-        comment: data.comment,
+        sessionId: data.studySessionId,
         end: Date.now()
       });
+      this.$refs.studyFinishModal.close();
     },
-    finish(data) {
-      if (data.studySessionId) {
-        this.studySessionId = data.studySessionId;
-      }
-
-      if (this.finished && !this.study.multipleSubmit) {
-        this.$refs.studyFinishModal.open();
-        return;
-      }
+    finish() {
+      this.$refs.studyFinishModal.open();
     },
     updateStep(step) {
+      if(this.readOnlyComputed){
+        this.localStudyStepId = step;
+      } else {   
       this.$socket.emit("appDataUpdate", {
           table: "study_session",
           data: {
             id: this.studySessionId,
             studyStepId: step 
           },
+        }, (result) => {
+          if (!result.success) {
+            this.eventBus.emit('toast', {
+              title: "Study Step update failed",
+              message: result.message,
+              variant: "danger"
+            });
+          }
         });
+      }  
     },
   }
 };

@@ -2,6 +2,7 @@ const Socket = require("../Socket.js");
 const { v4: uuidv4 } = require("uuid");
 const { genSalt, genPwdHash } = require("../../utils/auth.js");
 const { generateMarvelUsername } = require("../../utils/generator.js");
+const { inject } = require("../../utils/generic");
 
 /**
  * Handle user through websocket
@@ -22,18 +23,7 @@ module.exports = class UserSocket extends Socket {
    * @returns {Promise<Awaited<*&{creator_name: string|*|undefined}>[]>}
    */
   async updateCreatorName(data, key = "userId", targetName = "creator_name") {
-    if (!Array.isArray(data)) {
-      data = [data];
-    }
-
-    return Promise.all(
-      data.map(async (x) => {
-        return {
-          ...x,
-          [targetName]: await this.models["user"].getUserName(x[key]),
-        };
-      })
-    );
+    return await inject(data, async (userId) => await this.models["user"].getUserName(userId), targetName, key);
   }
 
   /**
@@ -291,91 +281,98 @@ module.exports = class UserSocket extends Socket {
     try {
       const createdUsers = [];
       for (const user of users) {
-        let createdUser, password;
-        if (user.status === "new") {
-          // Generate a password using UUID (8 characters)
-          password = uuidv4().replace(/-/g, "").substring(0, 8);
-          const salt = genSalt();
-          const pwdHash = await genPwdHash(password, salt);
+        // Create transaction for every user, so each creation process could be isolated
+        const transaction = await this.models["user"].sequelize.transaction();
+        try {
+          let createdUser, password;
+          if (user.status === "new") {
+            password = uuidv4().replace(/-/g, "").substring(0, 8);
+            const salt = genSalt();
+            const pwdHash = await genPwdHash(password, salt);
 
-          let username;
-          let retries = 0;
-          const maxRetries = 5;
+            let username;
+            let retries = 0;
+            const maxRetries = 5;
 
-          while (retries < maxRetries) {
-            username = generateMarvelUsername();
-            try {
-              // Create the user
-              createdUser = await this.models["user"].create(
-                {
-                  firstName: user.firstname,
-                  lastName: user.lastname,
-                  userName: username,
-                  email: user.email,
-                  passwordHash: pwdHash,
-                  salt,
-                  moodleId: Number(user.id),
-                  acceptTerms: false,
-                  acceptStats: false,
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                },
-                {
-                  hooks: true,
-                  individualHooks: true,
-                  userRoles: user.roles,
-                  roleMap,
+            while (retries < maxRetries) {
+              username = generateMarvelUsername();
+              try {
+                createdUser = await this.models["user"].create(
+                  {
+                    firstName: user.firstname,
+                    lastName: user.lastname,
+                    userName: username,
+                    email: user.email,
+                    passwordHash: pwdHash,
+                    salt,
+                    moodleId: Number(user.id),
+                    acceptTerms: false,
+                    acceptStats: false,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                  },
+                  {
+                    hooks: true,
+                    individualHooks: true,
+                    userRoles: user.roles,
+                    roleMap,
+                    transaction,
+                  }
+                );
+                break;
+              } catch (error) {
+                if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "userName") {
+                  retries++;
+                } else {
+                  throw error;
                 }
-              );
-              break;
-            } catch (error) {
-              if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "userName") {
-                retries++;
-              } else {
-                throw error;
               }
             }
-          }
 
-          if (!createdUser) {
-            throw new Error("Failed to create user with unique username");
-          }
-        } else {
-          // Update the user's details
-          await this.models["user"].update(
-            {
-              firstName: user.firstname,
-              lastName: user.lastname,
-              moodleId: user.id,
-            },
-            {
-              where: { email: user.email },
-              hooks: true,
-              individualHooks: true,
-              userRoles: user.roles,
-              roleMap,
+            if (!createdUser) {
+              throw new Error("Failed to create user with unique username");
             }
-          );
+          } else {
+            await this.models["user"].update(
+              {
+                firstName: user.firstname,
+                lastName: user.lastname,
+                moodleId: user.id,
+              },
+              {
+                where: { email: user.email },
+                hooks: true,
+                individualHooks: true,
+                userRoles: user.roles,
+                roleMap,
+                transaction,
+              }
+            );
 
-          // Fetch the updated user
-          createdUser = await this.models["user"].findOne({ where: { email: user.email } });
+            createdUser = await this.models["user"].findOne({
+              where: { email: user.email },
+              transaction,
+            });
+          }
+
+          createdUsers.push({
+            id: createdUser.moodleId,
+            firstname: createdUser.firstName,
+            lastname: createdUser.lastName,
+            username: createdUser.userName,
+            email: createdUser.email,
+            roles: user.roles,
+            password: user.status === "new" ? password : "",
+            status: user.status,
+          });
+        } catch (error) {
+          this.logger.error("Failed to bulk create user: " + error);
         }
-
-        createdUsers.push({
-          id: createdUser.moodleId,
-          firstname: createdUser.firstName,
-          lastname: createdUser.lastName,
-          username: createdUser.userName,
-          email: createdUser.email,
-          roles: user.roles,
-          password: user.status === "new" ? password : "",
-          status: user.status,
-        });
       }
 
       return createdUsers;
     } catch (error) {
-      this.logger.error("Failed to bulk update users: " + error);
+      this.logger.error("Failed to bulk create users: " + error);
     }
   }
 

@@ -3,20 +3,22 @@
     <template #element>
       <table class="table table-hover">
         <tbody>
-          <tr v-for="(item, index) in choiceItems" :key="'entry_' + index">
-            <td v-for="field in fields" :key="field.key">
-              <div class="d-flex align-items-center">
+        <tr v-for="(item, index) in choices" :key="'entry_' + index">
+          <td v-for="field in fields" :key="field.key">
+            <div class="d-flex align-items-center">
                 <span class="badge bg-primary me-2">
                   <i class="bi bi-file-earmark-text"></i> {{ index + 1 }}
                 </span>
+
                 <FormSelect
                   v-if="field.type === 'select'"
                   :ref="'ref_' + field.key"
                   v-model="currentData[index][field.key]"
                   :data-table="true"
-                  :options="{ options: item.allChoiceOptions, value: 'value', name: 'name' }"
+                  :parent-value="item"
+                  :options="{options: field.options}"
                   :placeholder="field.label"
-                  class="flex-grow-1"  
+                  class="flex-grow-1"
                   style="min-width: 200px; max-width: 800px;"
                 />
                 <FormDefault
@@ -26,9 +28,9 @@
                   :data-table="true"
                   :options="field"
                 />
-              </div>
-            </td>
-          </tr>
+            </div>
+          </td>
+        </tr>
         </tbody>
       </table>
     </template>
@@ -39,6 +41,8 @@
 import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
+import {sorter} from "@/assets/utils.js";
+Array.prototype.sorter = sorter;
 
 /**
  * Show a table to insert new elements
@@ -47,7 +51,12 @@ import FormSelect from "@/basic/form/Select.vue";
  */
 export default {
   name: "FormChoice",
-  components: { FormElement, FormDefault, FormSelect },
+  components: {FormElement, FormDefault, FormSelect},
+  inject: {
+    formData: {
+      default: () => null,
+    },
+  },
   props: {
     options: {
       type: Object,
@@ -59,16 +68,11 @@ export default {
       default: () => [],
     },
   },
-  inject: {
-    formData: {
-      default: () => null,
-    },
-  },
   emits: ["update:modelValue"],
   data() {
     return {
-      currentData: this.modelValue && this.modelValue.length > 0 
-        ? [...this.modelValue] 
+      currentData: this.modelValue && this.modelValue.length > 0
+        ? [...this.modelValue]
         : [],
     };
   },
@@ -83,8 +87,22 @@ export default {
       deep: true,
     },
     currentData: {
-      handler() { 
+      handler() {
         this.$emit("update:modelValue", this.currentData);
+      },
+      deep: true,
+      immediate: true,
+    },
+    choices: {
+      handler() {
+        this.currentData = this.choices.map((c) => {
+          return this.fields.reduce((acc, field) => {
+            acc[field.key] = null;
+            // die workflowStepId
+            acc["id"] = c.id;
+            return acc;
+          }, {});
+        });
       },
       deep: true,
       immediate: true,
@@ -94,64 +112,26 @@ export default {
     fields() {
       return this.$store.getters[`table/${this.options.options.table}/getFields`];
     },
-    choiceItems() {
-      const fieldsData = this.fields.find(field => field.key); // in our case we need documentId defined in study_step
-      const relatedDataOptions = fieldsData?.options?.relatedTable;
-
-      const fieldsItems = fieldsData
-        ? this.$store.getters[`table/${fieldsData.options.table}/getAll`] // in our case all documents 
-        : [];
-      const relatedItems = relatedDataOptions // in our case workflow_step data
-        ? this.$store.getters[`table/${relatedDataOptions.table}/getAll`]
-        : [];
-
-      const formDataId = this.formData?.workflowId; // in our case we need workflowId
-
-      const choiceOptions = relatedItems // TODO this part needs to be more generalized
-        .filter(relatedItemData => relatedItemData.workflowId === formDataId && relatedItemData.workflowStepDocument === null)
-        .map(relatedItemData => {
-          const filteredItems = fieldsItems.filter(doc => {
-            if (relatedItemData.stepType === 1) return doc.type === 0; // if workflow_step type = 1 use PDF
-            if (relatedItemData.stepType === 2) return doc.type === 1; // if workflow_step type = 2 use HTML
-            return false;
-          });
-
-          return {
-            ...relatedItemData,
-            allChoiceOptions: filteredItems.map(doc => ({
-              value: doc.id,
-              name: doc.name || doc.title
-            }))
-          };
-        });
-      
-      if (!this.currentData.length) {
-        this.currentData = choiceOptions.map(step => ({
-          stepId: step.id,
-          documentId: null, 
-        }));
+    choices() {
+      if (this.options.options.choices) {
+        const choicesConfig = this.options.options.choices;
+        return this.$store.getters[`table/${choicesConfig.table}/getFiltered`](
+          (e) => choicesConfig.filter.every(
+            (f) => {
+              switch (f.type) {
+                case "formData":
+                  return e[f.key] === this.formData[f.value];
+                default:
+                  return e[f.key] === f.value
+              }
+            }
+          )).sorter(choicesConfig.sort);
       }
-      
-      return choiceOptions;
-    }
-  },
-  mounted() {
-    this.initializeCurrentData();
+      return [];
+    },
   },
   methods: {
-    initializeCurrentData() {
-    if (this.modelValue && this.modelValue.length) {
-      this.currentData = [...this.modelValue];
-    } else {
-      this.currentData = this.choiceItems.map(item => {
-        const entry = { stepId: item.id };
-        this.fields.forEach(field => {
-          entry[field.key] = null;
-        });
-        return entry;
-      });
-    }
-  },
+    // TODO needs to be adapted to the new structure
     validate() {
       const allValid = this.currentData.every(entry => entry.studyId !== null);
       if (!allValid) {
