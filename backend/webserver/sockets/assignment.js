@@ -139,16 +139,15 @@ module.exports = class AssignmentSocket extends Socket {
       };
     });
 
-    await Promise.all(
-      result.map(assignment =>
-        this.assignPeerReview(
-          assignment,
-          assignment.assignedReviewers,
-          template,
-          createdByUserId
-        )
-      )
-    );
+    for (const assignment of result) {
+      await this.assignPeerReview(
+        assignment,
+        assignment.assignedReviewers,
+        template,
+        createdByUserId
+      );
+    }
+    
     
     return result;
 

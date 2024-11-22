@@ -44,9 +44,7 @@ import DTable from "@/basic/table/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import EditReviewerModal from "./EditReviewerModal.vue";
 import BasicModal from "@/basic/Modal.vue";
-import { add } from "lodash";
 import { computed } from "vue";
-import {v4 as uuid} from "uuid";
 
 /**
  * Details of study session for a given study in a modal
@@ -165,6 +163,7 @@ export default {
       this.load();
       this.$socket.emit("studySessionSubscribe", {studyId: studyId});
       this.$refs.studySessionModal.open();
+      console.log(this.study)
     },
     close() {
       this.$socket.emit("studySessionUnsubscribe", {studyId: this.studyId});
@@ -178,12 +177,13 @@ export default {
         this.$socket.emit("studyGetById", {studyId: this.studyId});
       }
     },
-    action(data) {
+    action(data) { 
       switch (data.action) {
         case "openStudySession":
           this.$router.push("/review/" + data.params.hash);
           break;
         case "copyStudySessionLink":
+        console.log(data, "DATA STUDY Session");
           this.copyURL(data.params.hash);
           break;
         case "deleteStudySession":

@@ -66,7 +66,10 @@
     </select>
 
     <!-- Text on the Right -->
+     <div
+    v-if="selectedOption === 'hiwi'">
     <span style="margin-left: 10px;">Remaining Assignments: {{ this.remainingAssignments }}</span>
+  </div>
   </div>
           <div v-if="selectedOption === 'general'">
             <BasicForm
@@ -169,7 +172,7 @@ import { watch } from "vue";
           return !this.selectedReviewers.length > 0
         }
         if (this.currentStep === 2) {
-          return false//return !Object.values(this.sliderValues).some(value => value > 0);
+          //return !Object.values(this.sliderValues).some(value => value > 0);
         }
           
           
@@ -295,10 +298,14 @@ import { watch } from "vue";
             break;
           case 1:
             this.selectedReviewers = []
-            break;
-          case 2:
+            this.selectedOption = 'general'
             this.hiwiToggleField = []
             this.hiwiValues = []
+            this.sliderValues = []
+            this.sliders = []
+            break;
+          case 2:
+            
             break;
         }
       },
