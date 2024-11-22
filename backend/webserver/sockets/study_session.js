@@ -68,7 +68,7 @@ module.exports = class StudySessionSocket extends Socket {
             } else {
                 const currentStudySession = await this.models['study_session'].getById(sessionId)
                 const study = await this.models['study'].getById(currentStudySession.studyId);
-                if (this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
+                if ( await this.checkUserAccess(currentStudySession.userId) || await this.checkUserAccess(study.userId)) {
                     const studySession = await this.models['study_session'].updateById(data.sessionId, data);
                     await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
                 } else {
@@ -89,9 +89,13 @@ module.exports = class StudySessionSocket extends Socket {
         const session = await this.models['study_session'].getByHash(studySessionHash);
         if (session) {
             const study = await this.models['study'].getById(session.studyId);
-            if (this.checkUserAccess(session.userId) || this.checkUserAccess(study.userId)) {
+            //CHeck User Access prüfen
+            //Ändern: Returnen ob Zugriff oder nicht
+            if (await this.checkUserAccess(session.userId) || await this.checkUserAccess(study.userId)) {
+                console.log(this.checkUserAccess(session.userId), this.checkUserAccess(study.userId), "Check User Access");
                 this.emit("studyRefresh", study);
                 this.emit("study_sessionRefresh", session);
+                console.log("Study Session found", session.userId, study.userId);
             } else {
                 this.socket.emit("studySessionError", {
                     studySessionHash: studySessionHash, message: "No access rights"
@@ -171,7 +175,6 @@ module.exports = class StudySessionSocket extends Socket {
 
         this.socket.on("studySessionUpdate", async (data) => {
             try {
-                console.log(data, "DATA");
                 if (data.sessionId && data.sessionId !== 0) {
                     await this.updateSession(data.sessionId, data);
                 }
@@ -190,12 +193,29 @@ module.exports = class StudySessionSocket extends Socket {
             }
         });
 
-        this.socket.on("studySessionGetByHash", async (data) => {
+        this.socket.on("studySessionGetByHash", async (data, callback) => {
             try {
+                //Callback mit Zugriff ja oder nein (retunren)
                 await this.sendSessionGetByHash(data.studySessionHash)
             } catch (err) {
                 this.socket.emit("studySessionError", {studySessionHash: data.studySessionHash, message: err});
                 this.logger.error(err);
+            }
+        });
+
+        this.socket.on("appDataUpdate", async (data, callback) => {
+            try {
+                const transaction = await database.sequelize.transaction();
+                const id = await this.updateData(data, {transaction: transaction});
+                await transaction.commit();
+
+                // send updated data to all clients
+                await this.sendTableData(data.table, [id], null, false,  true);
+
+                callback({success: true, id: id});
+            } catch (err) {
+                this.logger.error(err.message);
+                callback({success: false, message: err.message})
             }
         });
 

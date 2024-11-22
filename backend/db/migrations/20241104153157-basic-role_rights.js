@@ -3,11 +3,11 @@
 const roleRights = [
   {
     role: "teacher",
-    userRightName: "frontend.dashboard.studies.addBulkAssignments",
+    userRightName: "frontend.dashboard.studies.view.readOnly",
   },
   {
-    role: "mentor",
-    userRightName: "frontend.dashboard.studies.view",
+    role: "teacher",
+    userRightName: "frontend.dashboard.studies.view.userPrivateInfo",
   },
   {
     role: "mentor",
@@ -31,7 +31,7 @@ const roleRights = [
   },
   {
     role: "admin",
-    userRightName: "frontend.dashboard.studies.view.userInfo",
+    userRightName: "frontend.dashboard.studies.view.userPrivateInfo",
   },
 ];
 

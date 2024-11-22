@@ -8,10 +8,7 @@
       <span>Assignment overview</span>
     </template>
     <template #body>
-      <!-- Content -->
       <div class="content-container">
-      
-        <!-- Step1: Choose Reviewers -->
         <div
           class="table-scroll-container"
         >
@@ -94,8 +91,6 @@ import BasicForm from "@/basic/Form.vue";
 import FormSlider from "@/basic/form/Slider.vue";
 import {defineAsyncComponent} from "vue";
 
-import { hide, main } from "@popperjs/core";
-
 /**
  * Modal for bulk creating assignments
  * @author: Alexander Bürkle
@@ -120,7 +115,6 @@ inject: {
       columnsStepOne() { 
       const usersWithAssignments = this.users.filter((user) => user.numberAssignments > 0);
       const roles = usersWithAssignments.map((user) => user.role);
-      const uniqueRoles = [...new Set(roles)];
       const roleFilterColumn = {
         name: "Role",
         key: "role",
@@ -175,11 +169,10 @@ inject: {
   
   methods: {
     
-    open(id, modal) {
+    open(id) {
       this.$refs.modal.open();
       this.handleStepZero(id)
-      this.idStudy = id
-      //this.mainModal?.hide()
+      this.idStudy = is
     },
     resetModal() {
       this.selectedUsers = [];
@@ -192,7 +185,6 @@ inject: {
       this.filteredUsers = [];
     },
     handleStepZero(id) {
-      console.log(this.mainModal.studyId)
       this.mainModal?.hide()
       const userIds = this.$store.getters["table/study_session/getFiltered"](e => e.studyId === id).map(session => session.userId);
       const users = this.users.filter(user => userIds.includes(user.id)).map(users => ({
@@ -206,8 +198,8 @@ inject: {
                   "btn-danger": true,
                 },
               },
-              title: "Delete document...",
-              action: "deleteDoc",
+              title: "Delete user session...",
+              action: "deleteSession",
             },
       ]
     }));;
@@ -239,8 +231,8 @@ inject: {
                   "btn-danger": true,
                 },
               },
-              title: "Delete document...",
-              action: "deleteDoc",
+              title: "Delete user session...",
+              action: "deleteSession",
             },
       ]
       this.selectedUsers.push(user);
@@ -268,7 +260,7 @@ inject: {
     },
     action(data) {
       switch(data.action) {
-        case "deleteDoc":
+        case "deleteSession":
           this.selectedUsers.splice(data.params, 1);
           const element = this.newUsers.splice(data.params, 1);
           if(!element.length > 0) {

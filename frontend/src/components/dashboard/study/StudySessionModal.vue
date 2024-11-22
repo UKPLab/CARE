@@ -138,7 +138,7 @@ export default {
             },
             
           ];
-          if (this.$store.getters["auth/getUserId"] === this.study.createdByUserId) {
+          if (this.$store.getters["auth/getUserId"] === this.study.createdByUserId || this.$store.getters["auth/isAdmin"]) {
             session.manage.push({
               icon: "trash",
               options: {
@@ -163,7 +163,6 @@ export default {
       this.load();
       this.$socket.emit("studySessionSubscribe", {studyId: studyId});
       this.$refs.studySessionModal.open();
-      console.log(this.study)
     },
     close() {
       this.$socket.emit("studySessionUnsubscribe", {studyId: this.studyId});
@@ -183,7 +182,6 @@ export default {
           this.$router.push("/review/" + data.params.hash);
           break;
         case "copyStudySessionLink":
-        console.log(data, "DATA STUDY Session");
           this.copyURL(data.params.hash);
           break;
         case "deleteStudySession":
