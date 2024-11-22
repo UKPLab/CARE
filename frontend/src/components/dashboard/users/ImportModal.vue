@@ -19,7 +19,10 @@
         </div>
       </div>
       <!-- Content -->
-      <div class="content-container">
+      <div 
+        class="content-container"
+        :class="{ 'h-100': createdErrors.length > 0 }"
+      >
         <!-- Step0: Upload -->
         <div
           v-if="currentStep === 0"
@@ -126,10 +129,21 @@
           v-if="currentStep === 3"
           class="result-container"
         >
-          <p v-if="updatedUserCount">
-            Successfully created {{ updatedUserCount.new }} users and overwrote {{ updatedUserCount.updated }} users
-          </p>
-
+          <div v-if="updatedUserCount">
+            Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote <strong>{{ updatedUserCount.updated }}</strong> users
+            <div 
+              v-if="createdErrors.length > 0"
+              class="error-container"
+            >
+              Failed to create the following users:
+              <ul
+                v-for="(error, index) in createdErrors"
+                :key="index"
+              >
+                <li>User with Moodle Id {{ error.userId }} due to {{ error.message }}</li>
+              </ul>
+            </div>
+          </div>
           <BasicForm
             v-if="importType === 'moodle'"
             ref="form"
@@ -252,6 +266,7 @@ export default {
       ],
       updatedUserCount: null,
       createdUsers: [],
+      createdErrors: [],
     };
   },
   computed: {
@@ -368,6 +383,7 @@ export default {
       if (this.updatedUserCount) {
         this.updatedUserCount = null;
         this.createdUsers = [];
+        this.createdErrors = [];
         this.$emit("updateUser");
       }
       if (this.importType === "moodle") {
@@ -434,8 +450,9 @@ export default {
       this.$socket.emit("userBulkCreate", userData, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
-          const { createdUsers } = res;
+          const { createdUsers, errors } = res;
           this.createdUsers = createdUsers;
+          this.createdErrors = errors;
           this.updatedUserCount = {
             new: this.createdUsers.filter((u) => u.status === "new").length,
             updated: this.createdUsers.filter((u) => u.status === "duplicate").length,
@@ -622,7 +639,7 @@ export default {
 }
 
 .content-container {
-  height: 400px;
+  height: 25rem;
 }
 
 /* Upload */
@@ -711,6 +728,14 @@ export default {
   margin-top: 15px;
   button:first-child {
     margin-right: 0.5rem;
+  }
+}
+ 
+.error-container {
+  margin: 0.25rem auto 0.5rem;
+  color: firebrick;
+  ul  {
+    margin-bottom: 0.25rem;
   }
 }
 </style>
