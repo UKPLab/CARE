@@ -1,4 +1,4 @@
-import { FileSaver } from "file-saver"; // required for window.saveAs to work
+import { FileSaver } from "file-saver"; // DO NOT delete this import, required for window.saveAs to work
 import Papa from "papaparse";
 
 
