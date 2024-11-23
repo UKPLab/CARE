@@ -40,7 +40,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
-import DTable from "@/basic/table/Table.vue";
+import DTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import EditReviewerModal from "./EditReviewerModal.vue";
 import BasicModal from "@/basic/Modal.vue";

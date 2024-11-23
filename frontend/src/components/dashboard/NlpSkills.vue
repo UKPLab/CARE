@@ -28,7 +28,7 @@
 
 <script>
 import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
-import BasicTable from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import { cloneDeep } from "lodash";
