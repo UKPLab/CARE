@@ -216,14 +216,9 @@ module.exports = class StudySocket extends Socket {
 
                 const newStudyData = {
                     ...currentStudy,
-                    id: undefined,
-                    hash: uuidv4(),
+                    id: undefined, 
                     template: true,
-                    name: `${currentStudy.name}`,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
                 };
-
                 const newStudy = await this.models['study'].create(newStudyData);
 
                 this.emit("studyRefresh", newStudy);
