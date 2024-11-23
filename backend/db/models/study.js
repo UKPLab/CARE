@@ -169,18 +169,34 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async createStudySteps(study, options) {
             const workflowSteps = await sequelize.models.workflow_step.getSortedWorkflowSteps(study.workflowId);
+            const studyStepsMap = {}; 
             let previousStepId = null;
 
             for (const workflowStep of workflowSteps) {
                 const stepDocument = options.context.stepDocuments.find(doc => doc.id === workflowStep.id);
-                const studyStep = await sequelize.models.study_step.add({
+                const studyStep = await sequelize.models.study_step.create({
                     studyId: study.id,
                     stepType: workflowStep.stepType,
                     workflowStepId: workflowStep.id,
                     documentId: (stepDocument && stepDocument.documentId) ? stepDocument.documentId : null,
                     studyStepPrevious: previousStepId,
+                    allowBackward: workflowStep.allowBackward,
+                    workflowStepDocument: null, 
                     configuration: workflowStep.configuration
                 }, {transaction: options.transaction, context: study});
+        
+                studyStepsMap[workflowStep.id] = studyStep;
+        
+                // If the workflowStepDocument references a previous workflowStep
+                if (workflowStep.workflowStepDocument) {
+                    const referencedStudyStep = studyStepsMap[workflowStep.workflowStepDocument];
+                    if (referencedStudyStep) {
+                        await studyStep.update(
+                            { workflowStepDocument: referencedStudyStep.id },
+                            { transaction: options.transaction }
+                        );
+                    }
+                }
 
                 previousStepId = studyStep.id;
             }
