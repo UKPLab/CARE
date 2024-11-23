@@ -151,8 +151,7 @@ export default {
     nextStudyStep() {
       if (this.currentStudyStep) {
         // Find the next step by looking for a step where `studyStepPrevious` matches `currentStudyStep.id`
-        const nextStep = this.studySteps.find(step => step.studyStepPrevious === this.currentStudyStep.id);
-        return nextStep;
+        return this.studySteps.find(step => step.studyStepPrevious === this.currentStudyStep.id);
       }
     },
     currentWorkflowStep() { // TODO think about what will happen if we have af one_step workflow

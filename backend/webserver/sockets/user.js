@@ -24,7 +24,6 @@ module.exports = class UserSocket extends Socket {
    */
   async updateCreatorName(data, key = "userId", targetName = "creator_name") {
     return await inject(data, async (userId) => await this.models["user"].getUserName(userId), targetName, key);
-    return await inject(data, async (userId) => await this.models["user"].getUserName(userId), targetName, key);
   }
 
   /**
