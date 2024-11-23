@@ -174,7 +174,7 @@ export default {
      * @return {*}
      */
     getValues(values) {
-      let return_data = {...values, ...this.defaultValues };
+      let return_data = {...this.defaultValues, ...values};
       // also provide id if set
       if (values.id) {
         return_data.id = values.id;

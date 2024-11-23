@@ -50,6 +50,43 @@ module.exports = class Socket {
     }
 
     /**
+     * Creates a new socket event
+     * @param eventName The name of the event
+     * @param func  The function to execute (need parameter data and options)
+     * @param options Additional options for the function
+     * @param transaction If the function should be executed in a transaction for db operations
+     * @returns
+     */
+    createSocket(eventName, func, options = {}, transaction = false) {
+        this.socket.on(eventName, async (data, callback) => {
+            let t = undefined;
+            try {
+                if (transaction) {
+                    t = await this.server.db.sequelize.transaction();
+                    options.transaction = t;
+                }
+
+                const result = await func.bind(this)(data, options);
+                if (t) {
+                    await t.commit();
+                }
+                if (callback) {
+                    callback({success: true, data: result});
+                }
+            } catch (err) {
+                this.logger.error(err.message);
+                if (t) {
+                    await t.rollback();
+                }
+                if (callback) {
+                    callback({success: false, message: err.message});
+                }
+            }
+        });
+
+    }
+
+    /**
      * Get initialized socket class object by class name
      * @param {string} name The name of the socket class
      * @returns {Socket<>|null} The socket class object
