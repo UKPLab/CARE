@@ -45,6 +45,17 @@ module.exports = class AppSocket extends Socket {
     async updateData(data, options = {}) {
         const transaction = options.transaction;
 
+        let newEntry = null;
+        if ('deleted' in data.data || 'closed' in data.data) {
+            newEntry = await this.models[data.table].updateById(
+                data.data.id,
+                data.data,
+                {transaction: transaction}
+            );
+            return newEntry.id;
+        }
+
+
         // update only if we have fields defined
         if ("fields" in this.models[data.table]) {
             // check or set user information
@@ -77,7 +88,6 @@ module.exports = class AppSocket extends Socket {
             }
 
             // update data
-            let newEntry = null;
             if (!("id" in data.data) || data.data.id === 0) {
                 newEntry = await this.models[data.table].add(data.data, {context: data.data, transaction: transaction});
             } else {
@@ -241,6 +251,7 @@ module.exports = class AppSocket extends Socket {
                 callback({success: true, id: id});
             } catch (err) {
                 this.logger.error(err.message);
+                await transaction.rollback();
                 callback({success: false, message: err.message})
             }
         });

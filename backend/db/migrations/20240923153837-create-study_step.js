@@ -70,7 +70,21 @@ module.exports = {
           allowNull: true,
           defaultValue: null,
           type: Sequelize.DATE
-      }
+      },
+      allowBackward: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
+      workflowStepDocument: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'study_step',
+          key: 'id'
+        },
+        allowNull: true,
+        onDelete: 'SET NULL'
+      },
     });
   },
 

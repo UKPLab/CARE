@@ -51,7 +51,7 @@ module.exports = {
         allowNull: false
       },
       text: {
-        type: Sequelize.STRING(256),
+        type: Sequelize.TEXT,
         allowNull: true,
       },
       attributes: {
