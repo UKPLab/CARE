@@ -130,6 +130,7 @@ module.exports = class UserSocket extends Socket {
   async bulkCreateUsers(users, roleMap) {
     try {
       const createdUsers = [];
+      const errors = [];
       for (const user of users) {
         // Create transaction for every user, so each creation process could be isolated
         const transaction = await this.models["user"].sequelize.transaction();
@@ -164,9 +165,11 @@ module.exports = class UserSocket extends Socket {
                   {
                     hooks: true,
                     individualHooks: true,
-                    userRoles: user.roles,
-                    roleMap,
                     transaction,
+                    context: {
+                      userRoles: user.roles,
+                      roleMap,
+                    },
                   }
                 );
                 break;
@@ -193,15 +196,16 @@ module.exports = class UserSocket extends Socket {
                 where: { email: user.email },
                 hooks: true,
                 individualHooks: true,
-                userRoles: user.roles,
-                roleMap,
                 transaction,
+                context: {
+                  userRoles: user.roles,
+                  roleMap,
+                },
               }
             );
 
             createdUser = await this.models["user"].findOne({
               where: { email: user.email },
-              transaction,
             });
           }
 
@@ -216,11 +220,22 @@ module.exports = class UserSocket extends Socket {
             status: user.status,
           });
         } catch (error) {
+          if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "email") {
+            errors.push({
+              userId: user.id,
+              message: "duplicate email",
+            });
+          } else {
+            errors.push({
+              userId: user.id,
+              message: error.errors[0].message,
+            });
+          }
           this.logger.error("Failed to bulk create user: " + error);
         }
       }
-
-      return createdUsers;
+      
+      return { createdUsers, errors };
     } catch (error) {
       this.logger.error("Failed to bulk create users: " + error);
     }
@@ -403,11 +418,12 @@ module.exports = class UserSocket extends Socket {
     this.socket.on("userBulkCreate", async (userData, callback) => {
       const { users, moodleCareRoleMap } = userData;
       try {
-        const createdUsers = await this.bulkCreateUsers(users, moodleCareRoleMap);
+        const { createdUsers, errors } = await this.bulkCreateUsers(users, moodleCareRoleMap);
         callback({
           success: true,
           message: "Users successfully created",
           createdUsers,
+          errors
         });
       } catch (error) {
         this.logger.error(error);

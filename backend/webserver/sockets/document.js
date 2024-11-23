@@ -542,67 +542,7 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
-    /**
-     * Retrieve documents that are ready for review
-     * @returns {Promise<Array<Object>>} An array of objects. Each contains a document's info such as name, hash, etc.
-     */
-    async getReviewDocuments() {
-        try {
-            // Get documents that are ready for review
-            const reviewReadyDocuments = await this.models["document"].findAll({
-                where: {
-                    readyForReview: true,
-                    uploaded: true,
-                    deleted: false,
-                },
-                attributes: ["id", "name", "type", "userId", "hash", "createdAt"],
-                raw: true,
-            });
-
-            // Process each document to get additional information
-            const processedDocuments = await Promise.all(
-                reviewReadyDocuments.map(async (doc) => {
-                    // Find associated studyIds for this document
-                    const associatedStudies = await this.models["study_step"].findAll({
-                        where: { documentId: doc.id },
-                        attributes: ["studyId"],
-                        raw: true,
-                    });
-
-                    const studyIds = associatedStudies.map((study) => study.studyId);
-
-                    // Count the number of study sessions for these studyIds
-                    const sessionCount = await this.models["study_session"].count({
-                        where: {
-                            studyId: studyIds,
-                        },
-                    });
-
-                    // Get the document owner's information
-                    const owner = await this.models["user"].findOne({
-                        where: { id: doc.userId },
-                        attributes: ["firstName", "lastName"],
-                        raw: true,
-                    });
-
-                    return {
-                        ...doc,
-                        sessionCount,
-                        firstName: owner.firstName,
-                        lastName: owner.lastName,
-                    };
-                })
-            );
-
-            return processedDocuments;
-        } catch (error) {
-            this.logger.error("Error in getReviewDocuments:", error);
-        }
-    }
-
     init() {
-        fs.mkdirSync(UPLOAD_PATH, { recursive: true });
-
         this.socket.on("documentGetMoodleData", async (moodleData, callback) => {
             try {
                 const assignments = await this.transformMoodleSubmissionInfo(moodleData);
@@ -621,7 +561,7 @@ module.exports = class DocumentSocket extends Socket {
 
         this.socket.on("documentGetReviews", async (callback) => {
             try {
-                const reviewDocuments = await this.getReviewDocuments();
+                const reviewDocuments = await this.models["document"].getReviewDocuments();
                 callback({
                     success: true,
                     documents: reviewDocuments
