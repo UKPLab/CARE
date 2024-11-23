@@ -138,6 +138,16 @@ export default {
       currentData: null,
     };
   },
+  computed: {
+    defaultValues() {
+      return this.fields.reduce((acc, field) => {
+        if ("default" in field) {
+          acc[field.key] = field.default;
+        }
+        return acc;
+      }, {});
+    },
+  },
   watch: {
     currentData: {
       handler() {
@@ -154,8 +164,8 @@ export default {
       deep: true,
     },
   },
-  beforeMount() {
-    this.currentData = this.modelValue;
+  mounted() {
+    this.currentData = this.getValues(this.modelValue);
   },
   methods: {
     /**
@@ -164,25 +174,12 @@ export default {
      * @return {*}
      */
     getValues(values) {
-      let return_data = Object.assign(
-        {},
-        ...this.fields.map((f) => ({
-          // use value if set
-          [f.key]:
-            f.key in values && values[f.key] !== null
-              ? values[f.key]
-              : // otherwise, you default from fields configuration, if set
-              "default" in f
-              ? f.default
-              : // otherwise, use undefined to handle by subcomponent
-                null,
-        }))
-      );
+      let return_data = {...values, ...this.defaultValues };
       // also provide id if set
       if (values.id) {
         return_data.id = values.id;
       }
-      return values;
+      return return_data;
     },
     validate() {
       return Object.keys(this.$refs)

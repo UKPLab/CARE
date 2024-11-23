@@ -2,6 +2,7 @@
   <BasicModal
     ref="modal"
     @hide="resetModal"
+    lg
   >
     <template #title>
       <span>Bulk Import Users</span>
@@ -19,7 +20,7 @@
         </div>
       </div>
       <!-- Content -->
-      <div 
+      <div
         class="content-container"
         :class="{ 'h-100': createdErrors.length > 0 }"
       >
@@ -46,7 +47,7 @@
                 icon-name="cloud-arrow-up"
                 size="64"
               />
-              <p>Drag and drop CSV file here<br />or click to upload</p>
+              <p>Drag and drop CSV file here<br/>or click to upload</p>
             </div>
             <p>
               Please check the format or
@@ -120,7 +121,7 @@
           class="confirm-container"
         >
           <p>
-            Are you sure you want to bulk create <strong>{{ userCount.new }}</strong> users <br />
+            Are you sure you want to bulk create <strong>{{ userCount.new }}</strong> users <br/>
             and overwrite <strong>{{ userCount.duplicate }}</strong> users?
           </p>
         </div>
@@ -130,8 +131,9 @@
           class="result-container"
         >
           <div v-if="updatedUserCount">
-            Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote <strong>{{ updatedUserCount.updated }}</strong> users
-            <div 
+            Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote
+            <strong>{{ updatedUserCount.updated }}</strong> users
+            <div
               v-if="createdErrors.length > 0"
               class="error-container"
             >
@@ -189,7 +191,7 @@ import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/table/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import Papa from "papaparse";
-import { downloadObjectsAs } from "@/assets/utils.js";
+import {downloadObjectsAs} from "@/assets/utils.js";
 
 /**
  * Modal for bulk creating users through csv file and Moodle API
@@ -197,7 +199,7 @@ import { downloadObjectsAs } from "@/assets/utils.js";
  */
 export default {
   name: "ImportModal",
-  components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm },
+  components: {BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm},
   emits: ["updateUser"],
   data() {
     return {
@@ -209,35 +211,9 @@ export default {
         size: 0,
         errors: [],
       },
-      moodleData: {
-        url: "",
-        apiKey: "",
-        courseID: "",
-        assignmentID: "",
-      },
-      baseFields: [
-        {
-          key: "courseID",
-          label: "Course ID:",
-          type: "text",
-          required: true,
-          placeholder: "course-id-placeholder",
+        moodleData: {
+
         },
-        {
-          key: "apiKey",
-          label: "Moodle API Key:",
-          type: "text",
-          required: true,
-          placeholder: "api-key-placeholder",
-        },
-        {
-          key: "url",
-          label: "Moodle URL:",
-          type: "text",
-          required: true,
-          placeholder: "https://example.moodle.com",
-        },
-      ],
       users: [],
       selectedUsers: [],
       tableOptions: {
@@ -254,15 +230,15 @@ export default {
           key: "status",
           width: "1",
           filter: [
-            { key: "new", name: "New" },
-            { key: "duplicate", name: "Duplicate" },
+            {key: "new", name: "New"},
+            {key: "duplicate", name: "Duplicate"},
           ],
         },
-        { name: "ID", key: "id" },
-        { name: "First Name", key: "firstname" },
-        { name: "Last Name", key: "lastname" },
-        { name: "Email", key: "email" },
-        { name: "Roles", key: "roles" },
+        {name: "ID", key: "id"},
+        {name: "First Name", key: "firstname"},
+        {name: "Last Name", key: "lastname"},
+        {name: "Email", key: "email"},
+        {name: "Roles", key: "roles"},
       ],
       updatedUserCount: null,
       createdUsers: [],
@@ -276,12 +252,58 @@ export default {
         duplicate: this.selectedUsers.filter((u) => u.status === "duplicate").length,
       };
     },
+    moodleCourseId() {
+      return parseInt(this.$store.getters["settings/getValue"]('rpc.moodleAPI.courseID'));
+    },
+    showMoodleCourseId() {
+      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.courseID') === "true";
+    },
+    moodleAPIKey() {
+      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.apiKey');
+    },
+    showMoodleAPIKey() {
+      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.apiKey') === "true";
+    },
+    moodleAPIUrl() {
+      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.apiUrl');
+    },
+    showMoodleAPIUrl() {
+      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.apiUrl') === "true";
+    },
+    baseFields() {
+      return [
+        {
+          key: "courseID",
+          label: "Course ID:",
+          type: "text",
+          required: true,
+          default: this.moodleCourseId,
+          placeholder: "course-id-placeholder",
+        },
+        {
+          key: "apiKey",
+          label: "Moodle API Key:",
+          type: "text",
+          required: true,
+          default: this.moodleAPIKey,
+          placeholder: "api-key-placeholder",
+        },
+        {
+          key: "url",
+          label: "Moodle URL:",
+          type: "text",
+          required: true,
+          default: this.moodleAPIUrl,
+          placeholder: "https://example.moodle.com",
+        },
+      ];
+    },
     steps() {
       return [
-        this.importType === "csv" ? { title: "Upload" } : { title: "Moodle" },
-        { title: "Preview" },
-        { title: "Confirm" },
-        { title: "Result" },
+        this.importType === "csv" ? {title: "Upload"} : {title: "Moodle"},
+        {title: "Preview"},
+        {title: "Confirm"},
+        {title: "Result"},
       ];
     },
     isDisabled() {
@@ -289,7 +311,7 @@ export default {
         if (this.importType === "csv") {
           return this.file.name === "" || this.file.errors.length > 0;
         } else {
-          const { courseID, url, apiKey } = this.moodleData;
+          const {courseID, url, apiKey} = this.moodleData;
           return !courseID || !url || !apiKey;
         }
       }
@@ -337,13 +359,13 @@ export default {
       downloadObjectsAs(users, filename, "csv");
     },
     uploadToMoodle() {
-      const { courseID, apiKey, url, assignmentID } = this.moodleData;
-      const loginData = this.createdUsers.map(({ id, username, password }) => ({
+      const {courseID, apiKey, url, assignmentID} = this.moodleData;
+      const loginData = this.createdUsers.map(({id, username, password}) => ({
         id,
         username,
         password,
       }));
-      const options = { apiKey, url };
+      const options = {apiKey, url};
       const courseData = {
         courseID,
         assignmentID,
@@ -416,12 +438,12 @@ export default {
     handleStepZero() {
       if (this.importType === "moodle") {
         if (!this.$refs.form.validate()) return;
-        const { courseID, apiKey, url } = this.moodleData;
-        const options = { apiKey, url };
-        this.$socket.emit("userGetMoodleData", { courseID, options }, (res) => {
+        const {courseID, apiKey, url} = this.moodleData;
+        const options = {apiKey, url};
+        this.$socket.emit("userGetMoodleData", {courseID, options}, (res) => {
           this.$refs.modal.waiting = false;
           if (res.success) {
-            const { users } = res;
+            const {users} = res;
             this.users = users;
             this.checkDuplicateUsers();
           } else {
@@ -450,7 +472,7 @@ export default {
       this.$socket.emit("userBulkCreate", userData, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
-          const { createdUsers, errors } = res;
+          const {createdUsers, errors} = res;
           this.createdUsers = createdUsers;
           this.createdErrors = errors;
           this.updatedUserCount = {
@@ -479,8 +501,8 @@ export default {
         Papa.parse(file, {
           header: true,
           complete: function (results) {
-            const { data: rows, meta } = results;
-            const { fields: fileHeaders } = meta;
+            const {data: rows, meta} = results;
+            const {fields: fileHeaders} = meta;
             const requiredHeaders = ["id", "firstname", "lastname", "email", "roles"];
             const seenIds = new Set();
             const seenEmails = new Set();
@@ -593,6 +615,7 @@ export default {
   justify-content: space-between;
   margin-bottom: 1.25rem;
   position: relative;
+
   &:after {
     content: "";
     position: absolute;
@@ -608,6 +631,7 @@ export default {
   z-index: 1;
   background-color: white;
   padding: 0 5px;
+
   &:before {
     --dimension: 30px;
     content: attr(data-index);
@@ -620,9 +644,11 @@ export default {
     justify-content: center;
     border: 1px solid #6c6b6b;
   }
+
   &:first-child {
     padding-left: 0;
   }
+
   &:last-child {
     padding-right: 0;
   }
@@ -631,6 +657,7 @@ export default {
 .stepper div.active {
   --btn-color: #0d6efd;
   border-color: var(--btn-color);
+
   &:before {
     color: white;
     background-color: var(--btn-color);
@@ -703,6 +730,7 @@ export default {
 
 .file-error-container {
   color: firebrick;
+
   > p {
     margin-bottom: 0.5rem;
   }
@@ -726,15 +754,17 @@ export default {
 
 .link-container {
   margin-top: 15px;
+
   button:first-child {
     margin-right: 0.5rem;
   }
 }
- 
+
 .error-container {
   margin: 0.25rem auto 0.5rem;
   color: firebrick;
-  ul  {
+
+  ul {
     margin-bottom: 0.25rem;
   }
 }
