@@ -3,6 +3,14 @@
 const roleRights = [
   {
     role: "teacher",
+    userRightName: "frontend.dashboard.studies.addBulkAssignments",
+  },
+  {
+    role: "teacher",
+    userRightName: "frontend.dashboard.studies.view",
+  },
+  {
+    role: "teacher",
     userRightName: "frontend.dashboard.studies.view.readOnly",
   },
   {
@@ -11,26 +19,14 @@ const roleRights = [
   },
   {
     role: "mentor",
+    userRightName: "frontend.dashboard.studies.view",
+  },
+  {
+    role: "mentor",
     userRightName: "frontend.dashboard.studies.view.readOnly",
   },
   {
     role: "mentor",
-    userRightName: "frontend.dashboard.studies.view.userPrivateInfo",
-  },
-  {
-    role: "admin",
-    userRightName: "frontend.dashboard.studies.addBulkAssignments",
-  },
-  {
-    role: "admin",
-    userRightName: "frontend.dashboard.studies.view",
-  },
-  {
-    role: "admin",
-    userRightName: "frontend.dashboard.studies.view.readOnly",
-  },
-  {
-    role: "admin",
     userRightName: "frontend.dashboard.studies.view.userPrivateInfo",
   },
 ];

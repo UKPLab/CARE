@@ -3,6 +3,11 @@
     <template #headerElements>
       <BasicButton
         class="btn btn-secondary btn-sm me-1"
+        title="Add User"
+        @click="$refs.userModal.open()"
+      />
+      <BasicButton
+        class="btn btn-secondary btn-sm me-1"
         title="Upload Password"
         @click="$refs.uploadModal.open()"
       />
@@ -37,6 +42,10 @@
     @update-user="fetchUsers"
   />
   <UploadModal ref="uploadModal" />
+  <UserModal 
+    ref="userModal"
+    @update-user="fetchUsers"
+  />
 </template>
 
 <script>
@@ -48,6 +57,7 @@ import PasswordModal from "./users/PasswordModal.vue";
 import RightsModal from "./users/RightsModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
+import UserModal from "./users/UserModal.vue";
 
 /**
  * Display user list by users' role
@@ -65,6 +75,7 @@ export default {
     BasicButton,
     ImportModal,
     UploadModal,
+    UserModal,
   },
   props: {
     admin: {
