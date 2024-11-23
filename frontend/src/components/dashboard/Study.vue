@@ -132,9 +132,6 @@ export default {
     },
     buttons() {
       return [
-    },
-    buttons() {
-      return [
               {
                 icon: "pencil-square",
                 options: {

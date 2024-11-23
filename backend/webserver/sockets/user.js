@@ -3,7 +3,6 @@ const { v4: uuidv4 } = require("uuid");
 const { genSalt, genPwdHash } = require("../../utils/auth.js");
 const { generateMarvelUsername } = require("../../utils/generator.js");
 const { inject } = require("../../utils/generic");
-const { inject } = require("../../utils/generic");
 
 /**
  * Handle user through websocket
