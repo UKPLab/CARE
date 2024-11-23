@@ -40,7 +40,7 @@
 
 <script>
 import Card from "@/basic/Card.vue";
-import BasicTable from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./review/UploadModal.vue";
 import ImportModal from "./review/ImportModal.vue";

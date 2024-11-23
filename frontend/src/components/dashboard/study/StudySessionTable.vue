@@ -9,7 +9,7 @@
 </template>
 
 <script>
-import BasicTable from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**

@@ -45,7 +45,7 @@
 </template>
 
 <script>
-import BasicTable from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import Card from "@/basic/Card.vue";
 import ExportSingle from "@/basic/download/ExportSingle.vue";

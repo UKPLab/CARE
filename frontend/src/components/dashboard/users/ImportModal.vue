@@ -109,10 +109,10 @@
           class="preview-table-container"
         >
           <BasicTable
+            v-model="selectedUsers"
             :columns="columns"
             :data="users"
             :options="tableOptions"
-            @row-selection="(users) => (selectedUsers = users)"
           />
         </div>
         <!-- Step2:  -->
@@ -188,7 +188,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
-import BasicTable from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import Papa from "papaparse";
 import {downloadObjectsAs} from "@/assets/utils.js";

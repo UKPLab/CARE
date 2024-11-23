@@ -125,7 +125,7 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import Loader from "@/basic/Loading.vue"
-import DTable from "@/basic/table/Table.vue"
+import DTable from "@/basic/Table.vue"
 
 /**
  * Modal for accessing a study

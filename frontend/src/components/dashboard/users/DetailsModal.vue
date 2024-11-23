@@ -42,7 +42,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
-import BasicTable from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 
 /**
