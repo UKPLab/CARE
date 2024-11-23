@@ -184,7 +184,7 @@ export default {
         }, (result) => {
           if (result.success) {
             this.showSuccess();
-            this.$emit("success", result.id);
+            this.$emit("success", result.data);
           } else {
             this.$refs.coordinatorModal.waiting = false;
             this.eventBus.emit("toast", {

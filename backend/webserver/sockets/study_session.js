@@ -203,21 +203,5 @@ module.exports = class StudySessionSocket extends Socket {
             }
         });
 
-        this.socket.on("appDataUpdate", async (data, callback) => {
-            try {
-                const transaction = await database.sequelize.transaction();
-                const id = await this.updateData(data, {transaction: transaction});
-                await transaction.commit();
-
-                // send updated data to all clients
-                await this.sendTableData(data.table, [id], null, false,  true);
-
-                callback({success: true, id: id});
-            } catch (err) {
-                this.logger.error(err.message);
-                callback({success: false, message: err.message})
-            }
-        });
-
     }
 }

@@ -45,6 +45,7 @@ module.exports = class AppSocket extends Socket {
     async updateData(data, options = {}) {
         const transaction = options.transaction;
 
+        console.log(data);
         // update only if we have fields defined
         if ("fields" in this.models[data.table]) {
             // check or set user information
@@ -212,7 +213,26 @@ module.exports = class AppSocket extends Socket {
         }
     }
 
+    /**
+     * Update data for a specific table to the client
+     * @param data
+     * @param options - {transaction: Sequelize.Transaction}
+     * @returns {Promise<*>}
+     */
+    async updateAppData(data, options) {
+
+        const id = await this.updateData(data, options);
+        // send updated data to all clients
+        options.transaction.afterCommit(() => {
+            this.sendTableData(data.table, [id], null, false, true);
+        });
+        return id;
+    }
+
     init() {
+
+        this.createSocket("appDataUpdate", this.updateAppData, {}, true);
+
         this.socket.on("appInit", async (data) => {
             try {
                 await this.sendInit(data);
@@ -229,21 +249,7 @@ module.exports = class AppSocket extends Socket {
             }
         });
 
-        this.socket.on("appDataUpdate", async (data, callback) => {
-            try {
-                const transaction = await database.sequelize.transaction();
-                const id = await this.updateData(data, {transaction: transaction});
-                await transaction.commit();
 
-                // send updated data to all clients
-                await this.sendTableData(data.table, [id], null, false,  true);
-
-                callback({success: true, id: id});
-            } catch (err) {
-                this.logger.error(err.message);
-                callback({success: false, message: err.message})
-            }
-        });
 
         this.socket.on("appSettingSet", async (data) => {
             try {

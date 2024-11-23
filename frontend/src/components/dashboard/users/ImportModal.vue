@@ -472,7 +472,7 @@ export default {
       this.$socket.emit("userBulkCreate", userData, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
-          const {createdUsers, errors} = res;
+          const {createdUsers, errors} = res.data;
           this.createdUsers = createdUsers;
           this.createdErrors = errors;
           this.updatedUserCount = {
