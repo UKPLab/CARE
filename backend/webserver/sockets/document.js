@@ -156,7 +156,7 @@ module.exports = class DocumentSocket extends Socket {
      */
     async refreshAllDocuments(userId = null) {
         try {
-            if (this.isAdmin()) {
+            if (await this.isAdmin()) {
                 if (userId) {
                     this.emit("documentRefresh", await this.models['document'].getAllByKey("userId", userId));
                 } else {

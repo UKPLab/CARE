@@ -162,7 +162,7 @@ module.exports = class TagSocket extends Socket {
         try {
             const tags = await this.models['tag'].getAllByKey('tagSetId', tagSetId);
 
-            if (this.isAdmin()) {
+            if (await this.isAdmin()) {
                 await this.sendTagsUpdate(tags);
             } else {
                 await this.sendTagsUpdate(tags.filter(t => t.public || t.userId === this.userId))
@@ -206,7 +206,7 @@ module.exports = class TagSocket extends Socket {
 
         this.socket.on("tagSetGetAll", async () => {
             try {
-                if (this.isAdmin()) {
+                if (await this.isAdmin()) {
                     await this.sendTagSets();
                 } else {
                     await this.sendTagSetsByUser();
@@ -218,7 +218,7 @@ module.exports = class TagSocket extends Socket {
 
         this.socket.on("tagGetAll", async () => {
             try {
-                if (this.isAdmin()) {
+                if (await this.isAdmin()) {
                     await this.sendTags();
                 } else {
                     await this.sendTagsByUser();

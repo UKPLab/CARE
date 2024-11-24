@@ -16,7 +16,7 @@ module.exports = class StudySessionSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendSessions(userId = null) {
-        if (this.isAdmin()) {
+        if (await this.isAdmin()) {
             if (userId) {
                 const studies = await this.models['study'].getAllByKey('userId', userId);
                 const sessionsPerStudy = await Promise.all(studies.map(async s => await this.models['study_session'].getAllByKey("studyId", s.id)))

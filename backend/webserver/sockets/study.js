@@ -62,7 +62,7 @@ module.exports = class StudySocket extends Socket {
      */
     async sendStudies(userId = null) {
         try {
-            if (this.isAdmin()) {
+            if (await this.isAdmin()) {
                 if (userId) {
                     this.emit("studyRefresh", await this.models['study'].getAllByKey('userId', userId));
                 } else {
