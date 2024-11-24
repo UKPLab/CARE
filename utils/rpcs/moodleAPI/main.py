@@ -54,8 +54,8 @@ def create_app():
     def getUsersFromCourse(sid, data):
         try:
             logger.info(f"Received call: {data} from {sid}")
-            api = Moodle(data['options']['apiKey'], data['options']['url'])
-            users = api.get_users_from_course(data['courseID'])
+            api = Moodle(data['options']['apiKey'], data['options']['apiUrl'])
+            users = api.get_users_from_course(data['options']['courseID'])
             response = {"success": True, "data": users}
             return response
         except Exception as e:

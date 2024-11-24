@@ -24,7 +24,7 @@ exports.overrideObjectAttributes = function overrideObjectAttributes(obj_orig, o
  * @param key - key to be used as input for the function - if not present, the object is returned as is
  * @returns {Promise<Awaited<T|*>[]>}
  */
-exports.inject = async function inject(data, func, targetName, key) {
+exports.inject = async function inject(data, func, targetName, key = null) {
     if (!Array.isArray(data)) {
       data = [data];
     }
@@ -36,7 +36,7 @@ exports.inject = async function inject(data, func, targetName, key) {
         } else {
           return {
             ...x,
-            [targetName]: await func(x[key]),
+            [targetName]: (key) ? await func(x[key]): await func(x),
           };
         }
       })

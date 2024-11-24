@@ -98,8 +98,8 @@
           <template v-else>
             <BasicForm
               ref="form"
-              v-model="moodleData"
-              :fields="baseFields"
+              v-model="moodleOptions"
+              :fields="moodleOptionsFields"
             />
           </template>
         </div>
@@ -120,6 +120,10 @@
           v-if="currentStep === 2"
           class="confirm-container"
         >
+          <BasicIcon
+            icon-name="person-fill-up"
+            size="64"
+          />
           <p>
             Are you sure you want to bulk create <strong>{{ userCount.new }}</strong> users <br/>
             and overwrite <strong>{{ userCount.duplicate }}</strong> users?
@@ -149,8 +153,8 @@
           <BasicForm
             v-if="importType === 'moodle'"
             ref="form"
-            v-model="moodleData"
-            :fields="finalFields"
+            v-model="moodleOptions"
+            :fields="finalMoodleOptionsFields"
           />
           <div class="link-container">
             <BasicButton
@@ -170,6 +174,7 @@
     </template>
     <template #footer>
       <BasicButton
+        v-if="currentStep > 0"
         title="Previous"
         class="btn btn-secondary"
         @click="prevStep"
@@ -192,10 +197,11 @@ import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import Papa from "papaparse";
 import {downloadObjectsAs} from "@/assets/utils.js";
+import {v4 as uuid} from "uuid";
 
 /**
  * Modal for bulk creating users through csv file and Moodle API
- * @author: Linyin Huang
+ * @author: Linyin Huang, Dennis Zyska
  */
 export default {
   name: "ImportModal",
@@ -211,9 +217,7 @@ export default {
         size: 0,
         errors: [],
       },
-        moodleData: {
-
-        },
+      moodleOptions: {},
       users: [],
       selectedUsers: [],
       tableOptions: {
@@ -226,17 +230,20 @@ export default {
       },
       columns: [
         {
-          name: "Status",
-          key: "status",
-          width: "1",
+          name: "Duplicate",
+          key: "exists",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: "Yes", default: "No"},
+          },
           filter: [
-            {key: "new", name: "New"},
-            {key: "duplicate", name: "Duplicate"},
+            {key: false, name: "New"},
+            {key: true, name: "Duplicate"},
           ],
         },
-        {name: "ID", key: "id"},
-        {name: "First Name", key: "firstname"},
-        {name: "Last Name", key: "lastname"},
+        {name: "extId", key: "extId"},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
         {name: "Email", key: "email"},
         {name: "Roles", key: "roles"},
       ],
@@ -248,8 +255,8 @@ export default {
   computed: {
     userCount() {
       return {
-        new: this.selectedUsers.filter((u) => u.status === "new").length,
-        duplicate: this.selectedUsers.filter((u) => u.status === "duplicate").length,
+        new: this.selectedUsers.filter((u) => !u.exists).length,
+        duplicate: this.selectedUsers.filter((u) => u.exists).length,
       };
     },
     moodleCourseId() {
@@ -270,7 +277,7 @@ export default {
     showMoodleAPIUrl() {
       return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.apiUrl') === "true";
     },
-    baseFields() {
+    moodleOptionsFields() {
       return [
         {
           key: "courseID",
@@ -289,7 +296,7 @@ export default {
           placeholder: "api-key-placeholder",
         },
         {
-          key: "url",
+          key: "apiUrl",
           label: "Moodle URL:",
           type: "text",
           required: true,
@@ -311,8 +318,8 @@ export default {
         if (this.importType === "csv") {
           return this.file.name === "" || this.file.errors.length > 0;
         } else {
-          const {courseID, url, apiKey} = this.moodleData;
-          return !courseID || !url || !apiKey;
+          const {courseID, apiUrl, apiKey} = this.moodleOptions;
+          return !courseID || !apiUrl || !apiKey;
         }
       }
       if (this.currentStep === 1) {
@@ -323,9 +330,9 @@ export default {
       }
       return false;
     },
-    finalFields() {
+    finalMoodleOptionsFields() {
       return [
-        ...this.baseFields,
+        ...this.moodleOptionsFields,
         {
           key: "assignmentID",
           label: "Assignment ID:",
@@ -339,19 +346,23 @@ export default {
   methods: {
     downloadFileAsCSV() {
       const filename = `users_${Date.now()}`;
-      const users = this.createdUsers.map((user) => {
-        delete user.status;
-        return user;
-      });
+      const users = this.createdUsers.map((user) =>  ({
+        extId: user.extId,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        roles: user.roles,
+        password: (user.initialPassword || ""),
+      }));
       downloadObjectsAs(users, filename, "csv");
     },
     downloadTemplateCSV() {
       const filename = "users_template";
       const users = [
         {
-          id: "123456",
-          firstname: "Test",
-          lastname: "User",
+          extId: "123456",
+          firstName: "Test",
+          lastName: "User",
           email: "test.user@example.com",
           roles: "Student*in",
         },
@@ -359,10 +370,10 @@ export default {
       downloadObjectsAs(users, filename, "csv");
     },
     uploadToMoodle() {
-      const {courseID, apiKey, url, assignmentID} = this.moodleData;
-      const loginData = this.createdUsers.map(({id, username, password}) => ({
-        id,
-        username,
+      const {courseID, apiKey, url, assignmentID} = this.moodleOptions;
+      const loginData = this.createdUsers.map(({extId, userName, password}) => ({
+        extId,
+        userName,
         password,
       }));
       const options = {apiKey, url};
@@ -382,7 +393,7 @@ export default {
         } else {
           this.eventBus.emit("toast", {
             title: "Uploading failed",
-            message: "Please contact CARE staff to resolve the issue",
+            message: res.message,
             type: "error",
           });
         }
@@ -420,10 +431,9 @@ export default {
     nextStep() {
       if (this.currentStep >= 3) return;
 
-      this.$refs.modal.waiting = true;
-
       switch (this.currentStep) {
         case 0:
+          this.$refs.modal.waiting = true;
           this.handleStepZero();
           break;
         case 1:
@@ -438,20 +448,17 @@ export default {
     handleStepZero() {
       if (this.importType === "moodle") {
         if (!this.$refs.form.validate()) return;
-        const {courseID, apiKey, url} = this.moodleData;
-        const options = {apiKey, url};
-        this.$socket.emit("userGetMoodleData", {courseID, options}, (res) => {
+        this.$socket.emit("userMoodleUserGetAll", this.moodleOptions, (res) => {
           this.$refs.modal.waiting = false;
           if (res.success) {
-            const {users} = res;
-            this.users = users;
-            this.checkDuplicateUsers();
+            this.users = res['data'];
           } else {
             this.eventBus.emit("toast", {
               title: "Failed to get users from Moodle",
-              message: "Please contact CARE staff to resolve the issue",
+              message: res.message,
               type: "error",
             });
+            this.resetModal();
           }
         });
       } else {
@@ -459,6 +466,7 @@ export default {
       }
     },
     handleStepTwo() {
+      const progressId = uuid();
       const userData = {
         users: this.selectedUsers,
         // Moodle's role names are subject to change
@@ -468,21 +476,23 @@ export default {
           "Tutor*in": "mentor",
           "Student*in": "student",
         },
+        progressId: progressId,
       };
+      this.$refs.modal.startProgress(progressId);
       this.$socket.emit("userBulkCreate", userData, (res) => {
-        this.$refs.modal.waiting = false;
+        this.$refs.modal.stopProgress();
         if (res.success) {
           const {createdUsers, errors} = res.data;
           this.createdUsers = createdUsers;
           this.createdErrors = errors;
           this.updatedUserCount = {
-            new: this.createdUsers.filter((u) => u.status === "new").length,
-            updated: this.createdUsers.filter((u) => u.status === "duplicate").length,
+            new: this.createdUsers.filter((u) => !u.exists).length,
+            updated: this.createdUsers.filter((u) => u.exists).length,
           };
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to bulk create users",
-            message: "Please contact CARE staff to resolve the issue",
+            message: res.message,
             type: "error",
           });
         }
@@ -591,7 +601,7 @@ export default {
       this.$refs.fileInput.value = "";
     },
     checkDuplicateUsers() {
-      this.$socket.emit("userCheckDuplicatesByEmail", this.users, (res) => {
+      this.$socket.emit("userCheckExistsByMail", this.users, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
           this.users = res.users;
