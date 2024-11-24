@@ -103,12 +103,12 @@ def create_app():
             response = {"success": False, "message": "error: " + str(e)}
             return response
         
-    @sio.on("uploadLoginDataToMoodle")
-    def uploadLoginDataToMoodle(sid, data):
+    @sio.on("publishAssignmentTextFeedback")
+    def publishAssignmentTextFeedback(sid, data):
         try:
             logger.info(f"Received call: {data} from {sid}")
-            api = Moodle(data['options']['apiKey'], data['options']['url'])
-            api.upload_login_data_to_moodle(course_id=data['courseID'], assignment_id=data['assignmentID'], login_data=data['loginData'])
+            api = Moodle(data['options']['apiKey'], data['options']['apiUrl'])
+            api.publish_assignment_text_feedback(course_id=data['options']['courseID'], assignment_id=data['options']['assignmentID'], feedback_data=data['feedback'])
             response = {"success": True, "data": "Passwords uploaded successfully."}
             return response
         except Exception as e:

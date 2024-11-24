@@ -133,24 +133,25 @@ module.exports = class UserSocket extends Socket {
 
     /**
      * Uploads login data to a Moodle assignment as feedback comments.
-     * @param {Object} moodleData - The data required for uploading login data.
-     * @param {number} moodleData.courseID - The ID of the course to fetch users from.
-     * @param {number} moodleData.assignmentID - The ID of the Moodle assignment.
-     * @param {Array<Object>} moodleData.loginData - An array of objects containing user IDs, usernames and passwords.
-     * @param {string} moodleData.options.apiKey - The API token for the Moodle instance
-     * @param {string} moodleData.options.url - The URL of the Moodle instance.
-     * @returns {Promise<void>} - A promise that resolves when the passwords have been uploaded.
+     * @param {Object} data - The data required for uploading login data.
+     * @param {Object} data.options - The options object containing the API key and URL of the Moodle instance.
+     * @param {number} data.options.courseID - The ID of the course to fetch users from.
+     * @param {number} data.options.assignmentID - The ID of the Moodle assignment.
+     * @param {string} data.options.apiKey - The API token for the Moodle instance
+     * @param {string} data.options.apiUrl - The URL of the Moodle instance.
+     * @param {Array<Object>} data.users - An array of objects containing the uploaded users.
+     * @returns {Promise<Object>} - A promise that resolves when the passwords have been uploaded.
      */
-    async uploadDataToMoodle(moodleData) {
-        const {courseID, assignmentID} = moodleData;
-        const convertedCourseID = Number(courseID);
-        const convertedAsgID = Number(assignmentID);
-        const updatedMoodleData = {...moodleData, convertedCourseID, convertedAsgID};
-        try {
-            return await this.server.rpcs["MoodleRPC"].uploadLoginDataToMoodle(updatedMoodleData);
-        } catch (error) {
-            this.logger.error(error);
-        }
+    async userPublishMoodle(data) {
+        const feedback = data['users'].map((user) => ({
+            extId: user.extId,
+            text: "Username: " + user.userName + "\nPassword: " + user.password,
+        }));
+
+        return await this.server.rpcs["MoodleRPC"].publishAssignmentTextFeedback({
+            options: data.options,
+            feedback: feedback,
+        });
     }
 
     /**
@@ -232,22 +233,6 @@ module.exports = class UserSocket extends Socket {
     }
 
     init() {
-        // Upload extIds, usernames and passwords to Moodle
-        this.socket.on("userUploadToMoodle", async (moodleData, callback) => {
-            try {
-                const {success, data} = await this.uploadDataToMoodle(moodleData);
-                callback({
-                    success, users: data,
-                });
-            } catch (error) {
-                this.logger.error(error);
-                callback({
-                    success: false, message: "Failed to upload to Moodle",
-                });
-            }
-        });
-
-
         this.socket.on("userGetData", async (data) => {
             try {
                 await this.sendUserData();
@@ -356,5 +341,7 @@ module.exports = class UserSocket extends Socket {
         this.createSocket("userMoodleUserGetAll", this.getUsersFromCourse, {}, false);
         this.createSocket("userCheckExistsByMail", this.checkUsersExists, {}, false);
         this.createSocket("userCreate", this.createUser, {}, true);
+        this.createSocket("userPublishMoodle", this.userPublishMoodle, {}, false);
+
     }
 };

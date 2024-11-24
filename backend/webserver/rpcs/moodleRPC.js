@@ -117,22 +117,21 @@ module.exports = class MoodleRPC extends RPC {
     }
 
     /**
-     * Uploads passwords to a Moodle assignment as feedback comments.
+     * Publishes the text feedback for an assignment to Moodle.
      *
-     * @param {Object} data - The data required for uploading passwords.
-     * @param {number} data.courseID - The ID of the course to fetch users from.
-     * @param {number} data.assignmentID - The ID of the Moodle assignment.
-     * @param {Array<Object>} data.loginData - A list of dictionaries containing user IDs and passwords.
+     * @param {Object} data - The data required for uploading login data.
+     * @param {Object} data.options - The options object containing the API key and URL of the Moodle instance.
+     * @param {number} data.options.courseID - The ID of the course to fetch users from.
+     * @param {number} data.options.assignmentID - The ID of the Moodle assignment.
      * @param {string} data.options.apiKey - The API token for the Moodle instance
-     * @param {string} data.options.url - The URL of the Moodle instance.
-     * @returns {Promise<void>} - A promise that resolves when the passwords have been uploaded.
+     * @param {string} data.options.apiUrl - The URL of the Moodle instance.
+     * @param {Array<Object>} data.feedback - An array of objects containing the uploaded users:
+     * @param {number} data.feedback.extId - The ID of the user.
+     * @param {string} data.feedback.feedback - The feedback text.
+     * @returns {Promise<Object>} - A promise that resolves when the passwords have been uploaded.
      */
-    async uploadLoginDataToMoodle(data) {
-        try {
-            return this.request("uploadLoginDataToMoodle", data);
-        } catch (err) {
-            throw err;
-        }
+    async publishAssignmentTextFeedback(data) {
+        return await this.request("publishAssignmentTextFeedback", data);
     }
 
 
