@@ -482,7 +482,8 @@ module.exports = (sequelize, DataTypes) => {
             tableName: "user",
             hooks: {
                 afterCreate: async (user, options) => {
-                    const {userRoles, roleMap, transaction} = options;
+                    const {context, transaction} = options;
+                    const {userRoles, roleMap} = context || {};
                     try {
                         await assignUserRoles(user, userRoles, roleMap, false, transaction);
                         await transaction.commit();
@@ -492,7 +493,8 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 },
                 afterUpdate: async (user, options) => {
-                    const {userRoles, roleMap, transaction} = options;
+                    const {context, transaction} = options;
+                    const {userRoles, roleMap} = context || {};
                     if (userRoles && roleMap && transaction) {
                         try {
                             await assignUserRoles(user, userRoles, roleMap, true, transaction);

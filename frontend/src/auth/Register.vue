@@ -308,7 +308,6 @@ export default {
 
         this.toLogin();
       } catch (err) {
-        console.log("ERR", err);
         this.eventBus.emit('toast', {
           message: err.response && err.response.data && err.response.data.message ? err.response.data.message : err.message,
           title: "Invalid User Credentials",
