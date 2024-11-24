@@ -35,14 +35,14 @@
     ref="detailsModal"
     @update-user="fetchUsers"
   />
-  <RightsModal ref="rightsModal" />
-  <PasswordModal ref="passwordModal" />
+  <RightsModal ref="rightsModal"/>
+  <PasswordModal ref="passwordModal"/>
   <ImportModal
     ref="importModal"
     @update-user="fetchUsers"
   />
-  <UploadModal ref="uploadModal" />
-  <UserModal 
+  <UploadModal ref="uploadModal"/>
+  <UserModal
     ref="userModal"
     @update-user="fetchUsers"
   />
@@ -93,17 +93,21 @@ export default {
         borderless: false,
         small: false,
         pagination: 10,
+        sort: {
+          column: "id",
+          order: "ASC",
+        }
       },
       columns: [
-        { name: "ID", key: "id", sortable: true },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "User", key: "userName" },
-        { name: "Email", key: "email" },
-        { name: "Accept Terms", key: "acceptTerms", sortable: true },
-        { name: "Accept Stats", key: "acceptStats", sortable: true },
-        { name: "Last Login", key: "lastLoginAt", sortable: true },
-        { name: "Manage", key: "manage", type: "button-group" },
+        {name: "ID", key: "id", sortable: true},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
+        {name: "User", key: "userName"},
+        {name: "Email", key: "email"},
+        {name: "Accept Terms", key: "acceptTerms", sortable: true},
+        {name: "Accept Stats", key: "acceptStats", sortable: true},
+        {name: "Last Login", key: "lastLoginAt", sortable: true},
+        {name: "Manage", key: "manage", type: "button-group"},
       ],
       // Possible values for role here are all the roles in the DB.
       role: "all",
