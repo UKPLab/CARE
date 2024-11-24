@@ -335,89 +335,89 @@ module.exports = class Socket {
         includeFieldTables = false,
     ) {
         try {
-            if (!this.autoTables.includes(table) && !this.isAdmin()) {
-                this.logger.error("Table " + table + " is not an auto table!");
+
+            const accessRights = this.server.db.models[table]['accessMap'].filter(a => this.hasAccess(a.right));
+            console.log(accessRights);
+            if (!this.autoTables.includes(table) && accessRights.length === 0) {
+                this.logger.error("No access rights for autotable: " + table);
                 return;
-            } else {
-                //check to update creator name
-                const updateCreatorName =
-                    "userId" in this.models[table].getAttributes();
-
-                let data = [];
-                if (this.isAdmin()) {
-                    data = await this.models[table].getAutoTable(filter, userId);
-                } else {
-                    data = await this.models[table].getAutoTable(filter, this.userId);
-                }
-
-                if (includeForeignData) {
-                    const foreignKeys = await this.server.db.sequelize
-                        .getQueryInterface()
-                        .getForeignKeyReferencesForTable(table);
-
-                    // send all foreign keys of table that are in autoTables
-                    foreignKeys
-                        .filter((fk) => this.autoTables.includes(fk.referencedTableName) && fk.referencedTableName !== table)
-                        .map(async (fk) => {
-                            const uniqueIds = data
-                                .map((d) => d[fk.columnName])
-                                .filter(
-                                    (value, index, array) => array.indexOf(value) === index
-                                );
-                            if (uniqueIds.length > 0) {
-                                await this.sendTableData(
-                                    fk.referencedTableName,
-                                    [{key: "id", values: uniqueIds}],
-                                    [],
-                                    userId,
-                                    includeForeignData
-                                );
-                            }
-                        });
-                }
-                if (includeFieldTables) {
-                    const fields = this.models[table].fields.filter(
-                        (f) => f.type === "choice" || f.type === "table"
-                    );
-                    for (const field of fields) {
-                        if ("table" in field.options) {
-                            // TODO we already have the object, so we don't need to query the database again in sendTableData
-                            const ids = (await Promise.all(data.map(async (d) => {
-                                    const tableData = await this.models[field.options.table].getAllByKey(
-                                        field.options.id,
-                                        d.id, true);
-                                    return tableData.map((td) => td.id);
-                                }
-                            ))).flat(1);
-
-                            if (ids.length > 0) {
-                                await this.sendTableData(
-                                    field.options.table,
-                                    [{key: "id", values: ids}],
-                                    [],
-                                    userId,
-                                    includeForeignData
-                                );
-                            }
-                        }
-                    }
-                }
-
-                if (include.length > 0) {
-                    for (const inclusions of include) {
-                        if (this.autoTables.includes(inclusions.table) || this.isAdmin()) {
-                            await this.sendTableData(inclusions.table,  [{
-                                key: "id",
-                                values: [...new Set(data.map((d) => d[inclusions.by]))]
-                            }],[], userId, includeForeignData, includeFieldTables);
-                        }
-                    }
-                }
-
-                console.log("TABLES", table);
-
-                this.emit(table + "Refresh", data, updateCreatorName);
             }
+
+            let data = [];
+            if (accessRights.length > 0 || this.isAdmin()) {
+                const attributes = [...new Set(accessRights.flatMap(a => a.columns))];
+                data = await this.models[table].getAutoTable(filter, userId, attributes);
+            } else {
+                data = await this.models[table].getAutoTable(filter, this.userId);
+            }
+            console.log(data);
+
+            if (includeForeignData) {
+                const foreignKeys = await this.server.db.sequelize
+                    .getQueryInterface()
+                    .getForeignKeyReferencesForTable(table);
+
+                // send all foreign keys of table that are in autoTables
+                foreignKeys
+                    .filter((fk) => this.autoTables.includes(fk.referencedTableName) && fk.referencedTableName !== table)
+                    .map(async (fk) => {
+                        const uniqueIds = data
+                            .map((d) => d[fk.columnName])
+                            .filter(
+                                (value, index, array) => array.indexOf(value) === index
+                            );
+                        if (uniqueIds.length > 0) {
+                            await this.sendTableData(
+                                fk.referencedTableName,
+                                [{key: "id", values: uniqueIds}],
+                                [],
+                                userId,
+                                includeForeignData
+                            );
+                        }
+                    });
+            }
+            if (includeFieldTables) {
+                const fields = this.models[table].fields.filter(
+                    (f) => f.type === "choice" || f.type === "table"
+                );
+                for (const field of fields) {
+                    if ("table" in field.options) {
+                        // TODO we already have the object, so we don't need to query the database again in sendTableData
+                        const ids = (await Promise.all(data.map(async (d) => {
+                                const tableData = await this.models[field.options.table].getAllByKey(
+                                    field.options.id,
+                                    d.id, true);
+                                return tableData.map((td) => td.id);
+                            }
+                        ))).flat(1);
+
+                        if (ids.length > 0) {
+                            await this.sendTableData(
+                                field.options.table,
+                                [{key: "id", values: ids}],
+                                [],
+                                userId,
+                                includeForeignData
+                            );
+                        }
+                    }
+                }
+            }
+
+            if (include.length > 0) {
+                for (const inclusions of include) {
+                    await this.sendTableData(inclusions.table, [{
+                        key: "id",
+                        values: [...new Set(data.map((d) => d[inclusions.by]))]
+                    }], [], userId, includeForeignData, includeFieldTables);
+                }
+            }
+
+
+            console.log("TABLES", table);
+
+            this.emit(table + "Refresh", data, true);
         } catch (err) {
             this.logger.error(err);
         }
