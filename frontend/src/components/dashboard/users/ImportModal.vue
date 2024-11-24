@@ -96,11 +96,7 @@
             </template>
           </template>
           <template v-else>
-            <BasicForm
-              ref="form"
-              v-model="moodleOptions"
-              :fields="moodleOptionsFields"
-            />
+            <MoodleOptions ref="moodleOptionsForm" v-model="moodleOptions"/>
           </template>
         </div>
         <!-- Step1: Preview -->
@@ -150,12 +146,11 @@
               </ul>
             </div>
           </div>
-          <BasicForm
+          <MoodleOptions
             v-if="importType === 'moodle'"
-            ref="form"
             v-model="moodleOptions"
-            :fields="finalMoodleOptionsFields"
-          />
+            ref="moodleOptionsForm"
+            with-assignment-id/>
           <div class="link-container">
             <BasicButton
               v-if="importType === 'moodle'"
@@ -194,10 +189,10 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/Table.vue";
-import BasicForm from "@/basic/Form.vue";
 import Papa from "papaparse";
 import {downloadObjectsAs} from "@/assets/utils.js";
 import {v4 as uuid} from "uuid";
+import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
 
 /**
  * Modal for bulk creating users through csv file and Moodle API
@@ -205,7 +200,7 @@ import {v4 as uuid} from "uuid";
  */
 export default {
   name: "ImportModal",
-  components: {BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm},
+  components: {MoodleOptions, BasicModal, BasicButton, BasicIcon, BasicTable},
   emits: ["updateUser"],
   data() {
     return {
@@ -259,52 +254,6 @@ export default {
         duplicate: this.selectedUsers.filter((u) => u.exists).length,
       };
     },
-    moodleCourseId() {
-      return parseInt(this.$store.getters["settings/getValue"]('rpc.moodleAPI.courseID'));
-    },
-    showMoodleCourseId() {
-      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.courseID') === "true";
-    },
-    moodleAPIKey() {
-      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.apiKey');
-    },
-    showMoodleAPIKey() {
-      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.apiKey') === "true";
-    },
-    moodleAPIUrl() {
-      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.apiUrl');
-    },
-    showMoodleAPIUrl() {
-      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.apiUrl') === "true";
-    },
-    moodleOptionsFields() {
-      return [
-        {
-          key: "courseID",
-          label: "Course ID:",
-          type: "text",
-          required: true,
-          default: this.moodleCourseId,
-          placeholder: "course-id-placeholder",
-        },
-        {
-          key: "apiKey",
-          label: "Moodle API Key:",
-          type: "text",
-          required: true,
-          default: this.moodleAPIKey,
-          placeholder: "api-key-placeholder",
-        },
-        {
-          key: "apiUrl",
-          label: "Moodle URL:",
-          type: "text",
-          required: true,
-          default: this.moodleAPIUrl,
-          placeholder: "https://example.moodle.com",
-        },
-      ];
-    },
     steps() {
       return [
         this.importType === "csv" ? {title: "Upload"} : {title: "Moodle"},
@@ -330,23 +279,12 @@ export default {
       }
       return false;
     },
-    finalMoodleOptionsFields() {
-      return [
-        ...this.moodleOptionsFields,
-        {
-          key: "assignmentID",
-          label: "Assignment ID:",
-          type: "text",
-          required: true,
-          placeholder: "assignment-id-placeholder",
-        },
-      ];
-    },
+
   },
   methods: {
     downloadFileAsCSV() {
       const filename = `users_${Date.now()}`;
-      const users = this.createdUsers.map((user) =>  ({
+      const users = this.createdUsers.map((user) => ({
         extId: user.extId,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -447,7 +385,7 @@ export default {
     },
     handleStepZero() {
       if (this.importType === "moodle") {
-        if (!this.$refs.form.validate()) return;
+        if (!this.$refs.moodleOptionsForm.validate()) return;
         this.$socket.emit("userMoodleUserGetAll", this.moodleOptions, (res) => {
           this.$refs.modal.waiting = false;
           if (res.success) {
@@ -513,7 +451,7 @@ export default {
           complete: function (results) {
             const {data: rows, meta} = results;
             const {fields: fileHeaders} = meta;
-            const requiredHeaders = ["id", "firstname", "lastname", "email", "roles"];
+            const requiredHeaders = ["extId", "firstName", "lastName", "email", "roles"];
             const seenIds = new Set();
             const seenEmails = new Set();
             // src: https://www.mailercheck.com/articles/email-validation-javascript
@@ -531,10 +469,10 @@ export default {
                 }
               }
               // Check for duplicate id
-              if (seenIds.has(row.id)) {
-                errors.push(`Duplicate id found: ${row.id} at index ${index + 1}`);
+              if (seenIds.has(row.extId)) {
+                errors.push(`Duplicate id found: ${row.extId} at index ${index + 1}`);
               } else {
-                seenIds.add(row.id);
+                seenIds.add(row.extId);
               }
 
               // Check for duplicate email

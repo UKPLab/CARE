@@ -1,16 +1,15 @@
 <template>
   <BasicModal
     ref="modal"
-    @hide="resetModal"
+    @hide="reset"
   >
     <template #title>
       <span>Upload Password</span>
     </template>
     <template #body>
-      <BasicForm
-        ref="form"
-        v-model="moodleData"
-        :fields="formFields"
+      <MoodleOptions
+        v-model="moodleOptions" ref="moodleOptionsForm"
+        with-assignment-id
       />
       <!-- TODO: Turn this file uploading functionality into a component -->
       <div class="form-field">
@@ -58,8 +57,8 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import BasicForm from "@/basic/Form.vue";
 import Papa from "papaparse";
+import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
 
 /**
  * Modal for uploading the login data of the newly created users to Moodle
@@ -67,7 +66,7 @@ import Papa from "papaparse";
  */
 export default {
   name: "UploadModal",
-  components: { BasicModal, BasicButton, BasicForm },
+  components: {MoodleOptions, BasicModal, BasicButton},
   data() {
     return {
       formFields: [
@@ -100,19 +99,14 @@ export default {
           placeholder: "api-key-placeholder",
         },
       ],
-      moodleData: {
-        courseID: "",
-        assignmentID: "",
-        url: "",
-        apiKey: "",
-      },
+      moodleOptions: {},
       uploadedUsers: [],
       fileErrors: [],
     };
   },
   computed: {
     isDisabled() {
-      const { courseID, url, apiKey, assignmentID } = this.moodleData;
+      const {courseID, url, apiKey, assignmentID} = this.moodleOptions;
       return !courseID || !url || !apiKey || !assignmentID || this.uploadedUsers.length < 1;
     },
   },
@@ -120,22 +114,17 @@ export default {
     open() {
       this.$refs.modal.open();
     },
-    resetModal() {
-      this.moodleData = {
-        url: "",
-        apiKey: "",
-        courseID: "",
-        assignmentID: "",
-      };
+    reset() {
+      this.$refs.moodleOptionsForm.reset();
       this.uploadedUsers = [];
       if (this.$refs.fileInput) {
         this.$refs.fileInput.value = "";
       }
     },
     uploadToMoodle() {
-      const { courseID, apiKey, url, assignmentID } = this.moodleData;
-      const loginData = this.uploadedUsers.map(({ id, username, password }) => ({ id, username, password }));
-      const options = { apiKey, url };
+      const {courseID, apiKey, url, assignmentID} = this.moodleData;
+      const loginData = this.uploadedUsers.map(({id, username, password}) => ({id, username, password}));
+      const options = {apiKey, url};
       const courseData = {
         courseID,
         assignmentID,
@@ -170,9 +159,9 @@ export default {
         Papa.parse(file, {
           header: true,
           complete: function (results) {
-            const { data: rows, meta } = results;
-            const { fields: fileHeaders } = meta;
-            const requiredHeaders = ["id", "username", "password"];
+            const {data: rows, meta} = results;
+            const {fields: fileHeaders} = meta;
+            const requiredHeaders = ["extId", "userName", "password"];
             const seenIds = new Set();
             const errors = [];
             // Check headers
@@ -187,10 +176,10 @@ export default {
                 }
               }
               // Check for duplicate id
-              if (seenIds.has(row.id)) {
-                errors.push(`Duplicate id found: ${row.id} at index ${index + 1}`);
+              if (seenIds.has(row.extId)) {
+                errors.push(`Duplicate id found: ${row.extId} at index ${index + 1}`);
               } else {
-                seenIds.add(row.id);
+                seenIds.add(row.extId);
               }
             });
 
@@ -232,6 +221,7 @@ export default {
   display: flex;
   align-items: center;
   margin: 25px 0;
+
   .form-label {
     flex-shrink: 0;
     margin-bottom: 0;
@@ -241,6 +231,7 @@ export default {
 
 .file-error-container {
   color: firebrick;
+
   > p {
     margin-bottom: 0.5rem;
   }

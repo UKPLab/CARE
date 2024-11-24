@@ -3,11 +3,6 @@
     <template #headerElements>
       <BasicButton
         class="btn btn-secondary btn-sm me-1"
-        title="Add User"
-        @click="$refs.userModal.open()"
-      />
-      <BasicButton
-        class="btn btn-secondary btn-sm me-1"
         title="Upload Password"
         @click="$refs.uploadModal.open()"
       />
@@ -17,9 +12,14 @@
         @click="$refs.importModal.open('csv')"
       />
       <BasicButton
-        class="btn btn-primary btn-sm"
+        class="btn btn-secondary btn-sm me-1"
         title="Import via Moodle"
         @click="$refs.importModal.open('moodle')"
+      />
+      <BasicButton
+        class="btn btn-primary btn-sm"
+        title="Add User"
+        @click="$refs.userModal.open()"
       />
     </template>
     <template #body>
