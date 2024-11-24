@@ -191,7 +191,6 @@ import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/Table.vue";
 import Papa from "papaparse";
 import {downloadObjectsAs} from "@/assets/utils.js";
-import {v4 as uuid} from "uuid";
 import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
 
 /**
@@ -405,7 +404,6 @@ export default {
       }
     },
     handleStepTwo() {
-      const progressId = uuid();
       const userData = {
         users: this.selectedUsers,
         // Moodle's role names are subject to change
@@ -415,9 +413,9 @@ export default {
           "Tutor*in": "mentor",
           "Student*in": "student",
         },
-        progressId: progressId,
+        progressId: this.$refs.modal.getProgressId(),
       };
-      this.$refs.modal.startProgress(progressId);
+      this.$refs.modal.startProgress();
       this.$socket.emit("userBulkCreate", userData, (res) => {
         this.$refs.modal.stopProgress();
         if (res.success) {

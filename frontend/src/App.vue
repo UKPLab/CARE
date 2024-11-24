@@ -93,6 +93,8 @@ export default {
       data.forEach((table) => {
         createTable(this.$store, table);
       });
+      // create tables for admins
+      createTable(this.$store, {name:"user"}, "admin")
       this.loaded.tables = true;
     },
     appUser: function (data) {

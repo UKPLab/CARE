@@ -86,6 +86,7 @@
  *
  */
 import {Modal} from 'bootstrap';
+import {v4 as uuid} from "uuid";
 
 export default {
   name: "BasicModal",
@@ -171,9 +172,16 @@ export default {
     }
   },
   methods: {
-    startProgress(progressId) {
-      this.progressId = progressId;
+    getProgressId() {
+      this.progressId = uuid();
+      return this.progressId;
+    },
+    startProgress() {
+      if (!this.progress) {
+        this.getProgressId();
+      }
       this.progress = true;
+      return this.progressId;
     },
     stopProgress() {
       this.progress = false;

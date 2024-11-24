@@ -139,11 +139,7 @@ module.exports = class AppSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendData(data) {
-        try {
-            await this.sendTableData(data.table);
-        } catch (error) {
-            this.logger.error(error);
-        }
+        await this.sendTableData(data.table, (data.filter) ? data.filter: [], (data.include)? data.include: []);
     }
 
     /**
@@ -224,7 +220,7 @@ module.exports = class AppSocket extends Socket {
         const id = await this.updateData(data, options);
         // send updated data to all clients
         options.transaction.afterCommit(() => {
-            this.sendTableData(data.table, [id], null, false, true);
+            this.sendTableData(data.table, [{key: "id", value: id}], [], null,false, true);
         });
         return id;
     }
@@ -232,6 +228,7 @@ module.exports = class AppSocket extends Socket {
     init() {
 
         this.createSocket("appDataUpdate", this.updateAppData, {}, true);
+        this.createSocket("appData", this.sendData, {}, false);
 
         this.socket.on("appInit", async (data) => {
             try {
@@ -240,15 +237,6 @@ module.exports = class AppSocket extends Socket {
                 this.logger.error(err.message);
             }
         });
-
-        this.socket.on("appData", async (data) => {
-            try {
-                await this.sendData(data);
-            } catch (err) {
-                this.logger.error(err.message);
-            }
-        });
-
 
 
         this.socket.on("appSettingSet", async (data) => {

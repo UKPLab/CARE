@@ -9,7 +9,7 @@
         <label
           for="userList"
           class="form-label"
-          >Select User:</label
+        >Select User:</label
         >
         <input
           id="userList"
@@ -32,14 +32,6 @@
       <!-- TODO: Turn this file uploading functionality into a component -->
       <div class="form-field">
         <div
-          v-if="isUploading"
-          class="spinner-border m-5"
-          role="status"
-        >
-          <span class="visually-hidden">Loading...</span>
-        </div>
-        <div
-          v-else
           class="flex-grow-1"
         >
           <input
@@ -54,7 +46,6 @@
     </template>
     <template #footer>
       <div
-        v-if="!isUploading"
         class="btn-group"
       >
         <BasicButton
@@ -84,43 +75,20 @@ import BasicButton from "@/basic/Button.vue";
  * This component provides the functionality for uploading a document
  * to the server for a selected user.
  *
- * @author: Linyin Huang
+ * @author: Linyin Huang, Dennis Zyska
  */
 export default {
   name: "ReviewUploadModal",
-  components: { BasicModal, BasicButton },
-  emits: ["updateDocuments"],
+  components: {BasicModal, BasicButton},
   data() {
     return {
       selectedUserName: "",
       selectedUserId: null,
-      isUploading: false,
     };
   },
   computed: {
     users() {
       return this.$store.getters["admin/getUsersByRole"];
-    },
-  },
-  sockets: {
-    uploadResult: function (data) {
-      this.$refs.uploadModal.close();
-      this.isUploading = false;
-      if (data.success) {
-        this.eventBus.emit("toast", {
-          message: "File successfully uploaded!",
-          variant: "success",
-          delay: 3000,
-        });
-        this.$emit("updateDocuments");
-      } else {
-        this.eventBus.emit("toast", {
-          title: "Failed to upload the file",
-          message: "Please contact CARE staff to resolve the issue",
-          variant: "danger",
-          delay: 3000,
-        });
-      }
     },
   },
   methods: {
@@ -160,19 +128,33 @@ export default {
 
       const fileName = fileElement.files[0].name;
       const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
-
       if (fileType !== ".pdf") {
         alert("Please choose a PDF file");
         return;
       }
-      this.$socket.emit("uploadFile", {
-        type: "document",
+
+      this.$refs.uploadModal.waiting = true;
+      this.$socket.emit("documentAdd", {
         file: fileElement.files[0],
         name: fileName,
         userId: this.selectedUserId,
         isUploaded: true,
+      }, (res) => {
+        if (res.success) {
+          this.eventBus.emit("toast", {
+            message: "File successfully uploaded!",
+            variant: "success",
+          });
+          this.$refs.uploadModal.close();
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to upload the file",
+            message: res.message,
+            variant: "danger",
+          });
+          this.$refs.uploadModal.waiting = false;
+        }
       });
-      this.isUploading = true;
     },
   },
 };
@@ -183,6 +165,7 @@ export default {
   display: flex;
   align-items: center;
   margin: 25px 0;
+
   .form-label {
     flex-shrink: 0;
     margin-bottom: 0;

@@ -9,22 +9,22 @@
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
-          class="btn-primary btn-sm"
-          title="Add"
-          @click="add()"
-        />
-        <BasicButton
           v-if="canAddBulkAssignments"
-          class="btn-secondary btn-sm"
+          class="btn-secondary btn-sm me-1"
           title="Add Bulk Assignments"
           :style="{ margin: '10px 10px' }"
           @click="addBulkAssignment()"
         />
         <BasicButton
           v-if="canAddBulkAssignments"
-          class="btn-secondary btn-sm"
+          class="btn-secondary btn-sm me-1"
           title="Add Single Assignment"
           @click="addSingleAssignment()"
+        />
+        <BasicButton
+          class="btn btn-primary btn-sm"
+          title="Add"
+          @click="add()"
         />
       </template>
       <template #body>

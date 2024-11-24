@@ -241,7 +241,7 @@ class Moodle:
         
         return submission_infos
                             
-    def download_submissions_from_user(self, file_urls):
+    def download_submissions_from_url(self, file_urls):
         """
         Downloads files from the given list of URLs.
 

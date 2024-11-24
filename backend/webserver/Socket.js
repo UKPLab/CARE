@@ -1,3 +1,5 @@
+const {inject} = require("../utils/generic");
+
 /**
  * Defines as new Socket class
  *
@@ -317,7 +319,8 @@ module.exports = class Socket {
     /**
      * Send auto table data to the clients
      * @param table
-     * @param filterIds list of ids to send
+     * @param filter list of filter
+     * @param include
      * @param userId
      * @param includeForeignData also includes data from foreign keys tables
      * @param includeFieldTables also includes data from field tables
@@ -325,13 +328,14 @@ module.exports = class Socket {
      */
     async sendTableData(
         table,
-        filterIds = null,
+        filter = [],
+        include = [],
         userId = null,
         includeForeignData = true,
         includeFieldTables = false,
     ) {
         try {
-            if (!this.autoTables.includes(table)) {
+            if (!this.autoTables.includes(table) && !this.isAdmin()) {
                 this.logger.error("Table " + table + " is not an auto table!");
                 return;
             } else {
@@ -341,9 +345,9 @@ module.exports = class Socket {
 
                 let data = [];
                 if (this.isAdmin()) {
-                    data = await this.models[table].getAutoTable(userId, filterIds);
+                    data = await this.models[table].getAutoTable(filter, userId);
                 } else {
-                    data = await this.models[table].getAutoTable(this.userId, filterIds);
+                    data = await this.models[table].getAutoTable(filter, this.userId);
                 }
 
                 if (includeForeignData) {
@@ -363,7 +367,8 @@ module.exports = class Socket {
                             if (uniqueIds.length > 0) {
                                 await this.sendTableData(
                                     fk.referencedTableName,
-                                    uniqueIds,
+                                    [{key: "id", values: uniqueIds}],
+                                    [],
                                     userId,
                                     includeForeignData
                                 );
@@ -378,7 +383,7 @@ module.exports = class Socket {
                         if ("table" in field.options) {
                             // TODO we already have the object, so we don't need to query the database again in sendTableData
                             const ids = (await Promise.all(data.map(async (d) => {
-                                    const tableData =  await this.models[field.options.table].getAllByKey(
+                                    const tableData = await this.models[field.options.table].getAllByKey(
                                         field.options.id,
                                         d.id, true);
                                     return tableData.map((td) => td.id);
@@ -388,7 +393,8 @@ module.exports = class Socket {
                             if (ids.length > 0) {
                                 await this.sendTableData(
                                     field.options.table,
-                                    ids,
+                                    [{key: "id", values: ids}],
+                                    [],
                                     userId,
                                     includeForeignData
                                 );
@@ -396,6 +402,20 @@ module.exports = class Socket {
                         }
                     }
                 }
+
+                if (include.length > 0) {
+                    for (const inclusions of include) {
+                        if (this.autoTables.includes(inclusions.table) || this.isAdmin()) {
+                            await this.sendTableData(inclusions.table,  [{
+                                key: "id",
+                                values: [...new Set(data.map((d) => d[inclusions.by]))]
+                            }],[], userId, includeForeignData, includeFieldTables);
+                        }
+                    }
+                }
+
+                console.log("TABLES", table);
+
                 this.emit(table + "Refresh", data, updateCreatorName);
             }
         } catch (err) {
