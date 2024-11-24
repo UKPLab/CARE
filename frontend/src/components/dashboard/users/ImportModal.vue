@@ -288,6 +288,7 @@ export default {
         extId: user.extId,
         firstName: user.firstName,
         lastName: user.lastName,
+        userName: user.userName,
         email: user.email,
         roles: user.roles,
         password: (user.initialPassword || ""),

@@ -158,35 +158,32 @@ class Moodle:
         return users
 
         
-    def upload_login_data_to_moodle(self, assignment_id, course_id, login_data):
+    def publish_assignment_text_feedback(self, assignment_id, course_id, feedback_data):
         """
-        This method uploads the login data for a list of users to a specific assignment in a Moodle course as feedback.
+        This method uploads feedback data to a specific assignment in a Moodle course.
         Args:
             assignment_id (int): The ID of the assignment to upload data for.
             course_id (int): The ID of the course containing the assignment.
-            login_data (list of dict): A list of dictionaries containing login data. Each dictionary
-                                       should have the keys 'id', 'username', and 'password'.
+            feedback_data (list of dict): A list of dictionaries containing users' feedback data.
         Example:
             login_data = [
-                {'id': 1, 'username': 'user1', 'password': 'pass1'},
-                {'id': 2, 'username': 'user2', 'password': 'pass2'}
+                {'extId': 1, 'text': 'Feedback for user 1'},
+                {'extId': 2, 'text': 'Feedback for user 2'}
             ]
-            upload_login_data_to_moodle(assignment_id=123, course_id=456, login_data=login_data)
+            publish_assignment_text_feedback(assignment_id=123, course_id=456, feedback_data=feedback_data)
         """
-        
-        
         assignment_id = self.get_id_mapping_for_assignment(course_id, assignment_id)
         
-        for entry in login_data:
+        for entry in feedback_data:
             parameters = {}
             parameters['assignmentid'] = assignment_id
-            parameters['userid'] = entry['id']
+            parameters['userid'] = entry['extId']
             parameters['grade'] = 100
             parameters['attemptnumber'] = 1
             parameters['addattempt'] = 1
             parameters['workflowstate'] = 'Graded'
             parameters['applytoall'] = 0
-            parameters['plugindata[assignfeedbackcomments_editor][text]'] = 'CARE Username: ' + entry['username'] + '\n Password: ' + entry['password']
+            parameters['plugindata[assignfeedbackcomments_editor][text]'] = entry['text']
             parameters['plugindata[assignfeedbackcomments_editor][format]'] = 0
             parameters['plugindata[files_filemanager]'] = 0
             moodle_api.call('mod_assign_save_grade', **parameters)

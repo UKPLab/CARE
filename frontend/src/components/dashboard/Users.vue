@@ -57,7 +57,7 @@ import PasswordModal from "./users/PasswordModal.vue";
 import RightsModal from "./users/RightsModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
-import UserAddModal from "./users/UserAddModal.vue";
+import UserAddModal from "./users/UserCreateModal.vue";
 
 /**
  * Display user list by users' role

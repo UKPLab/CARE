@@ -106,8 +106,8 @@ export default {
   },
   computed: {
     isDisabled() {
-      const {courseID, url, apiKey, assignmentID} = this.moodleOptions;
-      return !courseID || !url || !apiKey || !assignmentID || this.uploadedUsers.length < 1;
+      const {courseID, apiUrl, apiKey, assignmentID} = this.moodleOptions;
+      return !courseID || !apiUrl || !apiKey || !assignmentID || this.uploadedUsers.length < 1;
     },
   },
   methods: {
@@ -122,31 +122,26 @@ export default {
       }
     },
     uploadToMoodle() {
-      const {courseID, apiKey, url, assignmentID} = this.moodleData;
-      const loginData = this.uploadedUsers.map(({id, username, password}) => ({id, username, password}));
-      const options = {apiKey, url};
-      const courseData = {
-        courseID,
-        assignmentID,
-        loginData,
-        options,
-      };
       this.$refs.modal.waiting = true;
-      this.$socket.emit("userUploadToMoodle", courseData, (res) => {
-        this.$refs.modal.waiting = false;
+      this.$socket.emit("userPublishMoodle", {
+        options: this.moodleOptions,
+        users: this.uploadedUsers,
+      }, (res) => {
         if (res.success) {
+          this.$refs.modal.close();
           this.eventBus.emit("toast", {
             title: "Uploading completed",
             message: "Please go to Moodle to check out your username and password!",
             variant: "success",
           });
-          this.$refs.modal.close();
         } else {
+          this.$refs.modal.waiting = false;
           this.eventBus.emit("toast", {
             title: "Uploading failed",
-            message: "Please contact CARE staff to resolve the issue",
+            message: res.message,
             type: "error",
           });
+
         }
       });
     },
