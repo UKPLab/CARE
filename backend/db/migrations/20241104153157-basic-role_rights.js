@@ -6,6 +6,18 @@ const roleRights = [
     userRightName: "frontend.dashboard.studies.addBulkAssignments",
   },
   {
+    role: "teacher",
+    userRightName: "frontend.dashboard.studies.view",
+  },
+  {
+    role: "teacher",
+    userRightName: "frontend.dashboard.studies.view.readOnly",
+  },
+  {
+    role: "teacher",
+    userRightName: "frontend.dashboard.studies.view.userPrivateInfo",
+  },
+  {
     role: "mentor",
     userRightName: "frontend.dashboard.studies.view",
   },
