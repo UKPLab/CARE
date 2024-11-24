@@ -162,6 +162,20 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Delete all study sessions for a study.
+         * @param study - The study object.
+         * @param options - Sequelize options object.
+         * @returns {Promise<void>}
+         */
+        static async deleteStudySessions(study, options) {
+            const studySessions = await sequelize.models.study_session.getAllByKey("studyId", study.id);
+
+            for (const studySession of studySessions) {
+                await sequelize.models.study_session.deleteById(studySession.id, { transaction: options.transaction });
+            }
+        }
+
+        /**
          * Create study steps for a study
          * @param study - The study object
          * @param options - Sequelize options object
@@ -347,6 +361,11 @@ module.exports = (sequelize, DataTypes) => {
 
             }, afterUpdate: async (study, options) => {
                 const transaction = options.transaction;
+
+                if (study.deleted) {
+                    await Study.deleteStudySteps(study, options);
+                    await Study.deleteStudySessions(study, options);
+                }
 
                 if (study.closed) {
                     await Study.appendConfigurationToLastDocument(study, transaction); 

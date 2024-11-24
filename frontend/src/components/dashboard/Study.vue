@@ -266,10 +266,21 @@ export default {
       } else if (data.action === "closeStudy") {
         this.$socket.emit("stats", {action: "closeStudy", data: {studyId: data.params.id}});
 
-        this.$socket.emit("studyUpdate", {
-          studyId: data.params.id,
-          closed: Date.now()
-        });
+        this.$socket.emit("appDataUpdate", {
+              table: "study",
+              data: {
+              id: data.params.id,
+              closed: true
+              }
+            }, (result) => {
+              if (!result.success) {
+                this.eventBus.emit('toast', {
+                  title: "Study closing failed",
+                  message: result.message,
+                  variant: "danger"
+                });
+              }
+            });
       } else if (data.action === "saveAsTemplate") {
         this.saveAsTemplate(data.params);
       }

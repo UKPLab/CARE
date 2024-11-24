@@ -14,32 +14,6 @@ const {inject} = require("../../utils/generic");
 module.exports = class StudySocket extends Socket {
 
     /**
-     * Update study
-     * @param {number} studyId
-     * @param {object} data study object
-     * @returns {Promise<*>}
-     */
-    async updateStudy(studyId, data) {
-
-        const currentStudy = await this.models['study'].getById(studyId);
-        if (this.checkUserAccess(currentStudy.userId)) {
-            const study = await this.models['study'].updateById(studyId, data);
-
-            if (currentStudy.deleted && !study.deleted) {
-                const sessions = await this.models['study_session'].getAllByKey('studyId', study.id);
-                for (const session of sessions) {
-                    await this.models['study_session'].deleteById(session.id);
-                }
-            }
-
-            this.emit("studyRefresh", study)
-            return study;
-        } else {
-            this.sendToast("You are not allowed to update this study", "Error", "Danger");
-        }
-    }
-
-    /**
      * Add a new study
      * @param study
      * @returns {Promise<void>}
@@ -183,7 +157,8 @@ module.exports = class StudySocket extends Socket {
         if (this.checkUserAccess(doc.userId)) {
             let study;
             if (data.id) {
-                study = await this.updateStudy(data.id, data);
+                study = await this.models['study'].updateById(data.id, data);
+                this.emit("studyRefresh", study);
             } else {
                 study = await this.addStudy(data);
             }
@@ -256,17 +231,6 @@ module.exports = class StudySocket extends Socket {
                 await this.sendStudyByHash(data.studyHash);
             } catch (err) {
                 this.logger.error(err);
-            }
-        });
-
-        this.socket.on("studyUpdate", async (data) => {
-            try {
-                if (data.studyId && data.studyId !== 0) {
-                    await this.updateStudy(data.studyId, data);
-                }
-            } catch (err) {
-                this.logger.error(err);
-                this.sendToast(err, "Error updating study", "Danger");
             }
         });
 
