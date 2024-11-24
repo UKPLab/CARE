@@ -513,11 +513,11 @@ module.exports = class DocumentSocket extends Socket {
             }
             const usersData = await Promise.all(
                 data.map(async (user) => {
-                    const moodleId = user.userid;
-                    const userInfo = await this.models["user"].findOne({ where: { moodleId } });
+                    const extId = user.userid;
+                    const userInfo = await this.models["user"].findOne({ where: { extId } });
 
                     if (!userInfo) {
-                        this.logger.error(`Failed to find the user with ${moodleId}`);
+                        this.logger.error(`Failed to find the user with ${extId}`);
                         return null;
                     }
 
@@ -525,7 +525,7 @@ module.exports = class DocumentSocket extends Socket {
                         const fileType = submission.filename.substring(submission.filename.lastIndexOf(".")).toLowerCase();
 
                         return {
-                            moodleId,
+                            extId,
                             userId: userInfo.userId,
                             firstName: userInfo.firstName,
                             lastName: userInfo.lastName,

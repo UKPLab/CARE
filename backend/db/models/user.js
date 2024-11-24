@@ -2,6 +2,8 @@
 const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
 const {genSalt, genPwdHash} = require("../../utils/auth.js");
+const {v4: uuidv4} = require("uuid");
+const {generateMarvelUsername} = require("../../utils/generator");
 
 module.exports = (sequelize, DataTypes) => {
     class User extends MetaModel {
@@ -18,6 +20,28 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "userId",
                 as: "roles",
             });
+        }
+
+        /**
+         * Adds a new user to the database.
+         * @param data
+         * @param options
+         * @returns {Promise<{password: string}>}
+         */
+        static async add(data, options) {
+            if (!data.salt) {
+                data.salt = genSalt();
+            }
+            if (!data.password) {
+                data.password = uuidv4().replace(/-/g, "").substring(0, 8);
+                data.initialPassword = data.password;
+            }
+            data.passwordHash = await genPwdHash(data.password, data.salt);
+            if (!data.userName) {
+                data.userName = generateMarvelUsername();
+            }
+
+            return await super.add(data, options);
         }
 
         /**
@@ -120,6 +144,7 @@ module.exports = (sequelize, DataTypes) => {
                     email: {
                         [Op.in]: emails,
                     },
+                    deleted: false,
                 },
                 attributes: ["email"],
                 raw: true,
@@ -467,14 +492,9 @@ module.exports = (sequelize, DataTypes) => {
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,
             acceptedAt: DataTypes.DATE,
-            rolesUpdatedAt: {
-                type: DataTypes.DATE,
-                allowNull: true,
-            },
-            moodleId: {
-                type: DataTypes.INTEGER,
-                allowNull: true,
-            },
+            rolesUpdatedAt: DataTypes.DATE,
+            extId: DataTypes.INTEGER,
+            initialPassword: DataTypes.STRING,
         },
         {
             sequelize,
@@ -484,25 +504,13 @@ module.exports = (sequelize, DataTypes) => {
                 afterCreate: async (user, options) => {
                     const {context, transaction} = options;
                     const {userRoles, roleMap} = context || {};
-                    try {
-                        await assignUserRoles(user, userRoles, roleMap, false, transaction);
-                        await transaction.commit();
-                    } catch (error) {
-                        await transaction.rollback();
-                        throw new Error(error.message);
-                    }
+                    await assignUserRoles(user, userRoles, roleMap, false, transaction);
                 },
                 afterUpdate: async (user, options) => {
                     const {context, transaction} = options;
                     const {userRoles, roleMap} = context || {};
-                    if (userRoles && roleMap && transaction) {
-                        try {
-                            await assignUserRoles(user, userRoles, roleMap, true, transaction);
-                            await transaction.commit();
-                        } catch (error) {
-                            await transaction.rollback();
-                            throw new Error(error.message);
-                        }
+                    if (userRoles && roleMap) {
+                        await assignUserRoles(user, userRoles, roleMap, true, transaction);
                     }
                 },
             },

@@ -38,12 +38,23 @@
                 <span class="visually-hidden">Loading...</span>
               </div>
             </div>
+            <div
+              v-else-if="progress"
+              class="justify-content-center flex-grow-1 d-flex"
+              role="status"
+            >
+              <div class="progress" style="width:100%">
+                <div class="progress-bar" role="progressbar" :style="'width:' + progressPercent + '%'" :aria-valuenow="progressPercent" aria-valuemin="0"
+                     aria-valuemax="100"> {{ progressPercent }}%
+                </div>
+              </div>
+            </div>
             <div v-else>
               <slot name="body"/>
             </div>
           </div>
           <div
-            v-if="!waiting"
+            v-if="!waiting && !progress"
             class="modal-footer"
           >
             <slot name="footer"/>
@@ -124,6 +135,17 @@ export default {
     return {
       modal: null,
       waiting: false,
+      progress: false,
+      progressData: null,
+      progressId: null,
+    }
+  },
+  computed: {
+    progressPercent() {
+      if (this.progressData) {
+        return Math.round(this.progressData.current / this.progressData.total * 100);
+      }
+      return 0;
     }
   },
   mounted() {
@@ -141,7 +163,21 @@ export default {
     this.$refs.Modal.removeEventListener('show.bs.modal', this.showEvent);
     this.modal.hide();
   },
+  sockets: {
+    progressUpdate: function (data) {
+      if (data.id === this.progressId) {
+        this.progressData = data;
+      }
+    }
+  },
   methods: {
+    startProgress(progressId) {
+      this.progressId = progressId;
+      this.progress = true;
+    },
+    stopProgress() {
+      this.progress = false;
+    },
     hideEvent() {
       console.log("hide");
       this.$emit('hide');
@@ -169,6 +205,7 @@ export default {
     },
     openModal() {
       this.waiting = false;
+      this.progress = false;
       this.modal.show();
     },
     close() {

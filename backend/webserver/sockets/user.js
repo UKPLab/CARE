@@ -1,14 +1,11 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
-const {genSalt, genPwdHash} = require("../../utils/auth.js");
-const {generateMarvelUsername} = require("../../utils/generator.js");
 const {inject} = require("../../utils/generic");
-const database = require("../../db");
 
 /**
  * Handle user through websocket
  *
- * @author Nils Dycke, Dennis Zyska, Linyin Huang
+ * @author Dennis Zyska, Nils Dycke, Linyin Huang
  * @type {UserSocket}
  */
 module.exports = class UserSocket extends Socket {
@@ -54,15 +51,14 @@ module.exports = class UserSocket extends Socket {
             this.socket.emit("userData", {success: true, users: mappedUsers});
         } else {
             this.socket.emit("userData", {
-                success: false,
-                message: "User rights and argument mismatch",
+                success: false, message: "User rights and argument mismatch",
             });
             this.logger.error("User right and request parameter mismatch");
         }
     }
 
     /**
-     * Get users by their role
+     * Get users by their roleu.status === "duplicate"
      * @param {string} role - The role of the users to fetch. Possible values: "student", "mentor", "all"
      * @returns {string[]} An array of users.
      */
@@ -83,21 +79,39 @@ module.exports = class UserSocket extends Socket {
     /**
      * Retrieves users from a specified moodle course and returns the data as an array.
      *
-     * @param {Object} courseData - The data object containing the course ID, Moodle URL and the API token.
-     * @param {number} courseData.courseID - The ID of the course to fetch users from.
-     * @param {string} courseData.options.apiKey - The API token for the Moodle instance
-     * @param {string} courseData.options.url - The URL of the Moodle instance.
-     * @returns {Promise<Array>} - An array of objects, each containing the following keys: id, firstname, lastname, email, username, roles
+     * @param {Object} options - The data object containing the course ID, Moodle URL and the API token.
+     * @param {number} options.courseID - The ID of the course to fetch users from.
+     * @param {string} options.options.apiKey - The API token for the Moodle instance
+     * @param {string} options.options.apiUrl - The URL of the Moodle instance.
+     * @returns {Promise<*>} - The response from the RPC service
      */
-    async getUsersFromCourse(courseData) {
-        const {courseID} = courseData;
-        const convertedCourseID = Number(courseID);
-        const updatedCourseData = {...courseData, convertedCourseID};
-        try {
-            return await this.server.rpcs["MoodleRPC"].getUsersFromCourse(updatedCourseData);
-        } catch (error) {
-            this.logger.error(error);
-        }
+    async getUsersFromCourse(options) {
+
+        let userTable = await this.server.rpcs["MoodleRPC"].getUsersFromCourse(
+            {
+                options: {
+                    courseID: Number(options.courseID),
+                    apiKey: options.apiKey,
+                    apiUrl: options.apiUrl,
+                }
+            }
+        );
+        userTable = await inject(userTable, (user) => user.id, "extId");
+        userTable = await this.checkUsersExists(userTable);
+
+        return userTable;
+    }
+
+    /**
+     * Check a list of users if they already exist in the database by email
+     * @param data - The data object containing the users to check - at least email key is required
+     * @returns {Promise<Awaited<_.LoDashFp.T|*>[]>} - An array of objects containing the status of the users
+     */
+    async checkUsersExists(data) {
+        const emails = data.map((user) => user.email);
+        const existingEmails = await this.models["user"].filterExistingEmails(emails);
+        const duplicateEmails = existingEmails.map((item) => item.email);
+        return await inject(data, (email) => duplicateEmails.includes(email), "exists", "email");
     }
 
     /**
@@ -124,12 +138,13 @@ module.exports = class UserSocket extends Socket {
 
     /**
      * Bulk create or update users
-     * @param {*} users - Users to be created or updated
-     * @param {Object} roleMap - A role map that maps an external platform roles to CARE roles
-     * @returns {Promise<array>} - A list of created or updated users
+     * @param {Object} data - The data object containing the users and role map
+     * @dataparam {*} users - Users to be created or updated
+     * @dataparam {Object} roleMap - A role map that maps an external platform roles to CARE roles
+     * @returns {Promise<{createdUsers: Array, errors: Array}>} - An object containing the created users and errors
      */
     async bulkCreateUsers(data) {
-        const {users, roleMap} = data;
+        const users = data["users"];
 
         const createdUsers = [];
         const errors = [];
@@ -138,150 +153,90 @@ module.exports = class UserSocket extends Socket {
             const transaction = await this.server.db.sequelize.transaction();
 
             try {
-                let createdUser, password;
-                if (user.status === "new") {
-                    password = uuidv4().replace(/-/g, "").substring(0, 8);
-                    const salt = genSalt();
-                    const pwdHash = await genPwdHash(password, salt);
-
-                    let username;
-                    let retries = 0;
-                    const maxRetries = 5;
-
-                    while (retries < maxRetries) {
-                        username = generateMarvelUsername();
-                        try {
-                            createdUser = await this.models["user"].create(
-                                {
-                                    firstName: user.firstname,
-                                    lastName: user.lastname,
-                                    userName: username,
-                                    email: user.email,
-                                    passwordHash: pwdHash,
-                                    salt,
-                                    moodleId: Number(user.id),
-                                    acceptTerms: false,
-                                    acceptStats: false,
-                                    createdAt: new Date(),
-                                    updatedAt: new Date(),
-                                },
-                                {
-                                    hooks: true,
-                                    individualHooks: true,
-                                    transaction,
-                                    context: {
-                                        userRoles: user.roles,
-                                        roleMap,
-                                    },
-                                }
-                            );
-                            break;
-                        } catch (error) {
-                            if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "userName") {
-                                retries++;
-                            } else {
-                                throw error;
-                            }
-                        }
-                    }
-
-                    if (!createdUser) {
-                        throw new Error("Failed to create user with unique username");
-                    }
-                } else {
-                    await this.models["user"].update(
-                        {
-                            firstName: user.firstname,
-                            lastName: user.lastname,
-                            moodleId: user.id,
+                let createdUser;
+                if (!user.exists) {
+                    createdUser = await this.models["user"].add(user, {
+                        transaction, context: {
+                            userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
                         },
-                        {
-                            where: {email: user.email},
-                            hooks: true,
-                            individualHooks: true,
-                            transaction,
-                            context: {
-                                userRoles: user.roles,
-                                roleMap,
-                            },
-                        }
-                    );
+                    })
 
-                    createdUser = await this.models["user"].findOne({
-                        where: {email: user.email},
-                    });
-                }
-
-                createdUsers.push({
-                    id: createdUser.moodleId,
-                    firstname: createdUser.firstName,
-                    lastname: createdUser.lastName,
-                    username: createdUser.userName,
-                    email: createdUser.email,
-                    roles: user.roles,
-                    password: user.status === "new" ? password : "",
-                    status: user.status,
-                });
-            } catch (error) {
-                if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "email") {
-                    errors.push({
-                        userId: user.id,
-                        message: "duplicate email",
-                    });
                 } else {
+                    const currentUserId = await this.models["user"].getUserIdByEmail(user.email);
+                    if (currentUserId) {
+                        createdUser = await this.models["user"].updateById(currentUserId, {
+                            firstName: user.firstName, lastName: user.lastName, extId: user.extId,
+                        }, {
+                            transaction, context: {
+                                userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
+                            }
+                        });
+                    } else {
+                        errors.push({
+                            email: user.email, message: "User with mail " + user.email + " not found",
+                        });
+                    }
+                }
+
+                if (!createdUser) {
+                    await transaction.rollback();
+                } else {
+                    createdUsers.push({...createdUser, roles: user.roles, exists: user.exists});
+                    await transaction.commit();
+                }
+
+            } catch (error) {
+                try {
+                    if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "email") {
+                        errors.push({
+                            userId: user.id, message: "duplicate email",
+                        });
+                    } else {
+                        errors.push({
+                            userId: user.id, message: error.errors[0].message,
+                        });
+                    }
+                } catch (e) {
                     errors.push({
-                        userId: user.id,
-                        message: error.errors[0].message,
+                        userId: user.id, message: "unknown error",
                     });
                 }
-                this.logger.error("Failed to bulk create user: " + error);
+                this.logger.error("Failed to bulk create user: " + user.email);
+                await transaction.rollback();
             }
+
+            // update frontend progress
+            this.socket.emit("progressUpdate", {
+                id: data["progressId"], current: users.indexOf(user) + 1, total: users.length,
+            });
         }
 
         return {createdUsers, errors};
     }
 
     init() {
-        // Upload moodleIDs, usernames and passwords to Moodle
+        // Upload extIds, usernames and passwords to Moodle
         this.socket.on("userUploadToMoodle", async (moodleData, callback) => {
             try {
                 const {success, data} = await this.uploadDataToMoodle(moodleData);
                 callback({
-                    success,
-                    users: data,
+                    success, users: data,
                 });
             } catch (error) {
                 this.logger.error(error);
                 callback({
-                    success: false,
-                    message: "Failed to upload to Moodle",
+                    success: false, message: "Failed to upload to Moodle",
                 });
             }
         });
 
-        this.socket.on("userGetMoodleData", async (courseData, callback) => {
-            try {
-                const {success, data} = await this.getUsersFromCourse(courseData);
-                callback({
-                    success,
-                    users: data,
-                });
-            } catch (error) {
-                this.logger.error(error);
-                callback({
-                    success: false,
-                    message: "Failed to get users from Moodle",
-                });
-            }
-        });
 
         this.socket.on("userGetData", async (data) => {
             try {
                 await this.sendUserData();
             } catch (e) {
                 this.socket.emit("userData", {
-                    success: false,
-                    message: "Failed to retrieve all users",
+                    success: false, message: "Failed to retrieve all users",
                 });
                 this.logger.error("DB error while loading all users from database" + JSON.stringify(e));
             }
@@ -292,13 +247,11 @@ module.exports = class UserSocket extends Socket {
             try {
                 await this.models["user"].updateUserConsent(this.userId, consentData);
                 callback({
-                    success: true,
-                    message: "Successfully updated user consent!",
+                    success: true, message: "Successfully updated user consent!",
                 });
             } catch (error) {
                 callback({
-                    success: false,
-                    message: "Failed to updated user consent!",
+                    success: false, message: "Failed to updated user consent!",
                 });
                 this.logger.error(error);
             }
@@ -309,14 +262,12 @@ module.exports = class UserSocket extends Socket {
             try {
                 const users = await this.getUsers(role);
                 this.socket.emit("userByRole", {
-                    success: true,
-                    users,
+                    success: true, users,
                 });
             } catch (error) {
                 const errorMsg = "User rights and request parameter mismatch";
                 this.socket.emit("userByRole", {
-                    success: false,
-                    message: errorMsg,
+                    success: false, message: errorMsg,
                 });
                 this.logger.error(errorMsg);
             }
@@ -327,13 +278,11 @@ module.exports = class UserSocket extends Socket {
             try {
                 const user = await this.models["user"].getUserDetails(userId);
                 this.socket.emit("userDetails", {
-                    success: true,
-                    user,
+                    success: true, user,
                 });
             } catch (error) {
                 this.socket.emit("userDetails", {
-                    success: false,
-                    message: "Failed to load user details",
+                    success: false, message: "Failed to load user details",
                 });
                 this.logger.error(error);
             }
@@ -344,13 +293,11 @@ module.exports = class UserSocket extends Socket {
             try {
                 const userRight = await this.models["user"].getUserRight(userId);
                 this.socket.emit("userRight", {
-                    success: true,
-                    userRight,
+                    success: true, userRight,
                 });
             } catch (error) {
                 this.socket.emit("userRight", {
-                    success: false,
-                    message: "Failed to get user right",
+                    success: false, message: "Failed to get user right",
                 });
                 this.logger.error(error);
             }
@@ -362,13 +309,11 @@ module.exports = class UserSocket extends Socket {
             try {
                 await this.models["user"].updateUserDetails(userId, userData);
                 callback({
-                    success: true,
-                    message: "Successfully updated user!",
+                    success: true, message: "Successfully updated user!",
                 });
             } catch (error) {
                 callback({
-                    success: false,
-                    message: "Failed to update user details",
+                    success: false, message: "Failed to update user details",
                 });
                 this.logger.error(error);
             }
@@ -380,62 +325,18 @@ module.exports = class UserSocket extends Socket {
             try {
                 await this.models["user"].resetUserPwd(userId, password);
                 callback({
-                    success: true,
-                    message: "Successfully reset password!",
+                    success: true, message: "Successfully reset password!",
                 });
             } catch (error) {
                 callback({
-                    success: false,
-                    message: "Failed to reset password",
-                });
-                this.logger.error(error);
-            }
-        });
-
-        // Send in users to check against the DB if the users are already in the DB
-        this.socket.on("userCheckDuplicatesByEmail", async (users, callback) => {
-            try {
-                const emails = users.map((user) => user.email);
-                const existingEmails = await this.models["user"].filterExistingEmails(emails);
-                const duplicateEmails = existingEmails.map((item) => item.email);
-                users.forEach((user) => {
-                    user.status = duplicateEmails.includes(user.email) ? "duplicate" : "new";
-                });
-                callback({
-                    success: true,
-                    users,
-                });
-            } catch (error) {
-                callback({
-                    success: false,
-                    message: "Failed to check for duplicate users",
+                    success: false, message: "Failed to reset password",
                 });
                 this.logger.error(error);
             }
         });
 
         this.createSocket("userBulkCreate", this.bulkCreateUsers, {}, false);
-        /*
-        // Bulk create users
-        this.socket.on("userBulkCreate", async (userData, callback) => {
-
-
-          const { users, moodleCareRoleMap } = userData;
-          try {
-            const { createdUsers, errors } = await this.bulkCreateUsers(users, moodleCareRoleMap);
-            callback({
-              success: true,
-              message: "Users successfully created",
-              createdUsers,
-              errors
-            });
-          } catch (error) {
-            this.logger.error(error);
-            callback({
-              success: false,
-              message: "Failed to bulk create users",
-            });
-          }
-        });*/
+        this.createSocket("userMoodleUserGetAll", this.getUsersFromCourse, {}, false);
+        this.createSocket("userCheckExistsByMail", this.checkUsersExists, {}, false);
     }
 };

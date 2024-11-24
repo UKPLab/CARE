@@ -42,10 +42,10 @@ class Moodle:
             
             email = user['email'] if 'email' in user else ''
             user_dict = {
-                'id': user['id'],
-                'firstname': user['firstname'],
-                'lastname': user['lastname'],
-                'username': "",  
+                'extId': user['id'],
+                'firstName': user['firstname'],
+                'lastName': user['lastname'],
+                'userName': "",
                 'email': email,
                 'roles': roles[:-2]  
             }
