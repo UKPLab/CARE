@@ -1,7 +1,7 @@
 <template>
   <BasicModal
     ref="modal"
-    @hide="resetModal"
+    @hide="reset"
   >
     <template #title>
       <span>Add User</span>
@@ -33,16 +33,14 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
-import axios from "axios";
-import getServerURL from "@/assets/serverUrl";
 
 /**
  * Modal for creating a single new user
- * @author: Linyin Huang
+ * @author: Linyin Huang, Dennis Zyska
  */
 export default {
-  name: "UserModal",
-  components: { BasicModal, BasicButton, BasicForm },
+  name: "UserAddModal",
+  components: {BasicModal, BasicButton, BasicForm},
   emits: ["updateUser"],
   data() {
     return {
@@ -92,9 +90,6 @@ export default {
         userName: "",
         email: "",
         password: "",
-        acceptTerms: false,
-        acceptStats: false,
-        acceptDataSharing: false,
         isCreatedByAdmin: true,
       },
     };
@@ -108,7 +103,7 @@ export default {
     open() {
       this.$refs.modal.open();
     },
-    resetModal() {
+    reset() {
       this.formData = {
         ...this.formData,
         firstName: "",
@@ -120,31 +115,25 @@ export default {
     },
     async createUser() {
       if (!this.$refs.form.validate()) return;
-      try {
-        await axios.post(
-          getServerURL() + "/auth/register",
-          { ...this.formData },
-          {
-            validateStatus: function (status) {
-              return status >= 200 && status < 300;
-            },
-          }
-        );
-        this.eventBus.emit("toast", {
-          title: "User Creation Completed",
-          variant: "success",
-          message: "The user creation was successful",
-        });
-        this.$refs.modal.close();
-        this.$emit("updateUser");
-      } catch (err) {
-        this.eventBus.emit("toast", {
-          title: "User Creation Failed",
-          variant: "danger",
-          message:
-            err.response && err.response.data && err.response.data.message ? err.response.data.message : err.message,
-        });
-      }
+      this.$refs.modal.waiting = true;
+
+      this.$socket.emit("userCreate", this.formData, (response) => {
+        if (response.success) {
+          this.eventBus.emit("toast", {
+            title: "User Creation Completed",
+            variant: "success",
+            message: "The user creation was successful",
+          });
+          this.$refs.modal.close();
+        } else {
+          this.$refs.modal.waiting = false;
+          this.eventBus.emit("toast", {
+            title: "User Creation Failed",
+            variant: "danger",
+            message: response.message,
+          });
+        }
+      });
     },
   },
 };
@@ -155,6 +144,7 @@ export default {
   display: flex;
   align-items: center;
   margin: 25px 0;
+
   .form-label {
     flex-shrink: 0;
     margin-bottom: 0;
