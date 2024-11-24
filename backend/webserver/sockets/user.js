@@ -40,6 +40,23 @@ module.exports = class UserSocket extends Socket {
     }
 
     /**
+     * Add a user to the database
+     * @param data
+     * @param options
+     * @returns {Promise<*>}
+     * @throws {Error} - If the user is not an admin
+     */
+    async createUser(data, options) {
+        if (!this.isAdmin()) {
+            throw new Error("User rights and argument mismatch");
+        }
+        const user = await this.models["user"].add(data, {transaction: options.transaction});
+        // TODO: update frontend user data, don't overwrite it was is currently done (see also refreshState in store/utils.js)
+        //this.socket.emit("userData", {success: true, users: [user]});
+        return user;
+    }
+
+    /**
      * Send all user data to the client (only for admins)
      * @return {Promise<void>}
      */
@@ -338,5 +355,6 @@ module.exports = class UserSocket extends Socket {
         this.createSocket("userBulkCreate", this.bulkCreateUsers, {}, false);
         this.createSocket("userMoodleUserGetAll", this.getUsersFromCourse, {}, false);
         this.createSocket("userCheckExistsByMail", this.checkUsersExists, {}, false);
+        this.createSocket("userCreate", this.createUser, {}, true);
     }
 };
