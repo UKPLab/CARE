@@ -31,9 +31,6 @@ module.exports = class UserSocket extends Socket {
      */
     minimalFields(user) {
         let include = ["id", "userName"];
-        if (this.isAdmin()) {
-            include.push("lastLoginAt", "acceptStats");
-        }
         const entries = Object.entries(user);
         const filtered = entries.filter(([k, v]) => include.indexOf(k) !== -1);
         return Object.fromEntries(filtered);
@@ -47,7 +44,7 @@ module.exports = class UserSocket extends Socket {
      * @throws {Error} - If the user is not an admin
      */
     async createUser(data, options) {
-        if (!this.isAdmin()) {
+        if (!(await this.isAdmin())) {
             throw new Error("User rights and argument mismatch");
         }
         const user = await this.models["user"].add(data, {transaction: options.transaction});
@@ -61,7 +58,7 @@ module.exports = class UserSocket extends Socket {
      * @return {Promise<void>}
      */
     async sendUserData() {
-        if (this.isAdmin()) {
+        if (await this.isAdmin()) {
             const users = await this.models["user"].getAll();
             const mappedUsers = users.map((x) => this.minimalFields(x));
 

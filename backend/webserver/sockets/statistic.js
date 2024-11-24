@@ -20,7 +20,7 @@ module.exports = class StatisticSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendStatsByUser(userId) {
-        if (this.isAdmin()) {
+        if (await this.isAdmin()) {
             if ((await this.models["user"].getById(userId)).acceptStats) {
                 const stats = await this.models['statistic'].getAllByKey('userId', userId);
                 this.socket.emit("statsDataByUser", {success: true, userId: userId, statistics: stats});
@@ -41,7 +41,7 @@ module.exports = class StatisticSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendStats() {
-        if (this.isAdmin()) {
+        if (await this.isAdmin()) {
             const stats = await this.models['statistic'].getAll();
             const users = [...new Set(stats.map(stat => stat.userId))];
 

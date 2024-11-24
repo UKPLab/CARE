@@ -22,7 +22,7 @@ module.exports = class AssignmentSocket extends Socket {
    */
   async getAssignmentInfosFromUser() {
     try {
-      if (this.isAdmin()) {
+      if (await this.isAdmin()) {
         const [documentUserIds, matchedUsers, users, roleIdMap] = await Promise.all([
           this.models["document"].findAll({
             where: { readyForReview: true },

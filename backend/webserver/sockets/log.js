@@ -37,7 +37,7 @@ module.exports = class LoggerSocket extends Socket {
 
         this.socket.on("logGetAll", async (data) => {
             try {
-                if (this.isAdmin()) {
+                if (await this.isAdmin()) {
                     this.socket.emit("logAll", await this.updateCreatorName(await this.models['log'].getLogs(data)));
                 }
             } catch (err) {

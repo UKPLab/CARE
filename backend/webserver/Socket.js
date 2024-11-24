@@ -153,7 +153,7 @@ module.exports = class Socket {
      * This can be problematic if user roles change during the login session,
      * as the changes won't be automatically reflected in the cache.
      *
-     * @returns {integer[]} An array of user role Ids.
+     * @returns {Promise<number[]>} An array of user role IDs.
      */
     async getUserRoles() {
         try {
@@ -180,7 +180,7 @@ module.exports = class Socket {
      * This can be problematic if the user's admin status changes
      * during their session, as the cached value won't automatically update.
      *
-     * @returns {boolean} True if the user is an admin.
+     * @returns {Promise<boolean>} True if the user is an admin.
      */
     async isAdmin() {
         try {
@@ -204,27 +204,23 @@ module.exports = class Socket {
     /**
      * Check if the user has this right
      * @param {string} right The name of the right to check
-     * @returns {boolean} True if the user has the specified right
+     * @returns {Promise<boolean>} If the user has access with this right
      */
     async hasAccess(right) {
-        try {
-            // admin has full rights, so return true directly
-            if (this.isAdmin()) return true;
-            const roleIds = await this.getUserRoles();
-            const hasRight = await Promise.all(
-                roleIds.map(async (roleId) => {
-                    const matchedRoles = await this.models["role_right_matching"].findAll({
-                        where: {userRoleId: roleId},
-                        raw: true,
-                    });
-                    return matchedRoles.some((matchedRole) => matchedRole.userRightName === right);
-                })
-            ).then((results) => results.some((r) => Boolean(r)));
+        // admin has full rights, so return true directly
+        if (await this.isAdmin()) return true;
+        const roleIds = await this.getUserRoles();
+        const hasRight = await Promise.all(
+            roleIds.map(async (roleId) => {
+                const matchedRoles = await this.models["role_right_matching"].findAll({
+                    where: {userRoleId: roleId},
+                    raw: true,
+                });
+                return matchedRoles.some((matchedRole) => matchedRole.userRightName === right);
+            })
+        ).then((results) => results.some((r) => Boolean(r)));
 
-            return hasRight;
-        } catch (error) {
-            this.logger.error(err);
-        }
+        return hasRight;
     }
 
     /**
@@ -232,8 +228,8 @@ module.exports = class Socket {
      * @param {number} userId The userId to check
      * @return {boolean}
      */
-    checkUserAccess(userId) {
-        if (this.isAdmin()) {
+    async checkUserAccess(userId) {
+        if (await this.isAdmin()) {
             return true;
         }
         if (this.userId !== userId) {
@@ -336,21 +332,20 @@ module.exports = class Socket {
     ) {
         try {
 
-            const accessRights = this.server.db.models[table]['accessMap'].filter(a => this.hasAccess(a.right));
-            console.log(accessRights);
+            const accessRights = this.server.db.models[table]['accessMap'].filter(async a => await this.hasAccess(a.right));
+
             if (!this.autoTables.includes(table) && accessRights.length === 0) {
                 this.logger.error("No access rights for autotable: " + table);
                 return;
             }
 
             let data = [];
-            if (accessRights.length > 0 || this.isAdmin()) {
+            if (accessRights.length > 0 || await this.isAdmin()) {
                 const attributes = [...new Set(accessRights.flatMap(a => a.columns))];
                 data = await this.models[table].getAutoTable(filter, userId, attributes);
             } else {
                 data = await this.models[table].getAutoTable(filter, this.userId);
             }
-            console.log(data);
 
             if (includeForeignData) {
                 const foreignKeys = await this.server.db.sequelize
@@ -413,9 +408,6 @@ module.exports = class Socket {
                     }], [], userId, includeForeignData, includeFieldTables);
                 }
             }
-
-
-            console.log("TABLES", table);
 
             this.emit(table + "Refresh", data, true);
         } catch (err) {
