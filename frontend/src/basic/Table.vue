@@ -270,8 +270,8 @@ export default {
         "table-borderless": this.options && this.options.borderless,
         "table-sm": this.options && this.options.small,
       },
-      sortColumn: null,
-      sortDirection: "ASC",
+      sortColumn: (this.options && this.options.sort && this.options.sort.column) ? this.options.sort.column : null,
+      sortDirection: (this.options && this.options.sort && this.options.sort.order) ? this.options.sort.order : "ASC",
       currentPage: 1,
       selectableRows: this.options && this.options.selectableRows,
       currentData: [],
@@ -398,7 +398,8 @@ export default {
     },
     modelValue: {
       handler() {
-        this.currentData = this.modelValue;
+        this.currentData = this.updateValues(this.modelValue);
+
       },
       deep: true,
     },
@@ -417,7 +418,7 @@ export default {
     },
   },
   mounted() {
-    this.currentData = this.modelValue;
+    this.currentData = this.updateValues(this.modelValue);
 
     if (this.options && this.options.pagination) {
       if (typeof this.options.pagination === "object") {
@@ -438,8 +439,12 @@ export default {
           [c.key]: Object.assign({}, ...c.filter.map((f) => ({[f.key]: false}))),
         }))
     );
+
   },
   methods: {
+    updateValues(data) {
+      return data;
+    },
     sort(column) {
       if (this.sortColumn && this.sortColumn === column) {
         this.sortDirection = this.sortDirection === "ASC" ? "DESC" : "ASC";
