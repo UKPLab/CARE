@@ -1,6 +1,5 @@
 <template>
   <Card title="Review Documents">
-    <!-- Header Starts -->
     <template #headerElements>
       <BasicButton
         class="btn-secondary btn-sm me-1"
@@ -12,29 +11,24 @@
         class="btn-primary btn-sm"
         title="Import via Moodle"
         text="Import via Moodle"
-        @click="$refs.importModal.openModal()"
+        @click="$refs.importModal.open()"
       />
     </template>
-    <!-- Header Ends -->
-    <!-- Body Starts -->
     <template #body>
       <BasicTable
         :columns="tableColumns"
-        :data="documents"
+        :data="documentsTable"
         :options="tableOptions"
         @action="action"
       />
     </template>
-    <!-- Body Ends -->
   </Card>
   <UploadModal
     ref="uploadModal"
-    @update-documents="fetchReviewDocuments"
   />
-  <ConfirmModal ref="deleteConf" />
+  <ConfirmModal ref="deleteConf"/>
   <ImportModal
     ref="importModal"
-    @update-documents="fetchReviewDocuments"
   />
 </template>
 
@@ -52,11 +46,21 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  * This component loads the documents for review from the server
  * and provide two ways to import documents: one is via manually importing;
  * the other is via importing from Moodle API.
- * @author Linyin Huang
+ * @author Linyin Huang, Dennis Zyska
  */
 export default {
   name: "ReviewDocuments",
-  fetchData: ["document", "study"],
+  fetchData: [{
+    table: "document",
+    filter: [{
+      key: "readyForReview",
+      value: true
+    }],
+    include: [{
+      table: "user",
+      by: "userId",
+    }]
+  }],
   components: {
     UploadModal,
     ImportModal,
@@ -67,7 +71,6 @@ export default {
   },
   data() {
     return {
-      documents: [],
       tableOptions: {
         striped: true,
         hover: true,
@@ -77,56 +80,55 @@ export default {
         pagination: 10,
       },
       tableColumns: [
-        { name: "Title", key: "name" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Session Count", key: "sessionCount" },
-        { name: "Created At", key: "createdAt" },
-        { name: "Type", key: "type" },
-        { name: "Manage", key: "manage", type: "button-group" },
+        {name: "Title", key: "name"},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
+        {name: "Created At", key: "createdAt"},
+        {name: "Type", key: "type"},
+        {name: "Manage", key: "manage", type: "button-group"},
       ],
     };
   },
-  mounted() {
-    this.fetchReviewDocuments();
-  },
-  methods: {
-    fetchReviewDocuments() {
-      this.$socket.emit("documentGetReviews", (res) => {
-        if (res.success) {
-          const { documents } = res;
-          this.documents = documents.map((d) => {
-            let newD = { ...d };
-            newD.type = d.type === 0 ? "PDF" : "HTML";
-            newD.manage = [
-              {
-                icon: "box-arrow-in-right",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  },
-                },
-                title: "Access document...",
-                action: "accessDoc",
+  computed: {
+    documents() {
+      return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
+    },
+    documentsTable() {
+      return this.documents.map((d) => {
+        let newD = {...d};
+        newD.type = d.type === 0 ? "PDF" : "HTML";
+        const user = this.$store.getters["admin/user/get"](d.userId)
+        newD.firstName = (user) ? user.firstName : "Unknown";
+        newD.lastName = (user) ? user.lastName : "Unknown";
+        newD.manage = [
+          {
+            icon: "box-arrow-in-right",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
               },
-              {
-                icon: "trash",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  },
-                },
-                title: "Delete document...",
-                action: "deleteDoc",
+            },
+            title: "Access document...",
+            action: "accessDoc",
+          },
+          {
+            icon: "trash",
+            options: {
+              iconOnly: true,
+              specifiers: {
+                "btn-outline-secondary": true,
               },
-            ];
-            return newD;
-          });
-        }
+            },
+            title: "Delete document...",
+            action: "deleteDoc",
+          },
+        ];
+        return newD;
       });
     },
+  },
+  methods: {
     action(data) {
       switch (data.action) {
         case "accessDoc":
@@ -152,13 +154,23 @@ export default {
       this.$refs.deleteConf.open("Delete Document", "Are you sure you want to delete the document?", warning, (val) => {
         if (val) {
           this.$socket.emit("documentUpdate", {
-            documentId: row.id,
+            id: row.id,
             deleted: true,
           }, (res) => {
-            if(res) {
-              this.fetchReviewDocuments();
+            if (res.success) {
+              this.eventBus.emit("toast", {
+                title: "Document deleted",
+                message: "The document has been deleted",
+                type: "success",
+              });
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Failed to delete document",
+                message: res.message,
+                type: "error",
+              });
             }
-          } );
+          });
         }
       });
     },

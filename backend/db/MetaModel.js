@@ -77,17 +77,27 @@ module.exports = class MetaModel extends Model {
     /**
      * Get all db entries for auto table (filtered)
      * @param userId
-     * @param filterIds filter IDs in Database
-     * @param includeDraft includes rows with column draft is true
+     * @param filterList list of filter objects
      * @return {Promise<MetaModel[]|Object|undefined>}
      */
-    static async getAutoTable(userId = null, filterIds = null, includeDraft = false) {
-        if (this.publicTable && !filterIds && !userId) {
+    static async getAutoTable(filterList = [], userId = null) {
+        if (this.publicTable && filterList.length === 0 && !userId) {
             return await this.getAll();
         } else {
             let filter = {}
-            if (!filterIds) {
-                filter['deleted'] = false;
+
+            for (let filterItem of filterList) {
+                if (filterItem.key in this.getAttributes() && filterItem.key !== 'userId') {
+                    if (filterItem.values && filterItem.values.length > 0) {
+                        filter[filterItem.key] = {[Op.or]: filterItem.values};
+                    } else {
+                        if (filterItem.type === "not") {
+                            filter[filterItem.key] = {[Op.not]: filterItem.value};
+                        } else {
+                            filter[filterItem.key] = filterItem.value;
+                        }
+                    }
+                }
             }
             if (userId && 'userId' in this.getAttributes()) {
                 if ("public" in this.getAttributes()) {
@@ -95,14 +105,6 @@ module.exports = class MetaModel extends Model {
                 } else {
                     filter['userId'] = userId;
                 }
-            }
-            if (filterIds !== null) {
-                filter['id'] = {
-                    [Op.or]: filterIds
-                }
-            }
-            if ("draft" in this.getAttributes()) {
-                filter['draft'] = includeDraft;
             }
             return await this.findAll({where: filter, raw: true});
         }
@@ -114,7 +116,8 @@ module.exports = class MetaModel extends Model {
      * @param {string[]} exclude - an array of attributes to exclude from the result
      * @return {Promise<object|undefined>}
      */
-    static async getAll(includeDeleted = false, exclude = []) {
+    static
+    async getAll(includeDeleted = false, exclude = []) {
         try {
             if (includeDeleted) {
                 return await this.findAll({
@@ -170,7 +173,8 @@ module.exports = class MetaModel extends Model {
      * @param {Object} [options={}] - Optional Sequelize query options. See: https://sequelize.org/api/v7/interfaces/_sequelize_core.index.queryoptions
      * @return {Promise<object|undefined>}
      */
-    static async add(data, options = {}) {
+    static
+    async add(data, options = {}) {
         try {
             const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt'].includes(key));
 
@@ -193,7 +197,8 @@ module.exports = class MetaModel extends Model {
      * @param {Object} [options={}] - Optional Sequelize query options
      * @return {Promise<object|undefined>}
      */
-    static async deleteById(id, options = {}) {
+    static
+    async deleteById(id, options = {}) {
         return await this.updateById(id, {deleted: true}, options);
     }
 
@@ -204,7 +209,8 @@ module.exports = class MetaModel extends Model {
      * @param {Object} [additionalOptions={}] - Optional Sequelize query options. See: https://sequelize.org/api/v7/interfaces/_sequelize_core.index.queryoptions
      * @return {Promise<*>}
      */
-    static async updateById(id, data, additionalOptions = {}) {
+    static
+    async updateById(id, data, additionalOptions = {}) {
         try {
             const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
 

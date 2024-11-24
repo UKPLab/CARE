@@ -162,14 +162,15 @@ module.exports = (sequelize, DataTypes) => {
             hooks: {
                 afterUpdate: async (studyStep, options) => {
                     // cascade deletion for documents created during study creation
-                    if (studyStep._previousDataValues.deleted === false && studyStep.deleted === true) {
+                    //Note: can't not just delete the document, because it could be used in other studies!
+                    /*if (studyStep._previousDataValues.deleted === false && studyStep.deleted === true) {
                         if (studyStep.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR) { // only for html documents that we created
                             const document = await sequelize.models.document.getById(studyStep.documentId);
                             if (document) {
                                 await sequelize.models.document.deleteById(document.id, {transaction: options.transaction});
                             }
                         }
-                    }
+                    }*/
                 }
             }
 

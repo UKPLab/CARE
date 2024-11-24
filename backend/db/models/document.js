@@ -69,7 +69,7 @@ module.exports = (sequelize, DataTypes) => {
 
             // Create a new delta file on disk for HTML documents
             if (newDocument.type === this.docTypes.DOC_TYPE_HTML) {
-                fs.writeFileSync(path.join(UPLOAD_PATH, `${newDocument.hash}.delta.json`), JSON.stringify({}));
+                fs.writeFileSync(path.join(UPLOAD_PATH, `${newDocument.hash}.delta`), JSON.stringify({}));
             }
             // TODO: what if transaction failes? --> need to delete the file again
 
@@ -112,7 +112,7 @@ module.exports = (sequelize, DataTypes) => {
                     reviewReadyDocuments.map(async (doc) => {
                         // Find associated studyIds for this document
                         const associatedStudies = await this.sequelize.models["study_step"].findAll({
-                            where: { documentId: doc.id },
+                            where: {documentId: doc.id},
                             attributes: ["studyId"],
                             raw: true,
                         });
@@ -121,12 +121,12 @@ module.exports = (sequelize, DataTypes) => {
 
                         // Count the number of study sessions for these studyIds
                         const sessionCount = await this.sequelize.models["study_session"].count({
-                            where: { studyId: studyIds },
+                            where: {studyId: studyIds},
                         });
 
                         // Get the document owner's information
                         const owner = await this.sequelize.models["user"].findOne({
-                            where: { id: doc.userId },
+                            where: {id: doc.userId},
                             attributes: ["firstName", "lastName"],
                             raw: true,
                         });
@@ -163,7 +163,45 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize: sequelize,
         modelName: 'document',
-        tableName: 'document'
+        tableName: 'document',
+        hooks: {
+            afterUpdate: async (document, options) => {
+                // If the document is deleted, we should also delete the associated db columns
+                if (document.deleted && !document._previousDataValues.deleted) {
+                    // delete associated studies
+                    const studies = await sequelize.models.study_step.getAllByKey("documentId", document.id);
+                    const uniqueStudyIds = [...new Set(studies.map(study => study.studyId))];
+                    for (const studyId of uniqueStudyIds) {
+                        await sequelize.models["study"].deleteById(studyId);
+                    }
+
+                    // delete associated annotations and comments
+                    if (document.type === Document.docTypes.DOC_TYPE_HTML) {
+                        // get document edits
+                        const documentEdits = await sequelize.models.document_edit.getAllByKey("documentId", document.id);
+                        const uniqueDocumentEditIds = [...new Set(documentEdits.map(documentEdit => documentEdit.id))];
+                        for (const documentEditId of uniqueDocumentEditIds) {
+                            await sequelize.models["document_edit"].deleteById(documentEditId);
+                        }
+
+                    } else if (document.type === Document.docTypes.DOC_TYPE_PDF) {
+                        // get unique annotations and comments ids
+                        const annotations = await sequelize.models.annotation.getAllByKey("documentId", document.id);
+                        const uniqueAnnotationIds = [...new Set(annotations.map(annotation => annotation.id))];
+                        for (const annotationId of uniqueAnnotationIds) {
+                            await sequelize.models["annotation"].deleteById(annotationId);
+                        }
+
+                        const comments = await sequelize.models["comment"].getAllByKey("documentId", document.id);
+                        const uniqueCommentIds = [...new Set(comments.map(comment => comment.id))];
+                        for (const commentId of uniqueCommentIds) {
+                            await sequelize.models["comment"].deleteById(commentId);
+                        }
+
+                    }
+                }
+            }
+        }
     });
     return Document;
 };

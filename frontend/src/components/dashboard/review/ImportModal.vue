@@ -1,7 +1,8 @@
 <template>
   <BasicModal
     ref="modal"
-    @hide="resetModal"
+    @hide="reset"
+    lg
   >
     <template #title>
       <span>Import Moodle Assignments</span>
@@ -22,10 +23,9 @@
       <div class="content-container">
         <!-- Step0: Moodle Information -->
         <div v-if="currentStep === 0">
-          <BasicForm
-            ref="form"
-            v-model="moodleData"
-            :fields="formFields"
+          <MoodleOptions
+            v-model="moodleOptions" ref="moodleOptionsForm"
+            with-assignment-id
           />
         </div>
         <!-- Step1: Preview -->
@@ -34,10 +34,10 @@
           class="preview-table-container"
         >
           <BasicTable
+            v-model="selectedAssignments"
             :data="assignments"
             :columns="tableColumns"
             :options="tableOptions"
-            @row-selection="(asg) => (selectedAssignments = asg)"
           />
         </div>
         <!-- Step2:  -->
@@ -46,7 +46,7 @@
           class="confirm-container"
         >
           <p>
-            Are you sure you want to import <strong>{{ selectedAssignments.length }}</strong> {{message}}?
+            Are you sure you want to import <strong>{{ selectedAssignments.length }}</strong> {{ message }}?
           </p>
         </div>
         <!-- Step3:  -->
@@ -55,7 +55,7 @@
           class="result-container"
         >
           <p>
-            Successfully imported <strong>{{ importedAssignments.length }}</strong> {{message}}. <br />
+            Successfully imported <strong>{{ importedAssignments.length }}</strong> {{ message }}. <br/>
             The modal can be closed now.
           </p>
         </div>
@@ -89,56 +89,21 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
-import BasicForm from "@/basic/Form.vue";
+import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
 
 /**
  * Modal for importing students' submission for a specific assignment from a Moodle course
- * @author: Linyin Huang
+ * @author: Dennis Zyska, Linyin Huang
  */
 export default {
   name: "ImportModal",
-  components: { BasicModal, BasicButton, BasicTable, BasicForm },
-  emits: ["updateDocuments"],
+  components: {MoodleOptions, BasicModal, BasicButton, BasicTable},
+  fetchData: [{table: "user", filter: [{type: "not", key: "extId", value: null}]}],
   data() {
     return {
       currentStep: 0,
-      steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }],
-      moodleData: {
-        url: "",
-        apiKey: "",
-        courseID: "",
-        assignmentID: "",
-      },
-      formFields: [
-        {
-          key: "courseID",
-          label: "Course ID:",
-          type: "text",
-          required: true,
-          placeholder: "course-id-placeholder",
-        },
-        {
-          key: "apiKey",
-          label: "Moodle API Key:",
-          type: "text",
-          required: true,
-          placeholder: "api-key-placeholder",
-        },
-        {
-          key: "url",
-          label: "Moodle URL:",
-          type: "text",
-          required: true,
-          placeholder: "https://example.moodle.com",
-        },
-        {
-          key: "assignmentID",
-          label: "Assignment ID:",
-          type: "text",
-          required: true,
-          placeholder: "assignment-id-placeholder",
-        },
-      ],
+      steps: [{title: "Moodle"}, {title: "Preview"}, {title: "Confirm"}, {title: "Result"}],
+      moodleOptions: {},
       tableOptions: {
         striped: true,
         hover: true,
@@ -148,20 +113,11 @@ export default {
         selectableRows: true,
       },
       tableColumns: [
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "File Name", key: "fileName" },
-        {
-          name: "File Type",
-          key: "type",
-          width: "1",
-          filter: [
-            { key: "pdf", name: "PDF" },
-            { key: "other", name: "Other" },
-          ],
-        },
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
+        {name: "File Name", key: "fileName"},
       ],
-      assignments: [],
+      downloadedAssignments: [],
       selectedAssignments: [],
       importedAssignments: [],
     };
@@ -169,8 +125,8 @@ export default {
   computed: {
     isDisabled() {
       if (this.currentStep === 0) {
-        const { courseID, url, apiKey, assignmentID } = this.moodleData;
-        return !courseID || !url || !apiKey || !assignmentID;
+        const {courseID, apiUrl, apiKey, assignmentID} = this.moodleOptions;
+        return !courseID || !apiUrl || !apiKey || !assignmentID;
       }
       if (this.currentStep === 1) {
         return !this.selectedAssignments.length > 0;
@@ -181,28 +137,50 @@ export default {
       return false;
     },
     message() {
-      if(this.currentStep === 2) {
+      if (this.currentStep === 2) {
         return this.selectedAssignments.length > 1 ? "assignments" : "assignment";
       }
-      if(this.currentStep === 3) {
+      if (this.currentStep === 3) {
         return this.importedAssignments.length > 1 ? "assignments" : "assignment";
       }
       return "assignments";
     },
+    users() {
+      return this.$store.getters["admin/user/getFiltered"]((u) => u.extId !== null);
+    },
+    usersExtIds() {
+      return this.users.map((u) => u.extId);
+    },
+    userAssignments() {
+      return this.downloadedAssignments.filter((a) => a['submissionURLs'].length > 0 && this.usersExtIds.includes(a["userid"]));
+    },
+    assignments() {
+      const submission_files = this.userAssignments.flatMap(obj => obj["submissionURLs"].map(subItem => ({
+        ...subItem,
+        extId: obj["userid"]
+      })))
+      return submission_files.filter(a => new URL(a['fileurl']).pathname.toLowerCase().endsWith(".pdf")).map((a) => {
+        const user = this.users.find((u) => u.extId === a.extId);
+        return {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          userId: user.id,
+          fileUrl: a['fileurl'],
+          fileName: new URL(a['fileurl']).pathname.split('/').pop(),
+        };
+      });
+    }
   },
   methods: {
-    openModal() {
+    open() {
       this.$refs.modal.open();
     },
-    resetModal() {
+    reset() {
       this.currentStep = 0;
-      this.assignments = [];
       this.selectedAssignments = [];
       if (this.importedAssignments.length > 0) {
         this.importedAssignments = [];
-        this.$emit("updateDocuments");
       }
-      this.eventBus.emit("resetFormField");
     },
     prevStep() {
       if (this.currentStep > 0) {
@@ -211,8 +189,6 @@ export default {
     },
     nextStep() {
       if (this.currentStep >= 3) return;
-
-      this.$refs.modal.waiting = true;
 
       switch (this.currentStep) {
         case 0:
@@ -228,41 +204,35 @@ export default {
       this.currentStep++;
     },
     handleStepZero() {
-      if (!this.$refs.form.validate()) return;
-      const { courseID, assignmentID, apiKey, url } = this.moodleData;
-      const options = { apiKey, url };
-      this.$socket.emit("documentGetMoodleData", { courseID, assignmentID, options }, (res) => {
+      if (!this.$refs.moodleOptionsForm.validate()) return;
+      this.$refs.modal.waiting = true;
+      this.$socket.emit("documentGetMoodleSubmissions", {options: this.moodleOptions}, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
-          const { assignments } = res;
-          this.assignments = assignments.map(({ type, ...user }) => ({
-            type,
-            ...user,
-            isDisabled: type !== "pdf",
-          }));
+          this.downloadedAssignments = res['data'];
         } else {
+          this.currentStep = 0;
           this.eventBus.emit("toast", {
             title: "Failed to get student assignments from Moodle",
-            message: "Please contact CARE staff to resolve the issue",
+            message: res.message,
             type: "error",
           });
         }
       });
     },
     handleStepTwo() {
-      const { apiKey, url } = this.moodleData;
-      const options = { apiKey, url };
-      const files = this.selectedAssignments.map(({ userId, fileName, fileUrl }) => ({ userId, fileName, fileUrl }));
-      const data = { options, files };
-      this.$socket.emit("uploadMoodleSubmission", data, (res) => {
-        this.$refs.modal.waiting = false;
+      this.$socket.emit("documentDownloadMoodleSubmissions", {
+        files: this.selectedAssignments,
+        options: this.moodleOptions,
+        progressId: this.$refs.modal.startProgress(),
+      }, (res) => {
+        this.$refs.modal.stopProgress();
         if (res.success) {
-          const { results } = res;
-          this.importedAssignments = results;
+          this.importedAssignments = res["data"];
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to import submission from Moodle",
-            message: "Please contact CARE staff to resolve the issue",
+            message: res.message,
             type: "error",
           });
         }
@@ -279,6 +249,7 @@ export default {
   justify-content: space-between;
   margin-bottom: 1.25rem;
   position: relative;
+
   &:after {
     content: "";
     position: absolute;
@@ -294,6 +265,7 @@ export default {
   z-index: 1;
   background-color: white;
   padding: 0 5px;
+
   &:before {
     --dimension: 30px;
     content: attr(data-index);
@@ -306,9 +278,11 @@ export default {
     justify-content: center;
     border: 1px solid #6c6b6b;
   }
+
   &:first-child {
     padding-left: 0;
   }
+
   &:last-child {
     padding-right: 0;
   }
@@ -317,6 +291,7 @@ export default {
 .stepper div.active {
   --btn-color: #0d6efd;
   border-color: var(--btn-color);
+
   &:before {
     color: white;
     background-color: var(--btn-color);
@@ -346,6 +321,7 @@ export default {
 
 .link-container {
   margin-top: 15px;
+
   button:first-child {
     margin-right: 0.5rem;
   }

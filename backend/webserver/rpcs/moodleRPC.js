@@ -58,8 +58,8 @@ module.exports = class MoodleRPC extends RPC {
 
     /**
      * Retrieves users from a specified assignemtn in a moodle course and returns the data as an array.
-     * 
-     * WARNING: This method only works, if at least one submission has been made to the assignment. 
+     *
+     * WARNING: This method only works, if at least one submission has been made to the assignment.
      * If you need to use it before any students have submitted, you can submit a dummy file to the assignment.
      *
      * @param {Object} data - The data object containing the course ID, assignment ID, Moodle URL and the API token.
@@ -94,11 +94,8 @@ module.exports = class MoodleRPC extends RPC {
      * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
      */
     async getSubmissionInfosFromAssignment(data) {
-        try {
-            return this.request("getSubmissionInfosFromAssignment", data);
-        } catch (err) {
-            throw err;
-        }
+        const results = await this.request("getSubmissionInfosFromAssignment", data);
+        return results['data'];
     }
 
     /**
@@ -108,12 +105,12 @@ module.exports = class MoodleRPC extends RPC {
      * @returns {Promise<Object>} The submission file data in binary format.
      * @throws {Error} If the RPC service returns a failure response or an error occurs during the process.
      */
-    async downloadSubmissionsFromUser(data) {
-        try {
-            return this.request("downloadSubmissionsFromUser", data);
-        } catch (err) {
-            throw err;
+    async downloadSubmissionsFromUrl(data) {
+        const response = await this.request("downloadSubmissionsFromUrl", data);
+        if (!response.success) {
+            throw new Error(response.message);
         }
+        return response['data'];
     }
 
     /**

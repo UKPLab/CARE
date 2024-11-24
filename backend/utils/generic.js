@@ -31,12 +31,12 @@ exports.inject = async function inject(data, func, targetName, key = null) {
 
     return Promise.all(
       data.map(async (x) => {
-        if (!x[key]) { // If the user ID is not present, return the object as is
+        if (!x[key]) { // If the key is not present, return the object as is
           return x;
         } else {
           return {
             ...x,
-            [targetName]: (key) ? await func(x[key]): await func(x),
+            [targetName]: await func(x[key]),
           };
         }
       })

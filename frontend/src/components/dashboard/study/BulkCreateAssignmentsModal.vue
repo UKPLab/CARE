@@ -1,5 +1,5 @@
 <template>
-  <BasicModal ref="modal" @hide="resetModal" xl>
+  <BasicModal ref="modal" @hide="reset" xl>
     <template #title>
       <span>Bulk Create Assignments</span>
     </template>
@@ -227,7 +227,7 @@ export default {
       this.handleStepZero()
 
     },
-    resetModal() {
+    reset() {
       this.hiwiToggleField = []
       this.hiwiValues = []
       this.currentStep = 0;
