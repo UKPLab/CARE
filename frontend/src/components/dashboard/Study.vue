@@ -12,19 +12,18 @@
           v-if="canAddBulkAssignments"
           class="btn-secondary btn-sm me-1"
           title="Add Bulk Assignments"
-          :style="{ margin: '10px 10px' }"
-          @click="addBulkAssignment()"
+          @click="addBulkAssignment"
         />
         <BasicButton
-          v-if="canAddBulkAssignments"
+          v-if="canAddSingleAssignments"
           class="btn-secondary btn-sm me-1"
           title="Add Single Assignment"
-          @click="addSingleAssignment()"
+          @click="addSingleAssignment"
         />
         <BasicButton
           class="btn btn-primary btn-sm"
           title="Add"
-          @click="add()"
+          @click="add"
         />
       </template>
       <template #body>
@@ -56,14 +55,30 @@ import CreateSingleAssignmentModal from "./study/CreateSingleAssignmentModal.vue
  */
 export default {
   name: "DashboardStudy",
-  components: {Card, BasicTable, StudyModal, StudySessionModal, BasicButton, ConfirmModal, BulkCreateAssignmentsModal, CreateSingleAssignmentModal},
+  components: {
+    Card,
+    BasicTable,
+    StudyModal,
+    StudySessionModal,
+    BasicButton,
+    ConfirmModal,
+    BulkCreateAssignmentsModal,
+    CreateSingleAssignmentModal
+  },
   inject: {
     acceptStats: {
       default: () => false
     }
   },
   props: {},
-  fetchData: ['study','study_session','workflow','workflow_step','study_step'],
+  fetchData: [
+    {
+      table: 'study',
+      include: [
+        {table: "user", by: "userId"}
+      ]
+    },
+    'study_session', 'workflow', 'workflow_step', 'study_step'],
   data() {
     return {
       options: {
@@ -74,23 +89,113 @@ export default {
         small: false,
         pagination: 10,
       },
-      columns: [
+    }
+  },
+  computed: {
+    studies() {
+      return this.$store.getters["table/study/getAll"];
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    buttons() {
+      return [
+        {
+          icon: "pencil-square",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Edit study",
+          action: "editStudy",
+        },
+        {
+          icon: "trash",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Delete study",
+          action: "deleteStudy",
+        },
+        {
+          icon: "box-arrow-in-right",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Open study",
+          action: "openStudy",
+        },
+        {
+          icon: "link-45deg",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Copy link to study",
+          action: "linkStudy",
+        },
+        {
+          icon: "card-list",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Inspect sessions",
+          action: "inspectSessions",
+        },
+        {
+          icon: "x-octagon",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Close study",
+          action: "closeStudy"
+        }
+      ];
+    },
+    columns() {
+      let cols = [
         {name: "Name", key: "name"},
-        {name: "Start", key: "start", sortable: true},
-        {name: "End", key: "end", sortable: true},
+        {
+          name: "Status",
+          key: "state",
+          sortable: true,
+          type: "badge",
+          typeOptions: {
+            keyMapping: {
+              "not started": "Not started",
+              "closed": "Closed",
+              "running": "Running",
+              "ended": "Ended",
+
+            },
+            classMapping: {
+              "not started": "bg-warning",
+              "closed": "bg-secondary",
+              "running": "bg-success",
+              "ended": "bg-danger",
+            }
+          }
+        },
         {name: "Created", key: "createdAt", sortable: true},
         {name: "Time Limit", key: "timeLimit", sortable: true},
         {name: "Session Limit", key: "limitSessions", sortable: true},
         {name: "Session Limit per User", key: "limitSessionsPerUser", sortable: true},
-        {
-          name: "Status",
-          key: "closed",
-          type: "badge",
-          typeOptions: {
-            keyMapping: {null: "Open", true: "Closed"},
-            classMapping: {null: "bg-warning", true: "bg-secondary"}
-          }
-        },
         {
           name: "Resumable",
           key: "resumable",
@@ -119,177 +224,53 @@ export default {
           }
         },
         {name: "Manage", key: "manage", type: "button-group"},
-      ]
-
-    }
-  },
-  computed: {
-    studies() {
-      return this.$store.getters["table/study/getAll"];
-    },
-    userId() {
-      return this.$store.getters["auth/getUserId"];
-    },
-    buttons() {
-      return [
-              {
-                icon: "pencil-square",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  }
-                },
-                title: "Edit study",
-                action: "editStudy",
-              },
-              {
-                icon: "trash",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  }
-                },
-                title: "Delete study",
-                action: "deleteStudy",
-              },
-              {
-                icon: "box-arrow-in-right",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  }
-                },
-                title: "Open study",
-                action: "openStudy",
-              },
-              {
-                icon: "link-45deg",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  }
-                },
-                title: "Copy link to study",
-                action: "linkStudy",
-              },
-              {
-                icon: "card-list",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  }
-                },
-                title: "Inspect sessions",
-                action: "inspectSessions",
-              },
-              {
-                icon:"x-octagon",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  }
-                },
-                title: "Close study",
-                action: "closeStudy"
-              }
-            ];
+      ];
+      if (this.canReadPrivateInformation) {
+        cols.splice(3, 0, {name: "FirstName", key: "firstName"});
+        cols.splice(4, 0, {name: "LastName", key: "lastName"});
+      }
+      return cols;
     },
     studs() {
-      if(this.isAdmin === true || this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view")) {
-        return this.studies.filter(study => study.template === false)
-          .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
-          .map(st => {
-            let study = {...st};
-            // dates
-            if (study.start === null) {
-              study.start = "-"
-            } else {
-              study.start = new Date(study.start).toLocaleString()
-            }
-
-            if (study.end === null) {
-              study.end = "-"
-            } else {
-              study.end = new Date(study.end).toLocaleString()
-            }
-
-            study.createdAt = new Date(study.createdAt).toLocaleString()
-
-            study.closed = study.closed ? true : null;
-
-            study.manage = this.buttons;
-            return study
-          });
-      }
-      if(this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.readOnly")) {
-        return this.studies.filter(study => study.template === false)
-          .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
-          .map(st => {
-            let study = {...st};
-            // dates
-            if (study.start === null) {
-              study.start = "-"
-            } else {
-              study.start = new Date(study.start).toLocaleString()
-            }
-
-            if (study.end === null) {
-              study.end = "-"
-            } else {
-              study.end = new Date(study.end).toLocaleString()
-            }
-
-            study.createdAt = new Date(study.createdAt).toLocaleString()
-
-            study.closed = study.closed ? true : null;
-
-            study.manage = this.buttons.filter(button => button.action !== "editStudy" && button.action !== "deleteStudy" && button.action !== "closeStudy");
-            return study
-          });
-      }
-      else {
-        console.log("Eslse")
-        return this.studies.filter(study => ((study.createdByUserId === null && study.userId === this.userId) || (study.createdByUserId === this.userId)) && study.template === false)
+      return this.studies.filter(study => ((study.createdByUserId === null && study.userId === this.userId) || (study.createdByUserId === this.userId)) && study.template === false)
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
           let study = {...st};
-            // dates
-            if (study.start === null) {
-              study.start = "-"
+
+          if (study.start !== null && new Date(study.start) > new Date()) {
+            study.state = "not started";
+          } else if(study.end !== null && new Date(study.end) < new Date()) {
+            if (study.multipleSubmit) {
+              study.state = study.closed ? "closed" : "running";
             } else {
-              study.start = new Date(study.start).toLocaleString()
+              study.state = "ended";
             }
-
-            if (study.end === null) {
-              study.end = "-"
-            } else {
-              study.end = new Date(study.end).toLocaleString()
-            }
-
-            study.createdAt = new Date(study.createdAt).toLocaleString()
-
-            study.closed = study.closed ? true : null;
-
-            study.manage = this.buttons;
-            return study
+          } else {
+            study.state = study.closed ? "closed" : "running";
           }
-        );
-      }
-      
-      
+
+          if (this.canReadPrivateInformation) {
+            const user = this.$store.getters["admin/user/get"](study.userId);
+            if (user) {
+              study.firstName = user.firstName;
+              study.lastName = user.lastName;
+            }
+          }
+
+          study.createdAt = new Date(study.createdAt).toLocaleString()
+          study.manage = this.buttons;
+          return study;
+        });
     },
-    isAdmin() {
-      return this.$store.getters["auth/isAdmin"];
+    canReadPrivateInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
     },
     canAddBulkAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addBulkAssignments");
     },
+    canAddSingleAssignments() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addBulkAssignments");
+    }
   },
   methods: {
     action(data) {
@@ -370,7 +351,7 @@ export default {
         } ${studySessions.length !== 1 ? "study session" : "study sessions"}
          existing for this study. Deleting it will delete the ${
           studySessions.length !== 1 ? "study session" : "study sessions"
-         }!`;
+        }!`;
       } else {
         warning = "";
       }
@@ -385,8 +366,8 @@ export default {
             this.$socket.emit("addDataUpdate", {
               table: "study",
               data: {
-              studyId: row.id,
-              deleted: true
+                studyId: row.id,
+                deleted: true
               }
             });
           }
@@ -402,7 +383,7 @@ export default {
         warningMessage,
         (confirmed) => {
           if (confirmed) {
-            this.$socket.emit("studySaveAsTemplate", { studyId: study.id });
+            this.$socket.emit("studySaveAsTemplate", {studyId: study.id});
 
             this.eventBus.emit('toast', {
               title: "Template Saved",

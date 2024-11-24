@@ -9,6 +9,7 @@ module.exports = class MetaModel extends Model {
      */
     static autoTable = false;
     static publicTable = false;
+    static accessMap = [];
 
     /**
      * Fields for frontend
@@ -78,9 +79,10 @@ module.exports = class MetaModel extends Model {
      * Get all db entries for auto table (filtered)
      * @param userId
      * @param filterList list of filter objects
+     * @param attributes
      * @return {Promise<MetaModel[]|Object|undefined>}
      */
-    static async getAutoTable(filterList = [], userId = null) {
+    static async getAutoTable(filterList = [], userId = null, attributes = null) {
         if (this.publicTable && filterList.length === 0 && !userId) {
             return await this.getAll();
         } else {
@@ -106,7 +108,12 @@ module.exports = class MetaModel extends Model {
                     filter['userId'] = userId;
                 }
             }
-            return await this.findAll({where: filter, raw: true});
+            let options = {where: filter, raw: true};
+            if (attributes && attributes.length > 0) {
+                options.attributes = [...new Set([...attributes, 'id'])];
+            }
+
+            return await this.findAll(options);
         }
     }
 
@@ -116,8 +123,7 @@ module.exports = class MetaModel extends Model {
      * @param {string[]} exclude - an array of attributes to exclude from the result
      * @return {Promise<object|undefined>}
      */
-    static
-    async getAll(includeDeleted = false, exclude = []) {
+    static async getAll(includeDeleted = false, exclude = []) {
         try {
             if (includeDeleted) {
                 return await this.findAll({

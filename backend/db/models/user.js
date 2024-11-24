@@ -8,6 +8,12 @@ const {generateMarvelUsername} = require("../../utils/generator");
 module.exports = (sequelize, DataTypes) => {
     class User extends MetaModel {
         static roleIdMap = null;
+        static accessMap = [
+            {
+                right: "frontend.dashboard.studies.view.userPrivateInfo",
+                columns: ["firstName", "lastName", "email"]
+            },
+        ];
 
         /**
          * Helper method for defining associations.
