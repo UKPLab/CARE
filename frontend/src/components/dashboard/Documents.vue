@@ -276,9 +276,20 @@ export default {
         warning,
         function (val) {
           if (val) {
-            this.$socket.emit("documentUpdate", {
-              documentId: row.id,
-              deleted: true,
+            this.$socket.emit("appDataUpdate", {
+              table: "document",
+              data: {
+              id: row.id,
+              deleted: true
+              }
+            }, (result) => {
+              if (!result.success) {
+                this.eventBus.emit('toast', {
+                  title: "Document delete failed",
+                  message: result.message,
+                  variant: "danger"
+                });
+              }
             });
           }
         }

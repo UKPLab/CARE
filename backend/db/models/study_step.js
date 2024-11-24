@@ -61,6 +61,15 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Get all study steps associated with a specific document.
+         * @param {number} documentId - The document ID to find associated study steps.
+         * @returns {Promise<Array>} - List of associated study steps.
+         */
+        static async getStudyStepsByDocumentId(documentId) {
+            return await this.findAll({ where: { documentId } });
+        }
+
+        /**
          * Adding a new study step
          * @param data
          * @param options - there must be a context object with the study object
