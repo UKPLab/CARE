@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn("document", "uploaded", {
+    await queryInterface.addColumn("document", "uploadedByUserId", {
       type: Sequelize.BOOLEAN,
       allowNull: false,
       defaultValue: false,
@@ -10,6 +10,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn("document", "uploaded");
+    await queryInterface.removeColumn("document", "uploadedByUserId");
   },
 };

@@ -130,7 +130,7 @@ export default {
               title: "Access document...",
               action: "accessDoc",
             },
-            ...(newD.uploaded
+            ...(newD.uploadedByUserId
               ? []
               : [
                   {
