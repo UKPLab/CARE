@@ -124,7 +124,7 @@ module.exports = (sequelize, DataTypes) => {
                 const reviewReadyDocuments = await Document.findAll({
                     where: {
                         readyForReview: true,
-                        uploaded: true,
+                        uploadedByUserId: true,
                         deleted: false,
                     },
                     attributes: ["id", "name", "type", "userId", "hash", "createdAt"],
@@ -176,7 +176,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         public: DataTypes.BOOLEAN,
         readyForReview: DataTypes.BOOLEAN,
-        uploaded: DataTypes.BOOLEAN,
+        uploadedByUserId: DataTypes.BOOLEAN,
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
