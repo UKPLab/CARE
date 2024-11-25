@@ -95,7 +95,7 @@ module.exports = class DocumentSocket extends Socket {
                 type: docTypes.DOC_TYPE_PDF,
                 name: data.name.replace(/.pdf$/, ""),
                 userId: data.userId ?? this.userId,
-                uploaded: data.isUploaded ?? false,
+                uploadedByUserId: data.isUploaded ?? false,
                 readyForReview: data.isUploaded ?? false,
             });
 
@@ -573,7 +573,7 @@ module.exports = class DocumentSocket extends Socket {
                     file: files[0],
                     name: file.fileName,
                     userId: file.userId,
-                    isUploaded: true
+                    isUploaded: true                    
                 }, {transaction: transaction});
 
                 results.push(document['id']);
