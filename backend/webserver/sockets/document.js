@@ -27,7 +27,7 @@ module.exports = class DocumentSocket extends Socket {
      * NOTE: currently we accept sharing per link --> returns always true
      *
      * @param documentId
-     * @returns boolean
+     * @returns {Promise<boolean>}
      */
     async checkDocumentAccess(documentId) {
         try {
@@ -184,61 +184,6 @@ module.exports = class DocumentSocket extends Socket {
         } else {
             this.logger.error("Document access error with documentId: " + document.id);
             this.sendToast("You don't have access to the document.", "Error loading documents", "Danger");
-        }
-    }
-
-
-    /**
-     * Sends the document to the client
-     *
-     * This method checks if the user has access to the document and then retrieves and sends the document data.
-     * For HTML documents, it fetches and combines draft edits with the existing content before sending.
-     *
-     * @param {number} documentId
-     * @returns {Promise<Delta|void>}
-     */
-    async sendDocument(documentId, studySessionId, studyStepId) {
-        const doc = await this.models['document'].getById(documentId);
-
-        if (this.checkDocumentAccess(doc.id)) {
-            const documentType = doc.type;
-
-            if (documentType === this.models['document'].docTypes.DOC_TYPE_HTML) {
-                let deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
-
-                if (fs.existsSync(deltaFilePath)) {
-                    let delta = await this.loadDocument(deltaFilePath);
-                    const edits = await this.models['document_edit'].findAll({
-                        where: {
-                            documentId: documentId,
-                            studySessionId: studySessionId,
-                            studyStepId: studyStepId,
-                            draft: true
-                        }
-                    });
-
-                    let dbDelta = dbToDelta(edits);
-                    delta = delta.compose(dbDelta);
-
-                    this.socket.emit("documentFile", {document: doc, deltas: delta});
-                } else {
-                    throw new Error("Document not found");
-                }
-            } else { // Non-HTML document type, send file
-                const filePath = `${UPLOAD_PATH}/${doc.hash}.pdf`;
-                if (fs.existsSync(filePath)) {
-                    fs.readFile(filePath, (err, data) => {
-                        if (err) {
-                            throw new Error("Failed to read PDF");
-                        }
-                        this.socket.emit("documentFile", {document: doc, file: data});
-                    });
-                } else {
-                    throw new Error("PDF file not found");
-                }
-            }
-        } else {
-            throw new Error("You do not have access to this document");
         }
     }
 
@@ -573,7 +518,7 @@ module.exports = class DocumentSocket extends Socket {
                     file: files[0],
                     name: file.fileName,
                     userId: file.userId,
-                    isUploaded: true                    
+                    isUploaded: true
                 }, {transaction: transaction});
 
                 results.push(document['id']);
@@ -595,6 +540,52 @@ module.exports = class DocumentSocket extends Socket {
         return results;
     }
 
+    /**
+     * Send a document to the client
+     *
+     * This method checks if the user has access to the document and then retrieves and sends the document data.
+     * For HTML documents, it fetches and combines draft edits with the existing content before sending.
+     *
+     * @param data {documentId: number, studySessionId: number, studyStepId: number}
+     * @param options {transaction: Transaction}
+     * @returns {Promise<{document: Document, deltas: Delta}|{document: Document, file: Buffer}>}
+     */
+    async getDocument(data, options) {
+        const document = await this.models['document'].getById(data['documentId']);
+
+        if (!(await this.checkDocumentAccess(document.id))) {
+            throw new Error("You do not have access to this document");
+        }
+
+        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
+            const deltaFilePath = `${UPLOAD_PATH}/${document.hash}.delta`;
+
+            if (!fs.existsSync(deltaFilePath)) {
+                throw new Error("Document not found");
+            }
+            let delta = await this.loadDocument(deltaFilePath);
+            const edits = await this.models['document_edit'].findAll({
+                where: {
+                    documentId: document.id,
+                    studySessionId: data['studySessionId'],
+                    studyStepId: data['studyStepId'],
+                    draft: true
+                }
+            });
+            delta = delta.compose(dbToDelta(edits));
+            return {document: document, deltas: delta}
+
+        } else {
+            const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
+            if (!fs.existsSync(filePath)) {
+                throw new Error("PDF file not found");
+            }
+            const file = fs.readFileSync(filePath);
+            return {document: document, file: file};
+        }
+
+    }
+
     init() {
 
         this.socket.on("documentGetReviews", async (callback) => {
@@ -613,17 +604,6 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("documentGet", async (data) => {
-            try {
-                await this.sendDocument(data.documentId, data.studySessionId, data.studyStepId);
-                if (data.studySessionId === null) {
-                    await this.openDocument(data.documentId);
-                }
-            } catch (e) {
-                this.logger.error("Error handling document request documentGet: ", e);
-                this.sendToast(e.message, "Error", "danger");
-            }
-        });
 
         this.socket.on("documentClose", async (data) => {
             try {
@@ -743,6 +723,7 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
+        this.createSocket("documentGet", this.getDocument, {}, false);
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.addDocument, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
