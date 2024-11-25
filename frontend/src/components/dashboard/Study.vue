@@ -166,17 +166,17 @@ export default {
           title: "Close study",
           action: "closeStudy"
         },
-              {
-                icon: "save",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-secondary": true,
-                  }
-                },
-                title: "Save as Template",
-                action: "saveAsTemplate",
-              }
+        {
+          icon: "save",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Save as Template",
+          action: "saveAsTemplate",
+        }
       ];
     },
     columns() {
@@ -250,7 +250,7 @@ export default {
 
           if (study.start !== null && new Date(study.start) > new Date()) {
             study.state = "not started";
-          } else if(study.end !== null && new Date(study.end) < new Date()) {
+          } else if (study.end !== null && new Date(study.end) < new Date()) {
             if (study.multipleSubmit) {
               study.state = study.closed ? "closed" : "running";
             } else {
@@ -305,20 +305,20 @@ export default {
         this.$socket.emit("stats", {action: "closeStudy", data: {studyId: data.params.id}});
 
         this.$socket.emit("appDataUpdate", {
-              table: "study",
-              data: {
-              id: data.params.id,
-              closed: true
-              }
-            }, (result) => {
-              if (!result.success) {
-                this.eventBus.emit('toast', {
-                  title: "Study closing failed",
-                  message: result.message,
-                  variant: "danger"
-                });
-              }
+          table: "study",
+          data: {
+            id: data.params.id,
+            closed: true
+          }
+        }, (result) => {
+          if (!result.success) {
+            this.eventBus.emit('toast', {
+              title: "Study closing failed",
+              message: result.message,
+              variant: "danger"
             });
+          }
+        });
       } else if (data.action === "saveAsTemplate") {
         this.saveAsTemplate(data.params);
       }
@@ -388,8 +388,8 @@ export default {
             this.$socket.emit("appDataUpdate", {
               table: "study",
               data: {
-              id: row.id,
-              deleted: true
+                id: row.id,
+                deleted: true
               }
             }, (result) => {
               if (!result.success) {
@@ -413,12 +413,20 @@ export default {
         warningMessage,
         (confirmed) => {
           if (confirmed) {
-            this.$socket.emit("studySaveAsTemplate", {studyId: study.id});
-
-            this.eventBus.emit('toast', {
-              title: "Template Saved",
-              message: "This study has been saved as a template.",
-              variant: "success",
+            this.$socket.emit("studySaveAsTemplate", {id: study.id}, (result) => {
+              if (!result.success) {
+                this.eventBus.emit('toast', {
+                  title: "Template Save Failed",
+                  message: result.message,
+                  variant: "danger",
+                });
+              } else {
+                this.eventBus.emit('toast', {
+                  title: "Template Saved",
+                  message: "This study has been saved as a template.",
+                  variant: "success",
+                });
+              }
             });
           }
         }

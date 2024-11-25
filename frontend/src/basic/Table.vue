@@ -1,4 +1,20 @@
 <template>
+  <div
+    v-if="options && options['search']"
+    class="input-group input-group-sm">
+    <span id="search-addon1" class="input-group-text">
+      <BasicIcon
+        icon-name="search"
+      ></BasicIcon>
+    </span>
+    <input
+      v-model="search"
+      type="text"
+      class="form-control"
+      placeholder="Type to filter table..."
+      aria-label="table-search"
+      aria-describedby="search-addon1">
+  </div>
   <table
     :class="tableClass"
     class="table"
@@ -8,6 +24,7 @@
       <th v-if="selectableRows">
         <div class="form-check">
           <input
+            v-if="!onlyOneRowSelectable"
             class="form-check-input"
             type="checkbox"
             :checked="isAllRowsSelected"
@@ -91,7 +108,7 @@
     </tr>
     <tr v-else-if="!data || data.length === 0">
       <td
-        :colspan="columns.length"
+        :colspan="(selectableRows) ? columns.length + 1 : columns.length"
         class="text-center"
       >
         No data
@@ -204,6 +221,7 @@ import TBadge from "./table/Badge.vue";
 import TIcon from "./table/Icon.vue";
 import Pagination from "./table/Pagination.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import BasicIcon from "@/basic/Icon.vue";
 import {tooltip} from "@/assets/tooltip.js";
 import deepEqual from "deep-equal";
 
@@ -217,6 +235,7 @@ import deepEqual from "deep-equal";
 export default {
   name: "BasicTable",
   components: {
+    BasicIcon,
     Pagination,
     TIcon,
     TBadge,
@@ -281,6 +300,7 @@ export default {
       filter: null,
       onlyOneRowSelectable: this.options && this.options.onlyOneRowSelectable,
       isAllRowsSelected: false,
+      search: ""
     };
   },
   computed: {
@@ -329,6 +349,17 @@ export default {
         return this.data;
       }
       let data = this.data.map((d) => d);
+
+      if (this.search && this.search !== "") {
+        data = data.filter((d) => {
+          for (const [key, value] of Object.entries(d)) {
+            if (typeof value === "string" && value.toLowerCase().includes(this.search.toLowerCase())) {
+              return true;
+            }
+          }
+          return false;
+        });
+      }
 
       if (this.sortColumn) {
         if (this.sortDirection === "ASC") {
@@ -380,16 +411,17 @@ export default {
       );
     },
     selectedRows() {
-      const currentSet = new Set(this.currentData.map((r) => JSON.stringify(r)));
-      return this.tableData.map((r) => currentSet.has(JSON.stringify(r)));
+      if (this.currentData) {
+        const currentSet = new Set(this.currentData.map((r) => JSON.stringify(r)));
+        return this.tableData.map((r) => currentSet.has(JSON.stringify(r)));
+      } else {
+        return [];
+      }
     },
   },
   watch: {
     currentData: {
-      handler(newVal, oldVal) {
-        if (this.onlyOneRowSelectable && newVal.length > 1) {
-          this.currentData = oldVal;
-        }
+      handler() {
         if (!deepEqual(this.currentData, this.modelValue)) {
           this.$emit("update:modelValue", this.currentData);
         }
@@ -466,9 +498,13 @@ export default {
     selectRow(isSelected, row) {
       if (this.selectableRows) {
         if (isSelected) {
-          // Check if the row is already in the selectedRows array; if not, add it
-          if (!this.currentData.some((r) => deepEqual(r, row))) {
-            this.currentData.push(row);
+          if (this.onlyOneRowSelectable) {
+            this.currentData = [row];
+          } else {
+            // Check if the row is already in the selectedRows array; if not, add it
+            if (!this.currentData.some((r) => deepEqual(r, row))) {
+              this.currentData.push(row);
+            }
           }
         } else {
           const toRemove = this.currentData.findIndex((r) => deepEqual(r, row));

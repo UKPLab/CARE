@@ -30,41 +30,44 @@ module.exports = class MetaModel extends Model {
     /**
      * Get db entry by id
      * @param {number} id
+     * @param {Object} options - Sequelize query options
      * @param {boolean} includeDeleted include deleted db entries
      * @return {Promise<object|undefined>}
      */
-    static async getById(id, includeDeleted = false) {
-        return await this.getByKey('id', id, includeDeleted);
+    static async getById(id, options = {}, includeDeleted = false) {
+        return await this.getByKey('id', id, options, includeDeleted);
     }
 
     /**
      * Get db entry by hash
      * @param {string} hash
+     * @param {Object} options - Sequelize query options
      * @return {Promise<object|undefined>}
      */
-    static async getByHash(hash) {
-        return await this.getByKey('hash', hash);
+    static async getByHash(hash, options = {}) {
+        return await this.getByKey('hash', hash, options);
     }
 
     /**
      * Get db entry by key
      * @param {string} key
      * @param {string} id
+     * @param {Object} options - Sequelize query options
      * @param {boolean} includeDeleted include deleted db entries
      * @return {Promise<object|undefined>}
      */
-    static async getByKey(key, id, includeDeleted = false) {
+    static async getByKey(key, id, options = {}, includeDeleted = false) {
         if (key in this.getAttributes()) {
             try {
                 if (includeDeleted) {
                     return await this.findOne({
                         where: {[key]: id},
-                        raw: true
+                        raw: true, ...options
                     });
                 } else {
                     return await this.findOne({
                         where: {[key]: id, 'deleted': false},
-                        raw: true
+                        raw: true, ...options
                     })
                 }
             } catch (err) {
@@ -179,10 +182,9 @@ module.exports = class MetaModel extends Model {
      * @param {Object} [options={}] - Optional Sequelize query options. See: https://sequelize.org/api/v7/interfaces/_sequelize_core.index.queryoptions
      * @return {Promise<object|undefined>}
      */
-    static
-    async add(data, options = {}) {
+    static async add(data, options = {}) {
         try {
-            const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt'].includes(key));
+            const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'deleted', 'deletedAt', 'creator_name'].includes(key));
 
             if ("hash" in this.getAttributes()) {
                 data.hash = uuidv4();
@@ -244,7 +246,7 @@ module.exports = class MetaModel extends Model {
 
             const updatedObjects = await this.update(this.subselectFields(data, possibleFields), options);
 
-            return await this.getById(id, true);
+            return await this.getById(id, additionalOptions,true);
         } catch (err) {
             console.log("DB MetaModel Class " + this.constructor.name + " update error in creation: " + err.message);
             throw new Error(err.message);

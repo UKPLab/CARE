@@ -179,31 +179,29 @@ module.exports = class StudySocket extends Socket {
 
     /**
      * Save the current study as a template (create a new study with template: true)
-     * @param {number} studyId - The ID of the study to be saved as a template
+     * @param {object} data
+     * @param {number} data.id - the id of the study to save as template
+     * @param {object} options - the options for the transaction
      * @returns {Promise<*>}
      */
-    async saveStudyAsTemplate(studyId) {
-        try {
-            const currentStudy = await this.models['study'].getById(studyId);
+    async saveStudyAsTemplate(data, options) {
+        const currentStudy = await this.models['study'].getById(data['id']);
 
-            if (this.checkUserAccess(currentStudy.userId)) {
+        if (this.checkUserAccess(currentStudy.userId)) {
 
-                const newStudyData = {
-                    ...currentStudy,
-                    id: undefined, 
-                    template: true,
-                };
-                const newStudy = await this.models['study'].create(newStudyData);
-
+            const newStudyData = {
+                ...currentStudy,
+                id: undefined,
+                hash: undefined,
+                template: true,
+            };
+            const newStudy = await this.models['study'].add(newStudyData, {transaction: options.transaction});
+            options.transaction.afterCommit(() => {
                 this.emit("studyRefresh", newStudy);
-
-                return newStudy;
-            } else {
-                this.sendToast("You are not allowed to save this study as a template", "Error", "Danger");
-            }
-        } catch (error) {
-            this.logger.error("Error saving study as template:", error);
-            throw error;
+            });
+            return newStudy;
+        } else {
+            throw new Error("No permission to save study as template");
         }
     }
 
@@ -245,16 +243,7 @@ module.exports = class StudySocket extends Socket {
             }
         });
 
-        this.socket.on("studySaveAsTemplate", async (data) => {
-            try {
-                if (data.studyId && data.studyId !== 0) {
-                    await this.saveStudyAsTemplate(data.studyId);
-                }
-            } catch (err) {
-                this.logger.error(err);
-                this.sendToast(err, "Error saving study as template", "Danger");
-            }
-        });
+        this.createSocket("studySaveAsTemplate", this.saveStudyAsTemplate, {}, true);
 
     }
 }

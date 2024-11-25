@@ -1,97 +1,150 @@
 <template>
   <BasicModal
     ref="modal"
-    @hide="resetModal"
     xl
+    @hide="reset"
   >
     <template #title>
       <span>Create Assignment</span>
     </template>
     <template #body>
-      <!-- Stepper -->
-      <div class="stepper">
-        <div
-          v-for="(step, index) in steps"
-          :key="index"
-          :data-index="index + 1"
-          :class="{ active: currentStep === index }"
-        >
-          {{ step.title }}
-        </div>
-      </div>
-      <!-- Content -->
       <div class="content-container">
-        <div
-          v-if="currentStep === 0"
-          class="file-upload-container"
-        >
-        
-        <div class="table-scroll-container">
-          <h4>Choose a template!</h4>
-            <div class="template-container">
-            <label for="template-dropdown">Choose a template:</label>
-            <div class="template-dropdown">
-            <select v-model="selectedTemplate" id="template-dropdown">
-              <option v-for="template in templateNames" :key="template" :value="template">{{ template }}</option>
-            </select>
+        <div v-if="templates.length === 0">
+          <p class="text-center text-danger">There are not study templates available!</p>
+          <p class="text-center">Please create a study template to proceed!</p>
+        </div>
+        <div v-else>
+
+          <!-- Stepper -->
+          <div class="stepper">
+            <div
+              v-for="(step, index) in steps"
+              :key="index"
+              :data-index="index + 1"
+              :class="{ active: currentStep === index }"
+            >
+              {{ step.title }}
             </div>
           </div>
-          <h4>Select assignment to review!</h4>
-          <BasicTable
-            :columns="columnsStepZero"
-            :data="assignments"
-            :options="tableOptionsZero"
-            @row-selection="(assignments) => (selectedAssignment = assignments)"
-          />
-        </div>
-        
-        </div>
-      
-        <!-- Step1: Choose Reviewers -->
-        <div
-          v-if="currentStep === 1"
-          class="file-upload-container"
-        >
-        <h4>Select reviewers!</h4>
-        <input
-      type="text"
-      v-model="searchTerm"
-      placeholder="Search reviewers"
-      class="search-input"
-    />
-      <div class="table-scroll-container">
-            <BasicTable
-              :columns="columnsStepOne"
-              :data="filteredReviewers"
-              :options="tableOptionsOne"
-              @row-selection="(filteredReviewers) => (selectedUsers = filteredReviewers)"
+          <!-- Content -->
+          <div v-if="currentStep === 0">
+            <BasicForm
+              ref="templateSelectionForm"
+              v-model="templateSelection"
+              :fields="templateSelectionFields"
             />
+            <div class="mt-3"><strong>Workflow Steps:</strong></div>
+            <ul class="list-group">
+              <li
+                v-for="(workflowStep, index) in workflowSteps"
+                :key="workflowStep.id" class="list-group-item"
+                :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
+                Workflow Step {{ index + 1 }}:
+                {{ (workflowStep.stepType === 1) ? "Annotator" : (workflowStep.stepType === 2) ? "Editor" : "Unknown" }}
+              </li>
+            </ul>
           </div>
+          <!-- Step 1: Choose Assignment -->
+          <div
+            v-if="currentStep === 1"
+            class="file-upload-container"
+          >
+            <div class="table-scroll-container">
+              <BasicTable
+                v-model="selectedAssignment"
+                :columns="documentsTableColumns"
+                :data="documentsTable"
+                :options="documentTableOptions"
+              />
+            </div>
+          </div>
+          <!-- Step 2: Choose Reviewers -->
+          <div
+            v-if="currentStep === 2"
+            class="file-upload-container"
+          >
+            <div class="table-scroll-container">
+              <BasicTable
+                v-model="selectedReviewer"
+                :columns="reviewerTableColumns"
+                :data="reviewerTable"
+                :options="reviewerTableOptions"
+              />
+            </div>
+          </div>
+          <!-- Step 3: Confirmation -->
+          <div v-if="currentStep === 3">
+            <p>
+              Are you sure you want to create the assignment with the following details?
+            </p>
+            <div>
+              <strong>Template:</strong> {{ template.name }}
+            </div>
+            <div>
+              <strong>Workflow:</strong> {{ workflow.name }}
+            </div>
+            <div>
+              <strong>Workflow Assignments:</strong>
+              <ul>
+                <li
+                  v-for="(stepAssignment, index) in workflowStepsAssignments"
+                  :key="stepAssignment.id"
+                >
+                  - Workflow Step {{ index + 1 }}:
+                  <span v-if="stepAssignment.documentId">
+                    {{ documents.find(doc => doc.id === stepAssignment.documentId).name }}
+                    ({{
+                      reviewers.find(user => user.id === documents.find(doc => doc.id === stepAssignment.documentId).userId).firstName
+                    }}
+                     {{
+                      reviewers.find(user => user.id === documents.find(doc => doc.id === stepAssignment.documentId).userId).lastName
+                    }})
+                  </span>
+                  <span v-else>
+                    Create new document
+                  </span>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <strong>Reviewers:</strong>
+              <ul>
+                <li
+                  v-for="reviewer in selectedReviewer">
+                  - {{ reviewer.firstName }} {{ reviewer.lastName }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
     </template>
     <template #footer>
       <BasicButton
+        v-if="templates.length === 0"
+        title="Close"
+        class="btn btn-secondary"
+        @click="$refs.modal.close()"
+      />
+      <BasicButton
+        v-if="currentStep !== 0"
         title="Previous"
         class="btn btn-secondary"
         @click="prevStep"
       />
-      <div v-if="currentStep != 1" >
       <BasicButton
+        v-if="currentStep !== 3"
         title="Next"
         class="btn btn-primary"
         :disabled="isDisabled"
         @click="nextStep"
       />
-    </div>
-    <div v-if="currentStep === 1" >
       <BasicButton
+        v-if="currentStep === 3"
         title="Create Assignment"
         class="btn btn-primary"
-        @click="createAssignment()"
-        :disabled="isDisabledAssignment"
+        @click="createAssignment"
       />
-    </div>
     </template>
   </BasicModal>
 </template>
@@ -99,121 +152,47 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
-import FormSlider from "@/basic/form/Slider.vue";
 
 /**
  * Modal for bulk creating assignments
- * @author: Alexander Bürkle, Linyin Huang
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang
  */
 export default {
   name: "ImportModal",
-  fetch_data: ["study"],
-  components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider},
-  emits: ["updateUser"],
-  mounted() {
-    this.$socket.emit("assignmentGetAssignmentInfosFromUser")
-    this.filteredUsers = this.users
-},
-  computed: {
-    templates() {
-        return this.$store.getters["table/study/getAll"].filter(item => item.template === true)
-      },
-    users() {
-      return this.$store.getters["admin/getAssignmentUserInfos"].filter(user => user.role != null);
-    },
-    steps() {
-      return [
-        { title: "Assignment Selection" },
-        { title: "Reviewer Selection" }
-      ];
-    },
-    isDisabled() {
-      if (this.currentStep === 0) {
-        return this.selectedAssignment === null || this.selectedTemplate === "";
-      }
-      if (this.currentStep === 1) {
-        return !this.selectedReviewers.length > 0
-      }
-        
-        
-      return false;
-    },
-    isDisabledAssignment() {
-      return this.selectedUsers.length === 0
-    },
-    columnsStepZero() { 
-      const usersWithAssignments = this.users.filter((user) => user.numberAssignments > 0);
-      const roles = usersWithAssignments.map((user) => user.role);
-      const uniqueRoles = [...new Set(roles)];
-      const roleFilterColumn = {
-        name: "Role",
-        key: "role",
-        width: "1",
-        filter: uniqueRoles.map((role) => ({ key: role, name: role })),
-      }
-      return [
-      roleFilterColumn,
-        { name: "ID", key: "id" },
-        { name: "Assignment", key: "documentName" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        
-        
-      ]},
-      columnsStepOne() { 
-        const uniqueRoles = [...new Set(this.users.map((user) => user.role).filter((role) => role != null))];
-        const roleFilterColumn = {
-          name: "Role",
-          key: "role",
-          width: "1",
-          filter: uniqueRoles.map((role) => ({ key: role, name: role })),
-        };
-        
-        return [
-        roleFilterColumn,
-          {
-            name: "Has Assignments",
-            key: "hasAssignments",
-            width: "1",
-            filter: [
-              { key: "true", name: "With Assignments" },
-              { key: "false", name: "No Assignments" },
-            ],
-          },
-          { name: "ID", key: "id" },
-          { name: "First Name", key: "firstName" },
-          { name: "Last Name", key: "lastName" },
-          {
-            name: "Number of Assignments",
-            key: "numberAssignments",
-          },
-        ]
-      },
-      filteredReviewers() {
-        return this.reviewers.filter((reviewer) => {
-          return this.searchTerm === "" || reviewer.firstName.toLowerCase().includes(this.searchTerm.toLowerCase()) || reviewer.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) || reviewer.userName.toLowerCase().includes(this.searchTerm.toLowerCase());
-        });
-      }
+  fetchData: [{
+    table: "document",
+    filter: [{
+      key: "readyForReview",
+      value: true
+    }],
   },
+    {
+      table: "user",
+      include: [{
+        table: "study_session",
+        by: "userId",
+        type: "count",
+        as: "studySessions"
+      }]
+    },
+    {
+      table: "study",
+      filter: [{
+        key: "template",
+        value: true
+      }]
+    }],
+  components: {BasicModal, BasicButton, BasicTable, BasicForm},
+  emits: ["updateUser"],
   data() {
     return {
-      searchTerm: "",
-      templateNames: [],
-      selectedTemplate: "",
-      showInputFields: false,
-      selectedUsers: [],
-      firstNameInput: "",
-      lastNameInput: "",
-      userNameInput: "",
       currentStep: 0,
-      assignments: [],
-      selectedAssignment: null,
-      reviewers: [],
-      selectedReviewers: [],
-      tableOptionsZero: {
+      templateSelection: {},
+      selectedAssignment: [],
+      selectedReviewer: [],
+      documentTableOptions: {
         striped: true,
         hover: true,
         bordered: false,
@@ -223,8 +202,9 @@ export default {
         scrollY: true,
         scrollX: true,
         onlyOneRowSelectable: true,
+        search: true
       },
-      tableOptionsOne: {
+      reviewerTableOptions: {
         striped: true,
         hover: true,
         bordered: false,
@@ -232,155 +212,158 @@ export default {
         small: false,
         selectableRows: true,
         scrollY: true,
-        scrollX: true
+        scrollX: true,
+        search: true,
       },
     };
   },
-  
-  methods: {
-    open(type) {
-      this.importType = type;
-      this.$refs.modal.open();
-      this.handleStepZero()
-      
+  computed: {
+    templateSelectionFields() {
+      return [
+        {
+          key: "template",
+          label: "Template",
+          type: "select",
+          options: this.templates.map(template => ({
+            name: template.name,
+            value: template.id,
+          })),
+          required: true,
+        },
+      ]
     },
-    resetModal() {
+    templates() {
+      return this.$store.getters["table/study/getFiltered"](item => item.template === true);
+    },
+    template() {
+      return this.$store.getters["table/study/get"](this.templateSelection.template);
+    },
+    workflow() {
+      return this.$store.getters["table/workflow/get"](this.template.workflowId);
+    },
+    workflowSteps() {
+      if (!this.template) return [];
+      return this.$store.getters["table/workflow_step/getFiltered"](item => item.workflowId === this.template.workflowId);
+    },
+    workflowStepsAssignment() {
+      return this.workflowSteps.filter(step => step.stepType === 1 && step.workflowStepDocument === null);
+    },
+    workflowStepsAssignments() {
+      return this.workflowSteps.map((c, index) => {
+        return {
+          documentId: (index === 0) ? this.selectedAssignment[0].id : null,
+          id: c.id
+        }
+      });
+    },
+    documents() {
+      return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
+    },
+    documentsTable() {
+      return this.documents.map((d) => {
+        let newD = {...d};
+        newD.type = d.type === 0 ? "PDF" : "HTML";
+        const user = this.$store.getters["admin/user/get"](d.userId)
+        newD.firstName = (user) ? user.firstName : "Unknown";
+        newD.lastName = (user) ? user.lastName : "Unknown";
+        return newD;
+      })
+    },
+    documentsTableColumns() {
+      return [
+        {name: "ID", key: "id"},
+        {name: "Document", key: "name"},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
+      ]
+    },
+    reviewers() {
+      return this.$store.getters["admin/user/getAll"];
+    },
+    reviewerTable() {
+      return this.reviewers.map((r) => {
+        let newR = {...r};
+        newR.documents = this.documents.filter((d) => d.userId === r.id).length;
+        return newR;
+      })
+    },
+    reviewerTableColumns() {
+      return [
+        {name: "ID", key: "id"},
+        {name: "extId", key: "extId"},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
+        {name: "Number of Assignments", key: "studySessions"},
+        {name: "Documents", key: "documents"},
+      ]
+    },
+    steps() {
+      return [
+        {title: "Template Selection"},
+        {title: "Assignment Selection"},
+        {title: "Reviewer Selection"},
+        {title: "Confirmation"},
+      ];
+    },
+    isDisabled() {
+      if (this.currentStep === 0) {
+        return this.workflowStepsAssignment.length === 0;
+      }
+      if (this.currentStep === 1) {
+        return this.selectedAssignment.length !== 1;
+      }
+      if (this.currentStep === 2) {
+        return this.selectedReviewer.length === 0;
+      }
+      return false;
+    },
+  },
+  methods: {
+    open() {
+      this.$refs.modal.open();
+    },
+    reset() {
       this.currentStep = 0;
-      this.selectedAssignment = null;
-      this.selectedReviewers = [];
-      this.assignments = [];
-      this.reviewers = [];
-      this.sliderValues = []
-      this.users = [];
-      this.selectedUsers = [];
-      this.filteredUsers = [];
-      this.firstNameInput = "";
-      this.lastNameInput = "";
-      this.userNameInput = "";
+      this.selectedAssignment = [];
+      this.selectedReviewer = [];
     },
     prevStep() {
       if (this.currentStep > 0) {
         this.currentStep--;
       }
-      switch(this.currentStep) {
-        case 0:
-          this.selectedAssignment = {}
-          break;
-        case 1:
-          this.selectedReviewers = []
-          break;
-        case 2:
-          
-          break;
-      }
     },
     nextStep() {
       if (this.currentStep >= 4) return;
-
       this.currentStep++;
-      switch (this.currentStep) {
-        case 0:
-          this.handleStepZero();
-          break;
-        case 1:
-          this.handleStepOne()
-          break;
-      }
-      
     },
-    handleStepZero() {
-      this.templateNames = this.templates.map(template => template.name)
-      const assignment = this.users.filter((user) => user.numberAssignments > 0);
-      this.assignments = this.splitUsersByDocuments(assignment);
-    },
-    handleStepOne() {
-      this.reviewers = this.createReviewers(this.users)
-      this.reviewers.forEach(rev => {
-            rev.hasAssignments = rev.numberAssignments > 0 ? "Has Assignments" : "No Assignment"
-          });
-      ;
-      },
-      filterUsers() {
-        const firstNameFilter = this.firstNameInput.toLowerCase();
-        const lastNameFilter = this.lastNameInput.toLowerCase();
-        const userNameFilter = this.userNameInput.toLowerCase();
 
-        this.filteredUsers = this.users.filter(user => {
-          const isAlreadySelected = this.selectedUsers.some(selectedUser => selectedUser.id === user.id);
-
-          return (
-            !isAlreadySelected && // Exclude users already in selectedUsers
-            (!firstNameFilter || user.firstName.toLowerCase().includes(firstNameFilter)) &&
-            (!lastNameFilter || user.lastName.toLowerCase().includes(lastNameFilter)) &&
-            (!userNameFilter || user.userName.toLowerCase().includes(userNameFilter))
-          );
-        });
-},
-    selectUser(user) {
-      user.manage = [
-      {
-              icon: "trash",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Delete document...",
-              action: "deleteDoc",
-            },
-      ]
-      this.selectedUsers.push(user);
-      this.clearInputs();
-      this.showInputFields = false;
-    },
-    removeUser(index) {
-      this.selectedUsers.splice(index, 1);
-    },
-    clearInputs() {
-      this.firstNameInput = '';
-      this.lastNameInput = '';
-      this.userNameInput = '';
-      this.filteredUsers = [];
-    },
-    splitUsersByDocuments(users) {
-      const result = [];
-      users.forEach(user => {
-        if (user.documents.length > 1) {
-          user.documents.forEach(doc => {
-            const newUser = { ...user, documentName: doc.name }; 
-            result.push(newUser);
+    createAssignment() {
+      this.$refs.modal.waiting = true;
+      this.$socket.emit("assignmentCreate", {
+        template: this.template,
+        reviewer: this.selectedReviewer,
+        assignments: this.selectedAssignment,
+        documents: this.workflowStepsAssignments
+      }, (res) => {
+        this.$refs.modal.waiting = false;
+        if (res.success) {
+          this.$refs.modal.close();
+          this.eventBus.emit("toast", {
+            title: "Assignment created",
+            message: "The assignment has been created successfully",
+            type: "success",
           });
         } else {
-          user.documentName = user.documents[0].name;
-          result.push(user);
+          this.eventBus.emit("toast", {
+            title: "Failed to create assignment",
+            message: res.message,
+            type: "error",
+          });
         }
-      });
-      return result;
-          },
-    createReviewers(users) {
-      return users
+      })
     },
-    createAssignment() {
-      let data = {}
-      data.assignment = this.selectedAssignment[0]
-      data.reviewers = this.selectedUsers.map(user => user.id)
-      data.template = this.templates.find(template => template.name === this.selectedTemplate)
-      data.createdByUserId = this.$store.getters["auth/getUserId"]
-      this.$socket.emit("assignmentPeerReview", data, (response) => {
-      }) 
-      this.$refs.modal.close();
-    },
-    action(data) {
-      switch(data.action) {
-        case "deleteDoc":
-          this.selectedUsers.splice(data.params, 1);
-          this.selectedUsers.
-          break;
-      }
-    }
-    },
-    
+  },
+
 };
 </script>
 
@@ -391,6 +374,7 @@ export default {
   justify-content: space-between;
   margin-bottom: 1.25rem;
   position: relative;
+
   &:after {
     content: "";
     position: absolute;
@@ -406,6 +390,7 @@ export default {
   z-index: 1;
   background-color: white;
   padding: 0 5px;
+
   &:before {
     --dimension: 30px;
     content: attr(data-index);
@@ -418,9 +403,11 @@ export default {
     justify-content: center;
     border: 1px solid #6c6b6b;
   }
+
   &:first-child {
     padding-left: 0;
   }
+
   &:last-child {
     padding-right: 0;
   }
@@ -429,6 +416,7 @@ export default {
 .stepper div.active {
   --btn-color: #0d6efd;
   border-color: var(--btn-color);
+
   &:before {
     color: white;
     background-color: var(--btn-color);
@@ -451,39 +439,24 @@ input {
   display: block;
   margin-bottom: 10px;
 }
+
 ul {
   list-style-type: none;
   padding: 0;
 }
+
 li {
   margin: 5px 0;
   cursor: pointer;
 }
+
 li:hover {
   background-color: #f0f0f0;
 }
-.selected-user {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
+
 button {
   margin-left: 10px;
 }
 
-.tabel-flex {
-  display: flex;
-}
-
-.template-container {
-  margin-bottom: 20px;
-  margin-top: 20px;
-  display: flex;
-}
-
-.template-dropdown {
-  margin-left: 10px;
-}
 
 </style>
