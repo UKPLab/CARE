@@ -39,7 +39,7 @@ module.exports = class DocumentSocket extends Socket {
 
             if (doc && (doc.public
                     || studyStepAssociationExists > 0)
-                || (this.checkUserAccess(doc.userId))
+                || (await this.checkUserAccess(doc.userId))
             ) {
                 return true;
             } else {
@@ -77,7 +77,7 @@ module.exports = class DocumentSocket extends Socket {
             throw new Error("Invalid file type");
         }
 
-        if (!this.checkUserAccess(data['userId'])) {
+        if (!(await this.checkUserAccess(data['userId']))) {
             throw new Error("User does not have access to upload documents");
         }
 
@@ -120,7 +120,7 @@ module.exports = class DocumentSocket extends Socket {
      */
     async updateDocument(data, options) {
         const doc = await this.models['document'].getById(data['id']);
-        if (!this.checkUserAccess(doc.userId)) {
+        if (!(await this.checkUserAccess(doc.userId))) {
             throw new Error("You are not allowed to update this document");
         }
 
@@ -179,7 +179,7 @@ module.exports = class DocumentSocket extends Socket {
      */
     async sendByHash(documentHash) {
         const document = await this.models['document'].getByHash(documentHash);
-        if (this.checkDocumentAccess(document.id)) {
+        if (await this.checkDocumentAccess(document.id)) {
             this.emit("documentRefresh", document);
         } else {
             this.logger.error("Document access error with documentId: " + document.id);
@@ -197,7 +197,7 @@ module.exports = class DocumentSocket extends Socket {
         try {
             const doc = await this.models['document'].getById(documentId);
 
-            if (this.checkDocumentAccess(doc.id)) {
+            if (await this.checkDocumentAccess(doc.id)) {
                 if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
                     const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
                     let delta = new Delta();
@@ -325,7 +325,7 @@ module.exports = class DocumentSocket extends Socket {
      * @return {Promise<void>}
      */
     async getData(data) {
-        if (this.checkDocumentAccess(data.documentId)) {
+        if (await this.checkDocumentAccess(data.documentId)) {
             if (data.studySessionId && data.studySessionId !== 0) {
                 const studySession = await this.models['study_session'].getById(data.studySessionId);
                 const study = await this.models['study'].getById(studySession.studyId);

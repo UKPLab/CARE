@@ -227,7 +227,7 @@ module.exports = class Socket {
     /**
      * Check if the user has access
      * @param {number} userId The userId to check
-     * @return {boolean}
+     * @return {Promise<boolean>} If the user has access
      */
     async checkUserAccess(userId) {
         if (await this.isAdmin()) {
