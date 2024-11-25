@@ -62,6 +62,15 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Get all study steps associated with a specific document.
+         * @param {number} documentId - The document ID to find associated study steps.
+         * @returns {Promise<Array>} - List of associated study steps.
+         */
+        static async getStudyStepsByDocumentId(documentId) {
+            return await this.findAll({ where: { documentId } });
+        }
+
+        /**
          * Adding a new study step
          * @param data
          * @param options - there must be a context object with the study object
@@ -139,6 +148,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "studyStepPrevious",
                 as: "previousStep",
             });
+
+            StudyStep.belongsTo(models["study_step"], {
+                foreignKey: "workflowStepDocument",
+                as: "stepDocument",
+            });
         }
     }
 
@@ -148,6 +162,8 @@ module.exports = (sequelize, DataTypes) => {
             stepType: DataTypes.INTEGER,
             documentId: DataTypes.INTEGER,
             studyStepPrevious: DataTypes.INTEGER,
+            workflowStepDocument: DataTypes.INTEGER,
+            allowBackward: DataTypes.BOOLEAN,
             configuration: DataTypes.JSONB,
             deleted: DataTypes.BOOLEAN,
             deletedAt: DataTypes.DATE,

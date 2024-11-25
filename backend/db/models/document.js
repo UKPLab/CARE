@@ -77,6 +77,31 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Cascade delete study steps and sessions for a document.
+         * Deletes all study steps with the given documentId and related study sessions.
+         * @param {number} documentId
+         * @param {Object} options
+         * @returns {Promise<void>}
+         */
+        static async cascadeDeletionByDocument(documentId, options) {
+            const transaction = options.transaction;
+
+            const studySteps = await sequelize.models.study_step.getStudyStepsByDocumentId(documentId);
+
+            for (const step of studySteps) {
+                const studyId = step.studyId;
+
+                // Delete the study using this documentId and all corresponding sessions and study_steps for the studyId
+                const study = await sequelize.models.study.findByPk(studyId, { transaction });
+                if (study) {
+                    await sequelize.models.study.deleteById(study.id, { transaction });
+                    await await sequelize.models.study.deleteStudySessions(study, options);
+                    await await sequelize.models.study.deleteStudySteps(study, options);
+                }
+            }
+        }
+
+        /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
          * The `models/index` file will call this method automatically.

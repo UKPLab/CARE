@@ -161,6 +161,20 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Delete all study sessions for a study.
+         * @param study - The study object.
+         * @param options - Sequelize options object.
+         * @returns {Promise<void>}
+         */
+        static async deleteStudySessions(study, options) {
+            const studySessions = await sequelize.models.study_session.getAllByKey("studyId", study.id);
+
+            for (const studySession of studySessions) {
+                await sequelize.models.study_session.deleteById(studySession.id, { transaction: options.transaction });
+            }
+        }
+
+        /**
          * Create study steps for a study
          * @param study - The study object
          * @param options - Sequelize options object
@@ -168,22 +182,118 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async createStudySteps(study, options) {
             const workflowSteps = await sequelize.models.workflow_step.getSortedWorkflowSteps(study.workflowId);
+            const studyStepsMap = {};
             let previousStepId = null;
 
             for (const workflowStep of workflowSteps) {
                 const stepDocument = options.context.stepDocuments.find(doc => doc.id === workflowStep.id);
-                const studyStep = await sequelize.models.study_step.add({
+                const plainStudyStep = await sequelize.models.study_step.add({
                     studyId: study.id,
                     stepType: workflowStep.stepType,
                     workflowStepId: workflowStep.id,
                     documentId: (stepDocument && stepDocument.documentId) ? stepDocument.documentId : null,
                     studyStepPrevious: previousStepId,
+                    allowBackward: workflowStep.allowBackward,
+                    workflowStepDocument: null,
                     configuration: workflowStep.configuration
-                }, {transaction: options.transaction, context: study});
+                }, { transaction: options.transaction, context: study });
+
+                const studyStep = await sequelize.models.study_step.findByPk(plainStudyStep.id, {
+                    transaction: options.transaction
+                });
+
+                studyStepsMap[workflowStep.id] = studyStep;
+
+                // If the workflowStepDocument references a previous workflowStep
+                if (workflowStep.workflowStepDocument) {
+                    const referencedStudyStep = studyStepsMap[workflowStep.workflowStepDocument];
+                    if (referencedStudyStep) {
+                        await studyStep.update(
+                            { workflowStepDocument: referencedStudyStep.id },
+                            { transaction: options.transaction }
+                        );
+                    }
+                }
 
                 previousStepId = studyStep.id;
             }
 
+        }
+
+        /**
+         * Appends configuration data to the last HTML document of the workflow.
+         * @param {Object} study
+         * @param {Object} transaction
+         */
+        static async appendConfigurationToLastDocument(study, transaction) {
+            const PLACEHOLDER = 'PLACEHOLDER';
+
+            const studySteps = await sequelize.models.study_step.findAll({
+                where: { studyId: study.id },
+                transaction
+            });
+
+            const questionnaireConfig = studySteps
+                .map(step => step.configuration?.questionnaire)
+                .find(q => q);
+
+            if (!questionnaireConfig) {
+                console.warn('No questionnaire configuration found in the study steps.');
+                return;
+            }
+
+            const studySessions = await sequelize.models.study_session.findAll({
+                where: { studyId: study.id },
+                transaction
+            });
+
+            if (!studySessions.length) {
+                console.warn('No study sessions found for the study.');
+                return;
+            }
+
+            for (const session of studySessions) {
+                const documentEdits = await sequelize.models.document_edit.findAll({
+                    where: { studySessionId: session.id },
+                    attributes: [
+                        'documentId',
+                        [sequelize.fn('MAX', sequelize.col('offset')), 'maxOffset']
+                    ],
+                    group: ['documentId'],
+                    transaction
+                });
+
+                for (const edit of documentEdits) {
+                    const maxOffset = edit.dataValues.maxOffset || 0;
+
+                    const correspondingStep = studySteps.find(step => step.id === session.studyStepId);
+
+                    if (!correspondingStep || correspondingStep.stepType !== 2) {
+                        console.warn(`Skipping stepId: ${correspondingStep?.id} as it is not stepType 2.`);
+                        continue;
+                    }
+
+                    const placeholderId = `${Buffer.from(`${correspondingStep.id}-${session.id}`).toString('base64')}`;
+                    const encodedQuestionnaireLink = questionnaireConfig.replace(PLACEHOLDER, placeholderId);
+
+                    await sequelize.models.document_edit.create({
+                        userId: session.userId,
+                        documentId: edit.documentId,
+                        studySessionId: session.id,
+                        studyStepId: correspondingStep.id,
+                        text: `\nQuestionnaire Link: ${encodedQuestionnaireLink}`,
+                        operationType: 0,
+                        offset: maxOffset + 1,
+                        span: `\nQuestionnaire Link: ${encodedQuestionnaireLink}`.length,
+                        draft: true,
+                        attributes: { type: "link", href: encodedQuestionnaireLink },
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    }, { transaction });
+                }
+            }
+
+            console.info(`Questionnaire link added to document_edit for all study sessions of study ID: ${study.id}`);
         }
 
         static associate(models) {
@@ -249,6 +359,17 @@ module.exports = (sequelize, DataTypes) => {
                 await Study.createStudySteps(study, options);
 
             }, afterUpdate: async (study, options) => {
+                const transaction = options.transaction;
+
+                if (study.deleted) {
+                    await Study.deleteStudySteps(study, options);
+                    await Study.deleteStudySessions(study, options);
+                }
+
+                if (study.closed) {
+                    await Study.appendConfigurationToLastDocument(study, transaction);
+                }
+
                 // We only update if the context and stepDocuments are available
                 if (options.context && options.context.stepDocuments) {
                     await Study.deleteStudySteps(study, options);

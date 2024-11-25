@@ -224,6 +224,10 @@ module.exports = class MetaModel extends Model {
                 data.deletedAt = Date.now();
             }
 
+            if (data.closed) {
+                data.closed = Date.now();
+            }
+
             let individualHooks = {};
             if ('hooks' in this.options) {
                 if ('afterUpdate' in this.options.hooks || 'beforeUpdate' in this.options.hooks) {
