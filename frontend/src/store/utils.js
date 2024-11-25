@@ -14,7 +14,7 @@ export function refreshState(state, data, removeDeleted = true) {
     }
     data.map((entry) => {
         if (!entry.deleted) {
-            state.data[entry.id] = entry;
+            state.data[entry.id] = { ...state.data[entry.id], ...entry };
         } else {
             if (removeDeleted) {
                 delete state.data[entry.id];

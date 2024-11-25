@@ -10,11 +10,12 @@ module.exports = (sequelize, DataTypes) => {
          * if not, throw an error
          * @param studyId
          * @param userId
+         * @param options - Transaction options
          * @returns {Promise<void>}
          * @throws Error if session cannot be created
          */
-        static async checkSessionAvailability(studyId, userId) {
-            const study = await sequelize.models.study.getById(studyId);
+        static async checkSessionAvailability(studyId, userId, options) {
+            const study = await sequelize.models.study.getById(studyId, {transaction: options.transaction});
             if (!study) {
                 throw new Error('Study not found');
             }
@@ -22,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
             if (study.limitSessions !== null && study.limitSessions > 0) {
                 const totalExistingSessionCount = await StudySession.count({
                     where: {studyId: studyId}
-                });
+                }, {transaction: options.transaction});
                 if (totalExistingSessionCount >= study.limitSessions) {
                     throw new Error(`Cannot create more than ${study.limitSessions} sessions for this study.`);
                 }
@@ -31,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
             if (study.limitSessionsPerUser !== null && study.limitSessionsPerUser > 0) {
                 const existingSessionCountPerUser = await StudySession.count({
                     where: {studyId: studyId, userId: userId}
-                });
+                }, {transaction: options.transaction});
                 if (existingSessionCountPerUser >= study.limitSessionsPerUser) {
                     throw new Error(`Cannot create more than ${study.limitSessionsPerUser} sessions for this user.`);
                 }
@@ -77,24 +78,20 @@ module.exports = (sequelize, DataTypes) => {
         createdAt: DataTypes.DATE
     }, {
         sequelize: sequelize, modelName: 'study_session', tableName: 'study_session', hooks: {
-            beforeCreate: async (studySession) => {
+            beforeCreate: async (studySession, options) => {
 
                 // check for study session availability
-                await StudySession.checkSessionAvailability(studySession.studyId, studySession.userId);
+                await StudySession.checkSessionAvailability(studySession.studyId, studySession.userId, options);
 
                 // get first step
-                const firstStep = await sequelize.models.study_step.getFirstStep(studySession.studyId);
+                const firstStep = await sequelize.models.study_step.getFirstStep(studySession.studyId, {transaction:options.transaction});
 
                 studySession.studyStepId = firstStep.id;
                 studySession.numberSteps = 1;
                 studySession.studyStepIdMax = firstStep.id
 
-                // Set the start date if not already set
-                if (!studySession.start) {
-                    studySession.start = new Date();
-                }
             },
-            beforeUpdate: async (studySession) => {
+            beforeUpdate: async (studySession, options) => {
 
                 // Check study is still open
                 await sequelize.models.study.checkStudyOpen(studySession.studyId);
@@ -121,6 +118,10 @@ module.exports = (sequelize, DataTypes) => {
                     }
                     studySession.numberSteps = (studySession.numberSteps || 0) + 1;
 
+                    // Set the start date if not already set
+                    if (!studySession.start) {
+                        studySession.start = new Date();
+                    }
                 }
 
             },

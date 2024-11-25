@@ -1,4 +1,5 @@
 const {inject} = require("../utils/generic");
+const {Sequelize, Op} = require("sequelize");
 
 /**
  * Defines as new Socket class
@@ -402,10 +403,28 @@ module.exports = class Socket {
 
             if (include.length > 0) {
                 for (const inclusions of include) {
-                    await this.sendTableData(inclusions.table, [{
-                        key: "id",
-                        values: [...new Set(data.map((d) => d[inclusions.by]))]
-                    }], [], userId, includeForeignData, includeFieldTables);
+                    if (inclusions.type === "count") {
+                        const count = await this.models[inclusions.table].findAll({
+                            attributes: [inclusions.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+                            where: {
+                                [inclusions.by]: {
+                                    [Op.in]: data.map((d) => d.id)
+                                },
+                            },
+                            group: inclusions.by,
+                            raw: true
+                        });
+                        // inject to data
+                        data = data.map((d) => {
+                            d[inclusions.as] = count.find((c) => c[inclusions.by] === d.id)?.count || 0;
+                            return d;
+                        });
+                    } else {
+                        await this.sendTableData(inclusions.table, [{
+                            key: "id",
+                            values: [...new Set(data.map((d) => d[inclusions.by]))]
+                        }], [], userId, includeForeignData, includeFieldTables);
+                    }
                 }
             }
 

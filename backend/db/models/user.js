@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
         static accessMap = [
             {
                 right: "frontend.dashboard.studies.view.userPrivateInfo",
-                columns: ["firstName", "lastName", "email"]
+                columns: ["firstName", "lastName", "email", "extId"]
             },
         ];
 

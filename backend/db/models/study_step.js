@@ -45,13 +45,13 @@ module.exports = (sequelize, DataTypes) => {
          * @param studyId
          * @returns {Promise<StudyStep>}
          */
-        static async getFirstStep(studyId) {
+        static async getFirstStep(studyId, options ) {
             const firstStep = await this.findOne({
                 where: {
                     studyId: studyId,
                     studyStepPrevious: null,
                     deleted: false,
-                },
+                }, ...options,
             });
             if (!firstStep) {
                 throw new Error("No first step found for this study");

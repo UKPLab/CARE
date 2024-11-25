@@ -4,79 +4,100 @@
       <span>Bulk Create Assignments</span>
     </template>
     <template #body>
-      <!-- Stepper -->
-      <div class="stepper">
-        <div v-for="(step, index) in steps" :key="index" :data-index="index + 1"
-          :class="{ active: currentStep === index }">
-          {{ step.title }}
-        </div>
+      <div v-if="templates.length === 0">
+        <p class="text-center text-danger">There are not study templates available!</p>
+        <p class="text-center">Please create a study template to proceed!</p>
       </div>
-      <!-- Content -->
-      <div class="content-container">
-        <!-- Step0: Choose Assignments -->
-        <div v-if="currentStep === 0" class="file-upload-container">
-          <h4>Select assignments to review!</h4>
-          <div class="table-scroll-container">
-            <BasicTable :columns="columnsStepZero" :data="assignments" :options="tableOptions"
-              @row-selection="(assignments) => (selectedAssignments = assignments)" />
+      <div v-else>
+        <!-- Stepper -->
+        <div class="stepper">
+          <div v-for="(step, index) in steps" :key="index" :data-index="index + 1"
+               :class="{ active: currentStep === index }">
+            {{ step.title }}
           </div>
-
         </div>
-        <!-- Step1: Choose Reviewers -->
-        <div v-if="currentStep === 1" class="preview-table-container">
-          <h4>Select reviewers!</h4>
-          <div class="table-scroll-container">
-            <BasicTable :columns="columnsStepOne" :data="reviewers" :options="tableOptions"
-              @row-selection="(reviewers) => (selectedReviewers = reviewers)" />
+        <!-- Content -->
+        <div class="content-container">
+          <!-- Step0: Choose Assignments -->
+          <div v-if="currentStep === 0" class="file-upload-container">
+            <h4>Select assignments to review!</h4>
+            <div class="table-scroll-container">
+              <BasicTable :columns="columnsStepZero" :data="assignments" :options="tableOptions"
+                          @row-selection="(assignments) => (selectedAssignments = assignments)"/>
+            </div>
+
           </div>
+          <!-- Step1: Choose Reviewers -->
+          <div v-if="currentStep === 1" class="preview-table-container">
+            <h4>Select reviewers!</h4>
+            <div class="table-scroll-container">
+              <BasicTable :columns="columnsStepOne" :data="reviewers" :options="tableOptions"
+                          @row-selection="(reviewers) => (selectedReviewers = reviewers)"/>
+            </div>
 
-        </div>
-        <!-- Step2: Choose number of reviewers per assignment -->
-        <div v-if="currentStep === 2" class="review-count-container">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <!-- Select Dropdown -->
-            <select v-model="selectedOption">
-              <option value="general">General</option>
-              <option value="hiwi">HiWi Selection</option>
-            </select>
+          </div>
+          <!-- Step2: Choose number of reviewers per assignment -->
+          <div v-if="currentStep === 2" class="review-count-container">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <!-- Select Dropdown -->
+              <select v-model="selectedOption">
+                <option value="general">General</option>
+                <option value="hiwi">HiWi Selection</option>
+              </select>
 
-            <!-- Text on the Right -->
+              <!-- Text on the Right -->
+              <div v-if="selectedOption === 'hiwi'">
+                <span style="margin-left: 10px;">Remaining Assignments: {{ this.remainingAssignments }}</span>
+              </div>
+            </div>
+            <div v-if="selectedOption === 'general'">
+              <BasicForm ref="form" :fields="sliders" v-model="sliderValues"/>
+
+            </div>
             <div v-if="selectedOption === 'hiwi'">
-              <span style="margin-left: 10px;">Remaining Assignments: {{ this.remainingAssignments }}</span>
+              <BasicForm ref="form" :fields="hiwiToggleField" v-model="hiwiValues"/>
             </div>
           </div>
-          <div v-if="selectedOption === 'general'">
-            <BasicForm ref="form" :fields="sliders" v-model="sliderValues" />
+          <!-- Step3: Choose template to create assignment -->
+          <div v-if="currentStep === 3" class="result-container">
+
+            <h3>Choose a template for the assignment creation!</h3>
+            <div>
+              <label for="template-dropdown">Choose a template:</label>
+              <select v-model="selectedTemplate" id="template-dropdown">
+                <option v-for="template in templateNames" :key="template" :value="template">{{ template }}</option>
+              </select>
+            </div>
 
           </div>
-          <div v-if="selectedOption === 'hiwi'">
-            <BasicForm ref="form" :fields="hiwiToggleField" v-model="hiwiValues" />
-          </div>
-        </div>
-        <!-- Step3: Choose template to create assignment -->
-        <div v-if="currentStep === 3" class="result-container">
-
-          <h3>Choose a template for the assignment creation!</h3>
-          <div>
-            <label for="template-dropdown">Choose a template:</label>
-            <select v-model="selectedTemplate" id="template-dropdown">
-              <option v-for="template in templateNames" :key="template" :value="template">{{ template }}</option>
-            </select>
-          </div>
-
-
         </div>
       </div>
     </template>
     <template #footer>
-      <BasicButton title="Previous" class="btn btn-secondary" @click="prevStep" />
-      <div v-if="currentStep != 3">
-        <BasicButton title="Next" class="btn btn-primary" :disabled="isDisabled" @click="nextStep" />
-      </div>
-      <div v-if="currentStep === 3">
-        <BasicButton title="Create Assignments" class="btn btn-primary" @click="createAssignments()"
-          :disabled="isDisabledAssignments" />
-      </div>
+      <BasicButton
+        v-if="templates.length === 0"
+        title="Close"
+        class="btn btn-secondary"
+        @click="$refs.modal.close()"
+      />
+      <BasicButton
+        v-if="currentStep !== 0"
+        title="Previous"
+        class="btn btn-secondary"
+        @click="prevStep"/>
+      <BasicButton
+        v-if="currentStep !== 3"
+        title="Next"
+        class="btn btn-primary"
+        :disabled="isDisabled"
+        @click="nextStep"/>
+      <BasicButton
+        v-if="currentStep === 3"
+        title="Create Assignments"
+        class="btn btn-primary"
+        :disabled="isDisabledAssignments"
+        @click="createAssignments()"
+      />
     </template>
   </BasicModal>
 </template>
@@ -89,7 +110,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import FormSlider from "@/basic/form/Slider.vue";
 import FormSwitch from "@/basic/form/Switch.vue";
-import { watch } from "vue";
+
 /**
  * Modal for bulk creating assignments
  * @author: Alexander Bürkle, Linyin Huang
@@ -97,7 +118,7 @@ import { watch } from "vue";
 export default {
   name: "ImportModal",
   fetch_data: ["study"],
-  components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider, FormSwitch },
+  components: {BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider, FormSwitch},
   emits: ["updateUser"],
   mounted() {
     this.$socket.emit("assignmentGetAssignmentInfosFromUser")
@@ -108,10 +129,10 @@ export default {
     },
     steps() {
       return [
-        { title: "Assignment Selection" },
-        { title: "Reviewer Selection" },
-        { title: "Review Count" },
-        { title: "Template Selection" },
+        {title: "Assignment Selection"},
+        {title: "Reviewer Selection"},
+        {title: "Review Count"},
+        {title: "Template Selection"},
       ];
     },
     isDisabled() {
@@ -137,7 +158,7 @@ export default {
         name: "Role",
         key: "role",
         width: "1",
-        filter: uniqueRoles.map((role) => ({ key: role, name: role })),
+        filter: uniqueRoles.map((role) => ({key: role, name: role})),
       };
 
       return [
@@ -147,13 +168,13 @@ export default {
           key: "hasAssignments",
           width: "1",
           filter: [
-            { key: "true", name: "With Assignments" },
-            { key: "false", name: "No Assignments" },
+            {key: "true", name: "With Assignments"},
+            {key: "false", name: "No Assignments"},
           ],
         },
-        { name: "ID", key: "id" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
+        {name: "ID", key: "id"},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
         {
           name: "Number of Assignments",
           key: "numberAssignments",
@@ -168,15 +189,15 @@ export default {
         name: "Role",
         key: "role",
         width: "1",
-        filter: uniqueRoles.map((role) => ({ key: role, name: role })),
+        filter: uniqueRoles.map((role) => ({key: role, name: role})),
       };
 
       return [
         roleFilterColumn,
-        { name: "ID", key: "id" },
-        { name: "Assignment", key: "documentName" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
+        {name: "ID", key: "id"},
+        {name: "Assignment", key: "documentName"},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
 
 
       ]
@@ -186,7 +207,8 @@ export default {
     },
     remainingAssignments() {
       return this.selectedAssignments.length - Object.keys(this.hiwiValues).reduce((total, key) => {
-        const value = Number(this.hiwiValues[key]); return total + (isNaN(value) ? 0 : value);
+        const value = Number(this.hiwiValues[key]);
+        return total + (isNaN(value) ? 0 : value);
       }, 0);
     }
   },
@@ -197,9 +219,7 @@ export default {
       hiwiValues: [],
       perviousHiwiValues: [],
       templateNames: [],
-      sliders: [
-
-      ],
+      sliders: [],
       currentStep: 0,
       assignments: [],
       selectedAssignments: [],
@@ -307,7 +327,16 @@ export default {
       }
 
       for (const user of this.selectedReviewers) {
-        this.hiwiToggleField.push({ key: user.id, label: user.firstName + " " + user.lastName, type: "slider", class: 'custom-slider-class', min: 0, max: this.selectedAssignments.length, step: 1, unit: '' })
+        this.hiwiToggleField.push({
+          key: user.id,
+          label: user.firstName + " " + user.lastName,
+          type: "slider",
+          class: 'custom-slider-class',
+          min: 0,
+          max: this.selectedAssignments.length,
+          step: 1,
+          unit: ''
+        })
       }
 
 
@@ -320,7 +349,7 @@ export default {
       users.forEach(user => {
         if (user.documents.length > 1) {
           user.documents.forEach(doc => {
-            const newUser = { ...user, documentName: doc.name };
+            const newUser = {...user, documentName: doc.name};
             result.push(newUser);
           });
         } else {
@@ -352,8 +381,7 @@ export default {
         data.reviewers = convertedHiwiValues
         this.$socket.emit("assignmentAssignHiwis", data, (response) => {
         })
-      }
-      else {
+      } else {
         data.reviewers = this.selectedReviewers
         this.$socket.emit("assignmentPeerReviews", data, (response) => {
         })
@@ -388,7 +416,7 @@ export default {
             break;
           }
         }
-        this.perviousHiwiValues = { ...newValue }
+        this.perviousHiwiValues = {...newValue}
       },
       deep: true
     },

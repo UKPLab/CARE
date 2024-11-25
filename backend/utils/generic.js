@@ -31,7 +31,7 @@ exports.inject = async function inject(data, func, targetName, key = null) {
 
     return Promise.all(
       data.map(async (x) => {
-        if (!x[key]) { // If the key is not present, return the object as is
+        if (!x || !x[key]) { // If the key is not present, return the object as is
           return x;
         } else {
           return {
