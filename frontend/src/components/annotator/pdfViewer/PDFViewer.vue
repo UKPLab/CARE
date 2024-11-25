@@ -1,4 +1,7 @@
 <template>
+  <div v-if="!pdf">
+    <BasicLoading  />
+  </div>
   <div
     v-if="pdf"
     id="pdfContainer"
@@ -25,6 +28,7 @@ import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 import {computed} from "vue";
 
 import Adder from "./Adder.vue";
+import BasicLoading from "@/basic/Loading.vue";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -38,7 +42,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export default {
   name: "PDFViewer",
-  components: {PDFPage, Adder},
+  components: {BasicLoading, PDFPage, Adder},
   inject: {
     documentId: {
       type: Number,
@@ -91,28 +95,41 @@ export default {
       }
     },
   },
-  sockets: {
-    documentFile: function (data) {
-      if (data.document.id === this.documentId) {
-        const loadingTask = pdfjsLib.getDocument(data.file);
-        loadingTask.promise
-          .then((pdf) => {
-            this.pdf = new PDF();
-            this.pdf.setPDF(pdf);
-          })
-          .catch(response => {
-            this.eventBus.emit('toast', {
-              title: "PDF Loading Error",
-              message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
-              variant: "danger"
-            });
-            this.$router.push("/");
-          });
-      }
-    }
-  },
   mounted() {
-    this.$socket.emit("documentGet", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
+    this.$socket.emit("documentGet",
+      {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId
+      },
+      (res) => {
+      console.log(res);
+        if (res.success) {
+          const loadingTask = pdfjsLib.getDocument(res['data']['file']);
+          loadingTask.promise
+            .then((pdf) => {
+              this.pdf = new PDF();
+              this.pdf.setPDF(pdf);
+            })
+            .catch(response => {
+              console.log(response);
+              this.eventBus.emit('toast', {
+                title: "PDF Loading Error",
+                message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
+                variant: "danger"
+              });
+              //this.$router.push("/");
+            });
+        } else {
+          this.eventBus.emit('toast', {
+            title: "PDF Loading Error",
+            message: res.message,
+            variant: "danger"
+          });
+          this.$router.push("/");
+        }
+      }
+    );
   },
   unmounted() {
     this.pdf = null;

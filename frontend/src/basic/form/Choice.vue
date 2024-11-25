@@ -41,9 +41,7 @@
 import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
-import {sorter} from "@/assets/utils.js";
-
-Array.prototype.sorter = sorter;
+import {sorter} from "@/assets/utils";
 
 /**
  * Show a table to insert new elements
@@ -84,7 +82,7 @@ export default {
     choices() {
       if (this.options.options.choices) {
         const choicesConfig = this.options.options.choices;
-        return this.$store.getters[`table/${choicesConfig.table}/getFiltered`](
+        return sorter(this.$store.getters[`table/${choicesConfig.table}/getFiltered`](
           (e) => choicesConfig.filter.every(
             (f) => {
               switch (f.type) {
@@ -94,7 +92,7 @@ export default {
                   return e[f.key] === f.value
               }
             }
-          )).sorter(choicesConfig.sort);
+          )), choicesConfig.sort);
       }
       return [];
     },
@@ -104,7 +102,7 @@ export default {
       handler(newValue) {
         if (JSON.stringify(newValue) !== JSON.stringify(this.currentData)) {
 
-          this.currentData =  this.choices.map((c, index) => {
+          this.currentData = this.choices.map((c, index) => {
             return this.fields.reduce((acc, field) => {
               acc[field.key] = newValue[index][field.key];
               // die workflowStepId

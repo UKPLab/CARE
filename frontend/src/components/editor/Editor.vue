@@ -146,7 +146,18 @@ export default {
       this.editor.getEditor().enable(!this.readonly);
     }
 
-    this.$socket.emit("documentGet", { documentId: this.documentId , studySessionId: this.studySessionId, studyStepId: this.studyStepId });
+    this.$socket.emit("documentGet",
+      { documentId: this.documentId ,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId },
+      (res) => {
+        if (res.success) {
+          this.initializeEditorWithContent(res['data']['deltas']);
+        } else {
+          this.handleDocumentError(res.error);
+        }
+      }
+    );
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
   },
@@ -154,9 +165,6 @@ export default {
     connect() {
       console.log("Socket connected:", this.$socket.id);
       this.$socket.emit("documentOpen", { documentId: this.documentId });
-    },
-    documentFile(data) {
-      this.initializeEditorWithContent(data['deltas']);
     },
     documentError(error) {
       console.error("Document error:", error.message);

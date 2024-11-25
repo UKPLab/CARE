@@ -73,7 +73,6 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import {sorter} from "@/assets/utils.js";
-Array.prototype.sorter = sorter;
 
 /**
  * Basic Coordinator to add or edit database entries
@@ -233,8 +232,7 @@ export default {
             ? data[field.key]
             : // if type is table, get the data from the store
             ["table", "choice"].includes(field.type) && this.$store.getters["table/" + field.options.table + "/hasFields"]
-              ? this.$store.getters["table/" + field.options.table + "/getFiltered"]((e) => e[field.options.id] === id)
-                .sorter(field.options.sort)
+              ? sorter(this.$store.getters["table/" + field.options.table + "/getFiltered"]((e) => e[field.options.id] === id), field.options.sort)
                 .filter((e) => e[field.options.key] === data[field.key])
                 .map((e) =>
                 this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"], copy)

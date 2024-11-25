@@ -231,14 +231,15 @@ export const sortGraph = function (key) {
 
 /**
  * This function sorts a list of objects according to the provided list of sorters objects.
- * @param sortList
- * @returns {sorter}
+ * @param arrayToSort list of objects to sort
+ * @param sortList list of objects with the keys "type" and "key" to sort the list
+ * @returns {[]}
  */
-export const sorter = function(sortList) {
+export const sorter = function(arrayToSort, sortList) {
     if (!sortList) {
-        return this;
+        return arrayToSort;
     }
-    let sortedList = this;
+    let sortedList = arrayToSort;
     for (let sort of sortList) {
         switch(sort.type) {
             case "graph":
