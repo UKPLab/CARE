@@ -6,9 +6,9 @@
         v-model="currentData"
         :class="selectClass" class="form-select"
         @blur="blur(currentData > -1)"
-
       >
-        <option v-for="option in selectOptions"
+        <option
+                v-for="option in selectOptions"
                 :key="option.value"
                 :class="option.class"
                 :value="option.value"
@@ -22,7 +22,8 @@
         class="form-select"
         @blur="blur(currentData > 0)"
       >
-        <option v-for="option in selectOptions"
+        <option
+                v-for="option in selectOptions"
                 :key="option.id"
                 :value="option[options.options.value]"
         >{{ option[options.options.name] }}
@@ -91,7 +92,6 @@ export default {
                 // create a mapping function to map the value to the key
                 sourceValue = f.mapping[e[f.key]];
               }
-              console.log("sourceValue", sourceValue);
               switch (f.type) {
                 case "formData":
                   return sourceValue === this.formData[f.value];

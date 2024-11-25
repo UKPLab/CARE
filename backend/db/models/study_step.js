@@ -2,6 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const {promises: fs} = require("fs");
+const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const stepTypes = Object.freeze({
     STEP_TYPE_ANNOTATOR: 1,
@@ -79,10 +80,7 @@ module.exports = (sequelize, DataTypes) => {
                         hideInFrontend: true
                     }, {transaction: options.transaction});
 
-                    console.log("There is new doucument", newDocument.id);
-
                     data.documentId = newDocument.id;
-                    console.log("data", data);
                 } else {
                     const document = await sequelize.models.document.getById(data.documentId);
 
@@ -101,10 +99,10 @@ module.exports = (sequelize, DataTypes) => {
                         userId: study.userId,
                         parentDocumentId: document.id,
                         hideInFrontend: true
-                    }, {transaction: transaction});
+                    }, {transaction: options.transaction});
 
-                    const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta.json`);
-                    const newFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta.json`);
+                    const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta`);
+                    const newFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
 
                     await fs.copyFile(originalFilePath, newFilePath);
                     // TODO copy data from document_edit table! it cannot be sure that all edits are in the delta file!

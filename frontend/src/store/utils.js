@@ -85,8 +85,6 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
              * @return {function(String): Object}
              */
             getByHash: state => hash => {
-                console.log(Object.values(state.data))
-                console.log(hash);
                 return Object.values(state.data).find(row => 'hash' in row && row.hash === hash);
             },
 
@@ -177,7 +175,6 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
                 let start = Date.now()
                 // for table tag we wont remove deleted tags - as they are needed for annotations made in documents
                 refreshState(state, data, (table.name !== 'tag'));
-                console.log(table.name, Date.now() - start);
                 state.refreshCount++;
             },
         },

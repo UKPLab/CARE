@@ -94,7 +94,6 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<Array<Object>>} An array of objects. Each contains a document's info such as name, hash, etc.
          */
         static async getReviewDocuments() {
-            console.log("getReviewDocuments 1")
             try {
                 // Get documents that are ready for review
                 const reviewReadyDocuments = await Document.findAll({

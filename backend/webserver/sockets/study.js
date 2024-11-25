@@ -84,7 +84,6 @@ module.exports = class StudySocket extends Socket {
     async sendStudyByHash(studyHash) {
         const study = await this.models['study'].getByHash(studyHash);
         // TODO: study db info, workflows in study where the studies are referenced , workflow steps, study step 
-        console.log(study)
         if (study) {
             const workflow = await this.models['workflow'].getById(study.workflowId);
             if (workflow) {
@@ -279,7 +278,6 @@ module.exports = class StudySocket extends Socket {
         this.socket.on("studyPublish", async (data) => {
             try {
                 await this.publishStudy(data)
-                console.log("Publishing this data;", data);
             } catch (e) {
                 this.logger.error(e);
                 this.socket.emit("studyPublished", {

@@ -204,7 +204,7 @@ module.exports = class DocumentSocket extends Socket {
             const documentType = doc.type;
 
             if (documentType === this.models['document'].docTypes.DOC_TYPE_HTML) {
-                let deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                let deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
 
                 if (fs.existsSync(deltaFilePath)) {
                     let delta = await this.loadDocument(deltaFilePath);
