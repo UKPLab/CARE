@@ -92,10 +92,8 @@ module.exports = class StudySessionSocket extends Socket {
             //CHeck User Access prüfen
             //Ändern: Returnen ob Zugriff oder nicht
             if (await this.checkUserAccess(session.userId) || await this.checkUserAccess(study.userId)) {
-                console.log(this.checkUserAccess(session.userId), this.checkUserAccess(study.userId), "Check User Access");
                 this.emit("studyRefresh", study);
                 this.emit("study_sessionRefresh", session);
-                console.log("Study Session found", session.userId, study.userId);
             } else {
                 this.socket.emit("studySessionError", {
                     studySessionHash: studySessionHash, message: "No access rights"

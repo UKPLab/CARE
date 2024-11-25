@@ -53,7 +53,6 @@ module.exports = (sequelize, DataTypes) => {
                     ],
                     filter: [
                         {type: "formData", key: "workflowId", value: "workflowId"},
-                        {key: "workflowStepDocument", value: null}
                     ],
                     name: "name"
                 }
@@ -250,7 +249,6 @@ module.exports = (sequelize, DataTypes) => {
                 await Study.createStudySteps(study, options);
 
             }, afterUpdate: async (study, options) => {
-
                 // We only update if the context and stepDocuments are available
                 if (options.context && options.context.stepDocuments) {
                     await Study.deleteStudySteps(study, options);

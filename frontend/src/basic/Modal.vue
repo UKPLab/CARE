@@ -187,7 +187,6 @@ export default {
       this.progress = false;
     },
     hideEvent() {
-      console.log("hide");
       this.$emit('hide');
       if (this.acceptStats) {
         this.$socket.emit("stats", {
