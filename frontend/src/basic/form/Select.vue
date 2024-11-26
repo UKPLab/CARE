@@ -80,30 +80,55 @@ export default {
       }
     },
     selectOptions() {
+      let baseOptions = [];
+
       if (Array.isArray(this.options.options)) {
-        return this.options.options;
-      }
-      if (this.options.options.filter) {
-        return this.$store.getters["table/" + this.options.options.table + "/getFiltered"](
-          (e) => this.options.options.filter.every(
-            (f) => {
-              let sourceValue = e[f.key];
-              if (f.mapping) {
-                // create a mapping function to map the value to the key
-                sourceValue = f.mapping[e[f.key]];
-              }
-              switch (f.type) {
-                case "formData":
-                  return sourceValue === this.formData[f.value];
-                case "parentData":
-                  return sourceValue === this.parentValue[f.value];
-                default:
-                  return sourceValue === f.value
-              }
+        baseOptions = this.options.options;
+      } else if (this.options.options.filter) {
+        baseOptions = this.$store.getters[
+          "table/" + this.options.options.table + "/getFiltered"
+        ]((e) =>
+          this.options.options.filter.every((f) => {
+            let sourceValue = e[f.key];
+            if (f.mapping) {
+              // create a mapping function to map the value to the key
+              sourceValue = f.mapping[e[f.key]];
             }
-          ));
+            switch (f.type) {
+              case "formData":
+                return sourceValue === this.formData[f.value];
+              case "parentData":
+                return sourceValue === this.parentValue[f.value];
+              default:
+                return sourceValue === f.value
+            }
+          }
+        ));
+      } else {
+        baseOptions = this.$store.getters[
+          "table/" + this.options.options.table + "/getAll"
+        ];
       }
-      return this.$store.getters["table/" + this.options.options.table + "/getAll"];
+
+      // Filter according to additional Options and add to baseOptions
+      if (this.options.options.additionalOptions) {
+        const mappingFilter = this.options.options.filter.find(
+          (filter) => filter.type === "parentData"
+        );
+        const mapping = mappingFilter?.mapping;
+
+        // Determine parentType from parentValue 
+        const parentType = this.parentValue?.[mappingFilter?.value];
+
+        // Filter `additionalOptions` to include only those matching the current `parentType`
+        const additionalOptions = this.options.options.additionalOptions.filter((option) => {
+          const stepType = mapping[option.type]; 
+          return stepType === parentType; 
+        });
+
+        baseOptions = [...baseOptions, ...additionalOptions];
+      }
+      return baseOptions;
     },
   },
   watch: {
