@@ -93,11 +93,9 @@ module.exports = (sequelize, DataTypes) => {
             },
             beforeUpdate: async (studySession, options) => {
 
-                // Check study is still open
-                await sequelize.models.study.checkStudyOpen(studySession.studyId);
-
                 // Check if study step changed
                 if (studySession._previousDataValues.studyStepId !== studySession.studyStepId) {
+                    await sequelize.models.study.checkStudyOpen(studySession.studyId);
 
                     const studySteps = await sequelize.models.study_step.getAllByKey("studyId", studySession.studyId);
 
