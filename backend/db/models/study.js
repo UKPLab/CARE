@@ -54,6 +54,9 @@ module.exports = (sequelize, DataTypes) => {
                     filter: [
                         {type: "formData", key: "workflowId", value: "workflowId"},
                     ],
+                    disabled: [
+                        {type: "disabledItems", key: "workflowStepDocument", value: null},
+                    ],
                     name: "name"
                 }
             }, required: true,
