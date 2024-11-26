@@ -49,13 +49,6 @@ module.exports = (sequelize, DataTypes) => {
                 required: false,
                 default: false
             },
-            {
-                key: "readyForReview",
-                label: "Is this a document that should be reviewed?",
-                type: "switch",
-                required: false,
-                default: false
-            },
         ]
 
         /**

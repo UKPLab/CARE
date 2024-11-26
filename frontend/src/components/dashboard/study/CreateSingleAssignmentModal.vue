@@ -201,7 +201,7 @@ export default {
         selectableRows: true,
         scrollY: true,
         scrollX: true,
-        onlyOneRowSelectable: true,
+        singleSelect: true,
         search: true
       },
       reviewerTableOptions: {
