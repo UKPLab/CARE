@@ -142,7 +142,8 @@ module.exports = class DocumentSocket extends Socket {
             name: data.name,
             type: data.type,
             userId: this.userId
-        });
+        }, {transaction: options.transaction} );
+        
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         });
