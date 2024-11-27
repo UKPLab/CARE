@@ -96,7 +96,10 @@
             </template>
           </template>
           <template v-else>
-            <MoodleOptions ref="moodleOptionsForm" v-model="moodleOptions"/>
+            <MoodleOptions
+              ref="moodleOptionsForm"
+              v-model="moodleOptions"
+            />
           </template>
         </div>
         <!-- Step1: Preview -->
@@ -308,13 +311,15 @@ export default {
       downloadObjectsAs(users, filename, "csv");
     },
     uploadToMoodle() {
-      const {courseID, apiKey, url, assignmentID} = this.moodleOptions;
-      const loginData = this.createdUsers.map(({extId, userName, password}) => ({
-        extId,
-        userName,
-        password,
-      }));
-      const options = {apiKey, url};
+      const { courseID, apiKey, apiUrl, assignmentID } = this.moodleOptions;
+      const loginData = this.createdUsers.map(
+        ({ extId, userName, password }) => ({
+          extId,
+          userName,
+          password,
+        })
+      );
+      const options = { apiKey, apiUrl };
       const courseData = {
         courseID,
         assignmentID,
