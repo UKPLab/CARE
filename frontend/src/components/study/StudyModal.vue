@@ -212,18 +212,18 @@ export default {
     studySessions() {
       if (this.studyId) {
         return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
-          .filter(s => s.end === null)
+          .filter(s => this.study && this.study.multipleSubmit? (!this.study.closed) : s.end === null)
           .map(s => {
-            let study = {...s}
-            study.resumable = this.study.resumable;
-            study.startParsed = new Date(study.start).toLocaleString();
-            study.finished = study.end !== null
-            study.manage = []
-            if (!study.finished) {
+            let session = {...s}
+            session.resumable = this.study.resumable;
+            session.startParsed = session.start ? new Date(session.start).toLocaleString() : 'Session has not started yet';
+            session.finished = session.end !== null
+            session.manage = [];
+            if (!session.finished) {
 
 
-              if (study.resumable) {
-                study.manage.push({
+              if (session.resumable && session.start) {
+                session.manage.push({
                   icon: "box-arrow-in-right",
                   options: {
                     iconOnly: true,
@@ -236,7 +236,21 @@ export default {
                   action: "resumeSession",
                 });
               }
-              study.manage.push(
+              if (!session.start) {
+                session.manage.push({
+                  icon: "box-arrow-in-right",
+                  options: {
+                    iconOnly: true,
+                    specifiers: {
+                      "btn-outline-secondary": true,
+                      "btn-sm": true,
+                    }
+                  },
+                  title: "Start session",
+                  action: "startSession",
+                });
+              }
+              session.manage.push(
                 {
                   icon: "x-octagon",
                   options: {
@@ -252,7 +266,7 @@ export default {
 
 
             }
-            return study;
+            return session;
           })
           ;
       }
@@ -351,6 +365,10 @@ export default {
         this.$emit("start", {studySessionId: data.params.id});
         this.$refs.modal.close();
       }
+      if (data.action === "startSession") {
+        this.$emit("start", {studySessionId: data.params.id});
+        this.$refs.modal.close();
+      }          
     }
   }
 }
