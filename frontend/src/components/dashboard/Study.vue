@@ -311,7 +311,13 @@ export default {
             closed: true
           }
         }, (result) => {
-          if (!result.success) {
+          if (result.success) {
+            this.eventBus.emit('toast', {
+              title: "Study closed",
+              message: "The study has been closed",
+              variant: "success"
+            });
+          } else{
             this.eventBus.emit('toast', {
               title: "Study closing failed",
               message: result.message,
