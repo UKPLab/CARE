@@ -120,9 +120,10 @@ module.exports = class UserSocket extends Socket {
     /**
      * Check a list of users if they already exist in the database by email
      * @param data - The data object containing the users to check - at least email key is required
+     * @param options - The options object
      * @returns {Promise<Awaited<_.LoDashFp.T|*>[]>} - An array of objects containing the status of the users
      */
-    async checkUsersExists(data) {
+    async checkUsersExists(data, options) {
         const emails = data.map((user) => user.email);
         const existingEmails = await this.models["user"].filterExistingEmails(emails);
         const duplicateEmails = existingEmails.map((item) => item.email);
@@ -197,24 +198,24 @@ module.exports = class UserSocket extends Socket {
                 if (!createdUser) {
                     await transaction.rollback();
                 } else {
-                    createdUsers.push({...createdUser, roles: user.roles, exists: user.exists});
                     await transaction.commit();
+                    createdUsers.push({...createdUser, roles: user.roles, exists: user.exists});
                 }
 
             } catch (error) {
                 try {
                     if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "email") {
                         errors.push({
-                            userId: user.id, message: "duplicate email",
+                            extId: user.extId, message: "duplicate email",
                         });
                     } else {
                         errors.push({
-                            userId: user.id, message: error.errors[0].message,
+                            extId: user.extId, message: error.errors[0].message,
                         });
                     }
                 } catch (e) {
                     errors.push({
-                        userId: user.id, message: "unknown error",
+                        extId: user.extId, message: e.message,
                     });
                 }
                 this.logger.error("Failed to bulk create user: " + user.email);

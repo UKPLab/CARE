@@ -145,7 +145,7 @@
                 v-for="(error, index) in createdErrors"
                 :key="index"
               >
-                <li>User with Moodle Id {{ error.userId }} due to {{ error.message }}</li>
+                <li>User with external Id {{ error.extId }} cannot be added: {{ error.message }}</li>
               </ul>
             </div>
           </div>
@@ -512,8 +512,9 @@ export default {
     async processFile(file) {
       if (file && file.name.endsWith(".csv")) {
         try {
-          this.users = await this.validateCSV(file);
-          console.log(this.users);
+          const parsingResults = await this.validateCSV(file);
+          console.log("ParsingResults", parsingResults);
+          this.users = parsingResults;
           this.file = {
             state: 1,
             name: file.name,
@@ -547,7 +548,7 @@ export default {
       this.$socket.emit("userCheckExistsByMail", this.users, (res) => {
         this.$refs.modal.waiting = false;
         if (res.success) {
-          this.users = res.users;
+          this.users = res.data;
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to check duplicate users",

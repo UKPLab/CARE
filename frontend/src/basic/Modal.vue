@@ -49,12 +49,12 @@
                 </div>
               </div>
             </div>
-            <div v-else>
+            <div v-show="!waiting && !progress">
               <slot name="body"/>
             </div>
           </div>
           <div
-            v-if="!waiting && !progress"
+            v-show="!waiting && !progress"
             class="modal-footer"
           >
             <slot name="footer"/>
@@ -177,7 +177,7 @@ export default {
       return this.progressId;
     },
     startProgress() {
-      if (!this.progress) {
+      if (!this.progressId) {
         this.getProgressId();
       }
       this.progress = true;
