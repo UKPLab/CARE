@@ -8,7 +8,8 @@
     </template>
     <template #body>
       <MoodleOptions
-        v-model="moodleOptions" ref="moodleOptionsForm"
+        ref="moodleOptionsForm"
+        v-model="moodleOptions" 
         with-assignment-id
       />
       <!-- TODO: Turn this file uploading functionality into a component -->
