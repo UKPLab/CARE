@@ -8,6 +8,7 @@ const {generateMarvelUsername} = require("../../utils/generator");
 module.exports = (sequelize, DataTypes) => {
     class User extends MetaModel {
         static roleIdMap = null;
+        static autoTable = true;
         static accessMap = [
             {
                 right: "frontend.dashboard.studies.view.userPrivateInfo",
@@ -96,7 +97,7 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Get user id by username or email
          * @param {string} userName username or email
-         * @returns {Promise<integer>} user id
+         * @returns {Promise<Number>} user id
          */
         static async getUserIdByName(userName) {
             const user = await User.find(userName);
@@ -128,7 +129,7 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Get user id by email
          * @param {string} email email
-         * @returns {Promise<integer>}} user id
+         * @returns {Promise<Number>}} user id
          */
         static async getUserIdByEmail(email) {
             const user = await User.getByKey("email", email);

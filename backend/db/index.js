@@ -12,6 +12,7 @@ const Sequelize = require('sequelize');
 const {DataTypes} = require("sequelize");
 const env = process.env.NODE_ENV || 'development';
 const config = require(__dirname + '/config/config.js')[env];
+const GlobalChangeTrackingPlugin = require('./plugins');
 const db = {};
 
 let sequelize;
@@ -20,6 +21,9 @@ if (config.use_env_variable) {
 } else {
     sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
+
+// Add global change tracking hooks to all models
+GlobalChangeTrackingPlugin(sequelize);
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
@@ -42,5 +46,7 @@ Object.keys(db.models).forEach(modelName => {
         db.models[modelName].associate(db.models);
     }
 });
+
+
 
 module.exports = db;

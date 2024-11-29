@@ -3,7 +3,12 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {
-        static autoTable = true;
+        static autoTable = {
+            foreignTables: [{
+                table: "study_step",
+                by: "studyId"
+            }]
+        };
         static fields = [{
             key: "name",
             label: "Name of the study:",
