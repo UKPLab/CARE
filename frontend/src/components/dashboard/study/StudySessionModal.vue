@@ -74,7 +74,14 @@ export default {
         small: false,
         pagination: 10,
       },
-      columns: [
+    }
+  },
+  computed: {
+    study() {
+      return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
+    },
+    columns(){ 
+      let cols = [
         {
           name: "User",
           key: "creator_name"
@@ -94,11 +101,12 @@ export default {
         },
         {name: "Manage", key: "manage", type: "button-group"},
       ]
-    }
-  },
-  computed: {
-    study() {
-      return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
+
+    if (this.canReadPrivateInformation) {
+        cols.splice(1, 0, {name: "FirstName", key: "firstName"});
+        cols.splice(2, 0, {name: "LastName", key: "lastName"});
+      }
+      return cols;
     },
     studySessions() {
       if (!this.study) {
@@ -108,7 +116,6 @@ export default {
         .filter(s => this.showFinished || s.end === null)
         .map(s => {
           let session = {...s};
-
           session.startParsed = new Date(session.start).toLocaleString();
           session.finished = session.end !== null;
           session.manage = [
@@ -152,9 +159,18 @@ export default {
               action: "deleteStudySession",
             });
           }
-
+          if (this.canReadPrivateInformation) {
+            const user = this.$store.getters["admin/user/get"](this.study.userId);
+            if (user) {
+              session.firstName = user.firstName;
+              session.lastName = user.lastName;
+            }
+          }
           return session;
         });
+    },
+    canReadPrivateInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
     },
   },
   methods: { 
