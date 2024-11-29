@@ -66,7 +66,7 @@ export default {
     },
     sessionStudyIds() {
       return this.$store.getters["table/study_session/getByUser"](this.$store.getters["auth/getUserId"])
-        .filter(s => !s.end)
+        .filter(s => !s.end || (s.studyId && this.$store.getters["table/study/get"](s.studyId) && this.$store.getters["table/study/get"](s.studyId).multipleSubmit ? !this.$store.getters["table/study/get"](s.studyId).closed : false))
         .map(s => s.studyId);
     },
     studyTimes() {

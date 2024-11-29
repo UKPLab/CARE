@@ -35,6 +35,13 @@ module.exports = (sequelize, DataTypes) => {
                             }
                         },
                     ],
+                    additionalOptions: [
+                        {
+                            type: sequelize.models.document.docTypes.DOC_TYPE_HTML, 
+                            name: "New Empty Document",
+                            value: null
+                        }
+                    ]
                 },
                 required: true,
             },

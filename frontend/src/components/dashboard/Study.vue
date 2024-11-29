@@ -6,6 +6,7 @@
     <ConfirmModal ref="confirmModal"/>
     <BulkCreateAssignmentsModal ref="bulkCreateAssignmentsModal"/>
     <CreateSingleAssignmentModal ref="createSingleAssignmentModal"/>
+    <InformationModal ref="informationModal"/>
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
@@ -47,6 +48,7 @@ import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
 import CreateSingleAssignmentModal from "./study/CreateSingleAssignmentModal.vue";
+import InformationModal from "@/basic/modal/InformationModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -63,7 +65,8 @@ export default {
     BasicButton,
     ConfirmModal,
     BulkCreateAssignmentsModal,
-    CreateSingleAssignmentModal
+    CreateSingleAssignmentModal,
+    InformationModal
   },
   inject: {
     acceptStats: {
@@ -98,8 +101,11 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
+    showInformationButton() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.admin");
+    },
     buttons() {
-      return [
+      const defaultButtons = [
         {
           icon: "pencil-square",
           options: {
@@ -164,20 +170,23 @@ export default {
             }
           },
           title: "Close study",
-          action: "closeStudy"
+          action: "closeStudy",
         },
-        {
-          icon: "save",
+      ];
+      if (this.showInformationButton) {
+        defaultButtons.push({
+          icon: "arrows-angle-expand",
           options: {
             iconOnly: true,
             specifiers: {
               "btn-outline-secondary": true,
-            }
+            },
           },
-          title: "Save as Template",
-          action: "saveAsTemplate",
-        }
-      ];
+          title: "Show informations",
+          action: "showInformation",
+        });
+      }
+      return defaultButtons;
     },
     columns() {
       let cols = [
@@ -311,7 +320,13 @@ export default {
             closed: true
           }
         }, (result) => {
-          if (!result.success) {
+          if (result.success) {
+            this.eventBus.emit('toast', {
+              title: "Study closed",
+              message: "The study has been closed",
+              variant: "success"
+            });
+          } else{
             this.eventBus.emit('toast', {
               title: "Study closing failed",
               message: result.message,
@@ -321,6 +336,9 @@ export default {
         });
       } else if (data.action === "saveAsTemplate") {
         this.saveAsTemplate(data.params);
+      } else if (data.action === "showInformation") {
+        const { deletedAt, createdAt, firstName, lastName, updatedAt, manage, ...filteredParams } = data.params;
+        this.$refs.informationModal.open(filteredParams);
       }
     },
     async copyLink(studyId) {

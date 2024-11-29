@@ -32,7 +32,6 @@ export default {
     return {
       id: 0,
       data: {},
-      editTimeout: null
     }
   },
   computed: {

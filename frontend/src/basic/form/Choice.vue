@@ -3,7 +3,7 @@
     <template #element>
       <table class="table table-hover">
         <tbody>
-        <tr v-for="(item, index) in choices" v-show="item.workflowStepDocument === null" :key="'entry_' + index">
+        <tr v-for="(item, index) in choices" :key="'entry_' + index">
           <td v-for="field in fields" :key="field.key">
             <div class="d-flex align-items-center">
                 <span class="badge bg-primary me-2">
@@ -82,17 +82,28 @@ export default {
     choices() {
       if (this.options.options.choices) {
         const choicesConfig = this.options.options.choices;
-        return sorter(this.$store.getters[`table/${choicesConfig.table}/getFiltered`](
-          (e) => choicesConfig.filter.every(
-            (f) => {
-              switch (f.type) {
-                case "formData":
-                  return e[f.key] === this.formData[f.value];
-                default:
-                  return e[f.key] === f.value
-              }
+        const filteredChoices = this.$store.getters[`table/${choicesConfig.table}/getFiltered`]((item) => {
+          return choicesConfig.filter.every((filter) => {
+            switch (filter.type) {
+              case "formData":
+                return item[filter.key] === this.formData[filter.value];
+              default:
+                return item[filter.key] === filter.value;
             }
-          )), choicesConfig.sort);
+          });
+        });
+
+        // Exclude items based on `disabled` conditions
+        const validChoices = filteredChoices.filter((item) => {
+          if (choicesConfig.disabled) {
+            return choicesConfig.disabled.every((rule) => {
+              return !(rule.type === "disabledItems" && item[rule.key] !== rule.value);
+            });
+          }
+          return true; 
+        });
+
+        return sorter(validChoices, choicesConfig.sort);
       }
       return [];
     },
@@ -142,16 +153,14 @@ export default {
     }
   },
   methods: {
-    // TODO needs to be adapted to the new structure
-    validate() {
-      const allValid = this.currentData.every(entry => entry.studyId !== null);
-      if (!allValid) {
-        this.$socket.emit("#toast", {
-          message: "Required field missing",
-          title: "Error",
-          variant: "stepDocuments",
+    validate() { 
+      const allValid = this.choices
+      .every((item, index) => {
+        return this.fields.every(field => {
+          const fieldKey = field.key;
+          return this.currentData[index]?.[fieldKey] !== null; 
         });
-      }
+      });
       return allValid;
     },
   },

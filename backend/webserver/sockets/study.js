@@ -90,39 +90,6 @@ module.exports = class StudySocket extends Socket {
                     studyHash: studyHash, message: "No workflow found!"
                 });
             }
-
-            /*
-            const responseData = {
-                ...study,
-                workflow: workflow ? {
-                    id: workflow.id,
-                    name: workflow.name,
-                    description: workflow.description
-                } : null,
-                workflowSteps: workflowSteps? workflowSteps.map(step => {
-                    return {
-                        id: step.id,
-                        workflowId: step.workflowId,
-                        stepType: step.stepType,
-                        workflowStepPrevious: step.workflowStepPrevious,
-                        allowBackward: step.allowBackward,
-                        workflowStepDocument: step.workflowStepDocument,
-                        configuration: step.configuration,
-                    }
-                })
-                : null,
-                studySteps: studySteps? studySteps.map(step => {
-                    return {
-                        id: step.id,
-                        studyId: step.study,
-                        workflowStepId: step.workflowStepId,
-                        documentId: step.documentId,
-                    }
-                })
-                : null
-            };
-            */
-
         } else {
             this.socket.emit("studyError", {
                 studyHash: studyHash, message: "Not found!"

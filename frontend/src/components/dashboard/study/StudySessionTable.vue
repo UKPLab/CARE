@@ -77,17 +77,17 @@ export default {
       }
 
       return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
-          .filter(s => this.showFinished || s.end === null)
+          .filter(s => this.showFinished || this.study && this.study.multipleSubmit? (!this.study.closed) : s.end === null)
           .map(s => {
             let session = {...s};
 
             session.resumable = this.study.resumable;
-            session.startParsed = new Date(session.start).toLocaleString();
-            session.finished = session.end !== null
+            session.startParsed = session.start? new Date(session.start).toLocaleString() : 'Session has not started yet';
+            session.finished = session.end !== null;
             session.manage = []
 
             if (!session.finished) {
-              if (session.resumable) {
+              if (session.resumable && session.start) {
                 session.manage.push({
                   icon: "box-arrow-in-right",
                   options: {
@@ -101,20 +101,37 @@ export default {
                   action: "resumeSession",
                 });
               }
-              session.manage.push(
-                  {
-                    icon: "trash",
-                    options: {
-                      iconOnly: true,
-                      specifiers: {
-                        "btn-outline-secondary": true,
-                        "btn-sm": true,
-                      }
-                    },
-                    title: "Delete session",
-                    action: "deleteSession",
-                  });
-            }
+              if (!session.start) {
+                session.manage.push({
+                  icon: "box-arrow-in-right",
+                  options: {
+                    iconOnly: true,
+                    specifiers: {
+                      "btn-outline-secondary": true,
+                      "btn-sm": true,
+                    }
+                  },
+                  title: "Start session",
+                  action: "startSession",
+                });
+              }
+              if ((this.userId === this.study.createdByUserId && this.userId !== this.study.userId) || this.$store.getters["auth/isAdmin"] ) {
+                session.manage.push(
+                    {
+                      icon: "trash",
+                      options: {
+                        iconOnly: true,
+                        specifiers: {
+                          "btn-outline-secondary": true,
+                          "btn-sm": true,
+                        }
+                      },
+                      title: "Delete session",
+                      action: "deleteSession",
+                    });
+              }
+
+            }  
 
             return session;
           });
@@ -134,6 +151,9 @@ export default {
         case "resumeSession":
           this.$router.push("/session/" + data.params.hash);
           break;
+        case "startSession":
+          this.$router.push("/session/" + data.params.hash);
+          break;  
         case "deleteSession":
           this.$refs.deleteConf.open(
               "Delete Session",

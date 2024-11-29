@@ -59,6 +59,9 @@ module.exports = (sequelize, DataTypes) => {
                     filter: [
                         {type: "formData", key: "workflowId", value: "workflowId"},
                     ],
+                    disabled: [
+                        {type: "disabledItems", key: "workflowStepDocument", value: null},
+                    ],
                     name: "name"
                 }
             }, required: true,
@@ -78,7 +81,8 @@ module.exports = (sequelize, DataTypes) => {
             min: 0,
             max: 180,
             step: 1,
-            default: 0,
+            default: 0, 
+            textMapping: [{from: 0, to: "unlimited"}]
         }, {
             key: "limitSessions",
             type: "slider",
@@ -90,6 +94,7 @@ module.exports = (sequelize, DataTypes) => {
             max: 200,
             step: 1,
             default: 0,
+            textMapping: [{from: 0, to: "unlimited"}]
         }, {
             key: "limitSessionsPerUser",
             type: "slider",
@@ -101,6 +106,7 @@ module.exports = (sequelize, DataTypes) => {
             max: 200,
             step: 1,
             default: 0,
+            textMapping: [{from: 0, to: "unlimited"}]
         }, {
             key: "collab",
             label: "Should the study be collaborative?",
