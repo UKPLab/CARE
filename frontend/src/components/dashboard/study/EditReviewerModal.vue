@@ -172,7 +172,7 @@ inject: {
     open(id) {
       this.$refs.modal.open();
       this.handleStepZero(id)
-      this.idStudy = is
+      this.idStudy = id
     },
     resetModal() {
       this.selectedUsers = [];
