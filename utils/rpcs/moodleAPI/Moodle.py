@@ -6,6 +6,7 @@ __author__ = "Alexander Bürkle, Dennis Zyska"
 
 class Moodle:
     def __init__(self, api_key, url, endpoint="/webservice/rest/server.php"):
+        print(url)
         self.api_key = api_key
         self.url = url
         self.endpoint = endpoint

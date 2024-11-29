@@ -508,6 +508,7 @@ export default {
       if (file && file.name.endsWith(".csv")) {
         try {
           this.users = await this.validateCSV(file);
+          console.log(this.users);
           this.file = {
             state: 1,
             name: file.name,
