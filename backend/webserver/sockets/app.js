@@ -1,6 +1,8 @@
 const Socket = require("../Socket.js");
 const {relevantFields} = require("../../utils/auth");
 const database = require("../../db");
+const {v4: uuidv4} = require("uuid");
+const {mergeFilter} = require("../../utils/data.js");
 
 /**
  * Send data for building the frontend app
@@ -148,7 +150,7 @@ module.exports = class AppSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendData(data) {
-        await this.sendTableData(data.table, (data.filter) ? data.filter: [], (data.include)? data.include: []);
+        await this.sendTableData(data.table, (data.filter) ? data.filter : [], (data.include) ? data.include : []);
     }
 
     /**
@@ -225,19 +227,81 @@ module.exports = class AppSocket extends Socket {
      * @returns {Promise<*>}
      */
     async updateAppData(data, options) {
+        return await this.updateData(data, options);
+    }
 
-        const id = await this.updateData(data, options);
-        // send updated data to all clients
-        options.transaction.afterCommit(() => {
-            this.sendTableData(data.table, [{key: "id", value: id}], [], null,false, true);
-        });
-        return id;
+
+    /**
+     * Subscribe to app data
+     */
+    async subscribeAppData(data, options) {
+        if (!data.table) {
+            throw new Error("Table name is required");
+        }
+
+        // add subscription to the list
+        const newSubscriptionId = uuidv4();
+        const tableName = data.table;
+        this.socket.appDataSubscriptions["ids"][newSubscriptionId] = data;
+        if (!this.socket.appDataSubscriptions["tables"][tableName]) {
+            this.socket.appDataSubscriptions["tables"][tableName] = new Set();
+        }
+        this.socket.appDataSubscriptions["tables"][tableName].add(newSubscriptionId);
+
+        // merge all filters
+        const oldFilters = this.socket.appDataSubscriptions["merged"][tableName];
+        const currentFilter = mergeFilter([(data.filter) ? data.filter : []], this.models[tableName].getAttributes());
+        const allFilter = [...this.socket.appDataSubscriptions["tables"][tableName]]
+            .map(subId => this.socket.appDataSubscriptions["ids"][subId])
+            .map(sub => (sub.filter) ? sub.filter : []);
+        const mergedFilters = mergeFilter(allFilter, this.models[tableName].getAttributes());
+        this.socket.appDataSubscriptions["merged"][tableName] = mergedFilters;
+
+        // check if client already has the data
+        if (oldFilters && oldFilters.length === 0) { // has already all data, no need for sending new data
+            return newSubscriptionId;
+        } else if (mergedFilters.length === 0) { // now need all data, so send it
+            await this.sendTable(tableName, mergedFilters);
+        } else if (oldFilters && oldFilters.length > 0) { // check if the we already has filter
+            if (oldFilters.includes(currentFilter)) { // and the new data is included in the old data
+                return newSubscriptionId;
+            } else { // if not, we need to send data for current filter
+                await this.sendTable(tableName, currentFilter);
+            }
+        } else {
+            // just send data with additional current filter
+            await this.sendTable(tableName, currentFilter);
+        }
+
+        //TODO handle includes
+        //TODO check if sending is needed or data is already available to the client
+        //TODO send data if new data in frontend is needed
+        //TODO on unsubscribe, recalculate the merged filters
+        //TODO the io appDataSubscription should maybe hold relevant users where then the merged data is checked
+
+        // we need to send the data to the client on subscription
+        //await this.sendTableData(data.table, (data.filter) ? data.filter : [], (data.include) ? data.include : []);
+
+        return newSubscriptionId;
+    }
+
+    /**
+     * Unsubscribe from app data
+     */
+    async unsubscribeAppData(data, options) {
+        // remove subscription from the list
+        const tableName = this.socket.appDataSubscriptions[data].table;
+        delete this.socket.appDataSubscriptions["ids"][data];
+        this.socket.appDataSubscriptions["tables"][tableName].delete(data);
     }
 
     init() {
 
         this.createSocket("appDataUpdate", this.updateAppData, {}, true);
         this.createSocket("appData", this.sendData, {}, false);
+
+        this.createSocket("subscribeAppData", this.subscribeAppData, {}, false);
+        this.createSocket("unsubscribeAppData", this.unsubscribeAppData, {}, false);
 
         this.socket.on("appInit", async (data) => {
             try {

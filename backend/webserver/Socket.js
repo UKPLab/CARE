@@ -1,5 +1,6 @@
 const {inject} = require("../utils/generic");
 const {Sequelize, Op} = require("sequelize");
+const _ = require("lodash");
 
 /**
  * Defines as new Socket class
@@ -67,6 +68,20 @@ module.exports = class Socket {
                 if (transaction) {
                     t = await this.server.db.sequelize.transaction();
                     options.transaction = t;
+
+                    t.afterCommit(() => {
+                        try {
+                            const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
+
+                            t.changes.map(async (entry) => {
+                                if (entry.constructor.autoTable) {
+                                    this.emit(entry.constructor.tableName + "Refresh", _.omit(entry.dataValues, defaultExcludes), true);
+                                }
+                            });
+                        } catch (e) {
+                            this.logger.error("Error in afterCommit sending data to client: " + e);
+                        }
+                    });
                 }
 
                 const result = await func.bind(this)(data, options);
@@ -313,6 +328,69 @@ module.exports = class Socket {
         }
     }
 
+    async sendTable(tableName, filter = []) {
+
+        // check if it is an autoTable or not
+        if (!this.models[tableName] || !this.models[tableName].autoTable) {
+            this.logger.error("Table " + tableName + " is not an autoTable");
+            return;
+        }
+
+        let allFilter = {deleted: false};
+        if (filter.length > 0) {
+            allFilter[Op.or] = filter;
+        }
+        const defaultExcludes = ["deleted", "deletedAt", "updatedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
+        const allAttributes = {
+            exclude: defaultExcludes,
+        };
+
+        //TODO: if (await this.isAdmin() || (this.models[tableName] && this.models[tableName].publicTable)) {
+        if ((this.models[tableName].publicTable)) { // is allowed to see everything
+            // no adaption of the filter or attributes needed
+        } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
+            // is allowed to see only his data and possible if there is a public attribute
+            const userFilter = {};
+            if ("public" in this.models[tableName].getAttributes()) {
+                userFilter[Op.or] = [{userId: this.userId}, {public: true}];
+            } else {
+                userFilter['userId'] = this.userId;
+            }
+            allFilter = {[Op.and]: [allFilter, userFilter]}
+        } else {
+            const accessRights = this.server.db.models[tableName]['accessMap'].filter(async a => await this.hasAccess(a.right));
+            if (accessRights.length > 0) {
+                const attributes = [...new Set(accessRights.flatMap(a => a.columns))];
+                allAttributes['include'] = attributes;
+            } else {
+                this.logger.warn("User with id " + this.userId + " requested table " + tableName + " without access rights");
+                return;
+            }
+        }
+
+        const data = await this.models[tableName].findAll({
+            where: allFilter,
+            attributes: allAttributes,
+            raw: true,
+        });
+
+        this.emit(tableName + "Refresh", data, true);
+
+        // send additional data if needed
+        if (this.models[tableName].autoTable.foreignTables && this.models[tableName].autoTable.foreignTables.length > 0) {
+            await Promise.all(this.models[tableName].autoTable.foreignTables.map(async (fTable) => {
+                const fdata = await this.models[fTable.table].findAll({
+                    where: {[fTable.by]: {[Op.in]: data.map(d => d.id)}, deleted: false},
+                    attributes: {exclude: defaultExcludes},
+                    raw: true,
+                });
+                this.emit(fTable.table + "Refresh", fdata, true);
+            }))
+        }
+
+    }
+
+
     /**
      * Send auto table data to the clients
      * @param table
@@ -433,4 +511,5 @@ module.exports = class Socket {
             this.logger.error(err);
         }
     }
-};
+}
+;

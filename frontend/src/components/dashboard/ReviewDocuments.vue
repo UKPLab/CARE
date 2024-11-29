@@ -97,7 +97,7 @@ export default {
       return this.documents.map((d) => {
         let newD = {...d};
         newD.type = d.type === 0 ? "PDF" : "HTML";
-        const user = this.$store.getters["admin/user/get"](d.userId)
+        const user = this.$store.getters["table/user/get"](d.userId)
         newD.firstName = (user) ? user.firstName : "Unknown";
         newD.lastName = (user) ? user.lastName : "Unknown";
         newD.manage = [

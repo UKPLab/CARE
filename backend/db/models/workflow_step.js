@@ -10,6 +10,7 @@ const stepTypes = Object.freeze({
 module.exports = (sequelize, DataTypes) => {
     class WorkflowStep extends MetaModel {
         static autoTable = true;
+        static publicTable = true;
 
         static stepTypes = stepTypes;
 

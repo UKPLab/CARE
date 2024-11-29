@@ -261,7 +261,7 @@ export default {
           }
 
           if (this.canReadPrivateInformation) {
-            const user = this.$store.getters["admin/user/get"](study.userId);
+            const user = this.$store.getters["table/user/get"](study.userId);
             if (user) {
               study.firstName = user.firstName;
               study.lastName = user.lastName;

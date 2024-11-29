@@ -146,7 +146,7 @@ export default {
       return "assignments";
     },
     users() {
-      return this.$store.getters["admin/user/getFiltered"]((u) => u.extId !== null);
+      return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
     },
     usersExtIds() {
       return this.users.map((u) => u.extId);
