@@ -24,7 +24,8 @@
         <!-- Step0: Moodle Information -->
         <div v-if="currentStep === 0">
           <MoodleOptions
-            v-model="moodleOptions" ref="moodleOptionsForm"
+            ref="moodleOptionsForm"
+            v-model="moodleOptions" 
             with-assignment-id
           />
         </div>
