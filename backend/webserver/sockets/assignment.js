@@ -86,25 +86,25 @@ module.exports = class AssignmentSocket extends Socket {
      *
      * @returns {Array<Object>} - The list of assignments with their assigned reviewers grouped by role.
      */
-    async assignPeerReviews(assignments, reviewers, reviewsPerRole, template, createdByUserId) {
+    async assignPeerReviews(data, options) {
         const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
         const assignmentTracker = new Map();
 
-        assignments.forEach((assignment) => {
+        data.assignments.forEach((assignment) => {
             const uniqueAssignmentKey = `${assignment.userId}_${assignment.documentName}`;
-            assignmentTracker.set(uniqueAssignmentKey, new Map(Object.keys(reviewsPerRole).map(role => [role, []])));
+            assignmentTracker.set(uniqueAssignmentKey, new Map(Object.keys(data.reviewsPerRole).map(role => [role, []])));
         });
 
-        const reviewersByRole = reviewers.reduce((acc, reviewer) => {
+        const reviewersByRole = data.reviewers.reduce((acc, reviewer) => {
             const role = reviewer.role;
             if (!acc[role]) acc[role] = [];
             acc[role].push(reviewer);
             return acc;
         }, {});
 
-        assignments.forEach((assignment) => {
+        data.assignments.forEach((assignment) => {
             const uniqueAssignmentKey = `${assignment.userId}_${assignment.documentName}`;
-            for (const [role, numReviewersStr] of Object.entries(reviewsPerRole)) {
+            for (const [role, numReviewersStr] of Object.entries(data.reviewsPerRole)) {
                 const numReviewersNeeded = parseInt(numReviewersStr, 10);
 
                 if (numReviewersNeeded === 0) continue;
@@ -124,7 +124,7 @@ module.exports = class AssignmentSocket extends Socket {
                 }
             }
         });
-        const result = assignments.map((assignment) => {
+        const result = data.assignments.map((assignment) => {
             const uniqueAssignmentKey = `${assignment.userId}_${assignment.documentName}`;
             const assignedReviewers = [];
 
@@ -138,18 +138,16 @@ module.exports = class AssignmentSocket extends Socket {
             };
         });
 
+        const template = data.template
+
         for (const assignment of result) {
-            await this.assignPeerReview(
-                assignment,
-                assignment.assignedReviewers,
-                template,
-                createdByUserId
+            console.log(assignment, "assignment");
+            await this.createAssignment(
+                {assignment, reviewers: assignment.assignedReviewers, template, documents: [assignment.documentName]},
+                options
             );
         }
-
-
         return result;
-
     }
 
     /**
@@ -297,50 +295,16 @@ module.exports = class AssignmentSocket extends Socket {
 
         this.createSocket("assignmentCreate", this.createAssignment, {}, true);
 
-        this.socket.on("assignmentGetAssignmentInfosFromUser", async () => {
-            try {
-                this.getAssignmentInfosFromUser();
-            } catch (error) {
-                this.logger.error(error);
-            }
-        });
+        this.createSocket("assignmentGetAssignmentInfosFromUser", this.getAssignmentInfosFromUser, {}, true);
 
-        this.socket.on("assignmentAssignHiwis", async (data) => {
+        this.createSocket("assignmentAssignHiwis", this.assignHiwis, {}, true);
 
-            try {
-                this.assignHiwis(data);
-                this.socket.emit("peerReview", {
-                    success: true,
-                    reviews,
-                });
-            } catch (error) {
-                this.socket.emit("peerReview", {
-                    success: false,
-                    message: error.message,
-                });
-                this.logger.error(error);
-            }
-        });
-
-        this.socket.on("assignmentPeerReviews", async (data) => {
-            try {
-                const reviews = await this.assignPeerReviews(data.assignments, data.reviewers, data.reviewsPerRole, data.template, data.createdByUserId);
-                this.socket.emit("peerReview", {
-                    success: true,
-                    reviews,
-                });
-            } catch (error) {
-                this.socket.emit("peerReview", {
-                    success: false,
-                    message: error.message,
-                });
-                this.logger.error(error);
-            }
-        });
+        this.createSocket("assignmentAssignPeerReviews", this.assignPeerReviews, {}, true);
 
         this.socket.on("assignmentEditReviewer", async (data) => {
             try {
-                const addedReviewers = await this.addReviewer(data.studyId, data.newReviewers.map(reviewer => reviewer.id));
+                console.log(data, "data");
+                const addedReviewers = await this.addReviewer(data);
                 const deletedReviewers = await this.removeReviewer(data.studyId, data.deletedReviewers);
                 this.socket.emit("peerReview", {
                     success: true,

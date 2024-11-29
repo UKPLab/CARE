@@ -185,7 +185,6 @@ export default {
       }]
     }],
   components: {BasicModal, BasicButton, BasicTable, BasicForm},
-  emits: ["updateUser"],
   data() {
     return {
       currentStep: 0,

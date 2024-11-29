@@ -166,7 +166,7 @@ export default {
           lastName: user.lastName,
           userId: user.id,
           fileUrl: a['fileurl'],
-          fileName: new URL(a['fileurl']).pathname.split('/').pop(),
+          fileName: /*new URL(a['fileurl']).pathname.split('/').pop()*/ a['filename'],
         };
       });
     }
@@ -210,6 +210,7 @@ export default {
         this.$refs.modal.waiting = false;
         if (res.success) {
           this.downloadedAssignments = res['data'];
+          console.log(this.downloadedAssignments, this.moodleOptions);
         } else {
           this.currentStep = 0;
           this.eventBus.emit("toast", {
@@ -219,8 +220,10 @@ export default {
           });
         }
       });
+      console.log(this.userAssignments)
     },
     handleStepTwo() {
+      
       this.$socket.emit("documentDownloadMoodleSubmissions", {
         files: this.selectedAssignments,
         options: this.moodleOptions,

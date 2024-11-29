@@ -33,14 +33,8 @@ module.exports = class DocumentSocket extends Socket {
         try {
             const doc = await this.models['document'].getById(documentId);
 
-            const studyStepAssociationExists = await this.models['study_step'].count({
-                where: {documentId: documentId}
-            });
-
-            if (doc && (doc.public
-                    || studyStepAssociationExists > 0)
-                || (await this.checkUserAccess(doc.userId))
-            ) {
+            if (doc && await this.checkUserAccess(doc.userId))
+             {
                 return true;
             } else {
                 return false;
