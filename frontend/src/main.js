@@ -64,7 +64,7 @@ app.use(router);
 app.use(store);
 
 //Add Auto emits for sockets on mounted
-import fetchData from "@/plugins/fetchData";
+import fetchData from "@/plugins/subscribeData";
 
 app.use(fetchData);
 
