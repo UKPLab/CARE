@@ -1,6 +1,7 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const {inject} = require("../../utils/generic");
+const _ = require("lodash");
 
 /**
  * Handle user through websocket
@@ -229,6 +230,33 @@ module.exports = class UserSocket extends Socket {
         return {createdUsers, errors};
     }
 
+    /**
+     * Update user's consent data
+     * @param {Object} data - The consent data object
+     * @param {boolean} data.acceptTerms - Indicates whether the user has consented to the terms of service
+     * @param {boolean} data.acceptStats - Indicates whether the user has agreed to tracking
+     * @param {boolean} data.acceptDataSharing - Indicates whether the user has agreed to donate their annotation data
+     * @param {string} data.acceptedAt - Time when the user made the consent
+     * @param {Object} options - Sequelize transaction options
+     * @returns {void}
+     */
+    async updateUserConsent(data, options) {
+        const user = await this.models['user'].getById(this.userId);
+        if (!user) {
+            throw new Error("Failed to update user: User not found");
+        }
+
+        return _.omit(await this.models["user"].updateById(user.id,
+                {
+                    acceptStats: data.acceptStats,
+                    acceptDataSharing: data.acceptDataSharing,
+                    acceptTerms: data.acceptTerms,
+                    acceptedAt: (user.acceptedAt === null) ? new Date() : user.acceptedAt,
+                }, {transaction: options.transaction}),
+            ['passwordHash', 'salt', 'initialPassword', 'createdAt', 'updatedAt', 'deletedAt', 'deleted']);
+
+    }
+
     init() {
         this.socket.on("userGetData", async (data) => {
             try {
@@ -241,20 +269,6 @@ module.exports = class UserSocket extends Socket {
             }
         });
 
-        // Update user's consent
-        this.socket.on("userUpdateConsent", async (consentData, callback) => {
-            try {
-                await this.models["user"].updateUserConsent(this.userId, consentData);
-                callback({
-                    success: true, message: "Successfully updated user consent!",
-                });
-            } catch (error) {
-                callback({
-                    success: false, message: "Failed to updated user consent!",
-                });
-                this.logger.error(error);
-            }
-        });
 
         // Get users by their role
         this.socket.on("userGetByRole", async (role) => {
@@ -334,6 +348,7 @@ module.exports = class UserSocket extends Socket {
             }
         });
 
+        this.createSocket("userConsentUpdate", this.updateUserConsent, {}, true);
         this.createSocket("userBulkCreate", this.bulkCreateUsers, {}, false);
         this.createSocket("userMoodleUserGetAll", this.getUsersFromCourse, {}, false);
         this.createSocket("userCheckExistsByMail", this.checkUsersExists, {}, false);
