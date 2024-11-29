@@ -290,7 +290,7 @@ module.exports = class UserSocket extends Socket {
         // Get right associated with the user
         this.socket.on("userGetRight", async (userId) => {
             try {
-                const userRight = await this.models["user"].getUserRight(userId);
+                const userRight = await this.models["user"].getUserRights(userId);
                 this.socket.emit("userRight", {
                     success: true, userRight,
                 });

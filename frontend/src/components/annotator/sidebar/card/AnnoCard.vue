@@ -199,7 +199,6 @@ export default {
     return {
       shake: false,
       showReplies: false,
-      showEditTimeout: null,
       edit_mode: false,
     }
   },

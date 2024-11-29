@@ -87,9 +87,28 @@ module.exports = class DocumentSocket extends Socket {
                 type: docTypes.DOC_TYPE_HTML,
                 name: data.name.replace(/.delta$/, ""),
                 userId: data.userId ?? this.userId,
-            });
+            }, {transaction: options.transaction});
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
+            fs.writeFileSync(target, data.file);
+
+            const deltaContent = JSON.parse(data.file.toString());
+
+            // Create initial database entry for document edits 
+            const initialEdit = {
+                documentId: doc.id,
+                userId: data.userId ?? this.userId,
+                studySessionId: null,
+                studyStepId: null,
+                draft: false,
+                offset: 0,  
+                operationType: 0,  
+                span: deltaContent.ops.reduce((span, op) => span + (op.insert ? op.insert.length : 0), 0),  
+                text: deltaContent.ops.map(op => op.insert).join(''),  
+                attributes: null,  
+            };
+
+            await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
         } else {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
@@ -97,7 +116,7 @@ module.exports = class DocumentSocket extends Socket {
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: data.isUploaded ?? false,
                 readyForReview: data.isUploaded ?? false,
-            });
+            }, {transaction: options.transaction});
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
         }

@@ -24,7 +24,7 @@
       <th v-if="selectableRows">
         <div class="form-check">
           <input
-            v-if="!onlyOneRowSelectable"
+            v-if="!singleSelect"
             class="form-check-input"
             type="checkbox"
             :checked="isAllRowsSelected"
@@ -298,7 +298,7 @@ export default {
       itemsPerPageList: [10, 25, 50, 100],
       paginationShowPages: 3,
       filter: null,
-      onlyOneRowSelectable: this.options && this.options.onlyOneRowSelectable,
+      singleSelect: this.options && this.options.singleSelect,
       isAllRowsSelected: false,
       search: ""
     };
@@ -498,7 +498,7 @@ export default {
     selectRow(isSelected, row) {
       if (this.selectableRows) {
         if (isSelected) {
-          if (this.onlyOneRowSelectable) {
+          if (this.singleSelect) {
             this.currentData = [row];
           } else {
             // Check if the row is already in the selectedRows array; if not, add it

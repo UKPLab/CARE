@@ -234,7 +234,7 @@ module.exports = (sequelize, DataTypes) => {
          * @param {number} userId - The ID of the user
          * @returns {Object<string, array>}
          */
-        static async getUserRight(userId) {
+        static async getUserRights(userId) {
             try {
                 let roles = await this.sequelize.models["user_role_matching"].findAll({
                     where: {userId},
