@@ -1,14 +1,13 @@
 <template>
   <Modal
     ref="modal"
-    lg
+    xl
     name="terms"
     disable-keyboard
     remove-close
   >
     <template #title> Terms </template>
     <template #body>
-      <h3>Terms of Service</h3>
       <div class="terms-container">
         <div v-html="config['terms']" />
       </div>
@@ -180,7 +179,7 @@ export default {
 
 <style scoped>
 .terms-container {
-  height: 400px;
+  height: 300px;
   overflow-y: auto;
   border: 1px solid #e0e0e0;
   padding: 1rem;
