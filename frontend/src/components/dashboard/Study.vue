@@ -26,6 +26,12 @@
           title="Add"
           @click="add"
         />
+        <BasicButton
+          v-if="canCloseEiwaProject"
+          class="btn btn-primary btn-sm"
+          title="Close Eiwa Project"
+          @click="closeEiwaProject"
+        />
       </template>
       <template #body>
         <BasicTable
@@ -290,6 +296,12 @@ export default {
     },
     canAddSingleAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addBulkAssignments");
+    },
+    canCloseEiwaProject() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.closeEiwaProject");
+    },
+    studiesProjectEiwa() {
+      return this.$store.getters["table/study/getFiltered"]((s) => s.projectId === 1);
     }
   },
   methods: {
@@ -379,6 +391,43 @@ export default {
     },
     studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
+    },
+    closeEiwaProject(){
+      this.$socket.emit("stats", {action: "closeEiwaProject", data: {projectId: 1}});
+
+      this.$refs.confirmModal.open(
+        "Close Eiwa Project",
+        "Are you sure you want to close the Eiwa project?",
+        "This will close all studies associated with the Eiwa project.",
+        (confirmed) => {
+          if (confirmed) {
+            this.studiesProjectEiwa.forEach(study => {
+              this.$socket.emit("appDataUpdate", {
+                table: "study",
+                data: {
+                  id: study.id,
+                  closed: true
+                }
+              }, (result) => {
+                if(result.success){
+                  this.eventBus.emit('toast', {
+                    title: "Study closed",
+                    message: "The study has been closed",
+                    variant: "success"
+                  });
+                } else {
+                  this.eventBus.emit('toast', {
+                    title: "Study closing failed",
+                    message: result.message + " Study: " + study.name,
+                    variant: "danger"
+                  });
+                }
+              });
+            });
+          }
+        }
+      );
+      
     },
     async deleteStudy(row) {
       const studySessions = this.$store.getters["table/study_session/getFiltered"](

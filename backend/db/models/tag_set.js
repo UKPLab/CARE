@@ -40,6 +40,10 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
+            TagSet.belongsTo(models["project"], {
+                foreignKey: "projectId",
+                as: "project",
+            });
         }
     }
 
@@ -51,7 +55,9 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
-        createdAt: DataTypes.DATE
+        createdAt: DataTypes.DATE,
+        projectId: DataTypes.INTEGER
+
     }, {
         sequelize,
         modelName: 'tag_set',
