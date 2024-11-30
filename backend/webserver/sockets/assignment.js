@@ -181,10 +181,6 @@ module.exports = class AssignmentSocket extends Socket {
 
         const study = await this.models["study"].add(new_study, {transaction: options.transaction, context: new_study});
 
-        options.transaction.afterCommit(() => {
-            this.emit("studyRefresh", study);
-        });
-
         await this.addReviewer({
             studyId: study.id,
             reviewer: data["reviewer"]
@@ -199,7 +195,7 @@ module.exports = class AssignmentSocket extends Socket {
      * @param {number} data.studyId - The ID of the study to which reviewers are to be added.
      * @param {Array<number>} data.reviewer - An array of user IDs representing the reviewers to be added.
      * @param {Object} options - The options for transaction data
-     * @returns {Promise<void>} - A promise that resolves when the reviewers have been added.
+     * @returns {Promise<void>} - A promise that resolves when the reviewers have been added to the study.
      */
     async addReviewer(data, options) {
 
@@ -218,18 +214,17 @@ module.exports = class AssignmentSocket extends Socket {
             }
         }
 
-        const createdSessions = await Promise.all(data['reviewer'].map(reviewer => {
+        await Promise.all(data['reviewer'].map(reviewer => {
             return this.models["study_session"].add({
                 studyId: data['studyId'],
                 userId: reviewer['id'],
             }, {transaction: options.transaction});
         }));
 
-        options.transaction.afterCommit(() => {
-            for (const session of createdSessions) {
-                this.emit("study_sessionRefresh", session);
-            }
-        });
+    }
+
+    async createAssignmentBulk(data, options) {
+
 
     }
 
@@ -294,6 +289,7 @@ module.exports = class AssignmentSocket extends Socket {
     init() {
 
         this.createSocket("assignmentCreate", this.createAssignment, {}, true);
+        this.createSocket("assignmentCreateBulk", this.createAssignmentBulk, {}, true);
 
         this.createSocket("assignmentGetAssignmentInfosFromUser", this.getAssignmentInfosFromUser, {}, true);
 

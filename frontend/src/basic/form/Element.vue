@@ -81,6 +81,10 @@ export default {
   },
   methods: {
     validate(data) {
+      if (data === true) {
+        this.invalidField = false;
+        return true;
+      }
       if (this.options.required) {
         // Check pattern
         if (this.options.pattern) {

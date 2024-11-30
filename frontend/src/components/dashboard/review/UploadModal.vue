@@ -9,7 +9,7 @@
       <h5 class="modal-title">Upload Assignment</h5>
     </template>
 
-    <template #step-0>
+    <template #step-1>
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedUser"
@@ -18,7 +18,7 @@
           :data="users"/>
       </div>
     </template>
-    <template #step-1>
+    <template #step-2>
       <BasicForm
         v-model="data"
         :fields="fileFields"
@@ -158,7 +158,8 @@ export default {
 }
 
 .table-scroll-container {
-  height: 300px;
+  max-height: 400px;
+  min-height: 80px;
   overflow-y: auto;
 }
 </style>

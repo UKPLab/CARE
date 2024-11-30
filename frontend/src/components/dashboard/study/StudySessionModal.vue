@@ -1,5 +1,5 @@
 <template>
-  <EditReviewerModal ref="editReviewerModal"/>
+  <EditReviewerModal ref="editReviewerModal" name="editReviewerModal" />
   <BasicModal
     ref="studySessionModal"
     :props="{studyId: studyId}"

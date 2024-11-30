@@ -109,7 +109,6 @@ export default {
     open() {
       this.reset();
       this.$refs.stepperModal.open();
-      console.log(this.$slots);
     },
     close() {
       this.$refs.stepperModal.close();
