@@ -73,11 +73,13 @@ module.exports = class Socket {
                         try {
                             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
 
-                            t.changes.map(async (entry) => {
-                                if (entry.constructor.autoTable) {
-                                    this.emit(entry.constructor.tableName + "Refresh", _.omit(entry.dataValues, defaultExcludes), true);
-                                }
-                            });
+                            if (t.changes) {
+                                t.changes.map(async (entry) => {
+                                    if (entry.constructor.autoTable) {
+                                        this.emit(entry.constructor.tableName + "Refresh", _.omit(entry.dataValues, defaultExcludes), true);
+                                    }
+                                });
+                            }
                         } catch (e) {
                             this.logger.error("Error in afterCommit sending data to client: " + e);
                         }
@@ -367,10 +369,9 @@ module.exports = class Socket {
             }
         }
 
-        const data = await this.models[tableName].findAll({
+        const data = await this.models[tableName].getAll({
             where: allFilter,
             attributes: allAttributes,
-            raw: true,
         });
 
         this.emit(tableName + "Refresh", data, true);
@@ -378,12 +379,11 @@ module.exports = class Socket {
         // send additional data if needed
         if (this.models[tableName].autoTable.foreignTables && this.models[tableName].autoTable.foreignTables.length > 0) {
             await Promise.all(this.models[tableName].autoTable.foreignTables.map(async (fTable) => {
-                const fdata = await this.models[fTable.table].findAll({
+                const fdata = await this.models[fTable.table].getAll({
                     where: {[fTable.by]: {[Op.in]: data.map(d => d.id)}, deleted: false},
                     attributes: {exclude: defaultExcludes},
-                    raw: true,
                 });
-                this.emit(fTable.table + "Refresh", fdata, true);
+                this.emit(fTable.tableName + "Refresh", fdata, true);
             }))
         }
 

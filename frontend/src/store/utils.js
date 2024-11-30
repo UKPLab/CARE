@@ -65,7 +65,7 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
              * Returns the whole store.
              *
              * @param state
-             * @returns {function: Array}
+             * @returns {Array}
              */
             getAll: state => {
                 return Object.values(state.data);
@@ -73,6 +73,8 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
 
             /**
              * Returns subset of the store by a given filter function.
+             * @param state
+             * @return {function(function): Array}
              */
             getFiltered: state => filter => {
                 return Object.values(state.data).filter(filter);

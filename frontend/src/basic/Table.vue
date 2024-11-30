@@ -490,6 +490,8 @@ export default {
           [c.key]: Object.assign({}, ...c.filter.map((f) => ({[f.key]: false}))),
         }))
     );
+    console.log("FILTERS", this.filter);
+    console.log("COLUMNS", this.columns);
 
   },
   methods: {

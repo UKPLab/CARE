@@ -183,14 +183,59 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Get all users
+         * @param {Object} options - Sequelize query options
          * @returns {string[]} An array of all users.
          */
-        static async getAllUsers() {
-            try {
-                return await User.getAll(false, ["passwordHash", "salt"]);
-            } catch (error) {
-                console.error(error);
+        static async getAll(options = {}) {
+            // make sure passwordHash and salt are excluded
+            if (options.attributes) {
+                if (!options.attributes.exclude) {
+                    options.attributes['exclude'] = ["passwordHash", "salt"];
+                } else {
+                    options.attributes.exclude.push("passwordHash", "salt");
+                }
+            } else {
+                options['attributes'] = {
+                    exclude: ["passwordHash", "salt"],
+                }
             }
+
+            // includes role matching as roles (ids)
+            const include =
+                [{
+                    model: this.sequelize.models["user_role_matching"],
+                    as: "roles",
+                    attributes: ["userRoleId"],
+                    where: {
+                        deleted: false,
+                    },
+                    required: false, // Ensures we get the user even if they have no roles
+                }];
+            if (options.include) {
+                options.include = options.include.concat(include);
+            } else {
+                options.include = include;
+            }
+
+            return await super.getAll(options).then((users) => {
+                const result = users.reduce((acc, item) => {
+                    if (!acc[item.id]) {
+                        acc[item.id] = item;
+                        acc[item.id].roles = [];
+                    }
+                    if (item['roles.userRoleId']) {
+                        acc[item.id].roles.push(item['roles.userRoleId']);
+                    }
+                    return acc;
+                }, {});
+                // return only list of values
+                return Object.values(result).map((item) => {
+                    // delete key roles.userRoleId
+                    delete item['roles.userRoleId'];
+                    return item;
+                });
+
+            });
         }
 
         /**

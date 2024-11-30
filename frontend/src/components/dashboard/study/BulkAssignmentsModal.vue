@@ -14,6 +14,8 @@
       <p class="text-center">Please create a study template to proceed!</p>
     </template>
 
+
+
     <template #step-0>
       <BasicForm
         ref="templateSelectionForm"
@@ -46,10 +48,10 @@
     <template #step-2>
       <div class="table-scroll-container">
         <BasicTable
-          v-model="selectedReviewers"
-          :columns="columnsStepOne"
-          :data="reviewers"
-          :options="tableOptions" />
+          v-model="selectedReviewer"
+          :columns="reviewerTableColumns"
+          :data="reviewerTable"
+          :options="reviewerTableOptions"/>
       </div>
     </template>
 
@@ -154,6 +156,9 @@ export default {
   emits: ["updateUser"],
   data() {
     return {
+      selectedReviewer: [],
+
+
       templateSelection: {},
       reviewerSelectionMode: 'general',
       hiwiValues: [],
@@ -161,7 +166,6 @@ export default {
       currentStep: 0,
       assignments: [],
       selectedAssignments: [],
-      selectedReviewers: [],
       sliderValues: {},
       documentTableOptions: {
         striped: true,
@@ -175,7 +179,7 @@ export default {
         onlyOneRowSelectable: false,
         search: true
       },
-      tableOptions: {
+      reviewerTableOptions: {
         striped: true,
         hover: true,
         bordered: false,
@@ -194,7 +198,7 @@ export default {
       return [
         this.workflowStepsAssignment.length !== 0,
         this.selectedAssignments.length > 0,
-        this.selectedReviewers.length > 0,
+        this.selectedReviewer.length > 0,
 
       ];
     },
@@ -243,7 +247,45 @@ export default {
         {name: "Last Name", key: "lastName"},
       ]
     },
-    reviewers() {
+    reviewerTable() {
+      return this.reviewer.map((r) => {
+        let newR = {...r};
+        newR.documents = this.documents.filter((d) => d.userId === r.id).length;
+        newR.rolesNames = r.roles.map((role) => this.roles.find((r) => r.id === role).name);
+        newR.rolesNames = newR.rolesNames.join(", ");
+        return newR;
+      })
+    },
+    roles() {
+      return this.$store.getters["admin/getSystemRoles"];
+    },
+    reviewerRoles() { // unique roles assigned to reviewers
+      return [...new Set(this.reviewer.flatMap(obj => obj.roles))];
+    },
+    reviewerTableColumns() {
+      return [
+        {name: "ID", key: "id"},
+        {name: "extId", key: "extId"},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
+        {name: "Number of Assignments", key: "studySessions"},
+        {name: "Documents", key: "documents"},
+        {
+          name: "Roles",
+          key: "rolesNames",
+          // filter for roles is not working, maybe it is because of an array
+          // TODO need special kind of filter for array includes
+          /*filter: this.reviewerRoles.length > 0 ? this.reviewerRoles.map((role) => ({
+            key: "roles",
+            name: role,
+          })) : undefined*/
+        },
+      ]
+    },
+    reviewer() {
+      return this.$store.getters["table/user/getAll"];
+    },
+    reviewersOld() {
       let reviewers = this.$store.getters["admin/getAssignmentUserInfos"].filter(user => user.role != null);
       reviewers.forEach(rev => {
         rev.hasAssignments = rev.numberAssignments > 0 ? "Has Assignments" : "No Assignment"
@@ -258,18 +300,6 @@ export default {
         {title: "Template Selection"},
       ];
     },
-    isDisabled() {
-      if (this.currentStep === 0) {
-        return this.workflowStepsAssignment.length === 0;
-      }
-      if (this.currentStep === 1) {
-        return !this.selectedAssignments.length > 0;
-      }
-      if (this.currentStep === 2) {
-        return !this.selectedReviewers.length > 0;
-      }
-      return false;
-    },
     isDisabledAssignments() {
       if (this.reviewerSelectionMode.reviewerSelectionMode === 'general') {
         for (const key in this.sliderValues) {
@@ -282,35 +312,7 @@ export default {
         return this.remainingAssignments !== 0;
       }
     },
-    columnsStepOne() {
-      const uniqueRoles = [...new Set(this.reviewers.map((user) => user.role).filter((role) => role != null))];
-      const roleFilterColumn = {
-        name: "Role",
-        key: "role",
-        width: "1",
-        filter: uniqueRoles.map((role) => ({key: role, name: role})),
-      };
 
-      return [
-        roleFilterColumn,
-        {
-          name: "Has Assignments",
-          key: "hasAssignments",
-          width: "1",
-          filter: [
-            {key: "true", name: "With Assignments"},
-            {key: "false", name: "No Assignments"},
-          ],
-        },
-        {name: "ID", key: "id"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {
-          name: "Number of Assignments",
-          key: "numberAssignments",
-        },
-      ]
-    },
     columnsStepZero() {
       const usersWithAssignments = this.users.filter((user) => user.numberAssignments > 0);
       const roles = usersWithAssignments.map((user) => user.role);
@@ -368,7 +370,7 @@ export default {
     },
     hiwiSelectionData() {
       let data = [];
-      for (const user of this.selectedReviewers) {
+      for (const user of this.selectedReviewer) {
         data.push({
           key: user.id,
           label: user.firstName + " " + user.lastName,
@@ -383,7 +385,7 @@ export default {
       return data;
     },
     roleSelectionSlider() {
-      const roleCounts = this.selectedReviewers.reduce((acc, obj) => {
+      const roleCounts = this.selectedReviewer.reduce((acc, obj) => {
         const role = obj.role;
         acc[role] = (acc[role] || 0) + 1;
         return acc;
@@ -455,7 +457,7 @@ export default {
       this.hiwiValues = []
       this.currentStep = 0;
       this.selectedAssignments = [];
-      this.selectedReviewers = [];
+      this.selectedReviewer = [];
       this.sliderValues = []
       this.users = [];
     },

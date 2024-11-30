@@ -84,8 +84,8 @@ module.exports = class UserSocket extends Socket {
                 this.logger.error("This user does not have the right to load users by their role.");
                 return;
             }
-
-            return role === "all" ? await this.models["user"].getAllUsers() : await this.models["user"].getUsersByRole(role);
+console.log("ALLLALLA,", await this.models["user"].getAll());
+            return role === "all" ? await this.models["user"].getAll() : await this.models["user"].getUsersByRole(role);
         } catch (error) {
             this.logger.error(error);
         }
