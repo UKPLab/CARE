@@ -59,7 +59,7 @@ import InformationModal from "@/basic/modal/InformationModal.vue";
 /**
  * Dashboard component for handling studies
  *
- * @author: Dennis Zyska, Nils Dycke
+ * @author: Dennis Zyska, Nils Dycke, Manu Sundar Raj Nandyal
  */
 export default {
   name: "DashboardStudy",
