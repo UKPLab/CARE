@@ -95,6 +95,7 @@
             </ul>
           </span>
       </th>
+      <th v-if="buttons.length > 0">Manage</th>
     </tr>
     </thead>
     <tbody>
@@ -108,7 +109,7 @@
     </tr>
     <tr v-else-if="!data || data.length === 0">
       <td
-        :colspan="(selectableRows) ? columns.length + 1 : columns.length"
+        :colspan="emptyColspan"
         class="text-center"
       >
         No data
@@ -118,21 +119,28 @@
       v-for="(r, index) in tableData"
       v-else
       :key="r"
+      @click="selectRow(r)"
     >
       <td v-if="selectableRows">
-        <div class="form-check">
+        <div class="form-check" @click.stop="">
           <input
             class="form-check-input"
             type="checkbox"
+            :class="{
+              pointer: selectableRows && !r.isDisabled,
+            }"
             :disabled="r.isDisabled"
-            :checked="selectedRows[index]"
-            @change="(e) => selectRow(e.target.checked, r)"
+            :checked="currentData.includes(r)"
+            @change="(e) => selectRow(r)"
           />
         </div>
       </td>
       <td
         v-for="c in columns"
         :key="c"
+        :class="{
+          pointer: selectableRows && !r.isDisabled,
+        }"
       >
           <span v-if="c.key in r">
             <TIcon
@@ -163,12 +171,6 @@
               :title="r[c.key].title"
               @action="actionEmitter"
             />
-            <TButtonGroup
-              v-else-if="c.type === 'button-group'"
-              :buttons="r[c.key]"
-              :params="r"
-              @action="actionEmitter"
-            />
             <span v-else-if="c.type === 'datetime'">
               {{ new Date(r[c.key]).toLocaleString() }}
             </span>
@@ -196,6 +198,16 @@
             </span>
           </span>
         <span v-else> - </span>
+      </td>
+      <td
+        v-if="buttons.length > 0"
+        @click.stop=""
+      >
+        <TButtonGroup
+          :buttons="buttons"
+          :params="r"
+          @action="actionEmitter"
+        />
       </td>
     </tr>
     </tbody>
@@ -278,6 +290,11 @@ export default {
         return {};
       },
     },
+    buttons: {
+      type: Array,
+      required: false,
+      default: () => [],
+    },
   },
   emits: ["action", "update:modelValue", "paginationUpdate"],
   data: function () {
@@ -312,6 +329,16 @@ export default {
         "serverSide" in this.options.pagination &&
         this.options.pagination.serverSide
       );
+    },
+    emptyColspan() {
+      let colspan = this.columns.length;
+      if (this.selectableRows) {
+        colspan += 1;
+      }
+      if (this.buttons.length > 0) {
+        colspan += 1;
+      }
+      return colspan;
     },
     total() {
       if (this.serverSidePagination) {
@@ -410,14 +437,6 @@ export default {
           .map(([k, v]) => ({[k]: v}))
       );
     },
-    selectedRows() {
-      if (this.currentData) {
-        const currentSet = new Set(this.currentData.map((r) => JSON.stringify(r)));
-        return this.tableData.map((r) => currentSet.has(JSON.stringify(r)));
-      } else {
-        return [];
-      }
-    },
   },
   watch: {
     currentData: {
@@ -495,13 +514,13 @@ export default {
         });
       }
     },
-    selectRow(isSelected, row) {
+    selectRow(row) {
       if (this.selectableRows) {
-        if (isSelected) {
+        if (!this.currentData.includes(row)) { // check if selected
           if (this.singleSelect) {
             this.currentData = [row];
           } else {
-            // Check if the row is already in the selectedRows array; if not, add it
+            // Check if the row is already selected
             if (!this.currentData.some((r) => deepEqual(r, row))) {
               this.currentData.push(row);
             }
@@ -558,5 +577,9 @@ export default {
   opacity: 0.5;
   background-color: #d8d8d8;
   border: 1px solid gray;
+}
+
+.pointer {
+  cursor: pointer;
 }
 </style>

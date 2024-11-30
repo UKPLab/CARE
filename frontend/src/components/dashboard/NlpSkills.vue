@@ -16,10 +16,11 @@
     </template>
     <template #body>
       <BasicTable
-          :columns="columns"
-          :data="data"
-          :options="options"
-          @action="action"
+        :columns="columns"
+        :data="data"
+        :options="options"
+        :buttons="buttons"
+        @action="action"
       />
     </template>
   </Card>
@@ -31,7 +32,7 @@ import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/Card.vue";
 import BasicButton from "@/basic/Button.vue";
-import { cloneDeep } from "lodash";
+import {cloneDeep} from "lodash";
 
 /**
  * Shows the list of available nlp skills to admins
@@ -39,11 +40,11 @@ import { cloneDeep } from "lodash";
  * This component loads all available skills as registered at the NLP broker. Each skill
  * is presented in one row and allows to get the details on click in a modal.
  *
- * @author: Nils Dycke
+ * @author: Nils Dycke, Dennis Zyska
  */
 export default {
   name: "NlpSkills",
-  components: { BasicTable, Card, BasicButton, NlpSkillModal },
+  components: {BasicTable, Card, BasicButton, NlpSkillModal},
   props: {
     'admin': {
       type: Boolean,
@@ -85,13 +86,9 @@ export default {
     }
   },
   computed: {
-    data() {
-      const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
-
-      return skills ? Object.values(skills).map(s => {
-        s = cloneDeep(s);
-
-        s.actions = [{
+    buttons() {
+      return [
+        {
           icon: "gear",
           options: {
             iconOnly: true,
@@ -101,8 +98,14 @@ export default {
           },
           title: "Configure",
           action: "configure",
-        }];
+        }
+      ];
+    },
+    data() {
+      const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
 
+      return skills ? Object.values(skills).map(s => {
+        s = cloneDeep(s);
         // check for relevant settings
         const activeStatus = this.$store.getters["settings/getValue"](`annotator.nlp.${s.name}.activated`);
         s.activated = {

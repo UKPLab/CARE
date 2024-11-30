@@ -32,6 +32,7 @@
           :columns="columns"
           :data="studs"
           :options="options"
+          :buttons="buttons"
           @action="action"
         />
       </template>
@@ -74,7 +75,7 @@ export default {
     }
   },
   props: {},
-  fetchData: [
+  subscribeTable: [
     {
       table: 'study',
       include: [
@@ -105,7 +106,7 @@ export default {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.admin");
     },
     buttons() {
-      const defaultButtons = [
+      const buttons = [
         {
           icon: "pencil-square",
           options: {
@@ -174,7 +175,7 @@ export default {
         },
       ];
       if (this.showInformationButton) {
-        defaultButtons.push({
+        buttons.push({
           icon: "arrows-angle-expand",
           options: {
             iconOnly: true,
@@ -182,11 +183,11 @@ export default {
               "btn-outline-secondary": true,
             },
           },
-          title: "Show informations",
+          title: "Show information",
           action: "showInformation",
         });
       }
-      return defaultButtons;
+      return buttons;
     },
     columns() {
       let cols = [
@@ -243,7 +244,6 @@ export default {
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
-        {name: "Manage", key: "manage", type: "button-group"},
       ];
       if (this.canReadPrivateInformation) {
         cols.splice(3, 0, {name: "FirstName", key: "firstName"});

@@ -81,6 +81,7 @@ module.exports = class DocumentSocket extends Socket {
                 type: docTypes.DOC_TYPE_HTML,
                 name: data.name.replace(/.delta$/, ""),
                 userId: data.userId ?? this.userId,
+                uploadedByUserId: this.userId,
             }, {transaction: options.transaction});
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
@@ -108,7 +109,7 @@ module.exports = class DocumentSocket extends Socket {
                 type: docTypes.DOC_TYPE_PDF,
                 name: data.name.replace(/.pdf$/, ""),
                 userId: data.userId ?? this.userId,
-                uploadedByUserId: data.isUploaded ?? false,
+                uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
             }, {transaction: options.transaction});
 

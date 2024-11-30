@@ -8,7 +8,7 @@
       <span>Create Assignment</span>
     </template>
     <template #body>
-      <div class="content-container">
+        <div class="content-container">
         <div v-if="templates.length === 0">
           <p class="text-center text-danger">There are not study templates available!</p>
           <p class="text-center">Please create a study template to proceed!</p>
@@ -161,7 +161,7 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "ImportModal",
-  fetchData: [{
+  subscribeTable: [{
     table: "document",
     filter: [{
       key: "readyForReview",
@@ -201,7 +201,7 @@ export default {
         scrollY: true,
         scrollX: true,
         singleSelect: true,
-        search: true
+        search: true,
       },
       reviewerTableOptions: {
         striped: true,

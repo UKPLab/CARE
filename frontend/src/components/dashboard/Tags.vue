@@ -12,6 +12,7 @@
         :columns="columns"
         :data="tagSets"
         :options="options"
+        :buttons="buttons"
         @action="action"
       />
     </template>
@@ -42,8 +43,8 @@ import {mapGetters} from "vuex";
 
 export default {
   name: "DashboardTags",
-  fetchData: ["tag_set", "tag"],
-  components: { BasicTable, BasicCard, BasicButton, TagSetModal, TagSetPublishModal, TagSetDeleteModal },
+  subscribeTable: ["tag_set", "tag"],
+  components: {BasicTable, BasicCard, BasicButton, TagSetModal, TagSetPublishModal, TagSetDeleteModal},
   props: {
     'admin': {
       type: Boolean,
@@ -69,7 +70,6 @@ export default {
         {name: "Public", key: "published", type: "badge"},
         {name: "User", key: "user", type: "badge"},
         {name: "Tags", key: "tags", type: "badge"},
-        {name: "Manage", key: "manage", type: "button-group"},
       ]
     }
   },
@@ -78,6 +78,65 @@ export default {
       userId: 'auth/getUserId',
       isAdmin: 'auth/isAdmin',
     }),
+    buttons() {
+      const buttons = [
+        {
+          icon: "clipboard",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Copy tag set",
+          action: "copyTagSet",
+        },
+        {
+          icon: "pencil",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-dark": true,
+            }
+          },
+          filter: [
+            {key: "userId", value: this.userId},
+          ],
+          title: "Edit tag set",
+          action: "editTagSet",
+        },
+        {
+          icon: "trash",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-dark": true,
+            }
+          },
+          filter: [
+            {key: "userId", value: this.userId},
+          ],
+          title: "Delete tag set",
+          action: "deleteTagSet",
+        },
+        {
+          icon: "share",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-dark": true,
+            }
+          },
+          filter: [
+            {key: "public", value: false},
+            {key: "userId", value: this.userId},
+          ],
+          title: "Share tag set",
+          action: "publishTagSet",
+        }
+      ];
+      return buttons;
+    },
     tagSets() {
       return this.$store.getters["table/tag_set/getAll"].map(d => {
           let newD = {...d};
@@ -99,62 +158,6 @@ export default {
               tooltip: this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id).map(e => e.name).join('<br>'),
               text: this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id).length
             };
-          newD.manage = [
-            {
-              icon: "clipboard",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                }
-              },
-              title: "Copy tag set",
-              action: "copyTagSet",
-            },
-          ]
-
-          if (newD['userId'] === this.userId || this.isAdmin) {
-            newD.manage.push(
-              {
-                icon: "pencil",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-dark": true,
-                  }
-                },
-                title: "Edit tag set",
-                action: "editTagSet",
-              });
-            newD.manage.push(
-              {
-                icon: "trash",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-dark": true,
-                  }
-                },
-                title: "Delete tag set",
-                action: "deleteTagSet",
-              });
-          }
-          if (!newD.public && (newD['userId'] === this.userId || this.isAdmin)) {
-            newD.manage.push(
-              {
-                icon: "share",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-dark": true,
-                  }
-                },
-                title: "Share tag set",
-                action: "publishTagSet",
-              },
-            );
-          }
-
           return newD;
         }
       );
