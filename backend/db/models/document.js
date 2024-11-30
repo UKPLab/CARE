@@ -110,6 +110,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "documentId",
                 as: "studySteps",
             });
+
+            Document.belongsTo(models["project"], {
+                foreignKey: 'projectId',
+                as: 'project',
+            });
         }
 
         /**
@@ -222,7 +227,8 @@ module.exports = (sequelize, DataTypes) => {
         createdAt: DataTypes.DATE,
         type: DataTypes.INTEGER, // 0 is for pdf and 1 is for html
         parentDocumentId: DataTypes.INTEGER,
-        hideInFrontend: DataTypes.BOOLEAN
+        hideInFrontend: DataTypes.BOOLEAN,
+        projectId: DataTypes.INTEGER,
     }, {
         sequelize: sequelize,
         modelName: 'document',

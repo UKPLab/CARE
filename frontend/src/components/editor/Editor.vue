@@ -23,7 +23,7 @@
   </span>
 
   <Teleport v-if="readonly" to="#topBarNavItems">
-    <button
+    <TopBarButton
         title="Read-Only mode"
         class="btn rounded-circle"
         type="button"
@@ -33,11 +33,11 @@
           :color="'#008000'"
           icon-name="file-earmark-lock2-fill"
       />
-    </button>
+    </TopBarButton>
   </Teleport>
 
   <Teleport v-if="showHTMLDownloadButton" to="#topBarNavItems">
-    <button
+    <TopBarButton
       title="Download document"
       class="btn rounded-circle"
       type="button"
@@ -48,7 +48,7 @@
         :size="18"
         icon-name="download"
       />
-    </button>
+    </TopBarButton>
   </Teleport>
   
 </template>
@@ -69,6 +69,7 @@ import { dbToDelta, deltaToDb } from "editor-delta-conversion";
 import { Editor } from './editorStore.js';
 import { downloadDocument } from "@/assets/utils.js";
 import {computed} from "vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 
 const Delta = Quill.import('delta');
 
