@@ -13,9 +13,9 @@ export default {
                 }
             },
             mounted() {
-                if (this.$options.fetchData) {
-                    if (this.$options.fetchData.length > 0) {
-                        this.$options.fetchData.forEach((table) => {
+                if (this.$options.subscribeTable) {
+                    if (this.$options.subscribeTable.length > 0) {
+                        this.$options.subscribeTable.forEach((table) => {
                             if (typeof table !== "object") {
                                 table = {table: table};
                             }

@@ -52,7 +52,7 @@ import {getTimeDiffString} from "@/assets/utils";
 export default {
   name: "DashboardStudySession",
   components: {Card, LoadIcon, StudySessionTable, Timer},
-  fetchData: ['study_session'],
+  subscribeTable: ['study_session'],
   props: {},
   data() {
     return {

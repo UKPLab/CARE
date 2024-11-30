@@ -70,6 +70,12 @@
             v-model="currentData[field.key]"
             :options="field"
           />
+          <FormFile
+            v-else-if="field.type === 'file'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]"
+            :options="field"
+          />
           <FormDefault
             v-else
             :ref="'ref_' + field.key"
@@ -96,6 +102,7 @@ import FormTable from "@/basic/form/DataTable.vue";
 import FormChoice from "@/basic/form/Choice.vue";
 import deepEqual from "deep-equal";
 import {computed} from "vue";
+import FormFile from "@/basic/form/File.vue";
 
 /**
  * Basic form component for rendering form fields provided by fields prop
@@ -105,6 +112,7 @@ import {computed} from "vue";
 export default {
   name: "BasicForm",
   components: {
+    FormFile,
     DatetimePicker,
     FormSwitch,
     FormSlider,
@@ -176,7 +184,7 @@ export default {
     getValues(values) {
       let return_data = {...this.defaultValues, ...values};
       // also provide id if set
-      if (values.id) {
+      if (values && values.id) {
         return_data.id = values.id;
       }
       return return_data;

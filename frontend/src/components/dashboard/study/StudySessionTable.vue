@@ -3,6 +3,7 @@
     :columns="columns"
     :data="studySessions"
     :options="options"
+    :buttons="buttons"
     @action="action"
   />
   <ConfirmModal ref="deleteConf" />
@@ -63,13 +64,15 @@ export default {
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
-        {name: "Manage", key: "manage", type: "button-group"},
       ]
     }
   },
   computed: {
     study() {
       return this.$store.getters["table/study/get"](this.studyId);
+    },
+    buttons() {
+      return [];
     },
     studySessions() {
       if (!this.study) {
@@ -84,8 +87,8 @@ export default {
             session.resumable = this.study.resumable;
             session.startParsed = session.start? new Date(session.start).toLocaleString() : 'Session has not started yet';
             session.finished = session.end !== null;
-            session.manage = []
 
+            // TODO change buttons to computed "buttons"
             if (!session.finished) {
               if (session.resumable && session.start) {
                 session.manage.push({

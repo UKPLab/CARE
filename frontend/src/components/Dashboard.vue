@@ -40,7 +40,7 @@ import NotFoundPage from "@/auth/NotFound.vue";
 
 export default {
   name: "DashboardRoute",
-  fetchData: ["nav_element"],
+  subscribeTable: ["nav_element"],
   components: { Loading, Sidebar },
   props: {
     catchAll: {
@@ -70,6 +70,7 @@ export default {
         component = this.defaultComponent;
       }
       if (component !== undefined) {
+        console.log(component);
         return defineAsyncComponent({
           loader: () => import("./dashboard/" + component.component + ".vue"),
           loadingComponent: Loading,

@@ -99,7 +99,7 @@ import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
 export default {
   name: "ImportModal",
   components: {MoodleOptions, BasicModal, BasicButton, BasicTable},
-  fetchData: [{table: "user", filter: [{type: "not", key: "extId", value: null}]}],
+  subscribeTable: [{table: "user", filter: [{type: "not", key: "extId", value: null}]}],
   data() {
     return {
       currentStep: 0,

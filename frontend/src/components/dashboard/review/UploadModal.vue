@@ -1,73 +1,36 @@
 <template>
-  <BasicModal
-    ref="uploadModal"
-    name="assignmentModal"
+  <StepperModal
+    ref="uploadStepper"
+    :steps="steps"
+    :validation="stepValid"
+    @submit="uploadDocument"
   >
-    <template #title> Upload Assignment</template>
-    <template #body>
-      <div class="form-field">
-        <label
-          for="userList"
-          class="form-label"
-        >Select User:</label
-        >
-        <input
-          id="userList"
-          class="form-control"
-          list="userOptions"
-          placeholder="Type to search..."
-          :value="selectedUserName"
-          @input="handleUserChange"
-        />
-        <datalist id="userOptions">
-          <option
-            v-for="(user, index) in users"
-            :key="index"
-            :value="user.firstName + ' ' + user.lastName"
-          >
-            {{ user.firstName }} {{ user.lastName }}
-          </option>
-        </datalist>
-      </div>
-      <!-- TODO: Turn this file uploading functionality into a component -->
-      <div class="form-field">
-        <div
-          class="flex-grow-1"
-        >
-          <input
-            id="fileInput"
-            class="form-control"
-            name="file"
-            type="file"
-            accept=".pdf"
-          />
-        </div>
+    <template #title>
+      <h5 class="modal-title">Upload Assignment</h5>
+    </template>
+
+    <template #step-0>
+      <div class="table-scroll-container">
+        <BasicTable
+          v-model="selectedUser"
+          :columns="selectionTable"
+          :options="selectionTableOptions"
+          :data="users"/>
       </div>
     </template>
-    <template #footer>
-      <div
-        class="btn-group"
-      >
-        <BasicButton
-          class="btn btn-secondary"
-          data-bs-dismiss="modal"
-          type="button"
-          title="Close"
-        />
-        <BasicButton
-          class="btn btn-primary"
-          type="button"
-          title="Upload"
-          @click="uploadDocument"
-        />
-      </div>
+    <template #step-1>
+      <BasicForm
+        v-model="data"
+        :fields="fileFields"
+      />
     </template>
-  </BasicModal>
+  </StepperModal>
 </template>
 
 <script>
-import BasicModal from "@/basic/Modal.vue";
-import BasicButton from "@/basic/Button.vue";
+import StepperModal from "@/basic/modal/StepperModal.vue";
+import BasicTable from "@/basic/Table.vue";
+import BasicForm from "@/basic/Form.vue";
 
 /**
  * Moodle assignment upload component
@@ -75,69 +38,84 @@ import BasicButton from "@/basic/Button.vue";
  * This component provides the functionality for uploading a document
  * to the server for a selected user.
  *
- * @author: Linyin Huang, Dennis Zyska
+ * @author: Dennis Zyska, Linyin Huang
  */
 export default {
   name: "ReviewUploadModal",
-  components: {BasicModal, BasicButton},
+  components: {BasicForm, BasicTable, StepperModal},
+  subscribeTable: ["user"],
   data() {
     return {
-      selectedUserName: "",
-      selectedUserId: null,
+      selectedUser: [],
+      data: {},
+      steps: [
+        {title: "Select User"},
+        {title: "Upload File"},
+      ],
+      fileFields: [
+        {
+          key: "file",
+          type: "file",
+          accept: ".pdf",
+          class: "form-control",
+          default: null
+        },
+      ],
+      selectionTable: [
+        {name: "ID", key: "id", sortable: true},
+        {name: "extId", key: "extId", sortable: true},
+        {name: "First Name", key: "firstName", sortable: true},
+        {name: "Last Name", key: "lastName", sortable: true},
+        {name: "Username", key: "username", sortable: true},
+      ],
+      selectionTableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        selectableRows: true,
+        scrollY: true,
+        scrollX: true,
+        singleSelect: true,
+        search: true,
+      },
     };
   },
   computed: {
     users() {
-      return this.$store.getters["admin/getUsersByRole"];
+      return this.$store.getters["table/user/getAll"];
+    },
+    stepValid() {
+      return [
+        this.selectedUser.length > 0,
+        this.data.file !== null,
+      ];
     },
   },
   methods: {
-    fetchUsers() {
-      this.$socket.emit("userGetByRole", "all");
-    },
     open() {
-      // Reset fileInput state
-      let fileElement = document.getElementById("fileInput");
-      try {
-        fileElement.value = null;
-      } catch (err) {
-        if (fileElement.value) {
-          fileElement.parentNode.replaceChild(fileElement.cloneNode(true), fileElement);
-        }
-      }
-      this.$refs.uploadModal.openModal();
-      this.fetchUsers();
-    },
-    handleUserChange(event) {
-      this.selectedUserName = event.target.value;
-      const selectedUser = this.users.find((user) => `${user.firstName} ${user.lastName}` === this.selectedUserName);
-
-      if (selectedUser) {
-        this.selectedUserId = selectedUser.id;
-      } else {
-        this.selectedUserId = null;
-      }
+      this.file = null;
+      this.selectedUser = [];
+      this.$refs.uploadStepper.open();
     },
     uploadDocument() {
-      const fileElement = document.getElementById("fileInput");
-
-      if (!this.selectedUserId || fileElement.files.length === 0) {
-        alert("Please select a user and choose a file");
-        return;
-      }
-
-      const fileName = fileElement.files[0].name;
+      const fileName = this.data.file.name;
       const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
       if (fileType !== ".pdf") {
-        alert("Please choose a PDF file");
+        this.eventBus.emit("toast", {
+          title: "Invalid file type",
+          message: "Only PDF files are allowed.",
+          variant: "danger",
+        });
         return;
       }
 
-      this.$refs.uploadModal.waiting = true;
+      this.$refs.uploadStepper.setWaiting(true);
       this.$socket.emit("documentAdd", {
-        file: fileElement.files[0],
+        file: this.data.file,
         name: fileName,
-        userId: this.selectedUserId,
+        userId: this.selectedUser[0].id,
         isUploaded: true,
       }, (res) => {
         if (res.success) {
@@ -145,17 +123,23 @@ export default {
             message: "File successfully uploaded!",
             variant: "success",
           });
-          this.$refs.uploadModal.close();
+          this.$refs.uploadStepper.close();
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to upload the file",
             message: res.message,
             variant: "danger",
           });
-          this.$refs.uploadModal.waiting = false;
+          this.$refs.uploadStepper.setWaiting(false);
         }
       });
     },
+    /*fetchUsers() {
+      this.$socket.emit("userGetByRole", "all");
+    },
+
+
+    */
   },
 };
 </script>
@@ -171,5 +155,10 @@ export default {
     margin-bottom: 0;
     margin-right: 0.5rem;
   }
+}
+
+.table-scroll-container {
+  height: 300px;
+  overflow-y: auto;
 }
 </style>

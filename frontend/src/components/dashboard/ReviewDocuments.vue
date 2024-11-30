@@ -19,6 +19,7 @@
         :columns="tableColumns"
         :data="documentsTable"
         :options="tableOptions"
+        :buttons="tableButtons"
         @action="action"
       />
     </template>
@@ -50,7 +51,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
   name: "ReviewDocuments",
-  fetchData: [{
+  subscribeTable: [{
     table: "document",
     filter: [{
       key: "readyForReview",
@@ -85,8 +86,31 @@ export default {
         {name: "Last Name", key: "lastName"},
         {name: "Created At", key: "createdAt"},
         {name: "Type", key: "type"},
-        {name: "Manage", key: "manage", type: "button-group"},
       ],
+      tableButtons: [
+        {
+          icon: "box-arrow-in-right",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          title: "Access document...",
+          action: "accessDoc",
+        },
+        {
+          icon: "trash",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          title: "Delete document...",
+          action: "deleteDoc",
+        },
+      ]
     };
   },
   computed: {
@@ -100,30 +124,6 @@ export default {
         const user = this.$store.getters["table/user/get"](d.userId)
         newD.firstName = (user) ? user.firstName : "Unknown";
         newD.lastName = (user) ? user.lastName : "Unknown";
-        newD.manage = [
-          {
-            icon: "box-arrow-in-right",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
-            title: "Access document...",
-            action: "accessDoc",
-          },
-          {
-            icon: "trash",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
-            title: "Delete document...",
-            action: "deleteDoc",
-          },
-        ];
         return newD;
       });
     },

@@ -62,7 +62,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import Loading from "@/basic/Loading.vue";
 
 export default {
-  fetchData: ['nav_group', 'nav_element'],
+  subscribeTable: ['nav_group', 'nav_element'],
   name: "SidebarNavigation",
   components: {LoadIcon, Loading},
   computed: {

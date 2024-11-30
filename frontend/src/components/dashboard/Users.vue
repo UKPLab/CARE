@@ -27,6 +27,7 @@
         :columns="columns"
         :data="users"
         :options="options"
+        :buttons="buttons"
         @action="chooseAction"
       />
     </template>
@@ -107,7 +108,6 @@ export default {
         {name: "Accept Terms", key: "acceptTerms", sortable: true},
         {name: "Accept Stats", key: "acceptStats", sortable: true},
         {name: "Last Login", key: "lastLoginAt", sortable: true},
-        {name: "Manage", key: "manage", type: "button-group"},
       ],
       // Possible values for role here are all the roles in the DB.
       role: "all",
@@ -119,16 +119,8 @@ export default {
         return this.formatUserData(user);
       });
     },
-  },
-  mounted() {
-    this.fetchUsers();
-  },
-  methods: {
-    fetchUsers() {
-      this.$socket.emit("userGetByRole", this.role);
-    },
-    formatUserData(user) {
-      user.manage = [
+    buttons() {
+      return [
         {
           title: "Edit User",
           action: "editUser",
@@ -163,7 +155,16 @@ export default {
           },
         },
       ];
-
+    },
+  },
+  mounted() {
+    this.fetchUsers();
+  },
+  methods: {
+    fetchUsers() {
+      this.$socket.emit("userGetByRole", this.role);
+    },
+    formatUserData(user) {
       const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
 
       return {
