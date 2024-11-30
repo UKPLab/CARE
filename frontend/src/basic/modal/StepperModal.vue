@@ -9,7 +9,7 @@
       <slot name="title"/>
     </template>
     <template #body>
-      <div class="stepper">
+      <div v-if="!$slots['error']" class="stepper">
         <div
           v-for="(step, index) in steps"
           :key="index"
@@ -21,12 +21,17 @@
       </div>
       <div class="content-container">
         <div>
-          <slot :name="'step-' + currentStep"/>
+          <template v-if="$slots['error']">
+            <slot name="error"/>
+          </template>
+          <template v-else>
+            <slot :name="'step-' + currentStep"/>
+          </template>
         </div>
       </div>
     </template>
     <template #footer>
-      <div class="btn-group">
+      <div v-if="!$slots['error']" class="btn-group">
         <slot name="buttons"/>
 
         <BasicButton
@@ -48,6 +53,13 @@
           class="btn btn-primary"
           :disabled="disabled(currentStep)"
           @click="submit"
+        />
+      </div>
+      <div v-else>
+        <BasicButton
+          title="Close"
+          class="btn btn-primary"
+          @click="close"
         />
       </div>
     </template>
