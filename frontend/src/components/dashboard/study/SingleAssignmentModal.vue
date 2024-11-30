@@ -1,12 +1,30 @@
 <template>
+  <StepperModal
+    ref="assignmentStepper"
+    :steps="steps"
+    :validation="stepValid"
+    xl>
+    <template #title>
+      <h5 class="modal-title">Create Assignment</h5>
+    </template>
+
+    <template v-if="templates.length === 0" #error>
+      <p class="text-center text-danger">There are not study templates available!</p>
+      <p class="text-center">Please create a study template to proceed!</p>
+    </template>
+    <template #step-0>
+
+    </template>
+
+
+  </StepperModal>
+  <!--
   <BasicModal
     ref="modal"
     xl
     @hide="reset"
   >
-    <template #title>
-      <span>Create Assignment</span>
-    </template>
+
     <template #body>
         <div class="content-container">
         <div v-if="templates.length === 0">
@@ -15,7 +33,6 @@
         </div>
         <div v-else>
 
-          <!-- Stepper -->
           <div class="stepper">
             <div
               v-for="(step, index) in steps"
@@ -26,7 +43,7 @@
               {{ step.title }}
             </div>
           </div>
-          <!-- Content -->
+
           <div v-if="currentStep === 0">
             <BasicForm
               ref="templateSelectionForm"
@@ -44,7 +61,6 @@
               </li>
             </ul>
           </div>
-          <!-- Step 1: Choose Assignment -->
           <div
             v-if="currentStep === 1"
             class="file-upload-container"
@@ -58,7 +74,6 @@
               />
             </div>
           </div>
-          <!-- Step 2: Choose Reviewers -->
           <div
             v-if="currentStep === 2"
             class="file-upload-container"
@@ -72,7 +87,6 @@
               />
             </div>
           </div>
-          <!-- Step 3: Confirmation -->
           <div v-if="currentStep === 3">
             <p>
               Are you sure you want to create the assignment with the following details?
@@ -147,6 +161,7 @@
       />
     </template>
   </BasicModal>
+  <!-->
 </template>
 
 <script>
@@ -154,6 +169,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
+import StepperModal from "@/basic/modal/StepperModal.vue";
 
 /**
  * Modal for bulk creating assignments
@@ -184,7 +200,7 @@ export default {
         value: true
       }]
     }],
-  components: {BasicModal, BasicButton, BasicTable, BasicForm},
+  components: {StepperModal, BasicModal, BasicButton, BasicTable, BasicForm},
   data() {
     return {
       currentStep: 0,
@@ -217,6 +233,9 @@ export default {
     };
   },
   computed: {
+    stepsValid() {
+      return [];
+    },
     templateSelectionFields() {
       return [
         {
@@ -319,7 +338,7 @@ export default {
   },
   methods: {
     open() {
-      this.$refs.modal.open();
+      this.$refs.assignmentStepper.open();
     },
     reset() {
       this.currentStep = 0;

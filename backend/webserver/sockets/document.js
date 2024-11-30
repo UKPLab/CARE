@@ -598,6 +598,7 @@ module.exports = class DocumentSocket extends Socket {
             const file = fs.readFileSync(filePath);
             return {document: document, file: file};
         }
+    }
 
     /**
      * Uploads login data to a Moodle assignment as feedback comments.
@@ -610,7 +611,7 @@ module.exports = class DocumentSocket extends Socket {
      * @param {Array<Object>} data.users - An array of objects containing the uploaded users.
      * @returns {Promise<Object>} - A promise that resolves when the passwords have been uploaded.
      */
-    async uploadReviewLinks(data) {
+    async uploadReviewLinks(data, options) {
         const feedback = data["users"].map((user) => ({
             extId: user.extId,
             text: user.links,

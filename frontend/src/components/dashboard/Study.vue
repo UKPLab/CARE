@@ -4,8 +4,8 @@
     <StudySessionModal ref="studySessionModal"/>
     <ConfirmModal ref="deleteConf"/>
     <ConfirmModal ref="confirmModal"/>
-    <BulkCreateAssignmentsModal ref="bulkCreateAssignmentsModal"/>
-    <CreateSingleAssignmentModal ref="createSingleAssignmentModal"/>
+    <BulkAssignmentsModal ref="bulkAssignmentsModal"/>
+    <SingleAssignmentModal ref="singleAssignmentModal"/>
     <InformationModal ref="informationModal"/>
     <Card title="Studies">
       <template #headerElements>
@@ -47,8 +47,8 @@ import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import BulkCreateAssignmentsModal from "./study/BulkCreateAssignmentsModal.vue";
-import CreateSingleAssignmentModal from "./study/CreateSingleAssignmentModal.vue";
+import BulkAssignmentsModal from "./study/BulkAssignmentsModal.vue";
+import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
 
 /**
@@ -65,8 +65,8 @@ export default {
     StudySessionModal,
     BasicButton,
     ConfirmModal,
-    BulkCreateAssignmentsModal,
-    CreateSingleAssignmentModal,
+    BulkAssignmentsModal,
+    SingleAssignmentModal,
     InformationModal
   },
   inject: {
@@ -173,6 +173,18 @@ export default {
           title: "Close study",
           action: "closeStudy",
         },
+        {
+          icon: "save",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Save as Template",
+          action: "saveAsTemplate",
+        }
+
       ];
       if (this.showInformationButton) {
         buttons.push({
@@ -326,7 +338,7 @@ export default {
               message: "The study has been closed",
               variant: "success"
             });
-          } else{
+          } else {
             this.eventBus.emit('toast', {
               title: "Study closing failed",
               message: result.message,
@@ -337,7 +349,7 @@ export default {
       } else if (data.action === "saveAsTemplate") {
         this.saveAsTemplate(data.params);
       } else if (data.action === "showInformation") {
-        const { deletedAt, createdAt, firstName, lastName, updatedAt, manage, ...filteredParams } = data.params;
+        const {deletedAt, createdAt, firstName, lastName, updatedAt, manage, ...filteredParams} = data.params;
         this.$refs.informationModal.open(filteredParams);
       }
     },
@@ -372,10 +384,10 @@ export default {
       this.$refs.studyCoordinator.open(0);
     },
     addBulkAssignment() {
-      this.$refs.bulkCreateAssignmentsModal.open();
+      this.$refs.bulkAssignmentsModal.open();
     },
     addSingleAssignment() {
-      this.$refs.createSingleAssignmentModal.open();
+      this.$refs.singleAssignmentModal.open();
     },
     studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
