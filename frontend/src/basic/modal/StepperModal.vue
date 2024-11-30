@@ -24,7 +24,7 @@
             <slot name="error"/>
           </template>
           <template v-else>
-            <slot :name="'step-' + currentStep"/>
+            <slot :name="'step-' + (currentStep + 1)"/>
           </template>
         </div>
       </div>

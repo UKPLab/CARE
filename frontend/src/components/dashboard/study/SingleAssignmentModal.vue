@@ -13,7 +13,7 @@
       <p class="text-center text-danger">There are not study templates available!</p>
       <p class="text-center">Please create a study template to proceed!</p>
     </template>
-    <template #step-0>
+    <template #step-1>
       <BasicForm
         ref="templateSelectionForm"
         v-model="templateSelection"
@@ -30,7 +30,7 @@
         </li>
       </ul>
     </template>
-    <template #step-1>
+    <template #step-2>
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedAssignment"
@@ -40,7 +40,7 @@
         />
       </div>
     </template>
-    <template #step-2>
+    <template #step-3>
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedReviewer"
@@ -50,7 +50,7 @@
         />
       </div>
     </template>
-    <template #step-3>
+    <template #step-4>
       <p>
         Are you sure you want to create the assignment with the following details?
       </p>
