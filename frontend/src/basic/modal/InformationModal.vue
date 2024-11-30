@@ -3,7 +3,6 @@
     ref="informationModal"
     lg
     name="informationModal"
-    @click="close"
   >
     <template #title>
       <h5 class="modal-title text-primary">Details</h5>

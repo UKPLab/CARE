@@ -3,7 +3,12 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
   class Workflow extends MetaModel {
-    static autoTable = true;
+    static autoTable = {
+            foreignTables: [{
+                table: "workflow_step",
+                by: "workflowId"
+            }]
+        };
     static publicTable = true;
 
     /**

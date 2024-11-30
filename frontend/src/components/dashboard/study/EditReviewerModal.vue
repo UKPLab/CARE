@@ -101,7 +101,7 @@ export default {
   components: { BasicModal, BasicButton, BasicIcon, BasicTable, BasicForm, FormSlider, "StudySessionModal": defineAsyncComponent(() => import("./StudySessionModal.vue")) },
   emits: ["updateUser"],
   mounted() {
-    this.$socket.emit("assignmentGetAssignmentInfosFromUser")
+    //this.$socket.emit("assignmentGetAssignmentInfosFromUser")
 },
 inject: {
     mainModal: {

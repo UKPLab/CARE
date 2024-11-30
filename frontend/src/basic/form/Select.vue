@@ -5,7 +5,7 @@
         v-if="Array.isArray(options.options)"
         v-model="currentData"
         :class="selectClass" class="form-select"
-        @blur="blur(currentData > -1)"
+        @blur="blur(currentData !== -1)"
       >
         <option
                 v-for="option in selectOptions"

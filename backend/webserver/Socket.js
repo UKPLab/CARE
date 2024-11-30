@@ -383,7 +383,7 @@ module.exports = class Socket {
                     where: {[fTable.by]: {[Op.in]: data.map(d => d.id)}, deleted: false},
                     attributes: {exclude: defaultExcludes},
                 });
-                this.emit(fTable.tableName + "Refresh", fdata, true);
+                this.emit(fTable.table + "Refresh", fdata, true);
             }))
         }
 

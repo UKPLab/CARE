@@ -133,7 +133,6 @@ export default {
   components: {StepperModal, BasicTable, BasicForm},
   data() {
     return {
-      currentStep: 0,
       templateSelection: {},
       selectedAssignment: [],
       selectedReviewer: [],
@@ -264,7 +263,6 @@ export default {
       this.$refs.assignmentStepper.open();
     },
     reset() {
-      this.currentStep = 0;
       this.selectedAssignment = [];
       this.selectedReviewer = [];
     },

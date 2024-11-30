@@ -14,7 +14,6 @@
       <p class="text-center">Please create a study template to proceed!</p>
     </template>
 
-
     <template #step-1>
       <BasicForm
         ref="templateSelectionForm"
@@ -100,41 +99,58 @@
       <p>
         Are you sure you want to create the assignment with the following details?
       </p>
-      <div>
-        <strong>Template:</strong> {{ template.name }}
-      </div>
-      <div>
-        <strong>Workflow:</strong> {{ workflow.name }}
-      </div>
-      <div>
-        <strong>Documents:</strong> {{ selectedAssignments.length }}
-      </div>
-      <div>
-        <strong>Reviewers:</strong> {{ selectedReviewer.length }}
-      </div>
-      <div>
-        <strong>Number of reviews that will be created:</strong>
-        {{ reviewerNumberOfAssignments }} <!-- TODO calculate for each mode -->
-      </div>
-      <div>
-        <strong>Selection Mode:</strong>
-        <!--{{ reviewerSelectionModeFields[0].options.find(field => field.value === reviewerSelectionMode.mode).name }}-->
-      </div>
-      <div v-if="reviewerSelectionMode.mode === 'role'">
-        <strong>Roles:</strong>
-        <ul>
-          <li v-for="(value, key) in listOfSelectedRoles" :key="key">
-            {{ value.role }}: {{ value.value }}
-          </li>
-        </ul>
-      </div>
-      <div v-else>
-        <strong>Reviewers:</strong>
-        <ul>
-          <li v-for="(value, key) in listOfSelectedReviewers" :key="key">
-            {{ value.reviewer }}: {{ value.value }}
-          </li>
-        </ul>
+
+      <div class="container">
+        <div class="row mb-2">
+          <div class="col-2"><strong>Template:</strong></div>
+          <div class="col-8">{{ template.name }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>Workflow:</strong></div>
+          <div class="col-8">{{ workflow.name }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>Documents:</strong></div>
+          <div class="col-8">{{ selectedAssignments.length }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>Reviewers:</strong></div>
+          <div class="col-8">{{ selectedReviewer.length }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>Reviews to create:</strong></div>
+          <div class="col-8">{{ numberOfReviews }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-2"><strong>Selection Mode:</strong></div>
+          <div class="col-8">
+            {{ reviewerSelectionModeFields[0].options.find(field => field.value === reviewerSelectionMode.mode).name }}
+          </div>
+        </div>
+        <div v-if="reviewerSelectionMode.mode === 'role'">
+          <div class="row mb-2">
+            <div class="col-2"><strong>Roles:</strong></div>
+            <div class="col-8">
+              <ul>
+                <li v-for="(value, key) in listOfSelectedRoles" :key="key">
+                  - {{ value.role }}: {{ value.value }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div v-if="reviewerSelectionMode.mode === 'reviewer'">
+          <div class="row mb-2">
+            <div class="col-2"><strong>Reviewers:</strong></div>
+            <div class="col-8">
+              <ul>
+                <li v-for="(value, key) in listOfSelectedReviewers" :key="key">
+                  - {{ value.reviewer }}: {{ value.value }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </template>
   </StepperModal>
@@ -157,10 +173,23 @@ export default {
       key: "readyForReview",
       value: true
     }],
+  }, {
+    table: "user",
+    include: [{
+      table: "study_session",
+      by: "userId",
+      type: "count",
+      as: "studySessions"
+    }]
+  }, {
+    table: "study",
+    filter: [{
+      key: "template",
+      value: true
+    }]
   }
   ],
   components: {StepperModal, BasicTable, BasicForm},
-  emits: ["updateUser"],
   data() {
     return {
       selectedReviewer: [],
@@ -201,11 +230,16 @@ export default {
         this.workflowStepsAssignment.length !== 0,
         this.selectedAssignments.length > 0,
         this.selectedReviewer.length > 0,
-        this.reviewerSelectionMode.mode !== undefined &&
-        (this.reviewerSelectionMode.mode === 'reviewer' ?
-          this.remainingAssignments === 0 :
-          Object.values(this.roleSelection).map((value) => parseInt(value, 0)).reduce((a, b) => a + b, 0) > 0)
+        this.selectionValid,
       ];
+    },
+    selectionValid() {
+      if (this.reviewerSelectionMode && this.reviewerSelectionMode.mode === 'reviewer') {
+        return this.remainingAssignments === 0;
+      } else if (this.reviewerSelectionMode && this.reviewerSelectionMode.mode === 'role') {
+        return Object.values(this.roleSelection).map((value) => parseInt(value, 0)).reduce((a, b) => a + b, 0) > 0;
+      }
+      return false;
     },
     templates() {
       return this.$store.getters["table/study/getFiltered"](item => item.template === true);
@@ -224,12 +258,21 @@ export default {
       return this.workflowSteps.filter(step => step.stepType === 1 && step.workflowStepDocument === null);
     },
     workflowStepsAssignments() {
-      return this.workflowSteps.map((c, index) => {
-        return {
-          documentId: (index === 0) ? this.selectedAssignment[0].id : null,
-          id: c.id
-        }
+      return this.selectedAssignments.map((document) => {
+        return this.workflowSteps.map((c, index) => {
+          return {
+            documentId: (index === 0) ? document.id : null,
+            id: c.id
+          }
+        });
       });
+    },
+    numberOfReviews() {
+      if (this.reviewerSelectionMode.mode === 'role') {
+        return Object.values(this.roleSelection).map((value) => parseInt(value, 0)).reduce((a, b) => a + b, 0) * this.selectedAssignments.length
+      } else {
+        return Object.values(this.reviewerSelection).map((value) => parseInt(value, 0)).reduce((a, b) => a + b, 0)
+      }
     },
     documents() {
       return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
@@ -359,70 +402,23 @@ export default {
         type: "slider",
         class: 'custom-slider-class',
         min: 0,
-        max: this.selectedAssignments.length, //TODO auto adapt max
+        max: 10,
         step: 1,
         unit: 'review(s)'
       }));
     },
     reviewerSelectionFields() {
-      let data = [];
-      for (const user of this.selectedReviewer) {
-        data.push({
-          key: user.id,
-          label: "Number of reviews for user: " + user.firstName + " " + user.lastName,
-          type: "slider",
-          class: 'custom-slider-class',
-          min: 0,
-          max: this.selectedAssignments.length, // TODO auto adapt max
-          step: 1,
-          unit: 'review(s)'
-        })
-      }
-      return data;
+      return this.selectedReviewer.map(user => ({
+        key: user.id,
+        label: "Number of reviews for user: " + user.firstName + " " + user.lastName,
+        type: "slider",
+        class: 'custom-slider-class',
+        min: 0,
+        max: this.remainingAssignments + parseInt(this.reviewerSelection[user.id]),
+        step: 1,
+        unit: 'review(s)'
+      }));
     },
-  },
-  /* //TODO delete if adapted auto adapt max values
-  watch: {
-    hiwiValues: {
-      handler(newValue) {
-        const oldValues = this.perviousHiwiValues;
-
-        for (const key in newValue) {
-          if (oldValues[key] > newValue[key]) {
-            const difference = Math.abs(oldValues[key] - newValue[key]);
-            for (let i = 0; i < this.hiwiSelectionData.length; i++) {
-              if (this.hiwiSelectionData[i].key != key) {
-                this.hiwiSelectionData[i].max = this.hiwiSelectionData[i].max + difference
-                if (this.hiwiSelectionData[i].max < 0) {
-                  this.hiwiSelectionData[i].max = 0
-                }
-              }
-            }
-            break;
-          }
-          if (oldValues[key] < newValue[key]) {
-            const difference = Math.abs(oldValues[key] - newValue[key]);
-            for (let i = 0; i < this.hiwiSelectionData.length; i++) {
-              if (this.hiwiSelectionData[i].key != key) {
-                this.hiwiSelectionData[i].max = this.hiwiSelectionData[i].max - difference
-                if (this.hiwiSelectionData[i].max < 0) {
-                  this.hiwiSelectionData[i].max = 0
-                }
-              }
-            }
-            break;
-          }
-        }
-        this.perviousHiwiValues = {...newValue}
-      },
-      deep: true
-    },
-
-
-
-  }, */
-  mounted() { // TODO make sure all data is loaded
-    //this.$socket.emit("assignmentGetAssignmentInfosFromUser")
   },
   methods: {
     open() {
@@ -431,39 +427,40 @@ export default {
     },
     reset() {
       this.selectedReviewer = [];
-      this.reviewerSelectionMode = {};
-      this.roleSelection = {};
-      this.templateSelection = {};
       this.selectedAssignments = [];
-      this.reviewerSelection = {};
     },
-    createAssignments() { // TODO send assignment creation to backend
-      let data = {}
-      data.createdByUserId = this.$store.getters["auth/getUserId"]
-      data.assignments = this.selectedAssignments
-      data.template = this.template
-      let dictionary = {}
-      Object.keys(this.sliderValues).forEach(key => {
-        if (!Number.isInteger(+key) && key !== 'length') {
-          dictionary[key] = this.sliderValues[key];
-        }
-      });
-      data.reviewsPerRole = dictionary
-      if (this.selectedOption === 'hiwi') {
-        const convertedHiwiValues = Object.fromEntries(
-          Object.entries(this.hiwiValues).filter(([key, value]) => value !== undefined)
-        );
-        data.reviewers = convertedHiwiValues
-        this.$socket.emit("assignmentAssignHiwis", data, (response) => {
-        })
-      } else {
-        data.reviewers = this.selectedReviewers
-        console.log(data, "DATA")
-        this.$socket.emit("assignmentAssignPeerReviews", data, (response) => {
-        })
+    createAssignments() {
+      console.log("Create Assignments");
+      const data = {
+        template: this.template,
+        selectedReviewer: this.selectedReviewer,
+        selectedAssignments: this.selectedAssignments,
+        reviewerSelection: this.reviewerSelection,
+        roleSelection: this.roleSelection,
+        documents: this.workflowStepsAssignments,
+        mode: this.reviewerSelectionMode.mode
       }
-
-      this.$refs.modal.close();
+      console.log(data);
+      this.$refs.assignmentStepper.setWaiting(true);
+      this.$socket.emit("assignmentCreateBulk", {
+        data
+      }, (res) => {
+        this.$refs.assignmentStepper.setWaiting(false);
+        if (res.success) {
+          this.$refs.assignmentStepper.close();
+          this.eventBus.emit("toast", {
+            title: "Assignment created",
+            message: "The assignment has been created successfully",
+            type: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to create assignment",
+            message: res.message,
+            type: "error",
+          });
+        }
+      })
     }
   },
 
@@ -497,5 +494,13 @@ li:hover {
 
 button {
   margin-left: 10px;
+}
+
+.list-group-item {
+  cursor: default;
+}
+
+.list-group-item:hover {
+  background-color: transparent;
 }
 </style>
