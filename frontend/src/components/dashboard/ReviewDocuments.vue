@@ -3,6 +3,12 @@
     <template #headerElements>
       <BasicButton
         class="btn-secondary btn-sm me-1"
+        text="Upload Review"
+        title="Upload Review"
+        @click="$refs.reviewUploadModal.open()"
+      />
+      <BasicButton
+        class="btn-secondary btn-sm me-1"
         text="Manual Import"
         title="Manual Import"
         @click="$refs.uploadModal.open()"
@@ -31,6 +37,7 @@
   <ImportModal
     ref="importModal"
   />
+  <ReviewUploadModal ref="reviewUploadModal" />
 </template>
 
 <script>
@@ -39,6 +46,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./review/UploadModal.vue";
 import ImportModal from "./review/ImportModal.vue";
+import ReviewUploadModal from "./review/ReviewUploadModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
@@ -66,6 +74,7 @@ export default {
     UploadModal,
     ImportModal,
     ConfirmModal,
+    ReviewUploadModal,
     Card,
     BasicTable,
     BasicButton,

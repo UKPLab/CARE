@@ -102,8 +102,13 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             // define association here
             Document.belongsTo(models["document"], {
-                foreignKey: 'parentDocumentId',
-                as: 'parentDocument',
+                foreignKey: "parentDocumentId",
+                as: "parentDocument",
+            });
+
+            Document.hasMany(models["study_step"], {
+                foreignKey: "documentId",
+                as: "studySteps",
             });
         }
 
@@ -160,6 +165,48 @@ module.exports = (sequelize, DataTypes) => {
                 this.logger.error("Error in getReviewDocuments:", error);
             }
         }
+
+        /**
+         * Retrieve review ready documents along with their associated studies
+         * @returns {Promise<Array<Object>>} An array of objects.
+         */
+        static async getDocAssociatedStudies() {
+            try {
+                return await Document.findAll({
+                    where: { readyForReview: true },
+                    attributes: [
+                        "id",
+                        "name",
+                        "userId",
+                        "readyForReview",
+                        [sequelize.col("studySteps.studyId"), "studyId"],
+                        [sequelize.col("studySteps.study.name"), "studyName"],
+                    ],
+                    include: [
+                        {
+                            model: sequelize.models["study_step"],
+                            as: "studySteps",
+                            attributes: [],
+                            include: [
+                                {
+                                    model: sequelize.models["study"],
+                                    as: "study",
+                                    attributes: [],
+                                    where: {
+                                        closed: {
+                                            [Op.not]: null,
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                    raw: true,
+                });
+            } catch (error) {
+                this.logger.error("Error in getDocAssociatedStudies:", error);
+            }
+        }
     }
 
     Document.init({
@@ -191,34 +238,41 @@ module.exports = (sequelize, DataTypes) => {
                         await sequelize.models["study"].deleteById(studyId);
                     }
 
-                    // delete associated annotations and comments
-                    if (document.type === Document.docTypes.DOC_TYPE_HTML) {
-                        // get document edits
-                        const documentEdits = await sequelize.models.document_edit.getAllByKey("documentId", document.id);
-                        const uniqueDocumentEditIds = [...new Set(documentEdits.map(documentEdit => documentEdit.id))];
-                        for (const documentEditId of uniqueDocumentEditIds) {
-                            await sequelize.models["document_edit"].deleteById(documentEditId);
-                        }
+                        // delete associated annotations and comments
+                        if (document.type === Document.docTypes.DOC_TYPE_HTML) {
+                            // get document edits
+                            const documentEdits = await sequelize.models.document_edit.getAllByKey(
+                                "documentId",
+                                document.id
+                            );
+                            const uniqueDocumentEditIds = [
+                                ...new Set(documentEdits.map((documentEdit) => documentEdit.id)),
+                            ];
+                            for (const documentEditId of uniqueDocumentEditIds) {
+                                await sequelize.models["document_edit"].deleteById(documentEditId);
+                            }
+                        } else if (document.type === Document.docTypes.DOC_TYPE_PDF) {
+                            // get unique annotations and comments ids
+                            const annotations = await sequelize.models.annotation.getAllByKey(
+                                "documentId",
+                                document.id
+                            );
+                            const uniqueAnnotationIds = [...new Set(annotations.map((annotation) => annotation.id))];
+                            for (const annotationId of uniqueAnnotationIds) {
+                                await sequelize.models["annotation"].deleteById(annotationId);
+                            }
 
-                    } else if (document.type === Document.docTypes.DOC_TYPE_PDF) {
-                        // get unique annotations and comments ids
-                        const annotations = await sequelize.models.annotation.getAllByKey("documentId", document.id);
-                        const uniqueAnnotationIds = [...new Set(annotations.map(annotation => annotation.id))];
-                        for (const annotationId of uniqueAnnotationIds) {
-                            await sequelize.models["annotation"].deleteById(annotationId);
+                            const comments = await sequelize.models["comment"].getAllByKey("documentId", document.id);
+                            const uniqueCommentIds = [...new Set(comments.map((comment) => comment.id))];
+                            for (const commentId of uniqueCommentIds) {
+                                await sequelize.models["comment"].deleteById(commentId);
+                            }
                         }
-
-                        const comments = await sequelize.models["comment"].getAllByKey("documentId", document.id);
-                        const uniqueCommentIds = [...new Set(comments.map(comment => comment.id))];
-                        for (const commentId of uniqueCommentIds) {
-                            await sequelize.models["comment"].deleteById(commentId);
-                        }
-
                     }
-                }
-            }
+                },
+            },
         }
-    });
+    );
     return Document;
 };
 
