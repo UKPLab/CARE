@@ -2,8 +2,8 @@
 
 const projects = [
   {
-    name: "EiWA Project",
-    description: "EiWA Project: Review a PDF document and write free text.",
+    name: "Default Project",
+    description: "The default project",
     userId: null
   }
 ];

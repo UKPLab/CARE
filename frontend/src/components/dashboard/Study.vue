@@ -89,6 +89,7 @@ export default {
         {table: "user", by: "userId"}
       ]
     },
+    'document',
     'study_session', 'workflow', 'workflow_step', 'study_step'],
   data() {
     return {
