@@ -122,24 +122,17 @@ module.exports = class MetaModel extends Model {
 
     /**
      * Get all db entries
-     * @param {boolean} includeDeleted - also return elements with deleted flag is true
-     * @param {string[]} exclude - an array of attributes to exclude from the result
+     * @param {Object} options - Sequelize query options
      * @return {Promise<object|undefined>}
      */
-    static async getAll(includeDeleted = false, exclude = []) {
+    static async getAll(options = {}) {
         try {
-            if (includeDeleted) {
-                return await this.findAll({
-                    raw: true,
-                    attributes: {exclude}
-                });
-            } else {
-                return await this.findAll({
-                    where: {deleted: false},
-                    raw: true,
-                    attributes: {exclude}
-                });
+            options["raw"] = true;
+            if (!options["where"]) {
+                options["where"] = {deleted: false};
             }
+
+            return await this.findAll(options);
 
         } catch (err) {
             console.log(err);
@@ -246,7 +239,7 @@ module.exports = class MetaModel extends Model {
 
             const updatedObjects = await this.update(this.subselectFields(data, possibleFields), options);
 
-            return await this.getById(id, additionalOptions,true);
+            return await this.getById(id, additionalOptions, true);
         } catch (err) {
             console.log("DB MetaModel Class " + this.constructor.name + " update error in creation: " + err.message);
             throw new Error(err.message);

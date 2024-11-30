@@ -2,7 +2,6 @@
   <BasicModal
     ref="stepperModal"
     name="stepperModal"
-    @click="close"
     lg
   >
     <template #title>

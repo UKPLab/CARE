@@ -1,6 +1,7 @@
 <template>
   <BasicModal
     ref="modal"
+    name="ReviewImportModal"
     @hide="reset"
     lg
   >
