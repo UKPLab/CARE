@@ -599,6 +599,27 @@ module.exports = class DocumentSocket extends Socket {
             return {document: document, file: file};
         }
 
+    /**
+     * Uploads login data to a Moodle assignment as feedback comments.
+     * @param {Object} data - The data required for uploading login data.
+     * @param {Object} data.options - The options object containing the API key and URL of the Moodle instance.
+     * @param {number} data.options.courseID - The ID of the course to fetch users from.
+     * @param {number} data.options.assignmentID - The ID of the Moodle assignment.
+     * @param {string} data.options.apiKey - The API token for the Moodle instance
+     * @param {string} data.options.apiUrl - The URL of the Moodle instance.
+     * @param {Array<Object>} data.users - An array of objects containing the uploaded users.
+     * @returns {Promise<Object>} - A promise that resolves when the passwords have been uploaded.
+     */
+    async uploadReviewLinks(data) {
+        const feedback = data["users"].map((user) => ({
+            extId: user.extId,
+            text: user.links,
+        }));
+
+        return await this.server.rpcs["MoodleRPC"].publishAssignmentTextFeedback({
+            options: data.options,
+            feedback,
+        });
     }
 
     init() {
@@ -744,6 +765,9 @@ module.exports = class DocumentSocket extends Socket {
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
-
+        this.createSocket("documentGetStudies", this.models["document"].getDocAssociatedStudies, {}, false);
+        // TODO: documentGetSessions to be implemented
+        this.createSocket("documentGetSessions");
+        this.createSocket("documentUploadReviewLinks", this.uploadReviewLinks, {}, false);
     }
-}
+};
