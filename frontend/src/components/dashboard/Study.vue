@@ -10,6 +10,12 @@
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
+          v-if="canCloseStudies"
+          class="btn-secondary btn-sm me-1"
+          title="Close Studies"
+          @click="closeStudies"
+        />
+        <BasicButton
           v-if="canAddBulkAssignments"
           class="btn-secondary btn-sm me-1"
           title="Add Bulk Assignments"
@@ -26,12 +32,7 @@
           title="Add"
           @click="add"
         />
-        <BasicButton
-          v-if="canCloseEiwaProject"
-          class="btn btn-primary btn-sm"
-          title="Close Eiwa Project"
-          @click="closeEiwaProject"
-        />
+
       </template>
       <template #body>
         <BasicTable
@@ -309,8 +310,8 @@ export default {
     canAddSingleAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addBulkAssignments");
     },
-    canCloseEiwaProject() {
-      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.closeEiwaProject");
+    canCloseStudies() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.closeAllStudies");
     },
     studiesProjectEiwa() {
       return this.$store.getters["table/study/getFiltered"]((s) => s.projectId === 1);
@@ -404,8 +405,8 @@ export default {
     studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
     },
-    closeEiwaProject(){
-      this.$socket.emit("stats", {action: "closeEiwaProject", data: {projectId: 1}});
+    closeStudies(){
+      this.$socket.emit("stats", {action: "closeStudies", data: {projectId: 1}});
 
       this.$refs.confirmModal.open(
         "Close Eiwa Project",
