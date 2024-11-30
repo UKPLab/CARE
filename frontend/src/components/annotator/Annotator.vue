@@ -29,11 +29,10 @@
 
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
-        <button
+        <TopBarButton
             v-if="studySessionId === null && numStudyComments > 0"
             :title="showAll ? 'Hide study comments' : 'Show study comments'"
             class="btn rounded-circle"
-            type="button"
             @click="setSetting({key: 'annotator.showAllComments', value: !showAll})"
         >
           <span class="position-relative translate-middle top-100 start-100 fs-10 fw-light">
@@ -45,15 +44,14 @@
                 :size="18"
             />
           </span>
-        </button>
+        </TopBarButton>
       </li>
       <li class="nav-item">
 
-        <button
+        <TopBarButton
             v-if="nlpEnabled"
             :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
             class="btn rounded-circle"
-            type="button"
             @click="toggleNlp"
         >
 
@@ -63,18 +61,17 @@
               :size="18"
               icon-name="robot"
           />
-        </button>
-        <button
+        </TopBarButton>
+        <TopBarButton
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
-            type="button"
             @click="toggleSidebar"
         >
           <LoadIcon
               :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
               :size="18"
           />
-        </button>
+        </TopBarButton>
       </li>
       <ExpandMenu class="nav-item"/>
     </Teleport>
@@ -91,37 +88,33 @@
 
     <Teleport to="#topbarCustomPlaceholder">
       <form class="hstack gap-3 container-fluid justify-content-center">
-        <button
+        <TopBarButton
             v-if="review"
             class="btn btn-outline-success me-2"
-            type="button"
             @click="$refs.reviewSubmit.open()"
         >Submit Review
-        </button>
-        <button
+        </TopBarButton>
+        <TopBarButton
             v-if="approve"
             class="btn btn-outline-dark me-2"
-            type="button"
             @click="$refs.report.open()"
         >
           Report
-        </button>
-        <button
+        </TopBarButton>
+        <TopBarButton
             v-if="approve"
             class="btn btn-outline-success me-2"
-            type="button"
             @click="decisionSubmit(true)"
         >
           Accept
-        </button>
-        <button
+        </TopBarButton>
+        <TopBarButton
             v-if="approve"
             class="btn btn-outline-danger me-2"
-            type="button"
             @click="decisionSubmit(false)"
         >
           Reject
-        </button>
+        </TopBarButton>
       </form>
     </Teleport>
 
@@ -149,6 +142,8 @@ import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 import {computed} from "vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
+
 
 export default {
   name: "AnnotatorView",

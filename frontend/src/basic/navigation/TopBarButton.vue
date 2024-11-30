@@ -13,6 +13,17 @@
       <span><slot>{{ buttonText }}</slot></span>
       </button>
   </template>
+
+/**
+*  Topbar button acts a button in the topbar that can be clicked to perform an action.
+*
+* @param {String} title - The title of the button.
+* @param {Object} props - The props to be passed to the button.
+* @param {String} text - The text to be displayed on the button.
+* @param {Boolean} disabled - Whether the button is disabled.
+*
+* @author: Manu Sundar Raj Nandyal
+*/
   
   <script>
   import LoadIcon from "@/basic/Icon.vue";

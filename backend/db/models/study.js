@@ -327,6 +327,11 @@ module.exports = (sequelize, DataTypes) => {
             Study.hasMany(models["study_step"], {
                 foreignKey: "studyId", as: "steps"
             });
+
+            Study.belongsTo(models["project"], {
+                foreignKey: "projectId", 
+                as: "project"
+            });
         }
 
     }
@@ -352,7 +357,8 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
-        createdAt: DataTypes.DATE
+        createdAt: DataTypes.DATE,
+        projectId: DataTypes.INTEGER
     }, {
         sequelize: sequelize, modelName: 'study', tableName: 'study', hooks: {
             afterCreate: async (study, options) => {
