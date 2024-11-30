@@ -15,8 +15,7 @@
     </template>
 
 
-
-    <template #step-0>
+    <template #step-1>
       <BasicForm
         ref="templateSelectionForm"
         v-model="templateSelection"
@@ -34,7 +33,7 @@
       </ul>
     </template>
 
-    <template #step-1>
+    <template #step-2>
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedAssignments"
@@ -45,7 +44,7 @@
       </div>
     </template>
 
-    <template #step-2>
+    <template #step-3>
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedReviewer"
@@ -55,92 +54,100 @@
       </div>
     </template>
 
-  </StepperModal>
+    <template #step-4>
+      <BasicForm
+        ref="selectionModeForm"
+        v-model="reviewerSelectionMode"
+        :fields="reviewerSelectionModeFields"
+      />
 
-  <!--
-
-
-          <div v-if="currentStep === 2">
-            <h4>Select reviewers!</h4>
-            <div class="table-scroll-container">
-              <BasicTable 
-              v-model="selectedReviewers"
-              :columns="columnsStepOne" 
-              :data="reviewers" 
-              :options="tableOptions"
-              @row-selection="(reviewers) => (selectedReviewers = reviewers)"/>
-            </div>
-          </div>
-          
-          
-          <div v-if="currentStep === 3" class="table-scroll-container">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <BasicForm
-              ref="templateSelectionForm"
-              v-model="reviewerSelectionMode"
-              :fields="reviewerSelectionFields"
-            />
-
-              <div v-if="reviewerSelectionMode.reviewerSelectionMode === 'hiwi'">
-                <span style="margin-left: 10px;">Remaining Assignments: {{ this.remainingAssignments }}</span>
-              </div>
-            </div>
-            <div class="table-scroll-container">
-            <div v-if="reviewerSelectionMode.reviewerSelectionMode === 'general'">
-              <BasicForm 
-              ref="form" 
-              v-model="sliderValues"
-              :fields="roleSelectionSlider" />
-
-            </div>
-            <div v-if="reviewerSelectionMode.reviewerSelectionMode === 'hiwi'">
-              <BasicForm ref="form" :fields="hiwiSelectionData" v-model="hiwiValues"/>
-            </div>
-          </div>
+      <div v-if="reviewerSelectionMode['mode'] === 'role'">
+        <div class="mt-2">
+          Define the number of reviews that each user of the role should perform:
         </div>
+        <BasicForm
+          v-if="roleSelectionFields.length > 0"
+          ref="roleBasedSelectionForm"
+          v-model="roleSelection"
+          class="mt-4"
+          :fields="roleSelectionFields"
+        />
+        <div v-else>
+          <p class="text-center text-danger mt-4">There are no roles available!</p>
+          <p class="text-center">Please select reviewers with roles or change selection mode!</p>
         </div>
       </div>
+      <div v-else-if="reviewerSelectionMode['mode'] === 'reviewer'">
+        <div class="mt-2">
+          Distribute the documents between the selected reviewers:
+        </div>
+        <div class="mb-4">
+          Remaining Assignments: <strong>{{ this.remainingAssignments }}</strong>
+        </div>
+
+        <BasicForm
+          ref="reviewerBasedSelectionForm"
+          v-model="reviewerSelection"
+          :fields="reviewerSelectionFields"
+        />
+      </div>
+      <div v-else>
+        Please select a reviewer selection mode
+      </div>
     </template>
-    <template #footer>
-      <BasicButton
-        v-if="templates.length === 0"
-        title="Close"
-        class="btn btn-secondary"
-        @click="$refs.modal.close()"
-      />
-      <BasicButton
-        v-if="currentStep !== 0"
-        title="Previous"
-        class="btn btn-secondary"
-        @click="prevStep"/>
-      <BasicButton
-        v-if="currentStep !== 3"
-        title="Next"
-        class="btn btn-primary"
-        :disabled="isDisabled"
-        @click="nextStep"/>
-      <BasicButton
-        v-if="currentStep === 3"
-        title="Create Assignments"
-        class="btn btn-primary"
-        :disabled="isDisabledAssignments"
-        @click="createAssignments()"
-      />
+
+    <template #step-5>
+      <p>
+        Are you sure you want to create the assignment with the following details?
+      </p>
+      <div>
+        <strong>Template:</strong> {{ template.name }}
+      </div>
+      <div>
+        <strong>Workflow:</strong> {{ workflow.name }}
+      </div>
+      <div>
+        <strong>Documents:</strong> {{ selectedAssignments.length }}
+      </div>
+      <div>
+        <strong>Reviewers:</strong> {{ selectedReviewer.length }}
+      </div>
+      <div>
+        <strong>Number of reviews that will be created:</strong>
+        {{ reviewerNumberOfAssignments }} <!-- TODO calculate for each mode -->
+      </div>
+      <div>
+        <strong>Selection Mode:</strong>
+        <!--{{ reviewerSelectionModeFields[0].options.find(field => field.value === reviewerSelectionMode.mode).name }}-->
+      </div>
+      <div v-if="reviewerSelectionMode.mode === 'role'">
+        <strong>Roles:</strong>
+        <ul>
+          <li v-for="(value, key) in listOfSelectedRoles" :key="key">
+            {{ value.role }}: {{ value.value }}
+          </li>
+        </ul>
+      </div>
+      <div v-else>
+        <strong>Reviewers:</strong>
+        <ul>
+          <li v-for="(value, key) in listOfSelectedReviewers" :key="key">
+            {{ value.reviewer }}: {{ value.value }}
+          </li>
+        </ul>
+      </div>
     </template>
-  </BasicModal>
-  -->
+  </StepperModal>
 </template>
 
 <script>
-import BasicModal from "@/basic/Modal.vue";
-import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 
 /**
  * Modal for bulk creating assignments
- * @author: Alexander Bürkle, Linyin Huang
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang
  */
 export default {
   name: "ImportModal",
@@ -152,21 +159,16 @@ export default {
     }],
   }
   ],
-  components: {StepperModal, BasicModal, BasicButton, BasicTable, BasicForm},
+  components: {StepperModal, BasicTable, BasicForm},
   emits: ["updateUser"],
   data() {
     return {
       selectedReviewer: [],
-
-
+      reviewerSelectionMode: {},
+      roleSelection: {},
       templateSelection: {},
-      reviewerSelectionMode: 'general',
-      hiwiValues: [],
-      perviousHiwiValues: [],
-      currentStep: 0,
-      assignments: [],
       selectedAssignments: [],
-      sliderValues: {},
+      reviewerSelection: {},
       documentTableOptions: {
         striped: true,
         hover: true,
@@ -194,12 +196,15 @@ export default {
     };
   },
   computed: {
-    stepValid() { //TODO: Implement validation
+    stepValid() {
       return [
         this.workflowStepsAssignment.length !== 0,
         this.selectedAssignments.length > 0,
         this.selectedReviewer.length > 0,
-
+        this.reviewerSelectionMode.mode !== undefined &&
+        (this.reviewerSelectionMode.mode === 'reviewer' ?
+          this.remainingAssignments === 0 :
+          Object.values(this.roleSelection).map((value) => parseInt(value, 0)).reduce((a, b) => a + b, 0) > 0)
       ];
     },
     templates() {
@@ -259,8 +264,11 @@ export default {
     roles() {
       return this.$store.getters["admin/getSystemRoles"];
     },
-    reviewerRoles() { // unique roles assigned to reviewers
+    reviewerRoles() { // unique roles of all possible reviewers
       return [...new Set(this.reviewer.flatMap(obj => obj.roles))];
+    },
+    selectedReviewerRoles() { // unique roles assigned to reviewers
+      return this.selectedReviewer.flatMap(obj => obj.roles);
     },
     reviewerTableColumns() {
       return [
@@ -285,60 +293,36 @@ export default {
     reviewer() {
       return this.$store.getters["table/user/getAll"];
     },
-    reviewersOld() {
-      let reviewers = this.$store.getters["admin/getAssignmentUserInfos"].filter(user => user.role != null);
-      reviewers.forEach(rev => {
-        rev.hasAssignments = rev.numberAssignments > 0 ? "Has Assignments" : "No Assignment"
-      });
-      return reviewers;
-    },
     steps() {
       return [
         {title: "Template Selection"},
-        {title: "Assignment Selection"},
-        {title: "Review Count"},
-        {title: "Template Selection"},
+        {title: "Document Selection"},
+        {title: "Reviewer Selection"},
+        {title: "Distribution"},
+        {title: "Confirmation"}
       ];
     },
-    isDisabledAssignments() {
-      if (this.reviewerSelectionMode.reviewerSelectionMode === 'general') {
-        for (const key in this.sliderValues) {
-          if (this.sliderValues[key] > 0) {
-            return false;
-          }
-        }
-        return true;
-      } else {
-        return this.remainingAssignments !== 0;
-      }
-    },
-
-    columnsStepZero() {
-      const usersWithAssignments = this.users.filter((user) => user.numberAssignments > 0);
-      const roles = usersWithAssignments.map((user) => user.role);
-      const uniqueRoles = [...new Set(roles)];
-      const roleFilterColumn = {
-        name: "Role",
-        key: "role",
-        width: "1",
-        filter: uniqueRoles.map((role) => ({key: role, name: role})),
-      };
-
-      return [
-        roleFilterColumn,
-        {name: "ID", key: "id"},
-        {name: "Assignment", key: "documentName"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-
-
-      ]
+    reviewerNumberOfAssignments() {
+      return Object.values(this.reviewerSelection).map((value) => parseInt(value, 0)).reduce((a, b) => a + b, 0)
     },
     remainingAssignments() {
-      return this.selectedAssignments.length - Object.keys(this.hiwiValues).reduce((total, key) => {
-        const value = Number(this.hiwiValues[key]);
-        return total + (isNaN(value) ? 0 : value);
-      }, 0);
+      return this.selectedAssignments.length - this.reviewerNumberOfAssignments;
+    },
+    listOfSelectedRoles() {
+      return Object.keys(this.roleSelection).map((key) => {
+        return {
+          role: this.roles.find((role) => role.id === parseInt(key)).name,
+          value: this.roleSelection[key]
+        }
+      })
+    },
+    listOfSelectedReviewers() {
+      return Object.keys(this.reviewerSelection).map((key) => {
+        return {
+          reviewer: this.reviewer.find(reviewer => reviewer.id === parseInt(key)).firstName + " " + this.reviewer.find(reviewer => reviewer.id === parseInt(key)).lastName,
+          value: this.reviewerSelection[key]
+        }
+      })
     },
     templateSelectionFields() {
       return [
@@ -354,60 +338,50 @@ export default {
         },
       ]
     },
-    reviewerSelectionFields() {
+    reviewerSelectionModeFields() {
       return [
         {
-          key: "reviewerSelectionMode",
+          key: "mode",
           label: "Reviewer Selection Mode",
           type: "select",
           options: [
-            {name: "General", value: "general"},
-            {name: "Hiwi", value: "hiwi"},
+            {name: "Role-based selection (the number of reviews each role should do)", value: "role"},
+            {name: "Reviewer-based selection (distribute document between the selected reviewers)", value: "reviewer"},
           ],
           required: true,
         },
       ]
     },
-    hiwiSelectionData() {
+    roleSelectionFields() {
+      return this.selectedReviewerRoles.map(roleId => ({
+        key: this.roles.find((role) => role.id === roleId).id,
+        label: "Number of reviews for role: " + this.roles.find((role) => role.id === roleId).name,
+        type: "slider",
+        class: 'custom-slider-class',
+        min: 0,
+        max: this.selectedAssignments.length, //TODO auto adapt max
+        step: 1,
+        unit: 'review(s)'
+      }));
+    },
+    reviewerSelectionFields() {
       let data = [];
       for (const user of this.selectedReviewer) {
         data.push({
           key: user.id,
-          label: user.firstName + " " + user.lastName,
+          label: "Number of reviews for user: " + user.firstName + " " + user.lastName,
           type: "slider",
           class: 'custom-slider-class',
           min: 0,
-          max: this.selectedAssignments.length,
+          max: this.selectedAssignments.length, // TODO auto adapt max
           step: 1,
-          unit: ''
+          unit: 'review(s)'
         })
       }
       return data;
     },
-    roleSelectionSlider() {
-      const roleCounts = this.selectedReviewer.reduce((acc, obj) => {
-        const role = obj.role;
-        acc[role] = (acc[role] || 0) + 1;
-        return acc;
-      }, {});
-
-      let data = [];
-      for (const role in roleCounts) {
-        data.push({
-          key: role,
-          label: "Number of " + role + "s per review",
-          type: "slider",
-          class: 'custom-slider-class',
-          min: 0,
-          max: roleCounts[role],
-          step: 1,
-          unit: ''
-        })
-      }
-      return data;
-    }
-
   },
+  /* //TODO delete if adapted auto adapt max values
   watch: {
     hiwiValues: {
       handler(newValue) {
@@ -444,33 +418,26 @@ export default {
       deep: true
     },
 
-  },
-  mounted() {
+
+
+  }, */
+  mounted() { // TODO make sure all data is loaded
     //this.$socket.emit("assignmentGetAssignmentInfosFromUser")
   },
   methods: {
-    open(type) {
-      this.importType = type;
+    open() {
+      this.reset();
       this.$refs.assignmentStepper.open();
     },
     reset() {
-      this.hiwiValues = []
-      this.currentStep = 0;
-      this.selectedAssignments = [];
       this.selectedReviewer = [];
-      this.sliderValues = []
-      this.users = [];
+      this.reviewerSelectionMode = {};
+      this.roleSelection = {};
+      this.templateSelection = {};
+      this.selectedAssignments = [];
+      this.reviewerSelection = {};
     },
-    prevStep() {
-      if (this.currentStep > 0) {
-        this.currentStep--;
-      }
-    },
-    nextStep() {
-      if (this.currentStep >= 3) return;
-      this.currentStep++;
-    },
-    createAssignments() {
+    createAssignments() { // TODO send assignment creation to backend
       let data = {}
       data.createdByUserId = this.$store.getters["auth/getUserId"]
       data.assignments = this.selectedAssignments
@@ -501,113 +468,34 @@ export default {
   },
 
 }
-
-
 </script>
 
 <style scoped>
-/* Stepper */
-.stepper {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  position: relative;
-
-  &:after {
-    content: "";
-    position: absolute;
-    top: 15px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: #ccc;
-  }
-}
-
-.stepper div {
-  z-index: 1;
-  background-color: white;
-  padding: 0 5px;
-
-  &:before {
-    --dimension: 30px;
-    content: attr(data-index);
-    margin-right: 6px;
-    display: inline-flex;
-    width: var(--dimension);
-    height: var(--dimension);
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #6c6b6b;
-  }
-
-  &:first-child {
-    padding-left: 0;
-  }
-
-  &:last-child {
-    padding-right: 0;
-  }
-}
-
-.stepper div.active {
-  --btn-color: #0d6efd;
-  border-color: var(--btn-color);
-
-  &:before {
-    color: white;
-    background-color: var(--btn-color);
-    border-color: var(--btn-color);
-  }
-}
-
-.content-container {
-  height: 500px;
-  margin-bottom: 20px;
-}
-
 .table-scroll-container {
-  max-height: 500px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
-.custom-slider-class {
-  width: 100%;
-  border: 2px solid #3498db;
-  border-radius: 8px;
-  padding: 2px;
+input {
+  display: block;
+  margin-bottom: 10px;
 }
 
-
-.review-count-container {
-  height: 100%;
-  white-space: nowrap;
-  overflow-x: scroll;
-  max-width: 50%;
+ul {
+  list-style-type: none;
+  padding: 0;
 }
 
-.confirm-container,
-.result-container {
-  height: 100%;
-  display: flex;
-  justify-content: flex-start;
-  align-items: flex-start;
-  flex-direction: column;
+li {
+  margin: 5px 0;
+  cursor: pointer;
 }
 
-.result-container h3 {
-  font-size: 2rem;
-  margin-bottom: 20px;
+li:hover {
+  background-color: #f0f0f0;
 }
 
-.result-container label {
-  font-size: 1.2rem;
-  margin-right: 10px;
-}
-
-.result-container select {
-  margin-top: 10px;
-  padding: 5px;
+button {
+  margin-left: 10px;
 }
 </style>
