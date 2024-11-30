@@ -21,7 +21,7 @@
       </div>
       <div class="content-container">
         <div>
-          <template v-if="$slots['error']">
+          <template v-if="!!$slots['error']">
             <slot name="error"/>
           </template>
           <template v-else>
@@ -110,6 +110,7 @@ export default {
     open() {
       this.reset();
       this.$refs.stepperModal.open();
+      console.log(this.$slots);
     },
     close() {
       this.$refs.stepperModal.close();

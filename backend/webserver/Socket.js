@@ -345,8 +345,7 @@ module.exports = class Socket {
             exclude: defaultExcludes,
         };
 
-        //TODO: if (await this.isAdmin() || (this.models[tableName] && this.models[tableName].publicTable)) {
-        if ((this.models[tableName].publicTable)) { // is allowed to see everything
+        if (await this.isAdmin() || this.models[tableName].publicTable) { // is allowed to see everything
             // no adaption of the filter or attributes needed
         } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
             // is allowed to see only his data and possible if there is a public attribute

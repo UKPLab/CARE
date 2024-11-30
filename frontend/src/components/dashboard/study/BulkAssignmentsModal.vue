@@ -1,57 +1,63 @@
 <template>
-  <BasicModal ref="modal" @hide="reset" xl>
+  <StepperModal
+    ref="assignmentStepper"
+    :steps="steps"
+    :validation="stepValid"
+    @submit="createAssignments"
+    xl>
     <template #title>
-      <span>Bulk Create Assignments</span>
+      <h5 class="modal-title">Create bulk assignment</h5>
     </template>
-    <template #body>
-      <div v-if="templates.length === 0">
-        <p class="text-center text-danger">There are not study templates available!</p>
-        <p class="text-center">Please create a study template to proceed!</p>
+
+    <template v-if="templates.length === 0" #error>
+      <p class="text-center text-danger">There are not study templates available!</p>
+      <p class="text-center">Please create a study template to proceed!</p>
+    </template>
+
+    <template #step-0>
+      <BasicForm
+        ref="templateSelectionForm"
+        v-model="templateSelection"
+        :fields="templateSelectionFields"
+      />
+      <div class="mt-3"><strong>Workflow Steps:</strong></div>
+      <ul class="list-group">
+        <li
+          v-for="(workflowStep, index) in workflowSteps"
+          :key="workflowStep.id" class="list-group-item"
+          :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
+          Workflow Step {{ index + 1 }}:
+          {{ (workflowStep.stepType === 1) ? "Annotator" : (workflowStep.stepType === 2) ? "Editor" : "Unknown" }}
+        </li>
+      </ul>
+    </template>
+
+    <template #step-1>
+      <div class="table-scroll-container">
+        <BasicTable
+          v-model="selectedAssignments"
+          :columns="documentsTableColumns"
+          :data="documentsTable"
+          :options="documentTableOptions"
+        />
       </div>
-      <div v-else>
-        <!-- Stepper -->
-        <div class="stepper">
-          <div v-for="(step, index) in steps" :key="index" :data-index="index + 1"
-               :class="{ active: currentStep === index }">
-            {{ step.title }}
-          </div>
-        </div>
-        <!-- Content -->
-        <div class="content-container">
-          <!-- Step0: Choose Assignments -->
-          <div v-if="currentStep === 0">
-            <BasicForm
-              ref="templateSelectionForm"
-              v-model="templateSelection"
-              :fields="templateSelectionFields"
-            />
-            <div class="mt-3"><strong>Workflow Steps:</strong></div>
-            <ul class="list-group">
-              <li
-                v-for="(workflowStep, index) in workflowSteps"
-                :key="workflowStep.id" class="list-group-item"
-                :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
-                Workflow Step {{ index + 1 }}:
-                {{ (workflowStep.stepType === 1) ? "Annotator" : (workflowStep.stepType === 2) ? "Editor" : "Unknown" }}
-              </li>
-            </ul>
-          </div>
-          <!-- Step 1: Choose Assignment -->
-          <div
-            v-if="currentStep === 1"
-  
-          >
-            <div class="table-scroll-container">
-              <BasicTable
-                v-model="selectedAssignments"
-                :columns="documentsTableColumns"
-                :data="documentsTable"
-                :options="documentTableOptions"
-                @row-selection="(documentsTable) => (selectedAssignments = documentsTable)"
-              />
-            </div>
-          </div>
-          
+    </template>
+
+    <template #step-2>
+      <div class="table-scroll-container">
+        <BasicTable
+          v-model="selectedReviewers"
+          :columns="columnsStepOne"
+          :data="reviewers"
+          :options="tableOptions" />
+      </div>
+    </template>
+
+  </StepperModal>
+
+  <!--
+
+
           <div v-if="currentStep === 2">
             <h4>Select reviewers!</h4>
             <div class="table-scroll-container">
@@ -65,17 +71,14 @@
           </div>
           
           
-          <!-- Step2: Choose number of reviewers per assignment -->
           <div v-if="currentStep === 3" class="table-scroll-container">
             <div style="display: flex; align-items: center; justify-content: space-between;">
-              <!-- Select Dropdown -->
               <BasicForm
               ref="templateSelectionForm"
               v-model="reviewerSelectionMode"
               :fields="reviewerSelectionFields"
             />
 
-              <!-- Text on the Right -->
               <div v-if="reviewerSelectionMode.reviewerSelectionMode === 'hiwi'">
                 <span style="margin-left: 10px;">Remaining Assignments: {{ this.remainingAssignments }}</span>
               </div>
@@ -123,6 +126,7 @@
       />
     </template>
   </BasicModal>
+  -->
 </template>
 
 <script>
@@ -130,6 +134,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
+import StepperModal from "@/basic/modal/StepperModal.vue";
 
 /**
  * Modal for bulk creating assignments
@@ -137,13 +142,20 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "ImportModal",
-  fetch_data: ["study"],
-  components: {BasicModal, BasicButton, BasicTable, BasicForm},
+  subscribeTable: [{
+    table: "document",
+    filter: [{
+      key: "readyForReview",
+      value: true
+    }],
+  }
+  ],
+  components: {StepperModal, BasicModal, BasicButton, BasicTable, BasicForm},
   emits: ["updateUser"],
   data() {
     return {
       templateSelection: {},
-      reviewerSelectionMode: 'general', 
+      reviewerSelectionMode: 'general',
       hiwiValues: [],
       perviousHiwiValues: [],
       currentStep: 0,
@@ -178,6 +190,14 @@ export default {
     };
   },
   computed: {
+    stepValid() { //TODO: Implement validation
+      return [
+        this.workflowStepsAssignment.length !== 0,
+        this.selectedAssignments.length > 0,
+        this.selectedReviewers.length > 0,
+
+      ];
+    },
     templates() {
       return this.$store.getters["table/study/getFiltered"](item => item.template === true);
     },
@@ -209,7 +229,7 @@ export default {
       return this.documents.map((d) => {
         let newD = {...d};
         newD.type = d.type === 0 ? "PDF" : "HTML";
-        const user = this.$store.getters["admin/user/get"](d.userId)
+        const user = this.$store.getters["table/user/get"](d.userId)
         newD.firstName = (user) ? user.firstName : "Unknown";
         newD.lastName = (user) ? user.lastName : "Unknown";
         return newD;
@@ -251,7 +271,7 @@ export default {
       return false;
     },
     isDisabledAssignments() {
-      if(this.reviewerSelectionMode.reviewerSelectionMode === 'general') {
+      if (this.reviewerSelectionMode.reviewerSelectionMode === 'general') {
         for (const key in this.sliderValues) {
           if (this.sliderValues[key] > 0) {
             return false;
@@ -384,7 +404,7 @@ export default {
       }
       return data;
     }
-    
+
   },
   watch: {
     hiwiValues: {
@@ -399,7 +419,7 @@ export default {
                 this.hiwiSelectionData[i].max = this.hiwiSelectionData[i].max + difference
                 if (this.hiwiSelectionData[i].max < 0) {
                   this.hiwiSelectionData[i].max = 0
-                } 
+                }
               }
             }
             break;
@@ -411,7 +431,7 @@ export default {
                 this.hiwiSelectionData[i].max = this.hiwiSelectionData[i].max - difference
                 if (this.hiwiSelectionData[i].max < 0) {
                   this.hiwiSelectionData[i].max = 0
-                } 
+                }
               }
             }
             break;
@@ -424,12 +444,12 @@ export default {
 
   },
   mounted() {
-    this.$socket.emit("assignmentGetAssignmentInfosFromUser")
+    //this.$socket.emit("assignmentGetAssignmentInfosFromUser")
   },
   methods: {
     open(type) {
       this.importType = type;
-      this.$refs.modal.open();
+      this.$refs.assignmentStepper.open();
     },
     reset() {
       this.hiwiValues = []
@@ -477,7 +497,7 @@ export default {
       this.$refs.modal.close();
     }
   },
-  
+
 }
 
 

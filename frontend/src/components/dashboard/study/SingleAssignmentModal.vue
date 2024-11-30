@@ -3,6 +3,7 @@
     ref="assignmentStepper"
     :steps="steps"
     :validation="stepValid"
+    @submit="createAssignment"
     xl>
     <template #title>
       <h5 class="modal-title">Create Assignment</h5>
@@ -13,160 +14,89 @@
       <p class="text-center">Please create a study template to proceed!</p>
     </template>
     <template #step-0>
-
+      <BasicForm
+        ref="templateSelectionForm"
+        v-model="templateSelection"
+        :fields="templateSelectionFields"
+      />
+      <div class="mt-3"><strong>Workflow Steps:</strong></div>
+      <ul class="list-group">
+        <li
+          v-for="(workflowStep, index) in workflowSteps"
+          :key="workflowStep.id" class="list-group-item"
+          :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
+          Workflow Step {{ index + 1 }}:
+          {{ (workflowStep.stepType === 1) ? "Annotator" : (workflowStep.stepType === 2) ? "Editor" : "Unknown" }}
+        </li>
+      </ul>
     </template>
-
-
-  </StepperModal>
-  <!--
-  <BasicModal
-    ref="modal"
-    xl
-    @hide="reset"
-  >
-
-    <template #body>
-        <div class="content-container">
-        <div v-if="templates.length === 0">
-          <p class="text-center text-danger">There are not study templates available!</p>
-          <p class="text-center">Please create a study template to proceed!</p>
-        </div>
-        <div v-else>
-
-          <div class="stepper">
-            <div
-              v-for="(step, index) in steps"
-              :key="index"
-              :data-index="index + 1"
-              :class="{ active: currentStep === index }"
-            >
-              {{ step.title }}
-            </div>
-          </div>
-
-          <div v-if="currentStep === 0">
-            <BasicForm
-              ref="templateSelectionForm"
-              v-model="templateSelection"
-              :fields="templateSelectionFields"
-            />
-            <div class="mt-3"><strong>Workflow Steps:</strong></div>
-            <ul class="list-group">
-              <li
-                v-for="(workflowStep, index) in workflowSteps"
-                :key="workflowStep.id" class="list-group-item"
-                :class="(workflowStep.workflowStepDocument !== null) ? 'disabled': 'list-group-item-primary'">
-                Workflow Step {{ index + 1 }}:
-                {{ (workflowStep.stepType === 1) ? "Annotator" : (workflowStep.stepType === 2) ? "Editor" : "Unknown" }}
-              </li>
-            </ul>
-          </div>
-          <div
-            v-if="currentStep === 1"
-            class="file-upload-container"
-          >
-            <div class="table-scroll-container">
-              <BasicTable
-                v-model="selectedAssignment"
-                :columns="documentsTableColumns"
-                :data="documentsTable"
-                :options="documentTableOptions"
-              />
-            </div>
-          </div>
-          <div
-            v-if="currentStep === 2"
-            class="file-upload-container"
-          >
-            <div class="table-scroll-container">
-              <BasicTable
-                v-model="selectedReviewer"
-                :columns="reviewerTableColumns"
-                :data="reviewerTable"
-                :options="reviewerTableOptions"
-              />
-            </div>
-          </div>
-          <div v-if="currentStep === 3">
-            <p>
-              Are you sure you want to create the assignment with the following details?
-            </p>
-            <div>
-              <strong>Template:</strong> {{ template.name }}
-            </div>
-            <div>
-              <strong>Workflow:</strong> {{ workflow.name }}
-            </div>
-            <div>
-              <strong>Workflow Assignments:</strong>
-              <ul>
-                <li
-                  v-for="(stepAssignment, index) in workflowStepsAssignments"
-                  :key="stepAssignment.id"
-                >
-                  - Workflow Step {{ index + 1 }}:
-                  <span v-if="stepAssignment.documentId">
-                    {{ documents.find(doc => doc.id === stepAssignment.documentId).name }}
-                    ({{
-                      reviewers.find(user => user.id === documents.find(doc => doc.id === stepAssignment.documentId).userId).firstName
-                    }}
-                     {{
-                      reviewers.find(user => user.id === documents.find(doc => doc.id === stepAssignment.documentId).userId).lastName
-                    }})
-                  </span>
-                  <span v-else>
-                    Create new document
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <strong>Reviewers:</strong>
-              <ul>
-                <li
-                  v-for="reviewer in selectedReviewer">
-                  - {{ reviewer.firstName }} {{ reviewer.lastName }}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+    <template #step-1>
+      <div class="table-scroll-container">
+        <BasicTable
+          v-model="selectedAssignment"
+          :columns="documentsTableColumns"
+          :data="documentsTable"
+          :options="documentTableOptions"
+        />
       </div>
     </template>
-    <template #footer>
-      <BasicButton
-        v-if="templates.length === 0"
-        title="Close"
-        class="btn btn-secondary"
-        @click="$refs.modal.close()"
-      />
-      <BasicButton
-        v-if="currentStep !== 0"
-        title="Previous"
-        class="btn btn-secondary"
-        @click="prevStep"
-      />
-      <BasicButton
-        v-if="currentStep !== 3"
-        title="Next"
-        class="btn btn-primary"
-        :disabled="isDisabled"
-        @click="nextStep"
-      />
-      <BasicButton
-        v-if="currentStep === 3"
-        title="Create Assignment"
-        class="btn btn-primary"
-        @click="createAssignment"
-      />
+    <template #step-2>
+      <div class="table-scroll-container">
+        <BasicTable
+          v-model="selectedReviewer"
+          :columns="reviewerTableColumns"
+          :data="reviewerTable"
+          :options="reviewerTableOptions"
+        />
+      </div>
     </template>
-  </BasicModal>
-  <!-->
+    <template #step-3>
+      <p>
+        Are you sure you want to create the assignment with the following details?
+      </p>
+      <div>
+        <strong>Template:</strong> {{ template.name }}
+      </div>
+      <div>
+        <strong>Workflow:</strong> {{ workflow.name }}
+      </div>
+      <div>
+        <strong>Workflow Assignments:</strong>
+        <ul>
+          <li
+            v-for="(stepAssignment, index) in workflowStepsAssignments"
+            :key="stepAssignment.id"
+          >
+            - Workflow Step {{ index + 1 }}:
+            <span v-if="stepAssignment.documentId">
+                    {{ documents.find(doc => doc.id === stepAssignment.documentId).name }}
+                    ({{
+                reviewers.find(user => user.id === documents.find(doc => doc.id === stepAssignment.documentId).userId).firstName
+              }}
+                     {{
+                reviewers.find(user => user.id === documents.find(doc => doc.id === stepAssignment.documentId).userId).lastName
+              }})
+                  </span>
+            <span v-else>
+                    Create new document
+                  </span>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <strong>Reviewers:</strong>
+        <ul>
+          <li
+            v-for="reviewer in selectedReviewer">
+            - {{ reviewer.firstName }} {{ reviewer.lastName }}
+          </li>
+        </ul>
+      </div>
+    </template>
+  </StepperModal>
 </template>
 
 <script>
-import BasicModal from "@/basic/Modal.vue";
-import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
@@ -200,7 +130,7 @@ export default {
         value: true
       }]
     }],
-  components: {StepperModal, BasicModal, BasicButton, BasicTable, BasicForm},
+  components: {StepperModal, BasicTable, BasicForm},
   data() {
     return {
       currentStep: 0,
@@ -233,8 +163,12 @@ export default {
     };
   },
   computed: {
-    stepsValid() {
-      return [];
+    stepValid() {
+      return [
+        this.workflowStepsAssignment.length !== 0,
+        this.selectedAssignment.length === 1,
+        this.selectedReviewer.length > 0,
+      ];
     },
     templateSelectionFields() {
       return [
@@ -323,21 +257,10 @@ export default {
         {title: "Confirmation"},
       ];
     },
-    isDisabled() {
-      if (this.currentStep === 0) {
-        return this.workflowStepsAssignment.length === 0;
-      }
-      if (this.currentStep === 1) {
-        return this.selectedAssignment.length !== 1;
-      }
-      if (this.currentStep === 2) {
-        return this.selectedReviewer.length === 0;
-      }
-      return false;
-    },
   },
   methods: {
     open() {
+      this.reset();
       this.$refs.assignmentStepper.open();
     },
     reset() {
@@ -345,27 +268,17 @@ export default {
       this.selectedAssignment = [];
       this.selectedReviewer = [];
     },
-    prevStep() {
-      if (this.currentStep > 0) {
-        this.currentStep--;
-      }
-    },
-    nextStep() {
-      if (this.currentStep >= 4) return;
-      this.currentStep++;
-    },
-
     createAssignment() {
-      this.$refs.modal.waiting = true;
+      this.$refs.assignmentStepper.setWaiting(true);
       this.$socket.emit("assignmentCreate", {
         template: this.template,
         reviewer: this.selectedReviewer,
         assignments: this.selectedAssignment,
         documents: this.workflowStepsAssignments
       }, (res) => {
-        this.$refs.modal.waiting = false;
+        this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {
-          this.$refs.modal.close();
+          this.$refs.assignmentStepper.close();
           this.eventBus.emit("toast", {
             title: "Assignment created",
             message: "The assignment has been created successfully",
@@ -386,72 +299,10 @@ export default {
 </script>
 
 <style scoped>
-/* Stepper */
-.stepper {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  position: relative;
-
-  &:after {
-    content: "";
-    position: absolute;
-    top: 15px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: #ccc;
-  }
-}
-
-.stepper div {
-  z-index: 1;
-  background-color: white;
-  padding: 0 5px;
-
-  &:before {
-    --dimension: 30px;
-    content: attr(data-index);
-    margin-right: 6px;
-    display: inline-flex;
-    width: var(--dimension);
-    height: var(--dimension);
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #6c6b6b;
-  }
-
-  &:first-child {
-    padding-left: 0;
-  }
-
-  &:last-child {
-    padding-right: 0;
-  }
-}
-
-.stepper div.active {
-  --btn-color: #0d6efd;
-  border-color: var(--btn-color);
-
-  &:before {
-    color: white;
-    background-color: var(--btn-color);
-    border-color: var(--btn-color);
-  }
-}
-
-.content-container {
-  height: 500px;
-  margin-bottom: 20px;
-}
-
 .table-scroll-container {
   height: 400px;
   overflow-y: auto;
 }
-
 
 input {
   display: block;
@@ -475,6 +326,5 @@ li:hover {
 button {
   margin-left: 10px;
 }
-
 
 </style>
