@@ -64,7 +64,7 @@
     <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
       <div v-show="s.id === currentStudyStepId">
-        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id"/>
+        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id" @error="error" />
       </div>
       <div v-show="s.id === currentStudyStepId">
         <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id"/>
@@ -276,6 +276,7 @@ export default {
           message: data.message,
           variant: "danger"
         });
+        this.error();
         this.$router.push("/");
       }
     },
@@ -283,6 +284,10 @@ export default {
   methods: {
     start(data) {
       this.studySessionId = data.studySessionId;
+    },
+    error() {
+      console.log("EEROOROROR");
+      this.$refs.studyModal.close();
     },
     calcTimeLeft() {
       const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;

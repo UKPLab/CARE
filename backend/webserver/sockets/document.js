@@ -24,25 +24,33 @@ module.exports = class DocumentSocket extends Socket {
      *
      * Check if user has rights to read the document data
      *
-     * NOTE: currently we accept sharing per link --> returns always true
+     * The user has access to the document if:
+     * - The document is public
+     * - The document is owned by the user
+     * - The user is an admin
+     * - The document is used in a study where the user is a participant
      *
      * @param documentId
      * @returns {Promise<boolean>}
      */
     async checkDocumentAccess(documentId) {
-        try {
-            const doc = await this.models['document'].getById(documentId);
+        const doc = await this.models['document'].getById(documentId);
 
-            if (doc && await this.checkUserAccess(doc.userId))
-             {
-                return true;
-            } else {
-                return false;
-            }
-        } catch (e) {
-            this.logger.error(e);
-            return false;
+        if (doc && (doc.public || doc.userId === this.userId || await this.isAdmin())) {
+            return true;
         }
+
+        // check if the document is used in a study where the user is a participant
+        const study_steps = await this.models['study_step'].getAllByKey('documentId', documentId);
+        const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_steps.map(step => step.studyId));
+
+        for (const session of study_sessions) {
+            if (session.userId === this.userId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -96,11 +104,11 @@ module.exports = class DocumentSocket extends Socket {
                 studySessionId: null,
                 studyStepId: null,
                 draft: false,
-                offset: 0,  
-                operationType: 0,  
-                span: deltaContent.ops.reduce((span, op) => span + (op.insert ? op.insert.length : 0), 0),  
-                text: deltaContent.ops.map(op => op.insert).join(''),  
-                attributes: null,  
+                offset: 0,
+                operationType: 0,
+                span: deltaContent.ops.reduce((span, op) => span + (op.insert ? op.insert.length : 0), 0),
+                text: deltaContent.ops.map(op => op.insert).join(''),
+                attributes: null,
             };
 
             await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
@@ -156,8 +164,8 @@ module.exports = class DocumentSocket extends Socket {
             name: data.name,
             type: data.type,
             userId: this.userId
-        }, {transaction: options.transaction} );
-        
+        }, {transaction: options.transaction});
+
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         });

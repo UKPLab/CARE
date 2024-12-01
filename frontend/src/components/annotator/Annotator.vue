@@ -191,7 +191,7 @@ export default {
       type: Number,
       required: true,
       default: 0,
-    },    
+    },
     studyStepId: {
       type: Number,
       required: false,
