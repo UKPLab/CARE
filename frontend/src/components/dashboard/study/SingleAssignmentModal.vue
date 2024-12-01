@@ -298,7 +298,7 @@ export default {
 
 <style scoped>
 .table-scroll-container {
-  height: 400px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
