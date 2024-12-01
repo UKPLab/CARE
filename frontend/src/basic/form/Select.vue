@@ -51,7 +51,7 @@ export default {
       required: true,
     },
     modelValue: {
-      type: Number,
+      type: [Number, String],
       required: false,
       default: -1,
     },

@@ -229,5 +229,7 @@ export default {
 </script>
 
 <style scoped>
-
+.shake {
+  animation: shake-animation 0.5s ease-in-out;
+}
 </style>

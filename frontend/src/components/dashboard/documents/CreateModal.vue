@@ -51,6 +51,7 @@ export default {
     create() {
       if (this.name.length === 0) {
         this.eventBus.emit("toast", {
+          title: "No name for document",
           message: "Please enter a name for the document!",
           variant: "danger",
         });

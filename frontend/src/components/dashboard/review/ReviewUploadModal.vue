@@ -182,7 +182,7 @@ export default {
           this.eventBus.emit("toast", {
             title: "Failed to fetch corresponding study sessions",
             message: res.message,
-            type: "error",
+            variant: "danger",
           });
         }
       });
@@ -204,7 +204,7 @@ export default {
             this.eventBus.emit("toast", {
               title: "Failed to import submission from Moodle",
               message: res.message,
-              type: "error",
+              variant: "danger",
             });
           }
         }

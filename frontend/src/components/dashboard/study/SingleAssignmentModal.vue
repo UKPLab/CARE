@@ -280,13 +280,13 @@ export default {
           this.eventBus.emit("toast", {
             title: "Assignment created",
             message: "The assignment has been created successfully",
-            type: "success",
+            variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to create assignment",
             message: res.message,
-            type: "error",
+            variant: "danger",
           });
         }
       })

@@ -414,7 +414,7 @@ export default {
         type: "slider",
         class: 'custom-slider-class',
         min: 0,
-        max: this.remainingAssignments + parseInt(this.reviewerSelection[user.id]),
+        max: Number(this.remainingAssignments + Number(this.reviewerSelection[user.id])),
         step: 1,
         unit: 'review(s)'
       }));
@@ -454,13 +454,13 @@ export default {
           this.eventBus.emit("toast", {
             title: "Assignment created",
             message: "The assignment has been created successfully",
-            type: "success",
+            variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to create assignment",
             message: res.message,
-            type: "error",
+            variant: "danger",
           });
         }
       })

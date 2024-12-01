@@ -140,7 +140,7 @@ export default {
           this.eventBus.emit("toast", {
             title: "Uploading failed",
             message: res.message,
-            type: "error",
+            variant: "danger",
           });
 
         }

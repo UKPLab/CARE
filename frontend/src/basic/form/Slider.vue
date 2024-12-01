@@ -59,7 +59,7 @@ export default {
   },
   watch: {
     currentData() {
-      this.$emit("update:modelValue", this.currentData);
+      this.$emit("update:modelValue", Number(this.currentData));
     },
     modelValue() {
       this.currentData = this.modelValue;

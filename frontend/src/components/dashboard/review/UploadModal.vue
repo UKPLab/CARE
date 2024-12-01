@@ -120,6 +120,7 @@ export default {
       }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
+            title: "Uploaded file",
             message: "File successfully uploaded!",
             variant: "success",
           });
