@@ -95,7 +95,7 @@ export default {
   },
   methods: {
     open() {
-      this.file = null;
+      this.data.file = null;
       this.selectedUser = [];
       this.$refs.uploadStepper.open();
     },
@@ -135,12 +135,6 @@ export default {
         }
       });
     },
-    /*fetchUsers() {
-      this.$socket.emit("userGetByRole", "all");
-    },
-
-
-    */
   },
 };
 </script>

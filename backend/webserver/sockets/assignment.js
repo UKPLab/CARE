@@ -142,7 +142,6 @@ module.exports = class AssignmentSocket extends Socket {
         const template = data.template
 
         for (const assignment of result) {
-            console.log(assignment, "assignment");
             await this.createAssignment(
                 {assignment, reviewers: assignment.assignedReviewers, template, documents: [assignment.documentName]},
                 options
@@ -168,7 +167,7 @@ module.exports = class AssignmentSocket extends Socket {
         const new_study = {
             ...data['template'],
             createdByUserId: this.userId,
-            userId: data["assignments"][0]['userId'],
+            userId: data["assignment"]['userId'],
             template: false,
             id: undefined,
             hash: undefined,
@@ -250,6 +249,40 @@ module.exports = class AssignmentSocket extends Socket {
             })));
 
         if (data.mode === "role") {
+            console.log("DAta", data);
+            console.log("data.roleSelection", data.roleSelection);
+            console.log("data.selectedReviewer", data.selectedReviewer);
+
+            const finalAssignmentsForRoles = [];
+
+            // transform the roleSelection (as we get String values from the frontend)
+            const roleSelection = Object.entries(data.roleSelection)
+                .filter(([_, assignments]) => Number(assignments) !== 0) // remove roles with no assignments
+                .reduce((acc, [roleId, assignments]) => {
+                    acc[roleId] = {};
+                    acc[roleId]['roleId'] = Number(roleId);
+                    acc[roleId]['assignments'] = assignments;
+                    acc[roleId]['users'] = data.selectedReviewer.find((reviewer) => reviewer.roles.includes(Number(roleId)))
+                    return acc;
+                }, {});
+
+            // distribute the assignments to the reviewers
+            for (let assignment of shuffledAssignments) {
+                let assigned = false;
+
+                for (let role of Object.keys(roleSelection)) {
+                    //TODO
+                }
+            }
+
+
+            console.log("roleSelection", roleSelection);
+
+
+            // every document should be reviewed by number of reviewers per role
+            // check two things, first a reviewer should not review his own document
+            // second, a reviewer should not review the same document twice
+            const finalAssignments = {};
 
 
         } else if (data.mode === "reviewer") {
@@ -262,9 +295,9 @@ module.exports = class AssignmentSocket extends Socket {
 
             // transform the reviewerSelection (as we get String values from the frontend)
             const reviewerSelection = Object.entries(data.reviewerSelection)
-                .filter(([_, assignments]) => assignments !== '0') // remove reviewers with no assignments
+                .filter(([_, assignments]) => Number(assignments) !== 0) // remove reviewers with no assignments
                 .reduce((acc, [reviewerId, assignments]) => {
-                    acc[Number(reviewerId)] = Number(assignments);
+                    acc[reviewerId] = Number(assignments);
                     return acc;
                 }, {});
 
@@ -274,8 +307,6 @@ module.exports = class AssignmentSocket extends Socket {
 
                 for (let reviewer of Object.keys(reviewerSelection)) {
                     // check if the reviewer still has assignments to review AND if it is not a document from himself
-                    console.log("Reviewer", reviewer);
-                    console.log("Assignment UserID", assignment.userId);
                     if (reviewerSelection[reviewer] > 0 && assignment.userId !== Number(reviewer)) {
                         finalAssignments[reviewer].push(assignment);
                         reviewerSelection[reviewer]--;
@@ -321,7 +352,17 @@ module.exports = class AssignmentSocket extends Socket {
                 }
             }
 
-            console.log("finalAssignments", finalAssignments);
+            // create the final assignments
+            for (const [reviewerId, assignments] of Object.entries(finalAssignments)) {
+                for (const assignment of assignments) {
+                    await this.createAssignment({
+                        assignment: assignment,
+                        reviewer: [data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId))],
+                        template: data.template,
+                        documents: assignment["document"]
+                    }, options);
+                }
+            }
 
         } else {
             throw new Error("Invalid mode provided for assignment creation.");

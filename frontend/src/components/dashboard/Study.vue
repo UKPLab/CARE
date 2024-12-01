@@ -465,7 +465,6 @@ export default {
         warning,
         function (val) {
           if (val) {
-
             this.$socket.emit("appDataUpdate", {
               table: "study",
               data: {
@@ -473,7 +472,13 @@ export default {
                 deleted: true
               }
             }, (result) => {
-              if (!result.success) {
+              if (result.success) {
+                this.eventBus.emit('toast', {
+                  title: "Study deleted",
+                  message: "The study has been deleted",
+                  variant: "success"
+                });
+              } else {
                 this.eventBus.emit('toast', {
                   title: "Study delete failed",
                   message: result.message,

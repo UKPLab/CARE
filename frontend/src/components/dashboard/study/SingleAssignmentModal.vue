@@ -271,7 +271,7 @@ export default {
       this.$socket.emit("assignmentCreate", {
         template: this.template,
         reviewer: this.selectedReviewer,
-        assignments: this.selectedAssignment,
+        assignment: this.selectedAssignment[0],
         documents: this.workflowStepsAssignments
       }, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
