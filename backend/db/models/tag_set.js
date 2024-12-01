@@ -32,6 +32,20 @@ module.exports = (sequelize, DataTypes) => {
             }
         ]
 
+        /**
+         * Delete all tags from tagSet
+         * @param tagSet
+         * @param options
+         * @returns {Promise<void>}
+         */
+        static async deleteTags(tagSet, options) {
+            const tags = await sequelize.models['tag'].getAllByKey("tagSetId", tagSet.id, {transaction: options.transaction});
+
+            for (const tag of tags) {
+                await sequelize.models['tag'].deleteById(tag.id, {transaction: options.transaction});
+            }
+        }
+
 
         /**
          * Helper method for defining associations.
@@ -61,7 +75,14 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize,
         modelName: 'tag_set',
-        tableName: 'tag_set'
+        tableName: 'tag_set',
+        hooks: {
+            afterUpdate: async (tagSet, options) => {
+                if (tagSet.deleted && !tagSet._previousDataValues.deleted) {
+                    await TagSet.deleteTags(tagSet, options);
+                }
+            }
+        }
     });
     return TagSet;
 };
