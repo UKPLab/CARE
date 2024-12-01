@@ -108,26 +108,25 @@ module.exports = class StudySessionSocket extends Socket {
 
     /**
      * Start a study session
-     * @param {number} studyId
+     * @param {object} data
+     * @param {number} data.studyId - A study id
+     * @param {number} data.studySessionId - A study session id
+     * @param {object} options - Transaction options
      * @returns {Promise<void>}
      */
-    async startStudySession(studyId) {
-        const study = await this.models['study'].getById(studyId);
-        if (study.start !== null && new Date() < new Date(study.start)) {
-            this.sendToast("Failed to start study, the study hasn't started yet.", "Study Failure", "danger");
-            return;
-        }
-        if (study.end !== null && new Date(study.end) < new Date()) {
-            this.sendToast("Failed to start study, the study already finished.", "Study Failure", "danger");
-            return;
+    async startStudySession(data, options) {
+        console.log(data);
+
+        if (data.studySessionId && data.studySessionId !== 0) {
+            // we just start the session
+            return await this.models["study_session"].updateById(data.studySessionId, {start: Date.now()}, {transaction: options.transaction});
+        } else if (data.studyId) {
+            // we create a new session
+            return await this.models["study_session"].add({
+                studyId: data.studyId, userId: this.userId, start: Date.now()
+            }, {transaction: options.transaction});
         }
 
-        const studySession = await this.models["study_session"].add({
-            studyId: study.id, userId: this.userId, start: Date.now()
-        });
-
-        await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
-        this.socket.emit("studySessionStarted", {success: true, studySessionId: studySession.id});
     }
 
     async init() {
@@ -182,14 +181,7 @@ module.exports = class StudySessionSocket extends Socket {
             }
         });
 
-        this.socket.on("studySessionStart", async (data) => {
-            try {
-                await this.startStudySession(data.studyId);
-            } catch (err) {
-                this.socket.emit("studySessionStarted", {success: false, message: err.message});
-                this.logger.error(err);
-            }
-        });
+        this.createSocket("studySessionStart", this.startStudySession, {}, true);
 
         this.socket.on("studySessionGetByHash", async (data, callback) => {
             try {

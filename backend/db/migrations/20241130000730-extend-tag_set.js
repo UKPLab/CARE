@@ -4,7 +4,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn("tag_set", "projectId", {
       type: Sequelize.INTEGER,
-      defaultValue: 0,
+      defaultValue: 1,
     });
   },
 

@@ -482,6 +482,8 @@ export default {
       }
     }
     // map columns to filter object (e.g. {column1: {filter1: false, filter2: false})
+    console.log("FILTERS", this.filter);
+    console.log("COLUMNS", this.columns);
     this.filter = Object.assign(
       {},
       ...this.columns

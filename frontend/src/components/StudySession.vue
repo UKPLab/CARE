@@ -26,6 +26,7 @@ import Loader from "@/basic/Loading.vue"
 export default {
   name: "StudySession",
   components: {Study, Loader},
+  subscribeTable: ['study_session'],
   props: {
     'studySessionHash': {
       type: String,

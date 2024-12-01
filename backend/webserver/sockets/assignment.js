@@ -253,37 +253,87 @@ module.exports = class AssignmentSocket extends Socket {
             console.log("data.roleSelection", data.roleSelection);
             console.log("data.selectedReviewer", data.selectedReviewer);
 
-            const finalAssignmentsForRoles = [];
+            const finalAssignmentsForRoles = {};
 
-            // transform the roleSelection (as we get String values from the frontend)
             const roleSelection = Object.entries(data.roleSelection)
                 .filter(([_, assignments]) => Number(assignments) !== 0) // remove roles with no assignments
                 .reduce((acc, [roleId, assignments]) => {
                     acc[roleId] = {};
                     acc[roleId]['roleId'] = Number(roleId);
-                    acc[roleId]['assignments'] = assignments;
-                    acc[roleId]['users'] = data.selectedReviewer.find((reviewer) => reviewer.roles.includes(Number(roleId)))
+                    acc[roleId]['neededAssignments'] = assignments;
+                    acc[roleId]['users'] = data.selectedReviewer.filter((reviewer) => reviewer.roles.includes(Number(roleId)));
                     return acc;
                 }, {});
 
-            // distribute the assignments to the reviewers
-            for (let assignment of shuffledAssignments) {
-                let assigned = false;
+            // initialize the finalAssignmentsForRoles object with empty arrays for each role
+            shuffledAssignments.forEach((assignment) => {
+                finalAssignmentsForRoles[assignment.id] = Object.entries(roleSelection)
+                    .reduce((acc, [roleId, role]) => {
+                        acc[roleId] = [];
+                        return acc;
+                    }, {});
+            });
 
-                for (let role of Object.keys(roleSelection)) {
-                    //TODO
+            console.log("RoleSelection", roleSelection);
+            console.log("finalAssignmentsForRoles", finalAssignmentsForRoles);
+
+            // role based assignment means we start with the role
+            for (const key in roleSelection) {
+                const {roleId, neededAssignments, users} = roleSelection[key];
+
+                // create a shuffle copy of the users array for each role
+                let userQueue = _.shuffle(users);
+                if (userQueue.length === 0) {
+                    throw new Error(`No users found for role ${data['roles'].find((role) => role.id === roleId).name}. Please add users to the role.`);
                 }
+                console.log("USERS", users);
+                console.log("USERQUEUE", userQueue);
+
+                // every document should get the number of reviews that we defined per role
+                for (const assignment of shuffledAssignments) {
+
+                    let firstUser = undefined;
+                    while (finalAssignmentsForRoles[assignment.id][roleId].length < neededAssignments) {
+                        let user = userQueue.shift(); // get user from queue
+                        console.log("USER", user);
+
+                        // if userQueue is empty, we need to assign reviewers again
+                        if (!user) {
+                            console.log("new queue")
+                            userQueue = _.shuffle(users);
+                            firstUser = undefined;
+                            user = userQueue.shift();
+                        }
+
+                        // check for infinite loop
+                        if (firstUser === user) {
+                            // Nice to have: we can try to swap users, but need to make sure that
+                            // the user is from same assigned role, so it will be easier to just run the again
+                            break; // if we tried to assign the user already, break the loop
+                        }
+                        if (firstUser === undefined) {
+                            firstUser = user; // save the first user to try to assign to
+                        }
+
+
+                        if (assignment.userId !== user.id) {
+                            finalAssignmentsForRoles[assignment.id][roleId].push(user);
+                        } else {
+                            userQueue.push(user); // push user back to queue
+                        }
+
+                    }
+
+                    if (finalAssignmentsForRoles[assignment.id][roleId].length < neededAssignments) {
+                        console.log(finalAssignmentsForRoles)
+                        throw new Error(`Could not assign all users. Please try again.`);
+                    }
+                }
+
             }
 
-
-            console.log("roleSelection", roleSelection);
-
-
-            // every document should be reviewed by number of reviewers per role
-            // check two things, first a reviewer should not review his own document
-            // second, a reviewer should not review the same document twice
-            const finalAssignments = {};
-
+            console.log("finalAssignmentsForRoles", finalAssignmentsForRoles);
+            //TODO create the assignments
 
         } else if (data.mode === "reviewer") {
             const finalAssignments = {};
