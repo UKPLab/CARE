@@ -20,7 +20,7 @@
   <TagSetModal
     ref="tagSetModal"
   />
-  <TagSetDeleteModal ref="tagSetDeleteModal"/>
+  <ConfirmModal ref="deleteConf"/>
   <TagSetPublishModal ref="tagSetPublishModal"/>
 </template>
 
@@ -37,14 +37,14 @@ import BasicCard from "@/basic/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import TagSetModal from "./coordinator/TagSet.vue";
 import TagSetPublishModal from "./tags/TagSetPublishModal.vue";
-import TagSetDeleteModal from "./tags/TagSetDeleteModal.vue";
 
 import {mapGetters} from "vuex";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 export default {
   name: "DashboardTags",
   subscribeTable: ["tag_set", "tag"],
-  components: {BasicTable, BasicCard, BasicButton, TagSetModal, TagSetPublishModal, TagSetDeleteModal},
+  components: {ConfirmModal, BasicTable, BasicCard, BasicButton, TagSetModal, TagSetPublishModal},
   props: {
     'admin': {
       type: Boolean,
@@ -179,7 +179,7 @@ export default {
           this.$refs.tagSetModal.open(data.params.id);
           break;
         case "deleteTagSet":
-          this.$refs.tagSetDeleteModal.open(data.params.id);
+          this.deleteTagSet(data.params);
           break;
         case "publishTagSet":
           this.$refs.tagSetPublishModal.open(data.params.id);
@@ -188,6 +188,38 @@ export default {
           this.selectAsDefault(data.params.id);
           break;
       }
+    },
+    deleteTagSet(row) {
+      this.$refs.deleteConf.open(
+        "Delete Tagset",
+        "Do you really want to delete the Tagset?",
+        "",
+        function (val) {
+          if (val) {
+            this.$socket.emit("appDataUpdate", {
+              table: "tag_set",
+              data: {
+                id: row.id,
+                deleted: true
+              }
+            }, (result) => {
+              if (result.success) {
+                this.eventBus.emit('toast', {
+                  title: "TagSet deleted",
+                  message: "The TagSet was successfully deleted",
+                  variant: "success"
+                });
+              } else {
+                this.eventBus.emit('toast', {
+                  title: "TagSet delete failed",
+                  message: result.message,
+                  variant: "danger"
+                });
+              }
+            });
+          }
+        }
+      );
     },
     selectAsDefault(tagSetId) {
       const length = this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === tagSetId).length;
