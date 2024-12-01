@@ -388,7 +388,7 @@ export default {
           label: "Reviewer Selection Mode",
           type: "select",
           options: [
-            {name: "Role-based selection (the number of reviews each role should do)", value: "role"},
+            {name: "Role-based selection (each document should be reviewed by number per role)", value: "role"},
             {name: "Reviewer-based selection (distribute document between the selected reviewers)", value: "reviewer"},
           ],
           required: true,
@@ -402,7 +402,7 @@ export default {
         type: "slider",
         class: 'custom-slider-class',
         min: 0,
-        max: 10,
+        max: Math.min(10, this.selectedAssignments.length),
         step: 1,
         unit: 'review(s)'
       }));

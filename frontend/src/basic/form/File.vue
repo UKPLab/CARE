@@ -2,26 +2,13 @@
   <FormElement ref="formElement" :data-table="dataTable" :options="options">
     <template #element="{blur}">
       <input
+        ref="fileUpload"
         type="file"
         :accept="options.accept"
         :class="options.class"
         :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
         @change="handleFileChange"
       />
-      <!--
-      <input
-        v-model="currentData"
-        :class="options.class"
-        :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
-        :maxlength="options.maxLength"
-        :name="options.key"
-        :placeholder="options.placeholder"
-        :required="options.required"
-        :type="options.type"
-        class="form-control"
-        @blur="blur(currentData)"
-      >
-      -->
     </template>
   </FormElement>
 </template>
@@ -59,6 +46,9 @@ export default {
       this.$emit("update:modelValue", this.currentData);
     },
     modelValue() {
+      if (!this.modelValue) {
+        this.$refs.fileUpload.value = "";
+      }
       this.currentData = this.modelValue;
     },
   },

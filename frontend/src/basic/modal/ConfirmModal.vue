@@ -2,7 +2,6 @@
   <Modal
     ref="confirmation"
     :name="'confirm'+name"
-    @hide="abort"
   >
     <template #title>
       Confirm {{ name }}
