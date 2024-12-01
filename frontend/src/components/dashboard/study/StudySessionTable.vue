@@ -28,11 +28,6 @@ export default {
       type: Number,
       required: true,
     },
-    showFinished: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
   },
   data() {
     return {
@@ -122,12 +117,11 @@ export default {
       ];
     },
     studySessions() {
-      if (!this.study) {
+      if (!this.study || this.studyClosed) {
         return [];
       }
 
       return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
-        .filter(s => this.showFinished || this.study && this.study.multipleSubmit ? (!this.study.closed) : s.end === null)
         .map(s => {
           let session = {...s};
 
