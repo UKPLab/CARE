@@ -21,10 +21,11 @@
         :loading="true"
       />
       <span v-else-if="showSessions">
-        <DTable
+        <BasicTable
           :columns="sessionTableColumns"
           :data="studySessions"
           :options="sessionTableOptions"
+          :buttons="buttons"
           @action="sessionAction"
         />
       </span>
@@ -40,7 +41,7 @@
           This study has finished on
           {{ studyEnd }}</div>
         <div
-          v-else-if="!sessionsAvailable"
+          v-else-if="!sessionsAvailable && studySessionId === 0"
           class="text-xxl-center text-danger fs-5">
           No more sessions available for this study.
         </div>
@@ -68,7 +69,7 @@
             This is a <b>collaborative</b> user study, so everyone can join and proceed with this study simultaneously!
           </div>
           <div
-            v-if="study.limitSessionsPerUser > 0"
+            v-if="studySessionId === 0 && study.limitSessionsPerUser > 0"
             class="mt-1"
           >
             You have <b> {{ study.limitSessionsPerUser - totalNumberOfOpenedSessions }} sessions </b> left for this study.
@@ -102,7 +103,7 @@
         class="btn-group"
       >
         <button
-          v-if="studySessions.length > 0 && !studyClosed"
+          v-if="studySessions.length > 0 && !studyClosed && studySessionId === 0"
           class="btn btn-secondary"
           type="button"
           @click="showSessions=!showSessions"
@@ -131,7 +132,7 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import Loader from "@/basic/Loading.vue"
-import DTable from "@/basic/Table.vue"
+import BasicTable from "@/basic/Table.vue"
 
 /**
  * Modal for accessing a study
@@ -142,7 +143,7 @@ import DTable from "@/basic/Table.vue"
  */
 export default {
   name: "StudyModal",
-  components: {Loader, DTable, Modal},
+  components: {Loader, BasicTable, Modal},
   props: {
     studyId: {
       type: Number,
@@ -151,6 +152,11 @@ export default {
     studyClosed: {
       type: Boolean,
       required: true,
+    },
+    studySessionId: {
+      type: Number,
+      required: false,
+      default: 0,
     }
   },
   emits: ["start", "finish"],
@@ -186,8 +192,7 @@ export default {
             keyMapping: {true: "Yes", false: "No"},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
-        },
-        {name: "Manage", key: "manage", type: "button-group"},
+        }
       ]
     }
   },
@@ -209,66 +214,74 @@ export default {
       }
       return "";
     },
+    studySession() {
+      if (this.studySessionId !== 0) {
+        return this.$store.getters['table/study_session/get'](this.studySessionId);
+      }
+    },
+    buttons() {
+      return [
+        {
+          icon: "box-arrow-in-right",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+              "btn-sm": true,
+            }
+          },
+          filter: [
+            {key: "showResumeButton", value: true},
+          ],
+          title: "Resume session",
+          action: "resumeSession",
+        },
+        {
+          icon: "box-arrow-in-right",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+              "btn-sm": true,
+            }
+          },
+          filter: [
+            {key: "showStartButton", value: true}
+          ],
+          title: "Start session",
+          action: "startSession",
+        },
+        {
+          icon: "x-octagon",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+              "btn-sm": true,
+            }
+          },
+          filter: [
+            {key: "finished", value: false}
+          ],
+          title: "Finish session",
+          action: "finishSession",
+        }
+      ]
+    },
     studySessions() {
       if (this.studyId) {
         return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
-          .filter(s => this.study && this.study.multipleSubmit? (!this.study.closed) : s.end === null)
+          .filter(s => this.study && this.study.multipleSubmit ? (!this.study.closed) : s.end === null)
           .map(s => {
             let session = {...s}
             session.resumable = this.study.resumable;
             session.startParsed = session.start ? new Date(session.start).toLocaleString() : 'Session has not started yet';
             session.finished = session.end !== null
-            session.manage = [];
-            if (!session.finished) {
+            session.showResumeButton = session.resumable && session.start && !this.studyClosed;
+            session.showStartButton = !session.start && !this.studyClosed;
 
-
-              if (session.resumable && session.start) {
-                session.manage.push({
-                  icon: "box-arrow-in-right",
-                  options: {
-                    iconOnly: true,
-                    specifiers: {
-                      "btn-outline-secondary": true,
-                      "btn-sm": true,
-                    }
-                  },
-                  title: "Resume session",
-                  action: "resumeSession",
-                });
-              }
-              if (!session.start) {
-                session.manage.push({
-                  icon: "box-arrow-in-right",
-                  options: {
-                    iconOnly: true,
-                    specifiers: {
-                      "btn-outline-secondary": true,
-                      "btn-sm": true,
-                    }
-                  },
-                  title: "Start session",
-                  action: "startSession",
-                });
-              }
-              session.manage.push(
-                {
-                  icon: "x-octagon",
-                  options: {
-                    iconOnly: true,
-                    specifiers: {
-                      "btn-outline-secondary": true,
-                      "btn-sm": true,
-                    }
-                  },
-                  title: "Finish session",
-                  action: "finishSession",
-                })
-
-
-            }
             return session;
-          })
-          ;
+          });
       }
       return [];
     },
@@ -289,7 +302,7 @@ export default {
       return true;
     },
     available() {
-      return (this.started && !this.studyClosed && this.sessionsAvailable);
+      return (this.started && !this.studyClosed && this.sessionsAvailable) || (this.studySessionId !== 0 && !this.studyClosed);
     },
     sessionsAvailable() {
       if (this.study) {
@@ -317,45 +330,24 @@ export default {
       this.$refs.modal.close();
     },
     start() {
-      // needed, otherwise the ref in the callback can become null
-      const modal = this.$refs.modal;
-
-      if (this.studyClosed) {
-        this.eventBus.emit('toast', {
-          title: "Study cannot be started!",
-          message: "The study is closed.",
-          variant: "danger"
+      this.$socket.emit("studySessionStart",
+        {studyId: this.studyId, studySessionId: this.studySessionId}, (response) => {
+          if (response.success) {
+            this.$emit("start", {studySessionId: response.studySessionId});
+            this.$refs.modal.close();
+            this.eventBus.emit('toast', {
+              title: "Study started",
+              message: "Enjoy!",
+              variant: "success"
+            });
+          } else {
+            this.eventBus.emit('toast', {
+              title: "Study cannot be started!",
+              message: response.message,
+              variant: "danger"
+            });
+          }
         });
-        return;
-      }
-
-      if (!this.sessionsAvailable) {
-        this.eventBus.emit('toast', {
-          title: "Study cannot be started!",
-          message: "The maximum number of sessions for this study has been reached.",
-          variant: "danger"
-        });
-        return;
-      }
-
-      this.sockets.subscribe("studySessionStarted", (data) => {
-        if (data.success) {
-          this.$emit("start", {studySessionId: data.studySessionId});
-          modal.waiting = false;
-          modal.close();
-          this.eventBus.emit('toast', {
-            title: "Study started",
-            message: "Enjoy!",
-            variant: "success"
-          });
-        } else {
-          modal.waiting = false;
-          this.eventBus.emit('toast', {title: "Study cannot be started!", message: data.message, variant: "danger"});
-        }
-      });
-
-      this.$socket.emit("studySessionStart", {studyId: this.studyId});
-      modal.waiting = true;
     },
     sessionAction(data) {
       if (data.action === "finishSession") {
@@ -368,7 +360,7 @@ export default {
       if (data.action === "startSession") {
         this.$emit("start", {studySessionId: data.params.id});
         this.$refs.modal.close();
-      }          
+      }
     }
   }
 }

@@ -44,6 +44,7 @@
     </template>
 
     <template #step-3>
+      <input type="checkbox" > Select only with documents
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedReviewer"
@@ -98,6 +99,12 @@
     <template #step-5>
       <p>
         Are you sure you want to create the assignment with the following details?
+      </p>
+      <p class="text-danger">
+        <strong>Warning:</strong> The assignment process will make sure that a reviewer no reviews their own document.
+        <br>
+        This could lead to a failure in the assignment process, <br>
+        so make sure that the values are set correct for a successful assignment.
       </p>
 
       <div class="container">
@@ -320,7 +327,7 @@ export default {
         {name: "First Name", key: "firstName"},
         {name: "Last Name", key: "lastName"},
         {name: "Number of Assignments", key: "studySessions"},
-        {name: "Documents", key: "documents"},
+        {name: "Documents", key: "documents", width: 1},
         {
           name: "Roles",
           key: "rolesNames",
@@ -388,7 +395,10 @@ export default {
           label: "Reviewer Selection Mode",
           type: "select",
           options: [
-            {name: "Role-based selection (each document should be reviewed by number per role)", value: "role"},
+            {
+              name: "Role-based selection (each document should be reviewed by the number defined of each role)",
+              value: "role"
+            },
             {name: "Reviewer-based selection (distribute document between the selected reviewers)", value: "reviewer"},
           ],
           required: true,
@@ -402,7 +412,7 @@ export default {
         type: "slider",
         class: 'custom-slider-class',
         min: 0,
-        max: Math.min(10, this.selectedAssignments.length),
+        max: 10,
         step: 1,
         unit: 'review(s)'
       }));
@@ -424,6 +434,7 @@ export default {
     selectedReviewer: {
       handler() {
         this.reviewerSelection = {};
+        this.roleSelection = {};
       },
       deep: true
     },
@@ -434,6 +445,8 @@ export default {
       this.$refs.assignmentStepper.open();
     },
     reset() {
+      this.reviewerSelection = {};
+      this.roleSelection = {};
       this.selectedReviewer = [];
       this.selectedAssignments = [];
     },
@@ -446,7 +459,8 @@ export default {
         reviewerSelection: this.reviewerSelection,
         roleSelection: this.roleSelection,
         documents: this.workflowStepsAssignments,
-        mode: this.reviewerSelectionMode.mode
+        mode: this.reviewerSelectionMode.mode,
+        roles: this.roles,
       }, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {

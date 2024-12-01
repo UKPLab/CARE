@@ -3,7 +3,12 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     class StudySession extends MetaModel {
-        static autoTable = true;
+        static autoTable = {
+            parentTables: [{
+                table: "study",
+                by: "studyId"
+            }]
+        };
 
         /**
          * Check if a new session can be created for a study
@@ -37,9 +42,12 @@ module.exports = (sequelize, DataTypes) => {
                     throw new Error(`Cannot create more than ${study.limitSessionsPerUser} sessions for this user.`);
                 }
             }
-            // Check for study closed or end date
+            // Check for study closed or end date and start date
             if (study.closed && Date.now() > new Date(study.end)) {
                 throw new Error('This study is closed');
+            }
+            if (study.start !== null && new Date() < new Date(study.start)) {
+                throw new Error('This study has not started yet');
             }
         }
 
