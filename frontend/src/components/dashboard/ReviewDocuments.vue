@@ -170,13 +170,13 @@ export default {
               this.eventBus.emit("toast", {
                 title: "Document deleted",
                 message: "The document has been deleted",
-                type: "success",
+                variant: "success",
               });
             } else {
               this.eventBus.emit("toast", {
                 title: "Failed to delete document",
                 message: res.message,
-                type: "error",
+                variant: "danger",
               });
             }
           });

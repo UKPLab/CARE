@@ -128,7 +128,7 @@ export default {
     },
     setWaiting(value) {
       this.$refs.stepperModal.waiting = value;
-    }
+    },
   }
 }
 
