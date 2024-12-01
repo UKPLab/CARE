@@ -3,7 +3,7 @@
 const settings = [
   {
     key: "app.register.acceptStats.default",
-    value: true,
+    value: false,
     type: "boolean",
     description: "The default value of whether the user agrees to tracking during registration.",
   },

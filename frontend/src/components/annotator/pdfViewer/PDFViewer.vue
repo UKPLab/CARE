@@ -118,7 +118,7 @@ export default {
                 message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
                 variant: "danger"
               });
-              //this.$router.push("/");
+              this.$router.push("/");
             });
         } else {
           this.eventBus.emit('toast', {

@@ -44,7 +44,8 @@
               role="status"
             >
               <div class="progress" style="width:100%">
-                <div class="progress-bar" role="progressbar" :style="'width:' + progressPercent + '%'" :aria-valuenow="progressPercent" aria-valuemin="0"
+                <div class="progress-bar" role="progressbar" :style="'width:' + progressPercent + '%'"
+                     :aria-valuenow="progressPercent" aria-valuemin="0"
                      aria-valuemax="100"> {{ progressPercent }}%
                 </div>
               </div>
