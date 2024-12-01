@@ -1,5 +1,6 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
+const _ = require("lodash");
 
 /**
  * Handle user through websocket
@@ -223,8 +224,108 @@ module.exports = class AssignmentSocket extends Socket {
 
     }
 
+    /**
+     * Creates multiple assignments based on the provided data.
+     * @param data - The data for creating assignments.
+     * @param {Object} data.template - The template to be used for the assignments.
+     * @param {Array<Object>} data.selectedReviewer - An array of reviewer objects to be assigned to the assignments.
+     * @param {Array<Object>} data.selectedAssignments - An array of assignment objects to be reviewed.
+     * @param {String} data.mode - The mode of the assignment creation (i.e, role or reviewer)
+     * @param {Array<Array>} data.documents - List of document assignments
+     * @param {Object} data.roleSelection - If the mode is role, the role selection object
+     * @param {Object} data.reviewerSelection - If the mode is reviewer, the reviewer selection object
+     * @param options
+     * @returns {Promise<void>}
+     */
     async createAssignmentBulk(data, options) {
 
+        console.log("data", data);
+        console.log("selectedAssignments", data.selectedAssignments);
+        // first shuffle the assignments, we use the Fisher-Yates shuffle algorithm from lodash
+        // we also need to make sure that the documents array is shuffled in the same way
+        const shuffledAssignments = _.shuffle(data.selectedAssignments.map(
+            (assignment, index) => ({
+                ...assignment,
+                document: data.documents[index]
+            })));
+
+        if (data.mode === "role") {
+
+
+        } else if (data.mode === "reviewer") {
+            const finalAssignments = {};
+
+            // initialize the finalAssignments object with empty arrays for each reviewer
+            data.selectedReviewer.forEach((reviewer) => {
+                finalAssignments[reviewer.id] = [];
+            });
+
+            // transform the reviewerSelection (as we get String values from the frontend)
+            const reviewerSelection = Object.entries(data.reviewerSelection)
+                .filter(([_, assignments]) => assignments !== '0') // remove reviewers with no assignments
+                .reduce((acc, [reviewerId, assignments]) => {
+                    acc[Number(reviewerId)] = Number(assignments);
+                    return acc;
+                }, {});
+
+            // distribute the assignments to the reviewers
+            for (let assignment of shuffledAssignments) {
+                let assigned = false;
+
+                for (let reviewer of Object.keys(reviewerSelection)) {
+                    // check if the reviewer still has assignments to review AND if it is not a document from himself
+                    console.log("Reviewer", reviewer);
+                    console.log("Assignment UserID", assignment.userId);
+                    if (reviewerSelection[reviewer] > 0 && assignment.userId !== Number(reviewer)) {
+                        finalAssignments[reviewer].push(assignment);
+                        reviewerSelection[reviewer]--;
+                        assigned = true;
+                        break;
+                    }
+                }
+
+                // if no reviewer is available anymore, try to swap with someone
+                if (!assigned) {
+                    let swapped = false;
+
+                    for (let i = 0; i < 10; i++) {
+                        // get a random reviewer
+                        const randomReviewer = _.sample(Object.keys(reviewerSelection));
+
+                        // check if the random reviewer is not the assignment owner and has already assignments to review
+                        if (randomReviewer !== assignment.userId && finalAssignments[randomReviewer].length > 0) {
+
+                            // get random assignment of the already assigned documents
+                            const randomAssignment = _.sample(finalAssignments[randomReviewer]);
+
+                            // add the old assignment to the current reviewer, but make sure it is not from him
+                            if (randomAssignment.userId !== assignment.userId) {
+
+                                // delete the "old" random assignment and add the new assignment
+                                finalAssignments[randomReviewer] = finalAssignments[randomReviewer].filter(a => a !== randomAssignment);
+                                finalAssignments[randomReviewer].push(assignment);
+
+                                // add the old assignment to the new reviewer
+                                finalAssignments[assignment.userId].push(randomAssignment);
+                                swapped = true;
+                                break;
+                            }
+
+                        }
+
+                    }
+
+                    if (!swapped) {
+                        throw new Error("Could not assign all reviewers. Please try again.");
+                    }
+                }
+            }
+
+            console.log("finalAssignments", finalAssignments);
+
+        } else {
+            throw new Error("Invalid mode provided for assignment creation.");
+        }
 
     }
 

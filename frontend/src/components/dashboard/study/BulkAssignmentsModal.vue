@@ -420,6 +420,14 @@ export default {
       }));
     },
   },
+  watch: {
+    selectedReviewer: {
+      handler() {
+        this.reviewerSelection = {};
+      },
+      deep: true
+    },
+  },
   methods: {
     open() {
       this.reset();
@@ -430,8 +438,8 @@ export default {
       this.selectedAssignments = [];
     },
     createAssignments() {
-      console.log("Create Assignments");
-      const data = {
+      this.$refs.assignmentStepper.setWaiting(true);
+      this.$socket.emit("assignmentCreateBulk", {
         template: this.template,
         selectedReviewer: this.selectedReviewer,
         selectedAssignments: this.selectedAssignments,
@@ -439,11 +447,6 @@ export default {
         roleSelection: this.roleSelection,
         documents: this.workflowStepsAssignments,
         mode: this.reviewerSelectionMode.mode
-      }
-      console.log(data);
-      this.$refs.assignmentStepper.setWaiting(true);
-      this.$socket.emit("assignmentCreateBulk", {
-        data
       }, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {
