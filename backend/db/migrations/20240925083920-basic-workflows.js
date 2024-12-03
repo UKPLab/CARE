@@ -10,7 +10,7 @@ const workflows = [
     ]
   },
   {
-    name: "Rummels Project",
+    name: "Rummels Project (experimental)",
     description: "Rummels Project: Correct a document over two revisions with edits overview.",
     steps: [
       { stepType: 2, allowBackward: false, workflowStepDocument: null },
