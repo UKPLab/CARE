@@ -79,7 +79,7 @@ module.exports = class DocumentSocket extends Socket {
             throw new Error("Invalid file type");
         }
 
-        if (!(await this.checkUserAccess(data['userId']))) {
+        if ((data['userid'] && data['userid'] !== this.userId) && !(await this.checkUserAccess(data['userId']))) {
             throw new Error("User does not have access to upload documents");
         }
 
