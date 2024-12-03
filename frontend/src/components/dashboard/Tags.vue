@@ -20,8 +20,7 @@
   <TagSetModal
     ref="tagSetModal"
   />
-  <ConfirmModal ref="deleteConf"/>
-  <TagSetPublishModal ref="tagSetPublishModal"/>
+  <ConfirmModal ref="confirm"/>
 </template>
 
 <script>
@@ -36,7 +35,6 @@ import BasicTable from "@/basic/Table.vue";
 import BasicCard from "@/basic/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import TagSetModal from "./coordinator/TagSet.vue";
-import TagSetPublishModal from "./tags/TagSetPublishModal.vue";
 
 import {mapGetters} from "vuex";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
@@ -44,7 +42,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 export default {
   name: "DashboardTags",
   subscribeTable: ["tag_set", "tag"],
-  components: {ConfirmModal, BasicTable, BasicCard, BasicButton, TagSetModal, TagSetPublishModal},
+  components: {ConfirmModal, BasicTable, BasicCard, BasicButton, TagSetModal},
   props: {
     'admin': {
       type: Boolean,
@@ -182,7 +180,7 @@ export default {
           this.deleteTagSet(data.params);
           break;
         case "publishTagSet":
-          this.$refs.tagSetPublishModal.open(data.params.id);
+          this.publishTagset(data.params);
           break;
         case "defaultTagSet":
           this.selectAsDefault(data.params.id);
@@ -190,7 +188,7 @@ export default {
       }
     },
     deleteTagSet(row) {
-      this.$refs.deleteConf.open(
+      this.$refs.confirm.open(
         "Delete Tagset",
         "Do you really want to delete the Tagset?",
         "",
@@ -212,6 +210,41 @@ export default {
               } else {
                 this.eventBus.emit('toast', {
                   title: "TagSet delete failed",
+                  message: result.message,
+                  variant: "danger"
+                });
+              }
+            });
+          }
+        }
+      );
+    },
+    publishTagset(row) {
+      this.$refs.confirm.open(
+        "Publish Tagset",
+        "Do you really want to publish the tagset? <br><br>" +
+        "      <strong>Note:</strong> Once you published it, you can't unpublish the tagset! If you want to unpublish it, you have to delete it\n" +
+        "      and create a new one.\n" +
+        "      If published the tagset will be available for all users.",
+        "",
+        function (val) {
+          if (val) {
+            this.$socket.emit("appDataUpdate", {
+              table: "tag_set",
+              data: {
+                id: row.id,
+                public: true
+              }
+            }, (result) => {
+              if (result.success) {
+                this.eventBus.emit('toast', {
+                  title: "TagSet published",
+                  message: "The TagSet was successfully published",
+                  variant: "success"
+                });
+              } else {
+                this.eventBus.emit('toast', {
+                  title: "TagSet publishing failed",
                   message: result.message,
                   variant: "danger"
                 });
