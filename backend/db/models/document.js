@@ -238,8 +238,10 @@ module.exports = (sequelize, DataTypes) => {
                 // If the document is deleted, we should also delete the associated db columns
                 if (document.deleted && !document._previousDataValues.deleted) {
                     // delete associated studies
-                    const studies = await sequelize.models.study_step.getAllByKey("documentId", document.id);
-                    const uniqueStudyIds = [...new Set(studies.map(study => study.studyId))];
+                    const study_steps = await sequelize.models.study_step.getAllByKey("documentId", document.id);
+                    console.log("StudySteps", study_steps);
+                    const uniqueStudyIds = [...new Set(study_steps.map(study => study.studyId))];
+                    console.log("Unique", uniqueStudyIds)
                     for (const studyId of uniqueStudyIds) {
                         await sequelize.models["study"].deleteById(studyId);
                     }
