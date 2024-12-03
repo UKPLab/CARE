@@ -48,7 +48,7 @@ module.exports = class AppSocket extends Socket {
         const transaction = options.transaction;
 
         let newEntry = null;
-        if ('deleted' in data.data || 'closed' in data.data) {
+        if ('deleted' in data.data || 'closed' in data.data || 'public' in data.data) {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
