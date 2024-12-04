@@ -513,7 +513,6 @@ export default {
       if (file && file.name.endsWith(".csv")) {
         try {
           const parsingResults = await this.validateCSV(file);
-          console.log("ParsingResults", parsingResults);
           this.users = parsingResults;
           this.file = {
             state: 1,

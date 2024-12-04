@@ -115,8 +115,6 @@ module.exports = class StudySessionSocket extends Socket {
      * @returns {Promise<void>}
      */
     async startStudySession(data, options) {
-        console.log(data);
-
         if (data.studySessionId && data.studySessionId !== 0) {
             // we just start the session
             return await this.models["study_session"].updateById(data.studySessionId, {start: Date.now()}, {transaction: options.transaction});

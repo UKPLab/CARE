@@ -410,7 +410,6 @@ module.exports = class Socket {
             }))
         }
         if (this.models[tableName].autoTable.parentTables && this.models[tableName].autoTable.parentTables.length > 0) {
-            console.log("ptable", this.models[tableName].autoTable.parentTables);
             await Promise.all(this.models[tableName].autoTable.parentTables.map(async (pTable) => {
                     const pdata = await this.models[pTable.table].getAll({
                         where: {['id']: {[Op.in]: data.map(d => d[pTable.by])}, deleted: false},
