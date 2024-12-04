@@ -286,7 +286,6 @@ export default {
       this.studySessionId = data.studySessionId;
     },
     error() {
-      console.log("EEROOROROR");
       this.$refs.studyModal.close();
     },
     calcTimeLeft() {

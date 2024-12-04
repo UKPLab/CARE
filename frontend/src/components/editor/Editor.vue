@@ -164,11 +164,9 @@ export default {
   },
   sockets: {
     connect() {
-      console.log("Socket connected:", this.$socket.id);
       this.$socket.emit("documentOpen", { documentId: this.documentId });
     },
     documentError(error) {
-      console.error("Document error:", error.message);
       this.handleDocumentError(error);
     }
   },
