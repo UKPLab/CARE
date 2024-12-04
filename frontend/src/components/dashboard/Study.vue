@@ -54,7 +54,7 @@ import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import BulkAssignmentsModal from "./study/BulkAssignmentsModal.vue";
+import BulkAssignmentsModal from "./study/BulkAssignmentModal.vue";
 import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
 

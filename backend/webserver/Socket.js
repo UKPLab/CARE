@@ -330,7 +330,7 @@ module.exports = class Socket {
         }
     }
 
-    async sendTable(tableName, filter = []) {
+    async sendTable(tableName, filter = [], injects = []) {
 
         // check if it is an autoTable or not
         if (!this.models[tableName] || !this.models[tableName].autoTable) {
@@ -369,10 +369,33 @@ module.exports = class Socket {
             }
         }
 
-        const data = await this.models[tableName].getAll({
+        let data = await this.models[tableName].getAll({
             where: allFilter,
             attributes: allAttributes,
         });
+
+        // handle injects
+        if (injects && injects.length > 0) {
+            for (const injection of injects) {
+                if (injection.type === "count") {
+                    const count = await this.models[injection.table].findAll({
+                        attributes: [injection.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+                        where: {
+                            [injection.by]: {
+                                [Op.in]: data.map((d) => d.id)
+                            },
+                        },
+                        group: injection.by,
+                        raw: true
+                    });
+                    // inject in data
+                    data = data.map((d) => {
+                        d[injection.as] = Number(count.find((c) => c[injection.by] === d.id)?.count) || 0;
+                        return d;
+                    });
+                }
+            }
+        }
 
         this.emit(tableName + "Refresh", data, true);
 
@@ -389,12 +412,12 @@ module.exports = class Socket {
         if (this.models[tableName].autoTable.parentTables && this.models[tableName].autoTable.parentTables.length > 0) {
             console.log("ptable", this.models[tableName].autoTable.parentTables);
             await Promise.all(this.models[tableName].autoTable.parentTables.map(async (pTable) => {
-                const pdata = await this.models[pTable.table].getAll({
-                    where: {['id']: {[Op.in]: data.map(d => d[pTable.by])}, deleted: false},
-                    attributes: {exclude: defaultExcludes},
-                });
-                this.emit(pTable.table + "Refresh", pdata, true);
-            })
+                    const pdata = await this.models[pTable.table].getAll({
+                        where: {['id']: {[Op.in]: data.map(d => d[pTable.by])}, deleted: false},
+                        attributes: {exclude: defaultExcludes},
+                    });
+                    this.emit(pTable.table + "Refresh", pdata, true);
+                })
             )
         }
 
