@@ -333,7 +333,7 @@ export default {
       this.$socket.emit("studySessionStart",
         {studyId: this.studyId, studySessionId: this.studySessionId}, (response) => {
           if (response.success) {
-            this.$emit("start", {studySessionId: response.studySessionId});
+            this.$emit("start", {studySessionId: response.data.id});
             this.$refs.modal.close();
             this.eventBus.emit('toast', {
               title: "Study started",
