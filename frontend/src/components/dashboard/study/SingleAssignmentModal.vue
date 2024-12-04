@@ -116,7 +116,7 @@ export default {
   },
     {
       table: "user",
-      include: [{
+      inject: [{
         table: "study_session",
         by: "userId",
         type: "count",

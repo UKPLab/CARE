@@ -7,7 +7,6 @@
  * @author Nils Dycke, Dennis Zyska
  */
 const passport = require('passport');
-const {genSalt, genPwdHash} = require("../../utils/auth");
 
 /**
  * Route for user management
@@ -34,7 +33,15 @@ module.exports = function (server) {
                     return next(err);
                 }
 
-                await server.db.models['user'].registerUserLogin(user.id);
+                let transaction;
+                try {
+                    transaction = await server.db.models['user'].sequelize.transaction();
+
+                    await server.db.models['user'].registerUserLogin(user.id, {transaction: transaction});
+                    await transaction.commit();
+                } catch (e) {
+                    await transaction.rollback();
+                }
 
                 res.status(200).send({user: user});
             });
@@ -120,7 +127,6 @@ module.exports = function (server) {
         }
 
         // create user if all checks passed
-
         let transaction;
         try {
             transaction = await server.db.models['user'].sequelize.transaction();
@@ -133,13 +139,13 @@ module.exports = function (server) {
                 acceptTerms: data.acceptTerms,
                 acceptStats: data.acceptStats,
                 acceptedAt: data.acceptedAt
-            }, { transaction });
+            }, {transaction});
             await transaction.commit();
             res.status(201).send("User was successfully created");
         } catch (err) {
             await transaction.rollback();
             server.logger.error("Cannot create user:", err);
-            res.status(400).json({ message: "Failed to create user", error: err.message });
+            res.status(400).json({message: "Failed to create user", error: err.message});
         }
     });
 };

@@ -161,24 +161,19 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Register a new login
          * @param {string} userId user id
-         * @returns {Promise<boolean>}} true if successful
+         * @param {object} options sequelize transaction
          */
-        static async registerUserLogin(userId) {
-            try {
-                const updatedObject = await this.update(
-                    {lastLoginAt: Date.now()},
-                    {
-                        where: {
-                            id: userId,
-                        },
-                        returning: true,
-                        plain: true,
-                    }
-                );
-                return updatedObject !== null && updatedObject !== undefined;
-            } catch (e) {
-                console.log(e);
-            }
+        static async registerUserLogin(userId, options) {
+            const updatedObject = await this.update(
+                {lastLoginAt: Date.now()},
+                {
+                    where: {
+                        id: userId,
+                    },
+                    returning: true,
+                    plain: true,
+                }
+            );
         }
 
         /**

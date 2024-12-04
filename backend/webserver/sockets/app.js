@@ -3,6 +3,7 @@ const {relevantFields} = require("../../utils/auth");
 const database = require("../../db");
 const {v4: uuidv4} = require("uuid");
 const {mergeFilter} = require("../../utils/data.js");
+const {mergeInjects} = require("../../utils/data");
 
 /**
  * Send data for building the frontend app
@@ -249,38 +250,47 @@ module.exports = class AppSocket extends Socket {
         this.socket.appDataSubscriptions["tables"][tableName].add(newSubscriptionId);
 
         // merge all filters
-        const oldFilters = this.socket.appDataSubscriptions["merged"][tableName];
+        const oldMerge = {...this.socket.appDataSubscriptions["merged"][tableName]};
         const currentFilter = mergeFilter([(data.filter) ? data.filter : []], this.models[tableName].getAttributes());
         const allFilter = [...this.socket.appDataSubscriptions["tables"][tableName]]
             .map(subId => this.socket.appDataSubscriptions["ids"][subId])
             .map(sub => (sub.filter) ? sub.filter : []);
         const mergedFilters = mergeFilter(allFilter, this.models[tableName].getAttributes());
-        this.socket.appDataSubscriptions["merged"][tableName] = mergedFilters;
+
+        const currentInject = (data.inject) ? data.inject : [];
+        const allInjects =
+            [...this.socket.appDataSubscriptions["tables"][tableName]]
+                .map(subId => this.socket.appDataSubscriptions["ids"][subId])
+                .map(sub => (sub.inject) ? sub.inject : []);
+        const mergedInjects = mergeInjects(allInjects);
+        this.socket.appDataSubscriptions["merged"][tableName] = {
+            filter: mergedFilters,
+            inject: mergedInjects
+        };
 
         // check if client already has the data
-        if (oldFilters && oldFilters.length === 0) { // has already all data, no need for sending new data
+        if (oldMerge
+            && oldMerge.filter && oldMerge.filter.length === 0
+            && oldMerge.inject && oldMerge.inject.length === 0
+            && mergedInjects.length === 0
+        ) { // has already all data, no need for sending new data
             return newSubscriptionId;
         } else if (mergedFilters.length === 0) { // now need all data, so send it
-            await this.sendTable(tableName, mergedFilters);
-        } else if (oldFilters && oldFilters.length > 0) { // check if the we already has filter
-            if (oldFilters.includes(currentFilter)) { // and the new data is included in the old data
+            await this.sendTable(tableName, mergedFilters, mergedInjects);
+        } else if ((oldMerge.filter && oldMerge.filter.length > 0)
+            || (oldMerge.inject && oldMerge.inject.length > 0)) { // check if the we already has filter
+            if (oldMerge.filter.includes(currentFilter) && oldMerge.inject.includes(currentInject)) { // and the new data is included in the old data
                 return newSubscriptionId;
             } else { // if not, we need to send data for current filter
-                await this.sendTable(tableName, currentFilter);
+                await this.sendTable(tableName, currentFilter, mergedInjects);
             }
         } else {
             // just send data with additional current filter
-            await this.sendTable(tableName, currentFilter);
+            await this.sendTable(tableName, currentFilter, mergedInjects);
         }
 
-        //TODO handle includes
-        //TODO check if sending is needed or data is already available to the client
-        //TODO send data if new data in frontend is needed
         //TODO on unsubscribe, recalculate the merged filters
         //TODO the io appDataSubscription should maybe hold relevant users where then the merged data is checked
-
-        // we need to send the data to the client on subscription
-        //await this.sendTableData(data.table, (data.filter) ? data.filter : [], (data.include) ? data.include : []);
 
         return newSubscriptionId;
     }

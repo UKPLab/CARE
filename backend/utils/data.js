@@ -8,7 +8,7 @@ const {Op} = require("sequelize");
  */
 function mergeFilter(allFilter, possibleAttributes) {
     // check if there is an empty array in allFilter, as we then need to retrieve all data anyway
-    if (allFilter.some(filter => filter.length === 0)) {
+    if (allFilter.every(filter => filter.length === 0)) {
         return [];
     }
 
@@ -32,10 +32,18 @@ function mergeFilter(allFilter, possibleAttributes) {
     });
 
     return mergedFilter;
+}
 
+function mergeInjects(allInjects) {
+    if (allInjects.every(injection => injection.length === 0)) {
+        return [];
+    }
+
+    return [].concat.apply([], allInjects);
 
 }
 
 module.exports = {
-    mergeFilter
+    mergeFilter,
+    mergeInjects,
 }
