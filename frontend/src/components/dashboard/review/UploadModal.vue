@@ -66,7 +66,7 @@ export default {
         {name: "extId", key: "extId", sortable: true},
         {name: "First Name", key: "firstName", sortable: true},
         {name: "Last Name", key: "lastName", sortable: true},
-        {name: "Username", key: "username", sortable: true},
+        {name: "Username", key: "userName", sortable: true},
       ],
       selectionTableOptions: {
         striped: true,
