@@ -24,7 +24,7 @@
       <th v-if="selectableRows">
         <div class="form-check">
           <input
-            v-if="!singleSelect"
+            v-if="!(this.options && this.options.singleSelect)"
             class="form-check-input"
             type="checkbox"
             :checked="isAllRowsSelected"
@@ -315,12 +315,14 @@ export default {
       itemsPerPageList: [10, 25, 50, 100],
       paginationShowPages: 3,
       filter: null,
-      singleSelect: this.options && this.options.singleSelect,
-      isAllRowsSelected: false,
       search: ""
     };
   },
   computed: {
+    isAllRowsSelected() {
+      return this.currentData.length === this.tableData.filter((r) => !r.isDisabled).length;
+      ;
+    },
     serverSidePagination() {
       return (
         this.options &&
@@ -521,11 +523,14 @@ export default {
     selectRow(row) {
       if (this.selectableRows) {
         if (!this.currentData.includes(row)) { // check if selected
-          if (this.singleSelect) {
+          if (this.options && this.options.singleSelect) {
             this.currentData = [row];
           } else {
             // Check if the row is already selected
-            if (!this.currentData.some((r) => deepEqual(r, row))) {
+
+            console.log(row);
+            console.log(!this.currentData.includes(row))
+            if (!this.currentData.includes(row)) {
               this.currentData.push(row);
             }
           }
@@ -535,15 +540,13 @@ export default {
             this.currentData.splice(toRemove, 1);
           }
         }
-        this.isAllRowsSelected = this.currentData.length === this.tableData.filter((r) => !r.isDisabled).length;
       }
     },
     selectAllRows() {
-      this.isAllRowsSelected = !this.isAllRowsSelected;
       if (this.isAllRowsSelected) {
-        this.currentData = [...this.tableData.filter((t) => !t.isDisabled)];
-      } else {
         this.currentData = [];
+      } else {
+        this.currentData = [...this.tableData.filter((t) => !t.isDisabled)];
       }
     },
     paginationPageChange(page) {

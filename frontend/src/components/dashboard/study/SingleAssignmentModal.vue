@@ -136,7 +136,20 @@ export default {
       templateSelection: {},
       selectedAssignment: [],
       selectedReviewer: [],
-      documentTableOptions: {
+
+
+    };
+  },
+  computed: {
+    stepValid() {
+      return [
+        this.workflowStepsAssignment.length !== 0,
+        this.selectedAssignment.length === 1,
+        this.selectedReviewer.length > 0,
+      ];
+    },
+    documentTableOptions() {
+      return {
         striped: true,
         hover: true,
         bordered: false,
@@ -147,8 +160,10 @@ export default {
         scrollX: true,
         singleSelect: true,
         search: true,
-      },
-      reviewerTableOptions: {
+      }
+    },
+    reviewerTableOptions() {
+      return {
         striped: true,
         hover: true,
         bordered: false,
@@ -158,16 +173,7 @@ export default {
         scrollY: true,
         scrollX: true,
         search: true,
-      },
-    };
-  },
-  computed: {
-    stepValid() {
-      return [
-        this.workflowStepsAssignment.length !== 0,
-        this.selectedAssignment.length === 1,
-        this.selectedReviewer.length > 0,
-      ];
+      }
     },
     templateSelectionFields() {
       return [
