@@ -231,10 +231,15 @@ export default {
     reviewers() {
       return this.$store.getters["table/user/getAll"];
     },
+    roles() {
+      return this.$store.getters["admin/getSystemRoles"];
+    },
     reviewerTable() {
       return this.reviewers.map((r) => {
         let newR = {...r};
         newR.documents = this.documents.filter((d) => d.userId === r.id).length;
+        newR.rolesNames = r.roles.map((role) => this.roles.find((r) => r.id === role).name);
+        newR.rolesNames = newR.rolesNames.join(", ");
         return newR;
       })
     },
@@ -246,6 +251,10 @@ export default {
         {name: "Last Name", key: "lastName"},
         {name: "Number of Assignments", key: "studySessions"},
         {name: "Documents", key: "documents"},
+        {
+          name: "Roles",
+          key: "rolesNames",
+        }
       ]
     },
     steps() {
