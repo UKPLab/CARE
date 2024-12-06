@@ -1,8 +1,7 @@
 "use strict";
 const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
-const {genSalt, genPwdHash} = require("../../utils/auth.js");
-const {v4: uuidv4} = require("uuid");
+const {genSalt, genPwdHash, genPwd} = require("../../utils/auth.js");
 const {generateMarvelUsername} = require("../../utils/generator");
 
 module.exports = (sequelize, DataTypes) => {
@@ -40,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
                 data.salt = genSalt();
             }
             if (!data.password) {
-                data.password = uuidv4().replace(/-/g, "").substring(0, 8);
+                data.password = genPwd(10, true);
                 data.initialPassword = data.password;
             }
             data.passwordHash = await genPwdHash(data.password, data.salt);
