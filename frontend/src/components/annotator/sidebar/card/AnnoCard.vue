@@ -344,7 +344,6 @@ export default {
     },
     save() {
       if (this.annotationId) {
-        console.log("save annotation");
         this.$socket.emit('annotationUpdate', {
           "annotationId": this.annotation.id,
           "tagId": JSON.stringify(this.annotation.tagId),
