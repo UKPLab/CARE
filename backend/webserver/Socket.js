@@ -148,6 +148,7 @@ module.exports = class Socket {
         try {
             const socket = this.getSocket("UserSocket");
             if (socket) {
+                console.log("data", data);
                 // Check if server side pagination is used
                 if (data && "count" in data) {
                     data.rows = await socket.updateCreatorName(data.rows);

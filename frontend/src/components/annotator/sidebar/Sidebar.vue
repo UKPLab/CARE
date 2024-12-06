@@ -194,6 +194,9 @@ export default {
     hasDrafts() {
       return this.$store.getters["table/comment/getFiltered"](e => e.draft).length > 0
         || this.$store.getters["table/annotation/getFiltered"](e => e.draft).length > 0;
+    },
+    anonymized() {
+      return this.study.anonymize;
     }
   },
   watch: {
@@ -285,7 +288,8 @@ export default {
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
         annotationId: null,
-        commentId: null
+        commentId: null,
+        anonymize: this.anonymized
       });
     },
     async leave() {

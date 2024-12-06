@@ -19,9 +19,39 @@ module.exports = class UserSocket extends Socket {
      * @param {object|object[]} data - The data to update
      * @param {string} key - The key of the user ID field
      * @param {string} targetName - The name of the target field
+     * @param {boolean} anonymize - If true, the creator name will be set to "anonymous"
      * @returns {Promise<Awaited<*&{creator_name: string|*|undefined}>[]>}
      */
     async updateCreatorName(data, key = "userId", targetName = "creator_name") {
+        
+        if (Object.keys(data).includes("studySessionId")) {
+            console.log("UPDATE CREATOR NAME", data);
+            const studySession = await this.models["study_session"].getById(data.studySessionId);
+            console.log("STUDY SESSION", studySession);
+            const study = await this.models["study"].getById(studySession.studyId);
+            console.log("STUDY", study);
+            const anonymize = study.anonymize;
+            console.log("ANONYMIZE", anonymize);
+            //const anonymize = await this.models["study"].getById(await this.models["study_session"].getById(data.studySessionId).studyId).anonymize;
+            return anonymize ? await inject(data, "anonymous") :
+                               await inject(data, async (userId) => await this.models["user"].getUserName(userId), targetName, key);
+        }
+        console.log("UPDATE CREATOR NAME WITHOUT STUDY", data);
+        if(Array.isArray(data) && data.length === 0) {
+            if (Object.keys(data[0]).includes("studySessionId")) {
+                console.log("UPDATE CREATOR NAME", data[0]);
+                const studySession = await this.models["study_session"].getById(data[0].studySessionId);
+                console.log("STUDY SESSION", studySession);
+                const study = await this.models["study"].getById(studySession.studyId);
+                console.log("STUDY", study);
+                const anonymize = study.anonymize;
+                console.log("ANONYMIZE", anonymize);
+                //const anonymize = await this.models["study"].getById(await this.models["study_session"].getById(data.studySessionId).studyId).anonymize;
+                return anonymize ? await inject(data, "anonymous") :
+                                   await inject(data, async (userId) => await this.models["user"].getUserName(userId), targetName, key);
+            }
+        }
+
         return await inject(data, async (userId) => await this.models["user"].getUserName(userId), targetName, key);
     }
 
