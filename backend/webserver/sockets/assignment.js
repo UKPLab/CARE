@@ -238,8 +238,6 @@ module.exports = class AssignmentSocket extends Socket {
      */
     async createAssignmentBulk(data, options) {
 
-        console.log("data", data);
-        console.log("selectedAssignments", data.selectedAssignments);
         // first shuffle the assignments, we use the Fisher-Yates shuffle algorithm from lodash
         // we also need to make sure that the documents array is shuffled in the same way
         const shuffledAssignments = _.shuffle(data.selectedAssignments.map(
@@ -249,10 +247,6 @@ module.exports = class AssignmentSocket extends Socket {
             })));
 
         if (data.mode === "role") {
-            console.log("DAta", data);
-            console.log("data.roleSelection", data.roleSelection);
-            console.log("data.selectedReviewer", data.selectedReviewer);
-
             const finalAssignmentsForRoles = {};
 
             const roleSelection = Object.entries(data.roleSelection)
@@ -274,9 +268,6 @@ module.exports = class AssignmentSocket extends Socket {
                     }, {});
             });
 
-            console.log("RoleSelection", roleSelection);
-            console.log("finalAssignmentsForRoles", finalAssignmentsForRoles);
-
             // role based assignment means we start with the role
             for (const key in roleSelection) {
                 const {roleId, neededAssignments, users} = roleSelection[key];
@@ -286,8 +277,6 @@ module.exports = class AssignmentSocket extends Socket {
                 if (userQueue.length === 0) {
                     throw new Error(`No users found for role ${data['roles'].find((role) => role.id === roleId).name}. Please add users to the role.`);
                 }
-                console.log("USERS", users);
-                console.log("USERQUEUE", userQueue);
 
                 // every document should get the number of reviews that we defined per role
                 for (const assignment of shuffledAssignments) {

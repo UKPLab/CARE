@@ -114,7 +114,6 @@ module.exports = class UserSocket extends Socket {
                 this.logger.error("This user does not have the right to load users by their role.");
                 return;
             }
-console.log("ALLLALLA,", await this.models["user"].getAll());
             return role === "all" ? await this.models["user"].getAll() : await this.models["user"].getUsersByRole(role);
         } catch (error) {
             this.logger.error(error);
@@ -289,17 +288,7 @@ console.log("ALLLALLA,", await this.models["user"].getAll());
     }
 
     init() {
-        this.socket.on("userGetData", async (data) => {
-            try {
-                await this.sendUserData();
-            } catch (e) {
-                this.socket.emit("userData", {
-                    success: false, message: "Failed to retrieve all users",
-                });
-                this.logger.error("DB error while loading all users from database" + JSON.stringify(e));
-            }
-        });
-
+        this.createSocket("userGetData", this.sendUserData, {}, false);
 
         // Get users by their role
         this.socket.on("userGetByRole", async (role) => {
