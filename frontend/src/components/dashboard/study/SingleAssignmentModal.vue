@@ -116,7 +116,7 @@ export default {
   },
     {
       table: "user",
-      include: [{
+      inject: [{
         table: "study_session",
         by: "userId",
         type: "count",
@@ -136,7 +136,20 @@ export default {
       templateSelection: {},
       selectedAssignment: [],
       selectedReviewer: [],
-      documentTableOptions: {
+
+
+    };
+  },
+  computed: {
+    stepValid() {
+      return [
+        this.workflowStepsAssignment.length !== 0,
+        this.selectedAssignment.length === 1,
+        this.selectedReviewer.length > 0,
+      ];
+    },
+    documentTableOptions() {
+      return {
         striped: true,
         hover: true,
         bordered: false,
@@ -147,8 +160,10 @@ export default {
         scrollX: true,
         singleSelect: true,
         search: true,
-      },
-      reviewerTableOptions: {
+      }
+    },
+    reviewerTableOptions() {
+      return {
         striped: true,
         hover: true,
         bordered: false,
@@ -158,16 +173,7 @@ export default {
         scrollY: true,
         scrollX: true,
         search: true,
-      },
-    };
-  },
-  computed: {
-    stepValid() {
-      return [
-        this.workflowStepsAssignment.length !== 0,
-        this.selectedAssignment.length === 1,
-        this.selectedReviewer.length > 0,
-      ];
+      }
     },
     templateSelectionFields() {
       return [
@@ -231,10 +237,15 @@ export default {
     reviewers() {
       return this.$store.getters["table/user/getAll"];
     },
+    roles() {
+      return this.$store.getters["admin/getSystemRoles"];
+    },
     reviewerTable() {
       return this.reviewers.map((r) => {
         let newR = {...r};
         newR.documents = this.documents.filter((d) => d.userId === r.id).length;
+        newR.rolesNames = r.roles.map((role) => this.roles.find((r) => r.id === role).name);
+        newR.rolesNames = newR.rolesNames.join(", ");
         return newR;
       })
     },
@@ -246,6 +257,10 @@ export default {
         {name: "Last Name", key: "lastName"},
         {name: "Number of Assignments", key: "studySessions"},
         {name: "Documents", key: "documents"},
+        {
+          name: "Roles",
+          key: "rolesNames",
+        }
       ]
     },
     steps() {

@@ -1,6 +1,6 @@
 <template>
   <StudyModal
-      v-if="studySessionId === 0 || studySession.start === null"
+      v-if="studySessionId === 0 || (this.studySession && this.studySession.start === null)"
       ref="studyModal"
       :study-id="studyId"
       :study-closed="studyClosed"
@@ -264,7 +264,7 @@ export default {
   mounted() {
     this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
     this.studySessionId = this.initStudySessionId;
-    if (this.studySessionId === 0 || this.studySession.start === null) {
+    if (this.studySessionId === 0 || (this.studySession && this.studySession.start === null)) {
       this.$refs.studyModal.open();
     }
   },
@@ -286,7 +286,6 @@ export default {
       this.studySessionId = data.studySessionId;
     },
     error() {
-      console.log("EEROOROROR");
       this.$refs.studyModal.close();
     },
     calcTimeLeft() {

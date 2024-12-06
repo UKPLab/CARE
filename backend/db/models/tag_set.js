@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
         ]
 
         /**
-         * Delete all tags from tagSet
+         * Delete all tags from a tag set
          * @param tagSet
          * @param options
          * @returns {Promise<void>}
@@ -43,6 +43,20 @@ module.exports = (sequelize, DataTypes) => {
 
             for (const tag of tags) {
                 await sequelize.models['tag'].deleteById(tag.id, {transaction: options.transaction});
+            }
+        }
+
+        /**
+         * Publish all tags from a tag set
+         * @param tagSet
+         * @param options
+         * @returns {Promise<void>}
+         */
+        static async puslishTags(tagSet, options) {
+            const tags = await sequelize.models['tag'].getAllByKey("tagSetId", tagSet.id, {transaction: options.transaction});
+
+            for (const tag of tags) {
+                await sequelize.models['tag'].updateById(tag.id, {public:true}, {transaction: options.transaction});
             }
         }
 
@@ -80,6 +94,9 @@ module.exports = (sequelize, DataTypes) => {
             afterUpdate: async (tagSet, options) => {
                 if (tagSet.deleted && !tagSet._previousDataValues.deleted) {
                     await TagSet.deleteTags(tagSet, options);
+                }
+                if (tagSet.public && !tagSet._previousDataValues.public) {
+                    await TagSet.puslishTags(tagSet, options);
                 }
             }
         }

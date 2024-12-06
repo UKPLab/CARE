@@ -4,7 +4,7 @@ const MetaModel = require("../MetaModel.js");
 module.exports = (sequelize, DataTypes) => {
     class DocumentEdit extends MetaModel {
         static autoTable = true;
-        
+
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
-            
+
             DocumentEdit.belongsTo(models["study_step"], {
                 foreignKey: 'studyStepId',
                 as: 'studyStep',
@@ -32,6 +32,7 @@ module.exports = (sequelize, DataTypes) => {
             span: DataTypes.INTEGER,
             text: DataTypes.STRING,
             attributes: DataTypes.JSONB,
+            deleted: DataTypes.BOOLEAN,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,
             deletedAt: DataTypes.DATE,

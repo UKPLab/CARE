@@ -79,7 +79,7 @@ module.exports = class DocumentSocket extends Socket {
             throw new Error("Invalid file type");
         }
 
-        if (!(await this.checkUserAccess(data['userId']))) {
+        if ((data['userid'] && data['userid'] !== this.userId) && !(await this.checkUserAccess(data['userId']))) {
             throw new Error("User does not have access to upload documents");
         }
 
@@ -222,7 +222,7 @@ module.exports = class DocumentSocket extends Socket {
 
             if (await this.checkDocumentAccess(doc.id)) {
                 if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
-                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
                     let delta = new Delta();
 
                     if (fs.existsSync(deltaFilePath)) {
@@ -308,7 +308,7 @@ module.exports = class DocumentSocket extends Socket {
                 });
 
                 const newDelta = new Delta(dbToDelta(edits));
-                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
 
                 let oldDelta = new Delta();
                 try {
