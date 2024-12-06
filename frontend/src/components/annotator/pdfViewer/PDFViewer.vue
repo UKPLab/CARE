@@ -103,7 +103,6 @@ export default {
         studyStepId: this.studyStepId
       },
       (res) => {
-      console.log(res);
         if (res.success) {
           const loadingTask = pdfjsLib.getDocument(res['data']['file']);
           loadingTask.promise
@@ -112,7 +111,6 @@ export default {
               this.pdf.setPDF(pdf);
             })
             .catch(response => {
-              console.log(response);
               this.eventBus.emit('toast', {
                 title: "PDF Loading Error",
                 message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",

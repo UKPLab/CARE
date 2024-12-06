@@ -70,7 +70,7 @@ export default {
         component = this.defaultComponent;
       }
       if (component !== undefined) {
-        console.log(component);
+        console.log("505 Error", component);
         return defineAsyncComponent({
           loader: () => import("./dashboard/" + component.component + ".vue"),
           loadingComponent: Loading,
