@@ -76,6 +76,15 @@ export default {
       }
 
     },
+    studySession() {
+      return this.$store.getters["table/study_session/get"](this.studySessionId);
+    }, 
+    study() {
+      return this.$store.getters["table/study/get"](this.studySession.studyId);
+    },
+    anonymize() {
+      return this.study.anonymize;
+    }
 
   },
   created() {
@@ -115,7 +124,8 @@ export default {
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
         selectors: {target},
-        tagId: tag.id
+        tagId: tag.id,
+        anonymize: this.anonymize,
       });
 
       this.isVisible = false;

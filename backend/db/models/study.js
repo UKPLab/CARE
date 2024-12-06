@@ -114,8 +114,8 @@ module.exports = (sequelize, DataTypes) => {
             default: false,
         },
         {
-            key: "anonymized",
-            label: "Should the annotations be anonymized?",
+            key: "anonymize",
+            label: "Should the comments be anonymized?",
             type: "switch",
             default: false,
         }, {

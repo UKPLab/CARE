@@ -30,10 +30,11 @@ module.exports = (sequelize, DataTypes) => {
         annotationId: DataTypes.INTEGER,
         parentCommentId: DataTypes.INTEGER,
         tags: DataTypes.STRING,
+        anonymize: DataTypes.BOOLEAN,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
-        updatedAt: DataTypes.DATE
+        updatedAt: DataTypes.DATE,
     }, {
         sequelize,
         modelName: 'comment',
