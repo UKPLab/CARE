@@ -59,15 +59,36 @@
             class="middle"
         ><b>Time Left:</b> {{ timeLeftHuman }}</span>
       </TopBarButton>
-    </div>
+    </div>     
+  </Teleport>    
+
+  <Teleport to="#topbarCenterPlaceholder">  
+    <TopBarButton
+      v-show="readOnlyComputed"
+      title="Read-Only mode"
+      class="btn rounded-circle"
+      type="button"
+    >
+      <span
+        :style="{ color: '#800000', fontWeight: 'bold' }"
+      >
+        Read-Only mode
+      </span>
+      <LoadIcon
+        :size="22"
+        :color="'#800000'"
+        icon-name="lock-fill"
+      />
+    </TopBarButton>
+    
   </Teleport>
     <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
       <div v-show="s.id === currentStudyStepId">
-        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id" @error="error" />
+        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id" @error="error" :active="activeComponents[index]"/>
       </div>
-      <div v-show="s.id === currentStudyStepId">
-        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id"/>
+      <div v-show="s.id === currentStudyStepId">      
+        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id" :active="activeComponents[index]"/>
       </div>
       <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
     </div>
@@ -127,6 +148,9 @@ export default {
     };
   },
   computed: {
+    activeComponents() {
+      return this.studySteps.map(step => step.id === this.currentStudyStepId);
+    },
     studySession() {
       if (this.studySessionId !== 0) {
         return this.$store.getters['table/study_session/get'](this.studySessionId);
@@ -334,6 +358,13 @@ export default {
 <style scoped>
 .d-flex {
   width: 100%;
+}
+
+.d-flex-justify-content-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
 }
 
 .mx-auto {
