@@ -258,17 +258,7 @@ module.exports = class UserSocket extends Socket {
     }
 
     init() {
-        this.socket.on("userGetData", async (data) => {
-            try {
-                await this.sendUserData();
-            } catch (e) {
-                this.socket.emit("userData", {
-                    success: false, message: "Failed to retrieve all users",
-                });
-                this.logger.error("DB error while loading all users from database" + JSON.stringify(e));
-            }
-        });
-
+        this.createSocket("userGetData", this.sendUserData, {}, false);
 
         // Get users by their role
         this.socket.on("userGetByRole", async (role) => {

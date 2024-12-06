@@ -2,12 +2,6 @@
 
 const settings = [
     {
-        key: "statistics.tracking.enabled",
-        value: "false",
-        type: "boolean",
-        description: "Enable or disable behavior tracking"
-    },
-    {
         key: "statistics.tracking.mouseDebounceTime",
         value: "500",
         type: "number",
