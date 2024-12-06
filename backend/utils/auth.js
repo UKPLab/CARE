@@ -21,6 +21,30 @@ async function createPwd(password, salt) {
 }
 
 /**
+ * Create a random password
+ *
+ * @param {number} length The password length
+ * @param {boolean} withoutSpecialTokens don't use special characters
+ * @returns {String} The random password
+ */
+exports.genPwd = function generatePassword(length, withoutSpecialTokens = false) {
+    let characters;
+    if (withoutSpecialTokens) {
+        characters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz23456789';
+    } else {
+        characters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz23456789!@#$%^&*()_+[]{}|;:,.<>?';
+    }
+    const array = new Uint32Array(length);
+    crypto.getRandomValues(array);
+    let password = '';
+    for (let i = 0; i < length; i++) {
+        const randomIndex = array[i] % characters.length;
+        password += characters[randomIndex];
+    }
+    return password;
+}
+
+/**
  * Generate a random salt.
  * @returns {string} The generated salt.
  */

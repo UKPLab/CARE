@@ -35,7 +35,6 @@ export default {
     showButtons() {
       return this.buttons.filter(b => {
         if (b.filter) {
-          console.log(this.params);
           return b.filter.some(f => {
             if (f.type === "not") {
               return this.params[f.key] !== f.value;
