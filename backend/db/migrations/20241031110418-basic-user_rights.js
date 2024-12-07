@@ -6,6 +6,10 @@ const userRights = [
     description: "access to the functionality of bulk adding assignments on the dashboard",
   },
   {
+    name: "frontend.dashboard.studies.addSingleAssignments",
+    description: "access to the functionality of adding assignments on the dashboard",
+  },
+  {
     name: "frontend.dashboard.studies.view",
     description: "access to view open studies and sessions",
   },
