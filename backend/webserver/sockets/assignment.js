@@ -244,8 +244,6 @@ module.exports = class AssignmentSocket extends Socket {
                 return acc;
             }, {});
 
-
-
             // role based assignment means we start with the role
             for (const key in roleSelection) {
                 const {roleId, neededAssignments, users} = roleSelection[key];
@@ -458,25 +456,6 @@ module.exports = class AssignmentSocket extends Socket {
     }
 
     /**
-     * Asynchronously removes sessions from a study and deletes their associated sessions.
-     *
-     * @param {number} study - The ID of the study from which reviewers are to be removed.
-     * @param {Array<number>} deletedReviewers - An array of user IDs representing the reviewers to be removed.
-     * @returns {Promise<void>} - A promise that resolves when the reviewers and their sessions have been removed.
-     */
-    async removeReviewer(study, deletedReviewers) {
-        const sessions = await this.models["study_session"].getAllByKey("studyId", study);
-        const filteredSessions = sessions.filter(session => deletedReviewers.includes(session.userId));
-        const deletedSession = await Promise.all(filteredSessions.map(session => {
-            return this.models["study_session"].deleteById(session.id)
-        }))
-
-        for (const session of deletedSession) {
-            this.emit("study_sessionRefresh", session);
-        }
-    }
-
-    /**
      * Assigns reviewers (Hiwis) to assignments based on the provided data.
      *
      * @param {Object} data - The data for assigning reviewers.
@@ -510,6 +489,7 @@ module.exports = class AssignmentSocket extends Socket {
 
         this.createSocket("assignmentCreate", this.createAssignment, {}, true);
         this.createSocket("assignmentCreateBulk", this.createAssignmentBulk, {}, true);
+        this.createSocket("assignmentAdd", this.addReviewer, {}, true);
 
 
         this.createSocket("assignmentGetAssignmentInfosFromUser", this.getAssignmentInfosFromUser, {}, true);
@@ -518,21 +498,6 @@ module.exports = class AssignmentSocket extends Socket {
 
         this.createSocket("assignmentAssignPeerReviews", this.assignPeerReviews, {}, true);
 
-        this.socket.on("assignmentEditReviewer", async (data) => {
-            try {
-                console.log(data, "data");
-                const addedReviewers = await this.addReviewer(data);
-                const deletedReviewers = await this.removeReviewer(data.studyId, data.deletedReviewers);
-                this.socket.emit("peerReview", {
-                    success: true, addedReviewers, deletedReviewers,
-                });
-            } catch (error) {
-                this.socket.emit("peerReview", {
-                    success: false, message: error.message,
-                });
-                this.logger.error(error, !"Error editing reviewer");
-            }
-        });
 
 
     }
