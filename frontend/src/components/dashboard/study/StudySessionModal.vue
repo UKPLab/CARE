@@ -1,5 +1,5 @@
 <template>
-  <EditReviewerModal ref="editReviewerModal" name="editReviewerModal"/>
+  <AddAssignmentModal ref="addAssignmentModal" name="addAssignmentModal"/>
   <BasicModal
     ref="studySessionModal"
     :props="{studyId: studyId}"
@@ -44,7 +44,7 @@
 <script>
 import DTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
-import EditReviewerModal from "./EditReviewerModal.vue";
+import AddAssignmentModal from "./AddAssignmentModal.vue";
 import BasicModal from "@/basic/Modal.vue";
 import {computed} from "vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
@@ -58,7 +58,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
   name: "StudySessionModal",
-  components: {ConfirmModal, DTable, BasicButton, EditReviewerModal, BasicModal},
+  components: {ConfirmModal, DTable, BasicButton, AddAssignmentModal, BasicModal},
   provide() {
     return {
       mainModal: computed(() => this.$refs.studySessionModal)
@@ -197,7 +197,7 @@ export default {
       this.$refs.studySessionModal.close();
     },
     addSingleAssignment() {
-      this.$refs.editReviewerModal.open(this.studyId, this.$refs.studySessionModal);
+      this.$refs.addAssignmentModal.open(this.studyId);
     },
     load() {
       if (!this.study) {
