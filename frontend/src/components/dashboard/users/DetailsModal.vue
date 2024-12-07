@@ -57,6 +57,7 @@ export default {
   data() {
     return {
       userId: 0,
+      userInfo: {},
       formFields: [
         {
           key: "userName",
@@ -109,17 +110,6 @@ export default {
     };
   },
   computed: {
-    userInfo() {
-      const userInfo = this.$store.getters["admin/getUserDetails"];
-      const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
-      return {
-        ...userInfo,
-        createdAt: formatDate(userInfo.createdAt),
-        updatedAt: formatDate(userInfo.updatedAt),
-        lastLoginAt: formatDate(userInfo.lastLoginAt),
-        deletedAt: formatDate(userInfo.deletedAt),
-      };
-    },
     systemRoles() {
       return this.$store.getters["admin/getSystemRoles"];
     },
@@ -135,16 +125,15 @@ export default {
   methods: {
     open(userId) {
       this.userId = userId;
-      this.$refs.modal.open();
       this.getUserDetails(userId);
+      this.$refs.modal.open();
     },
     submit() {
       if (!this.$refs.form.validate()) {
         return;
       }
       const userId = this.userId;
-      const { modelValue } = this.$refs.form;
-      const { firstName, lastName, email, roles } = modelValue;
+      const { firstName, lastName, email, roles } = this.userInfo;
       const userData = {
         firstName,
         lastName,
@@ -173,7 +162,19 @@ export default {
       });
     },
     getUserDetails(userId) {
-      this.$socket.emit("userGetDetails", userId);
+      this.$socket.emit("userGetDetails", userId, (res) => {
+        if (res.success) {
+          const userInfo = res["data"];
+          const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
+          this.userInfo = {
+            ...userInfo,
+            createdAt: formatDate(userInfo.createdAt),
+            updatedAt: formatDate(userInfo.updatedAt),
+            lastLoginAt: formatDate(userInfo.lastLoginAt),
+            deletedAt: formatDate(userInfo.deletedAt),
+          };
+        }
+      });
     },
     resetForm() {
       this.eventBus.emit("resetFormField");
