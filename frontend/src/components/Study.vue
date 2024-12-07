@@ -1,68 +1,68 @@
 <template>
   <StudyModal
-      v-if="studySessionId === 0 || (this.studySession && this.studySession.start === null)"
-      ref="studyModal"
-      :study-id="studyId"
-      :study-closed="studyClosed"
-      :study-session-id="studySessionId"
-      @finish="finalFinish"
-      @start="start"
+    v-if="studySessionId === 0 || (this.studySession && this.studySession.start === null)"
+    ref="studyModal"
+    :study-id="studyId"
+    :study-closed="studyClosed"
+    :study-session-id="studySessionId"
+    @finish="finalFinish"
+    @start="start"
   />
   <FinishModal
-      ref="studyFinishModal"
-      :study-session-id="studySessionId"
-      :show-time-up="timeUp"
-      @finish="finalFinish({studySessionId: this.studySessionId})"
+    ref="studyFinishModal"
+    :study-session-id="studySessionId"
+    :show-time-up="timeUp"
+    @finish="finalFinish({studySessionId: this.studySessionId})"
   />
 
   <Teleport to="#topbarCustomPlaceholder">
     <div class="d-flex justify-content-between align-items-center w-100">
 
       <TopBarButton
-          v-if="currentWorkflowStep && currentWorkflowStep.allowBackward && currentStudyStep && currentStudyStep.studyStepPrevious !== null"
-          class="btn btn-outline-primary me-3"
-          title="Previous"
-          @click="updateStep(currentStudyStep.studyStepPrevious)"
+        v-if="currentWorkflowStep && currentWorkflowStep.allowBackward && currentStudyStep && currentStudyStep.studyStepPrevious !== null"
+        class="btn btn-outline-primary me-3"
+        title="Previous"
+        @click="updateStep(currentStudyStep.studyStepPrevious)"
       >
         Previous
       </TopBarButton>
 
       <TopBarButton
-          v-if="!readOnlyComputed && studySession && lastStep && currentWorkflowStep && currentWorkflowStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
-          class="btn btn-outline-secondary mx-3"
-          title="Finish Study"
-          @click="finish"
+        v-if="!readOnlyComputed && studySession && lastStep && currentWorkflowStep && currentWorkflowStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
+        class="btn btn-outline-secondary mx-3"
+        title="Finish Study"
+        @click="finish"
       >
         Finish Study
       </TopBarButton>
 
       <TopBarButton
-          v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
-          class="btn btn-outline-primary ms-3"
-          title="Next"
-          @click="updateStep(nextStudyStep.id)"
+        v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
+        class="btn btn-outline-primary ms-3"
+        title="Next"
+        @click="updateStep(nextStudyStep.id)"
       >
         Next
       </TopBarButton>
 
       <TopBarButton
-          v-if="timeLeft > 0"
-          class="btn mb-1"
+        v-if="timeLeft > 0"
+        class="btn mb-1"
       >
         <LoadIcon
-            :size="21"
-            class="me-1 middle"
-            icon-name="stopwatch"
+          :size="21"
+          class="me-1 middle"
+          icon-name="stopwatch"
         />
         <span
-            :class="{'text-danger':timeLeft < (5 * 60)}"
-            class="middle"
+          :class="{'text-danger':timeLeft < (5 * 60)}"
+          class="middle"
         ><b>Time Left:</b> {{ timeLeftHuman }}</span>
       </TopBarButton>
-    </div>     
-  </Teleport>    
+    </div>
+  </Teleport>
 
-  <Teleport to="#topbarCenterPlaceholder">  
+  <Teleport to="#topbarCenterPlaceholder">
     <TopBarButton
       v-show="readOnlyComputed"
       title="Read-Only mode"
@@ -80,15 +80,17 @@
         icon-name="lock-fill"
       />
     </TopBarButton>
-    
+
   </Teleport>
-    <div v-if="studySessionId !== 0">
+  <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
       <div v-show="s.id === currentStudyStepId">
-        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id" @error="error" :active="activeComponents[index]"/>
+        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)"
+                   :document-id="s.documentId" :study-step-id="s.id" @error="error" :active="activeComponents[index]"/>
       </div>
-      <div v-show="s.id === currentStudyStepId">      
-        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id = "s.documentId" :study-step-id="s.id" :active="activeComponents[index]"/>
+      <div v-show="s.id === currentStudyStepId">
+        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id="s.documentId"
+                :study-step-id="s.id" :active="activeComponents[index]"/>
       </div>
       <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
     </div>
@@ -181,36 +183,36 @@ export default {
     },
     currentWorkflowStep() { // TODO think about what will happen if we have af one_step workflow
       return this.currentStudyStep && this.currentStudyStep.workflowStepId
-            ? this.$store.getters['table/workflow_step/get'](this.currentStudyStep.workflowStepId)
-            : null
+        ? this.$store.getters['table/workflow_step/get'](this.currentStudyStep.workflowStepId)
+        : null
     },
     lastStep() {
       const previousStepIds = this.studySteps
-            .map(step => step.studyStepPrevious)
-            .filter(id => id !== null); // Excluding null to avoid the first step
-        const lastStep = this.studySteps.find(step => !previousStepIds.includes(step.id));
-        return lastStep;
+        .map(step => step.studyStepPrevious)
+        .filter(id => id !== null); // Excluding null to avoid the first step
+      const lastStep = this.studySteps.find(step => !previousStepIds.includes(step.id));
+      return lastStep;
     },
     firstStep() {
       return (this.studySteps) ? this.studySteps.find(step => step.studyStepPrevious === null) : null;
     },
     workflowSteps() {
       const steps = this.studySteps.length > 0
-            ? this.studySteps.map(studyStep => this.$store.getters['table/workflow_step/get'](studyStep.workflowStepId))
-            : [];
+        ? this.studySteps.map(studyStep => this.$store.getters['table/workflow_step/get'](studyStep.workflowStepId))
+        : [];
       return steps;
     },
     studyTrajectory() {
       if (!this.studySession) return [];
-        let studyTrajectory = [];
-        let studyStep = this.$store.getters['table/study_step/get'](this.studySession.studyStepIdMax);
-        while (studyStep) {
-            studyTrajectory.push(studyStep.id);
-            studyStep = studyStep.studyStepPrevious
-                ? this.$store.getters['table/study_step/get'](studyStep.studyStepPrevious)
-                : null;
-        }
-        return studyTrajectory;
+      let studyTrajectory = [];
+      let studyStep = this.$store.getters['table/study_step/get'](this.studySession.studyStepIdMax);
+      while (studyStep) {
+        studyTrajectory.push(studyStep.id);
+        studyStep = studyStep.studyStepPrevious
+          ? this.$store.getters['table/study_step/get'](studyStep.studyStepPrevious)
+          : null;
+      }
+      return studyTrajectory;
     },
     studyId() {
       if (this.study) {
@@ -235,19 +237,19 @@ export default {
     },
     currentStudyStep() {
       return (this.currentStudyStepId)
-            ? this.$store.getters['table/study_step/get'](this.currentStudyStepId)
-            : null;
+        ? this.$store.getters['table/study_step/get'](this.currentStudyStepId)
+        : null;
     },
-    currentStudyStepId(){
-      if(this.readOnlyComputed && this.firstStep){
+    currentStudyStepId() {
+      if (this.readOnlyComputed && this.firstStep) {
         return this.localStudyStepId === 0 ? this.firstStep.id : this.localStudyStepId;
-      }      
+      }
       if (this.studySession && this.studySession.studyStepId) {
         return this.studySession.studyStepId;
       }
     },
     studyClosed() {
-      if(this.study) {
+      if (this.study) {
         if (this.study.closed) {
           return true;
         }
@@ -257,7 +259,7 @@ export default {
       }
       return false;
     },
-    readOnlyComputed(){
+    readOnlyComputed() {
       if (this.readOnly) {
         return this.readOnly;
       }
@@ -321,9 +323,26 @@ export default {
       }
     },
     finalFinish(data) {
-      this.$socket.emit("studySessionUpdate", {
-        sessionId: data.studySessionId,
-        end: Date.now()
+      this.$socket.emit("appDataUpdate", {
+        table: "study_session",
+        data: {
+          id: data.studySessionId,
+          end: Date.now()
+        }
+      }, (result) => {
+        if (result.success) {
+          this.eventBus.emit('toast', {
+            title: "Study Session finished",
+            message: "Study session has been finished",
+            variant: "success"
+          });
+        } else {
+          this.eventBus.emit('toast', {
+            title: "Study Session not finished",
+            message: result.message,
+            variant: "danger"
+          });
+        }
       });
       this.$refs.studyFinishModal.close();
     },
@@ -331,14 +350,14 @@ export default {
       this.$refs.studyFinishModal.open();
     },
     updateStep(step) {
-      if(this.readOnlyComputed){
+      if (this.readOnlyComputed) {
         this.localStudyStepId = step;
-      } else {   
-      this.$socket.emit("appDataUpdate", {
+      } else {
+        this.$socket.emit("appDataUpdate", {
           table: "study_session",
           data: {
             id: this.studySessionId,
-            studyStepId: step 
+            studyStepId: step
           },
         }, (result) => {
           if (!result.success) {
@@ -349,7 +368,7 @@ export default {
             });
           }
         });
-      }  
+      }
     },
   }
 };
