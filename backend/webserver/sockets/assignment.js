@@ -242,6 +242,8 @@ module.exports = class AssignmentSocket extends Socket {
                 }, options);
             }
 
+            return finalAssignments;
+
         } else if (data.mode === "reviewer") {
             const finalAssignments = {};
 
@@ -322,6 +324,8 @@ module.exports = class AssignmentSocket extends Socket {
                     }, options);
                 }
             }
+
+            return finalAssignments;
 
         } else {
             throw new Error("Invalid mode provided for assignment creation.");
