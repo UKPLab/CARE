@@ -44,7 +44,11 @@
     </template>
 
     <template #step-3>
-      <input type="checkbox" > Select only with documents
+      <div class="form-check"><input v-model="filterHasDocuments" class="form-check-input" type="checkbox" id="filterHasDocumentsCheckbox">
+        <label class="form-check-label" for="filterHasDocumentsCheckbox">
+          Select only with documents
+        </label>
+      </div>
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedReviewer"
@@ -167,6 +171,7 @@
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import {downloadObjectsAs} from "@/assets/utils";
 
 /**
  * Modal for bulk creating assignments
@@ -205,6 +210,7 @@ export default {
       templateSelection: {},
       selectedAssignments: [],
       reviewerSelection: {},
+      filterHasDocuments: false,
       documentTableOptions: {
         striped: true,
         hover: true,
@@ -310,6 +316,19 @@ export default {
         newR.rolesNames = newR.rolesNames.join(", ");
         return newR;
       })
+        .filter((reviewer) => {
+          console.log(this.filterHasDocuments);
+          console.log(reviewer.documents);
+          if (!this.filterHasDocuments) {
+            return true;
+          } else {
+            if (reviewer.documents >= 1) {
+              return true;
+            } else {
+              return false;
+            }
+          }
+        })
     },
     roles() {
       return this.$store.getters["admin/getSystemRoles"];
@@ -327,7 +346,7 @@ export default {
         {name: "First Name", key: "firstName"},
         {name: "Last Name", key: "lastName"},
         {name: "Number of Assignments", key: "studySessions"},
-        {name: "Documents", key: "documents", width: 1},
+        {name: "Documents", key: "documents", width: 1, sortable: true},
         {
           name: "Roles",
           key: "rolesNames",
@@ -464,6 +483,28 @@ export default {
       }, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {
+          console.log("RESULTS", res);
+          const filename = "assignments";
+          const returnData = Object.keys(res.data).map((assignmentId) => {
+            const assignment = this.documentsTable.find((document) => document.id === Number(assignmentId));
+            const assignmentUser = this.reviewer.find((reviewer) => reviewer.id === assignment.userId);
+            const reviewer = res.data[assignmentId];
+
+            const csv = {
+              "assignedToName": assignmentUser.firstName + " " + assignmentUser.lastName,
+              "assignedToFirstName": assignmentUser.firstName,
+              "assignedToLastName": assignmentUser.lastName,
+            }
+
+            reviewer.forEach((reviewerId, index) => {
+              const reviewerUser = this.reviewer.find((reviewer) => reviewer.id === Number(reviewerId));
+              csv[`reviewer_${index + 1}`] = reviewerUser.firstName + " " + reviewerUser.lastName;
+            });
+
+            return csv;
+          });
+
+          downloadObjectsAs(returnData, filename, "csv");
           this.$refs.assignmentStepper.close();
           this.eventBus.emit("toast", {
             title: "Assignment created",
