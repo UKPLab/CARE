@@ -24,25 +24,15 @@ module.exports = class AssignmentSocket extends Socket {
     async getAssignmentInfosFromUser() {
         try {
             if (await this.isAdmin()) {
-                const [documentUserIds, matchedUsers, users, roleIdMap] = await Promise.all([
-                    this.models["document"].findAll({
-                        where: {readyForReview: true},
-                        attributes: ["userId", "id", "name"],
-                        raw: true,
-                    }),
-                    this.models["user_role_matching"].findAll({
-                        attributes: ["userId", "userRoleId"],
-                        raw: true,
-                    }),
-                    this.models["user"].findAll({
-                        attributes: {exclude: ["passwordHash", "salt"]},
-                        raw: true,
-                    }),
-                    this.models["user_role"].findAll({
-                        attributes: ["id", "name"],
-                        raw: true,
-                    })
-                ]);
+                const [documentUserIds, matchedUsers, users, roleIdMap] = await Promise.all([this.models["document"].findAll({
+                    where: {readyForReview: true}, attributes: ["userId", "id", "name"], raw: true,
+                }), this.models["user_role_matching"].findAll({
+                    attributes: ["userId", "userRoleId"], raw: true,
+                }), this.models["user"].findAll({
+                    attributes: {exclude: ["passwordHash", "salt"]}, raw: true,
+                }), this.models["user_role"].findAll({
+                    attributes: ["id", "name"], raw: true,
+                })]);
 
                 const idToNameMap = new Map(roleIdMap.map(({id, name}) => [id, name]));
                 const matchedUserMap = new Map(matchedUsers.map(({userId, userRoleId}) => [userId, userRoleId]));
@@ -52,16 +42,12 @@ module.exports = class AssignmentSocket extends Socket {
                     const roleName = idToNameMap.get(matchedUserMap.get(user.id)) || null;
 
                     return {
-                        ...user,
-                        documents,
-                        numberAssignments: documents.length,
-                        role: roleName,
+                        ...user, documents, numberAssignments: documents.length, role: roleName,
                     };
                 });
 
                 this.socket.emit("assignmentUserInfos", {
-                    success: true,
-                    userInfos,
+                    success: true, userInfos,
                 });
 
             } else {
@@ -70,8 +56,7 @@ module.exports = class AssignmentSocket extends Socket {
         } catch (error) {
             this.logger.error(error);
             this.socket.emit("assignmentUserInfos", {
-                success: false,
-                message: error.message
+                success: false, message: error.message
             });
         }
     }
@@ -134,18 +119,19 @@ module.exports = class AssignmentSocket extends Socket {
             }
 
             return {
-                ...assignment,
-                assignedReviewers,
+                ...assignment, assignedReviewers,
             };
         });
 
         const template = data.template
 
         for (const assignment of result) {
-            await this.createAssignment(
-                {assignment, reviewers: assignment.assignedReviewers, template, documents: [assignment.documentName]},
-                options
-            );
+            await this.createAssignment({
+                assignment,
+                reviewers: assignment.assignedReviewers,
+                template,
+                documents: [assignment.documentName]
+            }, options);
         }
         return result;
     }
@@ -182,8 +168,7 @@ module.exports = class AssignmentSocket extends Socket {
         const study = await this.models["study"].add(new_study, {transaction: options.transaction, context: new_study});
 
         await this.addReviewer({
-            studyId: study.id,
-            reviewer: data["reviewer"]
+            studyId: study.id, reviewer: data["reviewer"]
         }, options);
 
     }
@@ -203,8 +188,7 @@ module.exports = class AssignmentSocket extends Socket {
         const currentStudy = await this.models["study"].getById(data['studyId'], {transaction: options.transaction});
         if (currentStudy.limitSessions !== 0) {
             const currentSessionCount = await this.models["study_session"].count({
-                where: {studyId: currentStudy.id},
-                raw: true,
+                where: {studyId: currentStudy.id}, raw: true,
             }, {transaction: options.transaction});
             const newSessionLimit = currentSessionCount + data["reviewer"].length;
             if (newSessionLimit > currentStudy.limitSessions) {
@@ -216,8 +200,7 @@ module.exports = class AssignmentSocket extends Socket {
 
         await Promise.all(data['reviewer'].map(reviewer => {
             return this.models["study_session"].add({
-                studyId: data['studyId'],
-                userId: reviewer['id'],
+                studyId: data['studyId'], userId: reviewer['id'],
             }, {transaction: options.transaction});
         }));
 
@@ -240,33 +223,28 @@ module.exports = class AssignmentSocket extends Socket {
 
         // first shuffle the assignments, we use the Fisher-Yates shuffle algorithm from lodash
         // we also need to make sure that the documents array is shuffled in the same way
-        const shuffledAssignments = _.shuffle(data.selectedAssignments.map(
-            (assignment, index) => ({
-                ...assignment,
-                document: data.documents[index]
-            })));
+        const shuffledAssignments = _.shuffle(data.selectedAssignments.map((assignment, index) => ({
+            ...assignment, document: data.documents[index]
+        })));
 
         if (data.mode === "role") {
-            const finalAssignmentsForRoles = {};
-
             const roleSelection = Object.entries(data.roleSelection)
                 .filter(([_, assignments]) => Number(assignments) !== 0) // remove roles with no assignments
                 .reduce((acc, [roleId, assignments]) => {
                     acc[roleId] = {};
                     acc[roleId]['roleId'] = Number(roleId);
                     acc[roleId]['neededAssignments'] = assignments;
+                    acc[roleId]['assignments'] = {};
                     acc[roleId]['users'] = data.selectedReviewer.filter((reviewer) => reviewer.roles.includes(Number(roleId)));
                     return acc;
                 }, {});
 
-            // initialize the finalAssignmentsForRoles object with empty arrays for each role
-            shuffledAssignments.forEach((assignment) => {
-                finalAssignmentsForRoles[assignment.id] = Object.entries(roleSelection)
-                    .reduce((acc, [roleId, role]) => {
-                        acc[roleId] = [];
-                        return acc;
-                    }, {});
-            });
+            const assignmentCounter = shuffledAssignments.reduce((acc, assignment) => {
+                acc[assignment.id] = 0;
+                return acc;
+            }, {});
+
+
 
             // role based assignment means we start with the role
             for (const key in roleSelection) {
@@ -278,59 +256,129 @@ module.exports = class AssignmentSocket extends Socket {
                     throw new Error(`No users found for role ${data['roles'].find((role) => role.id === roleId).name}. Please add users to the role.`);
                 }
 
-                // every document should get the number of reviews that we defined per role
-                for (const assignment of shuffledAssignments) {
+                // check if there are enough assignment for each user, that are not from the user itself
+                if (neededAssignments > shuffledAssignments.length) {
+                    throw new Error(`Not enough documents to review for role ${data['roles'].find((role) => role.id === roleId).name}. Please add more documents.`);
+                }
 
-                    let firstUser = undefined;
-                    while (finalAssignmentsForRoles[assignment.id][roleId].length < neededAssignments) {
-                        let user = userQueue.shift(); // get user from queue
-                        console.log("USER", user);
-
-                        // if userQueue is empty, we need to assign reviewers again
-                        if (!user) {
-                            console.log("new queue")
-                            userQueue = _.shuffle(users);
-                            firstUser = undefined;
-                            user = userQueue.shift();
-                        }
-
-                        // check for infinite loop
-                        if (firstUser === user) {
-                            // Nice to have: we can try to swap users, but need to make sure that
-                            // the user is from same assigned role, so it will be easier to just run the again
-                            break; // if we tried to assign the user already, break the loop
-                        }
-                        if (firstUser === undefined) {
-                            firstUser = user; // save the first user to try to assign to
-                        }
-
-
-                        if (assignment.userId !== user.id) {
-                            finalAssignmentsForRoles[assignment.id][roleId].push(user);
-                        } else {
-                            userQueue.push(user); // push user back to queue
-                        }
-
-                    }
-
-                    if (finalAssignmentsForRoles[assignment.id][roleId].length < neededAssignments) {
-                        console.log(finalAssignmentsForRoles)
-                        throw new Error(`Could not assign all users. Please try again.`);
+                for (const user of userQueue) {
+                    if (shuffledAssignments.filter((assignment) => assignment.userId !== user.id).length < neededAssignments) {
+                        throw new Error(`Not enough documents to review for ${user.firstName} ${user.lastName}. Please add more documents.`);
                     }
                 }
 
+                for (const user of userQueue) {
+                    roleSelection[roleId]['assignments'][user.id] = [];
+                    console.log(1)
+                    while (roleSelection[roleId]['assignments'][user.id].length < neededAssignments) {
+                        // first find a suitable assignment
+                        const minCount = Math.min(...Object.values(assignmentCounter));
+                        const newAssignment = shuffledAssignments.find(
+                            (assignment) =>
+                                assignmentCounter[assignment.id] === minCount && // select the assignment with the lowest amount of users assigned
+                                assignment.userId !== user.id && // make sure the user is not the owner of the document
+                                roleSelection[roleId]['assignments'][user.id].indexOf(assignment.id) === -1 // make sure the user is not already assigned to the document
+                        );
+                        if (newAssignment) {
+                            roleSelection[roleId]['assignments'][user.id].push(newAssignment.id);
+                            assignmentCounter[newAssignment.id]++;
+                        } else {
+                            let swapped = false;
+                            for (const otherUser of userQueue) {
+                                // if it is the same user, skip
+                                if (otherUser.id === user.id) {
+                                    continue;
+                                }
+                                // get all assignments for the other user
+                                const otherAssignments = roleSelection[roleId]['assignments'][otherUser.id];
+                                if (!otherAssignments) { // not initialized yet
+                                    continue;
+                                }
+                                const swappableAssignment = otherAssignments.find((assignedId) => {
+                                    const assignment = shuffledAssignments.find((a) => a.id === assignedId);
+                                    return (assignment.userId !== user.id // make sure the user is not the owner of the document
+                                        && roleSelection[roleId]['assignments'][user.id].indexOf(assignment.id) === -1 // make sure the user is not already assigned to the document
+                                    );
+                                });
+                                if (swappableAssignment) {
+
+                                    // check if a new assignment is suitable for the other user
+                                    const otherUserNewAssignment = shuffledAssignments.find(
+                                        (assignment) =>
+                                            assignmentCounter[assignment.id] === minCount && // Lowest count
+                                            assignment.userId !== otherUser.id && // Not owned by the other user
+                                            !roleSelection[roleId]['assignments'][otherUser.id].includes(assignment.id) && // Not already assigned
+                                            assignment.id !== swappableAssignment // Avoid selecting the same document being swapped
+                                    );
+                                    if (otherUserNewAssignment) { // perform the swap
+
+                                        // remove the swappable assignment from the other user and add it to the current user
+                                        roleSelection[roleId]['assignments'][otherUser.id] = otherAssignments.filter(
+                                            (assignedId) => assignedId !== swappableAssignment.id
+                                        );
+
+                                        // instead adding the other user's new assignment
+                                        roleSelection[roleId]['assignments'][otherUser.id].push(otherUserNewAssignment.id);
+
+                                        // add the swappable assignment to the current user
+                                        roleSelection[roleId]['assignments'][user.id].push(swappableAssignment.id);
+
+                                        // update the counters
+                                        assignmentCounter[otherUserNewAssignment.id]++;
+
+                                        swapped = true;
+                                        break;
+
+                                    }
+
+                                }
+
+                            }
+
+                            if (!swapped) {
+                                throw new Error(`Unable to assign enough documents for ${user.firstName} ${user.lastName} in role ${data['roles'].find((role) => role.id === roleId).name}`);
+                            }
+                        }
+
+                    }
+                }
             }
 
-            console.log("finalAssignmentsForRoles", finalAssignmentsForRoles);
-            //TODO create the assignments
+            // create the final assignments
+            const finalAssignments = {};
+            for (const roleId of Object.keys(roleSelection)) {
+                const roleAssignments = roleSelection[roleId]['assignments'];
+
+                for (const [reviewerId, assignments] of Object.entries(roleAssignments)) {
+                    for (const assignmentId of assignments) {
+                        if (!finalAssignments[assignmentId]) {
+                            finalAssignments[assignmentId] = [];
+                        }
+                        finalAssignments[assignmentId].push(reviewerId);
+                    }
+                }
+            }
+
+            for (const [assignmentId, reviewerIds] of Object.entries(finalAssignments)) {
+                const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
+                const reviewers = reviewerIds.map((reviewerId) => data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId)));
+                await this.createAssignment({
+                    assignment: assignment,
+                    reviewer: reviewers,
+                    template: data.template,
+                    documents: assignment["document"]
+                }, options);
+            }
 
         } else if (data.mode === "reviewer") {
             const finalAssignments = {};
 
             // initialize the finalAssignments object with empty arrays for each reviewer
-            data.selectedReviewer.forEach((reviewer) => {
-                finalAssignments[reviewer.id] = [];
-            });
+            data.selectedReviewer
+                .forEach((reviewer) => {
+                    finalAssignments
+                        [reviewer.id] = [];
+                });
 
             // transform the reviewerSelection (as we get String values from the frontend)
             const reviewerSelection = Object.entries(data.reviewerSelection)
@@ -455,22 +503,14 @@ module.exports = class AssignmentSocket extends Socket {
             return {...assignment, reviewer}; // Assign a reviewer to the assignment
         });
 
-        await Promise.all(
-            assignmentsWithReviewers.map(assignment =>
-                this.assignPeerReview(
-                    assignment,
-                    Array.of(assignment.reviewer),
-                    data.template,
-                    data.createdByUserId
-                )
-            )
-        );
+        await Promise.all(assignmentsWithReviewers.map(assignment => this.assignPeerReview(assignment, Array.of(assignment.reviewer), data.template, data.createdByUserId)));
     }
 
     init() {
 
         this.createSocket("assignmentCreate", this.createAssignment, {}, true);
         this.createSocket("assignmentCreateBulk", this.createAssignmentBulk, {}, true);
+
 
         this.createSocket("assignmentGetAssignmentInfosFromUser", this.getAssignmentInfosFromUser, {}, true);
 
@@ -484,14 +524,11 @@ module.exports = class AssignmentSocket extends Socket {
                 const addedReviewers = await this.addReviewer(data);
                 const deletedReviewers = await this.removeReviewer(data.studyId, data.deletedReviewers);
                 this.socket.emit("peerReview", {
-                    success: true,
-                    addedReviewers,
-                    deletedReviewers,
+                    success: true, addedReviewers, deletedReviewers,
                 });
             } catch (error) {
                 this.socket.emit("peerReview", {
-                    success: false,
-                    message: error.message,
+                    success: false, message: error.message,
                 });
                 this.logger.error(error, !"Error editing reviewer");
             }

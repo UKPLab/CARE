@@ -318,7 +318,7 @@ export default {
       return [...new Set(this.reviewer.flatMap(obj => obj.roles))];
     },
     selectedReviewerRoles() { // unique roles assigned to reviewers
-      return this.selectedReviewer.flatMap(obj => obj.roles);
+      return [...new Set(this.selectedReviewer.flatMap(obj => obj.roles))];
     },
     reviewerTableColumns() {
       return [
@@ -396,7 +396,7 @@ export default {
           type: "select",
           options: [
             {
-              name: "Role-based selection (each document should be reviewed by the number defined of each role)",
+              name: "Role-based selection (the number of documents that should be reviewed by each user of the selected roles)",
               value: "role"
             },
             {name: "Reviewer-based selection (distribute document between the selected reviewers)", value: "reviewer"},
