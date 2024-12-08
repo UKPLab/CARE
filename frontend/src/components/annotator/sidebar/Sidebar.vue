@@ -289,7 +289,7 @@ export default {
         studyStepId: this.studyStepId,
         annotationId: null,
         commentId: null,
-        anonymize: this.anonymized
+        anonymous: this.anonymized
       });
     },
     async leave() {
