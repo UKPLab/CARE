@@ -44,7 +44,8 @@
     </template>
 
     <template #step-3>
-      <div class="form-check"><input v-model="filterHasDocuments" class="form-check-input" type="checkbox" id="filterHasDocumentsCheckbox">
+      <div class="form-check">
+        <input v-model="filterHasDocuments" class="form-check-input" type="checkbox" id="filterHasDocumentsCheckbox">
         <label class="form-check-label" for="filterHasDocumentsCheckbox">
           Select only with documents
         </label>
@@ -483,28 +484,29 @@ export default {
       }, (res) => {
         this.$refs.assignmentStepper.setWaiting(false);
         if (res.success) {
-          console.log("RESULTS", res);
-          const filename = "assignments";
-          const returnData = Object.keys(res.data).map((assignmentId) => {
-            const assignment = this.documentsTable.find((document) => document.id === Number(assignmentId));
-            const assignmentUser = this.reviewer.find((reviewer) => reviewer.id === assignment.userId);
-            const reviewer = res.data[assignmentId];
+          if (this.reviewerSelectionMode.mode === 'role') {
+            const filename = "assignments";
+            const returnData = Object.keys(res.data).map((assignmentId) => {
+              const assignment = this.documentsTable.find((document) => document.id === Number(assignmentId));
+              const assignmentUser = this.reviewer.find((reviewer) => reviewer.id === assignment.userId);
+              const reviewer = res.data[assignmentId];
 
-            const csv = {
-              "assignedToName": assignmentUser.firstName + " " + assignmentUser.lastName,
-              "assignedToFirstName": assignmentUser.firstName,
-              "assignedToLastName": assignmentUser.lastName,
-            }
+              const csv = {
+                "assignedToName": assignmentUser.firstName + " " + assignmentUser.lastName,
+                "assignedToFirstName": assignmentUser.firstName,
+                "assignedToLastName": assignmentUser.lastName,
+              }
 
-            reviewer.forEach((reviewerId, index) => {
-              const reviewerUser = this.reviewer.find((reviewer) => reviewer.id === Number(reviewerId));
-              csv[`reviewer_${index + 1}`] = reviewerUser.firstName + " " + reviewerUser.lastName;
+              reviewer.forEach((reviewerId, index) => {
+                const reviewerUser = this.reviewer.find((reviewer) => reviewer.id === Number(reviewerId));
+                csv[`reviewer_${index + 1}`] = reviewerUser.firstName + " " + reviewerUser.lastName;
+              });
+
+              return csv;
             });
 
-            return csv;
-          });
-
-          downloadObjectsAs(returnData, filename, "csv");
+            downloadObjectsAs(returnData, filename, "csv");
+          }
           this.$refs.assignmentStepper.close();
           this.eventBus.emit("toast", {
             title: "Assignment created",

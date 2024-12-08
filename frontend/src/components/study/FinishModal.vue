@@ -21,13 +21,15 @@
       </div>
       <div v-else>
         <div class="mb-3 text-center h5">
-          Thank you for joining this study!
+          Thank you for joining! <br>
+          <br>
+          With a click on the finish button, you can submit your results.
         </div>
         <div
           v-if="showTimeUp"
           class="text-center text-danger h6"
         >
-         The time has expired, no more changes are possible.
+          The time has expired, no more changes are possible.
         </div>
       </div>
     </template>
@@ -74,7 +76,7 @@ Source: -
 */
 export default {
   name: "FinishModal",
-  components: { Modal, BasicButton },
+  components: {Modal, BasicButton},
   props: {
     studySessionId: {
       type: Number,

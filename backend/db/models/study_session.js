@@ -9,6 +9,12 @@ module.exports = (sequelize, DataTypes) => {
                 by: "studyId"
             }]
         };
+        static accessMap = [
+            {
+                right: "frontend.dashboard.studies.view",
+                columns: StudySession.getAttributes()
+            },
+        ];
 
         /**
          * Check if a new session can be created for a study

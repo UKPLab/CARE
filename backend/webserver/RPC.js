@@ -15,7 +15,7 @@ module.exports = class RPC {
         this.socket = null;
 
         this.retryDelay = 10000; //default delay between connection attempts
-        this.timeout = 5000; //default timeout for connection
+        this.timeout = 10000; //default timeout for connection
     }
 
     /**

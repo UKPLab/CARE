@@ -232,6 +232,18 @@ module.exports = class AppSocket extends Socket {
         return await this.updateData(data, options);
     }
 
+    /**
+     * Send data by hash
+     * @param data
+     * @param data.hash
+     * @param data.table
+     * @param options
+     * @returns {Promise<void>}
+     */
+    async sendDataByHash(data, options) {
+        await this.sendTable(data.table, mergeFilter([[{key: "hash", value: data.hash}]], this.models[data.table].getAttributes()));
+    }
+
 
     /**
      * Subscribe to app data
@@ -310,6 +322,7 @@ module.exports = class AppSocket extends Socket {
 
         this.createSocket("appDataUpdate", this.updateAppData, {}, true);
         this.createSocket("appData", this.sendData, {}, false);
+        this.createSocket("appDataByHash", this.sendDataByHash, {}, false);
 
         this.createSocket("subscribeAppData", this.subscribeAppData, {}, false);
         this.createSocket("unsubscribeAppData", this.unsubscribeAppData, {}, false);
