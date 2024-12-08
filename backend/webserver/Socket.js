@@ -237,7 +237,6 @@ module.exports = class Socket {
                 return matchedRoles.some((matchedRole) => matchedRole.userRightName === right);
             })
         ).then((results) => results.some((r) => Boolean(r)));
-
         return hasRight;
     }
 
@@ -332,8 +331,6 @@ module.exports = class Socket {
 
     async sendTable(tableName, filter = [], injects = []) {
 
-        console.log(tableName, filter);
-
         // check if it is an autoTable or not
         if (!this.models[tableName] || !this.models[tableName].autoTable) {
             this.logger.error("Table " + tableName + " is not an autoTable");
@@ -349,7 +346,17 @@ module.exports = class Socket {
             exclude: defaultExcludes,
         };
 
-        const accessRights = this.server.db.models[tableName]['accessMap'].filter(async a => await this.hasAccess(a.right));
+        const accessMap = this.server.db.models[tableName]['accessMap'];
+        const filteredAccessMap = await Promise.all(
+            accessMap.map(async a => ({
+                access: a,
+                hasAccess: await this.hasAccess(a.right),
+            }))
+        );
+        const accessRights = filteredAccessMap
+            .filter(item => item.hasAccess)
+            .map(item => item.access);
+
         if (await this.isAdmin() || this.models[tableName].publicTable) { // is allowed to see everything
             // no adaption of the filter or attributes needed
         } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes() && accessRights.length === 0) {
@@ -398,8 +405,6 @@ module.exports = class Socket {
             }
         }
 
-        this.emit(tableName + "Refresh", data, true);
-
         // send additional data if needed
         if (this.models[tableName].autoTable.foreignTables && this.models[tableName].autoTable.foreignTables.length > 0) {
             await Promise.all(this.models[tableName].autoTable.foreignTables.map(async (fTable) => {
@@ -420,6 +425,9 @@ module.exports = class Socket {
                 })
             )
         }
+
+        this.emit(tableName + "Refresh", data, true);
+        return data;
 
     }
 

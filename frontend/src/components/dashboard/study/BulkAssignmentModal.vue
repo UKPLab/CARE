@@ -318,8 +318,6 @@ export default {
         return newR;
       })
         .filter((reviewer) => {
-          console.log(this.filterHasDocuments);
-          console.log(reviewer.documents);
           if (!this.filterHasDocuments) {
             return true;
           } else {

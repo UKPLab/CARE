@@ -37,7 +37,6 @@ export default {
   },
   mounted() {
     //new Tooltip(this.$refs.tooltip, {trigger: "click"});
-    console.log("VBTOOLTIP", VBTooltip);
   }
 }
 </script>
