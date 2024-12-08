@@ -104,7 +104,8 @@ module.exports = class AnnotationSocket extends Socket {
             studyStepId: data.studyStepId,
             text: (data.selectors && data.selectors.target) ? data.selectors.target[0].selector[1].exact : null,
             draft: true,
-            userId: this.userId
+            userId: this.userId,
+            anonymize: data.anonymize,
         };
 
         const annotation = await this.models['annotation'].add(newAnnotation);
@@ -113,7 +114,8 @@ module.exports = class AnnotationSocket extends Socket {
             documentId: annotation.documentId,
             studySessionId: annotation.studySessionId,
             studyStepId: annotation.studyStepId,
-            annotationId: annotation.id
+            annotationId: annotation.id,
+            anonymize: annotation.anonymize,
         });
 
         this.emit("annotationRefresh", annotation);
