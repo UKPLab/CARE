@@ -141,7 +141,7 @@ module.exports = class AssignmentSocket extends Socket {
 
                 for (const user of userQueue) {
                     roleSelection[roleId]['assignments'][user.id] = [];
-                    console.log(1)
+
                     while (roleSelection[roleId]['assignments'][user.id].length < neededAssignments) {
                         // first find a suitable assignment
                         const minCount = Math.min(...Object.values(assignmentCounter));

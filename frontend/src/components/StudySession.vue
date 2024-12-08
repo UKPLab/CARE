@@ -60,7 +60,7 @@ export default {
     study() {
       return this.$store.getters['table/study/get'](this.studySession.studyId)
     },
-    studyHash(){
+    studyHash() {
       if (this.studySession && this.study) {
         return this.study["hash"];
       } else {
@@ -70,9 +70,20 @@ export default {
   },
   mounted() {
     this.$socket.emit("appDataByHash", {
-      table: "study_session",
-      hash: this.studySessionHash
-    })
+        table: "study_session",
+        hash: this.studySessionHash
+      },
+      (response) => {
+        if (!response.success) {
+          this.eventBus.emit('toast', {
+            title: "Access Error!",
+            message: response.message,
+            variant: "danger"
+          });
+          this.$router.push("/");
+        }
+
+      })
   },
 }
 </script>

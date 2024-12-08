@@ -33,7 +33,7 @@
         :title="(studySession.end) ? 'Finish Study Again' : 'Finish Study'"
         @click="finish"
       >
-        {{(studySession.end) ? 'Finish Study Again' : 'Finish Study'}}
+        {{ (studySession.end) ? 'Finish Study Again' : 'Finish Study' }}
       </TopBarButton>
 
       <TopBarButton
@@ -310,6 +310,15 @@ export default {
         this.$socket.emit("appDataByHash", {
           table: "study",
           hash: this.studyHash
+        }, (response) => {
+          if (!response.success) {
+            this.eventBus.emit('toast', {
+              title: "Access Error!",
+              message: response.message,
+              variant: "danger"
+            });
+            this.$router.push("/");
+          }
         })
       }
     },

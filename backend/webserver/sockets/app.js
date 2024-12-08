@@ -241,7 +241,10 @@ module.exports = class AppSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendDataByHash(data, options) {
-        await this.sendTable(data.table, mergeFilter([[{key: "hash", value: data.hash}]], this.models[data.table].getAttributes()));
+        const result = await this.sendTable(data.table, mergeFilter([[{key: "hash", value: data.hash}]], this.models[data.table].getAttributes()));
+        if (result.length === 0) {
+            throw new Error("You don't have rights to access this data");
+        }
     }
 
 
