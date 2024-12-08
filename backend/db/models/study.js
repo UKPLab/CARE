@@ -120,6 +120,12 @@ module.exports = (sequelize, DataTypes) => {
             label: "Should the study be collaborative?",
             type: "switch",
             default: false,
+        },
+        {
+            key: "anonymize",
+            label: "Should the comments be anonymized?",
+            type: "switch",
+            default: false,
         }, {
             key: "resumable",
             label: "Should the study be resumable?",
@@ -366,7 +372,8 @@ module.exports = (sequelize, DataTypes) => {
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
-        projectId: DataTypes.INTEGER
+        projectId: DataTypes.INTEGER,
+        anonymize: DataTypes.BOOLEAN
     }, {
         sequelize: sequelize, modelName: 'study', tableName: 'study', hooks: {
             afterCreate: async (study, options) => {
