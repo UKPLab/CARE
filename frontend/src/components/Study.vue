@@ -19,7 +19,7 @@
     <div class="d-flex justify-content-between align-items-center w-100">
 
       <TopBarButton
-        v-if="currentWorkflowStep && currentWorkflowStep.allowBackward && currentStudyStep && currentStudyStep.studyStepPrevious !== null"
+        v-if="currentStudyStep && currentStudyStep.allowBackward && currentStudyStep && currentStudyStep.studyStepPrevious !== null"
         class="btn btn-outline-primary me-3"
         title="Previous"
         @click="updateStep(currentStudyStep.studyStepPrevious)"
@@ -28,12 +28,12 @@
       </TopBarButton>
 
       <TopBarButton
-        v-if="!readOnlyComputed && studySession && lastStep && currentWorkflowStep && currentWorkflowStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
+        v-if="!readOnlyComputed && studySession && lastStep && currentStudyStep && currentStudyStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
         class="btn btn-outline-secondary mx-3"
-        title="Finish Study"
+        :title="(studySession.end) ? 'Finish Study Again' : 'Finish Study'"
         @click="finish"
       >
-        Finish Study
+        {{(studySession.end) ? 'Finish Study Again' : 'Finish Study'}}
       </TopBarButton>
 
       <TopBarButton
@@ -63,33 +63,32 @@
   </Teleport>
 
   <Teleport to="#topbarCenterPlaceholder">
-    <TopBarButton
+    <div
       v-show="readOnlyComputed"
-      title="Read-Only mode"
-      class="btn rounded-circle"
-      type="button"
+      title="Read-only"
     >
       <span
         :style="{ color: '#800000', fontWeight: 'bold' }"
       >
-        Read-Only mode
+        Read-only
       </span>
       <LoadIcon
         :size="22"
         :color="'#800000'"
         icon-name="lock-fill"
       />
-    </TopBarButton>
+    </div>
 
   </Teleport>
   <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
       <div v-show="s.id === currentStudyStepId">
-        <Annotator v-if="workflowSteps[index].stepType === 1 && studyTrajectory.includes(s.id)"
+        <Annotator v-if="s.stepType === 1 && (studyTrajectory.includes(s.id) || readOnly)"
                    :document-id="s.documentId" :study-step-id="s.id" @error="error" :active="activeComponents[index]"/>
       </div>
       <div v-show="s.id === currentStudyStepId">
-        <Editor v-if="workflowSteps[index].stepType === 2 && studyTrajectory.includes(s.id)" :document-id="s.documentId"
+        <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
+        <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
                 :study-step-id="s.id" :active="activeComponents[index]"/>
       </div>
       <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
@@ -181,11 +180,6 @@ export default {
         return this.studySteps.find(step => step.studyStepPrevious === this.currentStudyStep.id);
       }
     },
-    currentWorkflowStep() { // TODO think about what will happen if we have af one_step workflow
-      return this.currentStudyStep && this.currentStudyStep.workflowStepId
-        ? this.$store.getters['table/workflow_step/get'](this.currentStudyStep.workflowStepId)
-        : null
-    },
     lastStep() {
       const previousStepIds = this.studySteps
         .map(step => step.studyStepPrevious)
@@ -195,12 +189,6 @@ export default {
     },
     firstStep() {
       return (this.studySteps) ? this.studySteps.find(step => step.studyStepPrevious === null) : null;
-    },
-    workflowSteps() {
-      const steps = this.studySteps.length > 0
-        ? this.studySteps.map(studyStep => this.$store.getters['table/workflow_step/get'](studyStep.workflowStepId))
-        : [];
-      return steps;
     },
     studyTrajectory() {
       if (!this.studySession) return [];
@@ -228,6 +216,9 @@ export default {
         }
       }
       return false;
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
     },
     timeLeftHuman() {
       if (this.timeLeft < 60) {
@@ -274,7 +265,7 @@ export default {
   },
   watch: {
     studySession() {
-      if (this.study.timeLimit > 0 && this.studySession) {  //studySession required, otherwise not all data may be there yet
+      if (this.study && this.study.timeLimit > 0 && this.studySession) {  //studySession required, otherwise not all data may be there yet
         if (this.timerInterval) {
           clearInterval(this.timerInterval);
           this.timerInterval = null;
@@ -286,11 +277,17 @@ export default {
         }
       }
     },
+    studyHash() {
+      this.getStudyData();
+    }
   },
   mounted() {
-    this.$socket.emit("studyGetByHash", {studyHash: this.studyHash});
+    this.getStudyData();
     this.studySessionId = this.initStudySessionId;
-    if (this.studySessionId === 0 || (this.studySession && this.studySession.start === null)) {
+    if (this.studySessionId === 0 ||
+      (this.studySession &&
+        this.studySession.start === null &&
+        this.studySession.userId === this.userId)) {
       this.$refs.studyModal.open();
     }
   },
@@ -308,6 +305,14 @@ export default {
     },
   },
   methods: {
+    getStudyData() {
+      if (this.studyHash) {
+        this.$socket.emit("appDataByHash", {
+          table: "study",
+          hash: this.studyHash
+        })
+      }
+    },
     start(data) {
       this.studySessionId = data.studySessionId;
     },

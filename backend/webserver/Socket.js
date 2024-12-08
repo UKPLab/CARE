@@ -332,6 +332,8 @@ module.exports = class Socket {
 
     async sendTable(tableName, filter = [], injects = []) {
 
+        console.log(tableName, filter);
+
         // check if it is an autoTable or not
         if (!this.models[tableName] || !this.models[tableName].autoTable) {
             this.logger.error("Table " + tableName + " is not an autoTable");
@@ -347,9 +349,10 @@ module.exports = class Socket {
             exclude: defaultExcludes,
         };
 
+        const accessRights = this.server.db.models[tableName]['accessMap'].filter(async a => await this.hasAccess(a.right));
         if (await this.isAdmin() || this.models[tableName].publicTable) { // is allowed to see everything
             // no adaption of the filter or attributes needed
-        } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
+        } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes() && accessRights.length === 0) {
             // is allowed to see only his data and possible if there is a public attribute
             const userFilter = {};
             if ("public" in this.models[tableName].getAttributes()) {
@@ -359,10 +362,8 @@ module.exports = class Socket {
             }
             allFilter = {[Op.and]: [allFilter, userFilter]}
         } else {
-            const accessRights = this.server.db.models[tableName]['accessMap'].filter(async a => await this.hasAccess(a.right));
             if (accessRights.length > 0) {
-                const attributes = [...new Set(accessRights.flatMap(a => a.columns))];
-                allAttributes['include'] = attributes;
+                allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
             } else {
                 this.logger.warn("User with id " + this.userId + " requested table " + tableName + " without access rights");
                 return;

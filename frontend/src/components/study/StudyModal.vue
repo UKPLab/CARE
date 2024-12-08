@@ -5,7 +5,7 @@
     disable-keyboard
     lg
     name="studyStart"
-    remove-close
+    :remove-close="!studyClosed"
   >
     <template #title>
       <span v-if="showSessions">

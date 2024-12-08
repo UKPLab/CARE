@@ -37,7 +37,7 @@
       <template #body>
         <BasicTable
           :columns="columns"
-          :data="studs"
+          :data="studiesTable"
           :options="options"
           :buttons="buttons"
           @action="action"
@@ -272,8 +272,12 @@ export default {
       }
       return cols;
     },
-    studs() {
-      return this.studies.filter(study => ((study.createdByUserId === null && study.userId === this.userId) || (study.createdByUserId === this.userId)) && study.template === false)
+    studiesTable() {
+      return this.studies
+        .filter(study => !study.template)
+        .filter(study => this.canViewAllStudies ||
+        (((study.createdByUserId === null && study.userId === this.userId) ||
+            (study.createdByUserId === this.userId))))
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
           let study = {...st};
@@ -302,6 +306,9 @@ export default {
           study.sessions = this.$store.getters["table/study_session/getFiltered"]((e) => e.studyId === study.id).length;
           return study;
         });
+    },
+    canViewAllStudies() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view");
     },
     canReadPrivateInformation() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
@@ -406,7 +413,7 @@ export default {
     studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
     },
-    closeStudies(){
+    closeStudies() {
       this.$refs.confirmModal.open(
         "Close all running studies",
         "Are you sure you want to close all open studies?",
@@ -421,7 +428,7 @@ export default {
                   closed: true
                 }
               }, (result) => {
-                if(result.success){
+                if (result.success) {
                   this.eventBus.emit('toast', {
                     title: "Study closed",
                     message: "The study has been closed",
@@ -439,7 +446,7 @@ export default {
           }
         }
       );
-      
+
     },
     async deleteStudy(row) {
       const studySessions = this.$store.getters["table/study_session/getFiltered"](

@@ -116,12 +116,16 @@ export default {
 
       ];
     },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
     studySessions() {
       if (!this.study || this.studyClosed) {
         return [];
       }
 
       return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
+        .filter((studySession) => studySession.userId === this.userId)
         .map(s => {
           let session = {...s};
 

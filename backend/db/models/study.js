@@ -9,6 +9,14 @@ module.exports = (sequelize, DataTypes) => {
                 by: "studyId"
             }]
         };
+
+        static accessMap = [
+            {
+                right: "frontend.dashboard.studies.view",
+                columns: Study.getAttributes()
+            },
+        ];
+
         static fields = [{
             key: "name",
             label: "Name of the study:",
