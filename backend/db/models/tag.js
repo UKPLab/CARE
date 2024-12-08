@@ -71,7 +71,6 @@ module.exports = (sequelize, DataTypes) => {
         public: DataTypes.BOOLEAN,
         updatedAt: DataTypes.DATE,
         tagSetId: DataTypes.INTEGER,
-        anonymize: DataTypes.BOOLEAN,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE

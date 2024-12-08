@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
         studyStepId: DataTypes.INTEGER,
         selectors: DataTypes.JSONB,
         draft: DataTypes.BOOLEAN,
-        anonymize: DataTypes.BOOLEAN,
+        anonymous: DataTypes.BOOLEAN,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,

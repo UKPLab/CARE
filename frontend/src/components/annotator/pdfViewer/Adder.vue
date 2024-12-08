@@ -125,7 +125,7 @@ export default {
         studyStepId: this.studyStepId,
         selectors: {target},
         tagId: tag.id,
-        anonymize: this.anonymize,
+        anonymous: this.anonymize,
       });
 
       this.isVisible = false;
