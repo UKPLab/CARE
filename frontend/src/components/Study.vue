@@ -282,14 +282,8 @@ export default {
     }
   },
   mounted() {
-    this.getStudyData();
     this.studySessionId = this.initStudySessionId;
-    if (this.studySessionId === 0 ||
-      (this.studySession &&
-        this.studySession.start === null &&
-        this.studySession.userId === this.userId)) {
-      this.$refs.studyModal.open();
-    }
+    this.getStudyData();
   },
   sockets: {
     studyError: function (data) {
@@ -318,6 +312,13 @@ export default {
               variant: "danger"
             });
             this.$router.push("/");
+          } else {
+            if (this.studySessionId === 0 ||
+              (this.studySession &&
+                this.studySession.start === null &&
+                this.studySession.userId === this.userId)) {
+              this.$refs.studyModal.open();
+            }
           }
         })
       }
