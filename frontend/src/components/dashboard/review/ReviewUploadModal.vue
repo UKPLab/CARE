@@ -13,7 +13,7 @@
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedStudies"
-          :data="studies"
+          :data="studiesTable"
           :columns="studyTableColumns"
           :options="tableOptions"
         />
@@ -23,7 +23,7 @@
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedSessions"
-          :data="sessions"
+          :data="sessionsTable"
           :columns="sessionTableColumns"
           :options="tableOptions"
         />
@@ -52,6 +52,26 @@ import { testStudies, testSessions } from "./testData";
  */
 export default {
   name: "ReviewUploadModal",
+  subscribeTable: [
+    {
+      table: "document",
+      filter: [
+        {
+          key: "readyForReview",
+          value: true,
+        },
+      ],
+    },
+    {
+      table: "study",
+      // filter: [
+      //   {
+      //     key: "readyForReview",
+      //     value: true,
+      //   },
+      // ],
+    },
+  ],
   components: { MoodleOptions, BasicTable, StepperModal },
   fetchData: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }],
   data() {
@@ -65,15 +85,62 @@ export default {
         small: false,
         selectableRows: true,
       },
-      studies: testStudies, // TODO: testData
+      
       selectedStudies: [],
-      sessions: testSessions,
       selectedSessions: [],
     };
   },
   computed: {
     users() {
-      return this.$store.getters["admin/user/getFiltered"]((u) => u.extId !== null);
+      return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
+    },
+    studies() {
+      return this.$store.getters["table/study/getFiltered"]((s) => s.closed);
+    },
+    studiesTable() {
+      const documents = this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
+      const studySteps = this.$store.getters["table/study_step/getAll"];
+      
+      return studySteps
+        .map((step) => {
+          const document = documents.find((d) => d.id === step.documentId);
+          const study = this.studies.find((s) => s.id === step.studyId);
+          if (!study || !document) {
+            return null;
+          }
+
+          const user = this.users.find((u) => u.id === study.userId);
+
+          return {
+            docId: document.id,
+            docName: document.name,
+            readyForReview: document.readyForReview,
+            studyId: study.id,
+            studyName: study.name,
+            studyClosed: study.closed,
+            extId: user ? user.extId : null,
+            firstName: user ? user.firstName : null,
+            lastName: user ? user.lastName : null,
+          };
+        })
+        .filter((s) => s !== null);
+    },
+    sessionsTable() {
+      const studySessions = this.$store.getters["table/study_session/getAll"];
+      
+      const selectedStudyIds = this.selectedStudies.map(s => s.studyId);
+      const filteredSessions = studySessions.filter(({studyId}) => selectedStudyIds.includes(studyId));
+      
+      return filteredSessions.map(s => {
+        const user = this.users.find(u => u.id === s.userId);
+        return {
+          studyId: s.studyId,
+          extId: user.extId,
+          start: s.start,
+          end: s.end,
+          hash: s.hash,
+        }
+      })
     },
     steps() {
       return [{ title: "Document" }, { title: "Session" }, { title: "Moodle Info" }, { title: "Result" }];
@@ -84,7 +151,7 @@ export default {
     },
     studyTableColumns() {
       return [
-        { name: "Doc Title", key: "docName" },
+        { name: "Document Title", key: "docName" },
         { name: "Study Name", key: "studyName" },
         { name: "extId", key: "extId" },
         { name: "First Name", key: "firstName" },
@@ -101,6 +168,7 @@ export default {
     },
   },
   mounted() {
+    console.log(this.studiesTable, "mounted study");
     // this.$socket.emit("documentGetStudies", {}, (res) => {
     //   if (res.success) {
     //     this.studies = res["data"];
@@ -114,21 +182,6 @@ export default {
     },
     reset() {
       this.selectedStudies = [];
-    },
-    selectStudies() {
-      this.$refs.modal.waiting = true;
-      this.$socket.emit("documentGetSessions", { studyIds: this.selectedStudies }, (res) => {
-        this.$refs.modal.waiting = false;
-        if (res.success) {
-          // this. = res["data"];
-        } else {
-          this.eventBus.emit("toast", {
-            title: "Failed to fetch corresponding study sessions",
-            message: res.message,
-            variant: "danger",
-          });
-        }
-      });
     },
     uploadReviewLinks() {
       // if (!this.$refs.moodleOptionsForm.validate()) return;
@@ -156,9 +209,9 @@ export default {
           users: formattedSessions,
         },
         (res) => {
-          this.$refs.assignmentStepper.setWaiting(false);
+          this.$refs.reviewStepper.setWaiting(false);
           if (res.success) {
-            this.$refs.assignmentStepper.close();
+            this.$refs.reviewStepper.close();
             this.eventBus.emit("toast", {
               title: "Reviews uploaded",
               message: "The reviews have been successfully uploaded!",
