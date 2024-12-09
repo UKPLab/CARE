@@ -133,7 +133,8 @@ module.exports = class CommentSocket extends Socket {
                 studySessionId: data.studySessionId,
                 studyStepId: data.studyStepId,
                 annotationId: data.annotationId !== undefined ? data.annotationId : null,
-                parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null
+                parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+                anonymous: data.anonymous !== undefined ? data.anonymous : false
             }
 
             this.emit("commentRefresh", await this.models['comment'].add(newComment))

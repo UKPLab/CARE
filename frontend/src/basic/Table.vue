@@ -484,8 +484,6 @@ export default {
       }
     }
     // map columns to filter object (e.g. {column1: {filter1: false, filter2: false})
-    console.log("FILTERS", this.filter);
-    console.log("COLUMNS", this.columns);
     this.filter = Object.assign(
       {},
       ...this.columns
@@ -494,9 +492,6 @@ export default {
           [c.key]: Object.assign({}, ...c.filter.map((f) => ({[f.key]: false}))),
         }))
     );
-    console.log("FILTERS", this.filter);
-    console.log("COLUMNS", this.columns);
-
   },
   methods: {
     updateValues(data) {

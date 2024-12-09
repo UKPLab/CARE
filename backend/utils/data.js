@@ -6,7 +6,7 @@ const {Op} = require("sequelize");
  * @param possibleAttributes
  * @returns {*|*[]}
  */
-function mergeFilter(allFilter, possibleAttributes) {
+function mergeFilter(allFilter, possibleAttributes = []) {
     // check if there is an empty array in allFilter, as we then need to retrieve all data anyway
     if (allFilter.every(filter => filter.length === 0)) {
         return [];

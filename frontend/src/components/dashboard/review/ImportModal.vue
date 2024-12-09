@@ -212,7 +212,6 @@ export default {
         this.$refs.modal.waiting = false;
         if (res.success) {
           this.downloadedAssignments = res['data'];
-          console.log(this.downloadedAssignments, this.moodleOptions);
         } else {
           this.currentStep = 0;
           this.eventBus.emit("toast", {
@@ -222,7 +221,6 @@ export default {
           });
         }
       });
-      console.log(this.userAssignments)
     },
     handleStepTwo() {
       
