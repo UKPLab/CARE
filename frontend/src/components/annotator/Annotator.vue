@@ -49,7 +49,7 @@
       <li class="nav-item">
 
         <TopBarButton
-            v-if="nlpEnabled"
+            v-if="studySessionId && studySessionId !== 0 ? active && nlpEnabled : nlpEnabled"
             :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
             class="btn rounded-circle"
             @click="toggleNlp"
@@ -63,6 +63,7 @@
           />
         </TopBarButton>
         <TopBarButton
+            v-show="studySessionId && studySessionId !== 0 ? active : true"
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
             @click="toggleSidebar"
@@ -73,11 +74,11 @@
           />
         </TopBarButton>
       </li>
-      <ExpandMenu class="nav-item"/>
+      <ExpandMenu v-show ="studySessionId && studySessionId !== 0 ? active : true" class="nav-item"/>
     </Teleport>
 
     <Teleport to="#topBarExtendMenuItems">
-      <li><a
+      <li><a          
           :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
           class="dropdown-item"
           href="#"
@@ -196,6 +197,11 @@ export default {
       type: Number,
       required: false,
       default: null,
+    },
+    active: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
   },
   data() {

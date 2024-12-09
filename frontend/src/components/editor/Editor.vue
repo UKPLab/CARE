@@ -22,22 +22,9 @@
     </div>
   </span>
 
-  <Teleport v-if="readonly" to="#topBarNavItems">
-    <TopBarButton
-        title="Read-Only mode"
-        class="btn rounded-circle"
-        type="button"
-    >
-      <LoadIcon
-          :size="18"
-          :color="'#008000'"
-          icon-name="file-earmark-lock2-fill"
-      />
-    </TopBarButton>
-  </Teleport>
-
   <Teleport v-if="showHTMLDownloadButton" to="#topBarNavItems">
     <TopBarButton
+      v-show="studySessionId && studySessionId !== 0 ? active : true"
       title="Download document"
       class="btn rounded-circle"
       type="button"
@@ -112,6 +99,11 @@ export default {
       type: Number,
       required: false,
       default: null,
+    },
+    active: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
   },
   data() {

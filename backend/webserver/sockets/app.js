@@ -49,7 +49,8 @@ module.exports = class AppSocket extends Socket {
         const transaction = options.transaction;
 
         let newEntry = null;
-        if ('deleted' in data.data || 'closed' in data.data || 'public' in data.data) {
+        if (("id" in data.data && data.data.id !== 0) &&
+            ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data)) {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
@@ -231,6 +232,21 @@ module.exports = class AppSocket extends Socket {
         return await this.updateData(data, options);
     }
 
+    /**
+     * Send data by hash
+     * @param data
+     * @param data.hash
+     * @param data.table
+     * @param options
+     * @returns {Promise<void>}
+     */
+    async sendDataByHash(data, options) {
+        const result = await this.sendTable(data.table, mergeFilter([[{key: "hash", value: data.hash}]], this.models[data.table].getAttributes()));
+        if (result.length === 0) {
+            throw new Error("You don't have rights to access this data");
+        }
+    }
+
 
     /**
      * Subscribe to app data
@@ -309,6 +325,7 @@ module.exports = class AppSocket extends Socket {
 
         this.createSocket("appDataUpdate", this.updateAppData, {}, true);
         this.createSocket("appData", this.sendData, {}, false);
+        this.createSocket("appDataByHash", this.sendDataByHash, {}, false);
 
         this.createSocket("subscribeAppData", this.subscribeAppData, {}, false);
         this.createSocket("unsubscribeAppData", this.unsubscribeAppData, {}, false);

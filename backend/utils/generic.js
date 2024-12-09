@@ -33,6 +33,12 @@ exports.inject = async function inject(data, func, targetName, key = null) {
       data.map(async (x) => {
         if (!x || !x[key]) { // If the key is not present, return the object as is
           return x;
+        }
+        else if (Object.keys(x).includes("anonymous") && x.anonymous) {
+          return {
+            ...x,
+            [targetName]: "Anonymous",
+          };
         } else {
           return {
             ...x,

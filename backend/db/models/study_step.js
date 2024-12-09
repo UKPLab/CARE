@@ -15,6 +15,12 @@ module.exports = (sequelize, DataTypes) => {
     class StudyStep extends MetaModel {
         static autoTable = true;
         static stepTypes = stepTypes;
+        static accessMap = [
+            {
+                right: "frontend.dashboard.studies.view",
+                columns: StudyStep.getAttributes()
+            },
+        ];
         static fields = [
             {
                 key: "documentId",

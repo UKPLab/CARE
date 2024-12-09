@@ -138,7 +138,6 @@ channels:
           - $ref: '#/components/messages/studySessionGet'
           - $ref: '#/components/messages/studySessionGetAll'
           - $ref: '#/components/messages/studySessionGetByHash'
-          - $ref: '#/components/messages/studySessionUpdate'
     subscribe:
       message:
         oneOf:
@@ -880,19 +879,6 @@ components:
         properties:
           studySessionHash:
             $ref: "#/components/schemas/studySessionHash"
-    studySessionUpdate:
-      name: studySessionUpdate
-      title: Update study session
-      summary: Update study session by Id (if study session id is not set, a new study session will be created, but withtout hash response - use studyStart instead)
-      payload:
-        type: object
-        description: Payload object (only the properties which should be updated are required)
-        properties:
-          studySessionId:
-            $ref: "#/components/schemas/studySessionId"
-          deleted:
-              type: boolean
-              description: set to true if study session should be deleted
     studySessionError:
       name: studySessionError
       title: Study session error response

@@ -3,7 +3,7 @@
 const roleRights = [
   {
     role: "teacher",
-    userRightName: "frontend.dashboard.studies.addBulkAssignments",
+    userRightName: "frontend.dashboard.studies.addSingleAssignments",
   },
   {
     role: "teacher",
