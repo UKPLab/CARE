@@ -372,9 +372,8 @@ module.exports = class Socket {
                 }
             })
         );
-        const accessRights = filteredAccessMap
-            .filter(item => item.hasAccess)
-            .map(item => item.access);
+        const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
+        const accessRights = relevantAccessMap.map(item => item.access);
 
         if (await this.isAdmin() || this.models[tableName].publicTable) { // is allowed to see everything
             // no adaption of the filter or attributes needed
@@ -390,9 +389,38 @@ module.exports = class Socket {
         } else {
             if (accessRights.length > 0) {
                 // check if all accessRights has limitations?
-                if (filteredAccessMap.every(item => item.limitation)) {
-                    allFilter['id'] = {[Op.in]: [...new Set(accessRights.flatMap(a => a.limitation))]};
-                    allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+                if (relevantAccessMap.every(item => item.limitation)) {
+                    if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
+                        allFilter = {
+                            [Op.and]: [
+                                allFilter,
+                                {
+                                    [Op.or]: relevantAccessMap.flatMap(a => {
+                                        const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
+                                        return a.limitation
+                                            ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
+                                            : null;
+                                    }).filter(Boolean).concat([{userId: this.userId}]) // Ensure we always include the 'userId' condition
+                                }
+                            ]
+                        };
+                        allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+                    } else {
+                        allFilter = {
+                            [Op.and]: [
+                                allFilter,
+                                {
+                                    [Op.or]: relevantAccessMap.flatMap(a => {
+                                        const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
+                                        return a.limitation
+                                            ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
+                                            : null;
+                                    }).filter(Boolean)
+                                }
+                            ]
+                        }
+                        allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+                    }
                 } else { // do without limitations
                     allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
                 }
