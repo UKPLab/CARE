@@ -9,6 +9,14 @@ module.exports = (sequelize, DataTypes) => {
                 by: "studyId"
             }]
         };
+
+        static accessMap = [
+            {
+                right: "frontend.dashboard.studies.view",
+                columns: Study.getAttributes()
+            },
+        ];
+
         static fields = [{
             key: "name",
             label: "Name of the study:",
@@ -110,6 +118,12 @@ module.exports = (sequelize, DataTypes) => {
         }, {
             key: "collab",
             label: "Should the study be collaborative?",
+            type: "switch",
+            default: false,
+        },
+        {
+            key: "anonymize",
+            label: "Should the comments be anonymized?",
             type: "switch",
             default: false,
         }, {
@@ -358,7 +372,8 @@ module.exports = (sequelize, DataTypes) => {
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
-        projectId: DataTypes.INTEGER
+        projectId: DataTypes.INTEGER,
+        anonymize: DataTypes.BOOLEAN
     }, {
         sequelize: sequelize, modelName: 'study', tableName: 'study', hooks: {
             afterCreate: async (study, options) => {

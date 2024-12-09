@@ -26,7 +26,6 @@ import Loader from "@/basic/Loading.vue"
 export default {
   name: "StudySession",
   components: {Study, Loader},
-  subscribeTable: ['study_session'],
   props: {
     'studySessionHash': {
       type: String,
@@ -58,15 +57,33 @@ export default {
     readOnly() {
       return this.$route.meta.readOnly !== undefined && this.$route.meta.readOnly
     },
-    studyHash(){
-      if (this.studySession) {
-        return this.$store.getters['table/study/get'](this.studySession.studyId)["hash"];
+    study() {
+      return this.$store.getters['table/study/get'](this.studySession.studyId)
+    },
+    studyHash() {
+      if (this.studySession && this.study) {
+        return this.study["hash"];
+      } else {
+        return null;
       }
     },
   },
   mounted() {
-    //Callback prüfen, ob Zugriff da oder nicht
-    this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
+    this.$socket.emit("appDataByHash", {
+        table: "study_session",
+        hash: this.studySessionHash
+      },
+      (response) => {
+        if (!response.success) {
+          this.eventBus.emit('toast', {
+            title: "Access Error!",
+            message: response.message,
+            variant: "danger"
+          });
+          this.$router.push("/");
+        }
+
+      })
   },
 }
 </script>

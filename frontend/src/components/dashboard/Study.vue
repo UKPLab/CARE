@@ -12,7 +12,7 @@
         <BasicButton
           v-if="canCloseStudies"
           class="btn-secondary btn-sm me-1"
-          title="Close Studies"
+          title="Close All Studies"
           @click="closeStudies"
         />
         <BasicButton
@@ -37,7 +37,7 @@
       <template #body>
         <BasicTable
           :columns="columns"
-          :data="studs"
+          :data="studiesTable"
           :options="options"
           :buttons="buttons"
           @action="action"
@@ -234,7 +234,8 @@ export default {
           }
         },
         {name: "Created", key: "createdAt", sortable: true},
-        {name: "Time Limit", key: "timeLimit", sortable: true},
+        //{name: "Time Limit", key: "timeLimit", sortable: true},
+        {name: "Sessions", key: "sessions", sortable: true},
         {name: "Session Limit", key: "limitSessions", sortable: true},
         {name: "Session Limit per User", key: "limitSessionsPerUser", sortable: true},
         {
@@ -271,8 +272,12 @@ export default {
       }
       return cols;
     },
-    studs() {
-      return this.studies.filter(study => ((study.createdByUserId === null && study.userId === this.userId) || (study.createdByUserId === this.userId)) && study.template === false)
+    studiesTable() {
+      return this.studies
+        .filter(study => !study.template)
+        .filter(study => this.canViewAllStudies ||
+        (((study.createdByUserId === null && study.userId === this.userId) ||
+            (study.createdByUserId === this.userId))))
         .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
         .map(st => {
           let study = {...st};
@@ -298,9 +303,12 @@ export default {
           }
 
           study.createdAt = new Date(study.createdAt).toLocaleString()
-          study.manage = this.buttons;
+          study.sessions = this.$store.getters["table/study_session/getFiltered"]((e) => e.studyId === study.id).length;
           return study;
         });
+    },
+    canViewAllStudies() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view");
     },
     canReadPrivateInformation() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
@@ -309,12 +317,12 @@ export default {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addBulkAssignments");
     },
     canAddSingleAssignments() {
-      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addBulkAssignments");
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addSingleAssignments");
     },
     canCloseStudies() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.closeAllStudies");
     },
-    studiesProjectEiwa() {
+    studiesProject() {
       return this.$store.getters["table/study/getFiltered"]((s) => s.projectId === 1);
     }
   },
@@ -322,7 +330,6 @@ export default {
     action(data) {
       if (data.action === "editStudy") {
         this.$socket.emit("stats", {action: "editStudy", data: {studyId: data.params.id}});
-
         this.studyCoordinator(data.params);
       } else if (data.action === "deleteStudy") {
         this.deleteStudy(data.params);
@@ -406,16 +413,14 @@ export default {
     studyCoordinator(row, linkOnly = false) {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
     },
-    closeStudies(){
-      this.$socket.emit("stats", {action: "closeStudies", data: {projectId: 1}});
-
+    closeStudies() {
       this.$refs.confirmModal.open(
-        "Close Eiwa Project",
-        "Are you sure you want to close the Eiwa project?",
-        "This will close all studies associated with the Eiwa project.",
+        "Close all running studies",
+        "Are you sure you want to close all open studies?",
+        "This will close all studies!",
         (confirmed) => {
           if (confirmed) {
-            this.studiesProjectEiwa.forEach(study => {
+            this.studiesProject.forEach(study => {
               this.$socket.emit("appDataUpdate", {
                 table: "study",
                 data: {
@@ -423,7 +428,7 @@ export default {
                   closed: true
                 }
               }, (result) => {
-                if(result.success){
+                if (result.success) {
                   this.eventBus.emit('toast', {
                     title: "Study closed",
                     message: "The study has been closed",
@@ -441,7 +446,7 @@ export default {
           }
         }
       );
-      
+
     },
     async deleteStudy(row) {
       const studySessions = this.$store.getters["table/study_session/getFiltered"](
