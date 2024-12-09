@@ -348,10 +348,29 @@ module.exports = class Socket {
 
         const accessMap = this.server.db.models[tableName]['accessMap'];
         const filteredAccessMap = await Promise.all(
-            accessMap.map(async a => ({
-                access: a,
-                hasAccess: await this.hasAccess(a.right),
-            }))
+            accessMap.map(async a => {
+                let hasAccess = false;
+                let limitation = undefined;
+                if (a.right) {
+                    hasAccess = await this.hasAccess(a.right);
+                } else if (a.table) {
+                    const count = await this.models[a.table].findAll({
+                        attributes: [a.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+                        where: {
+                            ["userId"]: this.userId
+                        },
+                        group: a.by,
+                        raw: true
+                    }); // # [ { studyId: 29, count: '1' }, { studyId: 51, count: '1' } ]
+                    hasAccess = count.some(c => c.count > 0);
+                    limitation = count.map(c => c[a.by]);
+                }
+                return {
+                    access: a,
+                    hasAccess: hasAccess,
+                    limitation: limitation
+                }
+            })
         );
         const accessRights = filteredAccessMap
             .filter(item => item.hasAccess)
@@ -370,7 +389,13 @@ module.exports = class Socket {
             allFilter = {[Op.and]: [allFilter, userFilter]}
         } else {
             if (accessRights.length > 0) {
-                allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+                // check if all accessRights has limitations?
+                if (filteredAccessMap.every(item => item.limitation)) {
+                    allFilter['id'] = {[Op.in]: [...new Set(accessRights.flatMap(a => a.limitation))]};
+                    allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+                } else { // do without limitations
+                    allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+                }
             } else {
                 this.logger.warn("User with id " + this.userId + " requested table " + tableName + " without access rights");
                 return;

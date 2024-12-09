@@ -15,6 +15,11 @@ module.exports = (sequelize, DataTypes) => {
                 right: "frontend.dashboard.studies.view",
                 columns: Study.getAttributes()
             },
+            {
+                table: "study_session",
+                by: "studyId",
+                columns: Study.getAttributes()
+            }
         ];
 
         static fields = [{
