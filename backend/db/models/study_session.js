@@ -12,8 +12,14 @@ module.exports = (sequelize, DataTypes) => {
         static accessMap = [
             {
                 right: "frontend.dashboard.studies.view",
-                columns: StudySession.getAttributes()
+                columns: this.getAttributes()
             },
+            {
+                table: "study",
+                by: "id",
+                target: "studyId",
+                columns: this.getAttributes()
+            }
         ];
 
         /**
