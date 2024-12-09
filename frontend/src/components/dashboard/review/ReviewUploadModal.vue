@@ -14,7 +14,7 @@
         <BasicTable
           v-model="selectedStudies"
           :data="studies"
-          :columns="studyColumns"
+          :columns="studyTableColumns"
           :options="tableOptions"
         />
       </div>
@@ -24,7 +24,7 @@
         <BasicTable
           v-model="selectedSessions"
           :data="sessions"
-          :columns="sessionColumns"
+          :columns="sessionTableColumns"
           :options="tableOptions"
         />
       </div>
@@ -65,16 +65,6 @@ export default {
         small: false,
         selectableRows: true,
       },
-      studyColumns: [
-        { name: "Doc Title", key: "name" },
-        { name: "Study Name", key: "studyName" },
-      ],
-      sessionColumns: [
-        { name: "Study ID", key: "studyId" },
-        { name: "User ID", key: "userId" },
-        { name: "Start", key: "start" },
-        { name: "End", key: "end" },
-      ],
       studies: testStudies, // TODO: testData
       selectedStudies: [],
       sessions: testSessions,
@@ -91,6 +81,23 @@ export default {
     stepValid() {
       // TODO: To be implemented
       return [];
+    },
+    studyTableColumns() {
+      return [
+        { name: "Doc Title", key: "docName" },
+        { name: "Study Name", key: "studyName" },
+        { name: "extId", key: "extId" },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+      ];
+    },
+    sessionTableColumns() {
+      return [
+        { name: "Study ID", key: "studyId" },
+        { name: "extId", key: "extId" },
+        { name: "Start", key: "start" },
+        { name: "End", key: "end" },
+      ];
     },
   },
   mounted() {
@@ -125,20 +132,41 @@ export default {
     },
     uploadReviewLinks() {
       // if (!this.$refs.moodleOptionsForm.validate()) return;
+      const formattedSessions = this.selectedSessions.reduce((acc, session) => {
+        const link = window.location.origin + "/review/" + session.hash;
+        const existingUser = acc.find((user) => user.extId === session.extId);
+
+        if (existingUser) {
+          existingUser.links += `, ${link}`;
+        } else {
+          acc.push({
+            extId: session.extId,
+            links: link,
+          });
+        }
+
+        return acc;
+      }, []);
+
+      this.$refs.reviewStepper.setWaiting(true);
       this.$socket.emit(
         "documentUploadReviewLinks",
         {
           options: this.moodleOptions,
-          users: this.uploadedUsers,
+          users: formattedSessions,
         },
-
         (res) => {
-          this.$refs.modal.stopProgress();
+          this.$refs.assignmentStepper.setWaiting(false);
           if (res.success) {
-            this.importedAssignments = res["data"];
+            this.$refs.assignmentStepper.close();
+            this.eventBus.emit("toast", {
+              title: "Reviews uploaded",
+              message: "The reviews have been successfully uploaded!",
+              variant: "success",
+            });
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to import submission from Moodle",
+              title: "Failed to upload reviews",
               message: res.message,
               variant: "danger",
             });

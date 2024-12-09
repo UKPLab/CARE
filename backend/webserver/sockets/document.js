@@ -621,7 +621,7 @@ module.exports = class DocumentSocket extends Socket {
      * @param {Array<Object>} data.users - An array of objects containing the uploaded users.
      * @returns {Promise<Object>} - A promise that resolves when the passwords have been uploaded.
      */
-    async uploadReviewLinks(data, options) {
+    async uploadReviewLinks(data) {
         const feedback = data["users"].map((user) => ({
             extId: user.extId,
             text: user.links,
