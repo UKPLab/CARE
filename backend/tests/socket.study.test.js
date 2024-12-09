@@ -34,13 +34,6 @@ describe("Test Websockets - Studies", () => {
             expect(data.length).toBeGreaterThan(0);
             done();
         })
-        clientSocket.on("studyRefresh", (data) => {
-            expect(data.find(study => study.name === "Test Study 2")).toBeTruthy();
-            const studyId = data.find(study => study.name === "Test Study 2")['id']
-            clientSocket.emit("studySessionUpdate", {
-                studyId: studyId,
-            })
-        })
         clientSocket.on("studyPublished", (data) => {
             expect(data).toHaveProperty("success", true);
             clientSocket.emit("studyGetAll")

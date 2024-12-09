@@ -92,7 +92,7 @@ export default {
               "btn-sm": true,
             }
           },
-           filter: [
+          filter: [
             {key: "showStartButton", value: true},
           ],
           title: "Start session",
@@ -116,12 +116,16 @@ export default {
 
       ];
     },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
     studySessions() {
       if (!this.study || this.studyClosed) {
         return [];
       }
 
       return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
+        .filter((studySession) => studySession.userId === this.userId)
         .map(s => {
           let session = {...s};
 
@@ -137,7 +141,7 @@ export default {
         });
     },
     studyClosed() {
-      if(this.study) {
+      if (this.study) {
         if (this.study.closed) {
           return true;
         }
@@ -172,7 +176,27 @@ export default {
             null,
             function (res) {
               if (res) {
-                this.$socket.emit("studySessionUpdate", {sessionId: data.params.id, deleted: true});
+                this.$socket.emit("appDataUpdate", {
+                  table: "study_session",
+                  data: {
+                    id: data.params.id,
+                    deleted: true
+                  }
+                }, (result) => {
+                  if (result.success) {
+                    this.eventBus.emit('toast', {
+                      title: "Study Session deleted",
+                      message: "Study session has been deleted",
+                      variant: "success"
+                    });
+                  } else {
+                    this.eventBus.emit('toast', {
+                      title: "Study Session not deleted",
+                      message: result.message,
+                      variant: "danger"
+                    });
+                  }
+                });
               }
             }
           );

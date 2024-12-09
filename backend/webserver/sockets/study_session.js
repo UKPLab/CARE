@@ -53,34 +53,6 @@ module.exports = class StudySessionSocket extends Socket {
     }
 
     /**
-     * Update a study session
-     * @param {number} sessionId
-     * @param {object} data
-     */
-    async updateSession(sessionId, data) {
-        try {
-            if (data.evaluation) {
-                const evaluatedStudySession = {
-                    evaluation: data.evaluation, reviewUserId: this.userId, reviewComment: data.reviewComment
-                }
-                const studySession = await this.models['study_session'].updateById(data.sessionId, evaluatedStudySession)
-                await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
-            } else {
-                const currentStudySession = await this.models['study_session'].getById(sessionId)
-                const study = await this.models['study'].getById(currentStudySession.studyId);
-                if (this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
-                    const studySession = await this.models['study_session'].updateById(data.sessionId, data);
-                    await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
-                } else {
-                    this.sendToast("You are not allowed to update this study session", "Error", "Danger");
-                }
-            }
-        } catch (err) {
-            throw new Error(err.message);
-        }
-    }
-
-    /**
      * Send a study session by hash
      * @param {string} studySessionHash
      * @returns {Promise<void>}
@@ -168,17 +140,6 @@ module.exports = class StudySessionSocket extends Socket {
                 await this.sendSessions((data.userId) ? data.userId : null);
             } catch (err) {
                 this.logger.error(err);
-            }
-        });
-
-        this.socket.on("studySessionUpdate", async (data) => {
-            try {
-                if (data.sessionId && data.sessionId !== 0) {
-                    await this.updateSession(data.sessionId, data);
-                }
-            } catch (err) {
-                this.logger.error(err.message);
-                this.sendToast(err.message, "Error updating study", "danger");
             }
         });
 

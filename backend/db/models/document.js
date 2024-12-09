@@ -239,9 +239,8 @@ module.exports = (sequelize, DataTypes) => {
                 if (document.deleted && !document._previousDataValues.deleted) {
                     // delete associated studies
                     const study_steps = await sequelize.models.study_step.getAllByKey("documentId", document.id);
-                    console.log("StudySteps", study_steps);
                     const uniqueStudyIds = [...new Set(study_steps.map(study => study.studyId))];
-                    console.log("Unique", uniqueStudyIds)
+
                     for (const studyId of uniqueStudyIds) {
                         await sequelize.models["study"].deleteById(studyId);
                     }
