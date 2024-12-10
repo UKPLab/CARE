@@ -58,8 +58,20 @@
             v-model="currentData[field.key]"
             :options="field"
           />
+          <FormChoice
+            v-else-if="field.type === 'choice'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]"
+            :options="field"
+          />
           <FormPassword
             v-else-if="field.type === 'password'"
+            :ref="'ref_' + field.key"
+            v-model="currentData[field.key]"
+            :options="field"
+          />
+          <FormFile
+            v-else-if="field.type === 'file'"
             :ref="'ref_' + field.key"
             v-model="currentData[field.key]"
             :options="field"
@@ -87,7 +99,10 @@ import FormPassword from "@/basic/form/Password.vue";
 import FormTextarea from "@/basic/form/Textarea.vue";
 import FormEditor from "@/basic/form/Editor.vue";
 import FormTable from "@/basic/form/DataTable.vue";
+import FormChoice from "@/basic/form/Choice.vue";
 import deepEqual from "deep-equal";
+import {computed} from "vue";
+import FormFile from "@/basic/form/File.vue";
 
 /**
  * Basic form component for rendering form fields provided by fields prop
@@ -97,6 +112,7 @@ import deepEqual from "deep-equal";
 export default {
   name: "BasicForm",
   components: {
+    FormFile,
     DatetimePicker,
     FormSwitch,
     FormSlider,
@@ -107,6 +123,12 @@ export default {
     FormTextarea,
     FormEditor,
     FormTable,
+    FormChoice
+  },
+  provide() {
+    return {
+      formData: computed(() => this.currentData),
+    };
   },
   props: {
     modelValue: {
@@ -124,6 +146,16 @@ export default {
       currentData: null,
     };
   },
+  computed: {
+    defaultValues() {
+      return this.fields.reduce((acc, field) => {
+        if ("default" in field) {
+          acc[field.key] = field.default;
+        }
+        return acc;
+      }, {});
+    },
+  },
   watch: {
     currentData: {
       handler() {
@@ -140,8 +172,8 @@ export default {
       deep: true,
     },
   },
-  beforeMount() {
-    this.currentData = this.modelValue;
+  mounted() {
+    this.currentData = this.getValues(this.modelValue);
   },
   methods: {
     /**
@@ -150,25 +182,12 @@ export default {
      * @return {*}
      */
     getValues(values) {
-      let return_data = Object.assign(
-        {},
-        ...this.fields.map((f) => ({
-          // use value if set
-          [f.key]:
-            f.key in values && values[f.key] !== null
-              ? values[f.key]
-              : // otherwise, you default from fields configuration, if set
-              "default" in f
-              ? f.default
-              : // otherwise, use undefined to handle by subcomponent
-                null,
-        }))
-      );
+      let return_data = {...this.defaultValues, ...values};
       // also provide id if set
-      if (values.id) {
+      if (values && values.id) {
         return_data.id = values.id;
       }
-      return values;
+      return return_data;
     },
     validate() {
       return Object.keys(this.$refs)

@@ -2,14 +2,24 @@
   <Card title="Users">
     <template #headerElements>
       <BasicButton
-        class="btn-secondary btn-sm me-1"
+        class="btn btn-secondary btn-sm me-1"
+        title="Upload Password"
+        @click="$refs.uploadModal.open()"
+      />
+      <BasicButton
+        class="btn btn-secondary btn-sm me-1"
+        title="Import via CSV"
+        @click="$refs.importModal.open('csv')"
+      />
+      <BasicButton
+        class="btn btn-secondary btn-sm me-1"
         title="Import via Moodle"
         @click="$refs.importModal.open('moodle')"
       />
       <BasicButton
         class="btn btn-primary btn-sm"
-        title="Import via CSV"
-        @click="$refs.importModal.open('csv')"
+        title="Add User"
+        @click="$refs.userAddModal.open()"
       />
     </template>
     <template #body>
@@ -17,6 +27,7 @@
         :columns="columns"
         :data="users"
         :options="options"
+        :buttons="buttons"
         @action="chooseAction"
       />
     </template>
@@ -25,22 +36,29 @@
     ref="detailsModal"
     @update-user="fetchUsers"
   />
-  <RightsModal ref="rightsModal" />
-  <PasswordModal ref="passwordModal" />
+  <RightsModal ref="rightsModal"/>
+  <PasswordModal ref="passwordModal"/>
   <ImportModal
     ref="importModal"
+    @update-user="fetchUsers"
+  />
+  <UploadModal ref="uploadModal"/>
+  <UserAddModal
+    ref="userAddModal"
     @update-user="fetchUsers"
   />
 </template>
 
 <script>
-import BasicTable from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import PasswordModal from "./users/PasswordModal.vue";
 import RightsModal from "./users/RightsModal.vue";
 import ImportModal from "./users/ImportModal.vue";
+import UploadModal from "./users/UploadModal.vue";
+import UserAddModal from "./users/UserCreateModal.vue";
 
 /**
  * Display user list by users' role
@@ -57,6 +75,8 @@ export default {
     RightsModal,
     BasicButton,
     ImportModal,
+    UploadModal,
+    UserAddModal,
   },
   props: {
     admin: {
@@ -74,19 +94,22 @@ export default {
         borderless: false,
         small: false,
         pagination: 10,
+        sort: {
+          column: "id",
+          order: "ASC",
+        }
       },
       columns: [
-        { name: "ID", key: "id", sortable: true },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "User", key: "userName" },
-        { name: "Email", key: "email" },
-        { name: "Accept Terms", key: "acceptTerms", sortable: true },
-        { name: "Accept Stats", key: "acceptStats", sortable: true },
-        { name: "Last Login", key: "lastLoginAt", sortable: true },
-        { name: "Manage", key: "manage", type: "button-group" },
+        {name: "ID", key: "id", sortable: true},
+        {name: "First Name", key: "firstName"},
+        {name: "Last Name", key: "lastName"},
+        {name: "User", key: "userName"},
+        {name: "Email", key: "email"},
+        {name: "Accept Terms", key: "acceptTerms", sortable: true},
+        {name: "Accept Stats", key: "acceptStats", sortable: true},
+        {name: "Last Login", key: "lastLoginAt", sortable: true},
       ],
-      // Possible values for role are "all", "student", "mentor", "teacher"
+      // Possible values for role here are all the roles in the DB.
       role: "all",
     };
   },
@@ -96,16 +119,8 @@ export default {
         return this.formatUserData(user);
       });
     },
-  },
-  mounted() {
-    this.fetchUsers();
-  },
-  methods: {
-    fetchUsers() {
-      this.$socket.emit("userGetByRole", this.role);
-    },
-    formatUserData(user) {
-      user.manage = [
+    buttons() {
+      return [
         {
           title: "Edit User",
           action: "editUser",
@@ -140,7 +155,16 @@ export default {
           },
         },
       ];
-
+    },
+  },
+  mounted() {
+    this.fetchUsers();
+  },
+  methods: {
+    fetchUsers() {
+      this.$socket.emit("userGetByRole", this.role);
+    },
+    formatUserData(user) {
       const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
 
       return {
@@ -159,6 +183,10 @@ export default {
         case "resetPassword":
           this.openResetPasswordModal(data.params);
           break;
+        case "editReviews":
+          this.openEditReviewsModal(data.params)
+          break;
+
       }
     },
     openUserDetailsModal(user) {

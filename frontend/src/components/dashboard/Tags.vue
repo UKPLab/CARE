@@ -12,6 +12,7 @@
         :columns="columns"
         :data="tagSets"
         :options="options"
+        :buttons="buttons"
         @action="action"
       />
     </template>
@@ -19,8 +20,7 @@
   <TagSetModal
     ref="tagSetModal"
   />
-  <TagSetDeleteModal ref="tagSetDeleteModal"/>
-  <TagSetPublishModal ref="tagSetPublishModal"/>
+  <ConfirmModal ref="confirm"/>
 </template>
 
 <script>
@@ -31,19 +31,18 @@
  *
  * @author Dennis Zyska
  */
-import BasicTable from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import BasicCard from "@/basic/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import TagSetModal from "./coordinator/TagSet.vue";
-import TagSetPublishModal from "./tags/TagSetPublishModal.vue";
-import TagSetDeleteModal from "./tags/TagSetDeleteModal.vue";
 
 import {mapGetters} from "vuex";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 export default {
   name: "DashboardTags",
-  fetchData: ["tag_set", "tag"],
-  components: { BasicTable, BasicCard, BasicButton, TagSetModal, TagSetPublishModal, TagSetDeleteModal },
+  subscribeTable: ["tag_set", "tag"],
+  components: {ConfirmModal, BasicTable, BasicCard, BasicButton, TagSetModal},
   props: {
     'admin': {
       type: Boolean,
@@ -69,7 +68,6 @@ export default {
         {name: "Public", key: "published", type: "badge"},
         {name: "User", key: "user", type: "badge"},
         {name: "Tags", key: "tags", type: "badge"},
-        {name: "Manage", key: "manage", type: "button-group"},
       ]
     }
   },
@@ -78,6 +76,65 @@ export default {
       userId: 'auth/getUserId',
       isAdmin: 'auth/isAdmin',
     }),
+    buttons() {
+      const buttons = [
+        {
+          icon: "clipboard",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Copy tag set",
+          action: "copyTagSet",
+        },
+        {
+          icon: "pencil",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-dark": true,
+            }
+          },
+          filter: [
+            {key: "userId", value: this.userId},
+          ],
+          title: "Edit tag set",
+          action: "editTagSet",
+        },
+        {
+          icon: "trash",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-dark": true,
+            }
+          },
+          filter: [
+            {key: "userId", value: this.userId},
+          ],
+          title: "Delete tag set",
+          action: "deleteTagSet",
+        },
+        {
+          icon: "share",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-dark": true,
+            }
+          },
+          filter: [
+            {key: "public", value: false},
+            {key: "userId", value: this.userId},
+          ],
+          title: "Share tag set",
+          action: "publishTagSet",
+        }
+      ];
+      return buttons;
+    },
     tagSets() {
       return this.$store.getters["table/tag_set/getAll"].map(d => {
           let newD = {...d};
@@ -99,62 +156,6 @@ export default {
               tooltip: this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id).map(e => e.name).join('<br>'),
               text: this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === newD.id).length
             };
-          newD.manage = [
-            {
-              icon: "clipboard",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                }
-              },
-              title: "Copy tag set",
-              action: "copyTagSet",
-            },
-          ]
-
-          if (newD['userId'] === this.userId || this.isAdmin) {
-            newD.manage.push(
-              {
-                icon: "pencil",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-dark": true,
-                  }
-                },
-                title: "Edit tag set",
-                action: "editTagSet",
-              });
-            newD.manage.push(
-              {
-                icon: "trash",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-dark": true,
-                  }
-                },
-                title: "Delete tag set",
-                action: "deleteTagSet",
-              });
-          }
-          if (!newD.public && (newD['userId'] === this.userId || this.isAdmin)) {
-            newD.manage.push(
-              {
-                icon: "share",
-                options: {
-                  iconOnly: true,
-                  specifiers: {
-                    "btn-outline-dark": true,
-                  }
-                },
-                title: "Share tag set",
-                action: "publishTagSet",
-              },
-            );
-          }
-
           return newD;
         }
       );
@@ -176,15 +177,82 @@ export default {
           this.$refs.tagSetModal.open(data.params.id);
           break;
         case "deleteTagSet":
-          this.$refs.tagSetDeleteModal.open(data.params.id);
+          this.deleteTagSet(data.params);
           break;
         case "publishTagSet":
-          this.$refs.tagSetPublishModal.open(data.params.id);
+          this.publishTagset(data.params);
           break;
         case "defaultTagSet":
           this.selectAsDefault(data.params.id);
           break;
       }
+    },
+    deleteTagSet(row) {
+      this.$refs.confirm.open(
+        "Delete Tagset",
+        "Do you really want to delete the Tagset?",
+        "",
+        function (val) {
+          if (val) {
+            this.$socket.emit("appDataUpdate", {
+              table: "tag_set",
+              data: {
+                id: row.id,
+                deleted: true
+              }
+            }, (result) => {
+              if (result.success) {
+                this.eventBus.emit('toast', {
+                  title: "TagSet deleted",
+                  message: "The TagSet was successfully deleted",
+                  variant: "success"
+                });
+              } else {
+                this.eventBus.emit('toast', {
+                  title: "TagSet delete failed",
+                  message: result.message,
+                  variant: "danger"
+                });
+              }
+            });
+          }
+        }
+      );
+    },
+    publishTagset(row) {
+      this.$refs.confirm.open(
+        "Publish Tagset",
+        "Do you really want to publish the tagset? <br><br>" +
+        "      <strong>Note:</strong> Once you published it, you can't unpublish the tagset! If you want to unpublish it, you have to delete it\n" +
+        "      and create a new one.\n" +
+        "      If published the tagset will be available for all users.",
+        "",
+        function (val) {
+          if (val) {
+            this.$socket.emit("appDataUpdate", {
+              table: "tag_set",
+              data: {
+                id: row.id,
+                public: true
+              }
+            }, (result) => {
+              if (result.success) {
+                this.eventBus.emit('toast', {
+                  title: "TagSet published",
+                  message: "The TagSet was successfully published",
+                  variant: "success"
+                });
+              } else {
+                this.eventBus.emit('toast', {
+                  title: "TagSet publishing failed",
+                  message: result.message,
+                  variant: "danger"
+                });
+              }
+            });
+          }
+        }
+      );
     },
     selectAsDefault(tagSetId) {
       const length = this.$store.getters["table/tag/getFiltered"](tag => tag.tagSetId === tagSetId).length;

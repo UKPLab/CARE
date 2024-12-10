@@ -20,15 +20,21 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(rights, role) in userRight" :key="role">
+              <tr
+                v-for="(rights, role) in userRight"
+                :key="role"
+              >
                 <td>{{ role }}</td>
-                  <td>
-                    <ul>
-                      <li v-for="right in rights" :key="right">
-                        {{ right }}
-                      </li>
-                    </ul>
-                  </td>
+                <td>
+                  <ul>
+                    <li
+                      v-for="right in rights"
+                      :key="right"
+                    >
+                      {{ right }}
+                    </li>
+                  </ul>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -62,41 +68,19 @@ export default {
     return {};
   },
   computed: {
+    systemRoles() {
+      return this.$store.getters["admin/getSystemRoles"];
+    },
     userRight() {
       const rightObj = this.$store.getters["admin/getUserRight"];
       const formattedRights = {};
 
-      // NOTE: roleId currently hardcoded in frontend. 
-      // Consider receiving roleId data from backend to avoid data inconsistency.
       for (const [roleId, rights] of Object.entries(rightObj)) {
-        let roleName;
-        switch (roleId) {
-          case "1":
-            roleName = "user";
-            break;
-          case "2":
-            roleName = "admin";
-            break;
-          case "3":
-            roleName = "teacher";
-            break;
-          case "4":
-            roleName = "mentor";
-            break;
-          case "5":
-            roleName = "student";
-            break;
-          case "6":
-            roleName = "guest";
-            break;
-          default:
-            roleName = roleId;
-        }
-
+        const { name: roleName } = this.systemRoles.find(({ id }) => id === +roleId);
         if (roleName === "admin") {
           formattedRights[roleName] = ["admin has full rights"];
         } else if (rights.length === 0) {
-          formattedRights[roleName] = ["this role does not have associated rights yet",];
+          formattedRights[roleName] = ["this role does not have associated rights yet"];
         } else {
           formattedRights[roleName] = rights;
         }

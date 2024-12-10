@@ -22,7 +22,7 @@ export default {
   },
   props: {
     value: {
-      type: Object,
+      type: null,
       required: true
     },
     options: {

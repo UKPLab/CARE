@@ -16,7 +16,7 @@ module.exports = class StudySessionSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendSessions(userId = null) {
-        if (this.isAdmin()) {
+        if (await this.isAdmin()) {
             if (userId) {
                 const studies = await this.models['study'].getAllByKey('userId', userId);
                 const sessionsPerStudy = await Promise.all(studies.map(async s => await this.models['study_session'].getAllByKey("studyId", s.id)))
@@ -53,30 +53,6 @@ module.exports = class StudySessionSocket extends Socket {
     }
 
     /**
-     * Update a study session
-     * @param {number} sessionId
-     * @param {object} data
-     */
-    async updateSession(sessionId, data) {
-        if (data.evaluation) {
-            const evaluatedStudySession = {
-                evaluation: data.evaluation, reviewUserId: this.userId, reviewComment: data.reviewComment
-            }
-            const studySession = await this.models['study_session'].updateById(data.sessionId, evaluatedStudySession)
-            await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
-        } else {
-            const currentStudySession = await this.models['study_session'].getById(sessionId)
-            const study = await this.models['study'].getById(currentStudySession.studyId);
-            if (this.checkUserAccess(currentStudySession.userId) || this.checkUserAccess(study.userId)) {
-                const studySession = await this.models['study_session'].updateById(data.sessionId, data);
-                await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
-            } else {
-                this.sendToast("You are not allowed to update this study session", "Error", "Danger");
-            }
-        }
-    }
-
-    /**
      * Send a study session by hash
      * @param {string} studySessionHash
      * @returns {Promise<void>}
@@ -85,7 +61,9 @@ module.exports = class StudySessionSocket extends Socket {
         const session = await this.models['study_session'].getByHash(studySessionHash);
         if (session) {
             const study = await this.models['study'].getById(session.studyId);
-            if (this.checkUserAccess(session.userId) || this.checkUserAccess(study.userId)) {
+            //CHeck User Access prüfen
+            //Ändern: Returnen ob Zugriff oder nicht
+            if (await this.checkUserAccess(session.userId) || await this.checkUserAccess(study.userId)) {
                 this.emit("studyRefresh", study);
                 this.emit("study_sessionRefresh", session);
             } else {
@@ -102,26 +80,26 @@ module.exports = class StudySessionSocket extends Socket {
 
     /**
      * Start a study session
-     * @param {number} studyId
+     * @param {object} data
+     * @param {number} data.studyId - A study id
+     * @param {number} data.studySessionId - A study session id
+     * @param {object} options - Transaction options
      * @returns {Promise<void>}
      */
-    async startStudySession(studyId) {
-        const study = await this.models['study'].getById(studyId);
-        if (study.start !== null && new Date() < new Date(study.start)) {
-            this.sendToast("Failed to start study, the study hasn't started yet.", "Study Failure", "danger");
-            return;
-        }
-        if (study.end !== null && new Date(study.end) < new Date()) {
-            this.sendToast("Failed to start study, the study already finished.", "Study Failure", "danger");
-            return;
+    async startStudySession(data, options) {
+        if (data.studySessionId && data.studySessionId !== 0) {
+            // we just start the session
+            return await this.models["study_session"].updateById(data.studySessionId,
+                {start: Date.now()},
+                {transaction: options.transaction}
+            );
+        } else if (data.studyId) {
+            // we create a new session
+            return await this.models["study_session"].add({
+                studyId: data.studyId, userId: this.userId, start: Date.now()
+            }, {transaction: options.transaction});
         }
 
-        const studySession = await this.models["study_session"].add({
-            studyId: study.id, userId: this.userId, start: Date.now()
-        });
-
-        await this.emitRoom("study:" + studySession.studyId, "study_sessionRefresh", studySession);
-        this.socket.emit("studySessionStarted", {success: true, studySessionId: studySession.id});
     }
 
     async init() {
@@ -165,28 +143,11 @@ module.exports = class StudySessionSocket extends Socket {
             }
         });
 
-        this.socket.on("studySessionUpdate", async (data) => {
-            try {
-                if (data.sessionId && data.sessionId !== 0) {
-                    await this.updateSession(data.sessionId, data);
-                }
-            } catch (err) {
-                this.logger.error(err);
-                this.sendToast(err, "Error updating study", "Danger");
-            }
-        });
+        this.createSocket("studySessionStart", this.startStudySession, {}, true);
 
-        this.socket.on("studySessionStart", async (data) => {
+        this.socket.on("studySessionGetByHash", async (data, callback) => {
             try {
-                await this.startStudySession(data.studyId);
-            } catch (err) {
-                this.socket.emit("studySessionStarted", {success: false});
-                this.logger.error(err);
-            }
-        });
-
-        this.socket.on("studySessionGetByHash", async (data) => {
-            try {
+                //Callback mit Zugriff ja oder nein (retunren)
                 await this.sendSessionGetByHash(data.studySessionHash)
             } catch (err) {
                 this.socket.emit("studySessionError", {studySessionHash: data.studySessionHash, message: err});

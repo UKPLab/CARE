@@ -18,7 +18,6 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<{rows: Log[]; count: number}>} Logs
          */
         static async getLogs(data) {
-            console.log("Data", data);
             return await Log.findAndCountAll({
                 where: ("filter" in data) ? data.filter : {},
                 order: ('order' in data && data.order) ? data.order.filter(o => o[0] in this.getAttributes()) : [

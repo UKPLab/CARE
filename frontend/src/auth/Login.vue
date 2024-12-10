@@ -213,7 +213,6 @@ export default {
       } catch (error) {
         this.showError = true;
         this.errorMessage = error;
-        console.log(error);
       }
     },
     toRegister() {

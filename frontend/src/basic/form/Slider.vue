@@ -4,7 +4,7 @@
     <span
       class="flex-grow-1 text-end"
     >
-      {{ currentData }}
+      {{ displayText }}
       <span v-if="'unit' in options"> {{ options.unit }}</span>
     </span>
     <input
@@ -44,9 +44,22 @@ export default {
       currentData: false,
     }
   },
+  computed: {
+    displayText() {
+      if (this.options.textMapping && Array.isArray(this.options.textMapping)) {
+        const mapping = this.options.textMapping.find(
+          (item) => item.from === Number(this.currentData)
+        );
+        if (mapping) {
+          return mapping.to;
+        }
+      }
+      return this.currentData;
+    },
+  },
   watch: {
     currentData() {
-      this.$emit("update:modelValue", this.currentData);
+      this.$emit("update:modelValue", Number(this.currentData));
     },
     modelValue() {
       this.currentData = this.modelValue;

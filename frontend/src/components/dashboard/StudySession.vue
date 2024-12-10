@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <h1>Active Study Sessions</h1>
-    <div v-if="!studies || studies.length === 0">
+    <div v-if="!studiesFiltered || studiesFiltered.length === 0">
       <p class="fs-6">
         You have no active study sessions. Enter a study by clicking on the study link or create your own study.
       </p>
@@ -9,7 +9,7 @@
     <div v-else>
       <hr>
       <div
-        v-for="s in studies"
+        v-for="s in studiesFiltered"
         :key="s.id"
       >
         <Card
@@ -52,7 +52,7 @@ import {getTimeDiffString} from "@/assets/utils";
 export default {
   name: "DashboardStudySession",
   components: {Card, LoadIcon, StudySessionTable, Timer},
-  fetchData: ['study_session'],
+  subscribeTable: ['study_session'],
   props: {},
   data() {
     return {
@@ -64,9 +64,11 @@ export default {
       return this.$store.getters["table/study/getFiltered"](s => this.sessionStudyIds.includes(s.id))
         .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)));
     },
+    studiesFiltered() {
+      return this.studies.filter(s => !this.isStudyClosed(s));
+    },
     sessionStudyIds() {
       return this.$store.getters["table/study_session/getByUser"](this.$store.getters["auth/getUserId"])
-        .filter(s => !s.end)
         .map(s => s.studyId);
     },
     studyTimes() {
@@ -81,7 +83,18 @@ export default {
       } else {
         this.$socket.emit("studySessionSubscribe", {studyId: studyId});
       }
-    }
+    },
+    isStudyClosed(study) {
+      if(study) {
+        if (study.closed) {
+          return true;
+        }
+        if (!study.multipleSubmit && study.end && new Date(study.end) < Date.now()) {
+          return true;
+        }
+      }
+      return false;
+    },
   }
 }
 </script>

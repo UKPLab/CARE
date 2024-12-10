@@ -35,11 +35,16 @@ export default {
   name: "PDFAdder",
   inject: {
     documentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studySessionId: {
-      type: String,
+      type: Number,
+      required: false,
+      default: null,
+    },
+    studyStepId: {
+      type: Number,
       required: false,
       default: null,
     },
@@ -71,6 +76,15 @@ export default {
       }
 
     },
+    studySession() {
+      return this.$store.getters["table/study_session/get"](this.studySessionId);
+    }, 
+    study() {
+      return this.$store.getters["table/study/get"](this.studySession.studyId);
+    },
+    anonymize() {
+      return this.study.anonymize;
+    }
 
   },
   created() {
@@ -108,8 +122,10 @@ export default {
       this.$socket.emit('annotationUpdate', {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
         selectors: {target},
-        tagId: tag.id
+        tagId: tag.id,
+        anonymous: this.anonymize,
       });
 
       this.isVisible = false;
@@ -159,6 +175,7 @@ export default {
           data: {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
             eventClientX: event.clientX, eventClientY: event.clientY
           }
         });

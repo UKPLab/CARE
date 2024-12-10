@@ -40,7 +40,7 @@ import NotFoundPage from "@/auth/NotFound.vue";
 
 export default {
   name: "DashboardRoute",
-  fetchData: ["nav_element"],
+  subscribeTable: ["nav_element"],
   components: { Loading, Sidebar },
   props: {
     catchAll: {

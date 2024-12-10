@@ -21,20 +21,16 @@
       </div>
       <div v-else>
         <div class="mb-3 text-center h5">
-          Thank you for joining this study!
+          Thank you for joining! <br>
+          <br>
+          With a click on the finish button, you can submit your results.
         </div>
         <div
-          v-if="!closeable"
+          v-if="showTimeUp"
           class="text-center text-danger h6"
         >
           The time has expired, no more changes are possible.
         </div>
-
-        <label class="form-label">Comment</label>
-        <textarea
-          v-model="comment"
-          class="form-control"
-        />
       </div>
     </template>
     <template #footer>
@@ -73,14 +69,14 @@ import BasicButton from "@/basic/Button.vue";
 
 /* FinishModal.vue - modal to confirm to finish a study
 
-Prompts the user to confirm finishing a study (allowing to submit a comment).
+Prompts the user to confirm finishing a study.
 
 Author: Nils Dycke, Dennis Zyska
 Source: -
 */
 export default {
   name: "FinishModal",
-  components: { Modal, BasicButton },
+  components: {Modal, BasicButton},
   props: {
     studySessionId: {
       type: Number,
@@ -91,6 +87,10 @@ export default {
       type: Boolean,
       required: true,
     },
+    showTimeUp: {
+      type: Boolean,
+      required: true,
+    },
     finished: {
       type: Boolean,
       required: true,
@@ -98,9 +98,7 @@ export default {
   },
   emits: ["finish"],
   data() {
-    return {
-      comment: "",
-    }
+    return {};
   },
   mounted() {
     if (this.finished) {
@@ -115,7 +113,7 @@ export default {
       this.$refs.modal.close();
     },
     finish() {
-      this.$emit("finish", {"comment": this.comment});
+      this.$emit("finish");
     },
     toDashboard() {
       this.close();

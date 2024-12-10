@@ -2,13 +2,12 @@
   <Modal
     ref="confirmation"
     :name="'confirm'+name"
-    @close="abort()"
   >
     <template #title>
       Confirm {{ name }}
     </template>
     <template #body>
-      <div>{{ message }}</div>
+      <div v-html="message"></div>
       <div
         v-if="warning"
         class="text-danger fw-bold"

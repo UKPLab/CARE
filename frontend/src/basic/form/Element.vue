@@ -1,5 +1,5 @@
 <template>
-  <fieldset :disabled="options.readOnly !== undefined ? options.readOnly : false">
+  <fieldset :disabled="options.readOnly !== undefined ? options.readOnly : false" :class="{ 'shake': shake }">
     <div v-if="dataTable">
       <slot :id="options.key" :blur="validate" name="element"/>
       <div v-if="invalidField" class="feedback-invalid">
@@ -69,7 +69,8 @@ export default {
   data() {
     return {
       invalidField: false,
-      emptyField: false
+      emptyField: false,
+      shake: false,
     }
   },
   mounted() {
@@ -80,6 +81,10 @@ export default {
   },
   methods: {
     validate(data) {
+      if (data === true) {
+        this.invalidField = false;
+        return true;
+      }
       if (this.options.required) {
         // Check pattern
         if (this.options.pattern) {
@@ -107,14 +112,22 @@ export default {
             return true;
           }
           this.emptyField = true;
+          this.shakeIt();
           return false;
         } else {
           this.emptyField = true;
+          this.shakeIt();
           return false;
         }
       } else {
         return true;
       }
+    },
+    shakeIt() {
+      this.shake = true;
+      setTimeout(() => {
+        this.shake = false;
+      }, 1500);
     },
     resetFieldState () {
       this.invalidField = false;
@@ -130,5 +143,17 @@ export default {
   color: firebrick;
   padding-top: 4px;
   padding-left: 5px;
+}
+
+@keyframes shake-animation {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+.shake {
+  animation: shake-animation 0.5s ease-in-out;
 }
 </style>

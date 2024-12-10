@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
+            
+            Collab.belongsTo(models["study_step"], {
+                foreignKey: 'studyStepId',
+                as: 'studyStep',
+            });
         }
     }
 
@@ -20,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
         studySessionId: DataTypes.INTEGER,
+        studyStepId: DataTypes.INTEGER,
         targetType: DataTypes.STRING,
         targetId: DataTypes.INTEGER,
         timestamp: DataTypes.DATE,

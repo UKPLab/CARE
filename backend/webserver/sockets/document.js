@@ -2,6 +2,9 @@ const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
 const database = require("../../db/index.js");
+const {docTypes} = require("../../db/models/document.js");
+const path = require("path");
+
 
 const {dbToDelta} = require("editor-delta-conversion");
 
@@ -12,7 +15,7 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * Loading the document through websocket
  *
- * @author Dennis Zyska, Juliane Bechert
+ * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal
  * @type {DocumentSocket}
  */
 module.exports = class DocumentSocket extends Socket {
@@ -21,41 +24,154 @@ module.exports = class DocumentSocket extends Socket {
      *
      * Check if user has rights to read the document data
      *
-     * NOTE: currently we accept sharing per link --> returns always true
+     * The user has access to the document if:
+     * - The document is public
+     * - The document is owned by the user
+     * - The user is an admin
+     * - The document is used in a study where the user is a participant
      *
      * @param documentId
-     * @returns boolean
+     * @returns {Promise<boolean>}
      */
     async checkDocumentAccess(documentId) {
         const doc = await this.models['document'].getById(documentId);
-        if (doc && (doc.public
-                || (await this.models['study'].getAllByKey('documentId', documentId)).length > 0)
-            || (this.checkUserAccess(doc.userId))
-        ) {
+
+        if (doc && (doc.public || doc.userId === this.userId || await this.isAdmin())) {
             return true;
-        } else {
-            return false;
         }
+
+        // check if the document is used in a study where the user is a participant
+        const study_steps = await this.models['study_step'].getAllByKey('documentId', documentId);
+        const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_steps.map(step => step.studyId));
+
+        for (const session of study_sessions) {
+            if (session.userId === this.userId || await this.hasAccess("frontend.dashboard.studies.view")) {
+                return true;
+            }
+        }
+
+
+
+        return false;
+    }
+
+    /**
+     * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
+     * an entry in the database.
+     * @author Zheyu Zhang, Linyin Huang
+     * @param {Object} data - The data object containing the document details.
+     * @param {string} data.name - The name of the document.
+     * @param {Buffer} data.file - The binary content of the document.
+     * @param {number} [data.userId] - The ID of the user who owns the document (optional).
+     * @param {boolean} [data.isUploaded] - Indicates if the document is uploaded by an admin (optional).
+     * @param {Object} options - The options object containing the transaction.
+     * @returns {Promise<void>}
+     */
+    async addDocument(data, options) {
+
+        let doc = null;
+        let target = "";
+
+        if (!data['file']) {
+            throw new Error("No file uploaded");
+        }
+
+        const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
+        if (fileType !== ".pdf" && fileType !== ".delta") {
+            throw new Error("Invalid file type");
+        }
+
+        if ((data['userid'] && data['userid'] !== this.userId) && !(await this.checkUserAccess(data['userId']))) {
+            throw new Error("User does not have access to upload documents");
+        }
+
+        if (fileType === ".delta") {
+            //TODO this not the right way, when we upload a delta file, this should be included directly into the document_edit db
+            doc = await this.models["document"].add({
+                type: docTypes.DOC_TYPE_HTML,
+                name: data.name.replace(/.delta$/, ""),
+                userId: data.userId ?? this.userId,
+                uploadedByUserId: this.userId,
+            }, {transaction: options.transaction});
+
+            target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
+            fs.writeFileSync(target, data.file);
+
+            const deltaContent = JSON.parse(data.file.toString());
+
+            // Create initial database entry for document edits 
+            const initialEdit = {
+                documentId: doc.id,
+                userId: data.userId ?? this.userId,
+                studySessionId: null,
+                studyStepId: null,
+                draft: false,
+                offset: 0,
+                operationType: 0,
+                span: deltaContent.ops.reduce((span, op) => span + (op.insert ? op.insert.length : 0), 0),
+                text: deltaContent.ops.map(op => op.insert).join(''),
+                attributes: null,
+            };
+
+            await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
+        } else {
+            doc = await this.models["document"].add({
+                type: docTypes.DOC_TYPE_PDF,
+                name: data.name.replace(/.pdf$/, ""),
+                userId: data.userId ?? this.userId,
+                uploadedByUserId: this.userId,
+                readyForReview: data.isUploaded ?? false,
+            }, {transaction: options.transaction});
+
+            target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+        }
+
+        fs.writeFileSync(target, data.file);
+        options.transaction.afterCommit(() => {
+            this.emit("documentRefresh", doc);
+        })
+
+        return doc;
+
+    }
+
+    /**
+     * Update a document
+     *
+     * @param data - The data object containing the new document object.
+     * @param options - The options object containing the transaction.
+     * @return {Promise<void>}
+     */
+    async updateDocument(data, options) {
+        const doc = await this.models['document'].getById(data['id']);
+        if (!(await this.checkUserAccess(doc.userId))) {
+            throw new Error("You are not allowed to update this document");
+        }
+
+        const newDocument = await this.models['document'].updateById(doc.id, data);
+        options.transaction.afterCommit(async () => {
+            this.emit("documentRefresh", await this.updateCreatorName(newDocument));
+        });
+
     }
 
     /**
      * Create document (html)
      * @param data {type: number, name: string}
+     * @param options
      * @returns {Promise<void>}
      */
-    async createDocument(data) {
-        try {
-            const doc = await this.models["document"].add({
-                name: data.name,
-                type: data.type,
-                userId: this.userId
-            });
-            this.socket.emit("documentCreated", {success: true, documentId: doc.id});
+    async createDocument(data, options) {
+        const doc = await this.models["document"].add({
+            name: data.name,
+            type: data.type,
+            userId: this.userId
+        }, {transaction: options.transaction});
+
+        options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
-        } catch (error) {
-            console.error("Error creating document:", error);
-            this.socket.emit("documentCreated", {success: false, error: error.message});
-        }
+        });
+        return doc;
     }
 
     /**
@@ -65,7 +181,7 @@ module.exports = class DocumentSocket extends Socket {
      */
     async refreshAllDocuments(userId = null) {
         try {
-            if (this.isAdmin()) {
+            if (await this.isAdmin()) {
                 if (userId) {
                     this.emit("documentRefresh", await this.models['document'].getAllByKey("userId", userId));
                 } else {
@@ -76,7 +192,7 @@ module.exports = class DocumentSocket extends Socket {
             }
         } catch (err) {
             this.logger.error(err);
-            this.sendToast(err, "Error loading documents", "Danger");
+            this.sendToast(err, "Error loading documents", "danger");
         }
     }
 
@@ -88,94 +204,11 @@ module.exports = class DocumentSocket extends Socket {
      */
     async sendByHash(documentHash) {
         const document = await this.models['document'].getByHash(documentHash);
-        if (this.checkDocumentAccess(document.id)) {
+        if (await this.checkDocumentAccess(document.id)) {
             this.emit("documentRefresh", document);
         } else {
             this.logger.error("Document access error with documentId: " + document.id);
             this.sendToast("You don't have access to the document.", "Error loading documents", "Danger");
-        }
-    }
-
-    /**
-     * Update document
-     *
-     * @param {number} documentId
-     * @param {Object} document
-     * @return {Promise<void>}
-     */
-    async updateDocument(documentId, document) {
-        const doc = await this.models['document'].getById(documentId);
-        if (this.checkUserAccess(doc.userId)) {
-            this.socket.emit("documentRefresh", await this.updateCreatorName(await this.models['document'].updateById(doc.id, document)));
-            if (document.deleted && !doc.deleted) {
-                await this.cascadeDelete(documentId);
-            }
-        } else {
-            this.sendToast("You are not allowed to update this document", "Error", "Danger");
-        }
-    }
-
-
-    /**
-     * Cascading the delete of a document (by ID) to all tables with FK. This information is only pushed
-     * to the deleting client and not any others.
-     *
-     * @param {number} documentId
-     * @return {Promise<void>}
-     */
-    async cascadeDelete(documentId) {
-        const studies = await this.models['study'].getAllByKey("documentId", documentId);
-
-        studies.filter(async s => this.checkUserAccess(s.userId))
-            .forEach(s => {
-                try {
-                    this.getSocket("StudySocket").updateStudy(s.id, {deleted: true})
-                } catch (e) {
-                    this.logger.error("Failed to delete study " + s.id + " for doc " + documentId);
-                }
-            });
-    }
-
-    /**
-     * Sends the document to the client
-     *
-     * This method checks if the user has access to the document and then retrieves and sends the document data.
-     * For HTML documents, it fetches and combines draft edits with the existing content before sending.
-     *
-     * @param {number} documentId
-     * @returns {Promise<Delta|void>}
-     */
-    async sendDocument(documentId) {
-        try {
-            const doc = await this.models['document'].getById(documentId);
-            if (this.checkDocumentAccess(doc.id)) {
-                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
-                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
-                    if (fs.existsSync(deltaFilePath)) {
-                        const delta = await this.loadDocument(deltaFilePath);
-                        this.socket.emit("documentFile", {document: doc, deltas: delta});
-                    } else {
-                        this.socket.emit("documentFile", {document: doc, deltas: new Delta()});
-                    }
-                } else { // Non-HTML document type, send file
-                    const filePath = `${UPLOAD_PATH}/${doc.hash}.pdf`;
-                    if (fs.existsSync(filePath)) {
-                        fs.readFile(filePath, (err, data) => {
-                            if (err) {
-                                throw new Error("Failed to read PDF");
-                            }
-                            this.socket.emit("documentFile", {document: doc, file: data});
-                        });
-                    } else {
-                        throw new Error("PDF file not found");
-                    }
-                }
-            } else {
-                throw new Error("You do not have access to this document");
-            }
-        } catch (error) {
-            this.logger.error("An error occurred while sending the document:", error);
-            this.sendToast(error.message, "Error", "danger");
         }
     }
 
@@ -189,19 +222,19 @@ module.exports = class DocumentSocket extends Socket {
         try {
             const doc = await this.models['document'].getById(documentId);
 
-            if (this.checkDocumentAccess(doc.id)) {
+            if (await this.checkDocumentAccess(doc.id)) {
                 if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
-                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
                     let delta = new Delta();
 
                     if (fs.existsSync(deltaFilePath)) {
-                        let delta = await this.loadDocument(deltaFilePath);
+                        delta = await this.loadDocument(deltaFilePath);
                     } else {
                         this.logger.warn("No delta file found for document: " + documentId);
                     }
 
                     const edits = await this.models['document_edit'].findAll({
-                        where: {documentId: documentId, draft: true},
+                        where: {documentId: documentId, studySessionId: null, draft: true},
                         raw: true
                     });
 
@@ -209,6 +242,7 @@ module.exports = class DocumentSocket extends Socket {
                     delta = delta.compose(dbDelta);
 
                     this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
+                    return delta;
                 } else {
                     throw new Error("Non-HTML documents are not supported for this operation");
                 }
@@ -267,34 +301,41 @@ module.exports = class DocumentSocket extends Socket {
                 return;
             }
 
-            const edits = await this.models['document_edit'].findAll({
-                where: {documentId: documentId, draft: true},
-                raw: true
-            });
+            // TODO: Check if document type is HTML
+            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
 
-            const newDelta = new Delta(dbToDelta(edits));
-            const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta.json`;
+                const edits = await this.models['document_edit'].findAll({
+                    where: {documentId: documentId, studySessionId: null, draft: true},
+                    raw: true
+                });
 
-            let oldDelta = new Delta();
-            try {
-                const oldDeltaContent = await fs.promises.readFile(deltaFilePath, 'utf8');
-                oldDelta = new Delta(JSON.parse(oldDeltaContent));
-            } catch (err) {
-                if (err.code !== 'ENOENT') {
-                    throw err;
+                const newDelta = new Delta(dbToDelta(edits));
+                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
+
+                let oldDelta = new Delta();
+                try {
+                    const oldDeltaContent = await fs.promises.readFile(deltaFilePath, 'utf8');
+                    oldDelta = new Delta(JSON.parse(oldDeltaContent));
+                } catch (err) {
+                    if (err.code !== 'ENOENT') {
+                        throw err;
+                    }
                 }
+
+                const mergedDelta = oldDelta.compose(newDelta);
+
+                await fs.promises.writeFile(deltaFilePath, JSON.stringify(mergedDelta, null, 2), 'utf8');
+
+                await this.models['document_edit'].update(
+                    {draft: false},
+                    {where: {id: edits.map(edit => edit.id)}}
+                );
+
+                this.logger.info("Deltas file updated successfully.");
+            } else {
+                throw new Error("Non-HTML documents are not supported for this operation");
             }
 
-            const mergedDelta = oldDelta.compose(newDelta);
-
-            await fs.promises.writeFile(deltaFilePath, JSON.stringify(mergedDelta, null, 2), 'utf8');
-
-            await this.models['document_edit'].update(
-                {draft: false},
-                {where: {id: edits.map(edit => edit.id)}}
-            );
-
-            this.logger.info("Deltas file updated successfully.");
         } catch (err) {
             this.logger.error("Failed to read/write delta file:", err);
         }
@@ -309,10 +350,11 @@ module.exports = class DocumentSocket extends Socket {
      * @return {Promise<void>}
      */
     async getData(data) {
-        if (this.checkDocumentAccess(data.documentId)) {
+        if (await this.checkDocumentAccess(data.documentId)) {
             if (data.studySessionId && data.studySessionId !== 0) {
                 const studySession = await this.models['study_session'].getById(data.studySessionId);
                 const study = await this.models['study'].getById(studySession.studyId);
+
                 if (study.collab) {
 
                     // send studySessions
@@ -320,17 +362,35 @@ module.exports = class DocumentSocket extends Socket {
                     this.emit("study_sessionRefresh", studySessions);
 
                     // send annotations
-                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].getAllByKey('studySessionId', s.id)));
+                    const annotations = await Promise.all(studySessions.map(async s => await this.models['annotation'].findAll(
+                        {
+                            where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                            raw: true
+                        })
+                    ));
                     this.emit("annotationRefresh", annotations.flat(1));
 
                     // send comments
-                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].getAllByKey('studySessionId', s.id)));
+                    const comments = await Promise.all(studySessions.map(async s => await this.models['comment'].findAll(
+                        {
+                            where: {'studySessionId': s.id, 'studyStepId': data.studyStepId},
+                            raw: true
+                        })
+                    ));
                     this.emit("commentRefresh", comments.flat(1));
                 } else {
-                    const annotations = await this.models['annotation'].getAllByKey('studySessionId', data.studySessionId)
+                    const annotations = await this.models['annotation'].findAll(
+                        {
+                            where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                            raw: true
+                        });
                     this.emit("annotationRefresh", annotations);
 
-                    const comments = await this.models['comment'].getAllByKey('studySessionId', data.studySessionId)
+                    const comments = await this.models['comment'].findAll(
+                        {
+                            where: {'studySessionId': data.studySessionId, 'studyStepId': data.studyStepId},
+                            raw: true
+                        });
                     this.emit("commentRefresh", comments);
                 }
             } else {
@@ -383,10 +443,9 @@ module.exports = class DocumentSocket extends Socket {
      * @param {object} data {documentId: number, "ops" array consisting of [offset: number, operationType: number, span: number, text: string, attributes: Object]}
      */
     async editDocument(data) {
-
         const transaction = await database.sequelize.transaction();
         try {
-            const {userId, documentId, ops} = data;
+            const {documentId, studySessionId, studyStepId, ops} = data;
             let appliedEdits = [];
 
             await ops.reduce(async (promise, op) => {
@@ -395,6 +454,8 @@ module.exports = class DocumentSocket extends Socket {
                     userId: this.userId,
                     draft: true,
                     documentId,
+                    studySessionId: studySessionId || null,
+                    studyStepId: studyStepId || null,
                     ...op
                 };
 
@@ -408,8 +469,13 @@ module.exports = class DocumentSocket extends Socket {
 
             await transaction.commit();
 
-            this.emit("document_editRefresh", appliedEdits);
+            // Check if studySessionId is not null or zero
+            if (studySessionId !== null) {
+                this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+                return;
+            }
 
+            this.emit("document_editRefresh", appliedEdits);
         } catch (error) {
             await transaction.rollback();
             this.logger.error("Error editing document: " + error.message);
@@ -439,23 +505,159 @@ module.exports = class DocumentSocket extends Socket {
         }
     }
 
-    init() {
-        fs.mkdirSync(UPLOAD_PATH, {recursive: true});
+    /**
+     * Get Moodle submissions from an assignment
+     * @param data
+     * @param options
+     * @returns {Promise<ArrayLike<T>>}
+     */
+    async documentGetMoodleSubmissions(data, options) {
+        return await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment(
+            {
+                options: {
+                    courseID: Number(data.options.courseID),
+                    assignmentID: Number(data.options.assignmentID),
+                    apiKey: data.options.apiKey,
+                    apiUrl: data.options.apiUrl,
+                }
+            }
+        );
+    }
 
-        this.socket.on("documentGet", async (data) => {
+    async downloadMoodleSubmissions(data, options) {
+        const results = [];
+
+        for (const file of data.files) {
+            const transaction = await this.server.db.sequelize.transaction();
+
             try {
-                await this.sendDocument(data.documentId);
-                await this.openDocument(data.documentId);
+
+                const files = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl(
+                    {
+                        fileUrls: [file.fileUrl],
+                        options: data.options,
+                    }
+                );
+
+                const document = await this.addDocument({
+                    file: files[0],
+                    name: file.fileName,
+                    userId: file.userId,
+                    isUploaded: true
+                }, {transaction: transaction});
+
+                results.push(document['id']);
+
+                await transaction.commit();
+
             } catch (e) {
-                this.logger.error("Error handling document request: ", e);
-                this.sendToast("Error handling document request!", "Error", "danger");
+                this.logger.error(e.message);
+                await transaction.rollback();
+
+            }
+
+            // update frontend progress
+            this.socket.emit("progressUpdate", {
+                id: data["progressId"], current: data.files.indexOf(file) + 1, total: data.files.length,
+            });
+        }
+
+        return results;
+    }
+
+    /**
+     * Send a document to the client
+     *
+     * This method checks if the user has access to the document and then retrieves and sends the document data.
+     * For HTML documents, it fetches and combines draft edits with the existing content before sending.
+     *
+     * @param data {documentId: number, studySessionId: number, studyStepId: number}
+     * @param options {transaction: Transaction}
+     * @returns {Promise<{document: Document, deltas: Delta}|{document: Document, file: Buffer}>}
+     */
+    async getDocument(data, options) {
+        const document = await this.models['document'].getById(data['documentId']);
+
+        if (!(await this.checkDocumentAccess(document.id))) {
+            throw new Error("You do not have access to this document");
+        }
+
+        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
+            const deltaFilePath = `${UPLOAD_PATH}/${document.hash}.delta`;
+
+            if (!fs.existsSync(deltaFilePath)) {
+                throw new Error("Document not found");
+            }
+            let delta = await this.loadDocument(deltaFilePath);
+            const edits = await this.models['document_edit'].findAll({
+                where: {
+                    documentId: document.id,
+                    studySessionId: data['studySessionId'],
+                    studyStepId: data['studyStepId'],
+                    draft: true
+                }
+            });
+            delta = delta.compose(dbToDelta(edits));
+            return {document: document, deltas: delta}
+
+        } else {
+            const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
+            if (!fs.existsSync(filePath)) {
+                throw new Error("PDF file not found");
+            }
+            const file = fs.readFileSync(filePath);
+            return {document: document, file: file};
+        }
+    }
+
+    /**
+     * Uploads login data to a Moodle assignment as feedback comments.
+     * @param {Object} data - The data required for uploading login data.
+     * @param {Object} data.options - The options object containing the API key and URL of the Moodle instance.
+     * @param {number} data.options.courseID - The ID of the course to fetch users from.
+     * @param {number} data.options.assignmentID - The ID of the Moodle assignment.
+     * @param {string} data.options.apiKey - The API token for the Moodle instance
+     * @param {string} data.options.apiUrl - The URL of the Moodle instance.
+     * @param {Array<Object>} data.users - An array of objects containing the uploaded users.
+     * @returns {Promise<Object>} - A promise that resolves when the passwords have been uploaded.
+     */
+    async uploadReviewLinks(data, options) {
+        const feedback = data["users"].map((user) => ({
+            extId: user.extId,
+            text: user.links,
+        }));
+
+        return await this.server.rpcs["MoodleRPC"].publishAssignmentTextFeedback({
+            options: data.options,
+            feedback,
+        });
+    }
+
+    init() {
+
+        this.socket.on("documentGetReviews", async (callback) => {
+            try {
+                const reviewDocuments = await this.models["document"].getReviewDocuments();
+                callback({
+                    success: true,
+                    documents: reviewDocuments
+                });
+            } catch (e) {
+                this.logger.error(e);
+                callback({
+                    success: false,
+                    message: "Error retrieving review documents"
+                });
             }
         });
 
-        this.socket.on("documentClose", async (data) => {
 
+        this.socket.on("documentClose", async (data) => {
             try {
-                await this.saveDocument(data.documentId); // Save the document before closing	
+                if (data.studySessionId === null) {
+                    await this.saveDocument(data.documentId);
+                }
+
                 const index = this.socket.openComponents.editor.indexOf(data.documentId);
                 if (index > -1) {
                     this.socket.openComponents.editor[index] = undefined; // Remove the document ID
@@ -484,14 +686,6 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("documentUpdate", async (data) => {
-            try {
-                await this.updateDocument(data.documentId, data);
-            } catch (err) {
-                this.logger.error(err);
-                this.sendToast(err, "Error updating document", "Error", "danger");
-            }
-        });
 
         this.socket.on("documentGetByHash", async (data) => {
             try {
@@ -540,15 +734,6 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("documentCreate", async (data) => {
-            try {
-                await this.createDocument(data);
-            } catch (e) {
-                this.logger.error(e);
-                this.sendToast("Error create document", "Error", "danger");
-            }
-        });
-
         this.socket.on("documentEdit", async (data) => {
             try {
                 await this.editDocument(data);
@@ -585,6 +770,15 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-
+        this.createSocket("documentGet", this.getDocument, {}, false);
+        this.createSocket("documentCreate", this.createDocument, {}, true);
+        this.createSocket("documentAdd", this.addDocument, {}, true);
+        this.createSocket("documentUpdate", this.updateDocument, {}, true);
+        this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
+        this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
+        this.createSocket("documentGetStudies", this.models["document"].getDocAssociatedStudies, {}, false);
+        // TODO: documentGetSessions to be implemented
+        this.createSocket("documentGetSessions");
+        this.createSocket("documentUploadReviewLinks", this.uploadReviewLinks, {}, false);
     }
-}
+};

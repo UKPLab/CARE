@@ -2,13 +2,13 @@
   <FormElement ref="formElement" :data-table="dataTable" :options="options">
     <template #element="{blur}">
       <select
-          v-if="Array.isArray(options.options)"
-          v-model="currentData"
-          :class="selectClass" class="form-select"
-          @blur="blur(currentData > -1)"
-
+        v-if="Array.isArray(options.options)"
+        v-model="currentData"
+        :class="selectClass" class="form-select"
+        @blur="blur(currentData !== -1)"
       >
-        <option v-for="option in selectOptions"
+        <option
+                v-for="option in selectOptions"
                 :key="option.value"
                 :class="option.class"
                 :value="option.value"
@@ -17,12 +17,13 @@
         </option>
       </select>
       <select
-          v-else
-          v-model="currentData"
-          class="form-select"
-          @blur="blur(currentData > 0)"
+        v-else
+        v-model="currentData"
+        class="form-select"
+        @blur="blur(currentData > 0)"
       >
-        <option v-for="option in selectOptions"
+        <option
+                v-for="option in selectOptions"
                 :key="option.id"
                 :value="option[options.options.value]"
         >{{ option[options.options.name] }}
@@ -39,13 +40,18 @@ import FormElement from "@/basic/form/Element.vue"
 export default {
   name: "FormSelect",
   components: {FormElement},
+  inject: {
+    formData: {
+      default: () => null,
+    },
+  },
   props: {
     options: {
       type: Object,
       required: true,
     },
     modelValue: {
-      type: Number,
+      type: [Number, String],
       required: false,
       default: -1,
     },
@@ -53,6 +59,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    parentValue: {
+      type: Object,
+      required: false,
+      default: () => null,
     }
   },
   emits: ["update:modelValue"],
@@ -69,10 +80,55 @@ export default {
       }
     },
     selectOptions() {
+      let baseOptions = [];
+
       if (Array.isArray(this.options.options)) {
-        return this.options.options;
+        baseOptions = this.options.options;
+      } else if (this.options.options.filter) {
+        baseOptions = this.$store.getters[
+          "table/" + this.options.options.table + "/getFiltered"
+        ]((e) =>
+          this.options.options.filter.every((f) => {
+            let sourceValue = e[f.key];
+            if (f.mapping) {
+              // create a mapping function to map the value to the key
+              sourceValue = f.mapping[e[f.key]];
+            }
+            switch (f.type) {
+              case "formData":
+                return sourceValue === this.formData[f.value];
+              case "parentData":
+                return sourceValue === this.parentValue[f.value];
+              default:
+                return sourceValue === f.value
+            }
+          }
+        ));
+      } else {
+        baseOptions = this.$store.getters[
+          "table/" + this.options.options.table + "/getAll"
+        ];
       }
-      return this.$store.getters["table/" + this.options.options.table + "/getAll"];
+
+      // Filter according to additional Options and add to baseOptions
+      if (this.options.options.additionalOptions) {
+        const mappingFilter = this.options.options.filter.find(
+          (filter) => filter.type === "parentData"
+        );
+        const mapping = mappingFilter?.mapping;
+
+        // Determine parentType from parentValue 
+        const parentType = this.parentValue?.[mappingFilter?.value];
+
+        // Filter `additionalOptions` to include only those matching the current `parentType`
+        const additionalOptions = this.options.options.additionalOptions.filter((option) => {
+          const stepType = mapping[option.type]; 
+          return stepType === parentType; 
+        });
+
+        baseOptions = [...baseOptions, ...additionalOptions];
+      }
+      return baseOptions;
     },
   },
   watch: {

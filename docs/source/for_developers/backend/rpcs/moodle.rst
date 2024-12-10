@@ -67,17 +67,8 @@ parameters: submission_infos: list with urls: string
         // handle error
     }
 
-**uploadPasswordsToMoodle**: This method can be used to upload passwords as feedback in an assignment to Moodle.
-parameters: {courseID: int, assignmentID: int, passwords: list: {id: int, password: string}, options{url: string, apiKey: string}}
-
-.. code-block:: javascript
-
-    try {
-        data = {courseID: 1, assignmentID: 1, passwords: [{id: 1, password: "password1"}, {id: 2, password: "password2"}], options: {...}}
-        const response = await this.server.rpcs["MoodleRPC"].uploadPasswordsToMoodle(data);
-    } catch (error) {
-        // handle error
-    }
+**publishAssignmentTextFeedback**: This functions publishes the feedback text to the assignment per user.
+parameters: {, feedback_data: list: {extId: int, text: string}, options{apiKey: string, apiUrl: string, courseID: int, assignmentID: int}}
 
 Configure Moodle
 ----------------
@@ -147,35 +138,41 @@ Creating an assignment that is compatible with functionalities like downloading 
 
 1. **Navigate to the right course in Moodle**
 
-    Login to your Moodle account and click on 'My courses' in the upper left corner. Click on the course you want to create the assignment in. If you can't see the course, you can use the search bar at the top.
+    Login to your Moodle account and click on 'My courses'.
+    Click on the course you want to create the assignment in.
+    If you can't see the course, you can use the search bar at the top.
 
 2. **Activate the edit mode**
 
-    Now you should be on the homepage of the course. Make sure that you have the right to edit the course. To find out, look at the upper right corner and check if you see 'Edit mode' and a switch next to it. If you see it, click on the switch, so it shifts to the right. 
-    Now you are in edit mode. If you can't see 'Edit mode', you need to ask the course administrator for the right to edit the course. If you are assigned multiple roles, make sure that you are in the right role. 
-    You can change your role by clicking on your name in the upper right corner and then on 'Switch role to...'.
+    Now you should be on the homepage of the course.
+    Make sure that you have the right to edit the course.
+    To find out, look at the upper right corner and check if you see 'Edit mode' and a switch next to it.
 
 3. **Create an assignment**
 
-    With 'edit mode' activated, navigate to the right section (e.g. 'General') where you want to create the assignment. Click on '+ Add an activity or resource'. A new window will open. Click on 'Assignment'. If you can't find it, you can use the search bar at the top. 
+    With 'edit mode' activated, navigate to the right section (e.g. 'General') where you want to create the assignment.
+    Click on '+ Add an activity or resource' and add an 'Assignment' or 'Aufgabe' (if you are using the German version).
 
 4. **Configure the assignment**
 
-    Now you are in the assignment settings. Choose a name for the assignment and write a description if needed.
-    You don't need to change any other settings in the assignment settings. The default settings are already compatible with the functionalities. 
-    
+    Recommended settings for the feedback assignment are:
+
+    - Name: Choose a name for the assignment.
+    - Description: Write a description if needed.
+    - Availability: Deactivate all options.
+    - Submission types: Deactivate all options.
+    - Feedback types: Activate 'Feedback comments' and set 'Inline comments' to 'Yes'.
+
     **Submissions allowed**
     If you want students to be able to make submission and download them afterwards, make sure that the 'Submission types' are set to 'File submissions' and the 'Feedback types' are set to 'Feedback comments'. If you want students to be able to submit multiple files, just increase 'Maximum number of uploaded files' under 'Submission types'. 
     If you download the submissions of a student, all files will be retrieved.
 
-    **No submissions**
-    If you don't want students to submit files, you need to deselect 'File submissions' under 'Submission types'. You can still upload feedback commentary and grades. This is useful if you want to use the functionality to upload login data as feedback.
-
     Other settings can be adjusted as needed.
 
-5. **Test the assignment**
+.. tip::
 
-    To test if the configuration is correct, you can create a test submission. Just click on the assignment and then on 'Add submission'. Upload a file and click on 'Save changes'. Now you can use the functionalities to retrieve the submissions. Note that you may need to change your role to 'student' to be able to submit a file.
+    You can change your role by clicking on your name in the upper right corner and then on 'Switch role to...'.
+
 
 Findind the course and assignment IDs
 ~~~~~~~~~~~~~~~~~~~~

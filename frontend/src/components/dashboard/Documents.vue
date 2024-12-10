@@ -26,25 +26,26 @@
         :columns="columns"
         :data="docs"
         :options="options"
+        :buttons="buttons"
         @action="action"
       />
-      <EditorDownload ref="editorDownload" />
+      <EditorDownload ref="editorDownload"/>
     </template>
   </Card>
-  <PublishModal ref="publishModal" />
-  <StudyModal ref="studyCoordinator" />
-  <ExportAnnos ref="export" />
-  <ConfirmModal ref="deleteConf" />
-  <UploadModal ref="uploadModal" />
-  <CreateModal ref="createModal" />
-  <EditModal ref="editModal" />
+  <PublishModal ref="publishModal"/>
+  <StudyModal ref="studyCoordinator"/>
+  <ExportAnnos ref="export"/>
+  <ConfirmModal ref="deleteConf"/>
+  <UploadModal ref="uploadModal"/>
+  <CreateModal ref="createModal"/>
+  <EditModal ref="editModal"/>
 </template>
 
 <script>
 import PublishModal from "./documents/PublishModal.vue";
 import ExportAnnos from "@/basic/download/ExportAnnos.vue";
 import Card from "@/basic/Card.vue";
-import BasicTable from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import StudyModal from "./coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BasicButton from "@/basic/Button.vue";
@@ -64,7 +65,7 @@ import EditorDownload from "@/components/editor/EditorDownload.vue";
  */
 export default {
   name: "DashboardDocument",
-  fetchData: ["document", "study"],
+  subscribeTable: ["document", "study"],
   components: {
     StudyModal,
     ExportAnnos,
@@ -89,15 +90,14 @@ export default {
         pagination: 10,
       },
       columns: [
-        { name: "Title", key: "name" },
-        { name: "Created At", key: "createdAt" },
-        { name: "Type", key: "type" },
+        {name: "Title", key: "name"},
+        {name: "Created At", key: "createdAt"},
+        {name: "Type", key: "typeName"},
         {
           name: "Public",
           key: "publicBadge",
           type: "badge",
         },
-        { name: "Manage", key: "manage", type: "button-group" },
       ],
     };
   },
@@ -108,102 +108,150 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
+    buttons() {
+      const buttons = [
+        {
+          icon: "box-arrow-in-right",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          title: "Access document...",
+          action: "accessDoc",
+        },
+        {
+          icon: "trash",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          filter: [
+            {
+              key: "uploadedByUserId",
+              value: this.userId,
+            },
+            {
+              key: "uploadedByUserId",
+              value: null
+            }
+          ],
+          title: "Delete document...",
+          action: "deleteDoc",
+        },
+        {
+          icon: "cloud-arrow-up",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          filter: [
+            {
+              key: "uploadedByUserId",
+              value: this.userId,
+            },
+            {
+              key: "uploadedByUserId",
+              value: null
+            }
+          ],
+          title: "Publish document...",
+          action: "publicDoc",
+        },
+        {
+          icon: "pencil",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          filter: [
+            {
+              key: "uploadedByUserId",
+              value: this.userId,
+            },
+            {
+              key: "uploadedByUserId",
+              value: null
+            }
+          ],
+          title: "Rename document...",
+          action: "renameDoc",
+        },
+      ];
+      if (this.studiesEnabled) {
+        buttons.push({
+          icon: "person-workspace",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          filter: [
+            {
+              key: "type",
+              value: 0,
+            },
+          ],
+          title: "Open study coordinator...",
+          action: "studyCoordinator",
+        });
+      }
+      if (this.showDeltaDownloadButton) {
+        buttons.push({
+          icon: "download",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          filter: [
+            {
+              key: "type",
+              value: 1,
+            }],
+          title: "Export delta to a local file",
+          action: "exportDeltaDoc",
+        });
+      }
+      if (this.showHTMLDownloadButton) {
+        buttons.push({
+          icon: "download",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          filter: [
+            {
+              key: "type",
+              value: 1,
+            }],
+          title: "Export HTML to a local file",
+          action: "exportHTMLDoc",
+        });
+      }
+      return buttons;
+    },
     docs() {
       return this.documents
-        .filter((doc) => doc.userId === this.userId)
+        .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false)
         .map((d) => {
-          let newD = { ...d };
-          newD.type = d.type === 0 ? 'PDF' : 'HTML';
+          let newD = {...d};
+          newD.typeName = d.type === 0 ? "PDF" : "HTML";
           newD.publicBadge = {
             class: newD.public ? "bg-success" : "bg-danger",
             text: newD.public ? "Yes" : "No",
           };
-          newD.manage = [
-            {
-              icon: "box-arrow-in-right",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Access document...",
-              action: "accessDoc",
-            },
-            {
-              icon: "trash",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Delete document...",
-              action: "deleteDoc",
-            },
-            {
-              icon: "cloud-arrow-up",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Publish document...",
-              action: "publicDoc",
-            },
-            {
-              icon: "pencil",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Rename document...",
-              action: "renameDoc",
-            },
-          ];
-          if (this.studiesEnabled && d.type === 0) { //PDF document type
-            newD.manage.push({
-              icon: "person-workspace",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Open study coordinator...",
-              action: "studyCoordinator",
-            });
-          }
-
-          if (d.type === 1 && this.showDeltaDownloadButton) { //HTML document type
-            newD.manage.push({
-              icon: "download",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Export delta to a local file",
-              action: "exportDeltaDoc",
-            });
-          }
-          if (d.type === 1 && this.showHTMLDownloadButton) {
-            newD.manage.push({
-              icon: "download",
-              options: {
-                iconOnly: true,
-                specifiers: {
-                  "btn-outline-secondary": true,
-                },
-              },
-              title: "Export HTML to a local file",
-              action: "exportHTMLDoc",
-            });
-          }
           return newD;
         });
     },
@@ -258,8 +306,8 @@ export default {
           studies.length
         } ${studies.length !== 1 ? "studies" : "study"}
          running on this document. Deleting it will delete the ${
-           studies.length !== 1 ? "studies" : "study"
-         }!`;
+          studies.length !== 1 ? "studies" : "study"
+        }!`;
       } else {
         warning = "";
       }
@@ -270,9 +318,20 @@ export default {
         warning,
         function (val) {
           if (val) {
-            this.$socket.emit("documentUpdate", {
-              documentId: row.id,
-              deleted: true,
+            this.$socket.emit("appDataUpdate", {
+              table: "document",
+              data: {
+                id: row.id,
+                deleted: true
+              }
+            }, (result) => {
+              if (!result.success) {
+                this.eventBus.emit('toast', {
+                  title: "Document delete failed",
+                  message: result.message,
+                  variant: "danger"
+                });
+              }
             });
           }
         }

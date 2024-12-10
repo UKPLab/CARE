@@ -1,4 +1,4 @@
-import {FileSaver} from "file-saver"; //required for window.saveAs to work
+import { FileSaver } from "file-saver"; // DO NOT delete this import, required for window.saveAs to work
 import Papa from "papaparse";
 
 
@@ -67,14 +67,14 @@ export function objectsToJSON(objs) {
  */
 export function objectsToTXT(objs) {
     return objs.map(o => Object.entries(o).map(([k, v]) => {
-        if(typeof v === "object" && v !== null){
-          return `${k}\n${objectsToTXT([v])}`;
-        } else if(v === null) {
-            return `${k}:-`;
-        } else {
-            return `${k}:  ${v}`;
-        }
-    }).join("\n")
+            if (typeof v === "object" && v !== null) {
+                return `${k}\n${objectsToTXT([v])}`;
+            } else if (v === null) {
+                return `${k}:-`;
+            } else {
+                return `${k}:  ${v}`;
+            }
+        }).join("\n")
     ).join("\n\n");
 }
 
@@ -88,7 +88,7 @@ export function objectsToTXT(objs) {
 export function downloadObjectsAs(objs, name, file_type) {
     let data;
     let httpType;
-    if(file_type === "csv"){
+    if (file_type === "csv") {
         data = objectsToCSV(objs);
         httpType = "text/csv";
     } else if (file_type === "json") {
@@ -96,7 +96,7 @@ export function downloadObjectsAs(objs, name, file_type) {
         httpType = "application/json";
     } else if (file_type === "txt") {
         data = objectsToTXT(objs);
-        httpType = "text/plain";   
+        httpType = "text/plain";
     } else {
         throw `Invalid argument '${file_type}' passed to downloadObjectsAs`;
     }
@@ -113,27 +113,27 @@ export function downloadObjectsAs(objs, name, file_type) {
  * @returns {boolean}
  */
 export function arraysContainSameElements(a1, a2) {
-  const superSet = {};
-  for (const i of a1) {
-    const e = i + typeof i;
-    superSet[e] = 1;
-  }
-
-  for (const i of a2) {
-    const e = i + typeof i;
-    if (!superSet[e]) {
-      return false;
+    const superSet = {};
+    for (const i of a1) {
+        const e = i + typeof i;
+        superSet[e] = 1;
     }
-    superSet[e] = 2;
-  }
 
-  for (let e in superSet) {
-    if (superSet[e] === 1) {
-      return false;
+    for (const i of a2) {
+        const e = i + typeof i;
+        if (!superSet[e]) {
+            return false;
+        }
+        superSet[e] = 2;
     }
-  }
 
-  return true;
+    for (let e in superSet) {
+        if (superSet[e] === 1) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /**
@@ -145,63 +145,110 @@ export function arraysContainSameElements(a1, a2) {
  * @returns {string}
  */
 export function getTimeDiffString(start, end) {
-  let delta = Math.abs(end - start) / 1000;
+    let delta = Math.abs(end - start) / 1000;
 
-  const days = Math.floor(delta / 86400);
-  delta -= days * 86400;
+    const days = Math.floor(delta / 86400);
+    delta -= days * 86400;
 
-  const hours = Math.floor(delta / 3600) % 24;
-  delta -= hours * 3600;
+    const hours = Math.floor(delta / 3600) % 24;
+    delta -= hours * 3600;
 
-  const minutes = Math.floor(delta / 60) % 60;
-  delta -= minutes * 60;
+    const minutes = Math.floor(delta / 60) % 60;
+    delta -= minutes * 60;
 
-  const seconds = Math.floor(delta % 60);
+    const seconds = Math.floor(delta % 60);
 
-  if (days > 0) {
-    return `${days} day${days > 1 ? "s" : ""}`;
-  } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? "s" : ""} and ${minutes} minute${minutes > 1 ? "s" : ""}`;
-  } else if (minutes > 0) {
-    return `${minutes} minute${minutes > 1 ? "s" : ""}`;
-  } else {
-    return `${seconds} second${seconds > 1 ? "s" : ""}`;
-  }
+    if (days > 0) {
+        return `${days} day${days > 1 ? "s" : ""}`;
+    } else if (hours > 0) {
+        return `${hours} hour${hours > 1 ? "s" : ""} and ${minutes} minute${minutes > 1 ? "s" : ""}`;
+    } else if (minutes > 0) {
+        return `${minutes} minute${minutes > 1 ? "s" : ""}`;
+    } else {
+        return `${seconds} second${seconds > 1 ? "s" : ""}`;
+    }
 }
 
 /**
  * Downloads a document as a file.
- * @param content the written content inside of the document 
+ * @param content the written content inside of the document
  * @param fileName the name of the file
  * @param fileType the type of the file
  */
 export function downloadDocument(content, fileName, fileType = "") {
-  let typeSet;
+    let typeSet;
 
-  switch (fileType) {
-    case "html":
-      typeSet = "text/html;charset=utf-8";
-      break;
-    case "json":
-      typeSet = "application/json;charset=utf-8";
-      break;
-    case "csv":
-      typeSet = "text/csv;charset=utf-8";
-      break;
-    case "txt":
-    default:
-      typeSet = "text/plain;charset=utf-8";
-      break;
-  }
+    switch (fileType) {
+        case "html":
+            typeSet = "text/html;charset=utf-8";
+            break;
+        case "json":
+            typeSet = "application/json;charset=utf-8";
+            break;
+        case "csv":
+            typeSet = "text/csv;charset=utf-8";
+            break;
+        case "txt":
+        default:
+            typeSet = "text/plain;charset=utf-8";
+            break;
+    }
 
-  const blob = new Blob([content], { type: typeSet });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.setAttribute("href", url);
-  anchor.setAttribute("target", "_blank");
-  anchor.style.visibility = "hidden";
-  anchor.setAttribute("download", fileName);
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
+    const blob = new Blob([content], {type: typeSet});
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.setAttribute("href", url);
+    anchor.setAttribute("target", "_blank");
+    anchor.style.visibility = "hidden";
+    anchor.setAttribute("download", fileName);
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+}
+
+
+/**
+ * Sort the data in a graph according to a previous key
+ * @param key Key to sort the data
+ * @returns {[]}
+ */
+export const sortGraph = function (key) {
+    if (!key) {
+        return this;
+    }
+    const data = this;
+    const sorted = [];
+    let current = data.find(item => item[key] === null);
+
+    // find next element and add it to the sorted array
+    while (current) {
+        sorted.push(current);
+        current = data.find(item => item[key] === current.id);
+    }
+
+    return sorted;
+}
+
+/**
+ * This function sorts a list of objects according to the provided list of sorters objects.
+ * @param arrayToSort list of objects to sort
+ * @param sortList list of objects with the keys "type" and "key" to sort the list
+ * @returns {[]}
+ */
+export const sorter = function(arrayToSort, sortList) {
+    if (!sortList) {
+        return arrayToSort;
+    }
+    let sortedList = arrayToSort;
+    for (let sort of sortList) {
+        switch(sort.type) {
+            case "graph":
+                sortedList = sortGraph.call(sortedList, sort.key);
+                break;
+            default:
+                break;
+        }
+    }
+    return sortedList;
+
 }
