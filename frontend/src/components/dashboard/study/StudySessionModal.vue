@@ -89,6 +89,9 @@ export default {
     canAddSingleAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addSingleAssignments");
     },
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
+    },
     columns() {
       let cols = [
         {
