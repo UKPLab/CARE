@@ -1,55 +1,69 @@
 <template>
-  <div
-    ref="Modal"
-    :data-bs-keyboard="!disableKeyboard"
-    aria-hidden="true"
-    aria-labelledby="ModalLabel"
-    class="modal fade"
-    data-bs-backdrop="static"
-    role="dialog"
-    tabindex="-1"
-  >
+  <teleport to="body">
     <div
-      :class="xl && 'modal-xl' || lg && 'modal-lg'"
-      class="modal-dialog"
-      role="document"
+      ref="Modal"
+      :data-bs-keyboard="!disableKeyboard"
+      aria-hidden="true"
+      aria-labelledby="ModalLabel"
+      class="modal fade"
+      data-bs-backdrop="static"
+      role="dialog"
+      tabindex="-1"
     >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <slot name="title"/>
-          </h5>
-          <button
-            v-if="!removeClose"
-            aria-label="Close"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            type="button"
-          />
-        </div>
-        <div class="modal-body">
-          <div
-            v-if="waiting"
-            class="justify-content-center flex-grow-1 d-flex"
-            role="status"
-          >
-            <div class="spinner-border m-5">
-              <span class="visually-hidden">Loading...</span>
+      <div
+        :class="xl && 'modal-xl' || lg && 'modal-lg'"
+        class="modal-dialog"
+        role="document"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <slot name="title"/>
+            </h5>
+            <button
+              v-if="!removeClose"
+              aria-label="Close"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              type="button"
+            />
+          </div>
+          <div class="modal-body">
+            <div
+              v-if="waiting"
+              class="justify-content-center flex-grow-1 d-flex"
+              role="status"
+            >
+              <div class="spinner-border m-5">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <div
+              v-else-if="progress"
+              class="justify-content-center flex-grow-1 d-flex"
+              role="status"
+            >
+              <div class="progress" style="width:100%">
+                <div class="progress-bar" role="progressbar" :style="'width:' + progressPercent + '%'"
+                     :aria-valuenow="progressPercent" aria-valuemin="0"
+                     aria-valuemax="100"> {{ progressPercent }}%
+                </div>
+              </div>
+            </div>
+            <div v-show="!waiting && !progress">
+              <slot name="body"/>
             </div>
           </div>
-          <div v-else>
-            <slot name="body"/>
+          <div
+            v-show="!waiting && !progress"
+            class="modal-footer"
+          >
+            <slot name="footer"/>
           </div>
-        </div>
-        <div
-          v-if="!waiting"
-          class="modal-footer"
-        >
-          <slot name="footer"/>
         </div>
       </div>
     </div>
-  </div>
+  </teleport>
 </template>
 
 <script>
@@ -73,6 +87,7 @@
  *
  */
 import {Modal} from 'bootstrap';
+import {v4 as uuid} from "uuid";
 
 export default {
   name: "BasicModal",
@@ -122,6 +137,17 @@ export default {
     return {
       modal: null,
       waiting: false,
+      progress: false,
+      progressData: null,
+      progressId: null,
+    }
+  },
+  computed: {
+    progressPercent() {
+      if (this.progressData) {
+        return Math.round(this.progressData.current / this.progressData.total * 100);
+      }
+      return 0;
     }
   },
   mounted() {
@@ -139,7 +165,28 @@ export default {
     this.$refs.Modal.removeEventListener('show.bs.modal', this.showEvent);
     this.modal.hide();
   },
+  sockets: {
+    progressUpdate: function (data) {
+      if (data.id === this.progressId) {
+        this.progressData = data;
+      }
+    }
+  },
   methods: {
+    getProgressId() {
+      this.progressId = uuid();
+      return this.progressId;
+    },
+    startProgress() {
+      if (!this.progressId) {
+        this.getProgressId();
+      }
+      this.progress = true;
+      return this.progressId;
+    },
+    stopProgress() {
+      this.progress = false;
+    },
     hideEvent() {
       this.$emit('hide');
       if (this.acceptStats) {
@@ -161,17 +208,29 @@ export default {
     open() {
       this.openModal();
     },
+    show() {
+      this.openModal();
+    },
     openModal() {
       this.waiting = false;
+      this.progress = false;
       this.modal.show();
     },
     close() {
       this.modal.hide();
-    }
+    },
+    hide() {
+      this.modal.hide();
+    },
+    toggle() {
+      this.modal.toggle();
+    },
   }
 }
 </script>
 
 <style scoped>
-
+.shake {
+  animation: shake-animation 0.5s ease-in-out;
+}
 </style>

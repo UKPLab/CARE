@@ -54,8 +54,8 @@ def create_app():
     def getUsersFromCourse(sid, data):
         try:
             logger.info(f"Received call: {data} from {sid}")
-            api = Moodle(data['options']['apiKey'], data['options']['url'])
-            users = api.get_users_from_course(data['courseID'])
+            api = Moodle(data['options']['apiKey'], data['options']['apiUrl'])
+            users = api.get_users_from_course(data['options']['courseID'])
             response = {"success": True, "data": users}
             return response
         except Exception as e:
@@ -80,8 +80,8 @@ def create_app():
     def getSubmissionInfosFromAssignment(sid, data):
         try:
             logger.info(f"Received call: {data} from {sid}")
-            api = Moodle(data['options']['apiKey'], data['options']['url'])
-            submission_infos = api.get_submission_infos_from_assignment(course_id=data['courseID'], assignment_cmid=data['assignmentID'])
+            api = Moodle(data['options']['apiKey'], data['options']['apiUrl'])
+            submission_infos = api.get_submission_infos_from_assignment(course_id=data['options']['courseID'], assignment_cmid=data['options']['assignmentID'])
             response = {"success": True, "data": submission_infos}
             return response
         except Exception as e:
@@ -89,12 +89,12 @@ def create_app():
             response = {"success": False, "message": "error: " + str(e)}
             return response
         
-    @sio.on("downloadSubmissionsFromUser")
-    def downloadSubmissionsFromUser(sid, data):
+    @sio.on("downloadSubmissionsFromUrl")
+    def downloadSubmissionsFromUrl(sid, data):
         try:
             logger.info(f"Received call: {data} from {sid}")
-            api = Moodle(data['options']['apiKey'], data['options']['url'])
-            files = api.download_submissions_from_user(data)
+            api = Moodle(data['options']['apiKey'], data['options']['apiUrl'])
+            files = api.download_submissions_from_url(file_urls=data['fileUrls'])
             response = {"success": True, "data": files}
             return response
         except Exception as e:
@@ -103,12 +103,12 @@ def create_app():
             response = {"success": False, "message": "error: " + str(e)}
             return response
         
-    @sio.on("uploadLoginDataToMoodle")
-    def uploadLoginDataToMoodle(sid, data):
+    @sio.on("publishAssignmentTextFeedback")
+    def publishAssignmentTextFeedback(sid, data):
         try:
             logger.info(f"Received call: {data} from {sid}")
-            api = Moodle(data['options']['apiKey'], data['options']['url'])
-            api.upload_login_data_to_moodle(course_id=data['courseID'], assignment_id=data['assignmentID'], login_data=data['loginData'])
+            api = Moodle(data['options']['apiKey'], data['options']['apiUrl'])
+            api.publish_assignment_text_feedback(course_id=data['options']['courseID'], assignment_id=data['options']['assignmentID'], feedback_data=data['feedback'])
             response = {"success": True, "data": "Passwords uploaded successfully."}
             return response
         except Exception as e:

@@ -92,30 +92,6 @@ module.exports = class TagSocket extends Socket {
         await this.sendTagsUpdate(tagObjs);
     }
 
-    /**
-     * Publish a tagSet
-     * @param data
-     * @return {Promise<void>}
-     */
-    async publishTagSet(data) {
-        const prevTagSet = await this.models['tag_set'].getById(data.tagSetId);
-        if (!this.checkUserAccess(prevTagSet.userId)) {
-            this.logger.error("No permission to publish tagSet: " + data.tagSetId);
-            this.socket.emit("tagSetPublished", {success: false, message: "No permission to publish tagSet"});
-            return;
-        }
-
-        const newTagSet = await this.models['tag_set'].updateById(data.tagSetId, {public: true});
-        const tags = await this.models['tag'].getAllByKey('tagSetId', data.tagSetId);
-        const newTags = await Promise.all(tags.map(async t => await this.models['tag'].updateById(t.id, {public: true})));
-
-        await this.sendTagSetsUpdate(newTagSet);
-        await this.sendTagsUpdate(newTags);
-
-        this.socket.emit("tagSetPublished", {success: true});
-    }
-
-
     async sendTagsUpdate(tags) {
         this.emit("tagRefresh", tags);
     }
@@ -162,7 +138,7 @@ module.exports = class TagSocket extends Socket {
         try {
             const tags = await this.models['tag'].getAllByKey('tagSetId', tagSetId);
 
-            if (this.isAdmin()) {
+            if (await this.isAdmin()) {
                 await this.sendTagsUpdate(tags);
             } else {
                 await this.sendTagsUpdate(tags.filter(t => t.public || t.userId === this.userId))
@@ -206,7 +182,7 @@ module.exports = class TagSocket extends Socket {
 
         this.socket.on("tagSetGetAll", async () => {
             try {
-                if (this.isAdmin()) {
+                if (await this.isAdmin()) {
                     await this.sendTagSets();
                 } else {
                     await this.sendTagSetsByUser();
@@ -218,7 +194,7 @@ module.exports = class TagSocket extends Socket {
 
         this.socket.on("tagGetAll", async () => {
             try {
-                if (this.isAdmin()) {
+                if (await this.isAdmin()) {
                     await this.sendTags();
                 } else {
                     await this.sendTagsByUser();
@@ -240,14 +216,6 @@ module.exports = class TagSocket extends Socket {
             }
         });
 
-        this.socket.on("tagSetPublish", async (data) => {
-            try {
-                await this.publishTagSet(data);
-            } catch (err) {
-                this.socket.emit("tagSetPublished", {success: false, message: "Error publishing tagSet"});
-                this.logger.error(err);
-            }
-        });
 
     }
 

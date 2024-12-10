@@ -32,6 +32,34 @@ module.exports = (sequelize, DataTypes) => {
             }
         ]
 
+        /**
+         * Delete all tags from a tag set
+         * @param tagSet
+         * @param options
+         * @returns {Promise<void>}
+         */
+        static async deleteTags(tagSet, options) {
+            const tags = await sequelize.models['tag'].getAllByKey("tagSetId", tagSet.id, {transaction: options.transaction});
+
+            for (const tag of tags) {
+                await sequelize.models['tag'].deleteById(tag.id, {transaction: options.transaction});
+            }
+        }
+
+        /**
+         * Publish all tags from a tag set
+         * @param tagSet
+         * @param options
+         * @returns {Promise<void>}
+         */
+        static async puslishTags(tagSet, options) {
+            const tags = await sequelize.models['tag'].getAllByKey("tagSetId", tagSet.id, {transaction: options.transaction});
+
+            for (const tag of tags) {
+                await sequelize.models['tag'].updateById(tag.id, {public:true}, {transaction: options.transaction});
+            }
+        }
+
 
         /**
          * Helper method for defining associations.
@@ -40,6 +68,10 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
+            TagSet.belongsTo(models["project"], {
+                foreignKey: "projectId",
+                as: "project",
+            });
         }
     }
 
@@ -51,11 +83,23 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
-        createdAt: DataTypes.DATE
+        createdAt: DataTypes.DATE,
+        projectId: DataTypes.INTEGER
+
     }, {
         sequelize,
         modelName: 'tag_set',
-        tableName: 'tag_set'
+        tableName: 'tag_set',
+        hooks: {
+            afterUpdate: async (tagSet, options) => {
+                if (tagSet.deleted && !tagSet._previousDataValues.deleted) {
+                    await TagSet.deleteTags(tagSet, options);
+                }
+                if (tagSet.public && !tagSet._previousDataValues.public) {
+                    await TagSet.puslishTags(tagSet, options);
+                }
+            }
+        }
     });
     return TagSet;
 };

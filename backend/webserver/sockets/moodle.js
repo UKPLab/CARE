@@ -55,15 +55,6 @@ module.exports = class MoodleSocket extends Socket {
         this.socket.emit("downloadSubmissions", response);
     }
 
-    async uploadLoginDataTomoodle(data) {
-        this.logger.info("Calling MoodleRPC with: " + JSON.stringify(data));
-
-        const response = await this.server.rpcs["MoodleRPC"].uploadLoginDataTomoodle(data);
-
-        this.logger.info("Response: " + response);
-        
-        this.socket.emit("uploadPasswords", response);
-    }
 
     init() {
         this.socket.on("getUsersFromCourse", async (data) => {
@@ -97,13 +88,5 @@ module.exports = class MoodleSocket extends Socket {
                 this.logger.error("Couldn't download submissions from user. Error: " + err);
             }
         });
-
-        this.socket.on("uploadPasswordsToMoodle", async (data) => {
-            try {
-                await this.uploadPasswordsToMoodle(data);
-            } catch (err) {
-                this.logger.error("Couldn't upload passwords to Moodle. Error: " + err);
-            }
-        });
-}
+    }
 }

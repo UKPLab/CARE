@@ -29,11 +29,10 @@
 
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
-        <button
+        <TopBarButton
             v-if="studySessionId === null && numStudyComments > 0"
             :title="showAll ? 'Hide study comments' : 'Show study comments'"
             class="btn rounded-circle"
-            type="button"
             @click="setSetting({key: 'annotator.showAllComments', value: !showAll})"
         >
           <span class="position-relative translate-middle top-100 start-100 fs-10 fw-light">
@@ -45,15 +44,14 @@
                 :size="18"
             />
           </span>
-        </button>
+        </TopBarButton>
       </li>
       <li class="nav-item">
 
-        <button
-            v-if="nlpEnabled"
+        <TopBarButton
+            v-if="studySessionId && studySessionId !== 0 ? active && nlpEnabled : nlpEnabled"
             :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
             class="btn rounded-circle"
-            type="button"
             @click="toggleNlp"
         >
 
@@ -63,24 +61,24 @@
               :size="18"
               icon-name="robot"
           />
-        </button>
-        <button
+        </TopBarButton>
+        <TopBarButton
+            v-show="studySessionId && studySessionId !== 0 ? active : true"
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
-            type="button"
             @click="toggleSidebar"
         >
           <LoadIcon
               :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
               :size="18"
           />
-        </button>
+        </TopBarButton>
       </li>
-      <ExpandMenu class="nav-item"/>
+      <ExpandMenu v-show ="studySessionId && studySessionId !== 0 ? active : true" class="nav-item"/>
     </Teleport>
 
     <Teleport to="#topBarExtendMenuItems">
-      <li><a
+      <li><a          
           :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
           class="dropdown-item"
           href="#"
@@ -91,37 +89,33 @@
 
     <Teleport to="#topbarCustomPlaceholder">
       <form class="hstack gap-3 container-fluid justify-content-center">
-        <button
+        <TopBarButton
             v-if="review"
             class="btn btn-outline-success me-2"
-            type="button"
             @click="$refs.reviewSubmit.open()"
         >Submit Review
-        </button>
-        <button
+        </TopBarButton>
+        <TopBarButton
             v-if="approve"
             class="btn btn-outline-dark me-2"
-            type="button"
             @click="$refs.report.open()"
         >
           Report
-        </button>
-        <button
+        </TopBarButton>
+        <TopBarButton
             v-if="approve"
             class="btn btn-outline-success me-2"
-            type="button"
             @click="decisionSubmit(true)"
         >
           Accept
-        </button>
-        <button
+        </TopBarButton>
+        <TopBarButton
             v-if="approve"
             class="btn btn-outline-danger me-2"
-            type="button"
             @click="decisionSubmit(false)"
         >
           Reject
-        </button>
+        </TopBarButton>
       </form>
     </Teleport>
 
@@ -148,6 +142,9 @@ import debounce from 'lodash.debounce';
 import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
+import {computed} from "vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
+
 
 export default {
   name: "AnnotatorView",
@@ -159,11 +156,16 @@ export default {
     Loader,
     ExportAnnos
   },
+  provide() {
+    return {
+      documentId: computed(() => this.documentId),
+      studyStepId: computed(() => this.studyStepId)
+    }
+  },
   inject: {
-    documentId: {
-      default: 0
-    },
     studySessionId: {
+      type: Number,
+      required: false,
       default: null
     },
     acceptStats: {
@@ -185,6 +187,21 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    documentId: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
+    active: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
   },
   data() {
@@ -241,23 +258,28 @@ export default {
       return this.$store.getters["settings/getValue"]('service.nlp.enabled') === "true";
     },
     numStudyComments() {
-      return this.comments.filter(c => c.studySessionId).length;
-    },
+      return this.comments.filter(c => c.studySessionId === this.studySessionId && c.studyStepId === this.studyStepId).length;
+    }
   },
   watch: {
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId , studyStepId: this.studyStepId});
       }
-    }
+    },
+    studyStepId(newVal, oldVal) {
+      if (oldVal !== newVal) {
+        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId , studyStepId: this.studyStepId});
+      }
+    },
   },
   mounted() {
-    this.eventBus.on('pdfScroll', (anno_id) => {
-      this.scrollTo(anno_id);
+    this.eventBus.on('pdfScroll', (annotationId) => {
+      this.scrollTo(annotationId);
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "pdfScroll",
-          data: {documentId: this.documentId, study_session_id: this.studySessionId, anno_id: anno_id}
+          data: {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId, annotationId: annotationId}
         });
       }
     });
@@ -379,9 +401,7 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      if (this.studySessionId === null || (this.studySessionId && this.studySessionId !== 0)) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId});
-      }
+      this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
 
       // Join Room for document updates
       this.$socket.emit("documentSubscribe", {documentId: this.documentId});
@@ -411,6 +431,7 @@ export default {
             data: {
               documentId: this.documentId,
               studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               copiedText: copiedText,
             }
           });

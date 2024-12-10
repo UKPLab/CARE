@@ -12,7 +12,7 @@
       <BasicForm
         ref="form"
         v-model="userInfo"
-        :fields="fields"
+        :fields="formFields"
       />
       <div class="detail-table-container">
         <BasicTable
@@ -42,7 +42,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
-import BasicTable from "@/basic/table/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 
 /**
@@ -57,7 +57,7 @@ export default {
   data() {
     return {
       userId: 0,
-      fields: [
+      formFields: [
         {
           key: "userName",
           label: "Username:",
@@ -89,12 +89,6 @@ export default {
           type: "checkbox",
           required: true,
           readOnly: false,
-          options: [
-            { value: "admin", label: "Admin" },
-            { value: "teacher", label: "Teacher" },
-            { value: "mentor", label: "Mentor" },
-            { value: "student", label: "Student" },
-          ],
         },
       ],
       options: {
@@ -126,8 +120,18 @@ export default {
         deletedAt: formatDate(userInfo.deletedAt),
       };
     },
+    systemRoles() {
+      return this.$store.getters["admin/getSystemRoles"];
+    },
   },
-
+  mounted() {
+    const options = this.systemRoles.map((role) => ({
+      value: role.name,
+      label: role.name.charAt(0).toUpperCase() + role.name.slice(1),
+    }));
+    const index = this.formFields.findIndex(({ key }) => key === "roles");
+    this.formFields[index].options = options;
+  },
   methods: {
     open(userId) {
       this.userId = userId;

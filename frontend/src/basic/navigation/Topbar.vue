@@ -26,7 +26,8 @@
             name="logo"
           />
         </a>
-        <div id="topbarCustomPlaceholder"/>
+        <div id="topbarCustomPlaceholder"/>   
+        <div id="topbarCenterPlaceholder"/>     
         <ul
           id="topBarNavItems"
           class="navbar-nav ms-auto mt-2 mt-lg-0"
@@ -166,5 +167,11 @@ body.sidebar-exists #backButton {
   display: none;
 }
 
+#topbarCenterPlaceholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
 
 </style>

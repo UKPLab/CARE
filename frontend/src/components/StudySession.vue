@@ -6,8 +6,8 @@
   <Study
     v-else
     :init-study-session-id="studySessionId"
-    :readonly="readonly"
-    :study-hash="studySessionHash"
+    :read-only="readOnly"
+    :study-hash="studyHash"
   />
 </template>
 
@@ -32,11 +32,6 @@ export default {
       required: true,
     },
   },
-  data() {
-    return {
-      readonly: false,
-    }
-  },
   sockets: {
     studySessionError: function (data) {
       if (data.studySessionHash === this.studySessionHash) {
@@ -59,16 +54,36 @@ export default {
       } else
         return 0;
     },
-  },
-  watch: {
-    studySession(newVal) {
-      if (newVal && newVal.end) {
-        this.readonly = true;
+    readOnly() {
+      return this.$route.meta.readOnly !== undefined && this.$route.meta.readOnly
+    },
+    study() {
+      return this.$store.getters['table/study/get'](this.studySession.studyId)
+    },
+    studyHash() {
+      if (this.studySession && this.study) {
+        return this.study["hash"];
+      } else {
+        return null;
       }
     },
   },
   mounted() {
-    this.$socket.emit("studySessionGetByHash", {studySessionHash: this.studySessionHash});
+    this.$socket.emit("appDataByHash", {
+        table: "study_session",
+        hash: this.studySessionHash
+      },
+      (response) => {
+        if (!response.success) {
+          this.eventBus.emit('toast', {
+            title: "Access Error!",
+            message: response.message,
+            variant: "danger"
+          });
+          this.$router.push("/");
+        }
+
+      })
   },
 }
 </script>

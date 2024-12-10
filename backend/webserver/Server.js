@@ -212,6 +212,10 @@ module.exports = class Server {
         };
 
         this.io = new WebSocketServer(this.httpServer, socketIoOptions);
+
+        // initalize app data subscriptions
+        this.io.appDataSubscriptions = {};
+
         const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
         this.io.use(wrap(this.session));
         this.io.use(wrap(passport.initialize()));
@@ -235,6 +239,11 @@ module.exports = class Server {
             socket.openComponents = {
                 editor: []  // Array to track open documents
             };
+            socket.appDataSubscriptions = {
+                tables: {},
+                ids: {},
+                merged: {}
+            };
             this.logger.debug("Socket connect: " + socket.id);
 
             Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
@@ -244,16 +253,25 @@ module.exports = class Server {
             });
 
             socket.on("disconnect", async (reason) => {
-                this.logger.debug("Socket disconnected: " + reason);
-                
-                // Save open documents on disconnect
-                for (const documentId of socket.openComponents.editor) {
-                    if (this.availSockets[socket.id]['DocumentSocket']) {
-                        await this.availSockets[socket.id]['DocumentSocket'].saveDocument(documentId);
-                    }
-                }
+                try {
+                    this.logger.debug("Socket disconnected: " + reason);
 
-                delete this.availSockets[socket.id];
+                    // Save open documents on disconnect
+                    for (const documentId of socket.openComponents.editor) {
+                        if (this.availSockets[socket.id]['DocumentSocket']) {
+                            await this.availSockets[socket.id]['DocumentSocket'].saveDocument(documentId);
+                        }
+                    }
+
+                    // delete table subscriptions on disconnect (in case unmounted is not called)
+                    Object.entries(socket.appDataSubscriptions).forEach(([key, value]) => {
+                        this.io.appDataSubscriptions[value.table].delete(key);
+                    });
+
+                    delete this.availSockets[socket.id];
+                } catch (err) {
+                    this.logger.error("Error on socket disconnect: " + err);
+                }
             });
         });
     }

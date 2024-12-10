@@ -157,7 +157,6 @@ export default {
       }
     },
     updateJson(data) {
-      console.log("Data", data);
       try {
         const newTree = jsonview.create(data);
 

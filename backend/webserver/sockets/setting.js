@@ -14,7 +14,7 @@ module.exports = class SettingSocket extends Socket {
      * @return {Promise<void>}
      */
     async saveSettings(data) {
-        if (this.isAdmin()) {
+        if (await this.isAdmin()) {
             await Promise.all(data.map(async setting => await this.models['setting'].set(setting.key, setting.value)));
             await this.getSocket('AppSocket').sendSettings(true);  // Send new settings to all clients
             this.sendToast("Settings saved", "Success", "success");
@@ -25,7 +25,7 @@ module.exports = class SettingSocket extends Socket {
     init() {
 
         this.socket.on("settingGetData", async (data) => {
-            if (this.isAdmin()) {
+            if (await this.isAdmin()) {
                 this.socket.emit("settingData", await this.models['setting'].getAll(true));
                 try {
                     this.socket.emit("settingData", await this.models['setting'].getAll(true));

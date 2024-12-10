@@ -15,7 +15,6 @@ describe("Test Websockets - Service - NLP", () => {
 
     test("Service - NLP Service", (done) => {
         clientSocket.on("serviceRefresh", (data) => {
-            console.log(data);
             if (data['type'] === 'skillUpdate') {
                 expect(data['type']).toBe("skillUpdate");
                 expect(data['service']).toBe("NLPService");
@@ -40,7 +39,6 @@ describe("Test Websockets - Service - NLP", () => {
                 });
             }
             if (data['type'] === 'skillResults') {
-                console.log(data);
                 expect(data['data']['id']).toBe(1);
                 expect(data['data']['fallback']).toBe(true);
                 done();
