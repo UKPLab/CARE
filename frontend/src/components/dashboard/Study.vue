@@ -124,6 +124,9 @@ export default {
             }
           },
           title: "Edit study",
+          filter: [
+            {key: "showEditButton", value: true},
+          ],
           action: "editStudy",
         },
         {
@@ -134,6 +137,9 @@ export default {
               "btn-outline-secondary": true,
             }
           },
+          filter: [
+            {key: "showDeleteButton", value: true},
+          ],
           title: "Delete study",
           action: "deleteStudy",
         },
@@ -178,6 +184,9 @@ export default {
               "btn-outline-secondary": true,
             }
           },
+          filter: [
+            {key: "showCloseButton", value: true},
+          ],
           title: "Close study",
           action: "closeStudy",
         },
@@ -189,6 +198,9 @@ export default {
               "btn-outline-secondary": true,
             }
           },
+          filter: [
+            {key: "showTemplateButton", value: true},
+          ],
           title: "Save as Template",
           action: "saveAsTemplate",
         }
@@ -304,8 +316,16 @@ export default {
 
           study.createdAt = new Date(study.createdAt).toLocaleString()
           study.sessions = this.$store.getters["table/study_session/getFiltered"]((e) => e.studyId === study.id).length;
+
+          study.showEditButton = this.isAdmin || study.userId === this.userId;
+          study.showDeleteButton = this.isAdmin || study.userId === this.userId;
+          study.showCloseButton = this.isAdmin || study.userId === this.userId;
+          study.showTemplateButton = this.isAdmin || study.userId === this.userId;
           return study;
         });
+    },
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
     },
     canViewAllStudies() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view");
