@@ -269,6 +269,15 @@ export default {
     },
     openedTextarea() {
       return !this.collapseComment && (this.edit || this.editedByMyself)
+    },
+    studySession() {
+      return this.$store.getters["table/study_session/get"](this.studySessionId);
+    },
+    study() {
+      return this.$store.getters["table/study/get"](this.studySession.studyId);
+    },
+    anonymize() {
+      return this.study.anonymize;
     }
   },
   watch: {
@@ -379,6 +388,7 @@ export default {
         "parentCommentId": this.commentId,
         "studySessionId": this.studySessionId,
         "studyStepId": this.studyStepId,
+        "anonymous": this.anonymize,
       });
     },
     saveCard() {
