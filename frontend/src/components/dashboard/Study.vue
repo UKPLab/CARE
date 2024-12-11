@@ -22,7 +22,7 @@
           @click="addBulkAssignment"
         />
         <BasicButton
-          v-if="canAddSingleAssignments"
+          v-if="isAdmin"
           class="btn-secondary btn-sm me-1"
           title="Add Single Assignment"
           @click="addSingleAssignment"
