@@ -31,7 +31,7 @@
         />
       </span>
       <BasicButton
-        v-if="canAddSingleAssignments"
+        v-if="isAdmin"
         class="btn btn-primary"
         @click="addSingleAssignment"
         title="Add"

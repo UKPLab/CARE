@@ -13,7 +13,7 @@
         :key="s.id"
       >
         <Card
-          :title="getTitle(s)"
+          :title="s.title"
           collapsable collapsed @collapse="collapse(s.id, $event)"
         >
           <template #body>
@@ -54,10 +54,7 @@ export default {
   components: {Card, LoadIcon, StudySessionTable, Timer},
   subscribeTable: [{
     table: 'study_session',
-    include: [
-      {table: "user", by: "userId"}
-    ]
-  }],
+  }, "user"],
   props: {},
   data() {
     return {
@@ -67,7 +64,18 @@ export default {
   computed: {
     studies() {
       return this.$store.getters["table/study/getFiltered"](s => this.sessionStudyIds.includes(s.id))
-        .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)));
+        .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)))
+        .map(s => {
+          let study = {...s};
+          const firstName = this.$store.getters["table/user/get"](study.userId)?.firstName;
+            const lastName = this.$store.getters["table/user/get"](study.userId)?.lastName;
+          if (this.canReadPrivateInformation && firstName && lastName) {
+            study.title = study.name ? `Study: ${study.name} (from ${firstName} ${lastName})` : '<no name>';
+          } else {
+            study.title = study.name ? `Study: ${study.name}` : '<no name>';
+          }
+          return study;
+        });
     },
     studiesFiltered() {
       return this.studies.filter(s => !this.isStudyClosed(s));
@@ -85,15 +93,6 @@ export default {
     }
   },
   methods: {
-    getTitle(study) {
-      if (this.canReadPrivateInformation) {
-        const firstName = this.$store.getters["table/user/get"](study.userId).firstName;
-        const lastName = this.$store.getters["table/user/get"](study.userId).lastName;
-        return study.name ? `Study: ${study.name} (from ${firstName} ${lastName})` : '<no name>';
-      } else {
-        return study.name ? `Study: ${study.name}` : '<no name>';
-      }
-    },
     collapse(studyId, collapsed) {
       if (collapsed) {
         this.$socket.emit("studySessionUnsubscribe", {studyId: studyId});
