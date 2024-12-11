@@ -100,6 +100,7 @@ export default {
         borderless: false,
         small: false,
         pagination: 10,
+        search: true
       },
     }
   },

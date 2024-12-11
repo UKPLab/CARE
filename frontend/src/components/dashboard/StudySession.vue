@@ -13,7 +13,7 @@
         :key="s.id"
       >
         <Card
-          :title="s.name ? `Study: ${s.name}` : '<no name>'"
+          :title="getTitle(s)"
           collapsable collapsed @collapse="collapse(s.id, $event)"
         >
           <template #body>
@@ -52,7 +52,12 @@ import {getTimeDiffString} from "@/assets/utils";
 export default {
   name: "DashboardStudySession",
   components: {Card, LoadIcon, StudySessionTable, Timer},
-  subscribeTable: ['study_session'],
+  subscribeTable: [{
+    table: 'study_session',
+    include: [
+      {table: "user", by: "userId"}
+    ]
+  }],
   props: {},
   data() {
     return {
@@ -71,12 +76,24 @@ export default {
       return this.$store.getters["table/study_session/getByUser"](this.$store.getters["auth/getUserId"])
         .map(s => s.studyId);
     },
+    canReadPrivateInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
+    },
     studyTimes() {
       this.trigger; // leave here to force recompute
       return Object.fromEntries(this.studies.map(s => [s.id, s.end ? getTimeDiffString(Date.now(), new Date(s.end)) : null]));
     }
   },
   methods: {
+    getTitle(study) {
+      if (this.canReadPrivateInformation) {
+        const firstName = this.$store.getters["table/user/get"](study.userId).firstName;
+        const lastName = this.$store.getters["table/user/get"](study.userId).lastName;
+        return study.name ? `Study: ${study.name} (from ${firstName} ${lastName})` : '<no name>';
+      } else {
+        return study.name ? `Study: ${study.name}` : '<no name>';
+      }
+    },
     collapse(studyId, collapsed) {
       if (collapsed) {
         this.$socket.emit("studySessionUnsubscribe", {studyId: studyId});
@@ -85,7 +102,7 @@ export default {
       }
     },
     isStudyClosed(study) {
-      if(study) {
+      if (study) {
         if (study.closed) {
           return true;
         }
