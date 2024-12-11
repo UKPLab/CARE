@@ -91,6 +91,14 @@
         <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
                 :study-step-id="s.id" :active="activeComponents[index]"/>
       </div>
+      <div v-show="s.id === currentStudyStepId">
+        <FeedbackModal
+            v-if="s.stepType === 3 && studyTrajectory.includes(s.id)"
+            :study-step-id="s.id" :is-last-step="s.id === lastStep.id"
+            @close="handleModalClose"
+          />
+      </div>
+
       <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
     </div>
   </div>
@@ -113,10 +121,11 @@ import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed} from "vue";
+import FeedbackModal from "./feedback/FeedbackModal.vue";
 
 export default {
   name: "StudyRoute",
-  components: {LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton},
+  components: {LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, FeedbackModal},
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
@@ -363,6 +372,23 @@ export default {
     },
     finish() {
       this.$refs.studyFinishModal.open();
+    },
+    handleModalClose(event) {
+        if (event.endStudy) {
+            this.finish(); // End the study
+        } else if (event.nextStep) {
+            const nextStep = this.nextStudyStep;
+            if (nextStep) {
+                this.updateStep(nextStep.id);
+            }
+        } else if (event.previousStep && this.currentWorkflowStep.allowBackward) {
+            const previousStep = this.studySteps.find(
+                step => step.id === this.currentStudyStep.studyStepPrevious
+            );
+            if (previousStep) {
+                this.updateStep(previousStep.id);
+            }
+        }
     },
     updateStep(step) {
       if (this.readOnlyComputed) {
