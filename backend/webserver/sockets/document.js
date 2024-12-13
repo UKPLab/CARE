@@ -611,7 +611,7 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Uploads login data to a Moodle assignment as feedback comments.
+     * Uploads review links to a Moodle assignment as feedback comments.
      * @param {Object} data - The data required for uploading login data.
      * @param {Object} data.options - The options object containing the API key and URL of the Moodle instance.
      * @param {number} data.options.courseID - The ID of the course to fetch users from.
@@ -776,9 +776,6 @@ module.exports = class DocumentSocket extends Socket {
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
-        this.createSocket("documentGetStudies", this.models["document"].getDocAssociatedStudies, {}, false);
-        // TODO: documentGetSessions to be implemented
-        this.createSocket("documentGetSessions");
         this.createSocket("documentUploadReviewLinks", this.uploadReviewLinks, {}, false);
     }
 };
