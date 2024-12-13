@@ -118,6 +118,9 @@ export default {
           }
 
           const user = this.users.find((u) => u.id === study.userId);
+          if (!user) {
+            return null;
+          }
 
           return {
             docId: document.id,
@@ -126,9 +129,9 @@ export default {
             studyId: study.id,
             studyName: study.name,
             studyClosed: study.closed,
-            extId: user ? user.extId : null,
-            firstName: user ? user.firstName : null,
-            lastName: user ? user.lastName : null,
+            extId: user.extId,
+            firstName: user.firstName,
+            lastName: user.lastName,
           };
         })
         .filter((s) => s !== null);
