@@ -7,7 +7,7 @@
     @submit="uploadReviewLinks"
   >
     <template #title>
-      <h5 class="modal-title">Upload Review</h5>
+      <h5 class="modal-title">Upload Review Links</h5>
     </template>
     <template #step-1>
       <div class="table-scroll-container">
@@ -36,7 +36,6 @@
         with-assignment-id
       />
     </template>
-    <template #step-4></template>
   </StepperModal>
 </template>
 
@@ -61,15 +60,11 @@ export default {
         },
       ],
     },
-    // TODO: table to be subscribed
     {
-      table: "study",
-      // filter: [
-      //   {
-      //     key: "readyForReview",
-      //     value: true,
-      //   },
-      // ],
+      table: "study_session",
+    },
+    {
+      table: "study_step",
     },
   ],
   components: { MoodleOptions, BasicTable, StepperModal },
@@ -91,6 +86,19 @@ export default {
     };
   },
   computed: {
+    steps() {
+      return [{ title: "Document" }, { title: "Session" }, { title: "Moodle Info" }];
+    },
+    stepValid() {
+      return [
+        this.selectedStudies.length > 0,
+        this.selectedSessions.length > 0,
+        this.moodleOptionValid,
+      ];
+    },
+    moodleOptionValid() {
+      return Object.values(this.moodleOptions).every(v => v !== "");
+    },
     users() {
       return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
     },
@@ -142,13 +150,6 @@ export default {
         }
       })
     },
-    steps() {
-      return [{ title: "Document" }, { title: "Session" }, { title: "Moodle Info" }, { title: "Result" }];
-    },
-    stepValid() {
-      // TODO: To be implemented
-      return [];
-    },
     studyTableColumns() {
       return [
         { name: "Document Title", key: "docName" },
@@ -174,9 +175,9 @@ export default {
     },
     reset() {
       this.selectedStudies = [];
+      this.selectedSessions = [];
     },
     uploadReviewLinks() {
-      if (!this.$refs.moodleOptionsForm.validate()) return;
       const formattedSessions = this.selectedSessions.reduce((acc, session) => {
         const link = window.location.origin + "/review/" + session.hash;
         const existingUser = acc.find((user) => user.extId === session.extId);
@@ -206,7 +207,7 @@ export default {
             this.$refs.reviewStepper.close();
             this.eventBus.emit("toast", {
               title: "Reviews uploaded",
-              message: "The reviews have been successfully uploaded!",
+              message: "The review links have been successfully uploaded!",
               variant: "success",
             });
           } else {
