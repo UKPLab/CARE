@@ -44,7 +44,6 @@
 import BasicTable from "@/basic/Table.vue";
 import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import { testStudies, testSessions } from "./testData";
 
 /**
  * Modal for selecting study sessions and then upload generated review links to specified Moodle assignment
@@ -62,6 +61,7 @@ export default {
         },
       ],
     },
+    // TODO: table to be subscribed
     {
       table: "study",
       // filter: [
@@ -167,14 +167,6 @@ export default {
       ];
     },
   },
-  mounted() {
-    console.log(this.studiesTable, "mounted study");
-    // this.$socket.emit("documentGetStudies", {}, (res) => {
-    //   if (res.success) {
-    //     this.studies = res["data"];
-    //   }
-    // });
-  },
   methods: {
     open() {
       this.reset();
@@ -184,13 +176,13 @@ export default {
       this.selectedStudies = [];
     },
     uploadReviewLinks() {
-      // if (!this.$refs.moodleOptionsForm.validate()) return;
+      if (!this.$refs.moodleOptionsForm.validate()) return;
       const formattedSessions = this.selectedSessions.reduce((acc, session) => {
         const link = window.location.origin + "/review/" + session.hash;
         const existingUser = acc.find((user) => user.extId === session.extId);
 
         if (existingUser) {
-          existingUser.links += `, ${link}`;
+          existingUser.links += `\n${link}`;
         } else {
           acc.push({
             extId: session.extId,
