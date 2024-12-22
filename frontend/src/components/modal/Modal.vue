@@ -1,11 +1,18 @@
 <template>
-    <BasicModal ref="feedbackModal" lg name="feedbackModal">
+  <Loader
+      v-if="documentId && documentId === 0"
+      :loading="true"
+      class="pageLoader"
+  />
+  <span v-else>
+    <BasicModal ref="modal" 
+    name="Modal">
       <template #title>
         <h5 class="modal-title text-primary">Feedback</h5>
       </template>
       <template #body>
         <div class="feedback-container p-3">
-          <p v-if="!Object.keys(data).length">No feedback available.</p>
+          <p v-if="!data.length && !Object.keys(data).length">No feedback available.</p>
           <dl v-else>
             <dt v-for="(value, key) in data" :key="key">{{ key }}</dt>
             <dd>{{ value }}</dd>
@@ -28,7 +35,8 @@
         />
       </template>
     </BasicModal>
-  </template>
+  </span>
+</template>
   
   <script>
   import BasicModal from "@/basic/Modal.vue";
@@ -37,10 +45,10 @@
   /**
    * Providing information from the NLP Model
    *
-   * @author: Juliane Bechert
+   * @author: Juliane Bechert, Manu Sundar Raj Nandyal
    */
    export default {
-    name: "InformationModal",
+    name: "Modal",
     components: { BasicButton, BasicModal },
     props: {
       studyStepId: { type: Number, required: true },
@@ -52,16 +60,28 @@
       };
     },
     mounted() {
-      this.$refs.feedbackModal.open({ Test: "This is a test" });
+      this.$refs.modal.open();
+    },
+    computed:{
+      studyStep(){
+        return this.studyStepId && this.studyStepId !== 0 ? this.$store.getters["table/studyStep/get"](this.studyStepId) : null;
+      },
+      workflowStep(){
+        return this.studyStep && this.studyStep.workflowStepId ? this.$store.getters["table/workflow_step/get"](this.studyStep.workflowStepId) : null;
+      },
+      configuration(){
+        return this.workflowStep && this.workflowStep.configuration ? this.$store.getters["table/workflow_step/get"](this.workflowStep.configuration) : null;
+      },
+      
     },
     methods: {
       open(data) {
         this.data = data;
-        this.$refs.feedbackModal.open();
+        this.$refs.modal.open();
       },
       closeModal(event) {
         this.$emit("close", event);
-        this.$refs.feedbackModal.close();
+        this.$refs.modal.close();
       },
     },
   };
