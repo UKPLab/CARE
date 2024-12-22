@@ -20,7 +20,7 @@
           class="feedback-container p-3"
           :style="{ color: configuration?.textColor || '' }"
         >
-          <p v-if="!data && !data.length && !Object.keys(data).length">
+          <p v-if="!data || !Object.keys(data).length">
             No feedback available.
           </p>
           <dl v-else>

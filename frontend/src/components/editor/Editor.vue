@@ -104,20 +104,26 @@ export default {
       type: Boolean,
       required: false,
       default: true,
-    },
+    },    
+    modelValue: {
+        type: String,
+        required: false,
+        default: "",
+      },
   },
+  emits: ["update:modelValue"],
   data() {
     return {
       content: "",
       documentHash: this.$route.params.documentHash,
       deltaBuffer: [],
       editor: null,
-      documentLoaded: false,
+      documentLoaded: false,      
+      currentData: "",
     };
   },
   created() {
-    this.documentHash = this.$route.params.documentHash;
-    
+    this.documentHash = this.$route.params.documentHash;    
   },
   mounted() {
     const editorContainer = document.getElementById('editor-container');
@@ -152,7 +158,8 @@ export default {
       }
     );
 
-    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
+    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);    
+    this.currentData = this.modelValue;
   },
   sockets: {
     connect() {
@@ -246,7 +253,17 @@ export default {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
       }
-    }
+    },
+    currentData: {
+        handler(newData) {
+        this.$emit("update:modelValue", newData);
+      }
+    },
+    modelValue: {
+      handler(newData) {
+        this.currentData = newData;
+      }
+    },
   },
   methods: {
     onPaste(event) {
