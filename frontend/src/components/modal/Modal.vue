@@ -68,26 +68,28 @@
          default: false 
       },
     },
-  inject: {
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null // Allows for null if not in a study session
+    inject: {
+      studySessionId: {
+        type: Number,
+        required: false,
+        default: null // Allows for null if not in a study session
+      },
+      userId: {
+        type: Number,
+        required: false,
+        default: null
+      },
+      readonly: {
+        type: Boolean,
+        required: false,
+        default: false, // Default to false if not provided
+      },
     },
-    userId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    readonly: {
-      type: Boolean,
-      required: false,
-      default: false, // Default to false if not provided
-    },
-  },
-    data: { 
-      loadingConfig: true, 
-      data: {},
+    data() { 
+      return {
+        loadingConfig: true, 
+        data: {},
+      };
     },
     created() {
       if(this.configuration){
@@ -114,7 +116,7 @@
     },
     mounted() {
       this.$refs.modal.open();
-      },
+    },
     computed:{
       studyStep(){
         return this.studyStepId && this.studyStepId !== 0 ? this.$store.getters["table/studyStep/get"](this.studyStepId) : null;
@@ -122,6 +124,7 @@
       workflowStep(){
         return this.studyStep?.workflowStepId ? this.$store.getters["table/workflow_step/get"](this.studyStep.workflowStepId) : null;
       },
+      // this configuration is of type json, so it should be parsed
       configuration(){
         return this.workflowStep?.configuration? this.$store.getters["table/workflow_step/get"](this.workflowStep.configuration) : null;
       },
@@ -131,7 +134,11 @@
           this.configuration?.customClass || "",
         ].join(" ");
       },
+      parseConfiguration(){
+        return this.configuration? JSON.parse(this.configuration) : null;
+      },
     },
+    watch: {},
     methods: {
       open(data) {
         this.data = data;
