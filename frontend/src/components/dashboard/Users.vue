@@ -36,17 +36,18 @@
     ref="detailsModal"
     @update-user="fetchUsers"
   />
-  <RightsModal ref="rightsModal"/>
-  <PasswordModal ref="passwordModal"/>
+  <RightsModal ref="rightsModal" />
+  <PasswordModal ref="passwordModal" />
   <ImportModal
     ref="importModal"
     @update-user="fetchUsers"
   />
-  <UploadModal ref="uploadModal"/>
+  <UploadModal ref="uploadModal" />
   <UserAddModal
     ref="userAddModal"
     @update-user="fetchUsers"
   />
+  <ConfirmModal ref="confirmModal" />
 </template>
 
 <script>
@@ -59,6 +60,7 @@ import RightsModal from "./users/RightsModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
  * Display user list by users' role
@@ -77,6 +79,7 @@ export default {
     ImportModal,
     UploadModal,
     UserAddModal,
+    ConfirmModal,
   },
   props: {
     admin: {
@@ -97,17 +100,17 @@ export default {
         sort: {
           column: "id",
           order: "ASC",
-        }
+        },
       },
       columns: [
-        {name: "ID", key: "id", sortable: true},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "User", key: "userName"},
-        {name: "Email", key: "email"},
-        {name: "Accept Terms", key: "acceptTerms", sortable: true},
-        {name: "Accept Stats", key: "acceptStats", sortable: true},
-        {name: "Last Login", key: "lastLoginAt", sortable: true},
+        { name: "ID", key: "id", sortable: true },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        { name: "User", key: "userName" },
+        { name: "Email", key: "email" },
+        { name: "Accept Terms", key: "acceptTerms", sortable: true },
+        { name: "Accept Stats", key: "acceptStats", sortable: true },
+        { name: "Last Login", key: "lastLoginAt", sortable: true },
       ],
       // Possible values for role here are all the roles in the DB.
       role: "all",
@@ -154,6 +157,17 @@ export default {
             },
           },
         },
+        {
+          title: "Delete User",
+          action: "deleteUser",
+          icon: "trash",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+        },
       ];
     },
   },
@@ -184,9 +198,11 @@ export default {
           this.openResetPasswordModal(data.params);
           break;
         case "editReviews":
-          this.openEditReviewsModal(data.params)
+          this.openEditReviewsModal(data.params);
           break;
-
+        case "deleteUser":
+          this.deleteUser(data.params);
+          break;
       }
     },
     openUserDetailsModal(user) {
@@ -197,6 +213,38 @@ export default {
     },
     openResetPasswordModal(user) {
       this.$refs.passwordModal.open(user.id);
+    },
+    deleteUser(user) {
+      this.$refs.confirmModal.open("Delete User", "Are you sure you want to delete this user?", null, (val) => {
+        if (val) {
+          this.$socket.emit(
+            "appDataUpdate",
+            {
+              table: "user",
+              data: {
+                id: user.id,
+                deleted: true,
+              },
+            },
+            (result) => {
+              if (result.success) {
+                this.eventBus.emit("toast", {
+                  title: "User deleted",
+                  message: "User has been deleted",
+                  variant: "success",
+                });
+                this.fetchUsers();
+              } else {
+                this.eventBus.emit("toast", {
+                  title: "User not deleted",
+                  message: result.message,
+                  variant: "danger",
+                });
+              }
+            }
+          );
+        }
+      });
     },
   },
 };
