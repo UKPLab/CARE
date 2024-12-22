@@ -233,7 +233,7 @@ export default {
       return this.$store.getters["table/comment/get"](this.commentId);
     },
     skills() {
-      return this.$store.getters["service/getNLPSkills"];
+      return this.$store.getters["service/getSkills"]("NLPService");
     },
     settingResponse() {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
