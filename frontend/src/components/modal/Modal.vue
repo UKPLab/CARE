@@ -1,18 +1,28 @@
 <template>
-  <Loader
-      v-if="documentId && documentId === 0"
-      :loading="true"
-      class="pageLoader"
-  />
+  <Loader v-if="loadingConfig" :loading="true" class="pageLoader" />
   <span v-else>
-    <BasicModal ref="modal" 
-    name="Modal">
+    <BasicModal
+      ref="modal"
+      :name="configuration?.name || 'Modal'"
+      :class="modalClasses"
+      :style="{ backgroundColor: configuration?.backgroundColor || '' }"
+    >
       <template #title>
-        <h5 class="modal-title text-primary">Feedback</h5>
+        <h5
+          class="modal-title"
+          :class="configuration?.titleClass || 'text-primary'"
+        >
+          {{ configuration?.title || 'Feedback' }}
+        </h5>
       </template>
       <template #body>
-        <div class="feedback-container p-3">
-          <p v-if="!data.length && !Object.keys(data).length">No feedback available.</p>
+        <div
+          class="feedback-container p-3"
+          :style="{ color: configuration?.textColor || '' }"
+        >
+          <p v-if="!data && !data.length && !Object.keys(data).length">
+            No feedback available.
+          </p>
           <dl v-else>
             <dt v-for="(value, key) in data" :key="key">{{ key }}</dt>
             <dd>{{ value }}</dd>
@@ -20,18 +30,16 @@
         </div>
       </template>
       <template #footer>
-        <!-- "Next" Button for Non-Last Steps -->
         <BasicButton
           v-if="!isLastStep"
           @click="closeModal({ nextStep: true })"
-          title="Next"
+          :title="configuration?.nextButtonText || 'Next'"
         />
-        <!-- "Finish Study" Button for Last Step -->
         <BasicButton
           v-if="isLastStep"
           @click="closeModal({ endStudy: true })"
-          title="Finish Study"
-          class="btn btn-danger"
+          :title="configuration?.finishButtonText || 'Finish Study'"
+          :class="configuration?.finishButtonClass || 'btn btn-danger'"
         />
       </template>
     </BasicModal>
@@ -51,28 +59,78 @@
     name: "Modal",
     components: { BasicButton, BasicModal },
     props: {
-      studyStepId: { type: Number, required: true },
-      isLastStep: { type: Boolean, default: false },
+      studyStepId: { 
+        type: Number,
+        required: true 
+      },
+      isLastStep: {
+         type: Boolean,
+         default: false 
+      },
     },
-    data() {
-      return {
-        data: {}, 
-      };
+  inject: {
+    studySessionId: {
+      type: Number,
+      required: false,
+      default: null // Allows for null if not in a study session
+    },
+    userId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    readonly: {
+      type: Boolean,
+      required: false,
+      default: false, // Default to false if not provided
+    },
+  },
+    data: { 
+      loadingConfig: true, 
+      data: {},
+    },
+    created() {
+      if(this.configuration){
+        this.data = this.configuration;
+        this.loadingConfig = false;
+      }
+      // Delete this after the configuration is implemented
+      else{
+        this.data = {
+          "Feedback": "This is a placeholder for the feedback. The configuration is not implemented yet.",
+        };
+        this.loadingConfig = false;
+      }
+
+      
+      this.$socket.emit("documentGet",
+      { documentId: this.studyStep && this.studyStep.documentId ? this.studyStep.documentId : 0 ,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId },
+      (res) => {
+          
+        }
+      );
     },
     mounted() {
       this.$refs.modal.open();
-    },
+      },
     computed:{
       studyStep(){
         return this.studyStepId && this.studyStepId !== 0 ? this.$store.getters["table/studyStep/get"](this.studyStepId) : null;
       },
       workflowStep(){
-        return this.studyStep && this.studyStep.workflowStepId ? this.$store.getters["table/workflow_step/get"](this.studyStep.workflowStepId) : null;
+        return this.studyStep?.workflowStepId ? this.$store.getters["table/workflow_step/get"](this.studyStep.workflowStepId) : null;
       },
       configuration(){
-        return this.workflowStep && this.workflowStep.configuration ? this.$store.getters["table/workflow_step/get"](this.workflowStep.configuration) : null;
+        return this.workflowStep?.configuration? this.$store.getters["table/workflow_step/get"](this.workflowStep.configuration) : null;
       },
-      
+      modalClasses() {
+        return [
+          this.configuration?.size ? `modal-${this.configuration.size}` : "",
+          this.configuration?.customClass || "",
+        ].join(" ");
+      },
     },
     methods: {
       open(data) {
