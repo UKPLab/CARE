@@ -78,7 +78,7 @@
         icon-name="lock-fill"
       />
     </div>
-
+    
   </Teleport>
   <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
@@ -89,7 +89,7 @@
       <div v-show="s.id === currentStudyStepId">
         <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
         <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
-                :study-step-id="s.id" :active="activeComponents[index]"/>
+                :study-step-id="s.id" :active="activeComponents[index]" v-model="currentData"/>
       </div>
       <div v-show="s.id === currentStudyStepId">
         <FeedbackModal
@@ -121,15 +121,16 @@ import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed} from "vue";
-import FeedbackModal from "./feedback/FeedbackModal.vue";
+import Modal from "./modal/Modal.vue";
 
 export default {
   name: "StudyRoute",
-  components: {LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, FeedbackModal},
+  components: {LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, Modal},
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
       readonly: computed(() => this.readOnlyComputed),
+      modalData: computed(() => this.currentData),
     };
   },
   props: {
@@ -155,6 +156,7 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       localStudyStepId: 0,
+      currentData: null, // The v-model information is yet to be implemented
     };
   },
   computed: {
