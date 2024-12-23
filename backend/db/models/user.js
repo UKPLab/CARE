@@ -433,14 +433,12 @@ module.exports = (sequelize, DataTypes) => {
                 );
 
                 if (updatedRowsCount === 0) {
-                    console.log("Failed to update user: User not found");
-                    return;
+                    throw new Error("Failed to update user: User not found");
                 }
             } catch (error) {
-                console.log(error);
+                throw error;
             }
         }
-
     }
 
     /**

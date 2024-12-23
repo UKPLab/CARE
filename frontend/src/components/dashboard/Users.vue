@@ -55,12 +55,12 @@ import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
-import PasswordModal from "./users/PasswordModal.vue";
 import RightsModal from "./users/RightsModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import PasswordModal from "@/basic/modal/PasswordModal.vue";
 
 /**
  * Display user list by users' role
