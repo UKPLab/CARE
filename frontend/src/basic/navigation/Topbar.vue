@@ -57,6 +57,13 @@
                 <a class="dropdown-item display-username">
                   Signed in as {{ username }}
                 </a>
+                <a 
+                  class="dropdown-item"
+                  href="#"
+                  @click="$refs.passwordModal.open(userId)"
+                >
+                  Change password
+                </a>
                 <a
                   class="dropdown-item"
                   href="#"
@@ -69,6 +76,7 @@
       </div>
     </nav>
   </div>
+  <PasswordModal ref="passwordModal" />
 </template>
 
 <script>
@@ -79,17 +87,18 @@
  * after logging in. It includes standard utilities and navigation elements
  * appropriate for the context.
  *
- * @author: Carly Gettinger, Dennis Zyska, Nils Dycke
+ * @author: Carly Gettinger, Dennis Zyska, Nils Dycke, Linyin Huang
  */
 
 import LoadIcon from "@/basic/Icon.vue";
 import IconAsset from "@/basic/icons/IconAsset.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import PasswordModal from "@/basic/modal/PasswordModal.vue";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, IconAsset},
+  components: {LoadIcon, IconAsset, PasswordModal},
   computed: {
     username() {
       return this.$store.getters['auth/getUsername'];
@@ -97,6 +106,9 @@ export default {
     firstLetterUsername() {
       return this.$store.getters['auth/getUsername'].charAt(0).toUpperCase();
     },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    }
   },
   methods: {
     removeSidebarFlag() {
