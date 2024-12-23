@@ -60,6 +60,13 @@
                 <a 
                   class="dropdown-item"
                   href="#"
+                  @click="$refs.consentModal.open()"
+                >
+                  Update consent
+                </a>
+                <a 
+                  class="dropdown-item"
+                  href="#"
                   @click="$refs.passwordModal.open(userId)"
                 >
                   Change password
@@ -77,6 +84,7 @@
     </nav>
   </div>
   <PasswordModal ref="passwordModal" />
+  <ConsentModal ref="consentModal" />
 </template>
 
 <script>
@@ -95,10 +103,11 @@ import IconAsset from "@/basic/icons/IconAsset.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
+import ConsentModal from "@/basic/modal/ConsentModal.vue";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, IconAsset, PasswordModal},
+  components: {LoadIcon, IconAsset, PasswordModal, ConsentModal},
   computed: {
     username() {
       return this.$store.getters['auth/getUsername'];
