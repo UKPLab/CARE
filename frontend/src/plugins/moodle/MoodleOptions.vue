@@ -60,6 +60,7 @@ export default defineComponent({
             label: "Assignment ID:",
             type: "text",
             required: true,
+            default: "",
             placeholder: "assignment-id-placeholder",
           },
         ];
