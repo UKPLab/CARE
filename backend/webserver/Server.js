@@ -17,7 +17,9 @@ const crypto = require("crypto");
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const Socket = require(path.resolve(__dirname, "./Socket.js"));
 const Service = require(path.resolve(__dirname, "./Service.js"));
-const RPC = require(path.resolve(__dirname,"./RPC.js"));
+const RPC = require(path.resolve(__dirname, "./RPC.js"));
+const nodemailer = require('nodemailer');
+
 /**
  * Defines Express Webserver of Content Server
  *
@@ -36,6 +38,7 @@ module.exports = class Server {
 
         this.app = express();
         this.socket = null;
+        this.mailer = null;
 
         this.rpcs = {};
         this.sockets = {};
@@ -57,7 +60,6 @@ module.exports = class Server {
             this.app.use("/api", express.static(`${__dirname}/../../docs/api/`));
         }
 
-
         this.logger.debug("Initializing Session management...");
         this.session = this.#initSessionManagement();
         this.app.use(this.session);
@@ -78,10 +80,68 @@ module.exports = class Server {
         this.app.use("/*", express.static(`${__dirname}/../../dist/index.html`));
 
         this.httpServer = http.createServer(this.app);
+        Promise.resolve(this.#initMailServer()).then(() => {
+            if (this.mailer) {
+                this.logger.info("Mail server initialized");
+            } else {
+                this.logger.warn("Mail server not available!");
+            }
+        });
         this.#initWebsocketServer();
         this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
         this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
         this.#discoverComponents("./services", Service, this.addService.bind(this));
+    }
+
+    /**
+     * Initialize the mail server
+     * @returns {Promise<void>}
+     */
+    async #initMailServer() {
+
+        if (await this.db.models['setting'].get("system.mailService.enabled") === "true") {
+            if (await this.db.models['setting'].get("system.mailService.sendMail.enabled") === "true") {
+                this.mailer = nodemailer.createTransport({
+                    sendmail: true,
+                    newline: 'unix',
+                    path: await this.db.models['setting'].get("system.mailService.sendMail.path"),
+                });
+            } else if (await this.db.models['setting'].get("system.mailService.smtp.enabled") === "true") {
+                this.mailer = nodemailer.createTransport('SMTP', {
+                    host: await this.db.models['setting'].get("system.mailService.smtp.host"),
+                    port: await this.db.models['setting'].get("system.mailService.smtp.port"),
+                    secure: await this.db.models['setting'].get("system.mailService.smtp.secure") === "true",
+                    auth: {
+                        user: await this.db.models['setting'].get("system.mailService.smtp.auth.user"),
+                        pass: await this.db.models['setting'].get("system.mailService.smtp.auth.pass")
+                    }
+                });
+            }
+
+        }
+
+    }
+
+    /**
+     * Send a mail
+     * @param to email address
+     * @param subject of the mail
+     * @param text of the mail
+     * @returns {Promise<void>}
+     */
+    async sendMail(to, subject, text) {
+        this.mailer.sendMail({
+            from: await this.db.models['setting'].get("system.mailService.senderAddress"),
+            to: to,
+            subject: subject,
+            text: text
+        }, (err, info) => {
+            if (err) {
+                this.logger.error(err);
+            } else {
+                this.logger.info("Message send: " + info.messageId);
+            }
+        });
     }
 
     /**
@@ -283,7 +343,7 @@ module.exports = class Server {
      * @param addFunc the defined function inside the server.js class (i.e., this - e.g. this.addSocket)
      * @param extension  filter the files with the given extension
      */
-    #discoverComponents(classPath, classObj, addFunc, extension = ".js"){
+    #discoverComponents(classPath, classObj, addFunc, extension = ".js") {
         this.logger.debug("Discover components in " + classPath);
         const files = fs.readdirSync(path.resolve(__dirname, classPath));
 
