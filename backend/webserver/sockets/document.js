@@ -621,7 +621,7 @@ module.exports = class DocumentSocket extends Socket {
      * @param {Array<Object>} data.feedback - An array of objects containing the feedback to send
      * @returns {Promise<Object>} - A promise that resolves when the passwords have been uploaded.
      */
-    async uploadReviewLinks(data) {
+    async publishReviewLinks(data) {
         if (!(await this.isAdmin())) {
             throw new Error("You do not have permission to upload review links");
         }
@@ -774,6 +774,6 @@ module.exports = class DocumentSocket extends Socket {
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
-        this.createSocket("documentUploadReviewLinks", this.uploadReviewLinks, {}, false);
+        this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);
     }
 };
