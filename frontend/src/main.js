@@ -8,6 +8,7 @@ import SocketIO from 'socket.io-client';
 import VueSocketIO from 'vue-3-socket.io';
 import store from "./store";
 import router from './router';
+import './assets/styles/global.css';
 
 const app = Vue.createApp({
     render: () => Vue.h(App)

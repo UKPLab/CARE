@@ -125,6 +125,7 @@ export default {
             message: "The user creation was successful",
           });
           this.$refs.modal.close();
+          this.$emit("updateUser");
         } else {
           this.$refs.modal.waiting = false;
           this.eventBus.emit("toast", {
