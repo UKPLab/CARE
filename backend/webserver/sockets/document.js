@@ -618,18 +618,16 @@ module.exports = class DocumentSocket extends Socket {
      * @param {number} data.options.assignmentID - The ID of the Moodle assignment.
      * @param {string} data.options.apiKey - The API token for the Moodle instance
      * @param {string} data.options.apiUrl - The URL of the Moodle instance.
-     * @param {Array<Object>} data.users - An array of objects containing the uploaded users.
+     * @param {Array<Object>} data.feedback - An array of objects containing the feedback to send
      * @returns {Promise<Object>} - A promise that resolves when the passwords have been uploaded.
      */
     async uploadReviewLinks(data) {
-        const feedback = data["users"].map((user) => ({
-            extId: user.extId,
-            text: user.links,
-        }));
-
+        if (!(await this.isAdmin())) {
+            throw new Error("You do not have permission to upload review links");
+        }
         return await this.server.rpcs["MoodleRPC"].publishAssignmentTextFeedback({
             options: data.options,
-            feedback,
+            feedback: data.feedback,
         });
     }
 
