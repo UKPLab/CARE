@@ -318,7 +318,7 @@ module.exports = (sequelize, DataTypes) => {
                     },
                     include: [
                         {
-                            model: this.sequelize.models["user_role_matching"],
+                            model: sequelize.models["user_role_matching"],
                             as: "roles",
                             attributes: ["userRoleId"],
                             where: {
@@ -331,8 +331,7 @@ module.exports = (sequelize, DataTypes) => {
                 });
 
                 if (!user) {
-                    console.error("User not found");
-                    return;
+                    throw new Error("User not found");
                 }
                 const userDetails = user.get({plain: true});
                 userDetails.roles = userDetails.roles.map((role) => {
@@ -341,7 +340,7 @@ module.exports = (sequelize, DataTypes) => {
                 });
                 return userDetails;
             } catch (error) {
-                console.error(error);
+                throw error;
             }
         }
 
