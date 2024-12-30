@@ -344,6 +344,5 @@ module.exports = class UserSocket extends Socket {
         this.createSocket("userCheckExistsByMail", this.checkUsersExists, {}, false);
         this.createSocket("userCreate", this.createUser, {}, true);
         this.createSocket("userPublishMoodle", this.userPublishMoodle, {}, false);
-
     }
 };
