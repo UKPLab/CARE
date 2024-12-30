@@ -11,15 +11,6 @@
     </template>
     <template #step-1>
       <div class="table-scroll-container">
-        <MoodleOptions
-          ref="moodleOptionsForm"
-          v-model="moodleOptions"
-          with-assignment-id
-        />
-      </div>
-    </template>
-    <template #step-2>
-      <div class="table-scroll-container">
         <BasicTable
           v-model="selectedDocuments"
           :data="documentsTable"
@@ -28,7 +19,7 @@
         />
       </div>
     </template>
-    <template #step-3>
+    <template #step-2>
       <div class="table-scroll-container">
         <BasicTable
           v-model="selectedSessions"
@@ -38,30 +29,47 @@
         />
       </div>
     </template>
-    <template #step-4>
+    <template #step-3>
       <div class="mb-3">
         <label for="text_format" class="form-label"><b>Text Format:</b></label>
         <textarea v-model="text_format" class="form-control" id="text_format" rows="3"></textarea>
-        <div class="small" >
+        <div class="small">
           <p>
-            The placeholder <code>~SESSION_LINKS~</code> will be replaced with the review links.
+            The placeholder <code>~SESSION_LINKS~</code> will be replaced with the review links.<br>
+            The placeholder <code>~USERNAME~</code> will be replaced with the CARE username of the document owner.
           </p>
         </div>
       </div>
-      <div class="table-scroll-container">
-        <p>Selected documents:</p>
+      <div class="mb-3">
+        <label for="publishMethod" class="form-label"><b>Publishing Method:</b></label>
+        <select v-model="publishMethod" class="form-select" id="publishMethod">
+          <option value="moodle">Moodle</option>
+          <option value="email" disabled>Email</option>
+        </select>
+      </div>
+      <div class="mb-3 table-scroll-container">
+        <p><b>Selected documents:</b></p>
         <ul>
           <li v-for="doc in formattedSessions" :key="doc">
             <b>{{ doc.document.name }} ({{ doc.document.firstName }} {{ doc.document.lastName }})</b>
             <ul>
               <li v-for="session in doc.sessions" :key="session">
-                {{ session.firstName}} {{ session.lastName}} (<a :href="session.link" target="_blank">{{ session.link }}</a>)
+                {{ session.firstName }} {{ session.lastName }} (<a :href="session.link"
+                                                                   target="_blank">{{ session.link }}</a>)
               </li>
             </ul>
           </li>
         </ul>
       </div>
-
+    </template>
+    <template #step-4>
+      <div v-if="publishMethod==='moodle'" class="table-scroll-container">
+        <MoodleOptions
+          ref="moodleOptionsForm"
+          v-model="moodleOptions"
+          with-assignment-id
+        />
+      </div>
     </template>
   </StepperModal>
 </template>
@@ -113,15 +121,16 @@ export default {
       selectedSessions: [],
       moodleOptions: {},
       text_format: "Reviews:\n~SESSION_LINKS~",
+      publishMethod: "moodle",
     };
   },
   computed: {
     steps() {
       return [
-        {title: "Moodle Info"},
         {title: "Document Selection"},
         {title: "Session Selection"},
-        {title: "Confirmation"}
+        {title: "Confirmation"},
+        {title: "Publishing Options"},
       ];
     },
     stepValid() {
@@ -245,15 +254,17 @@ export default {
     },
     publishReviewLinks() {
       const feedback = this.formattedSessions.map((doc) => {
+        let text = this.text_format;
+        text = text.replace("~USERNAME~", doc.document.userName);
         return {
           extId: doc.document.extId,
-          text: this.text_format.replace("~SESSION_LINKS~", doc.sessions.map((s) => s.link).join("\n")),
+          text: text.replace("~SESSION_LINKS~", doc.sessions.map((s) => s.link).join("\n")),
         };
       });
 
       this.$refs.reviewStepper.setWaiting(true);
       this.$socket.emit(
-        "documentUploadReviewLinks",
+        "documentPublishReviewLinks",
         {
           options: this.moodleOptions,
           feedback: feedback,
@@ -263,13 +274,13 @@ export default {
           if (res.success) {
             this.$refs.reviewStepper.close();
             this.eventBus.emit("toast", {
-              title: "Reviews uploaded",
-              message: "The review links have been successfully uploaded!",
+              title: "Reviews published",
+              message: "The review links have been successfully published!",
               variant: "success",
             });
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to upload reviews",
+              title: "Failed to publish reviews",
               message: res.message,
               variant: "danger",
             });
