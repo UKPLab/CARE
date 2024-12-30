@@ -10,6 +10,7 @@
 
 import {defineComponent} from "vue";
 import BasicForm from "@/basic/Form.vue";
+import deepEqual from "deep-equal";
 
 export default defineComponent({
   components: {BasicForm},
@@ -34,7 +35,7 @@ export default defineComponent({
   },
   computed: {
     moodleCourseId() {
-      return parseInt(this.$store.getters["settings/getValue"]('rpc.moodleAPI.courseID'));
+      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.courseID');
     },
     showMoodleCourseId() {
       return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.courseID') === "true";
@@ -101,7 +102,15 @@ export default defineComponent({
   watch: {
     moodleOptions: {
       handler() {
-        this.$emit("update:modelValue", this.moodleOptions);
+        if (!deepEqual(this.moodleOptions, this.modelValue)) {
+          this.$emit("update:modelValue", this.moodleOptions);
+        }
+      },
+      deep: true,
+    },
+    modelValue: {
+      handler() {
+        this.moodleOptions = this.modelValue;
       },
       deep: true,
     },

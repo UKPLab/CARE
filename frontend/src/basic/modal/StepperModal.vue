@@ -19,12 +19,15 @@
         </div>
       </div>
       <div class="content-container">
-        <div>
+        <div :key="'step-' + (currentStep + 1)">
           <template v-if="!!$slots['error']">
             <slot name="error"/>
           </template>
-          <template v-else>
+          <template v-else-if="$slots['step-' + (currentStep + 1)]">
             <slot :name="'step-' + (currentStep + 1)"/>
+          </template>
+          <template v-else>
+            <p>Step {{ currentStep + 1 }} is not implemented.</p>
           </template>
         </div>
       </div>
