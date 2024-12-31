@@ -84,7 +84,7 @@
     </nav>
   </div>
   <PasswordModal ref="passwordModal" />
-  <ConsentModal ref="consentModal" />
+  <ConsentUpdateModal ref="consentModal" />
 </template>
 
 <script>
@@ -103,11 +103,11 @@ import IconAsset from "@/basic/icons/IconAsset.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
-import ConsentModal from "@/basic/modal/ConsentModal.vue";
+import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, IconAsset, PasswordModal, ConsentModal},
+  components: {LoadIcon, IconAsset, PasswordModal, ConsentUpdateModal},
   computed: {
     username() {
       return this.$store.getters['auth/getUsername'];
