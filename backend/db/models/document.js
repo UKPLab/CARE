@@ -170,48 +170,6 @@ module.exports = (sequelize, DataTypes) => {
                 this.logger.error("Error in getReviewDocuments:", error);
             }
         }
-
-        /**
-         * Retrieve review ready documents along with their associated studies
-         * @returns {Promise<Array<Object>>} An array of objects.
-         */
-        static async getDocAssociatedStudies() {
-            try {
-                return await Document.findAll({
-                    where: { readyForReview: true },
-                    attributes: [
-                        "id",
-                        "name",
-                        "userId",
-                        "readyForReview",
-                        [sequelize.col("studySteps.studyId"), "studyId"],
-                        [sequelize.col("studySteps.study.name"), "studyName"],
-                    ],
-                    include: [
-                        {
-                            model: sequelize.models["study_step"],
-                            as: "studySteps",
-                            attributes: [],
-                            include: [
-                                {
-                                    model: sequelize.models["study"],
-                                    as: "study",
-                                    attributes: [],
-                                    where: {
-                                        closed: {
-                                            [Op.not]: null,
-                                        },
-                                    },
-                                },
-                            ],
-                        },
-                    ],
-                    raw: true,
-                });
-            } catch (error) {
-                this.logger.error("Error in getDocAssociatedStudies:", error);
-            }
-        }
     }
 
     Document.init({

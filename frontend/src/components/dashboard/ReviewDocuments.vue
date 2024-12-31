@@ -3,9 +3,9 @@
     <template #headerElements>
       <BasicButton
         class="btn-secondary btn-sm me-1"
-        text="Upload Review"
-        title="Upload Review"
-        @click="$refs.reviewUploadModal.open()"
+        text="Publish Reviews"
+        title="Publish Reviews"
+        @click="$refs.publishModal.open()"
       />
       <BasicButton
         class="btn-secondary btn-sm me-1"
@@ -37,7 +37,7 @@
   <ImportModal
     ref="importModal"
   />
-  <ReviewUploadModal ref="reviewUploadModal" />
+  <PublishModal ref="publishModal" />
 </template>
 
 <script>
@@ -46,7 +46,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./review/UploadModal.vue";
 import ImportModal from "./review/ImportModal.vue";
-import ReviewUploadModal from "./review/ReviewUploadModal.vue";
+import PublishModal from "./review/PublishModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
@@ -74,7 +74,7 @@ export default {
     UploadModal,
     ImportModal,
     ConfirmModal,
-    ReviewUploadModal,
+    PublishModal,
     Card,
     BasicTable,
     BasicButton,

@@ -26,7 +26,7 @@
       </div>
       <div
         v-if="fileErrors.length > 0"
-        class="file-error-container"
+        class="scrollable-error-container"
       >
         <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
         <ul>
@@ -120,6 +120,7 @@ export default {
       this.uploadedUsers = [];
       if (this.$refs.fileInput) {
         this.$refs.fileInput.value = "";
+        this.fileErrors = [];
       }
     },
     uploadToMoodle() {
@@ -222,14 +223,6 @@ export default {
     flex-shrink: 0;
     margin-bottom: 0;
     margin-right: 0.5rem;
-  }
-}
-
-.file-error-container {
-  color: firebrick;
-
-  > p {
-    margin-bottom: 0.5rem;
   }
 }
 </style>
