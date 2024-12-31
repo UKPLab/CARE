@@ -9,6 +9,7 @@
 <script>
 import { defineComponent } from "vue";
 import BasicForm from "@/basic/Form.vue";
+import deepEqual from "deep-equal";
 
 export default defineComponent({
   components: { BasicForm },
@@ -59,6 +60,7 @@ export default defineComponent({
             label: "Assignment ID:",
             type: "text",
             required: true,
+            default: "",
             placeholder: "assignment-id-placeholder",
           },
         ];
@@ -107,7 +109,15 @@ export default defineComponent({
   watch: {
     moodleOptions: {
       handler() {
-        this.$emit("update:modelValue", this.moodleOptions);
+        if (!deepEqual(this.moodleOptions, this.modelValue)) {
+          this.$emit("update:modelValue", this.moodleOptions);
+        }
+      },
+      deep: true,
+    },
+    modelValue: {
+      handler() {
+        this.moodleOptions = this.modelValue;
       },
       deep: true,
     },
