@@ -7,12 +7,11 @@
 </template>
 
 <script>
-
-import {defineComponent} from "vue";
+import { defineComponent } from "vue";
 import BasicForm from "@/basic/Form.vue";
 
 export default defineComponent({
-  components: {BasicForm},
+  components: { BasicForm },
   props: {
     withAssignmentId: {
       type: Boolean,
@@ -29,27 +28,27 @@ export default defineComponent({
   emits: ["update:modelValue"],
   data() {
     return {
-      moodleOptions: {}
-    }
+      moodleOptions: {},
+    };
   },
   computed: {
     moodleCourseId() {
-      return parseInt(this.$store.getters["settings/getValue"]('rpc.moodleAPI.courseID'));
+      return parseInt(this.$store.getters["settings/getValue"]("rpc.moodleAPI.courseID"));
     },
     showMoodleCourseId() {
-      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.courseID') === "true";
+      return this.$store.getters["settings/getValue"]("rpc.moodleAPI.showInput.courseID") === "true";
     },
     moodleAPIKey() {
-      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.apiKey');
+      return this.$store.getters["settings/getValue"]("rpc.moodleAPI.apiKey");
     },
     showMoodleAPIKey() {
-      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.apiKey') === "true";
+      return this.$store.getters["settings/getValue"]("rpc.moodleAPI.showInput.apiKey") === "true";
     },
     moodleAPIUrl() {
-      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.apiUrl');
+      return this.$store.getters["settings/getValue"]("rpc.moodleAPI.apiUrl");
     },
     showMoodleAPIUrl() {
-      return this.$store.getters["settings/getValue"]('rpc.moodleAPI.showInput.apiUrl') === "true";
+      return this.$store.getters["settings/getValue"]("rpc.moodleAPI.showInput.apiUrl") === "true";
     },
     moodleOptionsFields() {
       if (this.withAssignmentId) {
@@ -66,35 +65,43 @@ export default defineComponent({
       } else {
         return this.basicMoodleOptionsFields;
       }
-
     },
     basicMoodleOptionsFields() {
-      return [
-        {
+      const optionFields = [];
+      if (this.showMoodleCourseId) {
+        optionFields.push({
           key: "courseID",
           label: "Course ID:",
           type: "text",
           required: true,
           default: this.moodleCourseId,
           placeholder: "course-id-placeholder",
-        },
-        {
+        });
+      }
+
+      if (this.showMoodleAPIKey) {
+        optionFields.push({
           key: "apiKey",
           label: "Moodle API Key:",
           type: "text",
           required: true,
           default: this.moodleAPIKey,
           placeholder: "api-key-placeholder",
-        },
-        {
+        });
+      }
+
+      if (this.showMoodleAPIUrl) {
+        optionFields.push({
           key: "apiUrl",
           label: "Moodle URL:",
           type: "text",
           required: true,
           default: this.moodleAPIUrl,
           placeholder: "https://example.moodle.com",
-        },
-      ];
+        });
+      }
+
+      return optionFields;
     },
   },
   watch: {
@@ -116,10 +123,7 @@ export default defineComponent({
       return this.$refs.form.validate();
     },
   },
-})
+});
 </script>
 
-
-<style scoped>
-
-</style>
+<style scoped></style>
