@@ -34,7 +34,7 @@ export default defineComponent({
   },
   computed: {
     moodleCourseId() {
-      return parseInt(this.$store.getters["settings/getValue"]("rpc.moodleAPI.courseID"));
+      return this.$store.getters["settings/getValue"]("rpc.moodleAPI.courseID");
     },
     showMoodleCourseId() {
       return this.$store.getters["settings/getValue"]("rpc.moodleAPI.showInput.courseID") === "true";
