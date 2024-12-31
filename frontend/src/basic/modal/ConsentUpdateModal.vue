@@ -61,7 +61,7 @@ import BasicButton from "@/basic/Button.vue";
  * @author: Linyin Huang
  */
 export default {
-  name: "ConsentModal",
+  name: "ConsentUpdateModal",
   components: { BasicModal, BasicButton },
   data() {
     return {
