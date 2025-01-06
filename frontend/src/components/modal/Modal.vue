@@ -3,28 +3,30 @@
   <span v-else>
     <BasicModal
       ref="modal"
-      :name="configuration?.name || 'Modal'"
+      :name="studyStep?.configuration?.name || 'Modal'"
       :class="modalClasses"
-      :style="{ backgroundColor: configuration?.backgroundColor || '' }"
+      :style="{ backgroundColor: studyStep?.configuration?.backgroundColor || '' }"
     >
       <template #title>
         <h5
           class="modal-title"
-          :class="configuration?.titleClass || 'text-primary'"
+          :class="studyStep?.configuration?.titleClass || 'text-primary'"
         >
-          {{ configuration?.title || 'Feedback' }}
+          {{ studyStep?.configuration?.title || 'Feedback' }}
         </h5>
       </template>
       <template #body>
         <div
           class="feedback-container p-3"
-          :style="{ color: configuration?.textColor || '' }"
+          :style="{ color: studyStep?.configuration?.textColor || '' }"
         >
-          <p v-if="!data || !Object.keys(data).length">
-            No feedback available.
+          <p v-if="!studyStep?.configuration || !Object.keys(studyStep.configuration).length">
+            No configuration available.
           </p>
           <dl v-else>
-            <dt v-for="(value, key) in data" :key="key">{{ key }}</dt>
+            <dt v-for="(value, key) in studyStep.configuration" :key="key">
+              {{ key }}
+            </dt>
             <dd>{{ value }}</dd>
           </dl>
         </div>
@@ -33,124 +35,133 @@
         <BasicButton
           v-if="!isLastStep"
           @click="closeModal({ nextStep: true })"
-          :title="configuration?.nextButtonText || 'Next'"
+          :title="studyStep?.configuration?.nextButtonText || 'Next'"
         />
         <BasicButton
           v-if="isLastStep"
           @click="closeModal({ endStudy: true })"
-          :title="configuration?.finishButtonText || 'Finish Study'"
-          :class="configuration?.finishButtonClass || 'btn btn-danger'"
+          :title="studyStep?.configuration?.finishButtonText || 'Finish Study'"
+          :class="studyStep?.configuration?.finishButtonClass || 'btn btn-danger'"
         />
       </template>
     </BasicModal>
   </span>
 </template>
-  
-  <script>
-  import BasicModal from "@/basic/Modal.vue";
-  import BasicButton from "@/basic/Button.vue";
-  
-  /**
-   * Providing information from the NLP Model
-   *
-   * @author: Juliane Bechert, Manu Sundar Raj Nandyal
-   */
-   export default {
-    name: "Modal",
-    components: { BasicButton, BasicModal },
-    props: {
-      studyStepId: { 
-        type: Number,
-        required: true 
-      },
-      isLastStep: {
-         type: Boolean,
-         default: false 
-      },
-    },
-    inject: {
-      studySessionId: {
-        type: Number,
-        required: false,
-        default: null // Allows for null if not in a study session
-      },
-      userId: {
-        type: Number,
-        required: false,
-        default: null
-      },
-      readonly: {
-        type: Boolean,
-        required: false,
-        default: false, // Default to false if not provided
-      },
-    },
-    data() { 
-      return {
-        loadingConfig: true, 
-        data: {},
-      };
-    },
-    created() {
-      if(this.configuration){
-        this.data = this.configuration;
-        this.loadingConfig = false;
-      }
-      // Delete this after the configuration is implemented
-      else{
-        this.data = {
-          "Feedback": "This is a placeholder for the feedback. The configuration is not implemented yet.",
-        };
-        this.loadingConfig = false;
-      }
 
-      
-      this.$socket.emit("documentGet",
-      { documentId: this.studyStep && this.studyStep.documentId ? this.studyStep.documentId : 0 ,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId },
-      (res) => {
-          
-        }
-      );
+<script>
+import BasicModal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
+
+/**
+ * Providing information from the NLP Model
+ *
+ * @author: Juliane Bechert, Manu Sundar Raj Nandyal
+ */
+  export default {
+  name: "Modal",
+  components: { BasicButton, BasicModal },
+  props: {
+    studyStepId: { 
+      type: Number,
+      required: true 
     },
-    mounted() {
+    isLastStep: {
+      type: Boolean,
+      default: false 
+    },
+  },
+  inject: {
+    studySessionId: {
+      type: Number,
+      required: false,
+      default: null // Allows for null if not in a study session
+    },
+    userId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+    readonly: {
+      type: Boolean,
+      required: false,
+      default: false, // Default to false if not provided
+    },
+  },
+  data() { 
+    return {
+      loadingConfig: true, 
+      data: {},
+    };
+  },
+  created() {
+    if(this.configuration){
+      this.data = this.configuration;
+      this.loadingConfig = false;
+    }
+    // Delete this after the configuration is implemented
+    else{
+      this.data = {
+        "Feedback": "This is a placeholder for the feedback. The configuration is not implemented yet.",
+      };
+      this.loadingConfig = false;
+    }
+
+    
+    this.$socket.emit("documentGet",
+    { documentId: this.studyStep && this.studyStep.documentId ? this.studyStep.documentId : 0 ,
+      studySessionId: this.studySessionId,
+      studyStepId: this.studyStepId },
+    (res) => {
+        
+      }
+    );
+  },
+  mounted() {
+    console.log("Modal mounted with studyStepId:", this.studyStepId);
+    console.log("Computed studyStep:", this.studyStep);
+    console.log("Configuration:", this.studyStep?.configuration);
+    this.$refs.modal.open();
+  },
+  computed: {
+    studyStep() {
+      console.log("Fetching studyStep for ID:", this.studyStepId);
+      if (this.studyStepId !== 0) {
+        return this.$store.getters['table/study_step/get'](this.studyStepId);
+      }
+      return null;
+    },
+    /* Is this code needed? Currently not working
+    workflowStep(){
+        return this.studyStep?.workflowStepId ? this.$store.getters["table/workflow_step/get"](this.studyStep.workflowStepId) : null;
+    },
+    // this configuration is of type json, so it should be parsed
+    configuration(){
+      return this.workflowStep?.configuration? this.$store.getters["table/workflow_step/get"](this.workflowStep.configuration) : null;
+    },
+    modalClasses() {
+      return [
+        this.configuration?.size ? `modal-${this.configuration.size}` : "",
+        this.configuration?.customClass || "",
+      ].join(" ");
+    },
+    parseConfiguration(){
+      return this.configuration? JSON.parse(this.configuration) : null;
+    },
+    */
+  },
+  watch: {},
+  methods: {
+    open(data) {
+      this.data = data;
       this.$refs.modal.open();
     },
-    computed:{
-      studyStep(){
-        return this.studyStepId && this.studyStepId !== 0 ? this.$store.getters["table/studyStep/get"](this.studyStepId) : null;
-      },
-      workflowStep(){
-        return this.studyStep?.workflowStepId ? this.$store.getters["table/workflow_step/get"](this.studyStep.workflowStepId) : null;
-      },
-      // this configuration is of type json, so it should be parsed
-      configuration(){
-        return this.workflowStep?.configuration? this.$store.getters["table/workflow_step/get"](this.workflowStep.configuration) : null;
-      },
-      modalClasses() {
-        return [
-          this.configuration?.size ? `modal-${this.configuration.size}` : "",
-          this.configuration?.customClass || "",
-        ].join(" ");
-      },
-      parseConfiguration(){
-        return this.configuration? JSON.parse(this.configuration) : null;
-      },
+    closeModal(event) {
+      this.$emit("close", event);
+      this.$refs.modal.close();
     },
-    watch: {},
-    methods: {
-      open(data) {
-        this.data = data;
-        this.$refs.modal.open();
-      },
-      closeModal(event) {
-        this.$emit("close", event);
-        this.$refs.modal.close();
-      },
-    },
-  };
-  </script>
+  },
+};
+</script>
   
     
 <style scoped>

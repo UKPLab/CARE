@@ -92,11 +92,11 @@
                 :study-step-id="s.id" :active="activeComponents[index]" v-model="currentData"/>
       </div>
       <div v-show="s.id === currentStudyStepId">
-        <FeedbackModal
-            v-if="s.stepType === 3 && studyTrajectory.includes(s.id)"
-            :study-step-id="s.id" :is-last-step="s.id === lastStep.id"
-            @close="handleModalClose"
-          />
+        <Modal
+          v-if="s.stepType === 3 && studyTrajectory.includes(s.id)"
+          :study-step-id="s.id" :is-last-step="s.id === lastStep.id"
+          @close="handleModalClose"
+        />
       </div>
 
       <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
