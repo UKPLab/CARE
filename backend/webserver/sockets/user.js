@@ -276,21 +276,6 @@ module.exports = class UserSocket extends Socket {
             }
         });
 
-        // Get specific user's details
-        this.socket.on("userGetDetails", async (userId) => {
-            try {
-                const user = await this.models["user"].getUserDetails(userId);
-                this.socket.emit("userDetails", {
-                    success: true, user,
-                });
-            } catch (error) {
-                this.socket.emit("userDetails", {
-                    success: false, message: "Failed to load user details",
-                });
-                this.logger.error(error);
-            }
-        });
-
         // Get right associated with the user
         this.socket.on("userGetRight", async (userId) => {
             try {
@@ -338,12 +323,12 @@ module.exports = class UserSocket extends Socket {
             }
         });
 
+        this.createSocket("userGetDetails", this.models["user"].getUserDetails, {}, false);
         this.createSocket("userConsentUpdate", this.updateUserConsent, {}, true);
         this.createSocket("userBulkCreate", this.bulkCreateUsers, {}, false);
         this.createSocket("userMoodleUserGetAll", this.getUsersFromCourse, {}, false);
         this.createSocket("userCheckExistsByMail", this.checkUsersExists, {}, false);
         this.createSocket("userCreate", this.createUser, {}, true);
         this.createSocket("userPublishMoodle", this.userPublishMoodle, {}, false);
-
     }
 };

@@ -13,7 +13,7 @@
         :key="s.id"
       >
         <Card
-          :title="s.name ? `Study: ${s.name}` : '<no name>'"
+          :title="s.title"
           collapsable collapsed @collapse="collapse(s.id, $event)"
         >
           <template #body>
@@ -52,7 +52,9 @@ import {getTimeDiffString} from "@/assets/utils";
 export default {
   name: "DashboardStudySession",
   components: {Card, LoadIcon, StudySessionTable, Timer},
-  subscribeTable: ['study_session'],
+  subscribeTable: [{
+    table: 'study_session',
+  }, "user"],
   props: {},
   data() {
     return {
@@ -62,7 +64,18 @@ export default {
   computed: {
     studies() {
       return this.$store.getters["table/study/getFiltered"](s => this.sessionStudyIds.includes(s.id))
-        .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)));
+        .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)))
+        .map(s => {
+          let study = {...s};
+          const firstName = this.$store.getters["table/user/get"](study.userId)?.firstName;
+            const lastName = this.$store.getters["table/user/get"](study.userId)?.lastName;
+          if (this.canReadPrivateInformation && firstName && lastName) {
+            study.title = study.name ? `Study: ${study.name} (from ${firstName} ${lastName})` : '<no name>';
+          } else {
+            study.title = study.name ? `Study: ${study.name}` : '<no name>';
+          }
+          return study;
+        });
     },
     studiesFiltered() {
       return this.studies.filter(s => !this.isStudyClosed(s));
@@ -70,6 +83,9 @@ export default {
     sessionStudyIds() {
       return this.$store.getters["table/study_session/getByUser"](this.$store.getters["auth/getUserId"])
         .map(s => s.studyId);
+    },
+    canReadPrivateInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
     },
     studyTimes() {
       this.trigger; // leave here to force recompute
@@ -85,7 +101,7 @@ export default {
       }
     },
     isStudyClosed(study) {
-      if(study) {
+      if (study) {
         if (study.closed) {
           return true;
         }

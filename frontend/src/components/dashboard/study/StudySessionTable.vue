@@ -39,7 +39,14 @@ export default {
         small: false,
         pagination: 10,
       },
-      columns: [
+    }
+  },
+  computed: {
+    study() {
+      return this.$store.getters["table/study/get"](this.studyId);
+    },
+    columns() {
+      let cols = [
         {name: "Started", key: "startParsed"},
         {
           name: "Finished",
@@ -59,12 +66,8 @@ export default {
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
-      ]
-    }
-  },
-  computed: {
-    study() {
-      return this.$store.getters["table/study/get"](this.studyId);
+      ];
+      return cols;
     },
     buttons() {
       return [
