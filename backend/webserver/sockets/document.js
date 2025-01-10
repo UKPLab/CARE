@@ -87,8 +87,11 @@ module.exports = class DocumentSocket extends Socket {
 
         if (fileType === ".delta") {
             //TODO this not the right way, when we upload a delta file, this should be included directly into the document_edit db
+            // Handle HTML and MODAL document types
+            const documentType = data.type === docTypes.DOC_TYPE_MODAL ? docTypes.DOC_TYPE_MODAL : docTypes.DOC_TYPE_HTML;
+    
             doc = await this.models["document"].add({
-                type: docTypes.DOC_TYPE_HTML,
+                type: documentType,
                 name: data.name.replace(/.delta$/, ""),
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: this.userId,
@@ -223,7 +226,7 @@ module.exports = class DocumentSocket extends Socket {
             const doc = await this.models['document'].getById(documentId);
 
             if (await this.checkDocumentAccess(doc.id)) {
-                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
+                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) { 
                     const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
                     let delta = new Delta();
 
@@ -244,7 +247,7 @@ module.exports = class DocumentSocket extends Socket {
                     this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
                     return delta;
                 } else {
-                    throw new Error("Non-HTML documents are not supported for this operation");
+                    throw new Error("Non-HTML/MODAL documents are not supported for this operation");
                 }
             } else {
                 throw new Error("You do not have access to this document");
@@ -302,7 +305,7 @@ module.exports = class DocumentSocket extends Socket {
             }
 
             // TODO: Check if document type is HTML
-            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
+            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) { 
 
                 const edits = await this.models['document_edit'].findAll({
                     where: {documentId: documentId, studySessionId: null, draft: true},
@@ -333,7 +336,7 @@ module.exports = class DocumentSocket extends Socket {
 
                 this.logger.info("Deltas file updated successfully.");
             } else {
-                throw new Error("Non-HTML documents are not supported for this operation");
+                throw new Error("Non-HTML/MODAL documents are not supported for this operation");
             }
 
         } catch (err) {
@@ -582,7 +585,7 @@ module.exports = class DocumentSocket extends Socket {
             throw new Error("You do not have access to this document");
         }
 
-        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
+        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) { 
             const deltaFilePath = `${UPLOAD_PATH}/${document.hash}.delta`;
 
             if (!fs.existsSync(deltaFilePath)) {

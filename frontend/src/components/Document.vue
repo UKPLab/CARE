@@ -5,7 +5,7 @@
       class="pageLoader"
   />
   <span v-else>
-    <Editor v-if="document.type === 1" ref="editor" :document-id = "documentId"/>
+    <Editor v-if="document.type === 1 || document.type === 2" ref="editor" :document-id="documentId" />
     <Annotator v-else ref="annotator" :document-id = "documentId"/>
   </span>
 </template>
