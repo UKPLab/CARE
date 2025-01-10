@@ -81,7 +81,7 @@
               </div>
               <div
                 v-else
-                class="file-error-container"
+                class="scrollable-error-container"
               >
                 <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
                 <ul>
@@ -153,7 +153,8 @@
             v-if="importType === 'moodle'"
             v-model="moodleOptions"
             ref="moodleOptionsForm"
-            with-assignment-id/>
+            with-assignment-id
+          />
           <div class="link-container">
             <BasicButton
               v-if="importType === 'moodle'"
@@ -679,14 +680,6 @@ export default {
   border: none;
   padding: 5px 10px;
   cursor: pointer;
-}
-
-.file-error-container {
-  color: firebrick;
-
-  > p {
-    margin-bottom: 0.5rem;
-  }
 }
 
 /* Preview */

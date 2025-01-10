@@ -15,7 +15,6 @@ const getDefaultState = () => {
     // userRecords contains a list of more detailed user data than the users array right above.
     userRecords: [],
     userStats: {},
-    user: {},
     userRight: {},
     systemRoles: [],
     assignmentUserInfos: [],
@@ -58,14 +57,6 @@ export default {
      */
     getUsersByRole: (state) => {
       return state["userRecords"];
-    },
-
-    /**
-     * Fetch specific user's details
-     * @returns {Object}
-     */
-    getUserDetails: (state) => {
-      return state["user"];
     },
 
     /**
@@ -139,17 +130,6 @@ export default {
     SOCKET_assignmentUserInfos: (state, message) => {
       if (message.success) {
         state.assignmentUserInfos = message.userInfos;
-      }
-    },
-
-    /**
-     * On "userDetails", update the specific user' details
-     * @param {*} state
-     * @param {*} message
-     */
-    SOCKET_userDetails: (state, message) => {
-      if (message.success) {
-        state.user = message.user;
       }
     },
 

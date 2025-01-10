@@ -31,6 +31,7 @@ services:
     volumes:
       - ./docs/build:/content-server/docs/build
       - ./docs/api:/content-server/docs/api
+      - ./files:/content-server/files
     depends_on:
       - postgres
     ports:
