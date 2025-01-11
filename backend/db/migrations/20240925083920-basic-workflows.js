@@ -14,9 +14,9 @@ const workflows = [
     description: "Rummels Project: Correct a document over two revisions with edits overview.",
     steps: [
       { stepType: 2, allowBackward: false, workflowStepDocument: null },
-      { stepType: 3, allowBackward: false, workflowStepDocument: 1 },
+      { stepType: 3, allowBackward: false, workflowStepDocument: null },
       { stepType: 2, allowBackward: false, workflowStepDocument: 1 },
-      { stepType: 3, allowBackward: false, workflowStepDocument: 3 }
+      { stepType: 3, allowBackward: false, workflowStepDocument: null }
     ]
   }
 ];

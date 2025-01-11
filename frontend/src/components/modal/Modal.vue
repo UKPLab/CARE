@@ -20,15 +20,10 @@
           class="feedback-container p-3"
           :style="{ color: studyStep?.configuration?.textColor || '' }"
         >
-          <p v-if="!studyStep?.configuration || !Object.keys(studyStep.configuration).length">
-            No configuration available.
+          <p v-if="!documentText">
+            No content available for this step.
           </p>
-          <dl v-else>
-            <dt v-for="(value, key) in studyStep.configuration" :key="key">
-              {{ key }}
-            </dt>
-            <dd>{{ value }}</dd>
-          </dl>
+          <div v-else v-html="documentText"></div>
         </div>
       </template>
       <template #footer>
@@ -51,6 +46,8 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import Quill from "quill";
+
 
 /**
  * Providing information from the NLP Model
@@ -91,7 +88,13 @@ import BasicButton from "@/basic/Button.vue";
     return {
       loadingConfig: true, 
       data: {},
+      documentText: null, // Holds the parsed content of the delta document
     };
+  },
+  computed: {
+    studyStep() {
+      return this.$store.getters["table/study_step/get"](this.studyStepId);
+    },
   },
   created() {
     if(this.configuration){
@@ -105,51 +108,26 @@ import BasicButton from "@/basic/Button.vue";
       };
       this.loadingConfig = false;
     }
-
-    
     this.$socket.emit("documentGet",
-    { documentId: this.studyStep && this.studyStep.documentId ? this.studyStep.documentId : 0 ,
-      studySessionId: this.studySessionId,
-      studyStepId: this.studyStepId },
-    (res) => {
-        
+      {
+        documentId: this.studyStep && this.studyStep.documentId ? this.studyStep.documentId : 0,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
+       },
+      (response) => {
+        if (response && response.success && response.data && response.data.deltas) {
+          const quill = new Quill(document.createElement("div"));
+          quill.setContents(response.data.deltas);
+          this.documentText = quill.root.innerHTML;
+        } else {
+          this.documentText = "Failed to load the document content.";
+        }
       }
     );
   },
   mounted() {
-    console.log("Modal mounted with studyStepId:", this.studyStepId);
-    console.log("Computed studyStep:", this.studyStep);
-    console.log("Configuration:", this.studyStep?.configuration);
     this.$refs.modal.open();
   },
-  computed: {
-    studyStep() {
-      console.log("Fetching studyStep for ID:", this.studyStepId);
-      if (this.studyStepId !== 0) {
-        return this.$store.getters['table/study_step/get'](this.studyStepId);
-      }
-      return null;
-    },
-    /* Is this code needed? Currently not working
-    workflowStep(){
-        return this.studyStep?.workflowStepId ? this.$store.getters["table/workflow_step/get"](this.studyStep.workflowStepId) : null;
-    },
-    // this configuration is of type json, so it should be parsed
-    configuration(){
-      return this.workflowStep?.configuration? this.$store.getters["table/workflow_step/get"](this.workflowStep.configuration) : null;
-    },
-    modalClasses() {
-      return [
-        this.configuration?.size ? `modal-${this.configuration.size}` : "",
-        this.configuration?.customClass || "",
-      ].join(" ");
-    },
-    parseConfiguration(){
-      return this.configuration? JSON.parse(this.configuration) : null;
-    },
-    */
-  },
-  watch: {},
   methods: {
     open(data) {
       this.data = data;
@@ -162,8 +140,6 @@ import BasicButton from "@/basic/Button.vue";
   },
 };
 </script>
-  
-    
 <style scoped>
 .feedback-container {
     max-height: 400px;
