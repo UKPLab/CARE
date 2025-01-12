@@ -1,6 +1,7 @@
 <template>
   <Loader v-if="loadingConfig" :loading="true" class="pageLoader" />
   <span v-else>
+    <NLPService ref="nlp" :data="data.data" :skill="skill" @response="response" :disabled="true" hidden />
     <BasicModal
       ref="modal"
       :name="studyStep?.configuration?.name || 'Modal'"
@@ -23,8 +24,13 @@
           <p v-if="!documentText">
             No content available for this step.
           </p>
+
+        <!-- TODO: Remove check for output once the configuration is fixed-->
+          <p v-if="output">
+          Output of the {{skill}}: {{ output }}
+        </p>
           <div v-else v-html="documentText"></div>
-        </div>
+        </div>      
       </template>
       <template #footer>
         <BasicButton
@@ -47,7 +53,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
-
+import NLPService from "@/basic/NLPService.vue";
 
 /**
  * Providing information from the NLP Model
@@ -56,7 +62,7 @@ import Quill from "quill";
  */
   export default {
   name: "Modal",
-  components: { BasicButton, BasicModal },
+  components: { BasicButton, BasicModal, NLPService },
   props: {
     studyStepId: { 
       type: Number,
@@ -87,8 +93,12 @@ import Quill from "quill";
   data() { 
     return {
       loadingConfig: true, 
-      data: {},
+      data: {
+        data: ""
+      },
+      skill: "skill_eic", // to be read from the configuration
       documentText: null, // Holds the parsed content of the delta document
+      output: null, // Holds the output from the NLP service
     };
   },
   computed: {
@@ -126,7 +136,8 @@ import Quill from "quill";
     );
   },
   mounted() {
-    this.$refs.modal.open();
+    this.$refs.nlp.request();
+    this.$refs.modal.open(); 
   },
   methods: {
     open(data) {
@@ -137,6 +148,9 @@ import Quill from "quill";
       this.$emit("close", event);
       this.$refs.modal.close();
     },
+    response(response) {
+      this.output = response;
+    }
   },
 };
 </script>
