@@ -56,7 +56,8 @@ import Quill from "quill";
 import NLPService from "@/basic/NLPService.vue";
 
 /**
- * Providing information from the NLP Model
+ * A Modal as per the configuration of the study step
+ * Also includes the NLP service to get the output of the skill
  *
  * @author: Juliane Bechert, Manu Sundar Raj Nandyal
  */
@@ -77,7 +78,7 @@ import NLPService from "@/basic/NLPService.vue";
     studySessionId: {
       type: Number,
       required: false,
-      default: null // Allows for null if not in a study session
+      default: null
     },
     userId: {
       type: Number,
@@ -87,15 +88,15 @@ import NLPService from "@/basic/NLPService.vue";
     readonly: {
       type: Boolean,
       required: false,
-      default: false, // Default to false if not provided
+      default: false,
     },
   },
   data() { 
     return {
       loadingConfig: true, 
       data: {
-        data: ""
-      },
+        data: "" // This input data is also wrong, because the data should contain everything from the configuration and not just the input for the NLP service
+      }, 
       skill: "skill_eic", // to be read from the configuration
       documentText: null, // Holds the parsed content of the delta document
       output: null, // Holds the output from the NLP service
@@ -104,7 +105,10 @@ import NLPService from "@/basic/NLPService.vue";
   computed: {
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
-    },
+    },    
+    configuration() {
+      return this.studyStep && this.studyStep.configuration ? this.studyStep.configuration : null;
+    }
   },
   created() {
     if(this.configuration){
@@ -136,7 +140,11 @@ import NLPService from "@/basic/NLPService.vue";
     );
   },
   mounted() {
-    this.$refs.nlp.request();
+    if(this.configuration && "firstOpen" in this.configuration){
+      this.skill = "skillName" in this.configuration.firstOpen? this.configuration.firstOpen.skillName : this.skill;
+      // Also set the input for the skill according to the configuration, because it is based on the data source
+      this.$refs.nlp.request();
+    }
     this.$refs.modal.open(); 
   },
   methods: {
