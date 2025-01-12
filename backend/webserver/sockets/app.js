@@ -63,6 +63,7 @@ module.exports = class AppSocket extends Socket {
         // update only if we have fields defined
         if ("fields" in this.models[data.table]) {
             // check or set user information
+            // TODO check if user is allowed to update data - missing await!
             if ("userId" in data.data && !this.checkUserAccess(data.data.userId)) {
                 throw new Error("You are not allowed to update the table " + data.table + " for another user!");
             } else {
@@ -337,7 +338,6 @@ module.exports = class AppSocket extends Socket {
                 this.logger.error(err.message);
             }
         });
-
 
         this.socket.on("appSettingSet", async (data) => {
             try {
