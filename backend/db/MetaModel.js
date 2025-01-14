@@ -143,27 +143,28 @@ module.exports = class MetaModel extends Model {
      * Get all db entries by key
      * @param {string} key column name
      * @param {any} value column value
+     * @param {Object} options - Sequelize query options
      * @param {boolean} includeDraft include draft
      */
-    static async getAllByKey(key, value, includeDraft = false) {
+    static async getAllByKey(key, value, options = {},  includeDraft = false) {
         if (key in this.getAttributes()) {
             try {
                 if (!includeDraft && "draft" in this.getAttributes()) {
                     return await this.findAll({
                         where: {[key]: value, deleted: false, draft: false},
                         raw: true
-                    });
+                    }, options);
                 } else {
                     return await this.findAll({
                         where: {[key]: value, deleted: false},
                         raw: true
-                    });
+                    }, options);
                 }
             } catch (err) {
                 console.log(err);
             }
         } else if (this.publicTable) {
-            return await this.getAll();
+            return await this.getAll(options);
         } else {
             console.log("DB MetaModel Class " + key + " not available: " + this.constructor.name)
         }
