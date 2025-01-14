@@ -555,7 +555,7 @@ module.exports = class Socket {
                         const ids = (await Promise.all(data.map(async (d) => {
                                 const tableData = await this.models[field.options.table].getAllByKey(
                                     field.options.id,
-                                    d.id, true);
+                                    d.id, {}, true);
                                 return tableData.map((td) => td.id);
                             }
                         ))).flat(1);
