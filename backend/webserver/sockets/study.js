@@ -172,6 +172,44 @@ module.exports = class StudySocket extends Socket {
         }
     }
 
+    /**
+     * Close a bulk of studies
+     * @param data
+     * @param data.projectId - the project id of the studies to close
+     * @param data.ignoreClosedState - if true, also close studies that are already closed
+     * @param data.progressId - the id of the progress bar to update
+     * @param options - not used
+     * @returns {Promise<void>}
+     */
+    async closeBulk(data, options) {
+
+        const studies = await this.models['study'].getAllByKey('projectId', data.projectId);
+        for (const study of studies) {
+            if (study.closed) {
+                if (!("ignoreClosedState" in data) || !data.ignoreClosedState) {
+                    continue;
+                }
+            }
+            const transaction = await this.server.db.sequelize.transaction();
+
+            try {
+
+                await this.models['study'].updateById(study.id, {closed: true}, {transaction: transaction});
+                await transaction.commit();
+            } catch (e) {
+                this.logger.error(e);
+                await transaction.rollback();
+            }
+
+            // update frontend progress
+            this.socket.emit("progressUpdate", {
+                id: data["progressId"], current: studies.indexOf(study) + 1, total: studies.length,
+            });
+        }
+
+
+    }
+
     async init() {
 
         this.socket.on("studyGet", async (data) => {
@@ -211,6 +249,7 @@ module.exports = class StudySocket extends Socket {
         });
 
         this.createSocket("studySaveAsTemplate", this.saveStudyAsTemplate, {}, true);
+        this.createSocket("studyCloseBulk", this.closeBulk, {}, false);
 
     }
 }
