@@ -322,7 +322,7 @@ export default {
 
           study.showEditButton = this.isAdmin || study.userId === this.userId;
           study.showDeleteButton = this.isAdmin || study.userId === this.userId;
-          study.showCloseButton = this.isAdmin || study.userId === this.userId;
+          study.showCloseButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
           study.showTemplateButton = this.isAdmin || study.userId === this.userId;
           return study;
         });
