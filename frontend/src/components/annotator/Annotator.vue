@@ -1,28 +1,28 @@
 <template>
   <Loader
-      v-if="documentId && documentId === 0"
-      :loading="true"
-      class="pageLoader"
+    v-if="documentId && documentId === 0"
+    :loading="true"
+    class="pageLoader"
   />
   <span v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
         <div
-            id="viewerContainer"
-            ref="viewer"
-            class="col border mh-100 justify-content-center p-3"
-            style="overflow-y: scroll;"
+          id="viewerContainer"
+          ref="viewer"
+          class="col border mh-100 justify-content-center p-3"
+          style="overflow-y: scroll;"
         >
           <PDFViewer
-              ref="pdfViewer"
-              class="rounded border border-1 shadow-sm"
-              style="margin:auto"
+            ref="pdfViewer"
+            class="rounded border border-1 shadow-sm"
+            style="margin:auto"
           />
 
         </div>
         <Sidebar
-            v-if="!sidebarDisabled"
-            ref="sidebar" :show="isSidebarVisible"
+          v-if="!sidebarDisabled"
+          ref="sidebar" :show="isSidebarVisible"
         />
       </div>
     </div>
@@ -30,18 +30,18 @@
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
         <TopBarButton
-            v-if="studySessionId === null && numStudyComments > 0"
-            :title="showAll ? 'Hide study comments' : 'Show study comments'"
-            class="btn rounded-circle"
-            @click="setSetting({key: 'annotator.showAllComments', value: !showAll})"
+          v-if="studySessionId === null && numStudyComments > 0"
+          :title="showAll ? 'Hide study comments' : 'Show study comments'"
+          class="btn rounded-circle"
+          @click="setSetting({key: 'annotator.showAllComments', value: !showAll})"
         >
           <span class="position-relative translate-middle top-100 start-100 fs-10 fw-light">
             {{ numStudyComments }}
           </span>
           <span>
             <LoadIcon
-                :icon-name="showAll ? 'eye-slash-fill' : 'eye-fill'"
-                :size="18"
+              :icon-name="!showAll ? 'eye-slash-fill' : 'eye-fill'"
+              :size="18"
             />
           </span>
         </TopBarButton>
@@ -49,40 +49,40 @@
       <li class="nav-item">
 
         <TopBarButton
-            v-if="studySessionId && studySessionId !== 0 ? active && nlpEnabled : nlpEnabled"
-            :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
-            class="btn rounded-circle"
-            @click="toggleNlp"
+          v-if="studySessionId && studySessionId !== 0 ? active && nlpEnabled : nlpEnabled"
+          :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
+          class="btn rounded-circle"
+          @click="toggleNlp"
         >
 
 
           <LoadIcon
-              :color="(!nlpActive) ?'#777777':'#097969'"
-              :size="18"
-              icon-name="robot"
+            :color="(!nlpActive) ?'#777777':'#097969'"
+            :size="18"
+            icon-name="robot"
           />
         </TopBarButton>
         <TopBarButton
-            v-show="studySessionId && studySessionId !== 0 ? active : true"
-            :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
-            class="btn rounded-circle"
-            @click="toggleSidebar"
+          v-show="studySessionId && studySessionId !== 0 ? active : true"
+          :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
+          class="btn rounded-circle"
+          @click="toggleSidebar"
         >
           <LoadIcon
-              :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
-              :size="18"
+            :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
+            :size="18"
           />
         </TopBarButton>
       </li>
-      <ExpandMenu v-show ="studySessionId && studySessionId !== 0 ? active : true" class="nav-item"/>
+      <ExpandMenu v-show="studySessionId && studySessionId !== 0 ? active : true" class="nav-item"/>
     </Teleport>
 
     <Teleport to="#topBarExtendMenuItems">
-      <li><a          
-          :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
-          class="dropdown-item"
-          href="#"
-          @click="downloadAnnotations('json')"
+      <li><a
+        :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
+        class="dropdown-item"
+        href="#"
+        @click="downloadAnnotations('json')"
       >Download
         Annotations</a></li>
     </Teleport>
@@ -90,29 +90,29 @@
     <Teleport to="#topbarCustomPlaceholder">
       <form class="hstack gap-3 container-fluid justify-content-center">
         <TopBarButton
-            v-if="review"
-            class="btn btn-outline-success me-2"
-            @click="$refs.reviewSubmit.open()"
+          v-if="review"
+          class="btn btn-outline-success me-2"
+          @click="$refs.reviewSubmit.open()"
         >Submit Review
         </TopBarButton>
         <TopBarButton
-            v-if="approve"
-            class="btn btn-outline-dark me-2"
-            @click="$refs.report.open()"
+          v-if="approve"
+          class="btn btn-outline-dark me-2"
+          @click="$refs.report.open()"
         >
           Report
         </TopBarButton>
         <TopBarButton
-            v-if="approve"
-            class="btn btn-outline-success me-2"
-            @click="decisionSubmit(true)"
+          v-if="approve"
+          class="btn btn-outline-success me-2"
+          @click="decisionSubmit(true)"
         >
           Accept
         </TopBarButton>
         <TopBarButton
-            v-if="approve"
-            class="btn btn-outline-danger me-2"
-            @click="decisionSubmit(false)"
+          v-if="approve"
+          class="btn btn-outline-danger me-2"
+          @click="decisionSubmit(false)"
         >
           Reject
         </TopBarButton>
@@ -225,9 +225,9 @@ export default {
   computed: {
     anchors() {
       return [].concat(
-          this.annotations.filter(a => a.anchors !== null)
-              .flatMap(a => a.anchors)
-              .filter(a => a !== undefined)
+        this.annotations.filter(a => a.anchors !== null)
+          .flatMap(a => a.anchors)
+          .filter(a => a !== undefined)
       )
     },
     showAll() {
@@ -236,16 +236,16 @@ export default {
     },
     annotations() {
       return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId)
-          .sort((a, b) => {
-            const a_noanchor = a.anchors === null || a.anchors.length === 0;
-            const b_noanchor = b.anchors === null || b.anchors.length === 0;
+        .sort((a, b) => {
+          const a_noanchor = a.anchors === null || a.anchors.length === 0;
+          const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
-            if (a_noanchor || b_noanchor) {
-              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
-            }
+          if (a_noanchor || b_noanchor) {
+            return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+          }
 
-            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
-          });
+          return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+        });
     },
     comments() {
       return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
@@ -258,18 +258,26 @@ export default {
       return this.$store.getters["settings/getValue"]('service.nlp.enabled') === "true";
     },
     numStudyComments() {
-      return this.comments.filter(c => c.studySessionId === this.studySessionId && c.studyStepId === this.studyStepId).length;
+      return this.comments.filter(c => c.studySessionId).length;
     }
   },
   watch: {
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId , studyStepId: this.studyStepId});
+        this.$socket.emit("documentGetData", {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId
+        });
       }
     },
     studyStepId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId , studyStepId: this.studyStepId});
+        this.$socket.emit("documentGetData", {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId
+        });
       }
     },
   },
@@ -279,7 +287,12 @@ export default {
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "pdfScroll",
-          data: {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId, annotationId: annotationId}
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            annotationId: annotationId
+          }
         });
       }
     });
@@ -353,8 +366,8 @@ export default {
 
         if (inPlaceholder) {
           const anchor = await this._waitForAnnotationToBeAnchored(
-              annotation,
-              3000
+            annotation,
+            3000
           );
           if (!anchor) {
             return;
@@ -401,7 +414,11 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      this.$socket.emit("documentGetData", {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId});
+      this.$socket.emit("documentGetData", {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId
+      });
 
       // Join Room for document updates
       this.$socket.emit("documentSubscribe", {documentId: this.documentId});
