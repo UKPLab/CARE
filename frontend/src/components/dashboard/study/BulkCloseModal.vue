@@ -58,14 +58,14 @@ export default {
           this.eventBus.emit("toast", {
             title: "All studies closed",
             message: "All open studies have been closed",
-            type: "success",
+            variant: "success",
           });
           this.$refs.bulkCloseModal.close();
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to close all studies",
             message: res.message,
-            type: "error",
+            variant: "danger",
           });
         }
       });
