@@ -1,18 +1,18 @@
 <template>
   <SideCard
-      :loading="loading()"
-      :shake="shake"
+    :loading="loading()"
+    :shake="shake"
   >
     <template #header>
       <div class="row">
         <div class="col">
           {{ comment.creator_name }}
           <Collaboration
-              ref="collab"
-              :target-id="commentId"
-              :document-id="documentId"
-              target-type="comment"
-              @collab-status="toEditMode"
+            ref="collab"
+            :target-id="commentId"
+            :document-id="documentId"
+            target-type="comment"
+            @collab-status="toEditMode"
           />
         </div>
         <div class="col text-end">
@@ -39,107 +39,91 @@
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
       <Comment
-          ref="main_comment"
-          :comment-id="commentId"
-          :edit="editedByMyself"
-          :level="0"
-          @save-card="save()"
+        ref="main_comment"
+        :comment-id="commentId"
+        :edit="editedByMyself"
+        :level="0"
+        @save-card="save()"
       />
     </template>
 
     <template #footer>
       <div class="ms-auto">
         <div
-            v-if="editedByMyself"
-            class="row"
+          v-if="editedByMyself"
+          class="row"
         >
           <div class="col text-end">
             <SidebarButton
-                :loading="false"
-                :props="$props"
-                icon="save-fill"
-                title="Save"
-                @click="save"
+              :loading="false"
+              :props="$props"
+              icon="save-fill"
+              title="Save"
+              @click="save"
             />
             <SidebarButton
-                :loading="false"
-                :props="$props"
-                icon="x-square-fill"
-                title="Cancel"
-                @click="cancel"
+              :loading="false"
+              :props="$props"
+              icon="x-square-fill"
+              title="Cancel"
+              @click="cancel"
             />
           </div>
         </div>
         <div
-            v-else
-            class="row"
+          v-else
+          class="row"
         >
           <div class="col">
             <button
-                v-if="numberReplies > 0"
-                class="btn btn-sm"
-                data-placement="top"
-                data-toggle="tooltip"
-                title="Reply"
-                type="button"
-                @click="showReplies = !showReplies"
+              v-if="numberReplies > 0"
+              class="btn btn-sm"
+              data-placement="top"
+              data-toggle="tooltip"
+              title="Reply"
+              type="button"
+              @click="showReplies = !showReplies"
             >
               <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
               <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
             </button>
           </div>
           <div
-              v-if="!readonly"
-              class="col text-end"
+            class="col text-end"
           >
             <SidebarButton
-                v-if="settingResponse"
-                :loading="false"
-                :props="$props"
-                icon="reply-fill"
-                title="Reply"
-                @click="$refs.main_comment.reply();showReplies = true"
+              v-if="settingResponse && !readonly"
+              :loading="false"
+              :props="$props"
+              icon="reply-fill"
+              title="Reply"
+              @click="$refs.main_comment.reply();showReplies = true"
             />
             <NLPService
-                v-if="summarizationAvailable && comment.userId === user_id"
-                :data="summarizationRequestData"
-                :skill="summarizationSkillName"
-                icon-name="file-text"
-                title="Summarize"
-                type="button"
-                @response="summarizeResponse"
+              v-if="summarizationAvailable && comment.userId === userId && !readonly"
+              :data="summarizationRequestData"
+              :skill="summarizationSkillName"
+              icon-name="file-text"
+              title="Summarize"
+              type="button"
+              @response="summarizeResponse"
             />
+            <VoteButtons :comment="comment" />
             <SidebarButton
-              v-if="voteEnabled"
+              v-if="comment.userId === userId && !readonly"
               :loading="false"
               :props="$props"
-              title="Helpful"
-              :badge="20"
-              icon="hand-thumbs-up-fill"
-              @click="vote(1)"
+              icon="pencil-square"
+              title="Edit"
+              @click="edit"
             />
             <SidebarButton
-              v-if="voteEnabled && !voteOnlyUpvote"
+              v-if="comment.userId === userId && !readonly"
               :loading="false"
               :props="$props"
-              title="Not helpful"
-              icon="hand-thumbs-down"
-              @click="vote(-1)" />
-            <SidebarButton
-                v-if="comment.userId === user_id"
-                :loading="false"
-                :props="$props"
-                icon="pencil-square"
-                title="Edit"
-                @click="edit"
-            />
-            <SidebarButton
-                v-if="comment.userId === user_id"
-                :loading="false"
-                :props="$props"
-                icon="trash3"
-                title="Delete"
-                @click="remove"
+              icon="trash3"
+              title="Delete"
+              @click="remove"
             />
           </div>
         </div>
@@ -148,16 +132,16 @@
 
     <template #thread>
       <div
-          v-if="showReplies"
-          class="d-grid gap-1 my-2"
+        v-if="showReplies"
+        class="d-grid gap-1 my-2"
       >
         <span
-            v-for="c in childComments"
-            :key="c.id"
+          v-for="c in childComments"
+          :key="c.id"
         >
           <Comment
-              :comment-id="c.id"
-              :level="1"
+            :comment-id="c.id"
+            :level="1"
           />
         </span>
       </div>
@@ -170,8 +154,8 @@ import SideCard from "./Card.vue";
 import Comment from "./Comment.vue";
 import Collaboration from "@/basic/Collaboration.vue"
 import SidebarButton from "./Button.vue"
-
 import NLPService from "@/basic/NLPService.vue";
+import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 
 /** Annotation elements
  *
@@ -182,7 +166,7 @@ import NLPService from "@/basic/NLPService.vue";
  */
 export default {
   name: "AnnoCard",
-  components: {NLPService, Collaboration, SideCard, Comment, SidebarButton},
+  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton},
   inject: {
     documentId: {
       type: Number,
@@ -219,7 +203,7 @@ export default {
     }
   },
   computed: {
-    user_id() {
+    userId() {
       return this.$store.getters["auth/getUserId"];
     },
     settingResponse() {
@@ -272,12 +256,6 @@ export default {
     summarizationMaxLength() {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.maxLength'));
     },
-    voteEnabled() {
-      return this.$store.getters["settings/getValue"]('annotator.comments.votes.enabled') === "true";
-    },
-    voteOnlyUpvote() {
-      return this.$store.getters["settings/getValue"]('annotator.comments.votes.onlyUpvote') === "true";
-    },
     summarizationRequestData() {
       return {
         text: this.annotation.text,
@@ -304,7 +282,7 @@ export default {
         return false;
       if (this.annotation)
         return this.annotation.text !== null && this.annotation.text.length >= this.summarizationMinAnnoLength
-            && this.summarizationActivated;
+          && this.summarizationActivated;
       return null;
     },
   },
@@ -341,7 +319,7 @@ export default {
         }
       }
     },
-    shakeIt(){
+    shakeIt() {
       this.shake = true;
       setTimeout(() => this.shake = false, 1500);
     },
@@ -434,18 +412,9 @@ export default {
       });
       this.showReplies = true;
     },
-    putFocus(){
+    putFocus() {
       this.shakeIt();
     },
-    vote(value) {
-      this.$socket.emit('appDataUpdate', {
-        table: "comment_vote",
-        data: {
-          commentId: this.commentId,
-          vote: value,
-        },
-      });
-    }
   }
 }
 </script>
