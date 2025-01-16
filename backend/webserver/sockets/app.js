@@ -59,77 +59,74 @@ module.exports = class AppSocket extends Socket {
             return newEntry.id;
         }
 
-
-        // update only if we have fields defined
-        if ("fields" in this.models[data.table]) {
-            // check or set user information
-            // TODO check if user is allowed to update data - missing await!
-            if ("userId" in data.data && !this.checkUserAccess(data.data.userId)) {
-                throw new Error("You are not allowed to update the table " + data.table + " for another user!");
-            } else {
-                data.data.userId = this.userId;
-            }
-
-            // check data exists for required fields
-            for (let field of this.models[data.table].fields) {
-                if (field.required) {
-                    if (
-                        !(field.key in data.data) ||
-                        data.data[field.key] === null ||
-                        data.data[field.key] === ""
-                    ) {
-                        {
-                            throw new Error("Required field missing: " + field.key);
-                        }
-                    }
-                }
-                // defaults
-                if (!(field.key in data.data || data.data[field.key] === null)) {
-                    // only if default is set and we are not updating an existing entry
-                    if (field.default !== null && !("id" in data.data)) {
-                        data.data[field.key] = field.default;
-                    }
-                }
-            }
-
-            // update data
-            if (!("id" in data.data) || data.data.id === 0) {
-                newEntry = await this.models[data.table].add(data.data, {context: data.data, transaction: transaction});
-            } else {
-                newEntry = await this.models[data.table].updateById(
-                    data.data.id,
-                    data.data,
-                    {context: data.data, transaction: transaction}
-                );
-            }
-
-            if (!newEntry) {
-                throw new Error("Failed to update data");
-            }
-
-            // check if table has a field with table options
-            if (newEntry) {
-                const tableResults = await Promise.all(
-                    this.models[data.table].fields
-                        .filter((f) => f.type === "table")
-                        .map(async (f) => {
-                            if ("table" in f.options) {
-                                const ids = await Promise.all(
-                                    data.data[f.key].map((tf) => {
-                                        tf[f.options.id] = newEntry.id;
-                                        return this.updateData({
-                                            table: f.options.table,
-                                            data: tf,
-                                        }, {transaction: transaction});
-                                    })
-                                );
-                                return ids;
-                            }
-                        })
-                );
-            }
-            return newEntry.id;
+        // check or set user information
+        // TODO check if user is allowed to update data - missing await!
+        if ("userId" in data.data && !this.checkUserAccess(data.data.userId)) {
+            throw new Error("You are not allowed to update the table " + data.table + " for another user!");
+        } else {
+            data.data.userId = this.userId;
         }
+
+        // check data exists for required fields
+        for (let field of this.models[data.table].fields) {
+            if (field.required) {
+                if (
+                    !(field.key in data.data) ||
+                    data.data[field.key] === null ||
+                    data.data[field.key] === ""
+                ) {
+                    {
+                        throw new Error("Required field missing: " + field.key);
+                    }
+                }
+            }
+            // defaults
+            if (!(field.key in data.data || data.data[field.key] === null)) {
+                // only if default is set and we are not updating an existing entry
+                if (field.default !== null && !("id" in data.data)) {
+                    data.data[field.key] = field.default;
+                }
+            }
+        }
+
+        // update data
+        if (!("id" in data.data) || data.data.id === 0) {
+            newEntry = await this.models[data.table].add(data.data, {context: data.data, transaction: transaction});
+        } else {
+            newEntry = await this.models[data.table].updateById(
+                data.data.id,
+                data.data,
+                {context: data.data, transaction: transaction}
+            );
+        }
+
+        if (!newEntry) {
+            throw new Error("Failed to update data");
+        }
+
+        // check if table has a field with table options
+        if (newEntry) {
+            const tableResults = await Promise.all(
+                this.models[data.table].fields
+                    .filter((f) => f.type === "table")
+                    .map(async (f) => {
+                        if ("table" in f.options) {
+                            const ids = await Promise.all(
+                                data.data[f.key].map((tf) => {
+                                    tf[f.options.id] = newEntry.id;
+                                    return this.updateData({
+                                        table: f.options.table,
+                                        data: tf,
+                                    }, {transaction: transaction});
+                                })
+                            );
+                            return ids;
+                        }
+                    })
+            );
+        }
+        return newEntry.id;
+
     }
 
     /**
@@ -242,7 +239,10 @@ module.exports = class AppSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendDataByHash(data, options) {
-        const result = await this.sendTable(data.table, mergeFilter([[{key: "hash", value: data.hash}]], this.models[data.table].getAttributes()));
+        const result = await this.sendTable(data.table, mergeFilter([[{
+            key: "hash",
+            value: data.hash
+        }]], this.models[data.table].getAttributes()));
         if (result.length === 0) {
             throw new Error("You don't have rights to access this data");
         }

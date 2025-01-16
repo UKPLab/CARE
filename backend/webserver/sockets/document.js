@@ -378,6 +378,11 @@ module.exports = class DocumentSocket extends Socket {
                         })
                     ));
                     this.emit("commentRefresh", comments.flat(1));
+
+                    // send comment votes (get votes for all comments)
+                    const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', comments.flat(1).map(c => c.id));
+                    this.emit("comment_voteRefresh", commentVotes);
+
                 } else {
                     const annotations = await this.models['annotation'].findAll(
                         {
@@ -392,10 +397,16 @@ module.exports = class DocumentSocket extends Socket {
                             raw: true
                         });
                     this.emit("commentRefresh", comments);
+
+                    // send comment votes (get votes for all comments)
+                    const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', comments.map(c => c.id));
+                    this.emit("comment_voteRefresh", commentVotes);
                 }
             } else {
                 this.emit("annotationRefresh", await this.models['annotation'].getAllByKey('documentId', data.documentId));
-                this.emit("commentRefresh", await this.models['comment'].getAllByKey('documentId', data.documentId));
+                const comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
+                this.emit("commentRefresh", comments);
+                this.emit("comment_voteRefresh", await this.models['comment_vote'].getAllByKeyValues('commentId', comments.map(c => c.id)), false);
             }
 
             // send additional data like tags
