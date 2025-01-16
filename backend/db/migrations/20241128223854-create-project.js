@@ -26,16 +26,16 @@ module.exports = {
                 },
                 public: {
                     type: Sequelize.BOOLEAN,
-                    default: false,
+                    defaultValue: false,
                 },
                 closed: {
                     allowNull: true,
-                    default: null,
+                    defaultValue: null,
                     type: Sequelize.DATE
                 },
                 deleted: {
                     type: Sequelize.BOOLEAN,
-                    default: false
+                    defaultValue: false
                 },
             });
     },

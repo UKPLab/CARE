@@ -140,6 +140,36 @@ module.exports = class MetaModel extends Model {
     }
 
     /**
+     * Get all db entries by key and multiple values
+     * @param {string} key column name
+     * @param {Array} values array of column values
+     * @param {Object} options - Sequelize query options
+     * @param {boolean} includeDraft include draft
+     *
+     */
+    static async getAllByKeyValues(key, values, options = {}, includeDraft = false) {
+        if (key in this.getAttributes()) {
+            try {
+                if (!includeDraft && "draft" in this.getAttributes()) {
+                    return await this.findAll({
+                        where: {[key]: {[Op.in]: values}, deleted: false, draft: false},
+                        raw: true
+                    }, options);
+                } else {
+                    return await this.findAll({
+                        where: {[key]: {[Op.in]: values}, deleted: false},
+                        raw: true
+                    }, options);
+                }
+            } catch (err) {
+                console.log(err);
+            }
+        } else {
+            console.log("DB MetaModel Class " + key + " not available: " + this.constructor.name)
+        }
+    }
+
+    /**
      * Get all db entries by key
      * @param {string} key column name
      * @param {any} value column value
@@ -199,8 +229,7 @@ module.exports = class MetaModel extends Model {
      * @param {Object} [options={}] - Optional Sequelize query options
      * @return {Promise<object|undefined>}
      */
-    static
-    async deleteById(id, options = {}) {
+    static async deleteById(id, options = {}) {
         return await this.updateById(id, {deleted: true}, options);
     }
 
@@ -211,8 +240,7 @@ module.exports = class MetaModel extends Model {
      * @param {Object} [additionalOptions={}] - Optional Sequelize query options. See: https://sequelize.org/api/v7/interfaces/_sequelize_core.index.queryoptions
      * @return {Promise<*>}
      */
-    static
-    async updateById(id, data, additionalOptions = {}) {
+    static async updateById(id, data, additionalOptions = {}) {
         try {
             const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
 
