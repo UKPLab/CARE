@@ -31,7 +31,7 @@ module.exports = {
             },
             deleted: {
                 type: Sequelize.BOOLEAN,
-                defaultValue: false, // TODO why db set it always to null? default is not set in db schema?
+                defaultValue: false,
             },
             createdAt: {
                 allowNull: false,
