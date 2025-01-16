@@ -1,13 +1,13 @@
 <template>
   <Card title="Users">
     <template #headerElements>
-      <ButtonHeader
+      <BasicButton
         class="btn btn-sm me-1 btn-secondary"
         title="Export"
         icon="cloud-arrow-down"
         @click="exportAllStats()"
       />
-      <ButtonHeader
+      <BasicButton
         class="btn btn-sm me-1"
         title="Refresh"
         icon="arrow-clockwise"
@@ -17,15 +17,16 @@
     <template #body>
       <BasicTable
         ref="user_table"
+        v-model="selectedUsers"
         :columns="user_table.columns"
         :data="users"
         :options="user_table.options"
-        @rowSelection="e => loadUserStats(e)"
       />
     </template>
   </Card>
   <hr>
-  <Card :title="`Stats for ${selectedUsers ? selectedUsers.length : 0} User${selectedUsers && selectedUsers.length !== 1 ? 's': ''}`">
+  <Card
+    :title="`Stats for ${selectedUsers ? selectedUsers.length : 0} User${selectedUsers && selectedUsers.length !== 1 ? 's': ''}`">
     <template #body>
       <BasicTable
         ref="stats_table"
@@ -45,8 +46,8 @@
 </template>
 
 <script>
-import BasicTable from "@/basic/table/Table.vue";
-import ButtonHeader from "@/basic/card/ButtonHeader.vue";
+import BasicTable from "@/basic/Table.vue";
+import BasicButton from "@/basic/Button.vue";
 import Card from "@/basic/Card.vue";
 import ExportSingle from "@/basic/download/ExportSingle.vue";
 
@@ -64,7 +65,7 @@ import ExportSingle from "@/basic/download/ExportSingle.vue";
  */
 export default {
   name: "UserStatistics",
-  components: {BasicTable, ButtonHeader, Card, ExportSingle},
+  components: {BasicTable, BasicButton, Card, ExportSingle},
   props: {
     'admin': {
       type: Boolean,
@@ -82,12 +83,11 @@ export default {
           borderless: false,
           small: false,
           pagination: 10,
-          selectableRows: true
+          selectableRows: true,
         },
         columns: [
           {name: "User", key: "userName", sortable: true},
           {name: "ID", key: "id", sortable: true},
-          {name: "Role", key: "sysrole", sortable: true},
           {name: "Last Login", key: "lastLoginAt", sortable: true},
         ],
       },
@@ -122,20 +122,24 @@ export default {
       return this.selectedUsers.reduce((acc, user) => acc.concat(this.$store.getters["admin/getStatsByUser"](user.id)), []).filter(s => s !== null);
     }
   },
+  watch: {
+    selectedUsers: {
+      handler(newUsers) {
+        newUsers.forEach(user => {
+          if (this.$store.getters["admin/getStatsByUser"](user.id) == null) {
+            this.$socket.emit("statsGetByUser", {userId: user.id})
+          }
+        });
+      },
+      deep: true,
+    },
+  },
   mounted() {
     this.loadUserData();
   },
   methods: {
     loadUserData() {
       this.$socket.emit("userGetData");
-    },
-    loadUserStats(rows) {
-      rows.forEach(user => {
-        if (this.$store.getters["admin/getStatsByUser"](user.id) == null) {
-          this.$socket.emit("statsGetByUser", {userId: user.id})
-        }
-      });
-      this.selectedUsers = rows;
     },
     exportAllStats() {
       this.$refs.export.requestExport({}, "json");

@@ -28,29 +28,31 @@
         v-if="success"
         class="btn-group"
       >
-        <button
+        <BasicButton
           class="btn btn-secondary"
           @click="close"
-        >Close</button>
-        <button
+          title="Close"
+        />
+        <BasicButton
           class="btn btn-primary"
+          title="Copy Link"
           @click="copyURL"
-        >Copy Link</button>
+        />
       </span>
       <span
         v-else
         class="btn-group"
       >
-        <button
+        <BasicButton
           class="btn btn-secondary"
-          type="button"
+          title="Abort"
           @click="close"
-        >Abort</button>
-        <button
+        />
+        <BasicButton
           class="btn btn-danger me-2"
-          type="button"
+          title="Yes, publish it!"
           @click="publish"
-        >Yes, publish it!</button>
+        />
       </span>
     </template>
   </Modal>
@@ -58,6 +60,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /* PublishModal.vue - modal for publishing a document
 
@@ -68,7 +71,12 @@ Source: -
 */
 export default {
   name: "PublishModal",
-  components: {Modal},
+  components: {Modal, BasicButton},
+  inject: {
+    acceptStats: {
+      default: () => false
+    }
+  },
   data() {
     return {
       id: 0,
@@ -88,10 +96,12 @@ export default {
       this.id = id;
       this.success = this.document.public;
       this.$refs.publishModal.openModal();
-      this.$socket.emit("stats", {
-        action: "openModalPublishDocument",
-        data: {documentId: this.id}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "openModalPublishDocument",
+          data: {documentId: this.id}
+        });
+      }
     },
     publish() {
       this.sockets.subscribe("documentPublished", (data) => {
@@ -114,25 +124,27 @@ export default {
     },
     close() {
       this.$refs.publishModal.close();
-      this.$socket.emit("stats", {
-        action: "cancelModalPublishDocument",
-        data: {documentId: this.id}
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "cancelModalPublishDocument",
+          data: {documentId: this.id}
+        });
+      }
     },
     async copyURL() {
       try {
         await navigator.clipboard.writeText(this.link);
         this.eventBus.emit('toast', {
-            title: "Link copied",
-            message: "Document link copied to clipboard!",
-            variant: "success"
-          });
+          title: "Link copied",
+          message: "Document link copied to clipboard!",
+          variant: "success"
+        });
       } catch ($e) {
         this.eventBus.emit('toast', {
-            title: "Link not copied",
-            message: "Could not copy document link to clipboard!",
-            variant: "danger"
-          });
+          title: "Link not copied",
+          message: "Could not copy document link to clipboard!",
+          variant: "danger"
+        });
       }
     }
   }

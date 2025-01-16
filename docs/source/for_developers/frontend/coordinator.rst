@@ -268,6 +268,12 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - N
       - N
+    * - :ref:`password<Password>`
+      - Y
+      - N
+      - N
+      - Y
+      - Y
     * - :ref:`*<Default>`
       - Y
       - Y
@@ -326,9 +332,38 @@ Using autotable:
 
     {
         options: {
-            table: <tableName>, id: <columnForForeignKey>
+            table: <tableName>,             // the name of the autotable in the vuex store
+            name: <keyOfDisplayName>,       // the key of the display text used in the table entries
+            value:<keyOfValueUsed>,         // the key of the value used in the table entries
+            filter: [                       // -- optional - list of filters to apply to the table entries
+                {
+                    type: <filterType>,    // the type of the filter
+                    key: <keyOfFilter>,     // the key in the table entries that should be filtered
+                    value: <valueOfFilter>  // the value that should be filtered for
+                    mapping: <mapObject>    // the real values will be used as key of this object, the output values as compared value
+                }
+            ],
         },
     }
+
+
+.. list-table:: Filter Table
+    :header-rows: 1
+
+    * - type
+      - key
+      - value
+    * - (default)
+      - the key in the table entries that should be filtered
+      - the value that should be filtered for
+    * - (formData)
+      - the key in the table entries that should be filtered
+      - the value of the formData with the key that should be filtered for
+    * - (parentData)
+      - the key in the table entries that should be filtered
+      - the value of the parentData with the key that should be filtered for (used for choices)
+
+
 
 Checkbox
 ^^^^^^^^
@@ -370,12 +405,16 @@ Tables are a bit more complex, example:
 It shows the corresponding fields of the table ``tag`` and allows to add and remove rows.
 Only Select and Text fields are supported.
 
+Password
+^^^^^^^^
+
+No specific options.
 
 Default
 ^^^^^^^
 
 Basic HTML `input <https://www.w3.org/TR/2010/WD-html5-20101019/the-input-element.html>`_ from type specified in ``type`` if no other type matches.
-For example it is used for ``text`` or ``password``.
+For example it is used for ``text``.
 
 .. list-table:: Extended form properties
     :header-rows: 1

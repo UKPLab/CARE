@@ -8,7 +8,7 @@
  * To login, register or check validity of a user login use this module.
  *
  * @module store/auth
- * @author Dennis Zyska, Nils Dycke
+ * @author Dennis Zyska, Nils Dycke, Linyin Huang
  */
 const getDefaultState = () => {
     return {
@@ -38,7 +38,7 @@ export default {
          * @returns {boolean} true if user is admin
          */
         isAdmin: state => {
-            return state['user'] && state.user.sysrole === "admin";
+            return state['user'] && state.user.isAdmin;
         },
 
         /**
@@ -71,6 +71,31 @@ export default {
             if (state.user) {
                 return state.user["id"];
             }
+        },
+
+        /**
+         * Gets the user's rights
+         * 
+         * @param state
+         * @returns {string[]} Array of right
+         */
+        getUserRights: state => {
+            if (state.user) {
+                return state.user["rights"];
+            }
+        },
+
+        /**
+         * Checks if the user has a specific right
+         * If the user is admin, the user has full right
+         * @param state
+         * @returns {Function} Function that takes a right string and returns boolean
+         */
+        checkRight: (state, getters) => (right) => {
+            if (getters.isAdmin) {
+                return true;
+            }
+            return getters.getUserRights.includes(right);
         }
     },
     mutations: {
@@ -81,7 +106,10 @@ export default {
          * @constructor
          */
         SET_USER: (state, user) => {
-            state.user = user;
+            state.user = {
+                ...state.user,
+                ...user
+            };
         },
     },
     actions: {

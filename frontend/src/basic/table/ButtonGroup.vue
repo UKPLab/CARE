@@ -1,7 +1,7 @@
 <template>
   <div class="btn-group btn-group-sm">
     <TableButton
-      v-for="b in buttons"
+      v-for="b in showButtons"
       :key="b"
       :action="b.action"
       :icon="b.icon"
@@ -31,8 +31,24 @@ export default {
     }
   },
   emits: ['action'],
+  computed: {
+    showButtons() {
+      return this.buttons.filter(b => {
+        if (b.filter) {
+          return b.filter.some(f => {
+            if (f.type === "not") {
+              return this.params[f.key] !== f.value;
+            } else {
+              return this.params[f.key] === f.value;
+            }
+          });
+        }
+        return true;
+      });
+    }
+  },
   methods: {
-    actionEmitter(data){
+    actionEmitter(data) {
       this.$emit('action', data);
     }
   }

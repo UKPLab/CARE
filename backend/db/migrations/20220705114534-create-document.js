@@ -13,6 +13,11 @@ module.exports = {
                     model: "user", key: "id"
                 }
             },
+            readyForReview: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: false
+            },
             public: {
                 type: Sequelize.BOOLEAN,
                 allowNull: false,

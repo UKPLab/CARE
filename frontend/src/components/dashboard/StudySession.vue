@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <h1>Active Study Sessions</h1>
-    <div v-if="!studies || studies.length === 0">
+    <div v-if="!studiesFiltered || studiesFiltered.length === 0">
       <p class="fs-6">
         You have no active study sessions. Enter a study by clicking on the study link or create your own study.
       </p>
@@ -9,11 +9,11 @@
     <div v-else>
       <hr>
       <div
-        v-for="s in studies"
+        v-for="s in studiesFiltered"
         :key="s.id"
       >
         <Card
-          :title="s.name ? `Study: ${s.name}` : '<no name>'"
+          :title="s.title"
           collapsable collapsed @collapse="collapse(s.id, $event)"
         >
           <template #body>
@@ -52,7 +52,9 @@ import {getTimeDiffString} from "@/assets/utils";
 export default {
   name: "DashboardStudySession",
   components: {Card, LoadIcon, StudySessionTable, Timer},
-  fetchData: ['study_session'],
+  subscribeTable: [{
+    table: 'study_session',
+  }, "user"],
   props: {},
   data() {
     return {
@@ -62,12 +64,28 @@ export default {
   computed: {
     studies() {
       return this.$store.getters["table/study/getFiltered"](s => this.sessionStudyIds.includes(s.id))
-        .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)));
+        .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)))
+        .map(s => {
+          let study = {...s};
+          const firstName = this.$store.getters["table/user/get"](study.userId)?.firstName;
+            const lastName = this.$store.getters["table/user/get"](study.userId)?.lastName;
+          if (this.canReadPrivateInformation && firstName && lastName) {
+            study.title = study.name ? `Study: ${study.name} (from ${firstName} ${lastName})` : '<no name>';
+          } else {
+            study.title = study.name ? `Study: ${study.name}` : '<no name>';
+          }
+          return study;
+        });
+    },
+    studiesFiltered() {
+      return this.studies.filter(s => !this.isStudyClosed(s));
     },
     sessionStudyIds() {
       return this.$store.getters["table/study_session/getByUser"](this.$store.getters["auth/getUserId"])
-        .filter(s => !s.end)
         .map(s => s.studyId);
+    },
+    canReadPrivateInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
     },
     studyTimes() {
       this.trigger; // leave here to force recompute
@@ -81,7 +99,18 @@ export default {
       } else {
         this.$socket.emit("studySessionSubscribe", {studyId: studyId});
       }
-    }
+    },
+    isStudyClosed(study) {
+      if (study) {
+        if (study.closed) {
+          return true;
+        }
+        if (!study.multipleSubmit && study.end && new Date(study.end) < Date.now()) {
+          return true;
+        }
+      }
+      return false;
+    },
   }
 }
 </script>

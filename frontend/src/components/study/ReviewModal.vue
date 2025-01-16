@@ -43,32 +43,26 @@
     </template>
     <template #footer>
       <div v-if="evaluated">
-        <button
+        <BasicButton
           class="btn btn-primary"
           data-bs-dismiss="modal"
-          type="button"
-        >
-          Close
-        </button>
+          title="Close"
+        />
       </div>
       <div
         v-else
         class="btn-group"
       >
-        <button
+        <BasicButton
           class="btn btn-danger"
-          type="button"
+          title="Decline"
           @click="evaluate(0)"
-        >
-          Decline
-        </button>
-        <button
+        />
+        <BasicButton
           class="btn btn-success"
-          type="button"
+          title="Acceptance"
           @click="evaluate(1)"
-        >
-          Acceptance
-        </button>
+        />
       </div>
     </template>
   </Modal>
@@ -76,6 +70,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /* ReviewModal.vue - Modal for providing a review outcome
 
@@ -86,8 +81,14 @@ Source: -
 */
 export default {
   name: "ReviewModal",
-  components: {Modal},
-  inject: ['studySessionId'],
+  components: {Modal, BasicButton},
+  inject: {
+   studySessionId: {
+      type: Number,
+      required: false,
+      default: null
+    },
+  },
   data() {
     return {
       comment: "",

@@ -1,5 +1,5 @@
 <template>
-  <fieldset :disabled="options.readOnly !== undefined ? options.readOnly : false">
+  <fieldset :disabled="options.readOnly !== undefined ? options.readOnly : false" :class="{ 'shake': shake }">
     <div v-if="dataTable">
       <slot :id="options.key" :blur="validate" name="element"/>
       <div v-if="invalidField" class="feedback-invalid">
@@ -69,16 +69,27 @@ export default {
   data() {
     return {
       invalidField: false,
-      emptyField: false
+      emptyField: false,
+      shake: false,
     }
+  },
+  mounted() {
+    this.eventBus.on('resetFormField', this.resetFieldState)
+  },
+  beforeUnmount() {
+    this.eventBus.off('resetFormField', this.resetFieldState)
   },
   methods: {
     validate(data) {
+      if (data === true) {
+        this.invalidField = false;
+        return true;
+      }
       if (this.options.required) {
-
         // Check pattern
         if (this.options.pattern) {
           if (new RegExp(this.options.pattern).test(data)) {
+            this.invalidField = false;
             return true;
           } else {
             this.invalidField = true;
@@ -86,22 +97,42 @@ export default {
           }
         }
         this.invalidField = false;
-
         // Check empty
-        if (data && data !== "") {
-          this.emptyField = false;
-          return true;
+        if (data) {
+          if(typeof data === "string" && data !== "") {
+            this.emptyField = false;
+            return true;
+          }
+          if(Array.isArray(data) && data.length !== 0 ) {
+            this.emptyField = false;
+            return true;
+          }
+          if(typeof data === "number")  {
+            this.emptyField = false;
+            return true;
+          }
+          this.emptyField = true;
+          this.shakeIt();
+          return false;
         } else {
           this.emptyField = true;
+          this.shakeIt();
           return false;
         }
-
       } else {
         return true;
       }
-
+    },
+    shakeIt() {
+      this.shake = true;
+      setTimeout(() => {
+        this.shake = false;
+      }, 1500);
+    },
+    resetFieldState () {
+      this.invalidField = false;
+      this.emptyField = false;
     }
-
   }
 }
 </script>
@@ -112,5 +143,17 @@ export default {
   color: firebrick;
   padding-top: 4px;
   padding-left: 5px;
+}
+
+@keyframes shake-animation {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+.shake {
+  animation: shake-animation 0.5s ease-in-out;
 }
 </style>

@@ -31,8 +31,21 @@ services:
     volumes:
       - ./docs/build:/content-server/docs/build
       - ./docs/api:/content-server/docs/api
+      - ./files:/content-server/files
     depends_on:
       - postgres
     ports:
       - ${PUBLISHED_PORT}:${CONTENT_SERVER_PORT}
+    restart: unless-stopped
+  rpc_test:
+    build:
+      context: ./utils/rpcs/test
+      dockerfile: Dockerfile
+    command: gunicorn --workers 1 --threads 100 --bind 0.0.0.0:8080 'main:create_app()' --access-logfile '-' --error-logfile '-'
+    restart: unless-stopped
+  rpc_moodle:
+    build:
+      context: ./utils/rpcs/moodleAPI
+      dockerfile: Dockerfile
+    command: gunicorn --workers 1 --threads 100 --bind 0.0.0.0:8081 'main:create_app()' --access-logfile '-' --error-logfile '-'
     restart: unless-stopped

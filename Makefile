@@ -19,7 +19,9 @@ help:
 	@echo "make dev-build-frontend   		 	Build frontend in development mode"
 	@echo "make build-frontend                  Build frontend in production mode"
 	@echo "make test							Run unit tests (backend only)"
-	@echo "make init             		 		Init (migrating) the database"
+	@echo "make test-modules                    Run unit tests for specific modules"
+	@echo "make db             		 			Init (migrating) the database"
+	@echo "make init           		  			Init (migrating) the database and install npm packages in all utils/modules subdirectories"
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
 	@echo "make build-clean                     Clean the environment of production build"
 	@echo "make docker          				Start docker images"
@@ -28,6 +30,7 @@ help:
 	@echo "make clean             				Delete development files"
 	@echo "make lint             				Run linter (only frontend)"
 	@echo "make kill             				Kill all node instances (only unix)"
+	@echo "make modules          				Install npm packages in all utils/modules subdirectories"
 
 .PHONY: doc
 doc: doc_asyncapi doc_sphinx
@@ -53,19 +56,30 @@ doc_clean:
 test: backend/node_modules/.uptodate
 	cd backend && npm run test
 
+.PHONY: test-rpc
+test-rpc: backend/node_modules/.uptodate
+	cd backend && npm run test_rpc
+
+.PHONY: test-modules
+test-modules:
+	cd utils/modules/editor-delta-conversion && npm run test:module -- tests/editor-delta-conversion.test.js
+
 .PHONY: lint
 lint: frontend/node_modules/.uptodate
 	cd frontend && npm run frontend-lint
 
 .PHONY: docker
 docker:
-	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres
+	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres rpc_test rpc_moodle
 
-.PHONY: init
-init: backend/node_modules/.uptodate
+.PHONY: db
+db: backend/node_modules/.uptodate
 	@echo ${POSTGRES_HOST}
 	cd backend/db && npx sequelize-cli db:create || echo "IGNORING ERROR"
 	cd backend/db && npx sequelize-cli db:migrate
+
+.PHONY: init
+init: modules db
 
 .PHONY: dev
 dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate
@@ -115,15 +129,29 @@ recover_db:
 	cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
 
 .PHONY: check_clean clean
+
 check_clean:
+ifeq ($(OS),Windows_NT)
+	@PowerShell -Command "$$response = Read-Host 'Are you sure? This will wipe out the entire database [y/N]'; if ($$response -ne 'y') { exit 1 }"
+else
 	@echo -n "Are you sure? This will wipe out the entire database [y/N] " && read ans && [ $${ans:-N} = y ]
+endif
 
 clean: check_clean
 	@echo "Cleaning project code and database. WARNING: This will remove your current DB state."
-	rm -f frontend/node_modules/.uptodate
-	rm -f backend/node_modules/.uptodate
+ifeq ($(OS),Windows_NT)
+	@if exist "frontend\node_modules" rmdir /S /Q "frontend\node_modules"
+	@if exist "backend\node_modules" rmdir /S /Q "backend\node_modules"
+	@if exist "utils\modules\editor-delta-conversion\node_modules" rmdir /S /Q "utils\modules\editor-delta-conversion\node_modules"
+	@if exist "dist" rmdir /S /Q "dist"
+	@for %%F in (files*) do if "%%~nxF" neq "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" del "%%F"
+else
+	rm -rf frontend/node_modules
+	rm -rf backend/node_modules
+	rm -rf care/utils/modules/editor-delta-conversion/node_modules
 	rm -rf dist
 	find files -maxdepth 1 -type f ! -name "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" -exec rm {} \;
+endif
 	@docker compose rm -f -s -v
 	@docker network rm care_default || echo "IGNORING ERROR"
 
@@ -150,3 +178,26 @@ ifeq ($(OS),Windows_NT)
 else
 	@touch $@
 endif
+
+utils/modules/%/node_modules/.uptodate: utils/modules/%/package.json
+	@echo "Running npm install in $(@D)"
+	@cd $(@D) && npm install
+ifeq ($(OS),Windows_NT)
+	@echo. > $@
+else
+	@touch $@
+endif
+
+install-utils-modules:
+ifeq ($(OS),Windows_NT)
+	@if exist "frontend\node_modules" rmdir /S /Q "frontend\node_modules"
+	@for /D %%d in (utils\modules\*) do @if exist "%%d\package.json" (cd %%d && npm install && @echo. > node_modules\.uptodate)
+else
+	rm -rf frontend/node_modules
+	@for d in $(shell find utils/modules -type d -maxdepth 1 -mindepth 1); do \
+		(cd $$d && npm install && touch node_modules/.uptodate); \
+	done
+endif
+
+.PHONY: modules
+modules: install-utils-modules

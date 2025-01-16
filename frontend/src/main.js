@@ -8,6 +8,7 @@ import SocketIO from 'socket.io-client';
 import VueSocketIO from 'vue-3-socket.io';
 import store from "./store";
 import router from './router';
+import './assets/styles/global.css';
 
 const app = Vue.createApp({
     render: () => Vue.h(App)
@@ -34,7 +35,7 @@ app.use(BToastPlugin);
 // Server URL for hot reload
 import getServerURL from '@/assets/serverUrl.js';
 
-app.use(new VueSocketIO({
+const socketio = new VueSocketIO({
     // eslint-disable-next-line no-undef
     debug: (process.env.NODE_ENV !== 'production'),
     connection: SocketIO(getServerURL(),
@@ -49,7 +50,9 @@ app.use(new VueSocketIO({
         actionPrefix: 'SOCKET_',
         mutationPrefix: 'SOCKET_'
     }
-}));
+});
+
+app.use(socketio);
 
 //EventBus
 import mitt from 'mitt';
@@ -58,11 +61,12 @@ const eventBus = mitt()
 app.config.globalProperties.eventBus = eventBus;
 app.config.unwrapInjectedRef = true;
 
-app.use(store);
 app.use(router);
+app.use(store);
 
 //Add Auto emits for sockets on mounted
-import fetchData from "@/plugins/fetchData";
-app.use(fetchData);
+import subscribeTable from "@/plugins/subscribeTable";
 
-app.mount('#app');
+app.use(subscribeTable);
+
+router.isReady().then(() => app.mount('#app'));

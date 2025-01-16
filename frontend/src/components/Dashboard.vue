@@ -5,14 +5,14 @@
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
         <div
           id="sidebarContainer"
-          class="col border mh-100  col-sm-auto g-0"
+          class="col border mh-100 col-sm-auto g-0"
         >
-          <Sidebar/>
+          <Sidebar />
         </div>
         <div
           id="viewerContainer"
           class="col border mh-100 justify-content-center p-3"
-          style="overflow-y: scroll;"
+          style="overflow-y: scroll"
         >
           <component
             :is="currentComponent"
@@ -34,55 +34,53 @@
  * @author: Dennis Zyska, Nils Dycke
  */
 import Sidebar from "./dashboard/navigation/Sidebar.vue";
-import {defineAsyncComponent} from "vue";
+import { defineAsyncComponent } from "vue";
 import Loading from "@/basic/Loading.vue";
 import NotFoundPage from "@/auth/NotFound.vue";
 
 export default {
   name: "DashboardRoute",
-  fetchData: ['nav_element'],
-  components: {Loading, Sidebar},
+  subscribeTable: ["nav_element"],
+  components: { Loading, Sidebar },
   props: {
-    "catchAll": {
+    catchAll: {
       type: String,
-      default: undefined
-    }
+      default: undefined,
+    },
   },
   computed: {
     navElements() {
-      return this.$store.getters['table/nav_element/getAll'];
+      return this.$store.getters["table/nav_element/getAll"];
     },
     settings() {
-      return this.$store.getters['settings/getSettings'];
+      return this.$store.getters["settings/getSettings"];
     },
     defaultComponent() {
       if (this.settings && "dashboard.navigation.component.default" in this.settings) {
-        return this.navElements.find(e => e.name.toLowerCase() === this.settings["dashboard.navigation.component.default"].toLowerCase());
+        return this.navElements.find((e) => e.name.toLowerCase() === this.settings["dashboard.navigation.component.default"].toLowerCase());
       }
       return undefined;
     },
     currentComponent() {
       let component = undefined;
       if (this.navElements.length > 0 && this.catchAll !== undefined) {
-        component = this.navElements.find(element => element.path.toLowerCase() === this.catchAll.toLowerCase());
+        component = this.navElements.find((element) => element.path.toLowerCase() === this.catchAll.toLowerCase());
       }
       if (component === undefined && this.defaultComponent) {
         component = this.defaultComponent;
       }
       if (component !== undefined) {
-        return defineAsyncComponent(
-          {
-            loader: () => import("./dashboard/" + component.component + ".vue"),
-            loadingComponent: Loading,
-            errorComponent: NotFoundPage
-          });
+        return defineAsyncComponent({
+          loader: () => import("./dashboard/" + component.component + ".vue"),
+          loadingComponent: Loading,
+          errorComponent: NotFoundPage,
+        });
       } else {
         return Loading;
       }
-
     },
   },
-}
+};
 </script>
 
 <style scoped>
@@ -93,5 +91,4 @@ export default {
 #viewerContainer::-webkit-scrollbar {
   display: none;
 }
-
 </style>

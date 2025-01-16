@@ -1,4 +1,7 @@
 const Socket = require("../Socket.js");
+const {v4: uuidv4} = require('uuid');
+const {Op} = require("sequelize");
+const {inject} = require("../../utils/generic");
 
 /**
  * Handle all studies through websocket
@@ -11,42 +14,17 @@ const Socket = require("../Socket.js");
 module.exports = class StudySocket extends Socket {
 
     /**
-     * Update study
-     * @param {number} studyId
-     * @param {object} data study object
-     * @returns {Promise<*>}
-     */
-    async updateStudy(studyId, data) {
-
-        const currentStudy = await this.models['study'].getById(studyId);
-        if (this.checkUserAccess(currentStudy.userId)) {
-            const study = await this.models['study'].updateById(studyId, data);
-
-            if (study.deleted) {
-                const sessions = await this.models['study_session'].getAllByKey('studyId', study.id);
-                for (const session of sessions) {
-                    await this.models['study_session'].deleteById(session.id);
-                }
-            }
-
-            this.emit("studyRefresh", study)
-            return study;
-        } else {
-            this.sendToast("You are not allowed to update this study", "Error", "Danger");
-        }
-    }
-
-    /**
      * Add a new study
      * @param study
      * @returns {Promise<void>}
      */
     async addStudy(study) {
         study.userId = this.userId;
-
+        if (this.getSocket("DocumentSocket")) {
+            this.getSocket("DocumentSocket").saveDocument(study.documentId);
+        }
         const newStudy = await this.models['study'].add(study);
         this.emit("studyRefresh", newStudy);
-
         return newStudy;
     }
 
@@ -57,7 +35,7 @@ module.exports = class StudySocket extends Socket {
      */
     async sendStudies(userId = null) {
         try {
-            if (this.isAdmin()) {
+            if (await this.isAdmin()) {
                 if (userId) {
                     this.emit("studyRefresh", await this.models['study'].getAllByKey('userId', userId));
                 } else {
@@ -78,10 +56,40 @@ module.exports = class StudySocket extends Socket {
      */
     async sendStudyByHash(studyHash) {
         const study = await this.models['study'].getByHash(studyHash);
+        // TODO: study db info, workflows in study where the studies are referenced , workflow steps, study step 
         if (study) {
-            const sessions = await this.models['study_session'].getAllByKey('userId', this.userId);
-            this.emit("study_sessionRefresh", sessions.filter(s => s.studyId === study.id));
-            this.emit("studyRefresh", study);
+            const workflow = await this.models['workflow'].getById(study.workflowId);
+            if (workflow) {
+                const workflowSteps = await this.models['workflow_step'].getAllByKey('workflowId', workflow.id);
+                if (workflowSteps) {
+                    const studySteps = await this.models['study_step'].getAllByKey('studyId', study.id);
+                    const studySession = await this.models['study_session'].findAll({
+                        where:
+                            {"userId": this.userId, "studyId": study.id}, raw: true,
+                    });
+                    this.emit("workflowRefresh", workflow);
+                    this.emit("workflow_stepRefresh", workflowSteps);
+                    this.emit("study_stepRefresh", studySteps);
+                    this.emit("study_sessionRefresh", studySession);
+                    this.emit("studyRefresh", await inject(study, async (x) => {
+                            return await this.models['study_session'].count({
+                                where: {
+                                    studyId: x
+                                }
+                            });
+                        }, "totalNumberOfOpenedSessions", "id")
+                    );
+
+                } else {
+                    this.socket.emit("studyError", {
+                        studyHash: studyHash, message: "No workflow steps found!"
+                    });
+                }
+            } else {
+                this.socket.emit("studyError", {
+                    studyHash: studyHash, message: "No workflow found!"
+                });
+            }
         } else {
             this.socket.emit("studyError", {
                 studyHash: studyHash, message: "Not found!"
@@ -114,8 +122,9 @@ module.exports = class StudySocket extends Socket {
         const doc = await this.models['document'].getById(data.documentId);
         if (this.checkUserAccess(doc.userId)) {
             let study;
-            if(data.id){
-                study = await this.updateStudy(data.id, data);
+            if (data.id) {
+                study = await this.models['study'].updateById(data.id, data);
+                this.emit("studyRefresh", study);
             } else {
                 study = await this.addStudy(data);
             }
@@ -133,6 +142,72 @@ module.exports = class StudySocket extends Socket {
                 success: false, message: "No permission to publish study"
             });
         }
+    }
+
+    /**
+     * Save the current study as a template (create a new study with template: true)
+     * @param {object} data
+     * @param {number} data.id - the id of the study to save as template
+     * @param {object} options - the options for the transaction
+     * @returns {Promise<*>}
+     */
+    async saveStudyAsTemplate(data, options) {
+        const currentStudy = await this.models['study'].getById(data['id']);
+
+        if (this.checkUserAccess(currentStudy.userId)) {
+
+            const newStudyData = {
+                ...currentStudy,
+                id: undefined,
+                hash: undefined,
+                template: true,
+            };
+            const newStudy = await this.models['study'].add(newStudyData, {transaction: options.transaction});
+            options.transaction.afterCommit(() => {
+                this.emit("studyRefresh", newStudy);
+            });
+            return newStudy;
+        } else {
+            throw new Error("No permission to save study as template");
+        }
+    }
+
+    /**
+     * Close a bulk of studies
+     * @param data
+     * @param data.projectId - the project id of the studies to close
+     * @param data.ignoreClosedState - if true, also close studies that are already closed
+     * @param data.progressId - the id of the progress bar to update
+     * @param options - not used
+     * @returns {Promise<void>}
+     */
+    async closeBulk(data, options) {
+
+        const studies = await this.models['study'].getAllByKey('projectId', data.projectId);
+        for (const study of studies) {
+            if (study.closed) {
+                if (!("ignoreClosedState" in data) || !data.ignoreClosedState) {
+                    continue;
+                }
+            }
+            const transaction = await this.server.db.sequelize.transaction();
+
+            try {
+
+                await this.models['study'].updateById(study.id, {closed: true}, {transaction: transaction});
+                await transaction.commit();
+            } catch (e) {
+                this.logger.error(e);
+                await transaction.rollback();
+            }
+
+            // update frontend progress
+            this.socket.emit("progressUpdate", {
+                id: data["progressId"], current: studies.indexOf(study) + 1, total: studies.length,
+            });
+        }
+
+
     }
 
     async init() {
@@ -161,19 +236,6 @@ module.exports = class StudySocket extends Socket {
             }
         });
 
-        this.socket.on("studyUpdate", async (data) => {
-            try {
-                if (data.studyId && data.studyId !== 0) {
-                    await this.updateStudy(data.studyId, data);
-                } else {
-                    await this.addStudy(data);
-                }
-            } catch (err) {
-                this.logger.error(err);
-                this.sendToast(err, "Error updating study", "Danger");
-            }
-        });
-
         this.socket.on("studyPublish", async (data) => {
             try {
                 await this.publishStudy(data)
@@ -185,6 +247,9 @@ module.exports = class StudySocket extends Socket {
 
             }
         });
+
+        this.createSocket("studySaveAsTemplate", this.saveStudyAsTemplate, {}, true);
+        this.createSocket("studyCloseBulk", this.closeBulk, {}, false);
 
     }
 }

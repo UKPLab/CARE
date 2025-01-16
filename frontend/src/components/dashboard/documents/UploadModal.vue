@@ -1,8 +1,8 @@
 <template>
   <Modal
-      ref="uploadModal"
-      lg
-      name="documentUpload"
+    ref="uploadModal"
+    lg
+    name="documentUpload"
   >
     <template #title>
       Upload new document
@@ -10,38 +10,36 @@
     <template #body>
       <div class="modal-body justify-content-center flex-grow-1 d-flex">
         <div
-            v-if="uploading"
-            class="spinner-border m-5 "
-            role="status"
+          v-if="uploading"
+          class="spinner-border m-5 "
+          role="status"
         >
           <span class="visually-hidden">Loading...</span>
         </div>
         <div
-            v-else
-            class="flex-grow-1"
+          v-else
+          class="flex-grow-1"
         >
-          <input
-              id="fileInput"
-              class="form-control"
-              name="file"
-              type="file"
-          >
+          <BasicForm
+            v-model="data"
+            :fields="fileFields"
+          />
         </div>
       </div>
     </template>
     <template #footer>
       <div v-if="!uploading">
         <button
-            class="btn btn-secondary"
-            data-bs-dismiss="modal"
-            type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+          type="button"
         >
           Close
         </button>
         <button
-            class="btn btn-primary"
-            type="button"
-            @click="upload"
+          class="btn btn-primary"
+          type="button"
+          @click="upload"
         >
           Upload
         </button>
@@ -52,6 +50,7 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
+import BasicForm from "@/basic/Form.vue";
 
 /**
  * Document upload component
@@ -64,52 +63,61 @@ import Modal from "@/basic/Modal.vue";
  */
 export default {
   name: "DocumentUploadModal",
-  components: {Modal},
+  components: {BasicForm, Modal},
   data() {
     return {
       uploading: false,
-      show: false
-    }
-  },
-  computed: {},
-  mounted() {
-  },
-  sockets: {
-    uploadResult: function (data) {
-      this.$refs.uploadModal.close();
-      this.uploading = false;
-      if (data.success) {
-        this.eventBus.emit('toast', {message: "File successfully uploaded!", variant: "success", delay: 3000});
-      } else {
-        this.eventBus.emit('toast', {message: "Error during upload of file!", variant: "danger", delay: 3000});
-      }
+      show: false,
+      data: {},
+      fileFields: [
+        {
+          key: "file",
+          type: "file",
+          accept: ".pdf,.delta",
+          class: "form-control",
+          default: null
+        },
+      ],
     }
   },
   methods: {
     open() {
-      let fileElement = document.getElementById('fileInput');
-      try {
-        fileElement.value = null;
-      } catch (err) {
-        if (fileElement.value) {
-          fileElement.parentNode.replaceChild(fileElement.cloneNode(true), fileElement);
-        }
-      }
-
-      this.$refs.uploadModal.openModal();
-      this.$socket.emit("stats", {action: "openUploadModal", data: {}});
+      this.data.file = null;
+      this.$refs.uploadModal.open();
     },
     upload() {
-      const fileElement = document.getElementById('fileInput');
-
-      // check if user had selected a file
-      if (fileElement.files.length === 0) {
-        alert('please choose a file')
-        return
+      const fileName = this.data.file.name;
+      const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+      if (fileType !== ".pdf" && fileType !== ".delta") {
+        this.eventBus.emit("toast", {
+          title: "Invalid file type",
+          message: "Only PDF and Delta files are allowed.",
+          variant: "danger",
+        });
+        return;
       }
 
-      this.$socket.emit("uploadFile", {type: "document", file: fileElement.files[0], name: fileElement.files[0].name});
-      this.uploading = true;
+      this.$refs.uploadModal.waiting = true;
+      this.$socket.emit("documentAdd", {
+        file: this.data.file,
+        name: fileName,
+      }, (res) => {
+        if (res.success) {
+          this.$refs.uploadModal.waiting = false;
+          this.eventBus.emit("toast", {
+            title: "Uploaded file",
+            message: "File successfully uploaded!",
+            variant: "success",
+          });
+          this.$refs.uploadModal.close();
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Failed to upload the file",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     }
   },
 

@@ -21,7 +21,8 @@ module.exports = class CommentSocket extends Socket {
             "documentId",
             "createdAt",
             "updatedAt",
-            "studySessionId"
+            "studySessionId",
+            "studyStepId"
         ]
 
         let copied = pickObjectAttributeSubset(comment, copyFields);
@@ -130,8 +131,10 @@ module.exports = class CommentSocket extends Socket {
                 userId: data.userId,
                 documentId: data.documentId,
                 studySessionId: data.studySessionId,
+                studyStepId: data.studyStepId,
                 annotationId: data.annotationId !== undefined ? data.annotationId : null,
-                parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null
+                parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+                anonymous: data.anonymous !== undefined ? data.anonymous : false
             }
 
             this.emit("commentRefresh", await this.models['comment'].add(newComment))

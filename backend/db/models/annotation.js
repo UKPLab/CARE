@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
+            
+            Annotation.belongsTo(models["study_step"], {
+                foreignKey: 'studyStepId',
+                as: 'studyStep',
+            });
         }
     }
 
@@ -21,12 +26,14 @@ module.exports = (sequelize, DataTypes) => {
         tagId: DataTypes.INTEGER,
         documentId: DataTypes.INTEGER,
         studySessionId: DataTypes.INTEGER,
+        studyStepId: DataTypes.INTEGER,
         selectors: DataTypes.JSONB,
         draft: DataTypes.BOOLEAN,
+        anonymous: DataTypes.BOOLEAN,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
-        updatedAt: DataTypes.DATE
+        updatedAt: DataTypes.DATE,
     }, {
         sequelize,
         modelName: 'annotation',

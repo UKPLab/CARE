@@ -97,7 +97,12 @@ export default {
     requestDownload(ids) {
       // do not allow second downlaod while one is in progress
       if(this.toDownload.length !== this.downloaded.length){
-        this.eventBus.emit('toast', {message: "Another download is in progress. Please wait.", variant: "warning", delay: 3000});
+        this.eventBus.emit('toast',
+          {
+            title: "Warning",
+            message: "Another download is in progress. Please wait.",
+            variant: "warning",
+            delay: 3000});
         return;
       }
 
