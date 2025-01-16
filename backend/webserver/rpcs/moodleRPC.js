@@ -15,6 +15,8 @@ module.exports = class MoodleRPC extends RPC {
         const url = "ws://" + process.env.RPC_MOODLE_HOST + ":" + process.env.RPC_MOODLE_PORT;
         super(server, url);
 
+        this.timeout = 30000; //default timeout for connection
+
     }
 
     /**
