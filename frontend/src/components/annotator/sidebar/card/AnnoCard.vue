@@ -110,6 +110,22 @@
                 @response="summarizeResponse"
             />
             <SidebarButton
+              v-if="voteEnabled"
+              :loading="false"
+              :props="$props"
+              title="Helpful"
+              :badge="20"
+              icon="hand-thumbs-up-fill"
+              @click="vote(1)"
+            />
+            <SidebarButton
+              v-if="voteEnabled && !voteOnlyUpvote"
+              :loading="false"
+              :props="$props"
+              title="Not helpful"
+              icon="hand-thumbs-down"
+              @click="vote(-1)" />
+            <SidebarButton
                 v-if="comment.userId === user_id"
                 :loading="false"
                 :props="$props"
@@ -255,6 +271,12 @@ export default {
     },
     summarizationMaxLength() {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.maxLength'));
+    },
+    voteEnabled() {
+      return this.$store.getters["settings/getValue"]('annotator.comments.votes.enabled') === "true";
+    },
+    voteOnlyUpvote() {
+      return this.$store.getters["settings/getValue"]('annotator.comments.votes.onlyUpvote') === "true";
     },
     summarizationRequestData() {
       return {
@@ -414,6 +436,15 @@ export default {
     },
     putFocus(){
       this.shakeIt();
+    },
+    vote(value) {
+      this.$socket.emit('appDataUpdate', {
+        table: "comment_vote",
+        data: {
+          commentId: this.commentId,
+          vote: value,
+        },
+      });
     }
   }
 }

@@ -73,6 +73,7 @@ module.exports = class Socket {
                         try {
                             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
 
+                            // TODO merge changes from same table and send it at once!
                             if (t.changes) {
                                 t.changes.map(async (entry) => {
                                     if (entry.constructor.autoTable) {
