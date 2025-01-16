@@ -3,6 +3,7 @@
     <StudyModal ref="studyCoordinator"/>
     <StudySessionModal ref="studySessionModal"/>
     <ConfirmModal ref="deleteConf"/>
+    <ConfirmModal ref="confirmModal"/>
     <BulkCloseModal ref="bulkConfirmModal"/>
     <BulkAssignmentsModal ref="bulkAssignmentsModal"/>
     <SingleAssignmentModal ref="singleAssignmentModal"/>
