@@ -4,6 +4,7 @@ const Delta = require('quill-delta');
 const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
+const {Op} = require("sequelize");
 
 
 const {dbToDelta} = require("editor-delta-conversion");
@@ -49,7 +50,6 @@ module.exports = class DocumentSocket extends Socket {
                 return true;
             }
         }
-
 
 
         return false;
@@ -403,9 +403,23 @@ module.exports = class DocumentSocket extends Socket {
                     this.emit("comment_voteRefresh", commentVotes);
                 }
             } else {
-                this.emit("annotationRefresh", await this.models['annotation'].getAllByKey('documentId', data.documentId));
+
+                // send comments and annotations for closed studies and without study session
                 const comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
-                this.emit("commentRefresh", comments);
+                const annotations = await this.models['annotation'].getAllByKey('documentId', data.documentId);
+
+                // get closed studies for the document and filter comments and annotations
+                const studySteps = await this.models['study_step'].getAllByKey('documentId', data.documentId);
+                const studyIds = studySteps.map(s => s.studyId);
+                const closedStudies = (await this.models['study'].getAllByKeyValues('id', studyIds)).filter(s => s.closed !== null);
+                const closeStudyIds = closedStudies.map(s => s.id);
+                const closedSessionIds = (await this.models['study_session'].getAllByKeyValues('studyId', closeStudyIds)).map(s => s.id);
+
+                const closedComments = comments.filter(c => closedSessionIds.includes(c.studySessionId) || c.studySessionId === null);
+                const closedAnnotations = annotations.filter(a => closedSessionIds.includes(a.studySessionId) || a.studySessionId === null);
+
+                this.emit("annotationRefresh", closedAnnotations);
+                this.emit("commentRefresh", closedComments);
                 this.emit("comment_voteRefresh", await this.models['comment_vote'].getAllByKeyValues('commentId', comments.map(c => c.id)), false);
             }
 
