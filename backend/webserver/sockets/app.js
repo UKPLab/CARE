@@ -63,8 +63,6 @@ module.exports = class AppSocket extends Socket {
         // TODO check if user is allowed to update data - missing await!
         if ("userId" in data.data && !this.checkUserAccess(data.data.userId)) {
             throw new Error("You are not allowed to update the table " + data.table + " for another user!");
-        } else {
-            data.data.userId = this.userId;
         }
 
         // check data exists for required fields
@@ -91,6 +89,9 @@ module.exports = class AppSocket extends Socket {
 
         // update data
         if (!("id" in data.data) || data.data.id === 0) {
+            if (!("userId" in data.data)) {
+                data.data.userId = this.userId;
+            }
             newEntry = await this.models[data.table].add(data.data, {context: data.data, transaction: transaction});
         } else {
             newEntry = await this.models[data.table].updateById(
