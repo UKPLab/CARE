@@ -124,6 +124,20 @@ export default defineComponent({
   },
   mounted() {
     this.moodleOptions = this.modelValue;
+
+    this.$socket.emit(
+      "assignmentGetInfo",
+      {
+        options: {
+          courseID: "1615",
+          apiKey: "XXXX",
+          apiUrl: "https://test.com",
+        },
+      },
+      (res) => {
+        console.log("assignmentGetInfo", { res });
+      }
+    );
   },
   methods: {
     reset() {
