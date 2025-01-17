@@ -30,6 +30,7 @@ export default defineComponent({
   data() {
     return {
       moodleOptions: {},
+      assignments: [],
     };
   },
   computed: {
@@ -53,17 +54,28 @@ export default defineComponent({
     },
     moodleOptionsFields() {
       if (this.withAssignmentId) {
-        return [
-          ...this.basicMoodleOptionsFields,
-          {
-            key: "assignmentID",
-            label: "Assignment ID:",
-            type: "text",
-            required: true,
-            default: "",
-            placeholder: "assignment-id-placeholder",
-          },
-        ];
+        const assignmentField = {
+          key: "assignmentID",
+          label: "Assignment ID:",
+          required: true,
+        };
+
+        if (this.assignments.length > 0) {
+          assignmentField.type = "select";
+          assignmentField.options = this.assignments.map((assignment) => ({
+            value: assignment[0],
+            name: assignment[1],
+          }));
+          assignmentField.icon = "list";
+        } else {
+          assignmentField.type = "text";
+          // NOTE: This text field should be given a default value, so the parent component can have access to this field.
+          // Please refer to commit#2c717d2.
+          assignmentField.default = "";
+          assignmentField.placeholder = "assignment-id-placeholder";
+        }
+
+        return [...this.basicMoodleOptionsFields, assignmentField];
       } else {
         return this.basicMoodleOptionsFields;
       }
@@ -112,6 +124,29 @@ export default defineComponent({
         if (!deepEqual(this.moodleOptions, this.modelValue)) {
           this.$emit("update:modelValue", this.moodleOptions);
         }
+
+        if (
+          this.withAssignmentId &&
+          this.moodleOptions.courseID &&
+          this.moodleOptions.apiKey &&
+          this.moodleOptions.apiUrl
+        ) {
+          this.$socket.emit(
+            "assignmentGetInfo",
+            {
+              options: {
+                courseID: this.moodleOptions.courseID,
+                apiKey: this.moodleOptions.apiKey,
+                apiUrl: this.moodleOptions.apiUrl,
+              },
+            },
+            (res) => {
+              if (res.success) {
+                this.assignments = res["data"];
+              }
+            }
+          );
+        }
       },
       deep: true,
     },
@@ -124,20 +159,6 @@ export default defineComponent({
   },
   mounted() {
     this.moodleOptions = this.modelValue;
-
-    this.$socket.emit(
-      "assignmentGetInfo",
-      {
-        options: {
-          courseID: "1615",
-          apiKey: "XXXX",
-          apiUrl: "https://test.com",
-        },
-      },
-      (res) => {
-        console.log("assignmentGetInfo", { res });
-      }
-    );
   },
   methods: {
     reset() {
