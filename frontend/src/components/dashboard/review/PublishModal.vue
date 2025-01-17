@@ -255,7 +255,7 @@ export default {
     publishReviewLinks() {
       const feedback = this.formattedSessions.map((doc) => {
         let text = this.text_format;
-        text = text.replace("~USERNAME~", doc.document.userName);
+        text = text.replace("~USERNAME~", doc.document.creator_name);
         return {
           extId: doc.document.extId,
           text: text.replace("~SESSION_LINKS~", doc.sessions.map((s) => s.link).join("\n")),
