@@ -91,7 +91,8 @@ module.exports = class MoodleRPC extends RPC {
      */
     async getAssignmentInfoFromCourse(data) {
         try {
-            return this.request("getAssignmentInfoFromCourse", data);
+            const response = await this.request("getAssignmentInfoFromCourse", data);
+            return response["data"];
         } catch (err) {
             throw err;
         }
