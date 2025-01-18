@@ -7,41 +7,56 @@
           <td v-for="field in fields" :key="field.key">
             <div class="d-flex align-items-center">
                 <span class="badge bg-primary me-2">
-                  <i class="bi bi-file-earmark-text"></i> {{ index + 1 }}
+                  <i class="bi bi-file-earmark-text"></i> {{ item.stepNumber }}
                 </span>
 
-              <FormSelect
-                v-if="field.type === 'select'"
-                :ref="'ref_' + field.key"
-                v-model="currentData[index][field.key]"
-                :data-table="true"
-                :parent-value="item"
-                :options="{options: field.options}"
-                :placeholder="field.label"
-                class="flex-grow-1"
-                style="min-width: 200px; max-width: 800px;"
-              />
-              <FormDefault
-                v-else
-                :ref="'ref_' + field.key"
-                v-model="currentData[index][field.key]"
-                :data-table="true"
-                :options="field"
-              />
-            </div>
-          </td>
-        </tr>
+                <div class="flex-grow-1 d-flex align-items-center">
+                  <FormSelect
+                    v-if="field.type === 'select'"
+                    :ref="'ref_' + field.key"
+                    v-model="currentData[index][field.key]"
+                    :data-table="true"
+                    :parent-value="item"
+                    :options="{options: field.options}"
+                    :placeholder="field.label"
+                    class="flex-grow-1"
+                    style="min-width: 200px; max-width: 800px;"
+                  />
+                  <FormDefault
+                    v-else
+                    :ref="'ref_' + field.key"
+                    v-model="currentData[index][field.key]"
+                    :data-table="true"
+                    :options="field"
+                  />
+
+                  <!-- Render Gear Icon if Configuration Exists -->
+                  <span
+                    v-if="item.hasConfiguration"
+                    class="ms-2"
+                    @click="openModal(item.configuration)"
+                  >
+                    <i class="bi bi-gear" title="View Configuration" style="cursor: pointer;"></i>
+                  </span>
+                </div>
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </template>
   </FormElement>
+ <ConfigurationModal ref="configurationModal" />
 </template>
 
 <script>
 import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
+import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
 import {sorter} from "@/assets/utils";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 /**
  * Show a table to insert new elements
@@ -50,7 +65,7 @@ import {sorter} from "@/assets/utils";
  */
 export default {
   name: "FormChoice",
-  components: {FormElement, FormDefault, FormSelect},
+  components: {FormElement, FormDefault, FormSelect, ConfigurationModal},
   inject: {
     formData: {
       default: () => null,
@@ -103,7 +118,25 @@ export default {
           return true; 
         });
 
-        return sorter(validChoices, choicesConfig.sort);
+        // Sort IDs in ascending order and calculate step numbers directly
+        let stepCounter = 1;
+        let previousId = null;
+
+        return validChoices
+          .sort((a, b) => a.id - b.id) 
+          .map((item) => {
+            if (previousId !== null && item.id - previousId > 1) {
+              stepCounter += item.id - previousId - 1;
+            }
+            const stepNumber = stepCounter;
+            stepCounter += 1; 
+            previousId = item.id; 
+            return {
+              ...item,
+              stepNumber, 
+              hasConfiguration: !!item.configuration && Object.keys(item.configuration).length > 0,
+            };
+          });
       }
       return [];
     },
@@ -163,9 +196,20 @@ export default {
       });
       return allValid;
     },
+    openModal(configuration) {
+      console.log("Opening configuration modal with:", configuration);
+      this.$refs.configurationModal.open(configuration);
+    },
   },
 };
 </script>
 
 <style scoped>
+.bi-gear {
+  color: #6c757d; /* Bootstrap muted color */
+  cursor: pointer;
+}
+.bi-gear:hover {
+  color: #0d6efd; /* Bootstrap primary color */
+}
 </style>
