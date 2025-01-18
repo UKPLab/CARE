@@ -6,19 +6,101 @@ const workflows = [
     description: "EiWA Project: Review a PDF document and write free text.",
     steps: [
       { stepType: 1, allowBackward: false, workflowStepDocument: null },
-      { stepType: 2, allowBackward: true, workflowStepDocument: 1 }
-    ]
+      { stepType: 2, allowBackward: true, workflowStepDocument: 1,
+        configuration: {
+          fields: [
+            {
+              type: "placeholder",
+              pattern: "~link\\[(\\d+)\\]~", 
+              fields: [
+                {
+                  name: "reviewLink",
+                  label: "Review Document Link",
+                  placeholder: "Provide the URL for the document",
+                  required: true,
+                  default: "https://example.com/document",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
   },
   {
     name: "Rummels Project (experimental)",
     description: "Rummels Project: Correct a document over two revisions with edits overview.",
     steps: [
       { stepType: 2, allowBackward: false, workflowStepDocument: null },
-      { stepType: 3, allowBackward: false, workflowStepDocument: null },
+      { stepType: 3, allowBackward: false, workflowStepDocument: null,
+        configuration: {
+          fields: [
+            {
+              type: "placeholder",
+              pattern: "~nlp\\[(\\d+)\\]~",
+              fields: [
+                {
+                  name: "skillName",
+                  label: "Skill Name",
+                  placeholder: "Enter NLP skill name",
+                  required: true,
+                  default: "Text Analysis",
+                },
+                {
+                  name: "dataSource",
+                  label: "Data Source",
+                  placeholder: "Enter the data source",
+                  required: true,
+                  default: "Editor Document",
+                },
+                {
+                  name: "output",
+                  label: "Output",
+                  placeholder: "Location where expected output should be saved",
+                  required: true,
+                  default: "HTML Document",
+                },
+              ],
+            },
+          ],
+        },
+      },
       { stepType: 2, allowBackward: false, workflowStepDocument: 1 },
-      { stepType: 3, allowBackward: false, workflowStepDocument: null }
-    ]
-  }
+      { stepType: 3, allowBackward: false, workflowStepDocument: null,
+        configuration: {
+          fields: [
+            {
+              type: "placeholder",
+              pattern: "~nlp\\[(\\d+)\\]~",
+              fields: [
+                {
+                  name: "skillName",
+                  label: "Skill Name",
+                  placeholder: "Enter NLP skill name",
+                  required: true,
+                  default: "Text Analysis",
+                },
+                {
+                  name: "dataSource",
+                  label: "Data Source",
+                  placeholder: "Enter the data source",
+                  required: true,
+                  default: "Editor Document",
+                },
+                {
+                  name: "output",
+                  label: "Output",
+                  placeholder: "Location where expected output should be saved",
+                  required: true,
+                  default: "HTML Document",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
 ];
 
 module.exports = { 
@@ -54,7 +136,7 @@ module.exports = {
                       workflowStepPrevious: previousStepId, 
                       allowBackward: step.allowBackward,
                       workflowStepDocument: step.workflowStepDocument,
-                      configuration: JSON.stringify({}),
+                      configuration: JSON.stringify(step.configuration),
                       createdAt: new Date(),
                       updatedAt: new Date()
                   }],
