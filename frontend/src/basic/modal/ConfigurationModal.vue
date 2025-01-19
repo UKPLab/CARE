@@ -64,22 +64,53 @@ data() {
         fields: [],
     },
     formData: [], 
+    studyStepId: null,
     };
 },
 methods: {
-    open(configuration) {
+    open(configuration, studyStepId) {
     this.data = configuration;
     this.formData = configuration.fields.map(() => ({}));
+    this.studyStepId = studyStepId;
     this.$refs.configurationModal.open();
     },
     close() {
     this.$refs.configurationModal.close();
     },
     submit() {
-    console.log("Submitted Data:", this.formData);
-    this.close();
+      if (this.validateForm()) {
+        const configData = {
+        studyStepId: this.studyStepId,
+        configuration: this.formData,
+        };
+
+        this.$emit("updateConfiguration", configData);
+
+        this.$refs.configurationModal.close();
+        this.eventBus.emit("toast", {
+        title: "Configuration Updated",
+        message: "The configuration data has been successfully updated.",
+        variant: "success",
+        });
+      }
     },
-},
+    validateForm() {
+      let isValid = true;
+      this.data.fields.forEach((placeholder, index) => {
+        placeholder.fields.forEach((field) => {
+          if (field.required && !this.formData[index][field.name]) {
+            isValid = false;
+            this.eventBus.emit("toast", {
+              title: "Validation Error",
+              message: `${field.label} is required.`,
+              variant: "danger",
+            });
+          }
+        });
+      });
+      return isValid;
+    },
+  },
 };
 </script>
 
