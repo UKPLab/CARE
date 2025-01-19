@@ -34,7 +34,7 @@
                   <span
                     v-if="item.hasConfiguration"
                     class="ms-2"
-                    @click="openModal(item.configuration)"
+                    @click="openModal(item.configuration, item.id)"
                   >
                     <i class="bi bi-gear" title="View Configuration" style="cursor: pointer;"></i>
                   </span>
@@ -46,7 +46,10 @@
       </table>
     </template>
   </FormElement>
- <ConfigurationModal ref="configurationModal" />
+  <ConfigurationModal
+    ref="configurationModal"
+    @updateConfiguration="handleConfigurationUpdate"
+  />
 </template>
 
 <script>
@@ -88,6 +91,7 @@ export default {
       currentData: this.modelValue && this.modelValue.length > 0
         ? [...this.modelValue]
         : [],
+      temporaryConfigurations: {}, 
     };
   },
   computed: {
@@ -145,12 +149,12 @@ export default {
     modelValue: {
       handler(newValue) {
         if (JSON.stringify(newValue) !== JSON.stringify(this.currentData)) {
-
           this.currentData = this.choices.map((c, index) => {
+            const tempConfig = this.temporaryConfigurations[c.id] || {};
             return this.fields.reduce((acc, field) => {
-              acc[field.key] = newValue[index][field.key];
-              // die workflowStepId
-              acc["id"] = c.id;
+              acc[field.key] = newValue[index]?.[field.key] || null;
+              acc["id"] = c.id; 
+              acc["configuration"] = tempConfig; 
               return acc;
             }, {});
           });
@@ -160,8 +164,14 @@ export default {
       deep: true,
     },
     currentData: {
-      handler() {
-        this.$emit("update:modelValue", this.currentData);
+      handler(newData) {
+        const preparedData = this.prepareSubmitData(newData); 
+        const previousValue = JSON.stringify(this.modelValue);
+        const currentValue = JSON.stringify(preparedData);
+
+        if (previousValue !== currentValue) {
+          this.$emit("update:modelValue", preparedData);
+        }
       },
       deep: true,
       immediate: true,
@@ -196,9 +206,27 @@ export default {
       });
       return allValid;
     },
-    openModal(configuration) {
-      console.log("Opening configuration modal with:", configuration);
-      this.$refs.configurationModal.open(configuration);
+    handleConfigurationUpdate(configData) {
+      const { studyStepId, configuration } = configData;
+      const stepIndex = this.currentData.findIndex((item) => item.id === studyStepId);
+      if (stepIndex !== -1) {
+        this.currentData[stepIndex] = {
+          ...this.currentData[stepIndex],
+          configuration, 
+        };
+      }     
+    },
+    prepareSubmitData(data) {
+      return data.map((item) => {
+        const tempConfig = this.temporaryConfigurations[item.id];
+        if (tempConfig) {
+          return { ...item, configuration: { firstOpen: [{ nlp: tempConfig }] } };
+        }
+        return item;
+      });
+    },
+    openModal(configuration, studyStepId) {
+      this.$refs.configurationModal.open(configuration, studyStepId);
     },
   },
 };

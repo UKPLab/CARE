@@ -217,6 +217,7 @@ module.exports = (sequelize, DataTypes) => {
 
             for (const workflowStep of workflowSteps) {
                 const stepDocument = options.context.stepDocuments.find(doc => doc.id === workflowStep.id);
+                const customConfig = stepDocument?.configuration || {};
                 const plainStudyStep = await sequelize.models.study_step.add({
                     studyId: study.id,
                     stepType: workflowStep.stepType,
@@ -225,7 +226,7 @@ module.exports = (sequelize, DataTypes) => {
                     studyStepPrevious: previousStepId,
                     allowBackward: workflowStep.allowBackward,
                     workflowStepDocument: null,
-                    configuration: workflowStep.configuration
+                    configuration: customConfig
                 }, { transaction: options.transaction, context: study });
 
                 const studyStep = await sequelize.models.study_step.findByPk(plainStudyStep.id, {
