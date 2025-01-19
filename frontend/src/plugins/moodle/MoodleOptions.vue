@@ -125,12 +125,12 @@ export default defineComponent({
           this.$emit("update:modelValue", this.moodleOptions);
         }
 
-        if (
-          this.withAssignmentId &&
-          this.moodleOptions.courseID &&
-          this.moodleOptions.apiKey &&
-          this.moodleOptions.apiUrl
-        ) {
+        if (this.withAssignmentId) {
+          if (!this.moodleOptions.courseID || !this.moodleOptions.apiKey || !this.moodleOptions.apiUrl) {
+            this.assignments = [];
+            return;
+          }
+
           this.$socket.emit(
             "assignmentGetInfo",
             {
@@ -141,9 +141,7 @@ export default defineComponent({
               },
             },
             (res) => {
-              if (res.success) {
-                this.assignments = res["data"];
-              }
+              this.assignments = res.success ? res["data"] : [];
             }
           );
         }
