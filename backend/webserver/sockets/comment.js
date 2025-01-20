@@ -39,60 +39,61 @@ module.exports = class CommentSocket extends Socket {
 
     /**
      * Update comments
-     * @param {number} commentId
-     * @param {object} comment
+     * @param {Object} data containing the inputs
+     * @param {number} data.commentId the id of the comment
+     * @param {object} data.comment the comment object
+     * @param {object} options containing transaction
      * @return {Promise<void>}
      */
-    async updateComment(commentId, comment) {
-        try {
-            const origComment = await this.models['comment'].getById(commentId);
+    async updateComment(data, options) {
+        const origComment = await this.models['comment'].getById(data.commentId);
 
-            if (origComment.userId === await this.models['user'].getUserIdByName("Bot")) {
-                const parentComment = await this.models['comment'].getById(origComment.parentCommentId);
-                if (!this.checkUserAccess(parentComment.userId)) {
-                    this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
-                    return;
-                }
-            } else if (!this.checkUserAccess(origComment.userId)) {
-                this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
-                return;
+        if (origComment.userId === await this.models['user'].getUserIdByName("Bot")) {
+            const parentComment = await this.models['comment'].getById(origComment.parentCommentId);
+            if (!this.checkUserAccess(parentComment.userId)) {
+                throw Error("You are not allowed to edit this comment.");
             }
-
-            if (comment.deleted) {
-                await this.deleteChildComments(commentId);
-            }
-
-            const newComment = await this.models['comment'].updateById(commentId, Object.assign(comment, {draft: false}));
-            this.emitDoc(newComment.documentId, "commentRefresh", newComment);
-        } catch (e) {
-            this.logger.error("Could not update comment in database. Error: " + e);
-            this.sendToast("Internal server error. Failed to update comment.", "Internal server error", "danger");
+        } else if (!this.checkUserAccess(origComment.userId)) {
+            throw Error("You are not allowed to edit this comment.");
         }
+
+        if (comment.deleted) {
+            await this.deleteChildComments(data, {transaction:options.transaction});
+        }
+
+        const newComment = await this.models['comment'].updateById(data.commentId, Object.assign(data.comment, {draft: false}), {transaction: options.transaction});
+        this.emitDoc(newComment.documentId, "commentRefresh", newComment);
     }
 
     /**
      * Delete all child comments
-     * @param {number} parentCommentId
+     * @param {Object} data the input to the function
+     * @param {number} data.commentId the id of the parent comment to be deleted
+     * @param {Object} options containing the current DB transaction
      * @return {Promise<void>}
      */
-    async deleteChildComments(parentCommentId) {
-        const comments = await this.models["comment"].getAllByKey("parentCommentId", parentCommentId);
+    async deleteChildComments(data, options) {
+        const comments = await this.models["comment"].getAllByKey("parentCommentId", data.commentId);
         await Promise.all(comments
             .filter(c => this.checkUserAccess(c.userId))
             .map(async comment => {
-                await this.updateComment(comment.id, Object.assign(comment, {deleted: true}));
+                await this.updateComment(comment.id, Object.assign(comment, {deleted: true}, {transaction:options.transaction}));
             }));
     }
 
     /**
      * Delete all child comments of an annotation
      * Note: Used in AnnotationSocket
-     * @param {number} annotationId
+     * @param {Object} data contains the inputs
+     * @param {number} data.annotationId the annotation id whose comments should be deleted
+     * @param {Object} options contains transaction object
      * @return {Promise<void>}
      */
-    async deleteChildCommentsByAnnotation(annotationId) {
+    async deleteChildCommentsByAnnotation(data, options) {
         try {
-            const comment = await this.models['comment'].getByKey("annotationId", annotationId);
+            const comment = await this.models['comment'].getByKey("annotationId", data.annotationId);
+
+            //todo
             await this.updateComment(comment.id, Object.assign(comment, {deleted: true}));
         } catch (e) {
             this.logger.info("Error during deletion of comments: " + e);
@@ -135,7 +136,7 @@ module.exports = class CommentSocket extends Socket {
             anonymous: data.anonymous !== undefined ? data.anonymous : false
         };
 
-        this.emit("commentRefresh", await this.models['comment'].add(newComment, {transaction:options.transaction}));
+        this.emit("commentRefresh", await this.models['comment'].add(newComment, {transaction: options.transaction}));
     }
 
     /**

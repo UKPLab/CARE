@@ -79,7 +79,20 @@ module.exports = class AnnotationSocket extends Socket {
      */
     async updateAnnotation(data, options) {
         if (data.annotationId && data.annotationId !== 0) { //modify
+            const origAnnotation = await this.models['annotation'].getById(data.annotationId);
 
+            if (!this.checkUserAccess(origAnnotation.userId)) {
+                throw Error("You have no permission to change this annotation");
+            }
+
+            data.annotation.draft = false;
+            const newAnno = await this.models['annotation'].updateById(data.annotationId, data.annotation)
+
+            if (data.annotation.deleted) {
+                // TODO: do it with hooks!
+                await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno.id);
+            }
+            this.emitDoc(newAnno.documentId, "annotationRefresh", newAnno);
         } else { //create new
             const newAnnotation = {
                 documentId: data.documentId,
@@ -135,7 +148,7 @@ module.exports = class AnnotationSocket extends Socket {
      * @param {object} data new annotation data
      * @return {Promise<void>}
      */
-    async addAnnotation(data) {
+    async addAnnotation(data) { //todo delete
 
         const newAnnotation = {
             documentId: data.documentId,
@@ -168,6 +181,9 @@ module.exports = class AnnotationSocket extends Socket {
         /**
          * 1. unify updateAnnot and addAnno
          * 2. turn update into modify
+         * todo check that updateComment affects frontend
+         * todo check that addComments affects frontend
+         * todo check that delete child comments affects frontend
          * this.socket.on("annotationUpdate", async (data) => {
             try {
                 if (data.annotationId && data.annotationId !== 0) {
