@@ -68,12 +68,51 @@ module.exports = class AnnotationSocket extends Socket {
     }
 
     /**
+     * Updates the annotations in the database. If the provided annotation is a new annotation,
+     * it will be created in the database otherwise the existing entry is overriden.
+     *
+     * @param {Object} data the input data from the frontend
+     * @param {Object} options containing transactions
+     * @param options.transaction the DB transaction
+     * @param {number} data.annotation
+     * @returns {Promise<void>}
+     */
+    async updateAnnotation(data, options) {
+        if (data.annotationId && data.annotationId !== 0) { //modify
+
+        } else { //create new
+            const newAnnotation = {
+                documentId: data.documentId,
+                selectors: data.selectors,
+                tagId: data.tagId,
+                studySessionId: data.studySessionId,
+                studyStepId: data.studyStepId,
+                text: (data.selectors && data.selectors.target) ? data.selectors.target[0].selector[1].exact : null,
+                draft: true,
+                userId: this.userId,
+                anonymous: data.anonymous !== undefined ? data.anonymous : false,
+            };
+
+            const annotation = await this.models['annotation'].add(newAnnotation, {transaction: options.transaction});
+            await this.getSocket("CommentSocket").addComment({
+                documentId: annotation.documentId,
+                studySessionId: annotation.studySessionId,
+                studyStepId: annotation.studyStepId,
+                annotationId: annotation.id,
+                anonymous: annotation.anonymous !== undefined ? data.anonymous : false,
+            });
+
+            this.emit("annotationRefresh", annotation);
+        }
+    }
+
+    /**
      * Update an annotation and send it to the client
      * @param {number} annotationId
      * @param {object} annotation
      * @return {Promise<void>}
      */
-    async updateAnnotation(annotationId, annotation) {
+    async modifyAnnotation(annotationId, annotation) {
         const origAnnotation = await this.models['annotation'].getById(annotationId);
 
         if (!this.checkUserAccess(origAnnotation.userId)) {
@@ -126,7 +165,10 @@ module.exports = class AnnotationSocket extends Socket {
     init() {
         this.createSocket("annotationGet", this.sendAnnotation, {}, false);
 
-        this.socket.on("annotationUpdate", async (data) => {
+        /**
+         * 1. unify updateAnnot and addAnno
+         * 2. turn update into modify
+         * this.socket.on("annotationUpdate", async (data) => {
             try {
                 if (data.annotationId && data.annotationId !== 0) {
                     await this.updateAnnotation(data.annotationId, data);
@@ -137,7 +179,9 @@ module.exports = class AnnotationSocket extends Socket {
                 this.logger.error("Could not update annotation and/or comment in database. Error: " + e);
                 this.sendToast("Internal server error. Failed to save annotation.", "Internal server error", "danger");
             }
-        });
+        });**/
+
+        this.socket.on("annotationUpdate", this.updateAnnotation, {}, true);
 
         this.socket.on("annotationGetByDocument", async (data) => {
             try {
