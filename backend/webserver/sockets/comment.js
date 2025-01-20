@@ -102,46 +102,40 @@ module.exports = class CommentSocket extends Socket {
     /**
      * Add a comment
      * @param {object} data comment object
+     * @param {object} options contains the transactions
      * @return {Promise<void>}
      */
-    async addComment(data) {
+    async addComment(data, options) {
         if (data.userId !== undefined) {
             if (data.userId === 'Bot') {
                 const parentComment = await this.models['comment'].getById(data.parentCommentId);
                 if (!this.checkUserAccess(parentComment.userId)) {
-                    this.sendToast("You are not allowed to add a comment.", "Access denied", "danger");
-                    return;
+                    throw Error("You are not allowed to add a comment.");
                 } else {
                     data.userId = await this.models['user'].getUserIdByName("Bot");
                     data.draft = false;
                 }
             } else if (!this.checkUserAccess(data.userId)) {
-                this.sendToast("You are not allowed to add a comment.", "Access denied", "danger");
-                return;
+                throw Error("You are not allowed to add a comment.");
             }
         } else {
             data.userId = this.userId;
         }
 
-        try {
-            let newComment = {
-                tags: "[]",
-                draft: data.draft !== undefined ? data.draft : true,
-                text: data.text !== undefined ? data.text : null,
-                userId: data.userId,
-                documentId: data.documentId,
-                studySessionId: data.studySessionId,
-                studyStepId: data.studyStepId,
-                annotationId: data.annotationId !== undefined ? data.annotationId : null,
-                parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
-                anonymous: data.anonymous !== undefined ? data.anonymous : false
-            }
+        let newComment = {
+            tags: "[]",
+            draft: data.draft !== undefined ? data.draft : true,
+            text: data.text !== undefined ? data.text : null,
+            userId: data.userId,
+            documentId: data.documentId,
+            studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
+            annotationId: data.annotationId !== undefined ? data.annotationId : null,
+            parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+            anonymous: data.anonymous !== undefined ? data.anonymous : false
+        };
 
-            this.emit("commentRefresh", await this.models['comment'].add(newComment))
-        } catch (e) {
-            this.logger.error("Could not add comment and/or comment to database. Error: " + e);
-            this.sendToast("Internal server error. Failed to add comment.", "Internal server error", "danger");
-        }
+        this.emit("commentRefresh", await this.models['comment'].add(newComment, {transaction:options.transaction}));
     }
 
     /**
