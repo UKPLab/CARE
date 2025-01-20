@@ -74,7 +74,7 @@ module.exports = class AnnotationSocket extends Socket {
      * @param {Object} data the input data from the frontend
      * @param {Object} options containing transactions
      * @param options.transaction the DB transaction
-     * @param {number} data.annotation
+     * @param {number} data.annotationId the id of the annotation to update
      * @returns {Promise<void>}
      */
     async updateAnnotation(data, options) {
@@ -85,12 +85,11 @@ module.exports = class AnnotationSocket extends Socket {
                 throw Error("You have no permission to change this annotation");
             }
 
-            data.annotation.draft = false;
-            const newAnno = await this.models['annotation'].updateById(data.annotationId, data.annotation)
+            data.draft = false;
+            const newAnno = await this.models['annotation'].updateById(data.annotationId, data)
 
-            if (data.annotation.deleted) {
-                // TODO: do it with hooks!
-                await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno.id);
+            if (data.deleted) {
+                await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno, {transaction: options.transaction});
             }
             this.emitDoc(newAnno.documentId, "annotationRefresh", newAnno);
         } else { //create new
@@ -120,110 +119,43 @@ module.exports = class AnnotationSocket extends Socket {
     }
 
     /**
-     * Update an annotation and send it to the client
-     * @param {number} annotationId
-     * @param {object} annotation
-     * @return {Promise<void>}
+     * Returns the annotations for a given document by its id.
+     *
+     * @param data the input
+     * @param {number} data.documentId the id of the document to retrieve the annotations for
+     * @param options not used
+     * @returns {Promise<void>}
      */
-    async modifyAnnotation(annotationId, annotation) {
-        const origAnnotation = await this.models['annotation'].getById(annotationId);
-
-        if (!this.checkUserAccess(origAnnotation.userId)) {
-            this.sendToast("You have no permission to change this annotation", "Annotation Not Saved", "danger");
-            return;
-        }
-
-        annotation.draft = false;
-        const newAnno = await this.models['annotation'].updateById(annotationId, annotation)
-
-        if (annotation.deleted) {
-            // TODO: do it with hooks!
-            await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno.id);
-        }
-        this.emitDoc(newAnno.documentId, "annotationRefresh", newAnno);
+    async getAnnotationsByDoc(data, options) {
+        this.emit("annotationRefresh",
+            await this.models['annotation'].getAllByKey("documentId", data.documentId));
     }
 
     /**
-     * Add an annotation and send it to the client
-     * @param {object} data new annotation data
-     * @return {Promise<void>}
+     * Exports the annotations for a given document
+     * @param {Object} data the input to the function
+     * @param {number} data.documentId the document id for which we export annotations
+     * @param {Object} options not used
+     * @returns {Promise<void>}
      */
-    async addAnnotation(data) { //todo delete
+    async exportAnnotationsByDocument(data, options) {
+        const annotations = await this.updateCreatorName(await this.models['annotation'].getAllByKey("documentId", data.documentId));
 
-        const newAnnotation = {
-            documentId: data.documentId,
-            selectors: data.selectors,
-            tagId: data.tagId,
-            studySessionId: data.studySessionId,
-            studyStepId: data.studyStepId,
-            text: (data.selectors && data.selectors.target) ? data.selectors.target[0].selector[1].exact : null,
-            draft: true,
-            userId: this.userId,
-            anonymous: data.anonymous !== undefined ? data.anonymous : false,
-        };
-
-        const annotation = await this.models['annotation'].add(newAnnotation);
-
-        await this.getSocket("CommentSocket").addComment({
-            documentId: annotation.documentId,
-            studySessionId: annotation.studySessionId,
-            studyStepId: annotation.studyStepId,
-            annotationId: annotation.id,
-            anonymous: annotation.anonymous !== undefined ? data.anonymous : false,
+        this.emit("annotationExport", {
+            "success": true,
+            "documentId": data.documentId,
+            "objs": await Promise.all(annotations.map(async (a) => await this.annotationFormat(a)))
         });
-
-        this.emit("annotationRefresh", annotation);
     }
 
     init() {
         this.createSocket("annotationGet", this.sendAnnotation, {}, false);
 
-        /**
-         * 1. unify updateAnnot and addAnno
-         * 2. turn update into modify
-         * todo check that updateComment affects frontend
-         * todo check that addComments affects frontend
-         * todo check that delete child comments affects frontend
-         * this.socket.on("annotationUpdate", async (data) => {
-            try {
-                if (data.annotationId && data.annotationId !== 0) {
-                    await this.updateAnnotation(data.annotationId, data);
-                } else {
-                    await this.addAnnotation(data);
-                }
-            } catch (e) {
-                this.logger.error("Could not update annotation and/or comment in database. Error: " + e);
-                this.sendToast("Internal server error. Failed to save annotation.", "Internal server error", "danger");
-            }
-        });**/
+        this.createSocket("annotationUpdate", this.updateAnnotation, {}, true);
 
-        this.socket.on("annotationUpdate", this.updateAnnotation, {}, true);
+        this.createSocket("annotationGetByDocument", this.getAnnotationsByDoc, {}, true);
 
-        this.socket.on("annotationGetByDocument", async (data) => {
-            try {
-                this.emit("annotationRefresh",
-                    await this.models['annotation'].getAllByKey("documentId", data.documentId));
-            } catch (e) {
-                this.logger.error("Error during loading of annotations: " + e);
-                this.sendToast("Internal server error. Failed to load annotations.", "Internal server error", "danger");
-            }
-        });
-
-        this.socket.on("annotationExportByDocument", async (data) => {
-            try {
-                const annotations = await this.updateCreatorName(await this.models['annotation'].getAllByKey("documentId", data.documentId));
-
-                this.socket.emit("annotationExport", {
-                    "success": true,
-                    "documentId": data.documentId,
-                    "objs": await Promise.all(annotations.map(async (a) => await this.annotationFormat(a)))
-                });
-            } catch (e) {
-                this.socket.emit("annotationExport", {"success": false, "documentId": data.documentId});
-                this.logger.error("Error during loading of annotations: " + e);
-                this.sendToast("Internal server error. Failed to load annotations.", "Internal server error", "danger");
-            }
-        });
+        this.createSocket("annotationExportByDocument", this.exportAnnotationsByDocument, {}, false);
     }
 
 }
