@@ -89,7 +89,7 @@
       <div v-show="s.id === currentStudyStepId">
         <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
         <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
-                :study-step-id="s.id" :active="activeComponents[index]" v-model="currentData"/>
+                :study-step-id="s.id" :active="activeComponents[index]" @update:data="updateData" />
       </div>
       <div v-show="s.id === currentStudyStepId">
         <Modal
@@ -120,8 +120,9 @@ import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-import {computed} from "vue";
+import {computed, onUpdated} from "vue";
 import Modal from "./modal/Modal.vue";
+import { update } from "lodash";
 
 export default {
   name: "StudyRoute",
@@ -130,7 +131,6 @@ export default {
     return {
       studySessionId: computed(() => this.studySessionId),
       readonly: computed(() => this.readOnlyComputed),
-      modalData: computed(() => this.currentData),
     };
   },
   props: {
@@ -156,7 +156,7 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       localStudyStepId: 0,
-      currentData: null, // The v-model information is yet to be implemented
+      dataFromEditor: null,
     };
   },
   computed: {
@@ -290,7 +290,8 @@ export default {
     },
     studyHash() {
       this.getStudyData();
-    }
+    },
+    
   },
   mounted() {
     this.studySessionId = this.initStudySessionId;
@@ -413,6 +414,10 @@ export default {
         });
       }
     },
+    updateData(data) {
+      console.log("new edits", data);
+      this.dataFromEditor = data;
+    },  
   }
 };
 </script>
