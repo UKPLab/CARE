@@ -298,7 +298,15 @@ export default {
     });
 
     // get tagsets
-    this.$socket.emit("tagSetGetAll");
+    this.$socket.emit("tagSetGetAll", {}, (result) => {
+      if(!result.success) {
+        this.eventBus.emit('toast', {
+          title: "Tag Set Error",
+          message: result.message,
+          variant: danger
+        });
+      }
+    });
     this.$socket.emit("tagGetAll");
 
     // init component
