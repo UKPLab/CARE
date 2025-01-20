@@ -409,6 +409,14 @@ export default {
         this.$socket.emit('commentUpdate', {
           "commentId": this.comment.id,
           "deleted": true
+        }, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: "Comment not updated",
+              message: res.message,
+              variant: "danger",
+            });
+          }
         });
       }
     },
@@ -426,6 +434,14 @@ export default {
         "studyStepId": this.studyStepId,
         "text": "Summarization: " + data[0]['summary_text'],
         "userId": "Bot"
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Comment not updated",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
       this.showReplies = true;
     },

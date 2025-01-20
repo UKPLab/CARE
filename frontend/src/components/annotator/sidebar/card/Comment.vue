@@ -348,6 +348,14 @@ export default {
         "commentId": this.commentId,
         "tags": JSON.stringify(this.comment.tags.sort()),
         "text": this.comment.text,
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Comment not updated",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
       if (this.$refs.collab) {
         this.$refs.collab.removeCollab();
@@ -392,6 +400,14 @@ export default {
       this.$socket.emit('commentUpdate', {
         "commentId": this.comment.id,
         "deleted": true
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Comment not updated",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
     },
     editComment() {
@@ -407,6 +423,14 @@ export default {
         "studySessionId": this.studySessionId,
         "studyStepId": this.studyStepId,
         "anonymous": this.anonymize,
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Comment not updated",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
     },
     saveCard() {

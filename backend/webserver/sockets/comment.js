@@ -154,32 +154,40 @@ module.exports = class CommentSocket extends Socket {
         this.emit("commentRefresh", comment);
     }
 
+    /**
+     * Add or update a comment if it has already existed
+     * @param {object} data - The input data from the frontend
+     * @param {number} data.commentId - The id of the comment
+     * @param {object} options - not used
+     * @return {Promise<void>}
+     */
+    async addOrUpdateComment(data, options) {
+        if(data.commentId) {
+            await this.updateComment(data.commentId, data);
+        } else {
+            await this.addComment(data);
+        }
+    }
+
+    /**
+     * Get all the comments of a certain document
+     * @param {object} data - The input data from the frontend
+     * @param {number} data.documentId - The id of the document
+     * @param {object} options - not used
+     * @return {Promise<void>}
+     */
+    async getCommentsByDocument(data, options) {
+        const comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
+        this.emit("commentRefresh", comments);
+    }
+
     init() {
 
         this.createSocket("commentGet", this.sendComment, {}, false);
-        this.socket.on("commentUpdate", async (data) => {
-            try {
-                if (data.commentId && data.commentId !== 0) {
-                    await this.updateComment(data.commentId, data);
-                } else {
-                    await this.addComment(data);
-                }
-            } catch (e) {
-                this.logger.error("Could not update comment and/or comment in database. Error: " + e);
-                this.sendToast("Internal Server Error: Could not update comment", "Internal server error", "danger");
-            }
-        });
+        this.createSocket("commentUpdate", this.addOrUpdateComment, {}, false);
+        this.createSocket("commentGetByDocument", this.getCommentsByDocument, {}, false);
 
-        this.socket.on("commentGetByDocument", async (data) => {
-            try {
-                const comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
-                this.emit("commentRefresh", comments);
-            } catch (e) {
-                this.logger.info("Error during loading of comments: " + e);
-                this.sendToast("Internal Server Error: Could not load comments by document", "Internal server error", "danger");
-            }
-        });
-
+        // TODO: What to do if the error will be thrown out using another socket event?
         this.socket.on("commentExportByDocument", async (data) => {
             try {
                 const comments = await this.updateCreatorName(await this.models['comment'].getAllByKey('documentId', data.documentId));
