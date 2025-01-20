@@ -13,7 +13,7 @@ module.exports = class TagSocket extends Socket {
      * send a tag to the client
      * @param {number} tagId
      * @return {Promise<void>}
-     */
+     
     async sendTag(tagId) {
         const tag = await this.models['tag'].getById(tagId);
         if (this.checkUserAccess(tag.userId) || tag.public) {
@@ -21,7 +21,7 @@ module.exports = class TagSocket extends Socket {
         } else {
             this.sendToast("You have no permission to see this tag", "Permission Error", "danger");
         }
-    }
+    }*/
 
     /**
      * update a tag set
@@ -118,22 +118,30 @@ module.exports = class TagSocket extends Socket {
     };
 
     async sendTagSets() {
-        try {
-            await this.sendTagSetsUpdate(await this.models['tag_set'].getAll());
-        } catch (err) {
-            this.logger.error(err);
-        }
+        await this.sendTagSetsUpdate(await this.models['tag_set'].getAll());
     };
 
     async sendTagSetsByUser() {
-        try {
-            const tagSets = await this.models['tag_set'].getAll();
-            await this.sendTagSetsUpdate(tagSets.filter(t => t.public || t.userId === this.userId || t.userId === null));
-        } catch (err) {
-            this.logger.error(err);
+        const tagSets = await this.models['tag_set'].getAll();
+        await this.sendTagSetsUpdate(tagSets.filter(t => t.public || t.userId === this.userId || t.userId === null));
+    }    
+            
+    /**
+     * Check if the user is an admin for tagSets access
+     * @param {object} data not used
+     * @param {object} options not used 
+     * @returns {Promise<void>}
+     */
+    async sendTagSetsByAdminOrUser(data, options) {
+        if (await this.isAdmin()) {
+            await this.sendTagSets();
+        } else {
+            await this.sendTagSetsByUser();
         }
-    };
+    }
 
+
+    /** 
     async sendTagsBySetId(tagSetId) {
         try {
             const tags = await this.models['tag'].getAllByKey('tagSetId', tagSetId);
@@ -147,7 +155,9 @@ module.exports = class TagSocket extends Socket {
             this.logger.error(err);
         }
     }
+    */
 
+    /** 
     async sendTagSetById(tagSetId) {
         try {
             const tagSet = await this.models['tag_set'].getById(tagSetId);
@@ -159,18 +169,21 @@ module.exports = class TagSocket extends Socket {
         } catch (err) {
             this.logger.error(err);
         }
-    }
+    }*/
 
 
     init() {
+        /** 
         this.socket.on("tagGet", async (data) => {
             try {
                 await this.sendTag(data.tagId)
             } catch (err) {
                 this.logger.error(err);
             }
-        });
+        });*/
 
+
+        /** 
         this.socket.on("tagSetGet", async (data) => {
             try {
                 await this.sendTagSetById(data.tagSetId);
@@ -178,8 +191,9 @@ module.exports = class TagSocket extends Socket {
             } catch (err) {
                 this.logger.error(err);
             }
-        });
+        });*/
 
+        /** 
         this.socket.on("tagSetGetAll", async () => {
             try {
                 if (await this.isAdmin()) {
@@ -190,7 +204,9 @@ module.exports = class TagSocket extends Socket {
             } catch (err) {
                 this.logger.error(err);
             }
-        });
+        });*/
+
+        this.createSocket("tagSetGetAll", this.sendTagSetsByAdminOrUser, {}, false);
 
         this.socket.on("tagGetAll", async () => {
             try {
