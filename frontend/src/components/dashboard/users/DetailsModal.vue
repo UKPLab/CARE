@@ -155,7 +155,7 @@ export default {
           this.$refs.modal.waiting = false;
           this.eventBus.emit("toast", {
             title: "Fail to update",
-            message: "Failed to update user details",
+            message: response.message,
             variant: "danger",
           });
         }

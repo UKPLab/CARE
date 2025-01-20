@@ -20,7 +20,7 @@ module.exports = class CollabSocket extends Socket {
     async updateCollab(data, options) {
         if (data.collabId && data.collabId !== 0) {
             const collabUpdate = await this.models["collab"].updateById(data.collabId, {timestamp: Date.now()}, {transaction: options.transaction});
-            this.emitDoc(collabUpdate.documentId, "collabRefresh", collabUpdate);
+            this.emitDoc(collabUpdate.documentId, "collabRefresh", collabUpdate); //fixme, sent twice due to collab
         } else {
             const newCollab = await this.models["collab"].add(
                 Object.assign(data, {
@@ -28,6 +28,8 @@ module.exports = class CollabSocket extends Socket {
                     timestamp: Date.now()
                 }), {transaction:options.transaction});
 
+
+            //todo change this to a callback return (in the frontend and then here)
             this.emit("collabStart", {
                     collabId: newCollab.id,
                     collabHash: newCollab.collabHash
@@ -35,7 +37,7 @@ module.exports = class CollabSocket extends Socket {
                 false
             );
 
-            this.emitDoc(newCollab.documentId, "collabRefresh", newCollab, false);
+            this.emitDoc(newCollab.documentId, "collabRefresh", newCollab, false); //fixme, sent twice due to collab
         }
     }
 
