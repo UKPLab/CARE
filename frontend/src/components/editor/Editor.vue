@@ -76,7 +76,7 @@ export default {
     studySessionId: {
       type: Number,
       required: false,
-      default: null // Allows for null if not in a study session
+      default: null
     },
     userId: {
       type: Number,
@@ -86,7 +86,7 @@ export default {
     readonly: {
       type: Boolean,
       required: false,
-      default: false, // Default to false if not provided
+      default: false,
     },
   },
   props: {
@@ -104,22 +104,24 @@ export default {
       type: Boolean,
       required: false,
       default: true,
-    },    
-    modelValue: {
-        type: String,
-        required: false,
-        default: "",
-      },
+    },        
   },
-  emits: ["update:modelValue"],
+  emits: ["update:data"],
   data() {
     return {
       content: "",
       documentHash: this.$route.params.documentHash,
       deltaBuffer: [],
+      deltaDataBuffer: [],
       editor: null,
       documentLoaded: false,      
-      currentData: "",
+      data: {"studyStepAsNumber":
+              {"firstVersion": null,
+              "currentVersion": null,
+              "edits": [] },
+              "2": {} ,
+              "3": {}
+            },
     };
   },
   created() {
@@ -141,8 +143,9 @@ export default {
         });
       }
 
-      this.editor.getEditor().on('text-change', this.handleTextChange);
       this.editor.getEditor().enable(!this.readonly);
+      this.editor.getEditor().on('text-change', this.handleTextChange);
+      this.editor.getEditor().on('text-change', this.handleDataChange);      
     }
 
     this.$socket.emit("documentGet",
@@ -158,8 +161,8 @@ export default {
       }
     );
 
-    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);    
-    this.currentData = this.modelValue;
+    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);  
+    this.debouncedProcessDataDelta = debounce(this.processDataDelta, this.debounceTimeForEdits);
   },
   sockets: {
     connect() {
@@ -253,17 +256,7 @@ export default {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
       }
-    },
-    currentData: {
-        handler(newData) {
-        this.$emit("update:modelValue", newData);
-      }
-    },
-    modelValue: {
-      handler(newData) {
-        this.currentData = newData;
-      }
-    },
+    },    
   },
   methods: {
     onPaste(event) {
@@ -312,6 +305,23 @@ export default {
         }
 
         this.deltaBuffer = [];
+      }
+    },
+    handleDataChange(delta, oldContents, source) {
+      if (source === "user") {
+        this.deltaDataBuffer.push(delta);
+        this.debouncedProcessDataDelta();
+      }
+    },
+    processDataDelta() {
+      if (this.deltaDataBuffer.length > 0) {
+        const combinedDelta = this.deltaDataBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
+        const dbOps = deltaToDb(combinedDelta.ops);
+        if (dbOps.length > 0) {
+          this.$emit("update:data", dbOps);
+        }
+
+        this.deltaDataBuffer = [];
       }
     },
     async leave() {
