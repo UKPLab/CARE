@@ -392,6 +392,14 @@ export default {
         } else {
           this.$socket.emit('commentGet', {
             "commentId": this.comment.id,
+          }, (res) => {
+            if (!res.success) {
+              this.eventBus.emit("toast", {
+                title: "Comments not retrieved",
+                message: res.message,
+                variant: "danger",
+              });
+            }
           });
         }
       }
