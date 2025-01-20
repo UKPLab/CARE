@@ -140,29 +140,22 @@ module.exports = class CommentSocket extends Socket {
 
     /**
      * Send a comment to the client
-     * @param {number} commentId
+     * @param {object} data - The input data from the frontend
+     * @param {number} data.commentId - The id of the comment
+     * @param {object} options - not used
      * @return {Promise<void>}
      */
-    async sendComment(commentId) {
-        const comment = await this.models['comment'].getById(commentId);
+    async sendComment(data, options) {
+        const comment = await this.models['comment'].getById(data.commentId);
         if (!this.checkDocumentAccess(comment.documentId)) {
-            this.sendToast("You don't have access to this comment", "Error", "danger");
-            return;
+            throw new Error("You don't have access to this comment");
         }
         this.emit("commentRefresh", comment);
     }
 
     init() {
 
-        this.socket.on("commentGet", async (data) => {
-            try {
-                await this.sendComment(data.commentId);
-            } catch (e) {
-                this.logger.error("Could not get comment and/or comment in database. Error: " + e);
-                this.sendToast("Internal Server Error: Could not get comment", "Internal server error", "danger");
-            }
-        });
-
+        this.createSocket("commentGet", this.sendComment, {}, false);
         this.socket.on("commentUpdate", async (data) => {
             try {
                 if (data.commentId && data.commentId !== 0) {
