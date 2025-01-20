@@ -356,7 +356,7 @@ export default {
           if (!res.success) {
             this.eventBus.emit("toast", {
               title: "Annotation Update Failed",
-              message: result.message,
+              message: res.message,
               variant: "danger",
             });
           }
@@ -416,7 +416,7 @@ export default {
           if (!res.success) {
             this.eventBus.emit("toast", {
               title: "Annotation Update Failed",
-              message: result.message,
+              message: res.message,
               variant: "danger",
             });
           }

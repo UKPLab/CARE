@@ -182,6 +182,10 @@ module.exports = class TagSocket extends Socket {
 
 
     init() {
+        //todo check if we can delete this file; adapt frontend to subscribe to the tag and tagset tables instead
+        //todo check if we can delete the one-liner functions (if not called elsewhere)
+        //todo simplify the function names and deleting comments
+
         /** 
         this.socket.on("tagGet", async (data) => {
             try {
@@ -230,22 +234,6 @@ module.exports = class TagSocket extends Socket {
         });
         */
         this.createSocket("tagGetAll", this.sendTagByAdminOrUser, {}, false);
-
-        /**        
-        this.socket.on("tagSetUpdate", async (data) => {
-            try {
-                if (data.tagSetId || data.tagSetId !== 0) {
-                    await this.updateTagSet(data.tagSetId, data.tagSet, (data.tags) ? data.tags : []);
-                } else {
-                    await this.addTagSet(data.tagSet, data.tags);
-                }
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
-        */
-
-
     }
 
 }

@@ -187,7 +187,7 @@ module.exports = class CommentSocket extends Socket {
         this.createSocket("commentUpdate", this.addOrUpdateComment, {}, false);
         this.createSocket("commentGetByDocument", this.getCommentsByDocument, {}, false);
 
-        // TODO: What to do if the error will be thrown out using another socket event?
+        // TODO: What to do if the error will be thrown out using another socket event? refactor
         this.socket.on("commentExportByDocument", async (data) => {
             try {
                 const comments = await this.updateCreatorName(await this.models['comment'].getAllByKey('documentId', data.documentId));

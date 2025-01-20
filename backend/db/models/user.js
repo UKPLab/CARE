@@ -346,71 +346,72 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Updates user's details
-         * @param {number} userId - The ID of the user
-         * @param {Object} userData - Includes firstName, lastName, email, roles
+         * @param {Object} data the input to the function
+         * @param {number} data.userId - The ID of the user
+         * @param {Object} data.userData - Includes firstName, lastName, email, roles
+         * @param {Object} options including the transaction
          * @returns {Promise<void>}
          */
-        static async updateUserDetails(userId, userData) {
-            const transaction = await sequelize.transaction();
+        static async updateUserDetails(data, options) {
+            const {userId, userData} = data;
+
             const UserRoleMatching = this.sequelize.models["user_role_matching"];
-            try {
-                const roleIdMap = await User.getRoleIdMap();
-                const [updatedRowsCount] = await User.update(
-                    {
-                        firstName: userData.firstName,
-                        lastName: userData.lastName,
-                        email: userData.email,
-                    },
-                    {
-                        where: {id: userId},
-                        returning: true,
-                        transaction,
-                    }
-                );
 
-                if (updatedRowsCount === 0) {
-                    console.error("Failed to update user: User not found");
-                    return;
+            const roleIdMap = await User.getRoleIdMap();
+            const [updatedRowsCount] = await User.update(
+                {
+                    firstName: userData.firstName,
+                    lastName: userData.lastName,
+                    email: userData.email,
+                },
+                {
+                    where: {id: userId},
+                    returning: true,
+                    transaction: options.transaction,
                 }
+            );
 
-                // Get current roles
-                const currentRoles = await UserRoleMatching.findAll({
-                    where: {userId},
-                    transaction,
-                });
-
-                // Determine roles to add and remove
-                const currentRoleIds = currentRoles.map((role) => role.userRoleId);
-                const currentRoleNames = currentRoleIds.map((id) =>
-                    Object.keys(roleIdMap).find((key) => roleIdMap[key] === id)
-                );
-
-                const rolesToAdd = userData.roles.filter((roleName) => !currentRoleNames.includes(roleName));
-                const rolesToRemove = currentRoleIds.filter(
-                    (roleId) => !userData.roles.includes(Object.keys(roleIdMap).find((key) => roleIdMap[key] === roleId))
-                );
-
-                // Add new roles
-                await Promise.all(
-                    rolesToAdd.map((roleName) =>
-                        UserRoleMatching.create({userId, userRoleId: roleIdMap[roleName]}, {transaction})
-                    )
-                );
-
-                // Remove roles
-                await UserRoleMatching.destroy({
-                    where: {
-                        userId,
-                        userRoleId: rolesToRemove,
-                    },
-                    individualHooks: true,
-                    transaction,
-                });
-                await transaction.commit();
-            } catch (error) {
-                await transaction.rollback();
-                console.error("Failed to update user: " + error);
+            if (updatedRowsCount === 0) {
+                console.error("Failed to update user: User not found");
+                return;
             }
+
+            // Get current roles
+            const currentRoles = await UserRoleMatching.findAll({
+                where: {userId},
+                transaction: options.transaction,
+            });
+
+            // Determine roles to add and remove
+            const currentRoleIds = currentRoles.map((role) => role.userRoleId);
+            const currentRoleNames = currentRoleIds.map((id) =>
+                Object.keys(roleIdMap).find((key) => roleIdMap[key] === id)
+            );
+
+            const rolesToAdd = userData.roles.filter((roleName) => !currentRoleNames.includes(roleName));
+            const rolesToRemove = currentRoleIds.filter(
+                (roleId) => !userData.roles.includes(Object.keys(roleIdMap).find((key) => roleIdMap[key] === roleId))
+            );
+
+            // Add new roles
+            await Promise.all(
+                rolesToAdd.map((roleName) =>
+                    UserRoleMatching.create({
+                        userId,
+                        userRoleId: roleIdMap[roleName]
+                    }, {transaction: options.transaction})
+                )
+            );
+
+            // Remove roles
+            await UserRoleMatching.destroy({
+                where: {
+                    userId,
+                    userRoleId: rolesToRemove,
+                },
+                individualHooks: true,
+                transaction: options.transaction,
+            });
         }
 
         /**

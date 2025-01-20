@@ -303,7 +303,7 @@ export default {
         this.eventBus.emit('toast', {
           title: "Tag Set Error",
           message: result.message,
-          variant: danger
+          variant: "danger"
         });
       }
     });
@@ -312,7 +312,7 @@ export default {
         this.eventBus.emit('toast', {
           title: "Tag Error",
           message: result.message,
-          variant: danger
+          variant: "danger"
         });
       }
     });

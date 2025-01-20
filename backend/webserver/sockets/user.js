@@ -272,17 +272,6 @@ module.exports = class UserSocket extends Socket {
     }
     */
 
-    /**
-     * Calls the update user details function
-     * @param {object} data contains userId and userData
-     * @param {object} options the options for the transaction
-     * @returns {Promise<void>}
-    **/
-    async callUpdateUserDetails(data, options) {
-        const {userId, userData} = data;
-        await this.models["user"].updateUserDetails(userId, userData);
-
-    }
 
     init() {
         this.createSocket("userGetData", this.sendUserData, {}, false);
@@ -339,7 +328,7 @@ module.exports = class UserSocket extends Socket {
         });
         */
 
-        this.createSocket("userUpdateDetails", this.callUpdateUserDetails, {}, true); //TODO not sure about true for the transaction
+        this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true); //TODO not sure about true for the transaction
 
         // Reset user's password
         this.socket.on("userResetPwd", async (data, callback) => {
