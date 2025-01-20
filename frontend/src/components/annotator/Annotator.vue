@@ -307,7 +307,15 @@ export default {
         });
       }
     });
-    this.$socket.emit("tagGetAll");
+    this.$socket.emit("tagGetAll", {}, (result) => {
+      if(!result.success) {
+        this.eventBus.emit('toast', {
+          title: "Tag Error",
+          message: result.message,
+          variant: danger
+        });
+      }
+    });
 
     // init component
     this.load();
