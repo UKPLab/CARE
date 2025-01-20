@@ -207,10 +207,11 @@ module.exports = class AppSocket extends Socket {
 
     /**
      * Send all data needed for the frontend app for initialization
-     * @param {[object]} data
+     * @param {Object} data - The input data from the frontend
+     * @param {Object} options - not used
      * @return {Promise<void>}
      */
-    async sendInit(data) {
+    async sendInit(data, options) {
         try {
             await this.sendUser();
             await this.sendTables();
