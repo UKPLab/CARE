@@ -352,6 +352,14 @@ export default {
         this.$socket.emit('annotationUpdate', {
           "annotationId": this.annotation.id,
           "tagId": JSON.stringify(this.annotation.tagId),
+        }, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: "Annotation Update Failed",
+              message: result.message,
+              variant: "danger",
+            });
+          }
         });
       }
 
@@ -404,6 +412,14 @@ export default {
           "annotationId": this.annotation.id,
           "tagId": JSON.stringify(this.annotation.tagId),
           "deleted": true
+        }, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: "Annotation Update Failed",
+              message: result.message,
+              variant: "danger",
+            });
+          }
         });
       } else {
         this.$socket.emit('commentUpdate', {
