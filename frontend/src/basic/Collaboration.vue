@@ -102,7 +102,15 @@ export default {
   },
   methods: {
     updateCollab() {
-      this.$socket.emit("collabUpdate", {collabId: this.collabId});
+      this.$socket.emit("collabUpdate", {collabId: this.collabId},  (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Collaboration Update Failed",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
     startCollab() {
       this.collabHash = uuidv4();
@@ -112,7 +120,15 @@ export default {
           targetId: this.targetId,
           documentId: this.documentId,
           collabHash: this.collabHash
-        });
+        },  (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Could not start collaboration",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
     removeCollab() {
       if (this.collabId !== null) {
