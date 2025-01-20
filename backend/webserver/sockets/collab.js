@@ -9,50 +9,39 @@ const Socket = require("../Socket.js");
 module.exports = class CollabSocket extends Socket {
 
     /**
-     * Refresh a collab entry with the current timestamp and emit the new collab to all clients
-     * @param {number} collabId
-     * @return {Promise<void>}
+     * Updates the collaboration status in the database. If there is non existent on the
+     * given entity, it will create one, otherwise it will be updated.
+     *
+     * @param {Object} data the input collab object
+     * @param {number} data.collabId the id of the collaboration if existent
+     * @param {Object} options containing the transaction
+     * @returns {Promise<void>}
      */
-    async refreshCollab(collabId) {
-        const collabUpdate = await this.models["collab"].updateById(collabId, {timestamp: Date.now()});
-        this.emitDoc(collabUpdate.documentId, "collabRefresh", collabUpdate);
-    }
+    async updateCollab(data, options) {
+        if (data.collabId && data.collabId !== 0) {
+            const collabUpdate = await this.models["collab"].updateById(data.collabId, {timestamp: Date.now()}, {transaction: options.transaction});
+            this.emitDoc(collabUpdate.documentId, "collabRefresh", collabUpdate);
+        } else {
+            const newCollab = await this.models["collab"].add(
+                Object.assign(data, {
+                    userId: this.userId,
+                    timestamp: Date.now()
+                }), {transaction:options.transaction});
 
-    /**
-     * Create a new collab entry and emit the new collab to all clients
-     * @param {object} data
-     * @return {Promise<void>}
-     */
-    async createCollab(data) {
-        const newCollab = await this.models["collab"].add(
-            Object.assign(data, {
-                userId: this.userId,
-                timestamp: Date.now()
-            }))
-        this.emit("collabStart", {
-                collabId: newCollab.id,
-                collabHash: newCollab.collabHash
-            },
-            false
-        )
-        this.emitDoc(newCollab.documentId, "collabRefresh", newCollab, false);
+            this.emit("collabStart", {
+                    collabId: newCollab.id,
+                    collabHash: newCollab.collabHash
+                },
+                false
+            );
+
+            this.emitDoc(newCollab.documentId, "collabRefresh", newCollab, false);
+        }
     }
 
 
     init() {
 
-        this.socket.on("collabUpdate", async (data) => {
-            try {
-                if (data.collabId && data.collabId !== 0) {
-                    await this.refreshCollab(data.collabId);
-                } else {
-                    await this.createCollab(data);
-                }
-            } catch (e) {
-                this.logger.error("Could not update collab table in database. Error: " + e);
-                this.sendToast(e.message, "DB Error", "danger");
-            }
-        });
-
+        this.createSocket("collabUpdate", this.updateCollab, {}, true);
     }
 }
