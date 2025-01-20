@@ -257,6 +257,33 @@ module.exports = class UserSocket extends Socket {
 
     }
 
+    /**
+     * Check if the user is an admin for tagSets access
+     * @param {object} data not used
+     * @param {object} options not used 
+     * @returns {Promise<void>}
+     
+    async getRoleOfUser(data, options) {
+        const users = await this.getUsers(role);
+                this.socket.emit("userByRole", {
+                    success: true, users,
+                });
+
+    }
+    */
+
+    /**
+     * Calls the update user details function
+     * @param {object} data contains userId and userData
+     * @param {object} options the options for the transaction
+     * @returns {Promise<void>}
+    **/
+    async callUpdateUserDetails(data, options) {
+        const {userId, userData} = data;
+        await this.models["user"].updateUserDetails(userId, userData);
+
+    }
+
     init() {
         this.createSocket("userGetData", this.sendUserData, {}, false);
 
@@ -276,7 +303,10 @@ module.exports = class UserSocket extends Socket {
             }
         });
 
+        // TODO refactor together: this.createSocket("userGetByRole", this.getRoleOfUser, {}, false);
+
         // Get right associated with the user
+        // TODO refactor together
         this.socket.on("userGetRight", async (userId) => {
             try {
                 const userRight = await this.models["user"].getUserRights(userId);
@@ -291,6 +321,7 @@ module.exports = class UserSocket extends Socket {
             }
         });
 
+        /*
         // Update user's following data: firstName, lastName, email, roles
         this.socket.on("userUpdateDetails", async (data, callback) => {
             const {userId, userData} = data;
@@ -306,6 +337,9 @@ module.exports = class UserSocket extends Socket {
                 this.logger.error(error);
             }
         });
+        */
+
+        this.createSocket("userUpdateDetails", this.callUpdateUserDetails, {}, true); //TODO not sure about true for the transaction
 
         // Reset user's password
         this.socket.on("userResetPwd", async (data, callback) => {
