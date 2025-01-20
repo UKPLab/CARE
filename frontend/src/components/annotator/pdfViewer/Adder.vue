@@ -78,7 +78,7 @@ export default {
     },
     studySession() {
       return this.$store.getters["table/study_session/get"](this.studySessionId);
-    }, 
+    },
     study() {
       return this.$store.getters["table/study/get"](this.studySession.studyId);
     },
@@ -126,6 +126,14 @@ export default {
         selectors: {target},
         tagId: tag.id,
         anonymous: this.anonymize,
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Annotation Update Failed",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
 
       this.isVisible = false;
