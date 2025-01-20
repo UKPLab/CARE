@@ -36,14 +36,16 @@ module.exports = class AnnotationSocket extends Socket {
 
     /**
      * Send an annotation to the client by id
-     * @param {number} annotationId
+     * @param {Object} data the input data from the frontend
+     * @param {Object} options not used
+     * @param {number} data.annotationId the id of the annotation
      * @return {Promise<*>}
      */
-    async sendAnnotation(annotationId) {
-        const anno = await this.models['annotation'].getById(annotationId);
+    async sendAnnotation(data, options) {
+        const anno = await this.models['annotation'].getById(data.annotationId);
 
         if (!this.checkDocumentAccess(anno.documentId)) {
-            this.sendToast("You have no permission to change this annotation", "Annotation Not Saved", "danger");
+            throw new Error("You have no permission to change this annotation");
         }
 
         await this.loadCommentsByAnnotation(anno.id);
@@ -122,15 +124,7 @@ module.exports = class AnnotationSocket extends Socket {
     }
 
     init() {
-
-        this.socket.on("annotationGet", async (data) => {
-            try {
-                await this.sendAnnotation(data.annotationId);
-            } catch (e) {
-                this.logger.error("Could not get annotation and/or comment in database. Error: " + e);
-                this.sendToast("Internal server error. Failed to get annotation.", "Internal server error", "danger");
-            }
-        });
+        this.createSocket("annotationGet", this.sendAnnotation, {}, false);
 
         this.socket.on("annotationUpdate", async (data) => {
             try {
