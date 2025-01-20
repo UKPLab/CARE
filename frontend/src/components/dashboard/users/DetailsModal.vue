@@ -148,14 +148,14 @@ export default {
           this.$emit("updateUser");
           this.eventBus.emit("toast", {
             title: "User updated",
-            message: response.message,
+            message: "Successfully updated user!",
             variant: "success",
           });
         } else {
           this.$refs.modal.waiting = false;
           this.eventBus.emit("toast", {
             title: "Fail to update",
-            message: response.message,
+            message: "Failed to update user details",
             variant: "danger",
           });
         }
