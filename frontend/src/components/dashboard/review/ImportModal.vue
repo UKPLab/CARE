@@ -1,95 +1,44 @@
 <template>
-  <BasicModal
-    ref="modal"
-    name="ReviewImportModal"
-    @hide="reset"
-    lg
+  <StepperModal
+    ref="importStepper"
+    :steps="steps"
+    :validation="stepValid"
+    @step-change="handleStepChange"
   >
     <template #title>
       <span>Import Moodle Assignments</span>
     </template>
-    <template #body>
-      <!-- Stepper -->
-      <div class="stepper">
-        <div
-          v-for="(step, index) in steps"
-          :key="index"
-          :data-index="index + 1"
-          :class="{ active: currentStep === index }"
-        >
-          {{ step.title }}
-        </div>
-      </div>
-      <!-- Content -->
-      <div class="content-container">
-        <!-- Step0: Moodle Information -->
-        <div v-if="currentStep === 0">
-          <MoodleOptions
-            ref="moodleOptionsForm"
-            v-model="moodleOptions" 
-            with-assignment-id
-          />
-        </div>
-        <!-- Step1: Preview -->
-        <div
-          v-if="currentStep === 1"
-          class="preview-table-container"
-        >
-          <BasicTable
-            v-model="selectedAssignments"
-            :data="assignments"
-            :columns="tableColumns"
-            :options="tableOptions"
-          />
-        </div>
-        <!-- Step2:  -->
-        <div
-          v-if="currentStep === 2"
-          class="confirm-container"
-        >
-          <p>
-            Are you sure you want to import <strong>{{ selectedAssignments.length }}</strong> {{ message }}?
-          </p>
-        </div>
-        <!-- Step3:  -->
-        <div
-          v-if="currentStep === 3"
-          class="result-container"
-        >
-          <p>
-            Successfully imported <strong>{{ importedAssignments.length }}</strong> {{ message }}. <br/>
-            The modal can be closed now.
-          </p>
-        </div>
-      </div>
-    </template>
-    <template #footer>
-      <BasicButton
-        v-if="currentStep !== 3"
-        title="Previous"
-        class="btn btn-secondary"
-        @click="prevStep"
-      />
-      <BasicButton
-        v-if="currentStep !== 3"
-        title="Next"
-        class="btn btn-primary"
-        :disabled="isDisabled"
-        @click="nextStep"
-      />
-      <BasicButton
-        v-if="currentStep === 3"
-        class="btn btn-primary"
-        title="Close"
-        @click="$refs.modal.close()"
+    <template #step-1>
+      <MoodleOptions
+        ref="moodleOptionsForm"
+        v-model="moodleOptions"
+        with-assignment-id
       />
     </template>
-  </BasicModal>
+    <template #step-2>
+      <BasicTable
+        v-model="selectedAssignments"
+        :data="assignments"
+        :columns="tableColumns"
+        :options="tableOptions"
+      />
+    </template>
+    <template #step-3>
+      <p>
+        Are you sure you want to import <strong>{{ selectedAssignments.length }}</strong> {{ message }}?
+      </p>
+    </template>
+    <template #step-4>
+      <p>
+        Successfully imported <strong>{{ importedAssignments.length }}</strong> {{ message }}. <br />
+        The modal can be closed now.
+      </p>
+    </template>
+  </StepperModal>
 </template>
 
 <script>
-import BasicModal from "@/basic/Modal.vue";
-import BasicButton from "@/basic/Button.vue";
+import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
 
@@ -99,12 +48,11 @@ import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
  */
 export default {
   name: "ImportModal",
-  components: {MoodleOptions, BasicModal, BasicButton, BasicTable},
-  subscribeTable: [{table: "user", filter: [{type: "not", key: "extId", value: null}]}],
+  components: { MoodleOptions, BasicTable, StepperModal },
+  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }],
   data() {
     return {
-      currentStep: 0,
-      steps: [{title: "Moodle"}, {title: "Preview"}, {title: "Confirm"}, {title: "Result"}],
+      steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }],
       moodleOptions: {},
       tableOptions: {
         striped: true,
@@ -115,9 +63,9 @@ export default {
         selectableRows: true,
       },
       tableColumns: [
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "File Name", key: "fileName"},
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        { name: "File Name", key: "fileName" },
       ],
       downloadedAssignments: [],
       selectedAssignments: [],
@@ -125,24 +73,15 @@ export default {
     };
   },
   computed: {
-    isDisabled() {
-      if (this.currentStep === 0) {
-        const {courseID, apiUrl, apiKey, assignmentID} = this.moodleOptions;
-        return !courseID || !apiUrl || !apiKey || !assignmentID;
-      }
-      if (this.currentStep === 1) {
-        return !this.selectedAssignments.length > 0;
-      }
-      if (this.currentStep === 3) {
-        return true;
-      }
-      return false;
+    stepValid() {
+      return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedAssignments.length > 0];
     },
     message() {
-      if (this.currentStep === 2) {
+      const currentStep = this.$refs.importStepper?.currentStep ?? 0;
+      if (currentStep === 2) {
         return this.selectedAssignments.length > 1 ? "assignments" : "assignment";
       }
-      if (this.currentStep === 3) {
+      if (currentStep === 3) {
         return this.importedAssignments.length > 1 ? "assignments" : "assignment";
       }
       return "assignments";
@@ -154,7 +93,7 @@ export default {
       return this.users.map((u) => u.extId);
     },
     userAssignments() {
-      return this.downloadedAssignments.filter((a) => a['submissionURLs'].length > 0 && this.usersExtIds.includes(a["userid"]));
+      return this.downloadedAssignments.filter((a) => a["submissionURLs"].length > 0 && this.usersExtIds.includes(a["userid"]));
     },
     assignments() {
       const submission_files = this.userAssignments.flatMap(obj => obj["submissionURLs"].map(subItem => ({
@@ -175,45 +114,37 @@ export default {
   },
   methods: {
     open() {
-      this.$refs.modal.open();
+      this.reset();
+      this.$refs.importStepper.open();
     },
     reset() {
-      this.currentStep = 0;
       this.selectedAssignments = [];
       if (this.importedAssignments.length > 0) {
         this.importedAssignments = [];
       }
     },
-    prevStep() {
-      if (this.currentStep > 0) {
-        this.currentStep--;
-      }
-    },
-    nextStep() {
-      if (this.currentStep >= 3) return;
-
-      switch (this.currentStep) {
+    handleStepChange(step) {
+      switch (step) {
         case 0:
           this.handleStepZero();
           break;
         case 1:
-          this.$refs.modal.waiting = false;
+          this.$refs.importStepper.setWaiting(false);
           break;
         case 2:
           this.handleStepTwo();
           break;
       }
-      this.currentStep++;
     },
     handleStepZero() {
-      if (!this.$refs.moodleOptionsForm.validate()) return;
-      this.$refs.modal.waiting = true;
-      this.$socket.emit("documentGetMoodleSubmissions", {options: this.moodleOptions}, (res) => {
-        this.$refs.modal.waiting = false;
+      if (!this.$refs.moodleOptionsForm?.validate()) return;
+      this.$refs.importStepper.setWaiting(true);
+      this.$socket.emit("documentGetMoodleSubmissions", { options: this.moodleOptions }, (res) => {
+        this.$refs.importStepper.setWaiting(false);
         if (res.success) {
-          this.downloadedAssignments = res['data'];
+          this.downloadedAssignments = res["data"];
         } else {
-          this.currentStep = 0;
+          this.$refs.importStepper.reset();
           this.eventBus.emit("toast", {
             title: "Failed to get student assignments from Moodle",
             message: res.message,
@@ -223,13 +154,12 @@ export default {
       });
     },
     handleStepTwo() {
-      
       this.$socket.emit("documentDownloadMoodleSubmissions", {
         files: this.selectedAssignments,
         options: this.moodleOptions,
-        progressId: this.$refs.modal.startProgress(),
+        progressId: this.$refs.importStepper.startProgress(),
       }, (res) => {
-        this.$refs.modal.stopProgress();
+        this.$refs.importStepper.stopProgress();
         if (res.success) {
           this.importedAssignments = res["data"];
         } else {
