@@ -35,7 +35,6 @@
     <template #footer>
       <div v-if="!$slots['error']" class="btn-group">
         <slot name="buttons"/>
-
         <BasicButton
           v-if="currentStep !== 0"
           title="Previous"
@@ -207,29 +206,5 @@ export default {
 
 .content-container {
   height: 100%;
-}
-
-/* Preview */
-.preview-table-container {
-  height: 100%;
-  white-space: nowrap;
-  overflow-x: scroll;
-}
-
-.confirm-container,
-.result-container {
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-}
-
-.link-container {
-  margin-top: 15px;
-
-  button:first-child {
-    margin-right: 0.5rem;
-  }
 }
 </style>
