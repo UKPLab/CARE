@@ -56,7 +56,6 @@ import { dbToDelta, deltaToDb } from "editor-delta-conversion";
 import { Editor } from './editorStore.js';
 import { downloadDocument } from "@/assets/utils.js";
 import {computed} from "vue";
-import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 
 const Delta = Quill.import('delta');
 
@@ -162,7 +161,7 @@ export default {
     );
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);  
-    this.debouncedProcessDataDelta = debounce(this.processDataDelta, this.debounceTimeForEdits);
+    this.debouncedProcessData = debounce(this.editorData, this.debounceTimeForEdits);
   },
   sockets: {
     connect() {
@@ -310,19 +309,16 @@ export default {
     handleDataChange(delta, oldContents, source) {
       if (source === "user") {
         this.deltaDataBuffer.push(delta);
-        this.debouncedProcessDataDelta();
+        this.debouncedProcessData();
       }
     },
-    processDataDelta() {
+    editorData() {
       if (this.deltaDataBuffer.length > 0) {
-        const combinedDelta = this.deltaDataBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
-        const dbOps = deltaToDb(combinedDelta.ops);
-        if (dbOps.length > 0) {
-          this.$emit("update:data", dbOps);
-        }
+        let newData = this.editor.getEditor().root.innerHTML;
+        this.$emit("update:data", newData);
 
-        this.deltaDataBuffer = [];
-      }
+        this.deltaBuffer = [];
+      }      
     },
     async leave() {
       if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
