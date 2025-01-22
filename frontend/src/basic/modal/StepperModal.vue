@@ -132,6 +132,9 @@ export default {
     setWaiting(value) {
       this.$refs.stepperModal.waiting = value;
     },
+    getProgressId() {
+      return this.$refs.stepperModal.getProgressId();
+    },
     startProgress(){
       return this.$refs.stepperModal.startProgress();
     },
