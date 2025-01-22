@@ -415,7 +415,6 @@ export default {
       }
     },
     updateData(data) {
-      console.log("new edits", data);
       this.dataFromEditor = data;
     },  
   }
