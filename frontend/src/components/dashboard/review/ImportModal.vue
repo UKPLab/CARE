@@ -125,13 +125,13 @@ export default {
     },
     handleStepChange(step) {
       switch (step) {
-        case 0:
+        case 1:
           this.handleStepZero();
           break;
-        case 1:
+        case 2:
           this.$refs.importStepper.setWaiting(false);
           break;
-        case 2:
+        case 3:
           this.handleStepTwo();
           break;
       }
@@ -176,66 +176,6 @@ export default {
 </script>
 
 <style scoped>
-/* Stepper */
-.stepper {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  position: relative;
-
-  &:after {
-    content: "";
-    position: absolute;
-    top: 15px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: #ccc;
-  }
-}
-
-.stepper div {
-  z-index: 1;
-  background-color: white;
-  padding: 0 5px;
-
-  &:before {
-    --dimension: 30px;
-    content: attr(data-index);
-    margin-right: 6px;
-    display: inline-flex;
-    width: var(--dimension);
-    height: var(--dimension);
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #6c6b6b;
-  }
-
-  &:first-child {
-    padding-left: 0;
-  }
-
-  &:last-child {
-    padding-right: 0;
-  }
-}
-
-.stepper div.active {
-  --btn-color: #0d6efd;
-  border-color: var(--btn-color);
-
-  &:before {
-    color: white;
-    background-color: var(--btn-color);
-    border-color: var(--btn-color);
-  }
-}
-
-.content-container {
-  height: 400px;
-}
-
 /* Preview */
 .preview-table-container {
   height: 100%;

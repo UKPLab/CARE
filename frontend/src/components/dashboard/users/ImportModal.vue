@@ -230,7 +230,7 @@ export default {
         const { courseID, apiUrl, apiKey } = this.moodleOptions;
         validStates.push(courseID && apiUrl && apiKey);
       }
-      validStates = [...validStates, this.selectedUsers.length > 0, true, true];
+      validStates = [...validStates, this.selectedUsers.length > 0, true, false];
       return validStates;
     },
   },
@@ -491,66 +491,6 @@ export default {
 </script>
 
 <style scoped>
-/* Stepper */
-.stepper {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  position: relative;
-
-  &:after {
-    content: "";
-    position: absolute;
-    top: 15px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: #ccc;
-  }
-}
-
-.stepper div {
-  z-index: 1;
-  background-color: white;
-  padding: 0 5px;
-
-  &:before {
-    --dimension: 30px;
-    content: attr(data-index);
-    margin-right: 6px;
-    display: inline-flex;
-    width: var(--dimension);
-    height: var(--dimension);
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #6c6b6b;
-  }
-
-  &:first-child {
-    padding-left: 0;
-  }
-
-  &:last-child {
-    padding-right: 0;
-  }
-}
-
-.stepper div.active {
-  --btn-color: #0d6efd;
-  border-color: var(--btn-color);
-
-  &:before {
-    color: white;
-    background-color: var(--btn-color);
-    border-color: var(--btn-color);
-  }
-}
-
-.content-container {
-  height: 25rem;
-}
-
 /* Upload */
 .file-upload-container {
   width: 100%;
