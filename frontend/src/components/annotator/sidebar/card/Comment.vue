@@ -1,24 +1,24 @@
 <template>
   <div
-      v-if="level >= 1"
-      class="mb-1"
+    v-if="level >= 1"
+    class="mb-1"
   >
     <div class="container-fluid">
       <div class="row">
         <div class="col">
           <LoadIcon
-              :icon-name="(collapseComment) ? 'chevron-right' : 'chevron-down'"
-              :size="12"
-              @click="collapseComment = !collapseComment"
+            :icon-name="(collapseComment) ? 'chevron-right' : 'chevron-down'"
+            :size="12"
+            @click="collapseComment = !collapseComment"
           />
 
           {{ comment.creator_name }}
           <Collaboration
-              ref="collab"
-              :document-id="documentId"
-              :target-id="commentId"
-              target-type="comment"
-              @collab-status="toEditMode"
+            ref="collab"
+            :document-id="documentId"
+            :target-id="commentId"
+            target-type="comment"
+            @collab-status="toEditMode"
           />
         </div>
         <div class="col text-end">
@@ -28,18 +28,18 @@
     </div>
   </div>
   <div
-      v-if="!collapseComment"
-      :class="{blockquoteMain: comment.annotationId, blockquoteSub: !comment.referenceAnnotation}"
-      class="comment card-text blockquote pb-1"
+    v-if="!collapseComment"
+    :class="{blockquoteMain: comment.annotationId, blockquoteSub: !comment.referenceAnnotation}"
+    class="comment card-text blockquote pb-1"
   >
     <div v-if="edit || editedByMyself">
       <textarea
-          ref="textarea"
-          v-model="comment.text"
-          class="form-control"
-          placeholder="Enter text..."
-          @keydown.ctrl.enter="saveOnDeactivated(false)"
-          @paste="onPaste"
+        ref="textarea"
+        v-model="comment.text"
+        class="form-control"
+        placeholder="Enter text..."
+        @keydown.ctrl.enter="saveOnDeactivated(false)"
+        @paste="onPaste"
       />
     </div>
     <div v-else-if="comment.text != null && comment.text.length > 0">
@@ -49,8 +49,8 @@
       <i>No comment</i>
     </div>
     <div
-        class="text-end fw-light"
-        title="Sentiment Analysis"
+      class="text-end fw-light"
+      title="Sentiment Analysis"
     >
       <span v-if="nlp_active && awaitingNlpResult && !edit">
         <IconLoading/>
@@ -72,68 +72,68 @@
     </div>
 
     <TagSelector
-        v-if="comment"
-        v-model="comment.tags"
-        :disabled="!edit"
-        :is-editor="comment.userId === userId"
+      v-if="comment"
+      v-model="comment.tags"
+      :disabled="!edit"
+      :is-editor="comment.userId === userId"
     />
     <div v-if="level >= 1">
       <div class="ms-auto">
         <div
-            v-if="editedByMyself"
-            class="row"
+          v-if="editedByMyself"
+          class="row"
         >
           <div
-              v-if="!readonly"
-              class="col text-end"
+            v-if="!readonly"
+            class="col text-end"
           >
             <SidebarButton
-                :loading="false"
-                :props="$props"
-                icon="save-fill"
-                title="Save (Ctrl+Enter)"
-                @click="save"
+              :loading="false"
+              :props="$props"
+              icon="save-fill"
+              title="Save (Ctrl+Enter)"
+              @click="save"
             />
             <SidebarButton
-                :loading="false"
-                :props="$props"
-                icon="x-square-fill"
-                title="Cancel"
-                @click="cancel"
+              :loading="false"
+              :props="$props"
+              icon="x-square-fill"
+              title="Cancel"
+              @click="cancel"
             />
           </div>
         </div>
         <div
-            v-else
-            class="row"
+          v-else
+          class="row"
         >
           <div
-              v-if="!readonly"
-              class="col text-end"
+            class="col text-end"
           >
             <SidebarButton
-                v-if="settingResponse"
-                :loading="false"
-                :props="$props"
-                icon="reply-fill"
-                title="Reply"
-                @click="reply"
+              v-if="settingResponse && !readonly"
+              :loading="false"
+              :props="$props"
+              icon="reply-fill"
+              title="Reply"
+              @click="reply"
+            />
+            <VoteButtons :comment="comment"/>
+            <SidebarButton
+              v-if="comment.userId === userId && !readonly"
+              :loading="false"
+              :props="$props"
+              icon="pencil-square"
+              title="Edit"
+              @click="editComment"
             />
             <SidebarButton
-                v-if="comment.userId === userId"
-                :loading="false"
-                :props="$props"
-                icon="pencil-square"
-                title="Edit"
-                @click="editComment"
-            />
-            <SidebarButton
-                v-if="comment.userId === userId || myBotRequest"
-                :loading="false"
-                :props="$props"
-                icon="trash3"
-                title="Delete"
-                @click="remove"
+              v-if="(comment.userId === userId || myBotRequest) && !readonly"
+              :loading="false"
+              :props="$props"
+              icon="trash3"
+              title="Delete"
+              @click="remove"
             />
           </div>
         </div>
@@ -141,13 +141,13 @@
     </div>
     <span v-if="level >= 1">
       <span
-          v-for="c in childComments"
-          :key="c.id"
+        v-for="c in childComments"
+        :key="c.id"
       >
         <hr class="hr">
         <CommentCard
-            :comment-id="c.id"
-            :level="level + 1"
+          :comment-id="c.id"
+          :level="level + 1"
         />
     </span>
     </span>
@@ -160,6 +160,7 @@ import IconLoading from "@/basic/icons/IconLoading.vue";
 import LoadIcon from "@/basic/Icon.vue"
 import Collaboration from "@/basic/Collaboration.vue"
 import SidebarButton from "./Button.vue"
+import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 
 /**
  * Comment card in the sidebar
@@ -170,7 +171,7 @@ import SidebarButton from "./Button.vue"
  */
 export default {
   name: "CommentCard",
-  components: {TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration},
+  components: {VoteButtons, TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration},
   inject: {
     documentId: {
       type: Number,
@@ -240,7 +241,7 @@ export default {
     },
     myBotRequest() {
       return this.comment.creator_name === "Bot"
-          && this.$store.getters["table/comment/get"](this.comment.parentCommentId).userId === this.userId;
+        && this.$store.getters["table/comment/get"](this.comment.parentCommentId).userId === this.userId;
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -250,14 +251,14 @@ export default {
     },
     childComments() {
       return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId)
-          .sort(
-              function (a, b) {
-                let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
-                if (keyA < keyB) return -1;
-                if (keyA > keyB) return 1;
-                return 0;
-              }
-          );
+        .sort(
+          function (a, b) {
+            let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
+            if (keyA < keyB) return -1;
+            if (keyA > keyB) return 1;
+            return 0;
+          }
+        );
     },
     nlp_active() {
       const conf = this.$store.getters["service/get"]("NLPService", "skillUpdate");
@@ -274,10 +275,19 @@ export default {
       return this.$store.getters["table/study_session/get"](this.studySessionId);
     },
     study() {
-      return this.$store.getters["table/study/get"](this.studySession.studyId);
+      if (this.studySession) {
+        return this.$store.getters["table/study/get"](this.studySession.studyId);
+      } else {
+        return null;
+      }
     },
     anonymize() {
-      return this.study.anonymize;
+      console.log(this.study);
+      if (this.study) {
+        return this.study.anonymize;
+      } else {
+        return false;
+      }
     }
   },
   watch: {
@@ -396,14 +406,14 @@ export default {
     },
     requestNlpFeedback() {
       this.$socket.emit("serviceRequest",
-          {
-            service: "NLPService",
-            data: {
-              id: this.commentId,
-              name: "sentiment_classification",
-              data: {text: this.comment.text}
-            }
+        {
+          service: "NLPService",
+          data: {
+            id: this.commentId,
+            name: "sentiment_classification",
+            data: {text: this.comment.text}
           }
+        }
       );
       this.awaitingNlpResult = true;
     },

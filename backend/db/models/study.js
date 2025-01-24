@@ -94,7 +94,7 @@ module.exports = (sequelize, DataTypes) => {
             min: 0,
             max: 180,
             step: 1,
-            default: 0, 
+            default: 0,
             textMapping: [{from: 0, to: "unlimited"}]
         }, {
             key: "limitSessions",
@@ -126,35 +126,35 @@ module.exports = (sequelize, DataTypes) => {
             type: "switch",
             default: false,
         },
-        {
-            key: "anonymize",
-            label: "Should the comments be anonymized?",
-            type: "switch",
-            default: false,
-        }, {
-            key: "resumable",
-            label: "Should the study be resumable?",
-            type: "switch",
-            default: false,
-        }, {
-            key: "multipleSubmit",
-            label: "Allow multiple submissions?",
-            type: "switch",
-            default: false,
-            help: "Specify whether participants can submit their study multiple times."
-        }, {
-            key: "start",
-            label: "Study sessions can't start before",
-            type: "datetime",
-            size: 6,
-            default: null,
-        }, {
-            key: "end",
-            label: "Study sessions can't start after:",
-            type: "datetime",
-            size: 6,
-            default: null,
-        },];
+            {
+                key: "anonymize",
+                label: "Should the comments be anonymized?",
+                type: "switch",
+                default: false,
+            }, {
+                key: "resumable",
+                label: "Should the study be resumable?",
+                type: "switch",
+                default: false,
+            }, {
+                key: "multipleSubmit",
+                label: "Allow multiple submissions?",
+                type: "switch",
+                default: false,
+                help: "Specify whether participants can submit their study multiple times."
+            }, {
+                key: "start",
+                label: "Study sessions can't start before",
+                type: "datetime",
+                size: 6,
+                default: null,
+            }, {
+                key: "end",
+                label: "Study sessions can't start after:",
+                type: "datetime",
+                size: 6,
+                default: null,
+            },];
 
         /**
          * Check if a study is still open
@@ -200,7 +200,7 @@ module.exports = (sequelize, DataTypes) => {
             const studySessions = await sequelize.models.study_session.getAllByKey("studyId", study.id);
 
             for (const studySession of studySessions) {
-                await sequelize.models.study_session.deleteById(studySession.id, { transaction: options.transaction });
+                await sequelize.models.study_session.deleteById(studySession.id, {transaction: options.transaction});
             }
         }
 
@@ -240,8 +240,8 @@ module.exports = (sequelize, DataTypes) => {
                     const referencedStudyStep = studyStepsMap[workflowStep.workflowStepDocument];
                     if (referencedStudyStep) {
                         await studyStep.update(
-                            { workflowStepDocument: referencedStudyStep.id },
-                            { transaction: options.transaction }
+                            {workflowStepDocument: referencedStudyStep.id},
+                            {transaction: options.transaction}
                         );
                     }
                 }
@@ -252,18 +252,16 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Appends configuration data to the last HTML document of the workflow.
+         * Handle possible configuration from study steps
          * @param {Object} study
          * @param {Object} transaction
          */
-        static async appendConfigurationToLastDocument(study, transaction) {
-            const PLACEHOLDER = 'PLACEHOLDER';
+        static async handleConfiguration(study, transaction) {
 
-            const studySteps = await sequelize.models.study_step.findAll({
-                where: { studyId: study.id },
-                transaction
-            });
+            const studySteps = await sequelize.models.study_step.getAllByKey("studyId", study.id, {transaction: transaction});
 
+            /*
+            // TODO - In the future, we will search/filter for the questionnaire configuration in the study steps
             const questionnaireConfig = studySteps
                 .map(step => step.configuration?.questionnaire)
                 .find(q => q);
@@ -272,59 +270,29 @@ module.exports = (sequelize, DataTypes) => {
                 console.warn('No questionnaire configuration found in the study steps.');
                 return;
             }
+             */
+            // For now (EiwA project), we set is manually for all steps of type 2 (editor)
+            const selectedStudySteps = studySteps.filter(step => step.stepType === 2);
+            const studyLink = 'https://docs.google.com/forms/d/e/1FAIpQLSf8ktLZZBmcyGmGlxTMwuoJ0aiJ7z2kSWmN-iwVUCL0w55iJQ/viewform?usp=pp_url&entry.433727748=~SESSION_HASH~';
 
-            const studySessions = await sequelize.models.study_session.findAll({
-                where: { studyId: study.id },
-                transaction
-            });
-
+            // We will do it for each session in the study
+            const studySessions = await sequelize.models.study_session.getAllByKey("studyId", study.id, {transaction: transaction});
             if (!studySessions.length) {
-                console.warn('No study sessions found for the study.');
                 return;
             }
 
             for (const session of studySessions) {
-                const documentEdits = await sequelize.models.document_edit.findAll({
-                    where: { studySessionId: session.id },
-                    attributes: [
-                        'documentId',
-                        [sequelize.fn('MAX', sequelize.col('offset')), 'maxOffset']
-                    ],
-                    group: ['documentId'],
-                    transaction
-                });
+                for (const step of selectedStudySteps) {
+                    await sequelize.models.document_edit.addLinkToStudySessionStep(
+                        session.id,
+                        step.id,
+                        studyLink.replace("~SESSION_HASH~", session.hash),
+                        "Do you find the feedback helpful?",
+                        transaction
+                    );
 
-                for (const edit of documentEdits) {
-                    const maxOffset = edit.dataValues.maxOffset || 0;
-
-                    const correspondingStep = studySteps.find(step => step.id === session.studyStepId);
-
-                    if (!correspondingStep || correspondingStep.stepType !== 2) {
-                        console.warn(`Skipping stepId: ${correspondingStep?.id} as it is not stepType 2.`);
-                        continue;
-                    }
-
-                    const placeholderId = `${Buffer.from(`${correspondingStep.id}-${session.id}`).toString('base64')}`;
-                    const encodedQuestionnaireLink = questionnaireConfig.replace(PLACEHOLDER, placeholderId);
-
-                    await sequelize.models.document_edit.create({
-                        userId: session.userId,
-                        documentId: edit.documentId,
-                        studySessionId: session.id,
-                        studyStepId: correspondingStep.id,
-                        text: `\nQuestionnaire Link: ${encodedQuestionnaireLink}`,
-                        operationType: 0,
-                        offset: maxOffset + 1,
-                        span: `\nQuestionnaire Link: ${encodedQuestionnaireLink}`.length,
-                        draft: true,
-                        attributes: { type: "link", href: encodedQuestionnaireLink },
-                        createdAt: new Date(),
-                        updatedAt: new Date()
-                    }, { transaction });
                 }
             }
-
-            console.info(`Questionnaire link added to document_edit for all study sessions of study ID: ${study.id}`);
         }
 
         static associate(models) {
@@ -349,7 +317,7 @@ module.exports = (sequelize, DataTypes) => {
             });
 
             Study.belongsTo(models["project"], {
-                foreignKey: "projectId", 
+                foreignKey: "projectId",
                 as: "project"
             });
         }
@@ -405,7 +373,7 @@ module.exports = (sequelize, DataTypes) => {
                 }
 
                 if (study.closed) {
-                    await Study.appendConfigurationToLastDocument(study, transaction);
+                    await Study.handleConfiguration(study, transaction);
                 }
 
                 // We only update if the context and stepDocuments are available
