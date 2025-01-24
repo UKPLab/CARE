@@ -12,7 +12,7 @@
   </button>
   <button
     v-else
-    class="btn btn-sm"
+    class="btn btn-sm position-relative border-0"
     data-placement="top"
     data-toggle="tooltip"
     :title="title"
@@ -25,6 +25,9 @@
       :size="16"
     />
     <span class="visually-hidden">{{ title }}</span>
+    <span v-if="badge" class="position-absolute top-0 start-85 translate-middle badge rounded-pill bg-dark">
+      {{ badge}}
+    </span>
   </button>
 </template>
 
@@ -42,7 +45,7 @@ import IconLoading from "@/basic/icons/IconLoading.vue";
 export default {
   name: "SidebarButton",
   components: {LoadIcon, IconLoading},
-    inject: {
+  inject: {
     acceptStats: {
       default: () => false
     }
@@ -70,6 +73,11 @@ export default {
       type: Boolean,
       required: false,
       default: false
+    },
+    "badge": {
+      type: Number,
+      required: false,
+      default: null
     }
 
   },
@@ -89,5 +97,7 @@ export default {
 </script>
 
 <style scoped>
-
+.start-85 {
+  left: 85% !important;
+}
 </style>

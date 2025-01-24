@@ -4,6 +4,7 @@
     <StudySessionModal ref="studySessionModal"/>
     <ConfirmModal ref="deleteConf"/>
     <ConfirmModal ref="confirmModal"/>
+    <BulkCloseModal ref="bulkConfirmModal"/>
     <BulkAssignmentsModal ref="bulkAssignmentsModal"/>
     <SingleAssignmentModal ref="singleAssignmentModal"/>
     <InformationModal ref="informationModal"/>
@@ -57,6 +58,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BulkAssignmentsModal from "./study/BulkAssignmentModal.vue";
 import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
+import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -66,6 +68,7 @@ import InformationModal from "@/basic/modal/InformationModal.vue";
 export default {
   name: "DashboardStudy",
   components: {
+    BulkCloseModal,
     Card,
     BasicTable,
     StudyModal,
@@ -320,7 +323,7 @@ export default {
 
           study.showEditButton = this.isAdmin || study.userId === this.userId;
           study.showDeleteButton = this.isAdmin || study.userId === this.userId;
-          study.showCloseButton = this.isAdmin || study.userId === this.userId;
+          study.showCloseButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
           study.showTemplateButton = this.isAdmin || study.userId === this.userId;
           return study;
         });
@@ -435,39 +438,7 @@ export default {
       this.$refs.studyCoordinator.open(row.id, null, linkOnly);
     },
     closeStudies() {
-      this.$refs.confirmModal.open(
-        "Close all running studies",
-        "Are you sure you want to close all open studies?",
-        "This will close all studies!",
-        (confirmed) => {
-          if (confirmed) {
-            this.studiesProject.forEach(study => {
-              this.$socket.emit("appDataUpdate", {
-                table: "study",
-                data: {
-                  id: study.id,
-                  closed: true
-                }
-              }, (result) => {
-                if (result.success) {
-                  this.eventBus.emit('toast', {
-                    title: "Study closed",
-                    message: "The study has been closed",
-                    variant: "success"
-                  });
-                } else {
-                  this.eventBus.emit('toast', {
-                    title: "Study closing failed",
-                    message: result.message + " Study: " + study.name,
-                    variant: "danger"
-                  });
-                }
-              });
-            });
-          }
-        }
-      );
-
+      this.$refs.bulkConfirmModal.open();
     },
     async deleteStudy(row) {
       const studySessions = this.$store.getters["table/study_session/getFiltered"](
