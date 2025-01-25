@@ -12,6 +12,8 @@ const workflows = [
             {
               type: "placeholder",
               pattern: "~link\\[(\\d+)\\]~", 
+              required: false,
+              functionality: "link placeholder",
               fields: [
                 {
                   name: "reviewLink",
@@ -38,6 +40,8 @@ const workflows = [
             {
               type: "placeholder",
               pattern: "~nlp\\[(\\d+)\\]~",
+              required: true,
+              functionality: "nlp placeholder", 
               fields: [
                 {
                   name: "skillName",
@@ -72,6 +76,8 @@ const workflows = [
             {
               type: "placeholder",
               pattern: "~nlp\\[(\\d+)\\]~",
+              required: true,
+              functionality: "nlp placeholder", 
               fields: [
                 {
                   name: "skillName",

@@ -13,8 +13,38 @@
     >
       <div id="hotZone" class="hot-zone"></div>
       <div id="sidepane" ref="sidepane">
-        <div id="spacer" />
-        <ul id="anno-list" class="list-group">
+        <div id="spacer"></div>
+
+        <!-- Placeholders Section -->
+        <div class="placeholders-section" v-if="placeholders && placeholders.length > 0">
+          <h6 class="section-header">Placeholders</h6>
+          <ul id="placeholder-list" class="list-group">
+            <li
+              v-for="placeholder in placeholders"
+              :key="placeholder.id"
+              class="list-group-item"
+            >
+              <SideCard>
+                <template #header>
+                  {{ placeholder.label }}
+                </template>
+                <template #body>
+                  <p>{{ placeholder.text }}</p>
+                </template>
+                <template #footer>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    @click="handlePlaceholderClick(placeholder)"
+                  >
+                    Add
+                  </button>
+                </template>
+              </SideCard>
+            </li>
+          </ul>
+        </div>
+
+        <ul id="anno-list" class="list-group" v-if="!placeholders || placeholders.length === 0">
           <li v-if="documentComments.length === 0">
             <p class="text-center">No elements</p>
           </li>
@@ -64,6 +94,7 @@
 </template>
 
 <script>
+import SideCard from "./card/Card.vue";
 import AnnoCard from "./card/AnnoCard.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { scrollElement } from "@/assets/anchoring/scroll";
@@ -76,7 +107,7 @@ import { scrollElement } from "@/assets/anchoring/scroll";
  */
 export default {
   name: "AnnotationSidebar",
-  components: {AnnoCard, ConfirmModal},
+  components: { SideCard, AnnoCard, ConfirmModal},
   inject: {
     documentId: {
       type: Number,
@@ -106,6 +137,11 @@ export default {
       type: Boolean,
       required: false,
       default: true,
+    },
+    placeholders: {
+      type: Array,
+      required: true, 
+      default: () => []
     },
   },
   data() {
@@ -244,6 +280,10 @@ export default {
     this.initHoverController()
   },
   methods: {
+    handlePlaceholderClick(placeholder) {
+      this.$emit("add-placeholder", placeholder.text);
+      console.log("Clicked placeholder:", placeholder);
+    },
     hover(annotationId) {
       if (annotationId) {
         const annotation = this.$store.getters['table/annotation/get'](annotationId);
@@ -520,5 +560,29 @@ export default {
   right: 0px;
   z-index: 999;
   display: none;
+}
+
+.placeholders-section {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 10px;
+}
+
+.section-header {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+#placeholder-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-group-item {
+  border: none;
+  background-color: transparent;
+  margin-top: 8px;
 }
 </style>

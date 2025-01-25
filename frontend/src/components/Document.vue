@@ -5,7 +5,8 @@
       class="pageLoader"
   />
   <span v-else>
-    <Editor v-if="document.type === 1 || document.type === 2" ref="editor" :document-id="documentId" />
+    <Editor v-if="document.type === 1" ref="editor" :document-id="documentId" />
+    <EditorWithSidebar v-if="document.type === 2" ref="editorWithSidebar" :document-id="documentId" />
     <Annotator v-else ref="annotator" :document-id = "documentId"/>
   </span>
 </template>
@@ -25,10 +26,11 @@ import Annotator from "./annotator/Annotator.vue";
 import Loader from "@/basic/Loading.vue";
 import {computed} from "vue";
 import Editor from "@/components/editor/Editor.vue"
+import EditorWithSidebar from "@/components/editor/EditorWithSidebar.vue";
 
 export default {
   name: "DocumentRoute",
-  components: {Annotator, Loader, Editor},
+  components: {Annotator, Loader, Editor, EditorWithSidebar },
   async beforeRouteLeave(to, from) {
     return await this.confirmLeave();
   },
