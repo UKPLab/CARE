@@ -90,6 +90,11 @@ import NLPService from "@/basic/NLPService.vue";
       required: false,
       default: false,
     },
+    data: {
+      type: Object,
+      required: false,
+      default: {},
+    }
   },
   data() { 
     return {
@@ -140,9 +145,9 @@ import NLPService from "@/basic/NLPService.vue";
     );
   },
   mounted() {
-    if(this.configuration && "firstOpen" in this.configuration){
-      this.skill = "skillName" in this.configuration.firstOpen? this.configuration.firstOpen.skillName : this.skill;
-      // Also set the input for the skill according to the configuration, because it is based on the data source
+    if(this.configuration && "functionality" in this.configuration){
+      // this.skill = "skillName" in this.configuration.firstOpen? this.configuration.firstOpen.skillName : this.skill;
+      // TODO: if functionality, check for nlp pattern and should be possible for multiple nlp calls
       this.$refs.nlp.request();
     }
     this.$refs.modal.open(); 
