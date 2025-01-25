@@ -252,6 +252,25 @@ export default {
     },    
   },
   methods: {
+    insertTextAtCursor(text) {
+      if (this.editor) {
+        const quill = this.editor.getEditor();
+        const range = quill.getSelection();
+        if (range) {
+          const placeholderDelta = new Delta().retain(range.index).insert(text);
+          quill.updateContents(placeholderDelta);
+          this.deltaBuffer.push(placeholderDelta);
+          this.debouncedProcessDelta();
+          quill.setSelection(range.index + text.length);
+        } else {
+          this.eventBus.emit("toast", {
+            title: "No Cursor Position",
+            message: "Please click in the editor to set the cursor position before inserting a placeholder.",
+            variant: "warning",
+          });
+        }
+      }
+    },
     onPaste(event) {
       if(this.user.acceptStats) {
       const pastedText = (event.clipboardData || window.clipboardData).getData('text');
