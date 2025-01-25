@@ -226,7 +226,18 @@ export default {
       });
     },
     openModal(configuration, studyStepId) {
-      this.$refs.configurationModal.open(configuration, studyStepId);
+      const currentEntry = this.currentData.find((entry) => entry.id === studyStepId);
+      if (!currentEntry || !currentEntry.documentId) {
+        this.eventBus.emit("toast", {
+          title: "Document Error",
+          message: "You need to selected a document.",
+          variant: "danger",
+        });
+        return;
+      }
+      const documentId = currentEntry.documentId;
+
+      this.$refs.configurationModal.open(configuration, studyStepId, documentId);
     },
   },
 };

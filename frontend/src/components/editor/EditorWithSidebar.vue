@@ -52,8 +52,8 @@ data() {
     return {
     isSidebarVisible: true, 
     placeholders: [
-    { id: "placeholder1", label: "Placeholder to insert a link", text: "~link\\[(\\d+)\\]~" },
-    { id: "placeholder2", label: "Placeholder to insert a nlp model", text: "~nlp\\[(\\d+)\\]~" },
+    { id: "placeholder1", label: "Placeholder to insert a link", text: "~link[d+]~" },
+    { id: "placeholder2", label: "Placeholder to insert an NLP model", text: "~nlp[d+]~" },
     ],
     };
 },
