@@ -114,13 +114,7 @@ export default {
       deltaDataBuffer: [],
       editor: null,
       documentLoaded: false,      
-      data: {"studyStepAsNumber":
-              {"firstVersion": null,
-              "currentVersion": null,
-              "edits": [] },
-              "2": {} ,
-              "3": {}
-            },
+      data: {},
     };
   },
   created() {
@@ -286,7 +280,6 @@ export default {
     }}},
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
-        console.log(delta);
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
       }
@@ -318,7 +311,7 @@ export default {
         let newData = this.editor.getEditor().root.innerHTML;
         this.$emit("update:data", newData);
 
-        this.deltaBuffer = [];
+        this.deltaDataBuffer = [];
       }      
     },
     async leave() {
@@ -345,6 +338,8 @@ export default {
       }
       this.documentLoaded = true;
       this.applyAdditionalEdits();
+      let intialData = this.editor.getEditor().root.innerHTML;
+      this.$emit("update:data", intialData);
     },
     applyAdditionalEdits() {
       if (this.unappliedEdits.length > 0) {

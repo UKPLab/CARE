@@ -89,7 +89,7 @@
       <div v-show="s.id === currentStudyStepId">
         <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
         <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
-                :study-step-id="s.id" :active="activeComponents[index]" @update:data="updateData" />
+                :study-step-id="s.id" :active="activeComponents[index]" @update:data="updateData(s.id, $event)" />
       </div>
       <div v-show="s.id === currentStudyStepId">
         <Modal
@@ -122,7 +122,6 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed, onUpdated} from "vue";
 import Modal from "./modal/Modal.vue";
-import { update } from "lodash";
 
 export default {
   name: "StudyRoute",
@@ -414,8 +413,32 @@ export default {
         });
       }
     },
-    updateData(data) {
-      this.dataFromEditor = data;
+    updateData(studyStepId, data) {
+      if (!this.dataFromEditor) {
+        this.dataFromEditor = {
+          studyStepAsNumber: {}
+        };
+      }
+
+      if (studyStepId !== null && Object.keys(this.dataFromEditor).length === 0) {
+        this.dataFromEditor = {
+          studyStepAsNumber: {}
+        };
+      }
+
+      if (studyStepId !== null && 
+          (Object.keys(this.dataFromEditor["studyStepAsNumber"]).length === 0 || !(studyStepId in this.dataFromEditor["studyStepAsNumber"]))) {
+        let studyStepNum = this.dataFromEditor["studyStepAsNumber"];
+        studyStepNum[studyStepId] = {
+          firstVersion: data,
+          currentVersion: data,
+          edits: []
+        };
+      } else if (studyStepId !== null && Object.keys(this.dataFromEditor["studyStepAsNumber"]).length !== 0 && (studyStepId in this.dataFromEditor["studyStepAsNumber"])) {
+        let studyStepNum = this.dataFromEditor["studyStepAsNumber"];
+        studyStepNum[studyStepId].currentVersion = data;
+      }
+      
     },  
   }
 };
