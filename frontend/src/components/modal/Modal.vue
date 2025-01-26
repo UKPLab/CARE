@@ -15,36 +15,49 @@
         >
           {{ studyStep?.configuration?.title || 'Feedback' }}
         </h5>
-      </template>
+      </template>  
       <template #body>
+      <div
+        v-if="waiting"
+        class="justify-content-center flex-grow-1 d-flex"
+        role="status"
+      >
+        <div class="spinner-border m-5">
+          <span class="visually-hidden">Loading...</span>          
+        </div>
+      </div>
+      <div v-else>
         <div
-          class="feedback-container p-3"
-          :style="{ color: studyStep?.configuration?.textColor || '' }"
-        >
-          <p v-if="!documentText">
-            No content available for this step.
-          </p>
+            class="feedback-container p-3"
+            :style="{ color: studyStep?.configuration?.textColor || '' }"
+          >
+            <p v-if="!documentText">
+              No content available for this step.
+            </p>
 
-        <!-- TODO: Remove check for output once the configuration is fixed-->
-          <p v-if="output">
-          Output of the {{skill}}: {{ output }}
-        </p>
-          <div v-else v-html="documentText"></div>
+          <!-- TODO: Remove check for output once the configuration is fixed-->
+            <p v-if="output">
+            Output of the {{skill}}: {{ output }}
+          </p>
+            <div v-else v-html="documentText"></div>
+          </div>
         </div>      
       </template>
       <template #footer>
-        <BasicButton
-          v-if="!isLastStep"
-          @click="closeModal({ nextStep: true })"
-          :title="studyStep?.configuration?.nextButtonText || 'Next'"
-        />
-        <BasicButton
-          v-if="isLastStep"
-          @click="closeModal({ endStudy: true })"
-          :title="studyStep?.configuration?.finishButtonText || 'Finish Study'"
-          :class="studyStep?.configuration?.finishButtonClass || 'btn btn-danger'"
-        />
-      </template>
+        <div v-if="!waiting">
+          <BasicButton
+            v-if="!isLastStep"
+            @click="closeModal({ nextStep: true })"
+            :title="studyStep?.configuration?.nextButtonText || 'Next'"
+          />
+          <BasicButton
+            v-if="isLastStep"
+            @click="closeModal({ endStudy: true })"
+            :title="studyStep?.configuration?.finishButtonText || 'Finish Study'"
+            :class="studyStep?.configuration?.finishButtonClass || 'btn btn-danger'"
+          />
+        </div>
+      </template>    
     </BasicModal>
   </span>
 </template>
@@ -105,6 +118,7 @@ import NLPService from "@/basic/NLPService.vue";
       skill: "skill_eic", // to be read from the configuration
       documentText: null, // Holds the parsed content of the delta document
       output: null, // Holds the output from the NLP service
+      waiting: false, // Holds the status of the NLP service which is waiting for the response
     };
   },
   computed: {
@@ -145,6 +159,10 @@ import NLPService from "@/basic/NLPService.vue";
     );
   },
   mounted() {
+    // TODO: Check this part after it is known how to read the pattern of the NLP service, also check for the nlp?
+    if(this.configuration && "functionality" in this.configuration){
+      this.waiting = true;
+    }
     if(this.configuration && "functionality" in this.configuration){
       // this.skill = "skillName" in this.configuration.firstOpen? this.configuration.firstOpen.skillName : this.skill;
       // TODO: if functionality, check for nlp pattern and should be possible for multiple nlp calls
@@ -163,6 +181,7 @@ import NLPService from "@/basic/NLPService.vue";
     },
     response(response) {
       this.output = response;
+      this.waiting = false;
     }
   },
 };
