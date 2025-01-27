@@ -1,11 +1,13 @@
 <template>
   <div
     v-if="options && options['search']"
-    class="input-group input-group-sm">
-    <span id="search-addon1" class="input-group-text">
-      <BasicIcon
-        icon-name="search"
-      ></BasicIcon>
+    class="input-group input-group-sm"
+  >
+    <span
+      id="search-addon1"
+      class="input-group-text"
+    >
+      <BasicIcon icon-name="search"></BasicIcon>
     </span>
     <input
       v-model="search"
@@ -13,35 +15,36 @@
       class="form-control"
       placeholder="Type to filter table..."
       aria-label="table-search"
-      aria-describedby="search-addon1">
+      aria-describedby="search-addon1"
+    />
   </div>
   <table
     :class="tableClass"
     class="table"
   >
     <thead>
-    <tr>
-      <th v-if="selectableRows">
-        <div class="form-check">
-          <input
-            v-if="!(this.options && this.options.singleSelect)"
-            class="form-check-input"
-            type="checkbox"
-            :checked="isAllRowsSelected"
-            @change="selectAllRows"
-          />
-        </div>
-      </th>
-      <th
-        v-for="c in columns"
-        :key="c.key"
-        :class="'width' in c ? 'col-' + c.width : 'col-auto'"
-      >
-        {{ c.name }}
-        <span
-          v-if="c.sortable"
-          title="Sort By"
+      <tr>
+        <th v-if="selectableRows">
+          <div class="form-check">
+            <input
+              v-if="!(options && options.singleSelect)"
+              class="form-check-input"
+              type="checkbox"
+              :checked="isAllRowsSelected"
+              @change="selectAllRows"
+            />
+          </div>
+        </th>
+        <th
+          v-for="c in columns"
+          :key="c.key"
+          :class="'width' in c ? 'col-' + c.width : 'col-auto'"
         >
+          {{ c.name }}
+          <span
+            v-if="c.sortable"
+            title="Sort By"
+          >
             <LoadIcon
               v-if="c.sortable"
               :class="{
@@ -56,7 +59,7 @@
               @click="sort('sortKey' in c ? c.sortKey : c.key)"
             />
           </span>
-        <span v-if="filter && c.filter">
+          <span v-if="filter && c.filter">
             <span
               aria-expanded="true"
               aria-haspopup="true"
@@ -89,59 +92,62 @@
                 <label
                   :for="'filterDropDown_' + c.key + '_label_' + f.key"
                   class="form-check-label"
-                >{{ f.name }}</label
+                  >{{ f.name }}</label
                 >
               </li>
             </ul>
           </span>
-      </th>
-      <th v-if="buttons.length > 0">Manage</th>
-    </tr>
+        </th>
+        <th v-if="buttons.length > 0">Manage</th>
+      </tr>
     </thead>
     <tbody>
-    <tr v-if="serverSidePagination && total > 0 && data.length === 0">
-      <td
-        :colspan="columns.length"
-        class="text-center"
+      <tr v-if="serverSidePagination && total > 0 && data.length === 0">
+        <td
+          :colspan="columns.length"
+          class="text-center"
+        >
+          Loading data from server...
+        </td>
+      </tr>
+      <tr v-else-if="!data || data.length === 0">
+        <td
+          :colspan="emptyColspan"
+          class="text-center"
+        >
+          No data
+        </td>
+      </tr>
+      <tr
+        v-for="(r, index) in tableData"
+        v-else
+        :key="r"
+        @click="selectRow(r)"
       >
-        Loading data from server...
-      </td>
-    </tr>
-    <tr v-else-if="!data || data.length === 0">
-      <td
-        :colspan="emptyColspan"
-        class="text-center"
-      >
-        No data
-      </td>
-    </tr>
-    <tr
-      v-for="(r, index) in tableData"
-      v-else
-      :key="r"
-      @click="selectRow(r)"
-    >
-      <td v-if="selectableRows">
-        <div class="form-check" @click.stop="">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            :class="{
-              pointer: selectableRows && !r.isDisabled,
-            }"
-            :disabled="r.isDisabled"
-            :checked="currentData.includes(r)"
-            @change="(e) => selectRow(r)"
-          />
-        </div>
-      </td>
-      <td
-        v-for="c in columns"
-        :key="c"
-        :class="{
-          pointer: selectableRows && !r.isDisabled,
-        }"
-      >
+        <td v-if="selectableRows">
+          <div
+            class="form-check"
+            @click.stop=""
+          >
+            <input
+              class="form-check-input"
+              type="checkbox"
+              :class="{
+                pointer: selectableRows && !r.isDisabled,
+              }"
+              :disabled="r.isDisabled"
+              :checked="currentData.includes(r)"
+              @change="(e) => selectRow(r)"
+            />
+          </div>
+        </td>
+        <td
+          v-for="c in columns"
+          :key="c"
+          :class="{
+            pointer: selectableRows && !r.isDisabled,
+          }"
+        >
           <span v-if="c.key in r">
             <TIcon
               v-if="c.type === 'icon'"
@@ -197,19 +203,19 @@
               {{ r[c.key] }}
             </span>
           </span>
-        <span v-else> - </span>
-      </td>
-      <td
-        v-if="buttons.length > 0"
-        @click.stop=""
-      >
-        <TButtonGroup
-          :buttons="buttons"
-          :params="r"
-          @action="actionEmitter"
-        />
-      </td>
-    </tr>
+          <span v-else> - </span>
+        </td>
+        <td
+          v-if="buttons.length > 0"
+          @click.stop=""
+        >
+          <TButtonGroup
+            :buttons="buttons"
+            :params="r"
+            @action="actionEmitter"
+          />
+        </td>
+      </tr>
     </tbody>
   </table>
   <Pagination
@@ -234,7 +240,7 @@ import TIcon from "./table/Icon.vue";
 import Pagination from "./table/Pagination.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import BasicIcon from "@/basic/Icon.vue";
-import {tooltip} from "@/assets/tooltip.js";
+import { tooltip } from "@/assets/tooltip.js";
 import deepEqual from "deep-equal";
 
 /**
@@ -256,7 +262,7 @@ export default {
     TToggle,
     LoadIcon,
   },
-  directives: {tooltip},
+  directives: { tooltip },
   inject: {
     acceptStats: {
       default: () => false,
@@ -275,8 +281,7 @@ export default {
     options: {
       type: Object,
       required: false,
-      default: () => {
-      },
+      default: () => {},
     },
     count: {
       type: Number,
@@ -306,8 +311,8 @@ export default {
         "table-borderless": this.options && this.options.borderless,
         "table-sm": this.options && this.options.small,
       },
-      sortColumn: (this.options && this.options.sort && this.options.sort.column) ? this.options.sort.column : null,
-      sortDirection: (this.options && this.options.sort && this.options.sort.order) ? this.options.sort.order : "ASC",
+      sortColumn: this.options && this.options.sort && this.options.sort.column ? this.options.sort.column : null,
+      sortDirection: this.options && this.options.sort && this.options.sort.order ? this.options.sort.order : "ASC",
       currentPage: 1,
       selectableRows: this.options && this.options.selectableRows,
       currentData: [],
@@ -315,13 +320,12 @@ export default {
       itemsPerPageList: [10, 25, 50, 100],
       paginationShowPages: 3,
       filter: null,
-      search: ""
+      search: "",
     };
   },
   computed: {
     isAllRowsSelected() {
       return this.currentData.length === this.tableData.filter((r) => !r.isDisabled).length;
-      ;
     },
     serverSidePagination() {
       return (
@@ -392,13 +396,9 @@ export default {
 
       if (this.sortColumn) {
         if (this.sortDirection === "ASC") {
-          data = data.sort((a, b) =>
-            a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0
-          );
+          data = data.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
         } else {
-          data = data.sort((a, b) =>
-            a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0
-          );
+          data = data.sort((a, b) => (a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0));
         }
       }
       if (this.filter) {
@@ -436,7 +436,7 @@ export default {
         {},
         ...Object.entries(sequelizeFilter)
           .filter(([k, v]) => v.length > 0)
-          .map(([k, v]) => ({[k]: v}))
+          .map(([k, v]) => ({ [k]: v }))
       );
     },
   },
@@ -452,7 +452,6 @@ export default {
     modelValue: {
       handler() {
         this.currentData = this.updateValues(this.modelValue);
-
       },
       deep: true,
     },
@@ -489,7 +488,7 @@ export default {
       ...this.columns
         .filter((c) => "filter" in c)
         .map((c) => ({
-          [c.key]: Object.assign({}, ...c.filter.map((f) => ({[f.key]: false}))),
+          [c.key]: Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))),
         }))
     );
   },
@@ -517,14 +516,15 @@ export default {
     },
     selectRow(row) {
       if (this.selectableRows) {
-        if (!this.currentData.includes(row)) { // check if selected
+        if (!this.currentData.includes(row)) {
+          // check if selected
           if (this.options && this.options.singleSelect) {
             this.currentData = [row];
           } else {
             // Check if the row is already selected
 
             console.log(row);
-            console.log(!this.currentData.includes(row))
+            console.log(!this.currentData.includes(row));
             if (!this.currentData.includes(row)) {
               this.currentData.push(row);
             }
