@@ -268,7 +268,28 @@ import deepEqual from "deep-equal";
  *
  * Use this component for tabulating data with a diverse API for interactions like buttons or row selection.
  *
- * @author Dennis Zyska, Nils Dycke
+ * @example
+ * // Example of using numeric filter
+ * const columns = [{
+ *   key: "documentCount",
+ *   name: "Document Count",
+ *   filter: {
+ *     type: "numeric",
+ *     defaultValue: 0, // Optional
+ *     defaultOperator: 'gt', // Optional
+ *   }
+ * }]
+ * // Example of using checkbox filter
+ * const columns = [{
+ *   key: "role",
+ *   name: "Role",
+ *   filter: [
+ *     { key: "admin", name: "Admin" },
+ *     { key: "user", name: "User" },
+ *   ],
+ * }]
+ * 
+ * @author Dennis Zyska, Nils Dycke, Linyin Huang
  */
 export default {
   name: "BasicTable",
@@ -339,7 +360,7 @@ export default {
       itemsPerPage: null,
       itemsPerPageList: [10, 25, 50, 100],
       paginationShowPages: 3,
-      filter: null,
+      filter: null, // can be assigned an object or an array, see example above.
       search: "",
     };
   },
