@@ -73,29 +73,49 @@
                 :icon-name="c.key in sequelizeFilter ? 'funnel-fill' : 'funnel'"
               />
             </span>
-            <ul
-              :aria-labelledby="'filterDropDown_' + c.key"
-              class="dropdown-menu p-1"
-              @click.stop=""
-            >
-              <li
-                v-for="f in c.filter"
-                :key="f.key"
-                class="form-check"
+            <template v-if="!c.filter.type">
+              <ul
+                :aria-labelledby="'filterDropDown_' + c.key"
+                class="dropdown-menu p-1"
+                @click.stop=""
               >
-                <input
-                  :id="'filterDropDown_' + c.key + '_label_' + f.key"
-                  v-model="filter[c.key][f.key]"
-                  class="form-check-input"
-                  type="checkbox"
-                />
-                <label
-                  :for="'filterDropDown_' + c.key + '_label_' + f.key"
-                  class="form-check-label"
-                  >{{ f.name }}</label
+                <li
+                  v-for="f in c.filter"
+                  :key="f.key"
+                  class="form-check"
                 >
-              </li>
-            </ul>
+                  <input
+                    :id="'filterDropDown_' + c.key + '_label_' + f.key"
+                    v-model="filter[c.key][f.key]"
+                    class="form-check-input"
+                    type="checkbox"
+                  />
+                  <label
+                    :for="'filterDropDown_' + c.key + '_label_' + f.key"
+                    class="form-check-label"
+                    >{{ f.name }}</label
+                  >
+                </li>
+              </ul>
+            </template>
+            <template v-else-if="c.filter.type === 'numeric'">
+              <div class="dropdown-menu p-2">
+                <select
+                  v-model="filter[c.key].operator"
+                  class="form-select form-select-sm mb-2"
+                >
+                  <option value="gt">&gt;</option>
+                  <option value="lt">&lt;</option>
+                  <option value="eq">=</option>
+                </select>
+                <input
+                  v-model="filter[c.key].value"
+                  class="form-control form-control-sm"
+                  type="number"
+                  min="0"
+                />
+              </div>
+            </template>
           </span>
         </th>
         <th v-if="buttons.length > 0">Manage</th>
@@ -403,17 +423,35 @@ export default {
       }
       if (this.filter) {
         data = data.filter((d) => {
-          for (const [key, va] of Object.entries(this.filter)) {
-            // only selected filter
-            const filter = Object.entries(va)
-              .filter(([k, v]) => v)
-              .map(([k, v]) => k);
-            if (filter.length > 0) {
-              if (!filter.includes(d[key].toString())) {
-                return false;
+          for (const [key, filterValue] of Object.entries(this.filter)) {
+            if (typeof filterValue === "object" && "operator" in filterValue) {
+              const value = parseFloat(d[key]);
+              const compareValue = parseFloat(filterValue.value);
+
+              switch (filterValue.operator) {
+                case "gt":
+                  if (!(value > compareValue)) return false;
+                  break;
+                case "lt":
+                  if (!(value < compareValue)) return false;
+                  break;
+                case "eq":
+                  if (value !== compareValue) return false;
+                  break;
+              }
+            } else {
+              // only selected filter
+              const filter = Object.entries(filterValue)
+                .filter(([k, v]) => v)
+                .map(([k, v]) => k);
+              if (filter.length > 0) {
+                if (!filter.includes(d[key].toString())) {
+                  return false;
+                }
               }
             }
           }
+
           return true;
         });
       }
@@ -488,7 +526,10 @@ export default {
       ...this.columns
         .filter((c) => "filter" in c)
         .map((c) => ({
-          [c.key]: Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))),
+          [c.key]:
+            c.filter.type === "numeric"
+              ? { operator: c.filter.defaultOperator ?? "gt", value: c.filter.defaultValue ?? "" } // initialize numeric filter
+              : Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))), // initialize checkbox filter
         }))
     );
   },
