@@ -345,7 +345,15 @@ export default {
         {name: "First Name", key: "firstName"},
         {name: "Last Name", key: "lastName"},
         {name: "Number of Assignments", key: "studySessions"},
-        {name: "Documents", key: "documents", width: 1, sortable: true},
+        {
+          name: "Documents", 
+          key: "documents", 
+          filter: {
+            type: "numeric",
+            defaultOperator: "gte",
+            defaultValue: 0,
+          },
+        },
         {
           name: "Roles",
           key: "rolesNames",
