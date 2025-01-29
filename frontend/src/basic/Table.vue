@@ -106,6 +106,8 @@
                 >
                   <option value="gt">&gt;</option>
                   <option value="lt">&lt;</option>
+                  <option value="gte">&ge;</option>
+                  <option value="lte">&le;</option>
                   <option value="eq">=</option>
                 </select>
                 <input
@@ -457,6 +459,12 @@ export default {
                 case "lt":
                   if (!(value < compareValue)) return false;
                   break;
+                case "gte":
+                  if (!(value >= compareValue)) return false;
+                  break;
+                case "lte":
+                  if (!(value <= compareValue)) return false;
+                  break;
                 case "eq":
                   if (value !== compareValue) return false;
                   break;
@@ -550,7 +558,7 @@ export default {
         .map((c) => ({
           [c.key]:
             c.filter.type === "numeric"
-              ? { operator: c.filter.defaultOperator ?? "gt", value: c.filter.defaultValue ?? "" } // initialize numeric filter
+              ? { operator: c.filter.defaultOperator ?? "gte", value: c.filter.defaultValue ?? "" } // initialize numeric filter
               : Object.assign({}, ...c.filter.map((f) => ({ [f.key]: false }))), // initialize checkbox filter
         }))
     );
