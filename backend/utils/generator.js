@@ -4,7 +4,6 @@
  * @author Linyin Huang
  */
 const animals = [
-  "AfricanElephant",
   "Antelope",
   "BengalTiger",
   "Buffalo",
@@ -14,6 +13,7 @@ const animals = [
   "Dolphin",
   "Eagle",
   "Emu",
+  "Elephant",
   "Falcon",
   "Flamingo",
   "Fox",
