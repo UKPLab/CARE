@@ -118,7 +118,7 @@
             </template>
           </span>
         </th>
-        <th v-if="buttons.length > 0">Manage</th>
+        <th v-if="hasButtons">Manage</th>
       </tr>
     </thead>
     <tbody>
@@ -226,11 +226,11 @@
           <span v-else> - </span>
         </td>
         <td
-          v-if="buttons.length > 0"
+          v-if="getFilteredButtons(r).length > 0"
           @click.stop=""
         >
           <TButtonGroup
-            :buttons="buttons"
+            :buttons="getFilteredButtons(r)"
             :params="r"
             @action="actionEmitter"
           />
@@ -288,7 +288,7 @@ import deepEqual from "deep-equal";
  *     { key: "user", name: "User" },
  *   ],
  * }]
- * 
+ *
  * @author Dennis Zyska, Nils Dycke, Linyin Huang
  */
 export default {
@@ -360,8 +360,9 @@ export default {
       itemsPerPage: null,
       itemsPerPageList: [10, 25, 50, 100],
       paginationShowPages: 3,
-      filter: null, // can be assigned an object or an array, see example above.
+      filter: null, // Can be assigned an object or an array, see example above.
       search: "",
+      hasButtons: false, // Use this flag to decide on the visibility of the column header
     };
   },
   computed: {
@@ -629,6 +630,25 @@ export default {
     // Therefore, add this wrapper function here to prevent reference error.
     deepEqual(row1, row2) {
       return deepEqual(row1, row2);
+    },
+    getFilteredButtons(row) {
+      const filteredButtons = this.buttons.filter((b) => {
+        if (!b.filter) return true;
+
+        return b.filter.some((f) => {
+          if (f.type === "not") {
+            return row[f.key] !== f.value;
+          }
+          return row[f.key] === f.value;
+        });
+      });
+
+      // Update this flag if there are any buttons
+      if (filteredButtons.length > 0) {
+        this.hasButtons = true;
+      }
+
+      return filteredButtons;
     },
   },
 };
