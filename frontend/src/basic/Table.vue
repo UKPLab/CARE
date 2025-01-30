@@ -475,7 +475,12 @@ export default {
                 .filter(([k, v]) => v)
                 .map(([k, v]) => k);
               if (filter.length > 0) {
-                if (!filter.includes(d[key].toString())) {
+                const dataValues = Array.isArray(d[key]) ? d[key] : String(d[key]).split(/,\s*/);
+                const hasMatch = dataValues.some((val) =>
+                  filter.some((f) => String(val).toLowerCase().trim() === String(f).toLowerCase().trim())
+                );
+
+                if (!hasMatch) {
                   return false;
                 }
               }
