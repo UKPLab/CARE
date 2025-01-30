@@ -333,7 +333,9 @@ export default {
       return this.$store.getters["admin/getSystemRoles"];
     },
     reviewerRoles() { // unique roles of all possible reviewers
-      return [...new Set(this.reviewer.flatMap(obj => obj.roles))];
+      return [...new Set(this.reviewerTable.flatMap(obj => {
+        return obj.rolesNames.split(/,\s*/).filter(n => n !== "");
+      }))];
     },
     selectedReviewerRoles() { // unique roles assigned to reviewers
       return [...new Set(this.selectedReviewer.flatMap(obj => obj.roles))];
@@ -357,12 +359,7 @@ export default {
         {
           name: "Roles",
           key: "rolesNames",
-          // filter for roles is not working, maybe it is because of an array
-          // TODO need special kind of filter for array includes
-          /*filter: this.reviewerRoles.length > 0 ? this.reviewerRoles.map((role) => ({
-            key: "roles",
-            name: role,
-          })) : undefined*/
+          filter: this.reviewerRoles.map(r => ({ key: r, name: r})),
         },
       ]
     },
