@@ -3,50 +3,59 @@
  *
  * @author Linyin Huang
  */
-/**
- * An array of Marvel characters
- * src: https://en.wikipedia.org/wiki/Lists_of_Marvel_Comics_characters
- */
-const marvelCharacters = [
-  "IronMan",
-  "CaptainAmerica",
-  "Thor",
-  "Hulk",
-  "BlackWidow",
-  "Hawkeye",
-  "SpiderMan",
-  "BlackPanther",
-  "DoctorStrange",
-  "CaptainMarvel",
-  "Wolverine",
-  "Deadpool",
-  "Thanos",
-  "Loki",
-  "StarLord",
-  "Groot",
-  "Gamora",
-  "Rocket",
-  "Vision",
-  "ScarletWitch",
-  "AntMan",
-  "Wasp",
-  "Daredevil",
-  "Punisher",
-  "SilverSurfer",
-  "Gambit",
-  "Cyclops",
-  "MrFantastic",
-  "Nightcrawler",
-  "NickFury",
-  "IceMan",
-  "HumanTorch",
-  "ProfessorX",
-  "Storm",
-  "JeanGrey",
-  "Rogue",
-  "EmmaFrost",
-  "WarMachine",
-  "ShangChi",
+const animals = [
+  "Antelope",
+  "BengalTiger",
+  "Buffalo",
+  "Cheetah",
+  "Coyote",
+  "Dingo",
+  "Dolphin",
+  "Eagle",
+  "Emu",
+  "Elephant",
+  "Falcon",
+  "Flamingo",
+  "Fox",
+  "Gazelle",
+  "Giraffe",
+  "Hedgehog",
+  "Hippopotamus",
+  "Iguana",
+  "Impala",
+  "Jackal",
+  "Jaguar",
+  "Kangaroo",
+  "Koala",
+  "Lemur",
+  "Lion",
+  "Manatee",
+  "Monkey",
+  "Narwhal",
+  "Numbat",
+  "Octopus",
+  "Ocelot",
+  "Panda",
+  "Penguin",
+  "Phoenix", 
+  "Quail",
+  "Quokka",
+  "Rabbit",
+  "Raccoon",
+  "RedPanda",
+  "Rhinoceros",
+  "Sloth",
+  "Squirrel",
+  "Tapir",
+  "Turtle",
+  "Unicorn",
+  "Urial",
+  "Viper",
+  "Vulture",
+  "Walrus",
+  "Wombat",
+  "Yak",
+  "Zebra",
 ];
 
 /**
@@ -64,11 +73,11 @@ function generateRandomString(length) {
 }
 
 /**
- * Generate a random Marvel-themed username
- * @returns {string} A random username consisting of a Marvel character name and 4-character random string
+ * Generate a random animal-themed username
+ * @returns {string} A random username consisting of an animal's name and 4-character random string
  */
-exports.generateMarvelUsername = function generateMarvelUsername() {
-  const randomCharacter = marvelCharacters[Math.floor(Math.random() * marvelCharacters.length)];
+exports.generateAnimalUsername = function generateAnimalUsername() {
+  const randomCharacter = animals[Math.floor(Math.random() * animals.length)];
   const randomSuffix = generateRandomString(4);
   return randomCharacter + randomSuffix;
 };

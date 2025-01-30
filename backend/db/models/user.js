@@ -2,7 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
 const {genSalt, genPwdHash, genPwd} = require("../../utils/auth.js");
-const {generateMarvelUsername} = require("../../utils/generator");
+const {generateAnimalUsername} = require("../../utils/generator");
 
 module.exports = (sequelize, DataTypes) => {
     class User extends MetaModel {
@@ -44,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
             }
             data.passwordHash = await genPwdHash(data.password, data.salt);
             if (!data.userName) {
-                data.userName = generateMarvelUsername();
+                data.userName = generateAnimalUsername();
             }
 
             return await super.add(data, options);
