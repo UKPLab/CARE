@@ -94,6 +94,7 @@ export default {
         borderless: false,
         small: false,
         pagination: 10,
+        search: true,
         sort: {
           column: "id",
           order: "ASC",
@@ -107,6 +108,7 @@ export default {
         {name: "Email", key: "email"},
         {name: "Accept Terms", key: "acceptTerms", sortable: true},
         {name: "Accept Stats", key: "acceptStats", sortable: true},
+        {name: "Accept Data Sharing", key: "acceptDataSharing", sortable: true},
         {name: "Last Login", key: "lastLoginAt", sortable: true},
       ],
       // Possible values for role here are all the roles in the DB.
