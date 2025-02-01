@@ -68,7 +68,14 @@ const routes = [
         name: "NotFound",
         component: () => import("@/auth/NotFound.vue"),
         meta: {requireAuth: false, hideTopbar: true}
-    }
+    },
+    {
+        path: "/history/:documentId/:studySessionId/:studyStepId",
+        name: "editor-history",
+        component: () => import('@/components/EditorHistory.vue'),
+        props: true,
+        meta: { requireAuth: true, adminOnly: true, history: true }
+      }
 ]
 
 // create the vue router

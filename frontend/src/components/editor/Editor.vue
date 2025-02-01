@@ -249,6 +249,25 @@ export default {
     }
   },
   methods: {
+    insertTextAtCursor(text) {
+      if (this.editor) {
+        const quill = this.editor.getEditor();
+        const range = quill.getSelection();
+        if (range) {
+          const editDelta = new Delta().retain(range.index).insert(text);
+          quill.updateContents(editDelta);
+          this.deltaBuffer.push(editDelta);
+          this.debouncedProcessDelta();
+          quill.setSelection(range.index + text.length);
+        } else {
+          this.eventBus.emit("toast", {
+            title: "No Cursor Position",
+            message: "Please click in the editor to set the cursor position before inserting an edit.",
+            variant: "warning",
+          });
+        }
+      }
+    },
     onPaste(event) {
       if(this.user.acceptStats) {
       const pastedText = (event.clipboardData || window.clipboardData).getData('text');
@@ -277,7 +296,6 @@ export default {
     }}},
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
-        console.log(delta);
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
       }
