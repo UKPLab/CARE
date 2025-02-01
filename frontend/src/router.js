@@ -70,7 +70,7 @@ const routes = [
         meta: {requireAuth: false, hideTopbar: true}
     },
     {
-        path: "/history/:documentId/:studySessionId/:studyStepId",
+        path: "/history/:documentHash/:studySessionHash/:studyStepId",
         name: "editor-history",
         component: () => import('@/components/EditorHistory.vue'),
         props: true,

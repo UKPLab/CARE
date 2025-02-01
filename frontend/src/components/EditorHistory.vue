@@ -4,13 +4,7 @@
         <div id="editorContainer" class="editor-container flex-grow-1">
           <Editor ref="editor" :document-id="documentId" :study-session-id="studySessionId" :study-step-id="studyStepId" :readonly="true" />
         </div>
-        <Sidebar
-          ref="sidebar"
-          :show="isSidebarVisible"
-          :edits="edits"
-          class="sidebar-container"
-          @add-edit="insertEditsInEditor"
-        />
+        <Sidebar ref="sidebar" :show="isSidebarVisible" :edits="edits" class="sidebar-container" @add-edit="insertEditsInEditor" />
       </div>
     </div>
   </template>
@@ -18,7 +12,7 @@
 /**
 * Editor component having a sidebar
 *
-* This component provides a Quill editor to edit the document and a sidebar containing data from the editorwhich can be shown according to time stamp.
+* This component provides a Quill editor to edit the document and a sidebar containing data from the editor which can be shown according to time stamp.
 *
 * @autor Juliane Bechert
 */
@@ -27,140 +21,172 @@ import Sidebar from "@/components/annotator/sidebar/Sidebar.vue";
 import Editor from "@/components/editor/Editor.vue"; 
 
 export default {
-name: "EditorHistory", 
-components: {
-    Sidebar,
-    Editor,
-},
-props: {
-    documentId: {
-    type: Number,
-    required: true,
+    name: "EditorHistory", 
+    components: {
+        Sidebar,
+        Editor,
     },
-    studySessionId: {
-    type: Number,
-    required: true,
+    props: {
+        documentHash: {
+        type: String,
+        required: true
+        },
+        studySessionHash: {
+        type: String,
+        required: true,
+        },
+        studyStepId: {
+        type: Number,
+        required: true,
+        },
     },
-    studyStepId: {
-    type: Number,
-    required: true,
+    data() {
+        return {
+        isSidebarVisible: true, 
+        edits: [],
+        };
     },
-},
-data() {
-    return {
-    isSidebarVisible: true, 
-    edits: []
-    };
-},
-mounted() {
-    this.$socket.emit(
-    "documentGet",
-    {
-        documentId: this.documentId,      
-        studySessionId: this.studySessionId, 
-        studyStepId: this.studyStepId,
-        history: true                      
-    },
-    (res) => {
-        if (res.success) {
-        this.initializeEditorWithContent(res.data.deltas);
-        } else {
-        this.handleDocumentError(res.error);
-        }
-    }
-    );
-},
-methods: {
-    insertEditsInEditor(edit) {
-        const editor = this.$refs.editor; 
-        if (editor) {
-        editor.insertTextAtCursor(edit); 
+    watch: {
+        document(newVal) {
+            if (newVal && this.studySessionId) {
+            this.fetchDocument();
+            }
+        },
+        studySession(newVal) {
+            if (newVal && this.documentId) {
+            this.fetchDocument();
+            }
         }
     },
-    groupDeltasByDate(deltas) {
-        if (!Array.isArray(deltas) || deltas.length === 0) {
-            console.warn("No deltas received or deltas is not an array.");
-            return {};
+    mounted() {
+        this.$socket.emit("documentGetByHash", { documentHash: this.documentHash });
+        this.$socket.emit("studySessionGetByHash", { studySessionHash: this.studySessionHash });
+    },
+    computed: {
+        document() {
+            return this.$store.getters["table/document/getByHash"](this.documentHash) || null;
+        },
+        documentId() {
+            return this.document ? this.document.id : null;         
+        },
+        studySession() {
+            return this.$store.getters["table/study_session/getByHash"](this.studySessionHash) || null;
+        },
+        studySessionId() {
+            return this.studySession ? this.studySession.id : null; 
+        },
+        history() {
+            return this.$route.meta.history !== undefined && this.$route.meta.history;
         }
-
-        const groupedDeltas = {};
-
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const oneWeekAgo = new Date(today);
-        oneWeekAgo.setDate(today.getDate() - 7);
-        const oneMonthAgo = new Date(today);
-        oneMonthAgo.setMonth(today.getMonth() - 1);
-
-        deltas.forEach(delta => {
-            if (!delta.updatedAt) {
-                console.warn("Missing updatedAt in delta:", delta);
-                return;
+    },
+    methods: {
+        insertEditsInEditor(edit) {
+            const editor = this.$refs.editor; 
+            if (editor) {
+            editor.insertTextAtCursor(edit); 
+            }
+        },
+        groupDeltasByDate(deltas) {
+            if (!Array.isArray(deltas) || deltas.length === 0) {
+                console.warn("No deltas received or deltas is not an array.");
+                return {};
             }
 
-            const updatedDate = new Date(delta.updatedAt);
+            const groupedDeltas = {};
 
-            let dateGroup = "";
-            if (updatedDate >= today) {
-                dateGroup = "Today";
-            } else if (updatedDate >= oneWeekAgo) {
-                dateGroup = "This Week";
-            } else if (updatedDate >= oneMonthAgo) {
-                dateGroup = "Last Week";
-            } else {
-                dateGroup = "Older";
-            }
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const oneWeekAgo = new Date(today);
+            oneWeekAgo.setDate(today.getDate() - 7);
+            const oneMonthAgo = new Date(today);
+            oneMonthAgo.setMonth(today.getMonth() - 1);
 
-            const exactDate = updatedDate.toISOString().split("T")[0];
-            const timeLabel = updatedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            if (!groupedDeltas[dateGroup]) {
-                groupedDeltas[dateGroup] = {};
-            }
-
-            if (!groupedDeltas[dateGroup][exactDate]) {
-                groupedDeltas[dateGroup][exactDate] = [];
-            }
-
-            const editsOnSameDay = groupedDeltas[dateGroup][exactDate];
-            const lastEdit = editsOnSameDay.length > 0 ? editsOnSameDay[editsOnSameDay.length - 1] : null;
-
-            // Merge edits within 120 seconds (2 minutes) by the same user
-            if (lastEdit && lastEdit.userId === delta.userId) {
-                const lastEditTime = new Date(lastEdit.updatedAt).getTime();
-                const currentEditTime = updatedDate.getTime();
-
-                if (currentEditTime - lastEditTime <= 120000) {
-                    const position = delta.offset;
-                    let textArray = lastEdit.text.split("");
-
-                    while (textArray.length < position) {
-                        textArray.push(" ");
-                    }
-                    textArray.splice(position, 0, delta.text);
-
-                    lastEdit.text = textArray.join("").replace(/\s+/g, " "); 
+            deltas.forEach(delta => {
+                if (!delta.updatedAt) {
+                    console.warn("Missing updatedAt in delta:", delta);
                     return;
                 }
-            }
-            groupedDeltas[dateGroup][exactDate].push({
-                ...delta,
-                timeLabel, 
+
+                const updatedDate = new Date(delta.updatedAt);
+
+                let dateGroup = "";
+                if (updatedDate >= today) {
+                    dateGroup = "Today";
+                } else if (updatedDate >= oneWeekAgo) {
+                    dateGroup = "This Week";
+                } else if (updatedDate >= oneMonthAgo) {
+                    dateGroup = "Last Week";
+                } else {
+                    dateGroup = "Older";
+                }
+
+                const exactDate = updatedDate.toISOString().split("T")[0];
+                const timeLabel = updatedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                if (!groupedDeltas[dateGroup]) {
+                    groupedDeltas[dateGroup] = {};
+                }
+
+                if (!groupedDeltas[dateGroup][exactDate]) {
+                    groupedDeltas[dateGroup][exactDate] = [];
+                }
+
+                const editsOnSameDay = groupedDeltas[dateGroup][exactDate];
+                const lastEdit = editsOnSameDay.length > 0 ? editsOnSameDay[editsOnSameDay.length - 1] : null;
+
+                // Merge edits within 120 seconds (2 minutes) by the same user
+                if (lastEdit && lastEdit.userId === delta.userId) {
+                    const lastEditTime = new Date(lastEdit.updatedAt).getTime();
+                    const currentEditTime = updatedDate.getTime();
+
+                    if (currentEditTime - lastEditTime <= 120000) {
+                        const position = delta.offset;
+                        let textArray = lastEdit.text.split("");
+
+                        while (textArray.length < position) {
+                            textArray.push(" ");
+                        }
+                        textArray.splice(position, 0, delta.text);
+
+                        lastEdit.text = textArray.join("").replace(/\s+/g, " "); 
+                        return;
+                    }
+                }
+                groupedDeltas[dateGroup][exactDate].push({
+                    ...delta,
+                    timeLabel, 
+                });
             });
-        });
-        return groupedDeltas;
+            return groupedDeltas;
+        },
+        initializeEditorWithContent(deltas) {
+            this.edits = this.groupDeltasByDate(deltas);
+        },
+        fetchDocument() {
+            this.$socket.emit(
+            "documentGet",
+            {
+                documentId: this.documentId,      
+                studySessionId: this.studySessionId, 
+                studyStepId: this.studyStepId,
+                history: this.history                     
+            },
+            (res) => {
+                console.log("Received response:", res);
+                if (res.success) {
+                this.initializeEditorWithContent(res.data.deltas);
+                } else {
+                this.eventBus.emit('toast', {
+                    title: "Document Error!",
+                    message: res?.message || "An unknown error occurred.",  
+                    variant: "danger"
+                });
+                this.$router.push("/");
+                }
+            }
+            );
+        }
     },
-    initializeEditorWithContent(deltas) {
-        this.edits = this.groupDeltasByDate(deltas);
-    },
-    handleDocumentError(error) {
-      this.eventBus.emit('toast', {
-        title: "Document error",
-        message: error.message,
-        variant: "danger"
-      });
-    },
-},
 };
 </script>
 

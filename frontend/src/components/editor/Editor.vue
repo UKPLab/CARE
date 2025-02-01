@@ -23,6 +23,22 @@
   </span>
 
   <Teleport v-if="showHTMLDownloadButton" to="#topBarNavItems">
+    <!-- Editor History Button (Only for Admins) -->
+    <TopBarButton
+      v-if="isAdmin"
+      title="Editor History"
+      class="btn rounded-circle ms-2"
+      type="button"
+      @click="openHistoryModal"
+    >
+      <LoadIcon
+        :color="'#777777'"
+        :size="18"
+        icon-name="eyeglasses"
+      />
+    </TopBarButton>
+
+    <!-- Download Button -->
     <TopBarButton
       v-show="studySessionId && studySessionId !== 0 ? active : true"
       title="Download document"
@@ -37,9 +53,36 @@
       />
     </TopBarButton>
   </Teleport>
-  
-</template>
 
+  <!-- Editor History Modal  -->
+  <BasicModal ref="historyModal" name="EditorHistoryModal">
+    <template #title>
+      Enter Parameters for Editor History
+    </template>
+
+    <template #body>
+      <div v-if="historyParams"> <!-- Ensures this only appears when modal is opened -->
+        <div class="mb-3">
+          <label class="form-label">Document History Hash</label>
+          <input v-model="historyParams.documentHistoryHash" type="text" class="form-control" placeholder="Enter Document History Hash">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Study Session Hash</label>
+          <input v-model="historyParams.studySessionHash" type="text" class="form-control" placeholder="Enter Study Session Hash">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Step ID</label>
+          <input v-model="historyParams.stepId" type="number" class="form-control" placeholder="Enter Step ID">
+        </div>
+      </div>
+    </template>
+
+    <template #footer>
+      <button class="btn btn-secondary" @click="$refs.historyModal.close()">Cancel</button>
+      <button class="btn btn-primary" @click="goToEditorHistory">Go to Editor History</button>
+    </template>
+  </BasicModal>
+</template>
 <script>
 /**
  * Editor component
@@ -57,6 +100,7 @@ import { Editor } from './editorStore.js';
 import { downloadDocument } from "@/assets/utils.js";
 import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
+import BasicModal from "@/basic/Modal.vue";
 
 const Delta = Quill.import('delta');
 
@@ -64,7 +108,7 @@ export default {
   name: "EditorView",
   fetch_data: ["document_edit"],
   components: {
-    LoadIcon,
+    LoadIcon, BasicModal
   },
   provide() {
     return {
@@ -113,6 +157,7 @@ export default {
       deltaBuffer: [],
       editor: null,
       documentLoaded: false,
+      historyParams: null,
     };
   },
   created() {
@@ -231,7 +276,10 @@ export default {
     },
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
-    }
+    },
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
+    },
   },
   watch: {
     unappliedEdits: {
@@ -249,6 +297,28 @@ export default {
     }
   },
   methods: {
+    openHistoryModal() {
+      this.historyParams = { 
+        documentHistoryHash: "",
+        studySessionHash: "",
+        stepId: "",
+      };
+      this.$refs.historyModal.open();
+    },
+    goToEditorHistory() {
+      if (!this.historyParams.documentHistoryHash || !this.historyParams.studySessionHash || !this.historyParams.stepId) {
+        this.eventBus.emit("toast", {
+          title: "Error",
+          message: "Please enter all required fields.",
+          variant: "danger",
+        });
+        return;
+      }
+
+      this.$router.push(`/history/${this.historyParams.documentHistoryHash}/${this.historyParams.studySessionHash}/${this.historyParams.stepId}`);
+      this.$refs.historyModal.close();
+      this.historyParams = null; // Reset after use
+    },
     insertTextAtCursor(text) {
       if (this.editor) {
         const quill = this.editor.getEditor();
