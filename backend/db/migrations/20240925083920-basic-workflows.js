@@ -10,18 +10,18 @@ const workflows = [
         configuration: {
           fields: [
             {
-              type: "placeholder",
-              pattern: "~link[d+]~", 
+              type: "addLink",
               required: false,
-              functionality: "link placeholder",
               fields: [
                 {
                   name: "reviewLink",
-                  label: "Review Document Link",
-                  placeholder: "Provide the URL for the document",
-                  required: true,
-                  default: "https://example.com/document",
+                  help: "The link is added to the end of the document \n `~SESSION_HASH~` will be replace with the current session hash",
+                  default: "https://example.com/document?hash=~SESSION_HASH~",
                 },
+                {
+                  name: "reviewText",
+                  help: "Do you find the feedback helpful?",
+                }
               ],
             },
           ],
@@ -39,9 +39,9 @@ const workflows = [
           fields: [
             {
               type: "placeholder",
-              pattern: "~nlp[d+]~",
+              pattern: "/~nlp\[(\d+)\]~/g",
               required: true,
-              functionality: "nlp placeholder", 
+              function: "nlp", 
               fields: [
                 {
                   name: "skillName",
@@ -75,9 +75,9 @@ const workflows = [
           fields: [
             {
               type: "placeholder",
-              pattern: "~nlp[d+]~",
+              pattern: "/~nlp\[(\d+)\]~/g",
               required: true,
-              functionality: "nlp placeholder", 
+              function: "nlp", 
               fields: [
                 {
                   name: "skillName",
