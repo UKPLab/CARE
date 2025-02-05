@@ -277,6 +277,7 @@ export default {
     }}},
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
+        console.log(delta);
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
       }
