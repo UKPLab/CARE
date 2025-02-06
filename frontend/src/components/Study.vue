@@ -92,7 +92,7 @@
                 :study-step-id="s.id" :active="activeComponents[index]" @update:data="updateData(s.id, $event)" />
       </div>
       <div v-show="s.id === currentStudyStepId">
-        <Modal
+        <StepModal
           v-if="s.stepType === 3 && studyTrajectory.includes(s.id)"
           :study-step-id="s.id" :is-last-step="s.id === lastStep.id"
           @close="handleModalClose"
@@ -121,11 +121,11 @@ import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed, onUpdated} from "vue";
-import Modal from "./modal/Modal.vue";
+import StepModal from "./stepmodal/StepModal.vue";
 
 export default {
   name: "StudyRoute",
-  components: {LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, Modal},
+  components: {LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, StepModal},
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
