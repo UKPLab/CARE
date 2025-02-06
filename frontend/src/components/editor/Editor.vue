@@ -154,8 +154,7 @@ export default {
       }
     );
 
-    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);  
-    this.debouncedProcessData = debounce(this.editorData, this.debounceTimeForEdits);
+    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
   },
   sockets: {
     connect() {
@@ -305,8 +304,8 @@ export default {
     },
     processDelta() {
       if (this.deltaBuffer.length > 0) {
-        const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
-        const dbOps = deltaToDb(combinedDelta.ops);
+        let combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
+        let dbOps = deltaToDb(combinedDelta.ops);
         if (dbOps.length > 0) {
           this.$socket.emit("documentEdit", {
             documentId: this.documentId,
@@ -316,22 +315,11 @@ export default {
           });
         }
 
-        this.deltaBuffer = [];
-      }
-    },
-    handleDataChange(delta, oldContents, source) {
-      if (source === "user") {
-        this.deltaDataBuffer.push(delta);
-        this.debouncedProcessData();
-      }
-    },
-    editorData() {
-      if (this.deltaDataBuffer.length > 0) {
         let newData = this.editor.getEditor().root.innerHTML;
         this.$emit("update:data", newData);
 
-        this.deltaDataBuffer = [];
-      }      
+        this.deltaBuffer = [];
+      }
     },
     async leave() {
       if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {

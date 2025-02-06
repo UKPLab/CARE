@@ -15,6 +15,9 @@
     </div>
   </template>
   
+
+<script>
+
 /**
 * Editor component having a sidebar
 *
@@ -22,7 +25,7 @@
 *
 * @autor Juliane Bechert
 */
-<script>
+
 import Sidebar from "@/components/annotator/sidebar/Sidebar.vue"; 
 import Editor from "@/components/editor/Editor.vue"; 
 
