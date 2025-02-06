@@ -260,11 +260,12 @@ module.exports = class UserSocket extends Socket {
     /**
      * Reset user's password
      * @param {Object} data
-     * @param {number} data.userId - The ID of the user
+     * @param {number} data.userId - The ID ｀of the user
      * @param {string} data.password - The new password
+     * @param {Object} options - Sequelize transaction options.
      * @returns {void}
      */
-    async resetUserPwd(data) {
+    async resetUserPwd(data, options) {
         const {userId, password} = data;
         if (!await this.isAdmin() && userId !== this.userId) {
             throw new Error("User rights and argument mismatch");

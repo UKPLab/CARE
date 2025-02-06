@@ -58,6 +58,7 @@
                   Signed in as {{ username }}
                 </a>
                 <a 
+                  v-if="consentEnabled"
                   class="dropdown-item"
                   href="#"
                   @click="$refs.consentModal.open()"
@@ -117,7 +118,10 @@ export default {
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
-    }
+    },
+    consentEnabled() {
+      return this.$store.getters["settings/getValue"]("app.config.consent.enabled") === "true";
+    },
   },
   methods: {
     removeSidebarFlag() {
