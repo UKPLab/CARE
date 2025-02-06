@@ -10,7 +10,7 @@ const workflows = [
         configuration: {
           fields: [
             {
-              type: "addLink",
+              type: "addLinkEOD",
               required: false,
               fields: [
                 {
