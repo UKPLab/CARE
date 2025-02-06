@@ -87,17 +87,13 @@ module.exports = class MoodleRPC extends RPC {
      * @param {number} data.options.courseID - The ID of the course to fetch assignments from.
      * @param {string} data.options.apiKey - The API token for the Moodle instance
      * @param {string} data.options.url - The URL of the Moodle instance.
-     * TODO: the return data structure to be decided
+     * @param {Object} options - Sequelize transaction options.
      * @returns {Promise<List>} - Information about the assignments in the course
      * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
      */
-    async getAssignmentInfoFromCourse(data) {
-        try {
-            const response = await this.request("getAssignmentInfoFromCourse", data);
-            return response["data"];
-        } catch (err) {
-            throw err;
-        }
+    async getAssignmentInfoFromCourse(data, options) {
+        const response = await this.request("getAssignmentInfoFromCourse", data);
+        return response["data"];
     }
 
     /**
