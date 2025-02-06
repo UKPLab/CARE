@@ -6,42 +6,15 @@
     <template #body>
       <div v-if="placeholders.length">
         <h6 class="text-secondary mb-3">Preview of the document:</h6>
-        <div v-for="(placeholder, index) in placeholders" :key="index" class="mb-4">
-          <!-- Preview Before -->
-          <p class="mb-2">
-            <span class="text-dark">
-              {{ placeholder.previewBefore.length > 100 ? placeholder.previewBefore.slice(0, 100) + '...' : placeholder.previewBefore}}
-            </span>
-          </p>
-          <h6 class="text-secondary mb-3">Add here the information for the placeholder:</h6>
-          <!-- Input Fields -->
-          <div v-if="data?.fields?.[0]?.fields">
-            <div
-              v-for="field in data.fields[0].fields"
-              :key="field.name"
-              class="mb-3"
-            >
-              <label :for="'field-' + field.name + '-' + index" class="form-label">
-                {{ field.label }}
-              </label>
-              <input
-                type="text"
-                class="form-control"
-                :id="'field-' + field.name + '-' + index"
-                :placeholder="field.placeholder"
-                v-model="formData[index][field.name]"
-                :required="field.required"
-              />
-            </div>
-          </div>
 
-          <!-- Preview After -->
-          <p class="mt-2">
-            <span class="text-dark">
-              {{ placeholder.previewAfter.length > 100 ? placeholder.previewAfter.slice(0, 100) + '...' : placeholder.previewAfter }}
-            </span>
-          </p>
-        </div>
+        <Placeholder
+          v-for="(placeholder, index) in placeholders"
+          :key="index"
+          :placeholder="placeholder"
+          :fields="data.fields[0]?.fields || []"
+          :index="index"
+          v-model="formData[index]" 
+        />
       </div>
       <div v-else>
         <p>No placeholders found in the document.</p>
@@ -53,9 +26,10 @@
     </template>
   </BasicModal>
 </template>
+
 <script>
 import BasicModal from "@/basic/Modal.vue";
-import BasicButton from "@/basic/Button.vue";
+import Placeholder from "@/basic/placeholder/Placeholder.vue";
 import { extractPlaceholder } from "@/assets/editor/placeholder.js";
 
 /**
@@ -68,20 +42,20 @@ import { extractPlaceholder } from "@/assets/editor/placeholder.js";
  * @author: Juliane Bechert
  */
 export default {
-name: "ConfigurationModal",
-components: { BasicModal, BasicButton },
-data() {
+  name: "ConfigurationModal",
+  components: { BasicModal, Placeholder },
+  data() {
     return {
-    data: {
-        fields: [],
-    },
-    placeholders: [],
-    formData: [], 
-    studyStepId: null,
+      data: { 
+        fields: [] 
+      },
+      placeholders: [],
+      formData: [],
+      studyStepId: null
     };
-},
-methods: {
-  open(configuration, studyStepId, documentId) {
+  },
+  methods: {
+    open(configuration, studyStepId, documentId) {
     this.studyStepId = studyStepId;
     const requestData = { documentId, studyStepId, studySessionId: this.studySessionId || null };
 
@@ -128,22 +102,21 @@ methods: {
     });
   },
     close() {
-    this.$refs.configurationModal.close();
+      this.$refs.configurationModal.close();
     },
     submit() {
       if (this.validateForm()) {
         const configData = {
-        studyStepId: this.studyStepId,
-        configuration: this.formData,
+          studyStepId: this.studyStepId,
+          configuration: this.formData,
         };
 
         this.$emit("updateConfiguration", configData);
-
         this.$refs.configurationModal.close();
         this.eventBus.emit("toast", {
-        title: "Configuration Updated",
-        message: "The configuration data has been successfully updated.",
-        variant: "success",
+          title: "Configuration Updated",
+          message: "The configuration data has been successfully updated.",
+          variant: "success",
         });
       }
     },
@@ -162,7 +135,7 @@ methods: {
         });
       });
       return isValid;
-    },    
+    },
   },
 };
 </script>
