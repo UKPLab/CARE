@@ -56,6 +56,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import { extractPlaceholder } from "@/assets/editor/placeholder.js";
 
 /**
  * Configuration Modal for User Input
@@ -88,7 +89,10 @@ methods: {
       if (response.success) {
         const { deltas } = response.data || {};
         if (deltas?.ops) {
-          this.placeholders = this.extractPlaceholders(deltas);
+          let quill = new Quill(document.createElement('div'));
+          quill.setContents(deltas.ops);
+          const docText = quill.getText(); // Extract text content from deltas
+          this.placeholders = extractPlaceholder(docText, /~nlp\[d\+\]~/g);
           if (configuration?.fields?.[0]?.fields) {
             this.formData = this.placeholders.map(() => {
               const fieldData = {};
@@ -158,36 +162,7 @@ methods: {
         });
       });
       return isValid;
-    },
-    extractPlaceholders(document) {
-      const content = document.ops.map((op) => op.insert).join("");
- 
-      // Use regex to match the placeholder
-      const regex = /~nlp\[d\+\]~/g; // Adjusted regex to match "~nlp[d+]~"
-      const results = [];
-      let match;
-
-      while ((match = regex.exec(content)) !== null) {
-        const index = match.index;
-        const text = match[0];
-
-        // Get all text before the placeholder
-        const fullBeforeText = content.slice(0, index).trim();
-        const previewBefore = fullBeforeText.length > 100
-          ? fullBeforeText.slice(0, 100) + "..."
-          : fullBeforeText;
-
-        // Get all text after the placeholder
-        const fullAfterText = content.slice(index + text.length).trim();
-        const previewAfter = fullAfterText.length > 100
-          ? fullAfterText.slice(0, 100) + "..."
-          : fullAfterText;
-
-        results.push({ text, previewBefore, previewAfter });
-      }
-
-      return results;
-    }
+    },    
   },
 };
 </script>
