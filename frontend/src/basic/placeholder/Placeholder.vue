@@ -39,10 +39,26 @@
   export default {
     name: "Placeholder",
     props: {
-      placeholder: Object,
-      fields: Array,
-      index: Number,
-      formData: Object
+      placeholder:
+      { type: Object,
+        required: true,
+        default: ""
+      },
+      fields: {
+        type: Array,
+        required: true,
+        default: []
+      },
+      index: {
+        type: Number,
+        required: true,
+        default: 0
+      },
+      formData: {
+        type: Object,
+        required: true,
+        default: {}
+      }
     }
   };
   </script>
