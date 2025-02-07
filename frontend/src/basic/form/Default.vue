@@ -1,10 +1,14 @@
 <template>
-  <FormElement ref="formElement" :data-table="dataTable" :options="options">
-    <template #element="{blur}">
+  <FormElement
+    ref="formElement"
+    :data-table="dataTable"
+    :options="options"
+  >
+    <template #element="{ blur }">
       <input
         v-model="currentData"
         :class="options.class"
-        :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
+        :disabled="options.readOnly !== undefined || options.disabled !== undefined"
         :maxlength="options.maxLength"
         :name="options.key"
         :placeholder="options.placeholder"
@@ -12,17 +16,17 @@
         :type="options.type"
         class="form-control"
         @blur="blur(currentData)"
-      >
+      />
     </template>
   </FormElement>
 </template>
 
 <script>
-import FormElement from "@/basic/form/Element.vue"
+import FormElement from "@/basic/form/Element.vue";
 
 export default {
   name: "FormDefault",
-  components: {FormElement},
+  components: { FormElement },
   props: {
     options: {
       type: Object,
@@ -37,13 +41,13 @@ export default {
       type: Boolean,
       required: false,
       default: false,
-    }
+    },
   },
-  emits: ["update:modelValue", 'blur'],
+  emits: ["update:modelValue", "blur"],
   data() {
     return {
       currentData: "",
-    }
+    };
   },
   watch: {
     currentData() {
@@ -59,11 +63,9 @@ export default {
   methods: {
     validate() {
       return this.$refs.formElement.validate(this.currentData);
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>
