@@ -17,6 +17,20 @@
         class="form-control"
         @blur="blur(currentData)"
       />
+      <div
+        v-if="options.suffix"
+        class="input-group-append"
+      >
+        <button
+          class="btn btn-outline-secondary btn-suffix"
+          type="button"
+          :disabled="options.suffix.disabled"
+          :title="options.suffix.tooltip"
+          @click="options.suffix.onClick"
+        >
+          {{ options.suffix.text }}
+        </button>
+      </div>
     </template>
   </FormElement>
 </template>
@@ -68,4 +82,9 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.btn-suffix {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+</style>
