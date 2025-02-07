@@ -58,6 +58,11 @@ export default defineComponent({
           key: "assignmentID",
           label: "Assignment ID:",
           required: true,
+          suffix: {
+            text: "Refresh",
+            onClick: this.fetchAssignments,
+            tooltip: "Refresh assignments list",
+          },
         };
 
         if (this.assignments.length > 0) {
@@ -124,26 +129,11 @@ export default defineComponent({
         if (!deepEqual(this.moodleOptions, this.modelValue)) {
           this.$emit("update:modelValue", this.moodleOptions);
         }
-
         if (this.withAssignmentId) {
           if (!this.moodleOptions.courseID || !this.moodleOptions.apiKey || !this.moodleOptions.apiUrl) {
             this.assignments = [];
             return;
           }
-
-          this.$socket.emit(
-            "assignmentGetInfo",
-            {
-              options: {
-                courseID: this.moodleOptions.courseID,
-                apiKey: this.moodleOptions.apiKey,
-                apiUrl: this.moodleOptions.apiUrl,
-              },
-            },
-            (res) => {
-              this.assignments = res.success ? res["data"] : [];
-            }
-          );
         }
       },
       deep: true,
@@ -164,6 +154,21 @@ export default defineComponent({
     },
     validate() {
       return this.$refs.form.validate();
+    },
+    fetchAssignments() {
+      this.$socket.emit(
+        "assignmentGetInfo",
+        {
+          options: {
+            courseID: this.moodleOptions.courseID,
+            apiKey: this.moodleOptions.apiKey,
+            apiUrl: this.moodleOptions.apiUrl,
+          },
+        },
+        (res) => {
+          this.assignments = res.success ? res["data"] : [];
+        }
+      );
     },
   },
 });
