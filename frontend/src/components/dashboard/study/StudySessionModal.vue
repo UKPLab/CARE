@@ -1,20 +1,20 @@
 <template>
-  <AddAssignmentModal ref="addAssignmentModal" name="addAssignmentModal"/>
+  <AddAssignmentModal
+    ref="addAssignmentModal"
+    name="addAssignmentModal"
+  />
   <BasicModal
     ref="studySessionModal"
-    :props="{studyId: studyId}"
+    :props="{ studyId: studyId }"
     lg
     name="studySessionModal"
     remove-close
   >
     <template #title>
-      <span>
-        Study Sessions of {{ studyName }}
-
-      </span>
+      <span> Study Sessions of {{ studyName }} </span>
     </template>
     <template #body>
-      <DTable
+      <BasicTable
         :columns="columns"
         :data="studySessions"
         :options="options"
@@ -26,27 +26,27 @@
       <span class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          @click="close"
           title="Close"
+          @click="close"
         />
       </span>
       <BasicButton
         v-if="isAdmin"
         class="btn btn-primary"
-        @click="addSingleAssignment"
         title="Add"
+        @click="addSingleAssignment"
       />
     </template>
   </BasicModal>
-  <ConfirmModal ref="deleteConf"/>
+  <ConfirmModal ref="deleteConf" />
 </template>
 
 <script>
-import DTable from "@/basic/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import AddAssignmentModal from "./AddAssignmentModal.vue";
 import BasicModal from "@/basic/Modal.vue";
-import {computed} from "vue";
+import { computed } from "vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
@@ -58,11 +58,11 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
   name: "StudySessionModal",
-  components: {ConfirmModal, DTable, BasicButton, AddAssignmentModal, BasicModal},
+  components: { ConfirmModal, BasicTable, BasicButton, AddAssignmentModal, BasicModal },
   provide() {
     return {
-      mainModal: computed(() => this.$refs.studySessionModal)
-    }
+      mainModal: computed(() => this.$refs.studySessionModal),
+    };
   },
   data() {
     return {
@@ -77,7 +77,7 @@ export default {
         small: false,
         pagination: 10,
       },
-    }
+    };
   },
   computed: {
     study() {
@@ -90,32 +90,32 @@ export default {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addSingleAssignments");
     },
     isAdmin() {
-      return this.$store.getters['auth/isAdmin'];
+      return this.$store.getters["auth/isAdmin"];
     },
     columns() {
       let cols = [
         {
           name: "User",
-          key: "creator_name"
+          key: "creator_name",
         },
         {
           name: "Started",
-          key: "startParsed"
+          key: "startParsed",
         },
         {
           name: "Finished",
           key: "finished",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
-            classMapping: {true: "bg-success", false: "bg-danger"}
-          }
+            keyMapping: { true: "Yes", false: "No" },
+            classMapping: { true: "bg-success", false: "bg-danger" },
+          },
         },
-      ]
+      ];
 
       if (this.canReadPrivateInformation) {
-        cols.splice(1, 0, {name: "FirstName", key: "firstName"});
-        cols.splice(2, 0, {name: "LastName", key: "lastName"});
+        cols.splice(1, 0, { name: "FirstName", key: "firstName" });
+        cols.splice(2, 0, { name: "LastName", key: "lastName" });
       }
       return cols;
     },
@@ -128,7 +128,7 @@ export default {
             specifiers: {
               "btn-outline-secondary": true,
               "btn-sm": true,
-            }
+            },
           },
           title: "Open session",
           action: "openStudySession",
@@ -140,7 +140,7 @@ export default {
             specifiers: {
               "btn-outline-secondary": true,
               "btn-sm": true,
-            }
+            },
           },
           title: "Copy session link",
           action: "copyStudySessionLink",
@@ -152,26 +152,28 @@ export default {
             specifiers: {
               "btn-outline-danger": true,
               "btn-sm": true,
-            }
+            },
           },
-          filter: [{
-            key: "showDeleteButton",
-            value: true
-          }],
+          filter: [
+            {
+              key: "showDeleteButton",
+              value: true,
+            },
+          ],
           title: "Delete session",
           action: "deleteStudySession",
-        }
-      ]
+        },
+      ];
     },
     studySessions() {
       if (!this.study) {
         return [];
       }
-      return this.$store.getters['table/study_session/getByKey']("studyId", this.studyId)
-        .filter(s => this.showFinished || s.end === null)
-        .map(s => {
-          let session = {...s};
-          session.startParsed = (session.start) ? new Date(session.start).toLocaleString() : "not yet";
+      return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
+        .filter((s) => this.showFinished || s.end === null)
+        .map((s) => {
+          let session = { ...s };
+          session.startParsed = session.start ? new Date(session.start).toLocaleString() : "not yet";
           session.finished = session.end !== null;
           session.showDeleteButton = this.$store.getters["auth/getUserId"] === this.study.createdByUserId || this.$store.getters["auth/isAdmin"];
           if (this.canReadPrivateInformation) {
@@ -192,11 +194,11 @@ export default {
     open(studyId) {
       this.studyId = studyId;
       this.load();
-      this.$socket.emit("studySessionSubscribe", {studyId: studyId});
+      this.$socket.emit("studySessionSubscribe", { studyId: studyId });
       this.$refs.studySessionModal.open();
     },
     close() {
-      this.$socket.emit("studySessionUnsubscribe", {studyId: this.studyId});
+      this.$socket.emit("studySessionUnsubscribe", { studyId: this.studyId });
       this.$refs.studySessionModal.close();
     },
     addSingleAssignment() {
@@ -204,7 +206,7 @@ export default {
     },
     load() {
       if (!this.study) {
-        this.$socket.emit("studyGetById", {studyId: this.studyId});
+        this.$socket.emit("studyGetById", { studyId: this.studyId });
       }
     },
     action(data) {
@@ -222,27 +224,31 @@ export default {
             null,
             function (res) {
               if (res) {
-                this.$socket.emit("appDataUpdate", {
-                  table: "study_session",
-                  data: {
-                    id: data.params.id,
-                    deleted: true
+                this.$socket.emit(
+                  "appDataUpdate",
+                  {
+                    table: "study_session",
+                    data: {
+                      id: data.params.id,
+                      deleted: true,
+                    },
+                  },
+                  (result) => {
+                    if (result.success) {
+                      this.eventBus.emit("toast", {
+                        title: "Study Session deleted",
+                        message: "Study session has been deleted",
+                        variant: "success",
+                      });
+                    } else {
+                      this.eventBus.emit("toast", {
+                        title: "Study Session not deleted",
+                        message: result.message,
+                        variant: "danger",
+                      });
+                    }
                   }
-                }, (result) => {
-                  if (result.success) {
-                    this.eventBus.emit('toast', {
-                      title: "Study Session deleted",
-                      message: "Study session has been deleted",
-                      variant: "success"
-                    });
-                  } else {
-                    this.eventBus.emit('toast', {
-                      title: "Study Session not deleted",
-                      message: result.message,
-                      variant: "danger"
-                    });
-                  }
-                });
+                );
               }
             }
           );
@@ -254,23 +260,21 @@ export default {
 
       try {
         await navigator.clipboard.writeText(link);
-        this.eventBus.emit('toast', {
+        this.eventBus.emit("toast", {
           title: "Link copied",
           message: "Study session link copied to clipboard!",
-          variant: "success"
+          variant: "success",
         });
       } catch ($e) {
-        this.eventBus.emit('toast', {
+        this.eventBus.emit("toast", {
           title: "Link not copied",
           message: "Could not copy study session link to clipboard!",
-          variant: "danger"
+          variant: "danger",
         });
       }
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

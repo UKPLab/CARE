@@ -6,7 +6,7 @@
     :buttons="buttons"
     @action="action"
   />
-  <ConfirmModal ref="deleteConf"/>
+  <ConfirmModal ref="deleteConf" />
 </template>
 
 <script>
@@ -22,7 +22,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
   name: "StudySessionTable",
-  components: {BasicTable, ConfirmModal},
+  components: { BasicTable, ConfirmModal },
   props: {
     studyId: {
       type: Number,
@@ -39,7 +39,7 @@ export default {
         small: false,
         pagination: 10,
       },
-    }
+    };
   },
   computed: {
     study() {
@@ -47,24 +47,24 @@ export default {
     },
     columns() {
       let cols = [
-        {name: "Started", key: "startParsed"},
+        { name: "Started", key: "startParsed" },
         {
           name: "Finished",
           key: "finished",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
-            classMapping: {true: "bg-success", false: "bg-danger"}
-          }
+            keyMapping: { true: "Yes", false: "No" },
+            classMapping: { true: "bg-success", false: "bg-danger" },
+          },
         },
         {
           name: "Resumable",
           key: "resumable",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
-            classMapping: {true: "bg-success", false: "bg-danger"}
-          }
+            keyMapping: { true: "Yes", false: "No" },
+            classMapping: { true: "bg-success", false: "bg-danger" },
+          },
         },
       ];
       return cols;
@@ -78,11 +78,9 @@ export default {
             specifiers: {
               "btn-outline-secondary": true,
               "btn-sm": true,
-            }
+            },
           },
-          filter: [
-            {key: "showResumeButton", value: true},
-          ],
+          filter: [{ key: "showResumeButton", value: true }],
           title: "Resume session",
           action: "resumeSession",
         },
@@ -93,11 +91,9 @@ export default {
             specifiers: {
               "btn-outline-secondary": true,
               "btn-sm": true,
-            }
+            },
           },
-          filter: [
-            {key: "showStartButton", value: true},
-          ],
+          filter: [{ key: "showStartButton", value: true }],
           title: "Start session",
           action: "startSession",
         },
@@ -108,15 +104,12 @@ export default {
             specifiers: {
               "btn-outline-secondary": true,
               "btn-sm": true,
-            }
+            },
           },
-          filter: [
-            {key: "showDeleteButton", value: true},
-          ],
+          filter: [{ key: "showDeleteButton", value: true }],
           title: "Delete session",
           action: "deleteSession",
-        }
-
+        },
       ];
     },
     userId() {
@@ -129,15 +122,15 @@ export default {
 
       return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
         .filter((studySession) => studySession.userId === this.userId)
-        .map(s => {
-          let session = {...s};
+        .map((s) => {
+          let session = { ...s };
 
           session.resumable = this.study.resumable;
-          session.startParsed = session.start ? new Date(session.start).toLocaleString() : 'Session has not started yet';
+          session.startParsed = session.start ? new Date(session.start).toLocaleString() : "Session has not started yet";
           session.finished = session.end !== null;
 
           session.showResumeButton = session.resumable && session.start && !this.studyClosed;
-          session.showDeleteButton = (this.userId === this.study.createdByUserId && this.userId !== this.study.userId)
+          session.showDeleteButton = this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
           session.showStartButton = !session.start && !this.studyClosed;
 
           return session;
@@ -161,7 +154,7 @@ export default {
   methods: {
     load() {
       if (!this.study) {
-        this.$socket.emit("studyGetById", {studyId: this.studyId});
+        this.$socket.emit("studyGetById", { studyId: this.studyId });
       }
     },
     action(data) {
@@ -179,37 +172,39 @@ export default {
             null,
             function (res) {
               if (res) {
-                this.$socket.emit("appDataUpdate", {
-                  table: "study_session",
-                  data: {
-                    id: data.params.id,
-                    deleted: true
+                this.$socket.emit(
+                  "appDataUpdate",
+                  {
+                    table: "study_session",
+                    data: {
+                      id: data.params.id,
+                      deleted: true,
+                    },
+                  },
+                  (result) => {
+                    if (result.success) {
+                      this.eventBus.emit("toast", {
+                        title: "Study Session deleted",
+                        message: "Study session has been deleted",
+                        variant: "success",
+                      });
+                    } else {
+                      this.eventBus.emit("toast", {
+                        title: "Study Session not deleted",
+                        message: result.message,
+                        variant: "danger",
+                      });
+                    }
                   }
-                }, (result) => {
-                  if (result.success) {
-                    this.eventBus.emit('toast', {
-                      title: "Study Session deleted",
-                      message: "Study session has been deleted",
-                      variant: "success"
-                    });
-                  } else {
-                    this.eventBus.emit('toast', {
-                      title: "Study Session not deleted",
-                      message: result.message,
-                      variant: "danger"
-                    });
-                  }
-                });
+                );
               }
             }
           );
           break;
       }
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>
