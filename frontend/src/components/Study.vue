@@ -157,6 +157,7 @@ export default {
       timerInterval: null,
       localStudyStepId: 0,
       dataFromEditor: null,
+      studyData: [], // Data from all the study steps
     };
   },
   computed: {
@@ -296,6 +297,7 @@ export default {
   mounted() {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
+    this.populateStudyData();
   },
   sockets: {
     studyError: function (data) {
@@ -441,6 +443,12 @@ export default {
       }
       
     },  
+  },
+  populateStudyData() {
+    //Example array: [{ 5: {} }, { 7: {} }, { 10: {} }]
+    if (this.studySteps.length > 0) {
+      this.studyData = this.studySteps.map(step => ({ [step.id]: {} }));
+    }
   }
 };
 </script>
