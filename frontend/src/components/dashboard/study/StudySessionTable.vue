@@ -1,8 +1,8 @@
 <template>
   <BasicTable
-    :columns="columns"
+    :columns="tableColumns"
     :data="studySessions"
-    :options="options"
+    :options="tableOptions"
     :buttons="buttons"
     @action="action"
   />
@@ -16,9 +16,9 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 /**
  * Table of study session with management buttons
  *
- * Table of study sessions included in the studysession dashboard component.
+ * Table of study sessions included in the study session dashboard component.
  *
- * @author: Nils Dycke
+ * @author: Nils Dycke, Linyin Huang
  */
 export default {
   name: "StudySessionTable",
@@ -28,10 +28,18 @@ export default {
       type: Number,
       required: true,
     },
+    currentUserOnly: {
+      type: Boolean,
+      default: false,
+      description: "If true, only shows sessions for the current user",
+    },
   },
+  // TODO:
+  emits: ["update", "session-deleted", "session-opened"],
   data() {
     return {
-      options: {
+      showFinished: true,
+      tableOptions: {
         striped: true,
         hover: true,
         bordered: false,
@@ -42,12 +50,15 @@ export default {
     };
   },
   computed: {
-    study() {
-      return this.$store.getters["table/study/get"](this.studyId);
+    canReadPrivateInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
     },
-    columns() {
-      let cols = [
-        { name: "Started", key: "startParsed" },
+    tableColumns() {
+      const columns = [
+        {
+          name: "Started",
+          key: "startParsed",
+        },
         {
           name: "Finished",
           key: "finished",
@@ -57,6 +68,7 @@ export default {
             classMapping: { true: "bg-success", false: "bg-danger" },
           },
         },
+        // TODO: whether to show this column
         {
           name: "Resumable",
           key: "resumable",
@@ -67,10 +79,22 @@ export default {
           },
         },
       ];
-      return cols;
+
+      if (!this.currentUserOnly) {
+        columns.unshift({
+          name: "User",
+          key: "creator_name",
+        });
+
+        if (this.canReadPrivateInformation) {
+          columns.splice(1, 0, { name: "FirstName", key: "firstName" }, { name: "LastName", key: "lastName" });
+        }
+      }
+
+      return columns;
     },
     buttons() {
-      return [
+      const buttons = [
         {
           icon: "box-arrow-in-right",
           options: {
@@ -80,10 +104,12 @@ export default {
               "btn-sm": true,
             },
           },
+          // TODO: Double check this
           filter: [{ key: "showResumeButton", value: true }],
-          title: "Resume session",
-          action: "resumeSession",
+          title: this.currentUserOnly ? "Resume session" : "Open session",
+          action: "openSession",
         },
+        // TODO: Double check this
         {
           icon: "box-arrow-in-right",
           options: {
@@ -97,8 +123,10 @@ export default {
           title: "Start session",
           action: "startSession",
         },
-        {
-          icon: "trash",
+      ];
+      if (!this.currentUserOnly) {
+        buttons.push({
+          icon: "link-45deg",
           options: {
             iconOnly: true,
             specifiers: {
@@ -106,35 +134,66 @@ export default {
               "btn-sm": true,
             },
           },
-          filter: [{ key: "showDeleteButton", value: true }],
-          title: "Delete session",
-          action: "deleteSession",
+          title: "Copy session link",
+          action: "copyStudySessionLink",
+        });
+      }
+      buttons.push({
+        icon: "trash",
+        options: {
+          iconOnly: true,
+          specifiers: {
+            "btn-outline-danger": true,
+            "btn-sm": true,
+          },
         },
-      ];
+        filter: [
+          {
+            key: "showDeleteButton",
+            value: true,
+          },
+        ],
+        title: "Delete session",
+        action: "deleteStudySession",
+      });
+
+      return buttons;
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
+    study() {
+      return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
+    },
     studySessions() {
-      if (!this.study || this.studyClosed) {
-        return [];
+      if (!this.study || this.studyClosed) return [];
+
+      let sessions = this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId).filter(
+        (s) => this.showFinished || s.end === null
+      );
+
+      if (this.currentUserOnly) {
+        sessions = sessions.filter((s) => s.userId === this.userId);
       }
 
-      return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
-        .filter((studySession) => studySession.userId === this.userId)
-        .map((s) => {
-          let session = { ...s };
+      return sessions.map((s) => this.processSession(s));
+      // return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
+      //   .filter((studySession) => studySession.userId === this.userId)
+      //   .map((s) => {
+      //     let session = { ...s };
 
-          session.resumable = this.study.resumable;
-          session.startParsed = session.start ? new Date(session.start).toLocaleString() : "Session has not started yet";
-          session.finished = session.end !== null;
+      //     session.resumable = this.study.resumable;
+      //     session.startParsed = session.start
+      //       ? new Date(session.start).toLocaleString()
+      //       : "Session has not started yet";
+      //     session.finished = session.end !== null;
 
-          session.showResumeButton = session.resumable && session.start && !this.studyClosed;
-          session.showDeleteButton = this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
-          session.showStartButton = !session.start && !this.studyClosed;
+      //     session.showResumeButton = session.resumable && session.start && !this.studyClosed;
+      //     session.showDeleteButton = this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
+      //     session.showStartButton = !session.start && !this.studyClosed;
 
-          return session;
-        });
+      //     return session;
+      //   });
     },
     studyClosed() {
       if (this.study) {
@@ -157,51 +216,106 @@ export default {
         this.$socket.emit("studyGetById", { studyId: this.studyId });
       }
     },
+    processSession(session) {
+      let processedSession = { ...session };
+      processedSession.startParsed = this.formatDate(session.start);
+      processedSession.finished = session.end !== null;
+      processedSession.resumable = !session.end && session.start; // Session is resumable if started but not finished
+      processedSession.showDeleteButton =
+        this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
+
+      // TODO: check
+      if (this.canReadPrivateInformation) {
+        this.addUserInfo(processedSession);
+      }
+
+      return processedSession;
+    },
+    formatDate(date) {
+      return date ? new Date(date).toLocaleString() : "not yet";
+    },
+    addUserInfo(session) {
+      const user = this.$store.getters["table/user/get"](session.userId);
+      if (user) {
+        session.firstName = user.firstName;
+        session.lastName = user.lastName;
+      }
+    },
     action(data) {
       switch (data.action) {
-        case "resumeSession":
-          this.$router.push("/session/" + data.params.hash);
+        case "openSession": {
+          const prefix = this.currentUserOnly ? "session" : "review";
+          this.$router.push(`/${prefix}/${data.params.hash}`);
+          this.$emit("session-opened", data.params);
+          // this.$router.push("/session/" + data.params.hash);
           break;
+        }
+        // TODO: check
         case "startSession":
           this.$router.push("/session/" + data.params.hash);
           break;
-        case "deleteSession":
-          this.$refs.deleteConf.open(
-            "Delete Session",
-            "You are about to delete a session; if you just want to finish the session, please access the session and abort the delete.",
-            null,
-            function (res) {
-              if (res) {
-                this.$socket.emit(
-                  "appDataUpdate",
-                  {
-                    table: "study_session",
-                    data: {
-                      id: data.params.id,
-                      deleted: true,
-                    },
-                  },
-                  (result) => {
-                    if (result.success) {
-                      this.eventBus.emit("toast", {
-                        title: "Study Session deleted",
-                        message: "Study session has been deleted",
-                        variant: "success",
-                      });
-                    } else {
-                      this.eventBus.emit("toast", {
-                        title: "Study Session not deleted",
-                        message: result.message,
-                        variant: "danger",
-                      });
-                    }
-                  }
-                );
-              }
-            }
-          );
+        case "copyStudySessionLink":
+          this.copyURL(data.params.hash);
+          break;
+        case "deleteStudySession":
+          this.confirmDelete(data.params);
           break;
       }
+    },
+    confirmDelete(params) {
+      this.$refs.deleteConf.open(
+        "Delete Session",
+        "You are about to delete a session; if you just want to finish the session, please access the session and abort the delete.",
+        null,
+        (confirmed) => {
+          if (confirmed) {
+            this.deleteSession(params.id);
+          }
+        }
+      );
+    },
+    deleteSession(sessionId) {
+      this.$socket.emit(
+        "appDataUpdate",
+        {
+          table: "study_session",
+          data: {
+            id: sessionId,
+            deleted: true,
+          },
+        },
+        (result) => {
+          if (result.success) {
+            this.showSuccessToast("Study Session deleted", "Study session has been deleted");
+            this.$emit("session-deleted", sessionId);
+          } else {
+            this.showErrorToast("Study Session not deleted", result.message);
+          }
+        }
+      );
+    },
+    async copyURL(hash) {
+      const link = `${window.location.origin}/review/${hash}`;
+      try {
+        await navigator.clipboard.writeText(link);
+        this.showSuccessToast("Link copied", "Study session link copied to clipboard!");
+      } catch (error) {
+        this.showErrorToast("Link not copied", "Could not copy study session link to clipboard!");
+      }
+    },
+    showSuccessToast(title, message) {
+      this.eventBus.emit("toast", {
+        title,
+        message,
+        variant: "success",
+      });
+    },
+    showErrorToast(title, message) {
+      this.eventBus.emit("toast", {
+        title,
+        message,
+        variant: "danger",
+      });
     },
   },
 };
