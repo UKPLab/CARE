@@ -116,6 +116,12 @@ export default {
     close() {
       this.$refs.stepperModal.close();
     },
+    hide() {
+      this.$refs.stepperModal.hide();
+    },
+    show() {
+      this.$refs.stepperModal.show();
+    },
     reset() {
       this.currentStep = 0;
     },
