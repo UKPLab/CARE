@@ -233,7 +233,39 @@ export default {
     },
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
-    }
+    },
+    studySteps() {
+      if (this.studyId !== 0) {
+        return this.$store.getters['table/study_step/getByKey']("studyId", this.studyId);
+      } else {
+        return [];
+      }
+    },
+    previousMatchStep(currentStepId) {
+      let currentStepIndex = this.studySteps.findIndex(step => step.id === currentStepId);
+
+      if (currentStepIndex === -1) return null; // Step not found
+
+      while (currentStepIndex >= 0) {
+        let previousStepId = this.studySteps[currentStepIndex].studyStepPrevious;
+
+        if (previousStepId === null) return null;
+
+        let previousStep = this.studySteps.find(step => step.id === previousStepId);
+
+        if (previousStep &&
+            previousStep.stepType === currentStep.stepType &&
+            previousStep.documentId === currentStep.documentId &&
+            previousStep.workflowStepDocument === currentStep.workflowStepDocument &&
+            previousStep.workflowStepId === currentStep.workflowStepId) {
+          return previousStep.id;
+        } // TODO: Check if workflowStepDocument and workflowStepId are needed for matching
+
+        currentStepIndex = this.studySteps.findIndex(step => step.id === previousStepId);
+      }
+
+      return null;
+    },
   },
   watch: {
     unappliedEdits: {
@@ -320,7 +352,7 @@ export default {
           this.$socket.emit("documentGet",
             { documentId: this.documentId ,
               studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId }, // TODO : previousStudySteps need to be composed
+              studyStepId: this.previousMatchStep(this.studyStepId) }, // TODO : previousStudySteps need to be composed
             (res) => {
               if (res.success) {
                 let quill = new Quill(document.createElement('div'));
