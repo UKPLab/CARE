@@ -206,17 +206,18 @@ export default {
       processedSession.startParsed = this.formatDate(session.start);
       processedSession.finished = session.end !== null;
 
-      processedSession.showDeleteButton =
-        this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
-
       if (this.currentUserOnly) {
         processedSession.resumable = this.study.resumable;
         processedSession.showResumeButton = session.resumable && session.start && !this.studyClosed;
+        processedSession.showDeleteButton =
+          this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
         processedSession.showStartButton = !session.start && !this.studyClosed;
-      }
-
-      if (!this.currentUserOnly && this.canReadPrivateInformation) {
-        this.addUserInfo(processedSession);
+      } else {
+        processedSession.showDeleteButton =
+          this.$store.getters["auth/getUserId"] === this.study.createdByUserId || this.$store.getters["auth/isAdmin"];
+        if (this.canReadPrivateInformation) {
+          this.addUserInfo(processedSession);
+        }
       }
 
       return processedSession;
