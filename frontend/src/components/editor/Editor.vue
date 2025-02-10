@@ -115,6 +115,7 @@ export default {
       editor: null,
       documentLoaded: false,      
       data: {},
+      firstVersion: null,
     };
   },
   created() {
@@ -302,6 +303,7 @@ export default {
       }
     },
     processDelta() {
+      let newData;
       if (this.deltaBuffer.length > 0) {
         let combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
         let dbOps = deltaToDb(combinedDelta.ops);
@@ -314,7 +316,30 @@ export default {
           });
         }
 
-        let newData = this.editor.getEditor().root.innerHTML;
+        if(this.firstVersion !== null){
+          this.$socket.emit("documentGet",
+            { documentId: this.documentId ,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId }, // TODO : previousStudySteps need to be composed
+            (res) => {
+              if (res.success) {
+                let quill = new Quill(document.createElement('div'));
+                quill.setContents(res['data']['deltas']);
+                this.firstVersion = quill.root.innerHTML;
+              } else {
+                this.handleDocumentError(res.error);
+              }
+            }
+          );
+          
+        }
+
+        let currentVersion = this.editor.getEditor().root.innerHTML;
+        newData = {
+          firstVersion : this.firstVersion,
+          currentVersion : currentVersion,
+          edits : [] //TODO: What edits are we talking here about?
+        };        
         this.$emit("update:data", newData);
 
         this.deltaBuffer = [];

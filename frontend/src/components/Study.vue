@@ -89,7 +89,7 @@
       <div v-show="s.id === currentStudyStepId">
         <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
         <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
-                :study-step-id="s.id" :active="activeComponents[index]" @update:data="updateData(s.id, $event)" />
+                :study-step-id="s.id" :active="activeComponents[index]" @update:data="(data) => studyData[step] = data" />
       </div>
       <div v-show="s.id === currentStudyStepId">
         <StepModal
@@ -415,34 +415,7 @@ export default {
           }
         });
       }
-    },
-    updateData(studyStepId, data) {
-      if (!this.dataFromEditor) {
-        this.dataFromEditor = {
-          studyStepAsNumber: {}
-        };
-      }
-
-      if (studyStepId !== null && Object.keys(this.dataFromEditor).length === 0) {
-        this.dataFromEditor = {
-          studyStepAsNumber: {}
-        };
-      }
-
-      if (studyStepId !== null && 
-          (Object.keys(this.dataFromEditor["studyStepAsNumber"]).length === 0 || !(studyStepId in this.dataFromEditor["studyStepAsNumber"]))) {
-        let studyStepNum = this.dataFromEditor["studyStepAsNumber"];
-        studyStepNum[studyStepId] = {
-          firstVersion: data,
-          currentVersion: data,
-          edits: []
-        };
-      } else if (studyStepId !== null && Object.keys(this.dataFromEditor["studyStepAsNumber"]).length !== 0 && (studyStepId in this.dataFromEditor["studyStepAsNumber"])) {
-        let studyStepNum = this.dataFromEditor["studyStepAsNumber"];
-        studyStepNum[studyStepId].currentVersion = data;
-      }
-      
-    },  
+    }, 
   },
   populateStudyData() {
     //Example array: [{ 5: {} }, { 7: {} }, { 10: {} }]
