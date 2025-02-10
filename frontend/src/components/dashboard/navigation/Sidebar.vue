@@ -67,7 +67,9 @@ export default {
   components: {LoadIcon, Loading},
   computed: {
     sidebarElements() {
-      const groups = this.$store.getters['table/nav_element/getAll'].reduce((acc, cur) => {
+      const groups = this.$store.getters['table/nav_element/getAll']
+        .filter(element => !element.admin || this.isAdmin)
+        .reduce((acc, cur) => {
                 if (cur.groupId === 0 || cur.groupId === undefined) {
                     console.error("For navigation element " + cur.name + " the group id " + cur.group + " doesn't exists!");
                 } else {
