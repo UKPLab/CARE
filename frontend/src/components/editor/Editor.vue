@@ -234,9 +234,9 @@ export default {
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
-    studySteps() {
+    studySteps() {      
       if (this.studyStepId !== null) {
-        const studyId = this.$store.getters['table/study_step/getById'](this.studyStepId)?.studyId;
+        const studyId = this.$store.getters['table/study_step/get'](this.studyStepId)?.studyId;
         return this.$store.getters['table/study_step/getByKey']("studyId", studyId);
       } else {
         return [];
@@ -311,7 +311,6 @@ export default {
       }
     },
     processDelta() {
-      let newData;
       if (this.deltaBuffer.length > 0) {
         let combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
         let dbOps = deltaToDb(combinedDelta.ops);
@@ -326,7 +325,7 @@ export default {
 
         this.retrieveFirstVersion();
         let currentVersion = this.editor.getEditor().root.innerHTML;
-        newData = {
+        let newData = {
           firstVersion : this.firstVersion,
           currentVersion : currentVersion,
           edits : [] //TODO: What edits are we talking here about?
@@ -362,7 +361,7 @@ export default {
       this.applyAdditionalEdits();
       this.retrieveFirstVersion();
       let currentVersion = this.editor.getEditor().root.innerHTML;
-      newData = {
+      let newData = {
         firstVersion : this.firstVersion,
         currentVersion : currentVersion,
         edits : [] //TODO: What edits are we talking here about?

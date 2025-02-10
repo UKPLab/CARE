@@ -273,7 +273,13 @@ export default {
         return true;
       }
       return false;
+    },
+    populateStudyData() {
+    //Example array: [{ 5: {} }, { 7: {} }, { 10: {} }]
+    if (this.studySteps.length > 0) {
+      this.studyData = this.studySteps.map(step => ({ [step.id]: {} }));
     }
+  },
   },
   watch: {
     studySession() {
@@ -297,7 +303,7 @@ export default {
   mounted() {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
-    this.populateStudyData();
+    this.populateStudyData;
   },
   sockets: {
     studyError: function (data) {
@@ -416,13 +422,7 @@ export default {
         });
       }
     }, 
-  },
-  populateStudyData() {
-    //Example array: [{ 5: {} }, { 7: {} }, { 10: {} }]
-    if (this.studySteps.length > 0) {
-      this.studyData = this.studySteps.map(step => ({ [step.id]: {} }));
-    }
-  }
+  },  
 };
 </script>
 
