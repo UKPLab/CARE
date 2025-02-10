@@ -3,6 +3,7 @@
     ref="stepperModal"
     name="stepperModal"
     lg
+    @hide="$emit('hide')"
   >
     <template #title>
       <slot name="title"/>
@@ -94,7 +95,7 @@ export default {
       default: () => []
     },
   },
-  emits: ["stepChange", "submit"],
+  emits: ["stepChange", "submit", 'hide'],
   data() {
     return {
       currentStep: 0
@@ -115,6 +116,12 @@ export default {
     },
     close() {
       this.$refs.stepperModal.close();
+    },
+    hide() {
+      this.$refs.stepperModal.hide();
+    },
+    show() {
+      this.$refs.stepperModal.show();
     },
     reset() {
       this.currentStep = 0;
