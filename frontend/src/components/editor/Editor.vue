@@ -234,17 +234,21 @@ export default {
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
-    studySteps() {
-      if (this.studyId !== 0) {
-        return this.$store.getters['table/study_step/getByKey']("studyId", this.studyId);
+    studySteps(currentStepId) {
+      if (currentStepId !== null) {
+        const studyId = this.$store.getters['table/study_step/getById'](currentStepId)?.studyId;
+        return this.$store.getters['table/study_step/getByKey']("studyId", studyId);
       } else {
         return [];
       }
     },
-    previousMatchStep(currentStepId) {
-      let currentStepIndex = this.studySteps.findIndex(step => step.id === currentStepId);
+    previousStepMatch(currentStepId) {
+      if (!currentStepId && currentStepId !== null) return null;
 
-      if (currentStepIndex === -1) return null; // Step not found
+      const currentStep = this.studySteps(currentStepId).find(step => step.id === currentStepId);
+      let currentStepIndex = this.studySteps(currentStepId).findIndex(step => step.id === currentStepId);
+
+      if (currentStepIndex === -1) return null;
 
       while (currentStepIndex >= 0) {
         let previousStepId = this.studySteps[currentStepIndex].studyStepPrevious;
@@ -352,7 +356,7 @@ export default {
           this.$socket.emit("documentGet",
             { documentId: this.documentId ,
               studySessionId: this.studySessionId,
-              studyStepId: this.previousMatchStep(this.studyStepId) }, // TODO : previousStudySteps need to be composed
+              studyStepId: this.previousStepMatch(this.studyStepId) }, // TODO : previousStudySteps need to be composed
             (res) => {
               if (res.success) {
                 let quill = new Quill(document.createElement('div'));
