@@ -89,7 +89,7 @@
       <div v-show="s.id === currentStudyStepId">
         <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
         <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
-                :study-step-id="s.id" :active="activeComponents[index]" @update:data="(data) => studyData[step] = data" />
+                :study-step-id="s.id" :active="activeComponents[index]" @update:data="updateStudyData(s.id,data)" />
       </div>
       <div v-show="s.id === currentStudyStepId">
         <StepModal
@@ -422,6 +422,13 @@ export default {
         });
       }
     }, 
+    updateStudyData(stepId, data) {
+      const index = this.studyData.findIndex(obj => obj.hasOwnProperty(stepId));
+      console.log("updating", this.studyData);
+      if (index >= -1) {        
+        this.studyData[index][stepId] = data;
+      }      
+    },
   },  
 };
 </script>
