@@ -12,6 +12,7 @@
                 :key="option.value"
                 :class="option.class"
                 :value="option.value"
+                :disabled="option.disabled"
         >
           {{ option.name }}
         </option>

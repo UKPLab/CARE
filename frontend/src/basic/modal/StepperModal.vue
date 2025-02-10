@@ -3,6 +3,7 @@
     ref="stepperModal"
     name="stepperModal"
     lg
+    @hide="$emit('hide')"
   >
     <template #title>
       <slot name="title"/>
@@ -94,7 +95,7 @@ export default {
       default: () => []
     },
   },
-  emits: ["stepChange", "submit"],
+  emits: ["stepChange", "submit", 'hide'],
   data() {
     return {
       currentStep: 0
