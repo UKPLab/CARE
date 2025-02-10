@@ -14,13 +14,6 @@
       <span> Study Sessions of {{ studyName }} </span>
     </template>
     <template #body>
-      <BasicTable
-        :columns="columns"
-        :data="studySessions"
-        :options="options"
-        :buttons="buttons"
-        @action="action"
-      />
       <StudySessionTable
         :study-id="studyId"
         :current-user-only="false"
@@ -45,16 +38,14 @@
       />
     </template>
   </BasicModal>
-  <!-- <ConfirmModal ref="deleteConf" /> -->
 </template>
 
 <script>
-import BasicTable from "@/basic/Table.vue";
+
 import BasicButton from "@/basic/Button.vue";
 import AddAssignmentModal from "./AddAssignmentModal.vue";
 import BasicModal from "@/basic/Modal.vue";
 import { computed } from "vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import StudySessionTable from "./StudySessionTable.vue";
 
 /**
@@ -66,7 +57,7 @@ import StudySessionTable from "./StudySessionTable.vue";
  */
 export default {
   name: "StudySessionModal",
-  components: { ConfirmModal, BasicTable, BasicButton, AddAssignmentModal, BasicModal, StudySessionTable },
+  components: { BasicButton, AddAssignmentModal, BasicModal, StudySessionTable },
   provide() {
     return {
       mainModal: computed(() => this.$refs.studySessionModal),
@@ -76,23 +67,12 @@ export default {
   data() {
     return {
       studyId: 0,
-      // showFinished: true,
-      // hash: null,
-      // options: {
-      //   striped: true,
-      //   hover: true,
-      //   bordered: false,
-      //   borderless: false,
-      //   small: false,
-      //   pagination: 10,
-      // },
     };
   },
   computed: {
     study() {
       return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
     },
-    // TODO:
     studyName() {
       return this.study ? this.study.name : "unknown";
     },
@@ -102,104 +82,6 @@ export default {
     isAdmin() {
       return this.$store.getters["auth/isAdmin"];
     },
-    // columns() {
-    //   let cols = [
-    //     {
-    //       name: "User",
-    //       key: "creator_name",
-    //     },
-    //     {
-    //       name: "Started",
-    //       key: "startParsed",
-    //     },
-    //     {
-    //       name: "Finished",
-    //       key: "finished",
-    //       type: "badge",
-    //       typeOptions: {
-    //         keyMapping: { true: "Yes", false: "No" },
-    //         classMapping: { true: "bg-success", false: "bg-danger" },
-    //       },
-    //     },
-    //   ];
-
-    //   if (this.canReadPrivateInformation) {
-    //     cols.splice(1, 0, { name: "FirstName", key: "firstName" });
-    //     cols.splice(2, 0, { name: "LastName", key: "lastName" });
-    //   }
-    //   return cols;
-    // },
-    // buttons() {
-    //   return [
-    //     {
-    //       icon: "box-arrow-in-right",
-    //       options: {
-    //         iconOnly: true,
-    //         specifiers: {
-    //           "btn-outline-secondary": true,
-    //           "btn-sm": true,
-    //         },
-    //       },
-    //       title: "Open session",
-    //       action: "openStudySession",
-    //     },
-    //     {
-    //       icon: "link-45deg",
-    //       options: {
-    //         iconOnly: true,
-    //         specifiers: {
-    //           "btn-outline-secondary": true,
-    //           "btn-sm": true,
-    //         },
-    //       },
-    //       title: "Copy session link",
-    //       action: "copyStudySessionLink",
-    //     },
-    //     {
-    //       icon: "trash",
-    //       options: {
-    //         iconOnly: true,
-    //         specifiers: {
-    //           "btn-outline-danger": true,
-    //           "btn-sm": true,
-    //         },
-    //       },
-    //       filter: [
-    //         {
-    //           key: "showDeleteButton",
-    //           value: true,
-    //         },
-    //       ],
-    //       title: "Delete session",
-    //       action: "deleteStudySession",
-    //     },
-    //   ];
-    // },
-    // studySessions() {
-    //   if (!this.study) {
-    //     return [];
-    //   }
-    //   return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
-    //     .filter((s) => this.showFinished || s.end === null)
-    //     .map((s) => {
-    //       let session = { ...s };
-    //       session.startParsed = session.start ? new Date(session.start).toLocaleString() : "not yet";
-    //       session.finished = session.end !== null;
-    //       session.showDeleteButton =
-    //         this.$store.getters["auth/getUserId"] === this.study.createdByUserId || this.$store.getters["auth/isAdmin"];
-    //       if (this.canReadPrivateInformation) {
-    //         const user = this.$store.getters["table/user/get"](session.userId);
-    //         if (user) {
-    //           session.firstName = user.firstName;
-    //           session.lastName = user.lastName;
-    //         }
-    //       }
-    //       return session;
-    //     });
-    // },
-    // canReadPrivateInformation() {
-    //   return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
-    // },
   },
   methods: {
     open(studyId) {
@@ -220,70 +102,6 @@ export default {
         this.$socket.emit("studyGetById", { studyId: this.studyId });
       }
     },
-    // action(data) {
-    //   switch (data.action) {
-    //     case "openStudySession":
-    //       this.$router.push("/review/" + data.params.hash);
-    //       break;
-    //     case "copyStudySessionLink":
-    //       this.copyURL(data.params.hash);
-    //       break;
-    //     case "deleteStudySession":
-    //       this.$refs.deleteConf.open(
-    //         "Delete Session",
-    //         "You are about to delete a session; if you just want to finish the session, please access the session and abort the delete.",
-    //         null,
-    //         function (res) {
-    //           if (res) {
-    //             this.$socket.emit(
-    //               "appDataUpdate",
-    //               {
-    //                 table: "study_session",
-    //                 data: {
-    //                   id: data.params.id,
-    //                   deleted: true,
-    //                 },
-    //               },
-    //               (result) => {
-    //                 if (result.success) {
-    //                   this.eventBus.emit("toast", {
-    //                     title: "Study Session deleted",
-    //                     message: "Study session has been deleted",
-    //                     variant: "success",
-    //                   });
-    //                 } else {
-    //                   this.eventBus.emit("toast", {
-    //                     title: "Study Session not deleted",
-    //                     message: result.message,
-    //                     variant: "danger",
-    //                   });
-    //                 }
-    //               }
-    //             );
-    //           }
-    //         }
-    //       );
-    //       break;
-    //   }
-    // },
-    // async copyURL(hash) {
-    //   const link = window.location.origin + "/review/" + hash;
-
-    //   try {
-    //     await navigator.clipboard.writeText(link);
-    //     this.eventBus.emit("toast", {
-    //       title: "Link copied",
-    //       message: "Study session link copied to clipboard!",
-    //       variant: "success",
-    //     });
-    //   } catch ($e) {
-    //     this.eventBus.emit("toast", {
-    //       title: "Link not copied",
-    //       message: "Could not copy study session link to clipboard!",
-    //       variant: "danger",
-    //     });
-    //   }
-    // },
   },
 };
 </script>

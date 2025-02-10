@@ -34,7 +34,6 @@ export default {
       description: "If true, only shows sessions for the current user",
     },
   },
-  // TODO:
   emits: ["update", "session-deleted", "session-opened"],
   data() {
     return {
@@ -68,8 +67,10 @@ export default {
             classMapping: { true: "bg-success", false: "bg-danger" },
           },
         },
-        // TODO: whether to show this column
-        {
+      ];
+
+      if (this.currentUserOnly) {
+        columns.push({
           name: "Resumable",
           key: "resumable",
           type: "badge",
@@ -77,8 +78,8 @@ export default {
             keyMapping: { true: "Yes", false: "No" },
             classMapping: { true: "bg-success", false: "bg-danger" },
           },
-        },
-      ];
+        });
+      }
 
       if (!this.currentUserOnly) {
         columns.unshift({
@@ -104,12 +105,10 @@ export default {
               "btn-sm": true,
             },
           },
-          // TODO: Double check this
-          filter: [{ key: "showResumeButton", value: true }],
+          filter: this.currentUserOnly ? [{ key: "showResumeButton", value: true }] : [],
           title: this.currentUserOnly ? "Resume session" : "Open session",
           action: "openSession",
         },
-        // TODO: Double check this
         {
           icon: "box-arrow-in-right",
           options: {
@@ -168,6 +167,8 @@ export default {
     studySessions() {
       if (!this.study || this.studyClosed) return [];
 
+      // TODO: Need to clarify what this line means.Since there is no function that updates the value of `this.showFinished`,
+      // `this.showFinished` will always be true, which means the filter function won't filter anything.
       let sessions = this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId).filter(
         (s) => this.showFinished || s.end === null
       );
@@ -177,23 +178,6 @@ export default {
       }
 
       return sessions.map((s) => this.processSession(s));
-      // return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
-      //   .filter((studySession) => studySession.userId === this.userId)
-      //   .map((s) => {
-      //     let session = { ...s };
-
-      //     session.resumable = this.study.resumable;
-      //     session.startParsed = session.start
-      //       ? new Date(session.start).toLocaleString()
-      //       : "Session has not started yet";
-      //     session.finished = session.end !== null;
-
-      //     session.showResumeButton = session.resumable && session.start && !this.studyClosed;
-      //     session.showDeleteButton = this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
-      //     session.showStartButton = !session.start && !this.studyClosed;
-
-      //     return session;
-      //   });
     },
     studyClosed() {
       if (this.study) {
@@ -217,15 +201,21 @@ export default {
       }
     },
     processSession(session) {
-      let processedSession = { ...session };
+      const processedSession = { ...session };
+
       processedSession.startParsed = this.formatDate(session.start);
       processedSession.finished = session.end !== null;
-      processedSession.resumable = !session.end && session.start; // Session is resumable if started but not finished
+
       processedSession.showDeleteButton =
         this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
 
-      // TODO: check
-      if (this.canReadPrivateInformation) {
+      if (this.currentUserOnly) {
+        processedSession.resumable = this.study.resumable;
+        processedSession.showResumeButton = session.resumable && session.start && !this.studyClosed;
+        processedSession.showStartButton = !session.start && !this.studyClosed;
+      }
+
+      if (!this.currentUserOnly && this.canReadPrivateInformation) {
         this.addUserInfo(processedSession);
       }
 
@@ -247,10 +237,8 @@ export default {
           const prefix = this.currentUserOnly ? "session" : "review";
           this.$router.push(`/${prefix}/${data.params.hash}`);
           this.$emit("session-opened", data.params);
-          // this.$router.push("/session/" + data.params.hash);
           break;
         }
-        // TODO: check
         case "startSession":
           this.$router.push("/session/" + data.params.hash);
           break;
