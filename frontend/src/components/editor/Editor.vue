@@ -26,10 +26,11 @@
     <!-- Editor History Button (Only for Admins) -->
     <TopBarButton
       v-if="isAdmin"
+      v-show="studySessionId && studySessionId !== 0 ? active : true"
       title="Editor History"
       class="btn rounded-circle ms-2"
       type="button"
-      @click="openHistoryModal"
+      @click="goToEditorHistory"
     >
       <LoadIcon
         :color="'#777777'"
@@ -53,35 +54,6 @@
       />
     </TopBarButton>
   </Teleport>
-
-  <!-- Editor History Modal  -->
-  <BasicModal ref="historyModal" name="EditorHistoryModal">
-    <template #title>
-      Enter Parameters for Editor History
-    </template>
-
-    <template #body>
-      <div v-if="historyParams"> <!-- Ensures this only appears when modal is opened -->
-        <div class="mb-3">
-          <label class="form-label">Document History Hash</label>
-          <input v-model="historyParams.documentHistoryHash" type="text" class="form-control" placeholder="Enter Document History Hash">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Study Session Hash</label>
-          <input v-model="historyParams.studySessionHash" type="text" class="form-control" placeholder="Enter Study Session Hash">
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Step ID</label>
-          <input v-model="historyParams.stepId" type="number" class="form-control" placeholder="Enter Step ID">
-        </div>
-      </div>
-    </template>
-
-    <template #footer>
-      <button class="btn btn-secondary" @click="$refs.historyModal.close()">Cancel</button>
-      <button class="btn btn-primary" @click="goToEditorHistory">Go to Editor History</button>
-    </template>
-  </BasicModal>
 </template>
 <script>
 /**
@@ -297,44 +269,39 @@ export default {
     }
   },
   methods: {
-    openHistoryModal() {
-      this.historyParams = { 
-        documentHistoryHash: "",
-        studySessionHash: "",
-        stepId: "",
-      };
-      this.$refs.historyModal.open();
-    },
     goToEditorHistory() {
-      if (!this.historyParams.documentHistoryHash || !this.historyParams.studySessionHash || !this.historyParams.stepId) {
-        this.eventBus.emit("toast", {
-          title: "Error",
-          message: "Please enter all required fields.",
-          variant: "danger",
-        });
-        return;
-      }
+      if (this.documentId && this.studySessionId && this.studyStepId) {
+        this.$router.push(`/history/${this.documentId}/${this.studySessionId}/${this.studyStepId}`);
+      } else {
+        const missingFields = [];
+        if (!this.documentId) missingFields.push('Document ID');
+        if (!this.studySessionId) missingFields.push('Study Session ID');
+        if (!this.studyStepId) missingFields.push('Study Step ID');
 
-      this.$router.push(`/history/${this.historyParams.documentHistoryHash}/${this.historyParams.studySessionHash}/${this.historyParams.stepId}`);
-      this.$refs.historyModal.close();
-      this.historyParams = null; // Reset after use
+        const errorMessage = `Missing required information: ${missingFields.join(', ')}.`;
+
+        this.eventBus.emit('toast', {
+          title: "Navigation Error",
+          message: errorMessage,
+          variant: "danger"
+        });
+      }
     },
+    clearEditor() {
+      if (this.editor) {
+        const quill = this.editor.getEditor();
+        quill.setContents([{ insert: '\n' }]);  
+      }
+    },
+
     insertTextAtCursor(text) {
       if (this.editor) {
         const quill = this.editor.getEditor();
         const range = quill.getSelection();
         if (range) {
-          const editDelta = new Delta().retain(range.index).insert(text);
-          quill.updateContents(editDelta);
-          this.deltaBuffer.push(editDelta);
-          this.debouncedProcessDelta();
-          quill.setSelection(range.index + text.length);
+          quill.insertText(range.index, text); 
         } else {
-          this.eventBus.emit("toast", {
-            title: "No Cursor Position",
-            message: "Please click in the editor to set the cursor position before inserting an edit.",
-            variant: "warning",
-          });
+          quill.insertText(quill.getLength() - 1, text); 
         }
       }
     },

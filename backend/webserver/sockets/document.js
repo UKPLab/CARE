@@ -621,9 +621,11 @@ module.exports = class DocumentSocket extends Socket {
                         documentId: document.id,
                         studySessionId: data.studySessionId,
                         studyStepId: data.studyStepId
-                    }
+                    },
+                    raw: true
                 });
-                return { document, deltas: edits };
+
+                this.emit("document_editRefresh", edits);
             } else {
                 const edits = await this.models['document_edit'].findAll({
                     where: {

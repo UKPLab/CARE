@@ -70,11 +70,11 @@ const routes = [
         meta: {requireAuth: false, hideTopbar: true}
     },
     {
-        path: "/history/:documentHash/:studySessionHash/:studyStepId",
+        path: "/history/:documentId/:studySessionId/:studyStepId",
         name: "editor-history",
         component: () => import('@/components/EditorHistory.vue'),
         props: true,
-        meta: { requireAuth: true, adminOnly: true, history: true }
+        meta: { requireAuth: true, adminOnly: true, history: true}
       }
 ]
 
