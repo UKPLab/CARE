@@ -137,8 +137,7 @@ export default {
       }
 
       this.editor.getEditor().enable(!this.readonly);
-      this.editor.getEditor().on('text-change', this.handleTextChange);
-      this.editor.getEditor().on('text-change', this.handleDataChange);      
+      this.editor.getEditor().on('text-change', this.handleTextChange);    
     }
 
     this.$socket.emit("documentGet",
