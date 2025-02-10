@@ -3,8 +3,10 @@
     ref="exportStepper"
     :steps="steps"
     :validation="stepValid"
+    submit-text="Download"
+    xl
     @submit="downloadData"
-    xl>
+    @hide="hide">
     <template #title>
       <h5 class="modal-title">Export Data</h5>
     </template>
@@ -16,6 +18,8 @@
         :fields="dataSelectionFields"
       />
     </template>
+
+    <!--
     <template #step-2>
       <div class="table-scroll-container">
         <div class="list-group">
@@ -43,8 +47,18 @@
         />
       </div>
     </template>
+    -->
 
-    <template #step-3>
+    <template #step-2>
+
+      <div v-if="dataSelection.exportType === 'reviewerList'">
+        <p>Exporting a list of all study sessions with hash:</p>
+
+        <p>
+          Total Studies: {{ studies.length }}<br>
+          Total Study Sessions: {{ studySessions.length }}
+        </p>
+      </div>
 
     </template>
   </StepperModal>
@@ -53,9 +67,8 @@
 <script>
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import FilterModal from "@/components/dashboard/projects/FilterModal.vue";
 import {computed} from "vue";
-import BasicButton from "@/basic/Button.vue";
+import {downloadObjectsAs} from "@/assets/utils";
 
 /**
  * ProjectModal - modal component for adding and editing projects
@@ -64,7 +77,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "ExportProjectModal",
-  components: {BasicButton, FilterModal, StepperModal, BasicForm},
+  components: {StepperModal, BasicForm},
   subscribeTable: [{
     table: "document",
   }, {
@@ -77,6 +90,8 @@ export default {
     }]
   }, {
     table: "study",
+  }, {
+    table: "study_session",
   }
   ],
   provide() {
@@ -102,7 +117,6 @@ export default {
     steps() {
       return [
         {title: "Settings"},
-        {title: "Filter"},
         {title: "Confirmation"}
       ];
     },
@@ -130,6 +144,30 @@ export default {
         }
       ]
     },
+    studies() {
+      return this.$store.getters["table/study/getFiltered"]((s) => s.projectId === this.dataSelection.projectId);
+    },
+    studySessions() {
+      return this.$store.getters["table/study_session/getFiltered"]((s) => this.studies.map(study => study.id).includes(s.studyId));
+    },
+    reviewerList() {
+      return this.studySessions.map(session => {
+
+        const study = this.$store.getters["table/study/get"](session.studyId);
+        const studyUser = this.$store.getters["table/user/get"](study.userId);
+        const studySessionUser = this.$store.getters["table/user/get"](session.userId);
+
+        return {
+          "studyUserName": studyUser.firstName + " " + studyUser.lastName,
+          "studyUserFirstName": studyUser.firstName,
+          "studyUserLastName": studyUser.lastName,
+          "studySessionUserName": studySessionUser.firstName + " " + studySessionUser.lastName,
+          "studySessionUserFirstName": studySessionUser.firstName,
+          "studySessionUserLastName": studySessionUser.lastName,
+          "studySessionHash": session.hash,
+        }
+      });
+    },
     projects() {
       return this.$store.getters["table/project/getAll"];
     },
@@ -137,24 +175,31 @@ export default {
   methods: {
     open(projectId) {
       this.dataSelection.projectId = projectId;
-      this.filter = [];
       this.$refs.exportStepper.open();
     },
-    downloadData() {
-      console.log("Download data");
+    hide() {
+      this.filter = [];
     },
+    downloadData() {
+      if (this.dataSelection.exportType === "reviewerList") {
+        this.downloadReviewerList();
+      }
+    },
+    downloadReviewerList() {
+      const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_session_list';
+      downloadObjectsAs(this.reviewerList, filename, "csv");
+    },
+    /*
     openFilterModal(i) {
       console.log(this.$refs);
       console.log(i);
       this.$refs['filter_' + i][0].open();
     }
+    */
   }
 }
 </script>
 
 <style scoped>
-.table-scroll-container {
-  max-height: 400px;
-  overflow-y: auto;
-}
+
 </style>

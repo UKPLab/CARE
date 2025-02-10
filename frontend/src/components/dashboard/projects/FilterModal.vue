@@ -1,6 +1,7 @@
 <template>
-  <BasicModal ref="filterModal" name="filterModal" title="Filter" @hide="hide">
-    <template #body>
+  <BasicModal ref="filterModal" name="filterModal" title="Filter" @hide="hide" xl>
+    <template v-if="currentData" #body>
+      <div class="table-scroll-container">
       <BasicForm
         ref="filterSelectionForm"
         v-model="currentData.options"
@@ -12,6 +13,7 @@
         :columns="dataTableColumns"
         :data="dataTable"
         :options="dataTableOptions"/>
+      </div>
     </template>
 
     <template #footer>
@@ -48,7 +50,7 @@ export default {
   emits: ["update:modelValue"],
   data() {
     return {
-      currentData: {},
+      currentData: null,
       dataTableOptions: {
         striped: true,
         hover: true,
@@ -112,7 +114,7 @@ export default {
         {
           key: "table",
           type: "select",
-          label: "Table",
+          label: "From which should be filtered?",
           options: [
             {name: "User", value: "user"},
           ],
@@ -133,12 +135,7 @@ export default {
     if (this.modelValue !== null) {
       this.currentData = this.modelValue;
     } else {
-      this.currentData = {
-        selected: [],
-        options: {
-          table: null
-        },
-      };
+      this.currentData = this.getEmptyData();
     }
   },
   methods: {
@@ -148,6 +145,14 @@ export default {
     },
     hide() {
       this.exportStepper?.show();
+    },
+    getEmptyData() {
+      return {
+        selected: [],
+        options: {
+          table: "user"
+        },
+      };
     }
 
   }
@@ -156,5 +161,8 @@ export default {
 
 
 <style scoped>
-
+.table-scroll-container {
+  max-height: 400px;
+  overflow-y: auto;
+}
 </style>
