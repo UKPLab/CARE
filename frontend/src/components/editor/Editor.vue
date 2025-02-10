@@ -234,41 +234,13 @@ export default {
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
-    studySteps(currentStepId) {
-      if (currentStepId !== null) {
-        const studyId = this.$store.getters['table/study_step/getById'](currentStepId)?.studyId;
+    studySteps() {
+      if (this.studyStepId !== null) {
+        const studyId = this.$store.getters['table/study_step/getById'](this.studyStepId)?.studyId;
         return this.$store.getters['table/study_step/getByKey']("studyId", studyId);
       } else {
         return [];
       }
-    },
-    previousStepMatch(currentStepId) {
-      if (!currentStepId && currentStepId !== null) return null;
-
-      const currentStep = this.studySteps(currentStepId).find(step => step.id === currentStepId);
-      let currentStepIndex = this.studySteps(currentStepId).findIndex(step => step.id === currentStepId);
-
-      if (currentStepIndex === -1) return null;
-
-      while (currentStepIndex >= 0) {
-        let previousStepId = this.studySteps[currentStepIndex].studyStepPrevious;
-
-        if (previousStepId === null) return null;
-
-        let previousStep = this.studySteps.find(step => step.id === previousStepId);
-
-        if (previousStep &&
-            previousStep.stepType === currentStep.stepType &&
-            previousStep.documentId === currentStep.documentId &&
-            previousStep.workflowStepDocument === currentStep.workflowStepDocument &&
-            previousStep.workflowStepId === currentStep.workflowStepId) {
-          return previousStep.id;
-        } // TODO: Check if workflowStepDocument and workflowStepId are needed for matching
-
-        currentStepIndex = this.studySteps.findIndex(step => step.id === previousStepId);
-      }
-
-      return null;
     },
   },
   watch: {
@@ -352,24 +324,7 @@ export default {
           });
         }
 
-        if(this.firstVersion !== null){
-          this.$socket.emit("documentGet",
-            { documentId: this.documentId ,
-              studySessionId: this.studySessionId,
-              studyStepId: this.previousStepMatch(this.studyStepId) }, // TODO : previousStudySteps need to be composed
-            (res) => {
-              if (res.success) {
-                let quill = new Quill(document.createElement('div'));
-                quill.setContents(res['data']['deltas']);
-                this.firstVersion = quill.root.innerHTML;
-              } else {
-                this.handleDocumentError(res.error);
-              }
-            }
-          );
-          
-        }
-
+        this.retrieveFirstVersion();
         let currentVersion = this.editor.getEditor().root.innerHTML;
         newData = {
           firstVersion : this.firstVersion,
@@ -405,8 +360,14 @@ export default {
       }
       this.documentLoaded = true;
       this.applyAdditionalEdits();
-      let intialData = this.editor.getEditor().root.innerHTML;
-      this.$emit("update:data", intialData);
+      this.retrieveFirstVersion();
+      let currentVersion = this.editor.getEditor().root.innerHTML;
+      newData = {
+        firstVersion : this.firstVersion,
+        currentVersion : currentVersion,
+        edits : [] //TODO: What edits are we talking here about?
+      };        
+      this.$emit("update:data", newData);
     },
     applyAdditionalEdits() {
       if (this.unappliedEdits.length > 0) {
@@ -428,6 +389,53 @@ export default {
       const documentName = document ? document.name : "document";
       const fileName = `${documentName}.html`;
       downloadDocument(editorContent, fileName, "text/html");
+    },
+    previousStepMatch(currentStepId) {
+      if (!currentStepId && currentStepId !== null) return null;
+
+      const currentStep = this.studySteps.find(step => step.id === currentStepId);
+      let currentStepIndex = this.studySteps.findIndex(step => step.id === currentStepId);
+
+      if (currentStepIndex === -1) return null;
+
+      while (currentStepIndex >= 0) {
+        let previousStepId = this.studySteps[currentStepIndex].studyStepPrevious;
+
+        if (previousStepId === null) return null;
+
+        let previousStep = this.studySteps.find(step => step.id === previousStepId);
+
+        if (previousStep &&
+            previousStep.stepType === currentStep.stepType &&
+            previousStep.documentId === currentStep.documentId &&
+            previousStep.workflowStepDocument === currentStep.workflowStepDocument &&
+            previousStep.workflowStepId === currentStep.workflowStepId) {
+          return previousStep.id;
+        } // TODO: Check if workflowStepDocument and workflowStepId are needed for matching
+
+        currentStepIndex = this.studySteps.findIndex(step => step.id === previousStepId);
+      }
+
+      return null;
+    },
+    retrieveFirstVersion(){
+      if(this.firstVersion !== null){
+          this.$socket.emit("documentGet",
+            { documentId: this.documentId ,
+              studySessionId: this.studySessionId,
+              studyStepId: this.previousStepMatch(this.studyStepId) }, // TODO : previousStudySteps need to be composed
+            (res) => {
+              if (res.success) {
+                let quill = new Quill(document.createElement('div'));
+                quill.setContents(res['data']['deltas']);
+                this.firstVersion = quill.root.innerHTML;
+              } else {
+                this.handleDocumentError(res.error);
+              }
+            }
+          );
+          
+        }
     }
   }
 };
