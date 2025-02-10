@@ -646,8 +646,7 @@ export default {
     },
     getFilteredButtons(row) {
       const filteredButtons = this.buttons.filter((b) => {
-        if (!b.filter) return true;
-
+        if (!b.filter || !b.filter.length) return true;
         return b.filter.some((f) => {
           if (f.type === "not") {
             return row[f.key] !== f.value;
