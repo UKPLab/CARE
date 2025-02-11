@@ -41,14 +41,6 @@ export default {
       readonly: true,
     };
   },
-  computed: {
-    readOnlyComputed() {
-      return true; 
-    },
-    history() {
-      return this.$route.meta.history !== undefined && this.$route.meta.history;
-    },
-  },
   props: {
     documentId: {
       type: Number,
@@ -74,9 +66,22 @@ export default {
   mounted() {
     this.fetchDocument();
   },
+  computed: {
+    readOnlyComputed() {
+      return true; 
+    },
+    history() {
+      return this.$route.meta.history !== undefined && this.$route.meta.history;
+    },
+    allEdits() {
+      return this.$store.getters["table/document_edit/getAll"];
+    },
+    groupedEdits() {
+      return this.groupDeltasByDate(this.allEdits);
+    }
+  },
   methods: {
-    async fetchDocument() {
-      try {
+    fetchDocument() {
         this.$socket.emit(
           "documentGet",
           {
@@ -86,35 +91,30 @@ export default {
             history: this.history,
           },
           (res) => {
-            if (res && res.success) {
-              this.loadEdits();
+            if (res.success) {
+              this.eventBus.emit("toast", {
+                title: "Retrieved update",
+                message: "Data was updated!",
+                variant: "success",
+            });
             } else {
-              throw new Error(res?.message || "Unknown error occurred");
+              this.eventBus.emit("toast", {
+                title: "Retrieving failed",
+                message: res.message,
+                variant: "danger",
+              });
             }
           }
         );
-      } catch (error) {
-        this.eventBus.emit("toast", {
-          title: "Document Error!",
-          message: error.message,
-          variant: "danger",
-        });
-        console.error("Document fetch failed:", error);
-      }
-    },
-    loadEdits() {
-      const allEdits = this.$store.getters["table/document_edit/getAll"];
-      this.groupedEdits = this.groupDeltasByDate(allEdits);
     },
     insertEditsInEditor(selectedEdit) {
       const editor = this.$refs.editor;
       if (editor && typeof editor.insertTextAtCursor === 'function') {
-        const cleanedDate = selectedEdit.createdAt.replace(/[^         const cleanedDate = selectedEdit.createdAt.replace(/[^\x20-\x7E]/g, '');
-        let selectedTime = new Date(cleanedDate).getTime();
+        const selectedTime = new Date(selectedEdit.createdAt).getTime();
         let relevantEdits = [];
 
-        for (const date in this.groupedEdits) {
-          const dayGroup = this.groupedEdits[date];
+        for (const date in this.groupDeltasByDate(this.allEdits)) {
+          const dayGroup = this.groupDeltasByDate(this.allEdits)[date];
           for (const minute in dayGroup) {
             const minuteGroup = dayGroup[minute];
             for (const edit of minuteGroup) {
@@ -132,8 +132,15 @@ export default {
         }
 
         const combinedDelta = dbToDelta(relevantEdits);
-        const combinedText = combinedDelta.ops.map(op => op.insert).join('');
-        editor.insertTextAtCursor(combinedText);
+        if (combinedDelta && combinedDelta.ops) {
+          const combinedText = combinedDelta.ops
+            .map(op => (op.insert ? op.insert : '')) 
+            .join('');
+
+          editor.insertTextAtCursor(combinedText);
+        } else {
+          console.warn("No operations in combined delta.");
+        }
       } else {
         console.error("Editor instance not found or insertTextAtCursor not defined.");
       }
