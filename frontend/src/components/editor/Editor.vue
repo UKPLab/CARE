@@ -328,7 +328,6 @@ export default {
         let newData = {
           firstVersion : this.firstVersion,
           currentVersion : currentVersion,
-          edits : [] //TODO: What edits are we talking here about?
         };        
         this.$emit("update:data", newData);
 
@@ -370,7 +369,6 @@ export default {
       let newData = {
         firstVersion: this.firstVersion,
         currentVersion: currentVersion,
-        edits: [] // TODO: What edits are we talking here about?
       };
       this.$emit("update:data", newData);
     },
@@ -434,7 +432,7 @@ export default {
           { 
             documentId: this.documentId,
             studySessionId: this.studySessionId,
-            studyStepId: this.previousStepMatch(this.studyStepId) 
+            studyStepId: this.previousStepMatch(this.studyStepId) //TODO: In document get itself, 
           }, 
           (res) => {
             if (res.success) {
