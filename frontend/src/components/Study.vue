@@ -89,7 +89,7 @@
       <div v-show="s.id === currentStudyStepId">
         <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
         <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
-                :study-step-id="s.id" :active="activeComponents[index]" @update:data="updateStudyData(s.id, $event)" />
+                :study-step-id="s.id" :active="activeComponents[index]" @update:data="studyData[s.id] = $event" />
       </div>
       <div v-show="s.id === currentStudyStepId">
         <StepModal
@@ -428,10 +428,7 @@ export default {
           }
         });
       }
-    }, 
-    updateStudyData(stepId, data) {
-      this.studyData[stepId] = data;     
-    },
+    }
   },  
 };
 </script>
