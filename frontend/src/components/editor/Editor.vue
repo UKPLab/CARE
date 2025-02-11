@@ -351,21 +351,27 @@ export default {
         return true;
       }
     },
-    initializeEditorWithContent(deltas) {
+    async initializeEditorWithContent(deltas) {
       this.content = deltas;
 
       if (this.editor) {
         this.editor.getEditor().setContents(deltas);
-      }
+      }      
       this.documentLoaded = true;
       this.applyAdditionalEdits();
-      this.retrieveFirstVersion();
+
+      try {
+        await this.retrieveFirstVersion();
+      } catch (error) {
+        console.error("Failed to retrieve first version:", error);
+      }
+
       let currentVersion = this.editor.getEditor().root.innerHTML;
       let newData = {
-        firstVersion : this.firstVersion,
-        currentVersion : currentVersion,
-        edits : [] //TODO: What edits are we talking here about?
-      };        
+        firstVersion: this.firstVersion,
+        currentVersion: currentVersion,
+        edits: [] // TODO: What edits are we talking here about?
+      };
       this.$emit("update:data", newData);
     },
     applyAdditionalEdits() {
@@ -417,25 +423,34 @@ export default {
 
       return null;
     },
-    retrieveFirstVersion(){
-      if(this.firstVersion !== null){
-          this.$socket.emit("documentGet",
-            { documentId: this.documentId ,
-              studySessionId: this.studySessionId,
-              studyStepId: this.previousStepMatch(this.studyStepId) }, // TODO : previousStudySteps need to be composed
-            (res) => {
-              if (res.success) {
-                let quill = new Quill(document.createElement('div'));
-                quill.setContents(res['data']['deltas']);
-                this.firstVersion = quill.root.innerHTML;
-              } else {
-                this.handleDocumentError(res.error);
-              }
-            }
-          );
-          
+    retrieveFirstVersion() {
+      return new Promise((resolve, reject) => {
+        if (this.firstVersion !== null) {
+          resolve(this.firstVersion);
+          return;
         }
+
+        this.$socket.emit("documentGet",
+          { 
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.previousStepMatch(this.studyStepId) 
+          }, 
+          (res) => {
+            if (res.success) {
+              let quill = new Quill(document.createElement('div'));
+              quill.setContents(res['data']['deltas']);
+              this.firstVersion = quill.root.innerHTML;
+              resolve(this.firstVersion);
+            } else {
+              this.handleDocumentError(res.error);
+              reject(res.error);
+            }
+          }
+        );
+      });
     }
+
   }
 };
 </script>
