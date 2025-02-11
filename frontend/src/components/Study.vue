@@ -89,7 +89,7 @@
       <div v-show="s.id === currentStudyStepId">
         <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
         <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
-                :study-step-id="s.id" :active="activeComponents[index]" @update:data="updateStudyData(s.id,data)" />
+                :study-step-id="s.id" :active="activeComponents[index]" @update:data="updateStudyData(s.id, $event)" />
       </div>
       <div v-show="s.id === currentStudyStepId">
         <StepModal
@@ -275,11 +275,14 @@ export default {
       return false;
     },
     populateStudyData() {
-    //Example array: [{ 5: {} }, { 7: {} }, { 10: {} }]
-    if (this.studySteps.length > 0) {
-      this.studyData = this.studySteps.map(step => ({ [step.id]: {} }));
-    }
-  },
+      console.log("populateStudyData", this.studySteps);
+      if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
+        this.studyData = this.studySteps.reduce((acc, step) => {
+          acc[step.id] = {};  // Initialize each stepId with an empty object
+          return acc;
+        }, {});
+      }
+    },  
   },
   watch: {
     studySession() {
@@ -298,7 +301,11 @@ export default {
     studyHash() {
       this.getStudyData();
     },
-    
+    studySteps(newSteps) {
+      if (newSteps.length > 0) {
+        this.populateStudyData;
+      }
+    },
   },
   mounted() {
     this.studySessionId = this.initStudySessionId;
@@ -423,11 +430,7 @@ export default {
       }
     }, 
     updateStudyData(stepId, data) {
-      const index = this.studyData.findIndex(obj => obj.hasOwnProperty(stepId));
-      console.log("updating", this.studyData);
-      if (index >= -1) {        
-        this.studyData[index][stepId] = data;
-      }      
+      this.studyData[stepId] = data;     
     },
   },  
 };
