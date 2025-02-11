@@ -74,7 +74,7 @@ export default {
       return this.$route.meta.history !== undefined && this.$route.meta.history;
     },
     allEdits() {
-      return this.$store.getters["table/document_edit/getAll"];
+      return this.$store.getters["table/document_edit/getAll"] // FIXME: Filter does not work .filter(session => session.studySessionId === this.studySessionId);
     },
     groupedEdits() {
       return this.groupDeltasByDate(this.allEdits);
