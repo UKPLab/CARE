@@ -87,6 +87,11 @@ export default {
       required: false,
       default: false,
     },
+    dataFromStudy: {
+      type: Array,
+      required: false,
+      default: [],
+    } 
   },
   props: {
     documentId: {

@@ -131,7 +131,7 @@ export default {
     return {
       studySessionId: computed(() => this.studySessionId),
       readonly: computed(() => this.readOnlyComputed),
-      data: computed(() => this.dataFromEditor),
+      dataFromStudy: computed(() => this.studyData),
     };
   },
   props: {
@@ -157,7 +157,6 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       localStudyStepId: 0,
-      dataFromEditor: null,
       studyData: [], // Data from all the study steps
     };
   },
