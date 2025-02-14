@@ -148,6 +148,17 @@ export default {
       (res) => {
         if (res.success) {
           this.initializeEditorWithContent(res['data']['deltas']);
+
+          let quill = new Quill(document.createElement('div'));
+          quill.setContents(res['data']['firstVersion']);
+          this.firstVersion = quill.root.innerHTML;
+          let currentVersion = this.editor.getEditor().root.innerHTML;
+
+          let studyData = {
+            firstVersion: this.firstVersion,
+            currentVersion: currentVersion,
+          };
+          this.$emit("update:data", studyData);
         } else {
           this.handleDocumentError(res.error);
         }
@@ -323,14 +334,12 @@ export default {
           });
         }
 
-        this.retrieveFirstVersion();
         let currentVersion = this.editor.getEditor().root.innerHTML;
-        let newData = {
+        let studyData = {
           firstVersion : this.firstVersion,
           currentVersion : currentVersion,
         };        
-        this.$emit("update:data", newData);
-
+        this.$emit("update:data", studyData);
         this.deltaBuffer = [];
       }
     },
@@ -358,19 +367,6 @@ export default {
       }      
       this.documentLoaded = true;
       this.applyAdditionalEdits();
-
-      try {
-        await this.retrieveFirstVersion();
-      } catch (error) {
-        console.error("Failed to retrieve first version:", error);
-      }
-
-      let currentVersion = this.editor.getEditor().root.innerHTML;
-      let newData = {
-        firstVersion: this.firstVersion,
-        currentVersion: currentVersion,
-      };
-      this.$emit("update:data", newData);
     },
     applyAdditionalEdits() {
       if (this.unappliedEdits.length > 0) {
