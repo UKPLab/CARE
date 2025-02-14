@@ -103,10 +103,10 @@ import NLPService from "@/basic/NLPService.vue";
       required: false,
       default: false,
     },
-    data: {
-      type: Object,
+    dataFromStudy: {
+      type: Array,
       required: false,
-      default: {},
+      default: [],
     }
   },
   data() { 
