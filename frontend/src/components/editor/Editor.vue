@@ -394,62 +394,6 @@ export default {
       const fileName = `${documentName}.html`;
       downloadDocument(editorContent, fileName, "text/html");
     },
-    previousStepMatch(currentStepId) {
-      if (!currentStepId && currentStepId !== null) return null;
-
-      const currentStep = this.studySteps.find(step => step.id === currentStepId);
-      let currentStepIndex = this.studySteps.findIndex(step => step.id === currentStepId);
-
-      if (currentStepIndex === -1) return null;
-
-      while (currentStepIndex >= 0) {
-        let previousStepId = this.studySteps[currentStepIndex].studyStepPrevious;
-
-        if (previousStepId === null) return null;
-
-        let previousStep = this.studySteps.find(step => step.id === previousStepId);
-
-        if (previousStep &&
-            previousStep.stepType === currentStep.stepType &&
-            previousStep.documentId === currentStep.documentId &&
-            previousStep.workflowStepDocument === currentStep.workflowStepDocument &&
-            previousStep.workflowStepId === currentStep.workflowStepId) {
-          return previousStep.id;
-        } // TODO: Check if workflowStepDocument and workflowStepId are needed for matching
-
-        currentStepIndex = this.studySteps.findIndex(step => step.id === previousStepId);
-      }
-
-      return null;
-    },
-    retrieveFirstVersion() {
-      return new Promise((resolve, reject) => {
-        if (this.firstVersion !== null) {
-          resolve(this.firstVersion);
-          return;
-        }
-
-        this.$socket.emit("documentGet",
-          { 
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.previousStepMatch(this.studyStepId) //TODO: In document get itself, 
-          }, 
-          (res) => {
-            if (res.success) {
-              let quill = new Quill(document.createElement('div'));
-              quill.setContents(res['data']['deltas']);
-              this.firstVersion = quill.root.innerHTML;
-              resolve(this.firstVersion);
-            } else {
-              this.handleDocumentError(res.error);
-              reject(res.error);
-            }
-          }
-        );
-      });
-    }
-
   }
 };
 </script>
