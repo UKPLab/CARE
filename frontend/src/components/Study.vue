@@ -122,6 +122,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed, onUpdated} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
+import {nextTick} from "vue";
 
 export default {
   name: "StudyRoute",
@@ -130,7 +131,7 @@ export default {
     return {
       studySessionId: computed(() => this.studySessionId),
       readonly: computed(() => this.readOnlyComputed),
-      data: computed(() => this.dataFromEditor),
+      dataFromStudy: computed(() => this.studyData),
     };
   },
   props: {
@@ -156,7 +157,6 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       localStudyStepId: 0,
-      dataFromEditor: null,
       studyData: [], // Data from all the study steps
     };
   },
@@ -274,8 +274,9 @@ export default {
       }
       return false;
     },
-    populateStudyData() {
-      console.log("populateStudyData", this.studySteps);
+    async populateStudyData() {
+      await nextTick();
+      console.log("populateStudyData studySteps", this.studySteps);
       if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
         this.studyData = this.studySteps.reduce((acc, step) => {
           acc[step.id] = {};  // Initialize each stepId with an empty object
@@ -301,15 +302,17 @@ export default {
     studyHash() {
       this.getStudyData();
     },
-    studySteps(newSteps) {
-      if (newSteps.length > 0) {
+  async studySteps(newSteps){
+    if (newSteps.length > 0) {
+        await nextTick();
         this.populateStudyData;
       }
-    },
+    } 
   },
-  mounted() {
+  async mounted() {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
+    await nextTick();
     this.populateStudyData;
   },
   sockets: {
