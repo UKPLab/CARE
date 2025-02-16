@@ -132,8 +132,12 @@ module.exports = {
       for (const workflow of workflows) {
           const workflowId = workflowMap[workflow.name];
           let previousStepId = null;  // Keep track of the previous step
+          const stepMap = {}; // Track actual step IDs
+          const innerStepMap = {}; // Track inner step numbers to actual IDs
 
-          for (const step of workflow.steps) {
+          for (let innerStepId = 1; innerStepId <= workflow.steps.length; innerStepId++) {
+              const step = workflow.steps[innerStepId - 1]; // Get step
+
               const stepInsertion = await queryInterface.bulkInsert(
                   'workflow_step',
                   [{
@@ -141,16 +145,31 @@ module.exports = {
                       stepType: step.stepType,
                       workflowStepPrevious: previousStepId, 
                       allowBackward: step.allowBackward,
-                      workflowStepDocument: step.workflowStepDocument,
-                      configuration: JSON.stringify(step.configuration),
+                      workflowStepDocument: null, 
+                      configuration: JSON.stringify(step.configuration || {}),
                       createdAt: new Date(),
                       updatedAt: new Date()
                   }],
                   { returning: true }
               );
 
-              // Update `previousStepId` to the ID of the current step
-              previousStepId = stepInsertion[0].id; 
+              const dbStepId = stepInsertion[0].id; 
+              stepMap[innerStepId] = dbStepId;
+              innerStepMap[innerStepId] = dbStepId;
+              previousStepId = dbStepId;
+          }
+
+          // Update workflowStepDocument with correct references
+          for (let innerStepId = 1; innerStepId <= workflow.steps.length; innerStepId++) {
+              const step = workflow.steps[innerStepId - 1];
+
+              if (step.workflowStepDocument !== null) {
+                  await queryInterface.bulkUpdate(
+                      'workflow_step',
+                      { workflowStepDocument: innerStepMap[step.workflowStepDocument] },
+                      { id: innerStepMap[innerStepId] }
+                  );
+              }
           }
       }
   },

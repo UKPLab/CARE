@@ -215,7 +215,8 @@ module.exports = (sequelize, DataTypes) => {
             const studyStepsMap = {};
             let previousStepId = null;
 
-            for (const workflowStep of workflowSteps) {
+            for (let i = 0; i < workflowSteps.length; i++) {
+                const workflowStep = workflowSteps[i];
                 const stepDocument = options.context.stepDocuments.find(doc => doc.id === workflowStep.id);
                 const customConfig = stepDocument?.configuration || {};
                 const plainStudyStep = await sequelize.models.study_step.add({
@@ -225,7 +226,7 @@ module.exports = (sequelize, DataTypes) => {
                     documentId: (stepDocument && stepDocument.documentId) ? stepDocument.documentId : null,
                     studyStepPrevious: previousStepId,
                     allowBackward: workflowStep.allowBackward,
-                    workflowStepDocument: null,
+                    studyStepDocument: null,
                     configuration: customConfig
                 }, { transaction: options.transaction, context: study });
 
@@ -234,19 +235,21 @@ module.exports = (sequelize, DataTypes) => {
                 });
 
                 studyStepsMap[workflowStep.id] = studyStep;
+                previousStepId = studyStep.id;
+            }
 
-                // If the workflowStepDocument references a previous workflowStep
+            // Update studyStepDocument references correctly
+            for (const workflowStep of workflowSteps) {
                 if (workflowStep.workflowStepDocument) {
+                    const currentStudyStep = studyStepsMap[workflowStep.id];  
                     const referencedStudyStep = studyStepsMap[workflowStep.workflowStepDocument];
-                    if (referencedStudyStep) {
-                        await studyStep.update(
-                            {workflowStepDocument: referencedStudyStep.id},
+                    if (currentStudyStep && referencedStudyStep) {
+                        await currentStudyStep.update(
+                            {studyStepDocument: referencedStudyStep.id},
                             {transaction: options.transaction}
                         );
                     }
                 }
-
-                previousStepId = studyStep.id;
             }
 
         }

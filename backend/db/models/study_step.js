@@ -163,7 +163,7 @@ module.exports = (sequelize, DataTypes) => {
             });
 
             StudyStep.belongsTo(models["study_step"], {
-                foreignKey: "workflowStepDocument",
+                foreignKey: "studyStepDocument",
                 as: "stepDocument",
             });
         }
@@ -175,7 +175,7 @@ module.exports = (sequelize, DataTypes) => {
             stepType: DataTypes.INTEGER,
             documentId: DataTypes.INTEGER,
             studyStepPrevious: DataTypes.INTEGER,
-            workflowStepDocument: DataTypes.INTEGER,
+            studyStepDocument: DataTypes.INTEGER,
             allowBackward: DataTypes.BOOLEAN,
             configuration: DataTypes.JSONB,
             deleted: DataTypes.BOOLEAN,
