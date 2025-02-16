@@ -1,7 +1,6 @@
 <template>
   <Loader v-if="loadingConfig" :loading="true" class="pageLoader" />
   <span v-else>
-    <NLPService ref="nlp" :data="data.inputData" :skill="data.skill" @response="response($event, data.skill)" :disabled="true" hidden />
     <BasicModal
       ref="modal"
       :name="studyStep?.configuration?.name || 'Modal'"
@@ -112,16 +111,8 @@ import {v4 as uuid} from "uuid";
   },
   data() { 
     return {
-      loadingConfig: true, 
-      data: {
-        skill: "skill_eic",
-        dataSource: "",
-        outputFile: "",
-        inputData: "hello world",
-        outputData: ""
-      }, 
+      loadingConfig: true,       
       documentText: null, // Holds the parsed content of the delta document
-      output: null, // Holds the output from the NLP service
       waiting: false, // Holds the status of the NLP service which is waiting for the response
       requests: {},
     };
@@ -136,16 +127,33 @@ import {v4 as uuid} from "uuid";
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
     },
+    nlpRequestTimeout() {
+      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
+    },
   },
   watch: {
     nlpResults: function (results) {
-      if (this.requestId && this.requestId in results) {
-        this.$emit("response", this.nlpResults[this.requestId]);
-        this.$store.commit("service/removeResults", {
-          service: "NLPService", 
-          requestId: this.requestId 
-        });
-        this.requestId = null;
+      for (let requestId in this.requests) {
+          if (requestId in results) {
+            //TODO: Should the nlp results be sent individually or as a whole?
+            // this.$emit("response", this.nlpResults[this.requestId]);
+            this.$emit("documentDataSave", {
+              userId: this.userId,
+              documentId: this.requests[requestId].output, //TODO: Recheck what the output holds
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,            
+              key: "placeholder_/~nlp\[(\d+)\]~/g_" + this.requests[requestId].skill, // Example: placeholder_/~nlp\[(\d+)\]~/g_skill_eic
+              value: this.nlpResults[this.requestId]
+            });
+            this.$store.commit("service/removeResults", {
+              service: "NLPService", 
+              requestId: requestId 
+            });
+            delete this.requests[requestId]; 
+          }                
+      }
+      if(Object.keys(this.requests).length === 0){
+        this.waiting = false;
       }
     },
   },
@@ -178,22 +186,17 @@ import {v4 as uuid} from "uuid";
     );
   },
   mounted() {
-    this.$refs.nlp.request();
+
     if(this.configuration && 'fields' in this.configuration && Array.isArray(this.configuration.fields)){
       this.waiting = true;
       for (let i = 0; i < this.configuration.fields.length; i++) {
         let field = this.configuration.fields[i];
 
         if (field.function === "nlp") {
-          this.data['skillName'] = field.fields.find(f => f.name === "skillName") ;
-          this.data['dataSource'] = field.fields.find(f => f.name === "dataSource");
-          this.data['outputFile'] = field.fields.find(f => f.name === "output");
-
-          if (this.$refs.nlp) {
-            this.request(skillName, dataSource, outputFile);
-          } else {
-            console.error("NLP reference not found");
-          }
+          let skill = field.fields.find(f => f.name === "skillName") ;
+          let dataSource = field.fields.find(f => f.name === "dataSource");
+          let output = field.fields.find(f => f.name === "output");
+          this.request(skill, dataSource, output);          
         }
       }
     }
@@ -209,20 +212,22 @@ import {v4 as uuid} from "uuid";
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    response(response, skill) {
-      this.data['outputFile'] = response;
-      console.log("Output from NLP service: ", response, skill);
-      this.waiting = false;
-    },
     async request(skill, dataSource, output) {
-      requestId = uuid();
-      this.request[requestId] = {};
+      const requestId = uuid();
+      this.requests[requestId] = {
+        skill: "",
+        dataSource: "",
+        output: "",
+        input: "",
+        result: ""
+      };
 
+      // TODO: Save the value of below directly in the this.requests[requestId]
       let dataSourceDoc = this.$store.getters["table/document/get"](dataSource); // TODO : Recheck what the dataSource holds
       // TODO: Should documentGet be done for each of these requests?
       let data = ""; // TODO : Recheck how to get the data
       let outputDoc = this.$store.getters["table/document/get"](output); // TODO : Recheck what the output holds
-      // TODO: Should documentSave be done for each of these requests?
+      // TODO: Should documentDataSave be done for each of these requests?
       await this.$socket.emit("serviceRequest",
             {
               service: "NLPService",
@@ -235,13 +240,12 @@ import {v4 as uuid} from "uuid";
       );
 
       setTimeout(() => {
-        if (this.requestId) {
+        if (requestId) {
           this.eventBus.emit('toast', {
             title: "NLP Service Request",
-            message: "Timeout in request for skill " + this.skill + " - Request failed!",
+            message: "Timeout in request for skill " + skill + " - Request failed!",
             variant: "danger"
           });
-          this.requestId = null;
         }
       }, this.nlpRequestTimeout);
 
