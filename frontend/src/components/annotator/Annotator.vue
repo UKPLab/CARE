@@ -171,6 +171,11 @@ export default {
     acceptStats: {
       default: () => false
     },
+    dataFromStudy: {
+      type: Array,
+      required: false,
+      default: [],
+    }
   },
   props: {
     approve: {
