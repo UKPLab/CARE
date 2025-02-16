@@ -1,7 +1,7 @@
 <template>
   <Loader v-if="loadingConfig" :loading="true" class="pageLoader" />
   <span v-else>
-    <NLPService ref="nlp" :data="data.data" :skill="skill" @response="response" :disabled="true" hidden />
+    <NLPService ref="nlp" :data="data.inputData" :skill="data.skill" @response="response($event, data.skill)" :disabled="true" hidden />
     <BasicModal
       ref="modal"
       :name="studyStep?.configuration?.name || 'Modal'"
@@ -67,6 +67,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
 import NLPService from "@/basic/NLPService.vue";
+import {v4 as uuid} from "uuid";
 
 /**
  * A Modal as per the configuration of the study step
@@ -113,12 +114,16 @@ import NLPService from "@/basic/NLPService.vue";
     return {
       loadingConfig: true, 
       data: {
-        data: "" // This input data is also wrong, because the data should contain everything from the configuration and not just the input for the NLP service
+        skill: "skill_eic",
+        dataSource: "",
+        outputFile: "",
+        inputData: "hello world",
+        outputData: ""
       }, 
-      skill: "skill_eic", // to be read from the configuration
       documentText: null, // Holds the parsed content of the delta document
       output: null, // Holds the output from the NLP service
       waiting: false, // Holds the status of the NLP service which is waiting for the response
+      requests: {},
     };
   },
   computed: {
@@ -127,11 +132,25 @@ import NLPService from "@/basic/NLPService.vue";
     },    
     configuration() {
       return this.studyStep && this.studyStep.configuration ? this.studyStep.configuration : null;
-    }
+    },
+    nlpResults() {
+      return this.$store.getters["service/getResults"]("NLPService");
+    },
+  },
+  watch: {
+    nlpResults: function (results) {
+      if (this.requestId && this.requestId in results) {
+        this.$emit("response", this.nlpResults[this.requestId]);
+        this.$store.commit("service/removeResults", {
+          service: "NLPService", 
+          requestId: this.requestId 
+        });
+        this.requestId = null;
+      }
+    },
   },
   created() {
     if(this.configuration){
-      this.data = this.configuration;
       this.loadingConfig = false;
     }
     // Delete this after the configuration is implemented
@@ -159,15 +178,26 @@ import NLPService from "@/basic/NLPService.vue";
     );
   },
   mounted() {
-    // TODO: Check this part after it is known how to read the pattern of the NLP service, also check for the nlp?
-    if(this.configuration && "functionality" in this.configuration){
+    this.$refs.nlp.request();
+    if(this.configuration && 'fields' in this.configuration && Array.isArray(this.configuration.fields)){
       this.waiting = true;
+      for (let i = 0; i < this.configuration.fields.length; i++) {
+        let field = this.configuration.fields[i];
+
+        if (field.function === "nlp") {
+          this.data['skillName'] = field.fields.find(f => f.name === "skillName") ;
+          this.data['dataSource'] = field.fields.find(f => f.name === "dataSource");
+          this.data['outputFile'] = field.fields.find(f => f.name === "output");
+
+          if (this.$refs.nlp) {
+            this.request(skillName, dataSource, outputFile);
+          } else {
+            console.error("NLP reference not found");
+          }
+        }
+      }
     }
-    if(this.configuration && "functionality" in this.configuration){
-      // this.skill = "skillName" in this.configuration.firstOpen? this.configuration.firstOpen.skillName : this.skill;
-      // TODO: if functionality, check for nlp pattern and should be possible for multiple nlp calls
-      this.$refs.nlp.request();
-    }
+    
     this.$refs.modal.open(); 
   },
   methods: {
@@ -179,10 +209,43 @@ import NLPService from "@/basic/NLPService.vue";
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    response(response) {
-      this.output = response;
+    response(response, skill) {
+      this.data['outputFile'] = response;
+      console.log("Output from NLP service: ", response, skill);
       this.waiting = false;
-    }
+    },
+    async request(skill, dataSource, output) {
+      requestId = uuid();
+      this.request[requestId] = {};
+
+      let dataSourceDoc = this.$store.getters["table/document/get"](dataSource); // TODO : Recheck what the dataSource holds
+      // TODO: Should documentGet be done for each of these requests?
+      let data = ""; // TODO : Recheck how to get the data
+      let outputDoc = this.$store.getters["table/document/get"](output); // TODO : Recheck what the output holds
+      // TODO: Should documentSave be done for each of these requests?
+      await this.$socket.emit("serviceRequest",
+            {
+              service: "NLPService",
+              data: {
+                id: requestId,
+                name: skill,
+                data: data
+              }
+            }
+      );
+
+      setTimeout(() => {
+        if (this.requestId) {
+          this.eventBus.emit('toast', {
+            title: "NLP Service Request",
+            message: "Timeout in request for skill " + this.skill + " - Request failed!",
+            variant: "danger"
+          });
+          this.requestId = null;
+        }
+      }, this.nlpRequestTimeout);
+
+    },
   },
 };
 </script>
