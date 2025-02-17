@@ -16,7 +16,7 @@
           <router-link
             v-for="element in sidebarElements[group.id]"
             :to="'/dashboard/' + element.path"
-            class="list-group-item list-group-item-action p-3"
+            class="list-group-item list-group-item-action list-group-item-custom p-3"
           >
             <span
               class="sidebar-icon"
@@ -33,7 +33,7 @@
       </div>
 
       <div
-        class="collapse-sidebar-container list-group-item-action list-group-item"
+        class="collapse-sidebar-container list-group-item-action list-group-item list-group-item-custom"
         title="Toggle sidebar"
         @click="toggleSidebar()"
       >
@@ -154,7 +154,7 @@ body.sb-sidenav-toggled .list-group-item-text {
   }
 }
 
-.list-group-item {
+.list-group-item-custom {
   display: flex !important;
   justify-content: flex-start;
   align-items: center;
