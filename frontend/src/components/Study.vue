@@ -61,25 +61,6 @@
       </TopBarButton>
     </div>
   </Teleport>
-
-  <Teleport to="#topbarCenterPlaceholder">
-    <div
-      v-show="readOnlyComputed"
-      title="Read-only"
-    >
-      <span
-        :style="{ color: '#800000', fontWeight: 'bold' }"
-      >
-        Read-only
-      </span>
-      <LoadIcon
-        :size="22"
-        :color="'#800000'"
-        icon-name="lock-fill"
-      />
-    </div>
-
-  </Teleport>
   <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
       <div v-show="s.id === currentStudyStepId">
@@ -120,7 +101,7 @@ export default {
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
-      readonly: computed(() => this.readOnlyComputed),
+      readOnly: computed(() => this.readOnlyComputed),
     };
   },
   props: {
