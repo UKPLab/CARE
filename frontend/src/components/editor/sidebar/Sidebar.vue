@@ -1,188 +1,148 @@
 <template>
-  <div id="sidebarContainer" class="version-history-sidebar">
+  <div id="sidebarContainer" class="col border mh-100 col-sm-auto g-0">
     <div id="hoverHotZone"></div>
     <div id="sidebar" class="collapse collapse-horizontal border-end d-flex flex-column">
       <div id="hotZone" class="hot-zone"></div>
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
-
-        <div class="edits-section" v-if="showEdits">
-          <h3 class="sidebar-title">Version History</h3>
-          <ul class="version-list" style="list-style: none; padding: 0;">
-            <li v-for="(dateGroups, dateCategory) in edits" :key="dateCategory" class="date-group">
-              <div class="group-header" @click="toggleCollapse(dateCategory)">
-                <span>{{ dateCategory }}</span>
-                <span v-if="collapsedGroups[dateCategory]">&#9654;</span>
-                <span v-else>&#9660;</span>
-              </div>
-
-              <ul v-show="!collapsedGroups[dateCategory]" style="list-style: none; padding: 0;">
-                <li v-for="(group, exactDate) in dateGroups" :key="exactDate" class="date-section">
-                  <div class="date-header" @click="toggleCollapse(exactDate)">
-                    <span>{{ group[0].timeLabel }}</span>
-                    <span v-if="collapsedGroups[exactDate]">&#9654;</span>
-                    <span v-else>&#9660;</span>
-                  </div>
-
-                  <ul v-show="!collapsedGroups[exactDate]" style="list-style: none; padding: 0;">
-                    <li v-for="edit in flattenGroup(group)" :key="edit.id" class="version-item" :class="{ 'current-version': edit.isCurrentVersion }">
-                      <SideCard @click="handleEditClick(edit)">
-                        <template #header>
-                          <div class="edit-header-line">
-                            <strong>{{ new Date(edit.updatedAt).toLocaleString() }}</strong>
-                          </div>
-                          <div class="creator-line">
-                            <span class="creator-name">{{ edit.creator_name || 'Anonymous User' }}</span>
-                          </div>
-                        </template>
-                        <template #body>
-                          <div v-if="edit.isCurrentVersion" class="current-version-body">
-                            <span class="current-badge">Current Version</span>
-                          </div>
-                        </template>
-                      </SideCard>
-                    </li>
-                  </ul>
-                </li>
-              </ul>
-            </li>
-          </ul>
-        </div>
+          <SidebarHistory v-if="content === 'history'"/>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import SideCard from "@/components/annotator/sidebar/card/Card.vue";
-  
+
+import SidebarHistory from "@/components/editor/sidebar/History.vue";
+
 /** Sidebar component of the Editor
  *
  * The Sidebar can show several card which can be clicked on and added to the Editor.
  *
- * @author Juliane Bechert
+ * @author Dennis Zyska
  */
 export default {
   name: "EditorSidebar",
-  components: { SideCard },
+  components: {SidebarHistory},
   props: {
-    edits: {
-      type: Object,
+    content: {
+      type: String,
       required: true,
-      default: () => ({}),
+      default: "history",
     },
-  },
-  data() {
-    return {
-      collapsedGroups: {},
-    };
-  },
-  computed: {
-    showEdits() {
-      return this.edits && Object.keys(this.edits).length > 0;
-    },
-  },
-  methods: {
-    handleEditClick(edit) {
-      this.$emit("add-edit", edit);
-    },
-    toggleCollapse(key) {
-      this.collapsedGroups[key] = !this.collapsedGroups[key];
-    },
-    flattenGroup(dayGroup) {
-      const versions = Object.values(dayGroup).flat();
-      return versions.sort((a, b) => {
-        if (a.isCurrentVersion) return -1;
-        if (b.isCurrentVersion) return 1;
-        return new Date(b.updatedAt) - new Date(a.updatedAt);
-      });
-    },
-  },
+  }
 };
 </script>
 
 <style scoped>
-.version-history-sidebar {
-  background-color: #f8f9fa;
-  border-right: 1px solid #ddd;
-  overflow-y: auto;
-  padding: 15px;
-  height: 100vh;
-  min-width: 300px;
-  max-width: 350px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+#sidebar {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  position: absolute;
 }
 
-.sidebar-title {
-  font-size: 1.4rem;
-  font-weight: bold;
-  margin-bottom: 10px;
+#sidebar.is-active {
+  transform: translateX(0);
 }
 
-.group-header, .date-header {
-  cursor: pointer;
-  padding: 8px 10px;
-  background-color: #e9ecef;
-  margin: 5px 0;
-  font-weight: bold;
-  border-radius: 2px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+#spacer {
+  width: 400px;
+  background-color: transparent;
 }
 
-.group-header:hover, .date-header:hover {
-  background-color: #d6d8db;
+#sidepane {
+  padding-top: 5px;
+  background-color: #e6e6e6;
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
 }
 
-.version-item {
-  padding: 8px 10px; 
-  background: white;
-  border: 1px solid #ddd;
-  margin: 5px 0;
-  border-radius: 5px;
-  transition: background 0.3s;
-  cursor: pointer;
+#anno-list .list-group-i {
+  border: none;
+  background-color: transparent;
+  margin-top: 4px;
+  margin-left: 2px;
+  margin-right: 2px;
 }
 
-.version-item:hover {
-  background-color: #f1f3f5;
+#anno-list {
+  list-style-type: none;
 }
 
-.current-version {
-  border-left: 4px solid #28a745;
-  background-color: #e6f4ea;
+#addPageNote {
+  padding-top: 1rem;
+  text-align: center;
 }
 
-.current-badge {
-  background-color: #28a745;
-  color: white;
-  padding: 2px 6px;
-  font-size: 0.75rem;
-  border-radius: 4px;
-  font-weight: bold;
-  margin-left: 8px;
+#addPageNote .btn {
+  border: none;
+  color: #575757;
 }
 
-.creator-name {
-  color: #555;
-  font-size: 0.85rem;
-  margin-top: 2px;
-  font-weight: 500;
+#sidepane::-webkit-scrollbar {
+  display: none;
 }
 
-.edit-header-line,
-.creator-line {
-  display: flex;
-  flex-direction: column; 
-  align-items: flex-start;
-  padding: 0 5px; 
-  margin: 0;
-  text-align: left;
+.hot-zone {
+  width: 3px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  cursor: col-resize;
 }
 
-.bi-person-fill {
-  font-size: 1rem;
-  color: #28a745;
+#sidebarContainer {
+  position: relative;
+  padding: 0;
+  transition: width 0.3s ease;
+  overflow-y: scroll;
+}
+
+#sidebarContainer.is-hidden {
+  position: fixed;
+  height: 100%;
+  right: 0;
+  width: 10px;
+}
+
+#sidebarContainer.is-hidden #hoverHotZone {
+  display: block;
+}
+
+#sidebarContainer.is-dragging {
+  transition: unset;
+}
+
+#sidebarContainer.is-fixed {
+  position: fixed;
+  right: 0;
+}
+
+#sidebarContainer.is-fixed .hot-zone {
+  display: none;
+}
+
+#sidebarContainer::-webkit-scrollbar {
+  display: none;
+}
+
+@media screen and (max-width: 900px) {
+  #sidebarContainer {
+    display: none;
+  }
+}
+#hoverHotZone {
+  position: fixed;
+  height: 100%;
+  width: 6px;
+  top: 0;
+  right: 0px;
+  z-index: 999;
+  display: none;
 }
 </style>

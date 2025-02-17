@@ -52,7 +52,7 @@ import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./documents/UploadModal.vue";
 import CreateModal from "./documents/CreateModal.vue";
 import EditModal from "./documents/EditModal.vue";
-import EditorDownload from "@/components/editor/EditorDownload.vue";
+import EditorDownload from "@/components/editor/editor/EditorDownload.vue";
 
 /**
  * Document list component
