@@ -1,200 +1,163 @@
 <template>
-  <BasicModal
-    ref="modal"
-    @hide="resetModal"
-    lg
+  <StepperModal
+    ref="importStepper"
+    :steps="steps"
+    :validation="stepValid"
+    @step-change="handleStepChange"
   >
     <template #title>
       <span>Bulk Import Users</span>
     </template>
-    <template #body>
-      <!-- Stepper -->
-      <div class="stepper">
-        <div
-          v-for="(step, index) in steps"
-          :key="index"
-          :data-index="index + 1"
-          :class="{ active: currentStep === index }"
-        >
-          {{ step.title }}
-        </div>
-      </div>
-      <!-- Content -->
-      <div
-        class="content-container"
-        :class="{ 'h-100': createdErrors.length > 0 }"
-      >
-        <!-- Step0: Upload -->
-        <div
-          v-if="currentStep === 0"
-          class="file-upload-container"
-        >
-          <template v-if="importType === 'csv'">
-            <div
-              class="drag-drop-area"
-              @dragover.prevent
-              @drop.prevent="handleDrop"
-              @click="$refs.fileInput.click()"
-            >
-              <input
-                ref="fileInput"
-                type="file"
-                accept=".csv"
-                style="display: none"
-                @change="handleFileUpload"
-              />
-              <BasicIcon
-                icon-name="cloud-arrow-up"
-                size="64"
-              />
-              <p>Drag and drop CSV file here<br/>or click to upload</p>
-            </div>
-            <p>
-              Please check the format or
-              <a
-                class="template-link"
-                @click="downloadTemplateCSV"
-              >
-                download the template
-              </a>
-              here.
-            </p>
-            <template v-if="file.state === 1">
-              <div
-                v-if="file.name !== '' && file.errors.length === 0"
-                class="file-info-container"
-              >
-                <div class="file-info">
-                  <BasicIcon
-                    icon-name="file-earmark"
-                    size="20"
-                  />
-                  <strong>{{ file.name }}</strong>
-                  <span>({{ file.size }} KB)</span>
-                </div>
-                <button @click="clearFile">
-                  <BasicIcon
-                    icon-name="x-circle-fill"
-                    size="20"
-                  />
-                </button>
-              </div>
-              <div
-                v-else
-                class="scrollable-error-container"
-              >
-                <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
-                <ul>
-                  <li
-                    v-for="(error, index) in file.errors"
-                    :key="index"
-                  >
-                    {{ error }}
-                  </li>
-                </ul>
-              </div>
-            </template>
-          </template>
-          <template v-else>
-            <MoodleOptions
-              ref="moodleOptionsForm"
-              v-model="moodleOptions"
+    <!-- Step1: Upload -->
+    <template #step-1>
+      <div class="file-upload-container">
+        <template v-if="importType === 'csv'">
+          <div
+            class="drag-drop-area"
+            @dragover.prevent
+            @drop.prevent="handleDrop"
+            @click="$refs.fileInput.click()"
+          >
+            <input
+              ref="fileInput"
+              type="file"
+              accept=".csv"
+              style="display: none"
+              @change="handleFileUpload"
             />
-          </template>
-        </div>
-        <!-- Step1: Preview -->
-        <div
-          v-if="currentStep === 1"
-          class="preview-table-container"
-        >
-          <BasicTable
-            v-model="selectedUsers"
-            :columns="columns"
-            :data="users"
-            :options="tableOptions"
-          />
-        </div>
-        <!-- Step2:  -->
-        <div
-          v-if="currentStep === 2"
-          class="confirm-container"
-        >
-          <BasicIcon
-            icon-name="person-fill-up"
-            size="64"
-          />
+            <BasicIcon
+              icon-name="cloud-arrow-up"
+              size="64"
+            />
+            <p>Drag and drop CSV file here<br />or click to upload</p>
+          </div>
           <p>
-            Are you sure you want to bulk create <strong>{{ userCount.new }}</strong> users <br/>
-            and overwrite <strong>{{ userCount.duplicate }}</strong> users?
-          </p>
-        </div>
-        <!-- Step3:  -->
-        <div
-          v-if="currentStep === 3"
-          class="result-container"
-        >
-          <div v-if="updatedUserCount">
-            Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote
-            <strong>{{ updatedUserCount.updated }}</strong> users
-            <div
-              v-if="createdErrors.length > 0"
-              class="error-container"
+            Please check the format or
+            <a
+              class="template-link"
+              @click="downloadTemplateCSV"
             >
-              Failed to create the following users:
-              <ul
-                v-for="(error, index) in createdErrors"
-                :key="index"
-              >
-                <li>User with external Id {{ error.extId }} cannot be added: {{ error.message }}</li>
+              download the template
+            </a>
+            here.
+          </p>
+          <template v-if="file.state === 1">
+            <div
+              v-if="file.name !== '' && file.errors.length === 0"
+              class="file-info-container"
+            >
+              <div class="file-info">
+                <BasicIcon
+                  icon-name="file-earmark"
+                  size="20"
+                />
+                <strong>{{ file.name }}</strong>
+                <span>({{ file.size }} KB)</span>
+              </div>
+              <button @click="clearFile">
+                <BasicIcon
+                  icon-name="x-circle-fill"
+                  size="20"
+                />
+              </button>
+            </div>
+            <div
+              v-else
+              class="scrollable-error-container"
+            >
+              <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
+              <ul>
+                <li
+                  v-for="(error, index) in file.errors"
+                  :key="index"
+                >
+                  {{ error }}
+                </li>
               </ul>
             </div>
-          </div>
+          </template>
+        </template>
+        <template v-else>
           <MoodleOptions
-            v-if="importType === 'moodle'"
-            v-model="moodleOptions"
             ref="moodleOptionsForm"
-            with-assignment-id
+            v-model="moodleOptions"
           />
-          <div class="link-container">
-            <BasicButton
-              v-if="importType === 'moodle'"
-              class="btn btn-outline-info"
-              title="Upload to Moodle"
-              @click="uploadToMoodle"
-            />
-            <BasicButton
-              class="btn btn-outline-primary"
-              title="Download Result CSV"
-              @click="downloadFileAsCSV"
-            />
+        </template>
+      </div>
+    </template>
+    <!-- Step2: Preview -->
+    <template #step-2>
+      <div class="preview-table-container">
+        <BasicTable
+          v-model="selectedUsers"
+          :columns="columns"
+          :data="users"
+          :options="tableOptions"
+        />
+      </div>
+    </template>
+    <!-- Step3: Confirm -->
+    <template #step-3>
+      <div class="confirm-container">
+        <BasicIcon
+          icon-name="person-fill-up"
+          size="64"
+        />
+        <p>
+          Are you sure you want to bulk create <strong>{{ userCount.new }}</strong> users <br />
+          and overwrite <strong>{{ userCount.duplicate }}</strong> users?
+        </p>
+      </div>
+    </template>
+    <!-- Step3: Result -->
+    <template #step-4>
+      <div class="result-container">
+        <div v-if="updatedUserCount">
+          Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote <strong>{{ updatedUserCount.updated }}</strong> users
+          <div
+            v-if="createdErrors.length > 0"
+            class="error-container"
+          >
+            Failed to create the following users:
+            <ul
+              v-for="(error, index) in createdErrors"
+              :key="index"
+            >
+              <li>User with external Id {{ error.extId }} cannot be added: {{ error.message }}</li>
+            </ul>
           </div>
+        </div>
+        <MoodleOptions
+          v-if="importType === 'moodle'"
+          ref="moodleOptionsForm"
+          v-model="moodleOptions"
+          with-assignment-id
+        />
+        <div class="link-container">
+          <BasicButton
+            v-if="importType === 'moodle'"
+            class="btn btn-outline-info"
+            title="Upload to Moodle"
+            @click="uploadToMoodle"
+          />
+          <BasicButton
+            class="btn btn-outline-primary"
+            title="Download Result CSV"
+            @click="downloadFileAsCSV"
+          />
         </div>
       </div>
     </template>
-    <template #footer>
-      <BasicButton
-        v-if="currentStep > 0"
-        title="Previous"
-        class="btn btn-secondary"
-        @click="prevStep"
-      />
-      <BasicButton
-        title="Next"
-        class="btn btn-primary"
-        :disabled="isDisabled"
-        @click="nextStep"
-      />
-    </template>
-  </BasicModal>
+  </StepperModal>
 </template>
 
 <script>
-import BasicModal from "@/basic/Modal.vue";
+import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/Table.vue";
 import Papa from "papaparse";
-import {downloadObjectsAs} from "@/assets/utils.js";
+import { downloadObjectsAs } from "@/assets/utils.js";
 import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
 
 /**
@@ -203,12 +166,11 @@ import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
  */
 export default {
   name: "ImportModal",
-  components: {MoodleOptions, BasicModal, BasicButton, BasicIcon, BasicTable},
+  components: { MoodleOptions, StepperModal, BasicButton, BasicIcon, BasicTable },
   emits: ["updateUser"],
   data() {
     return {
       importType: "csv",
-      currentStep: 0,
       file: {
         state: 0,
         name: "",
@@ -232,18 +194,18 @@ export default {
           key: "exists",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", default: "No"},
+            keyMapping: { true: "Yes", default: "No" },
           },
           filter: [
-            {key: false, name: "New"},
-            {key: true, name: "Duplicate"},
+            { key: false, name: "New" },
+            { key: true, name: "Duplicate" },
           ],
         },
-        {name: "extId", key: "extId"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Email", key: "email"},
-        {name: "Roles", key: "roles"},
+        { name: "extId", key: "extId" },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        { name: "Email", key: "email" },
+        { name: "Roles", key: "roles" },
       ],
       updatedUserCount: null,
       createdUsers: [],
@@ -258,31 +220,19 @@ export default {
       };
     },
     steps() {
-      return [
-        this.importType === "csv" ? {title: "Upload"} : {title: "Moodle"},
-        {title: "Preview"},
-        {title: "Confirm"},
-        {title: "Result"},
-      ];
+      return [this.importType === "csv" ? { title: "Upload" } : { title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }];
     },
-    isDisabled() {
-      if (this.currentStep === 0) {
-        if (this.importType === "csv") {
-          return this.file.name === "" || this.file.errors.length > 0;
-        } else {
-          const {courseID, apiUrl, apiKey} = this.moodleOptions;
-          return !courseID || !apiUrl || !apiKey;
-        }
+    stepValid() {
+      let validStates = [];
+      if (this.importType === "csv") {
+        validStates.push(this.file.name !== "" || this.file.errors.length < 1);
+      } else {
+        const { courseID, apiUrl, apiKey } = this.moodleOptions;
+        validStates.push(courseID && apiUrl && apiKey);
       }
-      if (this.currentStep === 1) {
-        return !this.selectedUsers.length > 0;
-      }
-      if (this.currentStep === 3) {
-        return true;
-      }
-      return false;
+      validStates = [...validStates, this.selectedUsers.length > 0, true, false];
+      return validStates;
     },
-
   },
   methods: {
     downloadFileAsCSV() {
@@ -294,7 +244,7 @@ export default {
         userName: user.userName,
         email: user.email,
         roles: user.roles,
-        password: (user.initialPassword || ""),
+        password: user.initialPassword || "",
       }));
       downloadObjectsAs(users, filename, "csv");
     },
@@ -312,22 +262,8 @@ export default {
       downloadObjectsAs(users, filename, "csv");
     },
     uploadToMoodle() {
-      const { courseID, apiKey, apiUrl, assignmentID } = this.moodleOptions;
-      const loginData = this.createdUsers.map(
-        ({ extId, userName, password }) => ({
-          extId,
-          userName,
-          password,
-        })
-      );
-      const options = { apiKey, apiUrl };
-      const courseData = {
-        courseID,
-        assignmentID,
-        loginData,
-        options,
-      };
-      this.$socket.emit("userUploadToMoodle", courseData, (res) => {
+      const users = this.createdUsers.map(({ extId, userName, password }) => ({ extId, userName, password }));
+      this.$socket.emit("userPublishMoodle", { options: this.moodleOptions, users }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
             title: "Uploading completed",
@@ -345,10 +281,10 @@ export default {
     },
     open(type) {
       this.importType = type;
-      this.$refs.modal.open();
+      this.resetModal();
+      this.$refs.importStepper.open();
     },
     resetModal() {
-      this.currentStep = 0;
       this.file = {
         state: 0,
         name: "",
@@ -367,35 +303,27 @@ export default {
         this.eventBus.emit("resetFormField");
       }
     },
-    prevStep() {
-      if (this.currentStep > 0) {
-        this.currentStep--;
-      }
-    },
-    nextStep() {
-      if (this.currentStep >= 3) return;
-
-      switch (this.currentStep) {
-        case 0:
-          this.$refs.modal.waiting = true;
+    handleStepChange(step) {
+      switch (step) {
+        case 1:
+          this.$refs.importStepper?.setWaiting(true);
           this.handleStepZero();
           break;
-        case 1:
-          this.$refs.modal.waiting = false;
-          break;
         case 2:
+          this.$refs.importStepper?.setWaiting(false);
+          break;
+        case 3:
           this.handleStepTwo();
           break;
       }
-      this.currentStep++;
     },
     handleStepZero() {
       if (this.importType === "moodle") {
-        if (!this.$refs.moodleOptionsForm.validate()) return;
+        if (!this.$refs.moodleOptionsForm?.validate()) return;
         this.$socket.emit("userMoodleUserGetAll", this.moodleOptions, (res) => {
-          this.$refs.modal.waiting = false;
+          this.$refs.importStepper?.setWaiting(false);
           if (res.success) {
-            this.users = res['data'];
+            this.users = res["data"];
           } else {
             this.eventBus.emit("toast", {
               title: "Failed to get users from Moodle",
@@ -419,13 +347,13 @@ export default {
           "Tutor*in": "mentor",
           "Student*in": "student",
         },
-        progressId: this.$refs.modal.getProgressId(),
+        progressId: this.$refs.importStepper.getProgressId(),
       };
-      this.$refs.modal.startProgress();
+      this.$refs.importStepper.startProgress();
       this.$socket.emit("userBulkCreate", userData, (res) => {
-        this.$refs.modal.stopProgress();
+        this.$refs.importStepper.stopProgress();
         if (res.success) {
-          const {createdUsers, errors} = res.data;
+          const { createdUsers, errors } = res.data;
           this.createdUsers = createdUsers;
           this.createdErrors = errors;
           this.updatedUserCount = {
@@ -454,8 +382,8 @@ export default {
         Papa.parse(file, {
           header: true,
           complete: function (results) {
-            const {data: rows, meta} = results;
-            const {fields: fileHeaders} = meta;
+            const { data: rows, meta } = results;
+            const { fields: fileHeaders } = meta;
             const requiredHeaders = ["extId", "firstName", "lastName", "email", "roles"];
             const seenIds = new Set();
             const seenEmails = new Set();
@@ -546,7 +474,7 @@ export default {
     },
     checkDuplicateUsers() {
       this.$socket.emit("userCheckExistsByMail", this.users, (res) => {
-        this.$refs.modal.waiting = false;
+        this.$refs.importStepper?.setWaiting(false);
         if (res.success) {
           this.users = res.data;
         } else {
@@ -563,66 +491,6 @@ export default {
 </script>
 
 <style scoped>
-/* Stepper */
-.stepper {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  position: relative;
-
-  &:after {
-    content: "";
-    position: absolute;
-    top: 15px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: #ccc;
-  }
-}
-
-.stepper div {
-  z-index: 1;
-  background-color: white;
-  padding: 0 5px;
-
-  &:before {
-    --dimension: 30px;
-    content: attr(data-index);
-    margin-right: 6px;
-    display: inline-flex;
-    width: var(--dimension);
-    height: var(--dimension);
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #6c6b6b;
-  }
-
-  &:first-child {
-    padding-left: 0;
-  }
-
-  &:last-child {
-    padding-right: 0;
-  }
-}
-
-.stepper div.active {
-  --btn-color: #0d6efd;
-  border-color: var(--btn-color);
-
-  &:before {
-    color: white;
-    background-color: var(--btn-color);
-    border-color: var(--btn-color);
-  }
-}
-
-.content-container {
-  height: 25rem;
-}
-
 /* Upload */
 .file-upload-container {
   width: 100%;
