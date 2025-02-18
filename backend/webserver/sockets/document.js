@@ -617,34 +617,47 @@ module.exports = class DocumentSocket extends Socket {
                 throw new Error("Document not found");
             }
             let delta = await this.loadDocument(deltaFilePath);
-            const edits = await this.models['document_edit'].findAll({
-                where: {
-                    documentId: document.id,
-                    studySessionId: data['studySessionId'],
-                    studyStepId: data['studyStepId'],
-                    draft: true
-                }
-            });
-            delta = delta.compose(dbToDelta(edits));
-                        
-            if(data['studySessionId'] !== null && data['studyStepId'] !== null) {
-                const previousStudyStepId = await this.getPreviousStepId(data['studyStepId']);
-                let previousDelta = await this.loadDocument(deltaFilePath);
-                const previousEdits = await this.models['document_edit'].findAll({
+    
+            if (data.history) {
+                const edits = await this.models['document_edit'].findAll({
+                    where: {
+                        documentId: document.id,
+                        studySessionId: data.studySessionId,
+                        studyStepId: data.studyStepId
+                    },
+                    raw: true
+                });
+
+                this.emit("document_editRefresh", edits);
+            } else {
+                const edits = await this.models['document_edit'].findAll({
                     where: {
                         documentId: document.id,
                         studySessionId: data['studySessionId'],
-                        studyStepId: previousStudyStepId,
+                        studyStepId: data['studyStepId'],
                         draft: true
                     }
                 });
-                previousDelta = previousDelta.compose(dbToDelta(previousEdits));
-                return {document: document, deltas: delta, firstVersion: previousDelta};
+                delta = delta.compose(dbToDelta(edits));
+                
+                if(data['studySessionId'] !== null && data['studyStepId'] !== null) {
+                    const previousStudyStepId = await this.getPreviousStepId(data['studyStepId']);
+                    let previousDelta = await this.loadDocument(deltaFilePath);
+                    const previousEdits = await this.models['document_edit'].findAll({
+                        where: {
+                            documentId: document.id,
+                            studySessionId: data['studySessionId'],
+                            studyStepId: previousStudyStepId,
+                            draft: true
+                        }
+                    });
+                    previousDelta = previousDelta.compose(dbToDelta(previousEdits));
+                    return {document: document, deltas: delta, firstVersion: previousDelta};
+                }
+                else{
+                    return {document: document, deltas: delta};
+                }
             }
-            else{
-                return {document: document, deltas: delta};
-            }
-
         } else {
             const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
             if (!fs.existsSync(filePath)) {

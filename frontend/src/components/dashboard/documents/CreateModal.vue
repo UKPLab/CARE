@@ -1,5 +1,5 @@
 <template>
-  <Modal ref="createModal" lg name="documentUpload">
+  <Modal ref="createModal" lg name="documentCreate">
     <template #title>Create new document</template>
     <template #body>
       <div class="modal-body justify-content-center flex-grow-1 d-flex">

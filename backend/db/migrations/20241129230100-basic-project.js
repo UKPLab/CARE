@@ -4,6 +4,7 @@ const projects = [
   {
     name: "Default Project",
     description: "The default project",
+    public: true,
     userId: null
   }
 ];

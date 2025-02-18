@@ -59,7 +59,7 @@ module.exports = class MoodleRPC extends RPC {
     }
 
     /**
-     * Retrieves users from a specified assignemtn in a moodle course and returns the data as an array.
+     * Retrieves users from a specified assignment in a moodle course and returns the data as an array.
      *
      * WARNING: This method only works, if at least one submission has been made to the assignment.
      * If you need to use it before any students have submitted, you can submit a dummy file to the assignment.
@@ -78,6 +78,22 @@ module.exports = class MoodleRPC extends RPC {
         } catch (err) {
             throw err;
         }
+    }
+
+    /**
+     * Retrieves information about all assignments in a specified Moodle course.
+     *
+     * @param {Object} data - The data object containing the course ID, Moodle URL and the API token.
+     * @param {number} data.options.courseID - The ID of the course to fetch assignments from.
+     * @param {string} data.options.apiKey - The API token for the Moodle instance
+     * @param {string} data.options.url - The URL of the Moodle instance.
+     * @param {Object} options - Sequelize transaction options.
+     * @returns {Promise<List>} - Information about the assignments in the course
+     * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
+     */
+    async getAssignmentInfoFromCourse(data, options) {
+        const response = await this.request("getAssignmentInfoFromCourse", data);
+        return response["data"];
     }
 
     /**
@@ -132,6 +148,4 @@ module.exports = class MoodleRPC extends RPC {
     async publishAssignmentTextFeedback(data) {
         return await this.request("publishAssignmentTextFeedback", data);
     }
-
-
 }
