@@ -174,7 +174,10 @@ export default {
   },
   methods: {
     selectEdit(edit) {
-      this.eventBus.emit("editorSelectEdit", edit.id);
+      this.eventBus.emit("editorSelectEdit", {
+        documentId: this.documentId,
+        editId: edit.id
+      });
       if (this.currentVersion) {
         this.currentVersion.isCurrentVersion = false;
       }

@@ -1,8 +1,8 @@
 <template>
-  <Loader 
-  v-if="documentId && documentId === 0" 
-  :loading="true" 
-  class="pageLoader" 
+  <Loader
+    v-if="documentId && documentId === 0"
+    :loading="true"
+    class="pageLoader"
   />
   <span v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
@@ -14,16 +14,17 @@
           style="overflow-y: scroll;"
         >
           <div id="editor-container"
-          @paste="onPaste"
-          @copy="onCopy">
+               @paste="onPaste"
+               @copy="onCopy">
           </div>
         </div>
       </div>
     </div>
   </span>
 
-  <Teleport v-if="showHTMLDownloadButton" to="#topBarNavItems">
+  <Teleport to="#topBarNavItems">
     <TopBarButton
+      v-if="showHTMLDownloadButton"
       v-show="studySessionId && studySessionId !== 0 ? active : true"
       title="Download document"
       class="btn rounded-circle"
@@ -37,7 +38,7 @@
       />
     </TopBarButton>
   </Teleport>
-  
+
 </template>
 
 <script>
@@ -46,16 +47,17 @@
  *
  * This component provides a Quill editor to edit the document.
  *
- * @autor Juliane Bechert, Zheyu Zhang, Dennis Zyska, Manu Sundar Raj Nandyal, Alexander Bürkle
+ * @autor Juliane Bechert, Dennis Zyska, Manu Sundar Raj Nandyal, Zheyu Zhang, Alexander Bürkle
  */
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
-import { dbToDelta, deltaToDb } from "editor-delta-conversion";
-import { Editor } from "@/components/editor/editorStore.js";
-import { downloadDocument } from "@/assets/utils.js";
+import {dbToDelta, deltaToDb} from "editor-delta-conversion";
+import {Editor} from "@/components/editor/editorStore.js";
+import {downloadDocument} from "@/assets/utils.js";
 import {computed} from "vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 
 const Delta = Quill.import('delta');
 
@@ -63,13 +65,7 @@ export default {
   name: "EditorView",
   fetch_data: ["document_edit"],
   components: {
-    LoadIcon,
-  },
-  provide() {
-    return {
-      documentId: computed(() => this.documentId),
-      studyStepId: computed(()=> this.studyStepId)
-    }
+    LoadIcon, TopBarButton
   },
   inject: {
     studySessionId: {
@@ -82,23 +78,21 @@ export default {
       required: false,
       default: null
     },
-    readonly: {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false,
     },
-    dataFromStudy: {
+    studyData: {
       type: Array,
       required: false,
-      default: [],
-    } 
-  },
-  props: {
+      default: () => [],
+    },
     documentId: {
       type: Number,
       required: true,
       default: 0,
-    },    
+    },
     studyStepId: {
       type: Number,
       required: false,
@@ -108,7 +102,7 @@ export default {
       type: Boolean,
       required: false,
       default: true,
-    },        
+    },
   },
   emits: ["update:data"],
   data() {
@@ -118,13 +112,13 @@ export default {
       deltaBuffer: [],
       deltaDataBuffer: [],
       editor: null,
-      documentLoaded: false,      
+      documentLoaded: false,
       data: {},
       firstVersion: null,
     };
   },
   created() {
-    this.documentHash = this.$route.params.documentHash;    
+    this.documentHash = this.$route.params.documentHash;
   },
   mounted() {
     const editorContainer = document.getElementById('editor-container');
@@ -142,14 +136,26 @@ export default {
         });
       }
 
-      this.editor.getEditor().enable(!this.readonly);
-      this.editor.getEditor().on('text-change', this.handleTextChange);    
+      this.editor.getEditor().enable(!this.readOnly);
+      this.editor.getEditor().on('text-change', this.handleTextChange);
+      this.eventBus.on('editorSelectEdit', (data) => {
+        if (data.documentId === this.documentId) {
+          this.setEditInEditor(data.editId);
+        }
+      });
+      this.eventBus.on('editorInsertText', (data) => {
+        if (data.documentId === this.documentId) {
+          this.insertTextAtCursor(data.text);
+        }
+      });
     }
 
     this.$socket.emit("documentGet",
-      { documentId: this.documentId ,
+      {
+        documentId: this.documentId,
         studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId },
+        studyStepId: this.studyStepId
+      },
       (res) => {
         if (res.success) {
           this.initializeEditorWithContent(res['data']['deltas']);
@@ -174,18 +180,24 @@ export default {
   },
   sockets: {
     connect() {
-      this.$socket.emit("documentOpen", { documentId: this.documentId });
+      this.$socket.emit("documentOpen", {documentId: this.documentId});
     },
     documentError(error) {
       this.handleDocumentError(error);
     }
   },
   unmounted() {
-    this.$socket.emit("documentClose", { documentId: this.documentId, studySessionId: this.studySessionId });
+    this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId});
   },
   computed: {
     user() {
       return this.$store.getters["auth/getUser"];
+    },
+    allEdits() {
+      return this.$store.getters["table/document_edit/getFiltered"](
+        (e) => e.documentId === this.documentId
+          && e.studySessionId === this.studySessionId
+          && e.studyStepId === this.studyStepId).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     },
     unappliedEdits() {
       return this.$store.getters["table/document_edit/getFiltered"](
@@ -196,13 +208,13 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
     },
     toolbarVisible() {
-      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.readonly;
+      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.readOnly;
     },
     editorOptions() {
       const toolsMap = {
-        "editor.toolbar.tools.font": { font: [] },
-        "editor.toolbar.tools.size": { size: [] },
-        "editor.toolbar.tools.align": { align: [] },
+        "editor.toolbar.tools.font": {font: []},
+        "editor.toolbar.tools.size": {size: []},
+        "editor.toolbar.tools.align": {align: []},
         "editor.toolbar.tools.header": ["header", "1", "2", "3", "4", "5", "6"],
         "editor.toolbar.tools.bold": "bold",
         "editor.toolbar.tools.italic": "italic",
@@ -211,15 +223,15 @@ export default {
         "editor.toolbar.tools.blockquote": "blockquote",
         "editor.toolbar.tools.code-block": "code-block",
         "editor.toolbar.tools.formula": "formula",
-        "editor.toolbar.tools.subscript": { script: "sub" },
-        "editor.toolbar.tools.superscript": { script: "super" },
-        "editor.toolbar.tools.indent": [{ indent: "-1" }, { indent: "+1" }],
-        "editor.toolbar.tools.direction": { direction: [] },
-        "editor.toolbar.tools.color": { color: [] },
-        "editor.toolbar.tools.background": { background: [] },
-        "editor.toolbar.tools.orderedList": { list: "ordered" },
-        "editor.toolbar.tools.unorderedList": { list: "bullet" },
-        "editor.toolbar.tools.checkList": { list: "check" },
+        "editor.toolbar.tools.subscript": {script: "sub"},
+        "editor.toolbar.tools.superscript": {script: "super"},
+        "editor.toolbar.tools.indent": [{indent: "-1"}, {indent: "+1"}],
+        "editor.toolbar.tools.direction": {direction: []},
+        "editor.toolbar.tools.color": {color: []},
+        "editor.toolbar.tools.background": {background: []},
+        "editor.toolbar.tools.orderedList": {list: "ordered"},
+        "editor.toolbar.tools.unorderedList": {list: "bullet"},
+        "editor.toolbar.tools.checkList": {list: "check"},
         "editor.toolbar.tools.link": "link",
         "editor.toolbar.tools.image": "image",
         "editor.toolbar.tools.video": "video",
@@ -242,7 +254,7 @@ export default {
 
       return {
         modules: {
-          toolbar: this.toolbarVisible ? { container: toolbarTools } : false
+          toolbar: this.toolbarVisible ? {container: toolbarTools} : false
         },
         theme: "snow"
       };
@@ -250,13 +262,16 @@ export default {
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
-    studySteps() {      
+    studySteps() {
       if (this.studyStepId !== null) {
         const studyId = this.$store.getters['table/study_step/get'](this.studyStepId)?.studyId;
         return this.$store.getters['table/study_step/getByKey']("studyId", studyId);
       } else {
         return [];
       }
+    },
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
     },
   },
   watch: {
@@ -268,13 +283,33 @@ export default {
       },
       deep: true
     },
-    readonly: {
+    readOnly: {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
+        if (newReadOnly) {
+          this.editor.getEditor().getModule("toolbar").container.style = "display:none"
+        } else {
+          this.editor.getEditor().getModule("toolbar").container.style = "display:block"
+        }
+
       }
-    },    
+    },
   },
   methods: {
+    clearEditor() {
+      if (this.editor) {
+        const quill = this.editor.getEditor();
+        quill.setContents([{insert: ''}]);
+      }
+    },
+    setEditInEditor(editId) {
+      const index = this.allEdits.findIndex((edit) => edit.id === editId);
+      const edits = (index !== -1) ? this.allEdits.slice(0, index + 1) : this.allEdits;
+
+      const delta = dbToDelta(edits);
+      this.clearEditor();
+      this.editor.getEditor().updateContents(delta, "api");
+    },
     insertTextAtCursor(text) {
       if (this.editor) {
         const quill = this.editor.getEditor();
@@ -295,31 +330,37 @@ export default {
       }
     },
     onPaste(event) {
-      if(this.user.acceptStats) {
-      const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-      if (pastedText) {
-        this.$socket.emit("stats", {
-          action: "textPasted",
-          data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            pastedText: pastedText,
-            acceptDataSharing: this.user.acceptDataSharing
-          }})
-    }}},
+      if (this.user.acceptStats) {
+        const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+        if (pastedText) {
+          this.$socket.emit("stats", {
+            action: "textPasted",
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              pastedText: pastedText,
+              acceptDataSharing: this.user.acceptDataSharing
+            }
+          })
+        }
+      }
+    },
     onCopy(event) {
-      if(this.user.acceptStats) {
-      const copiedText = (event.clipboardData || window.clipboardData).getData('text');
-      if (copiedText) {
-        this.$socket.emit("stats", {
-          action: "textCopied",
-          data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            copiedText: copiedText,
-            acceptDataSharing: this.user.acceptDataSharing
-          }})
-    }}},
+      if (this.user.acceptStats) {
+        const copiedText = (event.clipboardData || window.clipboardData).getData('text');
+        if (copiedText) {
+          this.$socket.emit("stats", {
+            action: "textCopied",
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              copiedText: copiedText,
+              acceptDataSharing: this.user.acceptDataSharing
+            }
+          })
+        }
+      }
+    },
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
         this.deltaBuffer.push(delta);
@@ -341,9 +382,9 @@ export default {
 
         let currentVersion = this.editor.getEditor().root.innerHTML;
         let studyData = {
-          firstVersion : this.firstVersion,
-          currentVersion : currentVersion,
-        };        
+          firstVersion: this.firstVersion,
+          currentVersion: currentVersion,
+        };
         this.$emit("update:data", studyData);
         this.deltaBuffer = [];
       }
@@ -369,7 +410,7 @@ export default {
 
       if (this.editor) {
         this.editor.getEditor().setContents(deltas);
-      }      
+      }
       this.documentLoaded = true;
       this.applyAdditionalEdits();
     },
