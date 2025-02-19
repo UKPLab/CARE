@@ -90,14 +90,18 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<Object|undefined>}
          */
         static async add(data, options = {}) {
-            if (data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR) {
+            if (data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR || data.stepType === StudyStep.stepTypes.STEP_TYPE_MODAL) {
                 const study = options.context;
+
+                const expectedDocType = data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR
+                    ? sequelize.models.document.docTypes.DOC_TYPE_HTML
+                    : sequelize.models.document.docTypes.DOC_TYPE_MODAL;
 
                 if (data.documentId === null) { // create a new document
 
                     const newDocument = await sequelize.models.document.add({
                         name: `Document for study ${study.id}, step ${data.workflowStepId}`,
-                        type: sequelize.models.document.docTypes.DOC_TYPE_HTML,
+                        type: expectedDocType,
                         userId: study.userId,
                         hideInFrontend: true
                     }, {transaction: options.transaction});
@@ -111,7 +115,7 @@ module.exports = (sequelize, DataTypes) => {
                         throw new Error(`Document not found: documentId ${data.documentId} is missing for step ${data.workflowStepId}`);
                     }
                     // Check document mismatch
-                    if (document.type !== sequelize.models.document.docTypes.DOC_TYPE_HTML) {
+                    if (document.type !== expectedDocType) {
                         throw new Error(`Document type mismatch: step ${data.workflowStepId} expects an Editor document (type 1), but found type ${document.type}.`);
                     }
 
@@ -127,7 +131,32 @@ module.exports = (sequelize, DataTypes) => {
                     const newFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
 
                     await fs.copyFile(originalFilePath, newFilePath);
-                    // TODO copy data from document_edit table! it cannot be sure that all edits are in the delta file!
+        
+                    // Copy data from `document_edit` table
+                    const existingEdits = await sequelize.models.document_edit.findAll({
+                        where: { documentId: document.id },
+                        raw: true
+                    });
+        
+                    if (existingEdits.length > 0) {
+                        const newEdits = existingEdits.map(edit => ({
+                            documentId: newDocument.id,
+                            studySessionId: null,
+                            studyStepId: null,
+                            userId: edit.userId,
+                            draft: edit.draft,
+                            offset: edit.offset,
+                            operationType: edit.operationType,
+                            span: edit.span,
+                            text: edit.text,
+                            attributes: edit.attributes
+                        }));
+        
+                        await sequelize.models.document_edit.bulkCreate(newEdits, { transaction: options.transaction });
+                        console.log(`Copied ${newEdits.length} edits from document ${document.id} to new study document ${newDocument.id}`);
+                    } else {
+                        console.log(`No edits found for document ${document.id}, skipping edit copy.`);
+                    }
 
                     data.documentId = newDocument.id;
                 }
@@ -163,7 +192,7 @@ module.exports = (sequelize, DataTypes) => {
             });
 
             StudyStep.belongsTo(models["study_step"], {
-                foreignKey: "workflowStepDocument",
+                foreignKey: "studyStepDocument",
                 as: "stepDocument",
             });
         }
@@ -175,7 +204,7 @@ module.exports = (sequelize, DataTypes) => {
             stepType: DataTypes.INTEGER,
             documentId: DataTypes.INTEGER,
             studyStepPrevious: DataTypes.INTEGER,
-            workflowStepDocument: DataTypes.INTEGER,
+            studyStepDocument: DataTypes.INTEGER,
             allowBackward: DataTypes.BOOLEAN,
             configuration: DataTypes.JSONB,
             deleted: DataTypes.BOOLEAN,

@@ -2,7 +2,7 @@
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
-        <Editor ref="editor"/>
+        <Editor ref="editor" @update:data="$emit('update:data', $event)" />
       </div>
       <Sidebar
         v-if="!sidebarDisabled && sidebarContent !== null"
@@ -75,6 +75,7 @@ export default {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
       readOnly: computed(() => this.readOnlyOverwrite),
+      active: computed(() => this.active),
     }
   },
   inject: {
@@ -105,12 +106,17 @@ export default {
       required: false,
       default: null,
     },
+    active: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
   },
-
+  emits: ["update:data"],
   data() {
     return {
       isSidebarVisible: false,
-      sidebarContent: null,
+      historyContent: false,
     };
   },
   computed: {
@@ -130,13 +136,25 @@ export default {
       }
       return false;
     },
+    document() {
+      return this.$store.getters["table/document/getById"](this.documentId);
+    },
+    sidebarContent() {
+      if (this.historyContent) {
+        return 'history';
+      }
+      if (this.document?.type === 2) {
+        return 'configurator';
+      }
+      return null;
+    }
   },
   methods: {
     toogleHistory() {
-      if (this.sidebarContent === 'history') {
-        this.sidebarContent = null;
+      if (this.historyContent) {
+        this.historyContent = false;
       } else {
-        this.sidebarContent = 'history';
+        this.historyContent = true;
         this.$socket.emit(
           "documentGet",
           {
@@ -155,8 +173,6 @@ export default {
             }
           }
         );
-
-
       }
     },
     leave() {
@@ -187,7 +203,7 @@ export default {
 }
 
 .sidebar-container {
-  width:350px;
+  width: 350px;
   max-width: 350px;
   min-width: 350px;
   background-color: #f8f9fa;

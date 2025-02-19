@@ -61,17 +61,26 @@
       </TopBarButton>
     </div>
   </Teleport>
+  
   <div v-if="studySessionId !== 0">
     <div v-for="(s, index) in studySteps" :key="index">
       <div v-show="s.id === currentStudyStepId">
         <Annotator v-if="s.stepType === 1 && (studyTrajectory.includes(s.id) || readOnly)"
-                   :document-id="s.documentId" :study-step-id="s.id" @error="error" :active="activeComponents[index]"/>
+                   :document-id="s.documentId" :study-step-id="s.id" :active="activeSteps[index]" @error="error"/>
       </div>
       <div v-show="s.id === currentStudyStepId">
         <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
         <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
-                :study-step-id="s.id" :active="activeComponents[index]"/>
+                :study-step-id="s.id" :active="activeSteps[index]" @update:data="studyData[s.id] = $event"/>
       </div>
+      <div v-show="s.id === currentStudyStepId">
+        <StepModal
+          v-if="s.stepType === 3 && studyTrajectory.includes(s.id)"
+          :study-step-id="s.id" :is-last-step="s.id === lastStep.id"
+          @close="handleModalClose"
+        />
+      </div>
+
       <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
     </div>
   </div>
@@ -94,14 +103,17 @@ import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {computed} from "vue";
+import StepModal from "./stepmodal/StepModal.vue";
+import {nextTick} from "vue";
 
 export default {
   name: "StudyRoute",
-  components: {LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton},
+  components: {LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, StepModal},
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
       readOnly: computed(() => this.readOnlyComputed),
+      studyData: computed(() => this.studyData),
     };
   },
   props: {
@@ -127,10 +139,11 @@ export default {
       timeLeft: 0,
       timerInterval: null,
       localStudyStepId: 0,
+      studyData: [], // Data from all the study steps
     };
   },
   computed: {
-    activeComponents() {
+    activeSteps() {
       return this.studySteps.map(step => step.id === this.currentStudyStepId);
     },
     studySession() {
@@ -242,7 +255,17 @@ export default {
         return true;
       }
       return false;
-    }
+    },
+    async populateStudyData() {
+      await nextTick();
+      console.log("populateStudyData studySteps", this.studySteps);
+      if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
+        this.studyData = this.studySteps.reduce((acc, step) => {
+          acc[step.id] = {};  // Initialize each stepId with an empty object
+          return acc;
+        }, {});
+      }
+    },
   },
   watch: {
     studySession() {
@@ -260,11 +283,19 @@ export default {
     },
     studyHash() {
       this.getStudyData();
+    },
+    async studySteps(newSteps) {
+      if (newSteps.length > 0) {
+        await nextTick();
+        this.populateStudyData;
+      }
     }
   },
-  mounted() {
+  async mounted() {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
+    await nextTick();
+    this.populateStudyData;
   },
   sockets: {
     studyError: function (data) {
@@ -345,6 +376,23 @@ export default {
     finish() {
       this.$refs.studyFinishModal.open();
     },
+    handleModalClose(event) {
+      if (event.endStudy) {
+        this.finish(); // End the study
+      } else if (event.nextStep) {
+        const nextStep = this.nextStudyStep;
+        if (nextStep) {
+          this.updateStep(nextStep.id);
+        }
+      } else if (event.previousStep && this.currentWorkflowStep.allowBackward) {
+        const previousStep = this.studySteps.find(
+          step => step.id === this.currentStudyStep.studyStepPrevious
+        );
+        if (previousStep) {
+          this.updateStep(previousStep.id);
+        }
+      }
+    },
     updateStep(step) {
       if (this.readOnlyComputed) {
         this.localStudyStepId = step;
@@ -365,8 +413,8 @@ export default {
           }
         });
       }
-    },
-  }
+    }
+  },
 };
 </script>
 

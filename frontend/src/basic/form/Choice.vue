@@ -7,41 +7,59 @@
           <td v-for="field in fields" :key="field.key">
             <div class="d-flex align-items-center">
                 <span class="badge bg-primary me-2">
-                  <i class="bi bi-file-earmark-text"></i> {{ index + 1 }}
+                  <i class="bi bi-file-earmark-text"></i> {{ item.stepNumber }}
                 </span>
 
-              <FormSelect
-                v-if="field.type === 'select'"
-                :ref="'ref_' + field.key"
-                v-model="currentData[index][field.key]"
-                :data-table="true"
-                :parent-value="item"
-                :options="{options: field.options}"
-                :placeholder="field.label"
-                class="flex-grow-1"
-                style="min-width: 200px; max-width: 800px;"
-              />
-              <FormDefault
-                v-else
-                :ref="'ref_' + field.key"
-                v-model="currentData[index][field.key]"
-                :data-table="true"
-                :options="field"
-              />
-            </div>
-          </td>
-        </tr>
+                <div class="flex-grow-1 d-flex align-items-center">
+                  <FormSelect
+                    v-if="field.type === 'select'"
+                    :ref="'ref_' + field.key"
+                    v-model="currentData[index][field.key]"
+                    :data-table="true"
+                    :parent-value="item"
+                    :options="{options: field.options}"
+                    :placeholder="field.label"
+                    class="flex-grow-1"
+                    style="min-width: 200px; max-width: 800px;"
+                  />
+                  <FormDefault
+                    v-else
+                    :ref="'ref_' + field.key"
+                    v-model="currentData[index][field.key]"
+                    :data-table="true"
+                    :options="field"
+                  />
+
+                  <!-- Render Gear Icon if Configuration Exists -->
+                  <span
+                    v-if="item.hasConfiguration"
+                    class="ms-2"
+                    @click="openModal(item.configuration, item.id)"
+                  >
+                    <i class="bi bi-gear" title="View Configuration" style="cursor: pointer;"></i>
+                  </span>
+                </div>
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </template>
   </FormElement>
+  <ConfigurationModal
+    ref="configurationModal"
+    @updateConfiguration="handleConfigurationUpdate"
+  />
 </template>
 
 <script>
 import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
+import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
 import {sorter} from "@/assets/utils";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 /**
  * Show a table to insert new elements
@@ -50,7 +68,7 @@ import {sorter} from "@/assets/utils";
  */
 export default {
   name: "FormChoice",
-  components: {FormElement, FormDefault, FormSelect},
+  components: {FormElement, FormDefault, FormSelect, ConfigurationModal},
   inject: {
     formData: {
       default: () => null,
@@ -73,6 +91,7 @@ export default {
       currentData: this.modelValue && this.modelValue.length > 0
         ? [...this.modelValue]
         : [],
+      temporaryConfigurations: {}, 
     };
   },
   computed: {
@@ -103,7 +122,25 @@ export default {
           return true; 
         });
 
-        return sorter(validChoices, choicesConfig.sort);
+        // Sort IDs in ascending order and calculate step numbers directly
+        let stepCounter = 1;
+        let previousId = null;
+
+        return validChoices
+          .sort((a, b) => a.id - b.id) 
+          .map((item) => {
+            if (previousId !== null && item.id - previousId > 1) {
+              stepCounter += item.id - previousId - 1;
+            }
+            const stepNumber = stepCounter;
+            stepCounter += 1; 
+            previousId = item.id; 
+            return {
+              ...item,
+              stepNumber, 
+              hasConfiguration: !!item.configuration && Object.keys(item.configuration).length > 0,
+            };
+          });
       }
       return [];
     },
@@ -112,12 +149,12 @@ export default {
     modelValue: {
       handler(newValue) {
         if (JSON.stringify(newValue) !== JSON.stringify(this.currentData)) {
-
           this.currentData = this.choices.map((c, index) => {
+            const tempConfig = this.temporaryConfigurations[c.id] || {};
             return this.fields.reduce((acc, field) => {
-              acc[field.key] = newValue[index][field.key];
-              // die workflowStepId
-              acc["id"] = c.id;
+              acc[field.key] = newValue[index]?.[field.key] || null;
+              acc["id"] = c.id; 
+              acc["configuration"] = tempConfig; 
               return acc;
             }, {});
           });
@@ -127,8 +164,14 @@ export default {
       deep: true,
     },
     currentData: {
-      handler() {
-        this.$emit("update:modelValue", this.currentData);
+      handler(newData) {
+        const preparedData = this.prepareSubmitData(newData); 
+        const previousValue = JSON.stringify(this.modelValue);
+        const currentValue = JSON.stringify(preparedData);
+
+        if (previousValue !== currentValue) {
+          this.$emit("update:modelValue", preparedData);
+        }
       },
       deep: true,
       immediate: true,
@@ -163,9 +206,49 @@ export default {
       });
       return allValid;
     },
+    handleConfigurationUpdate(configData) {
+      const { studyStepId, configuration } = configData;
+      const stepIndex = this.currentData.findIndex((item) => item.id === studyStepId);
+      if (stepIndex !== -1) {
+        this.currentData[stepIndex] = {
+          ...this.currentData[stepIndex],
+          configuration, 
+        };
+      }     
+    },
+    prepareSubmitData(data) {
+      return data.map((item) => {
+        const tempConfig = this.temporaryConfigurations[item.id];
+        if (tempConfig) {
+          return { ...item, configuration: { firstOpen: [{ nlp: tempConfig }] } };
+        }
+        return item;
+      });
+    },
+    openModal(configuration, studyStepId) {
+      const currentEntry = this.currentData.find((entry) => entry.id === studyStepId);
+      if (!currentEntry || !currentEntry.documentId) {
+        this.eventBus.emit("toast", {
+          title: "Document Error",
+          message: "You need to selected a document.",
+          variant: "danger",
+        });
+        return;
+      }
+      const documentId = currentEntry.documentId;
+
+      this.$refs.configurationModal.open(configuration, studyStepId, documentId);
+    },
   },
 };
 </script>
 
 <style scoped>
+.bi-gear {
+  color: #6c757d; /* Bootstrap muted color */
+  cursor: pointer;
+}
+.bi-gear:hover {
+  color: #0d6efd; /* Bootstrap primary color */
+}
 </style>

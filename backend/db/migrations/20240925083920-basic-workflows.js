@@ -6,19 +6,107 @@ const workflows = [
     description: "EiWA Project: Review a PDF document and write free text.",
     steps: [
       { stepType: 1, allowBackward: false, workflowStepDocument: null },
-      { stepType: 2, allowBackward: true, workflowStepDocument: 1 }
-    ]
+      { stepType: 2, allowBackward: true, workflowStepDocument: 1,
+        configuration: {
+          fields: [
+            {
+              type: "addLinkEOD",
+              required: false,
+              fields: [
+                {
+                  name: "reviewLink",
+                  help: "The link is added to the end of the document \n `~SESSION_HASH~` will be replace with the current session hash",
+                  default: "https://example.com/document?hash=~SESSION_HASH~",
+                },
+                {
+                  name: "reviewText",
+                  help: "Do you find the feedback helpful?",
+                }
+              ],
+            },
+          ],
+        },
+      },
+    ],
   },
   {
-    name: "Rummels Project (experimental)",
-    description: "Rummels Project: Correct a document over two revisions with edits overview.",
+    name: "Ruhr-Uni Bochum Project",
+    description: "Ruhr-Uni Bochum Project: Correct a document over two revisions with edits overview.",
     steps: [
       { stepType: 2, allowBackward: false, workflowStepDocument: null },
-      { stepType: 3, allowBackward: false, workflowStepDocument: 1 },
+      { stepType: 3, allowBackward: false, workflowStepDocument: null,
+        configuration: {
+          fields: [
+            {
+              type: "placeholder",
+              pattern: "/~nlp\[(\d+)\]~/g",
+              required: true,
+              function: "nlp", 
+              fields: [
+                {
+                  name: "skillName",
+                  label: "Skill Name",
+                  placeholder: "Enter NLP skill name",
+                  required: true,
+                  default: "Text Analysis",
+                },
+                {
+                  name: "dataSource",
+                  label: "Data Source",
+                  placeholder: "Enter the data source",
+                  required: true,
+                  default: "Editor Document",
+                },
+                {
+                  name: "output",
+                  label: "Output",
+                  placeholder: "Location where expected output should be saved",
+                  required: true,
+                  default: "HTML Document",
+                },
+              ],
+            },
+          ],
+        },
+      },
       { stepType: 2, allowBackward: false, workflowStepDocument: 1 },
-      { stepType: 3, allowBackward: false, workflowStepDocument: 3 }
-    ]
-  }
+      { stepType: 3, allowBackward: false, workflowStepDocument: null,
+        configuration: {
+          fields: [
+            {
+              type: "placeholder",
+              pattern: "/~nlp\[(\d+)\]~/g",
+              required: true,
+              function: "nlp", 
+              fields: [
+                {
+                  name: "skillName",
+                  label: "Skill Name",
+                  placeholder: "Enter NLP skill name",
+                  required: true,
+                  default: "Text Analysis",
+                },
+                {
+                  name: "dataSource",
+                  label: "Data Source",
+                  placeholder: "Enter the data source",
+                  required: true,
+                  default: "Editor Document",
+                },
+                {
+                  name: "output",
+                  label: "Output",
+                  placeholder: "Location where expected output should be saved",
+                  required: true,
+                  default: "HTML Document",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
 ];
 
 module.exports = { 
@@ -44,8 +132,12 @@ module.exports = {
       for (const workflow of workflows) {
           const workflowId = workflowMap[workflow.name];
           let previousStepId = null;  // Keep track of the previous step
+          const stepMap = {}; // Track actual step IDs
+          const innerStepMap = {}; // Track inner step numbers to actual IDs
 
-          for (const step of workflow.steps) {
+          for (let innerStepId = 1; innerStepId <= workflow.steps.length; innerStepId++) {
+              const step = workflow.steps[innerStepId - 1]; // Get step
+
               const stepInsertion = await queryInterface.bulkInsert(
                   'workflow_step',
                   [{
@@ -53,16 +145,31 @@ module.exports = {
                       stepType: step.stepType,
                       workflowStepPrevious: previousStepId, 
                       allowBackward: step.allowBackward,
-                      workflowStepDocument: step.workflowStepDocument,
-                      configuration: JSON.stringify({}),
+                      workflowStepDocument: null, 
+                      configuration: JSON.stringify(step.configuration || {}),
                       createdAt: new Date(),
                       updatedAt: new Date()
                   }],
                   { returning: true }
               );
 
-              // Update `previousStepId` to the ID of the current step
-              previousStepId = stepInsertion[0].id; 
+              const dbStepId = stepInsertion[0].id; 
+              stepMap[innerStepId] = dbStepId;
+              innerStepMap[innerStepId] = dbStepId;
+              previousStepId = dbStepId;
+          }
+
+          // Update workflowStepDocument with correct references
+          for (let innerStepId = 1; innerStepId <= workflow.steps.length; innerStepId++) {
+              const step = workflow.steps[innerStepId - 1];
+
+              if (step.workflowStepDocument !== null) {
+                  await queryInterface.bulkUpdate(
+                      'workflow_step',
+                      { workflowStepDocument: innerStepMap[step.workflowStepDocument] },
+                      { id: innerStepMap[innerStepId] }
+                  );
+              }
           }
       }
   },
