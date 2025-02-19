@@ -15,12 +15,7 @@
               Choose document type...
             </option>
             <option value="1">General HTML Document</option>
-            <option
-              v-if="isAdmin"
-              value="2"
-            >
-              Document that will be shown within the Modal
-            </option>
+            <option value="2">Study Modal Document (only usable in studies)</option>
           </select>
           <div class="invalid-feedback">
             Please select a valid document type.
