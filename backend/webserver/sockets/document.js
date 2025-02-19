@@ -639,25 +639,25 @@ module.exports = class DocumentSocket extends Socket {
                     }
                 });
                 delta = delta.compose(dbToDelta(edits));
-                
-                if(data['studySessionId'] !== null && data['studyStepId'] !== null) {
-                    const previousStudyStepId = await this.getPreviousStepId(data['studyStepId']);
-                    let previousDelta = await this.loadDocument(deltaFilePath);
-                    const previousEdits = await this.models['document_edit'].findAll({
-                        where: {
-                            documentId: document.id,
-                            studySessionId: data['studySessionId'],
-                            studyStepId: previousStudyStepId,
-                            draft: true
-                        }
-                    });
-                    previousDelta = previousDelta.compose(dbToDelta(previousEdits));
-                    return {document: document, deltas: delta, firstVersion: previousDelta};
+                            
+                    if(data['studySessionId'] !== null && data['studyStepId'] !== null) {
+                        const previousStudyStepId = await this.getPreviousStepId(data['studyStepId']);
+                        let previousDelta = await this.loadDocument(deltaFilePath);
+                        const previousEdits = await this.models['document_edit'].findAll({
+                            where: {
+                                documentId: document.id,
+                                studySessionId: data['studySessionId'],
+                                studyStepId: previousStudyStepId,
+                                draft: true
+                            }
+                        });
+                        previousDelta = previousDelta.compose(dbToDelta(previousEdits));
+                        return {document: document, deltas: delta, firstVersion: previousDelta};
+                    }
+                    else{
+                        return {document: document, deltas: delta};
+                    }
                 }
-                else{
-                    return {document: document, deltas: delta};
-                }
-            }
         } else {
             const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
             if (!fs.existsSync(filePath)) {
