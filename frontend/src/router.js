@@ -68,7 +68,7 @@ const routes = [
         name: "NotFound",
         component: () => import("@/auth/NotFound.vue"),
         meta: {requireAuth: false, hideTopbar: true}
-    }
+    },
 ]
 
 // create the vue router
