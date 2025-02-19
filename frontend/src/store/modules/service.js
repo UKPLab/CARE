@@ -100,25 +100,25 @@ export default {
         },
 
         /**
-         * Returns the skills stored for the NLPService. Equivalent to calling get("NLPService", "skillUpdate").
+         * Returns the skills stored for the specified service. Equivalent to calling get("NLPService", "skillUpdate").
          *
          * @param state
          * @returns {Array|[]}
          */
-        getNLPSkills: (state) => {
-            return "NLPService" in state.services && 'skillUpdate' in state.services["NLPService"] ?
-                Object.keys(state.services["NLPService"]['skillUpdate']) : [];
+        getSkills: (state) => (service) => {
+            return service in state.services && 'skillUpdate' in state.services[service] ?
+                Object.keys(state.services[service]['skillUpdate']) : [];
         },
 
         /**
-         * Returns the results stored for the NLPService. Equivalent to calling get("NLPService", "skillResults").
+         * Returns the results stored for the specified service. Equivalent to calling get("NLPService", "skillResults").
          *
          * @param state
          * @returns {Object|{}}
          */
-        getNLPResults: (state) => {
-            return "NLPService" in state.services && 'skillResults' in state.services["NLPService"] ?
-                state.services["NLPService"]['skillResults'] : {};
+        getResults: (state) => (service) => {
+            return service in state.services && 'skillResults' in state.services[service] ?
+                state.services[service]['skillResults'] : {};
         },
 
     },
@@ -126,7 +126,7 @@ export default {
         /**
          * On "serviceRefresh", adds the message of the given data.service under the data.type. If the service has
          * not communicated with the frontend yet, it is added to the map of services. This method currently supports
-         * the following services for syncrhonization (ands needs extension when adding new services):
+         * the following services for synchronization (and needs extension when adding new services):
          *
          * * NLPService
          *
@@ -190,9 +190,9 @@ export default {
          * @param state
          * @param requestId
          */
-        removeNLPResults: (state, requestId) => {
-            if ("NLPService" in state.services && 'skillResults' in state.services["NLPService"]) {
-                delete state.services["NLPService"]['skillResults'][requestId];
+        removeResults: (state, {service, requestId}) => {
+            if (service in state.services && 'skillResults' in state.services[service]) {
+                delete state.services[service]['skillResults'][requestId];
             }
         },
     },

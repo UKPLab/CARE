@@ -25,6 +25,7 @@
   <Teleport to="#topBarNavItems">
     <TopBarButton
       v-if="showHTMLDownloadButton"
+      v-show="studySessionId && studySessionId !== 0 ? active : true"
       title="Download document"
       class="btn rounded-circle"
       type="button"
@@ -37,22 +38,25 @@
       />
     </TopBarButton>
   </Teleport>
+
 </template>
+
 <script>
 /**
  * Editor component
  *
  * This component provides a Quill editor to edit the document.
  *
- * @autor Juliane Bechert, Dennis Zyska, Zheyu Zhang, Manu Sundar Raj Nandyal, Alexander Bürkle
+ * @autor Juliane Bechert, Dennis Zyska, Manu Sundar Raj Nandyal, Zheyu Zhang, Alexander Bürkle
  */
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
 import {dbToDelta, deltaToDb} from "editor-delta-conversion";
-import {Editor} from '../editorStore.js';
+import {Editor} from "@/components/editor/editorStore.js";
 import {downloadDocument} from "@/assets/utils.js";
+import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 
 const Delta = Quill.import('delta');
@@ -67,7 +71,7 @@ export default {
     studySessionId: {
       type: Number,
       required: false,
-      default: null // Allows for null if not in a study session
+      default: null
     },
     userId: {
       type: Number,
@@ -77,7 +81,12 @@ export default {
     readOnly: {
       type: Boolean,
       required: false,
-      default: false, // Default to false if not provided
+      default: false,
+    },
+    studyData: {
+      type: Array,
+      required: false,
+      default: () => [],
     },
     documentId: {
       type: Number,
@@ -89,20 +98,27 @@ export default {
       required: false,
       default: null,
     },
+    active: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
   },
+  emits: ["update:data"],
   data() {
     return {
       content: "",
       documentHash: this.$route.params.documentHash,
       deltaBuffer: [],
+      deltaDataBuffer: [],
       editor: null,
       documentLoaded: false,
-      historyParams: null,
+      data: {},
+      firstVersion: null,
     };
   },
   created() {
     this.documentHash = this.$route.params.documentHash;
-
   },
   mounted() {
     const editorContainer = document.getElementById('editor-container');
@@ -120,11 +136,17 @@ export default {
         });
       }
 
-      this.editor.getEditor().on('text-change', this.handleTextChange);
       this.editor.getEditor().enable(!this.readOnly);
-
-      this.eventBus.on('editorSelectEdit', (editId) => {
-        this.setEditInEditor(editId);
+      this.editor.getEditor().on('text-change', this.handleTextChange);
+      this.eventBus.on('editorSelectEdit', (data) => {
+        if (data.documentId === this.documentId) {
+          this.setEditInEditor(data.editId);
+        }
+      });
+      this.eventBus.on('editorInsertText', (data) => {
+        if (data.documentId === this.documentId) {
+          this.insertTextAtCursor(data.text);
+        }
       });
     }
 
@@ -137,6 +159,17 @@ export default {
       (res) => {
         if (res.success) {
           this.initializeEditorWithContent(res['data']['deltas']);
+
+          let quill = new Quill(document.createElement('div'));
+          quill.setContents(res['data']['firstVersion']);
+          this.firstVersion = quill.root.innerHTML;
+          let currentVersion = this.editor.getEditor().root.innerHTML;
+
+          let studyData = {
+            firstVersion: this.firstVersion,
+            currentVersion: currentVersion,
+          };
+          this.$emit("update:data", studyData);
         } else {
           this.handleDocumentError(res.error);
         }
@@ -229,6 +262,14 @@ export default {
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
     },
+    studySteps() {
+      if (this.studyStepId !== null) {
+        const studyId = this.$store.getters['table/study_step/get'](this.studyStepId)?.studyId;
+        return this.$store.getters['table/study_step/getByKey']("studyId", studyId);
+      } else {
+        return [];
+      }
+    },
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
@@ -250,54 +291,43 @@ export default {
         } else {
           this.editor.getEditor().getModule("toolbar").container.style = "display:block"
         }
-      }
-    }
-  },
-  methods: {
-    goToEditorHistory() {
-      if (this.documentId && this.studySessionId && this.studyStepId) {
-        this.$router.push(`/history/${this.documentId}/${this.studySessionId}/${this.studyStepId}`);
-      } else {
-        const missingFields = [];
-        if (!this.documentId) missingFields.push('Document ID');
-        if (!this.studySessionId) missingFields.push('Study Session ID');
-        if (!this.studyStepId) missingFields.push('Study Step ID');
 
-        const errorMessage = `Missing required information: ${missingFields.join(', ')}.`;
-
-        this.eventBus.emit('toast', {
-          title: "Navigation Error",
-          message: errorMessage,
-          variant: "danger"
-        });
       }
     },
+  },
+  methods: {
     clearEditor() {
       if (this.editor) {
         const quill = this.editor.getEditor();
         quill.setContents([{insert: ''}]);
       }
     },
-
-    insertTextAtCursor(text) {
-      if (this.editor) {
-        const quill = this.editor.getEditor();
-        const range = quill.getSelection();
-        if (range) {
-          quill.insertText(range.index, text);
-        } else {
-          quill.insertText(quill.getLength() - 1, text);
-        }
-      }
-    },
     setEditInEditor(editId) {
-
       const index = this.allEdits.findIndex((edit) => edit.id === editId);
       const edits = (index !== -1) ? this.allEdits.slice(0, index + 1) : this.allEdits;
 
       const delta = dbToDelta(edits);
       this.clearEditor();
       this.editor.getEditor().updateContents(delta, "api");
+    },
+    insertTextAtCursor(text) {
+      if (this.editor) {
+        const quill = this.editor.getEditor();
+        const range = quill.getSelection();
+        if (range) {
+          const placeholderDelta = new Delta().retain(range.index).insert(text);
+          quill.updateContents(placeholderDelta);
+          this.deltaBuffer.push(placeholderDelta);
+          this.debouncedProcessDelta();
+          quill.setSelection(range.index + text.length);
+        } else {
+          this.eventBus.emit("toast", {
+            title: "No Cursor Position",
+            message: "Please click in the editor to set the cursor position before inserting a placeholder.",
+            variant: "warning",
+          });
+        }
+      }
     },
     onPaste(event) {
       if (this.user.acceptStats) {
@@ -339,8 +369,8 @@ export default {
     },
     processDelta() {
       if (this.deltaBuffer.length > 0) {
-        const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
-        const dbOps = deltaToDb(combinedDelta.ops);
+        let combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
+        let dbOps = deltaToDb(combinedDelta.ops);
         if (dbOps.length > 0) {
           this.$socket.emit("documentEdit", {
             documentId: this.documentId,
@@ -350,6 +380,12 @@ export default {
           });
         }
 
+        let currentVersion = this.editor.getEditor().root.innerHTML;
+        let studyData = {
+          firstVersion: this.firstVersion,
+          currentVersion: currentVersion,
+        };
+        this.$emit("update:data", studyData);
         this.deltaBuffer = [];
       }
     },
@@ -369,7 +405,7 @@ export default {
         return true;
       }
     },
-    initializeEditorWithContent(deltas) {
+    async initializeEditorWithContent(deltas) {
       this.content = deltas;
 
       if (this.editor) {
@@ -398,7 +434,7 @@ export default {
       const documentName = document ? document.name : "document";
       const fileName = `${documentName}.html`;
       downloadDocument(editorContent, fileName, "text/html");
-    }
+    },
   }
 };
 </script>
