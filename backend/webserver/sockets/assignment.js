@@ -333,11 +333,32 @@ module.exports = class AssignmentSocket extends Socket {
 
     }
 
+    /**
+     * Retrieve all the assignments a course has.
+     * @param {Object} data - The data required for getting the relevant assignment info.
+     * @param {Object} data.options - The options object containing the API key and URL of the Moodle instance.
+     * @param {number} data.options.courseID - The ID of the course to fetch users from.
+     * @param {string} data.options.apiKey - The API token for the Moodle instance
+     * @param {string} data.options.apiUrl - The URL of the Moodle instance.
+     * @returns {Promise<ArrayLike<T>>}
+     */
+    async getAssignmentInfoFromCourse(data) {
+        return await this.server.rpcs["MoodleRPC"].getAssignmentInfoFromCourse(
+            {
+                options: {
+                    courseID: Number(data.options.courseID),
+                    apiKey: data.options.apiKey,
+                    apiUrl: data.options.apiUrl,
+                }
+            }
+        );
+    }
+
     init() {
 
         this.createSocket("assignmentCreate", this.createAssignment, {}, true);
         this.createSocket("assignmentCreateBulk", this.createAssignmentBulk, {}, true);
         this.createSocket("assignmentAdd", this.addReviewer, {}, true);
-
+        this.createSocket("assignmentGetInfo", this.getAssignmentInfoFromCourse, {}, false);
     }
 };

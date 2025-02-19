@@ -35,10 +35,19 @@
         <textarea v-model="text_format" class="form-control" id="text_format" rows="3"></textarea>
         <div class="small">
           <p>
-            The placeholder <code>~SESSION_LINKS~</code> will be replaced with the review links.<br>
-            The placeholder <code>~USERNAME~</code> will be replaced with the CARE username of the document owner.
+            <span>The placeholder <code>~SESSION_LINKS~</code> will be replaced with the review links.<br></span>
+            <span v-if="linkCollection === 'studies'">
+              The placeholder <code>~USERNAME~</code> will be replaced with the CARE username of the document owner.
+            </span>
           </p>
         </div>
+      </div>
+      <div class="mb-3">
+        <label for="publishMethod" class="form-label"><b>Link Collection:</b></label>
+        <select v-model="linkCollection" class="form-select" id="publishMethod">
+          <option value="studies">based on Studies (session links for each study)</option>
+          <option value="sessions">based on Sessions (links for own sessions)</option>
+        </select>
       </div>
       <div class="mb-3">
         <label for="publishMethod" class="form-label"><b>Publishing Method:</b></label>
@@ -48,14 +57,24 @@
         </select>
       </div>
       <div class="mb-3 table-scroll-container">
-        <p><b>Selected documents:</b></p>
-        <ul>
-          <li v-for="doc in formattedSessions" :key="doc">
+        <p><b>Links:</b></p>
+        <ul v-if="linkCollection === 'studies'">
+          <li v-for="doc in formattedStudies" :key="doc">
             <b>{{ doc.document.name }} ({{ doc.document.firstName }} {{ doc.document.lastName }})</b>
             <ul>
               <li v-for="session in doc.sessions" :key="session">
                 {{ session.firstName }} {{ session.lastName }} (<a :href="session.link"
                                                                    target="_blank">{{ session.link }}</a>)
+              </li>
+            </ul>
+          </li>
+        </ul>
+        <ul v-else-if="linkCollection === 'sessions'">
+          <li v-for="session in formattedSessions" :key="session">
+            <b>{{ session[0].firstName }} {{ session[0].lastName }}</b>
+            <ul>
+              <li v-for="s in session" :key="s">
+                {{ s.document.documentName }} (<a :href="s.link" target="_blank">{{ s.link }}</a>)
               </li>
             </ul>
           </li>
@@ -81,7 +100,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 
 /**
  * Modal for publish the review links to Moodle
- * @author: Linyin Huang, Dennis Zyska
+ * @author: Dennis Zyska, Linyin Huang
  */
 export default {
   name: "ReviewPublishModal",
@@ -122,6 +141,7 @@ export default {
       moodleOptions: {},
       text_format: "Reviews:\n~SESSION_LINKS~",
       publishMethod: "moodle",
+      linkCollection: "studies",
     };
   },
   computed: {
@@ -135,10 +155,9 @@ export default {
     },
     stepValid() {
       return [
-        Object.values(this.moodleOptions).every(v => v !== ""),
         this.selectedDocuments.length > 0,
         this.selectedSessions.length > 0,
-        true,
+        Object.values(this.moodleOptions).every(v => v !== ""),
       ];
     },
     users() {
@@ -202,19 +221,20 @@ export default {
           studyName: study.name,
           firstName: (user) ? user.firstName : "unknown",
           lastName: (user) ? user.lastName : "unknown",
-
+          userId: session.userId,
           studyId: session.studyId,
           sessionId: session.id,
           link: window.location.origin + "/review/" + session.hash,
           documentName: d.documentName,
           document: d,
+          extId: user.extId,
           start: session.start,
           end: session.end,
           hash: session.hash,
         }
       }));
     },
-    formattedSessions() {
+    formattedStudies() {
       return this.selectedDocuments.filter((d) => {
         return this.selectedSessions.find((s) => s.document.id === d.id);
       }).map((d) => {
@@ -223,6 +243,17 @@ export default {
           sessions: this.selectedSessions.filter((s) => s.document.id === d.id),
         };
       });
+    },
+    formattedSessions() {
+      // group by userId
+      return this.selectedSessions.reduce((acc, session) => {
+        const key = session.userId;
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(session);
+        return acc;
+      }, {});
     },
     documentTableColumns() {
       return [
@@ -253,12 +284,18 @@ export default {
       this.selectedSessions = [];
     },
     publishReviewLinks() {
-      const feedback = this.formattedSessions.map((doc) => {
+
+      const feedback = (this.linkCollection === 'studies') ? this.formattedStudies.map((doc) => {
         let text = this.text_format;
         text = text.replace("~USERNAME~", doc.document.creator_name);
         return {
           extId: doc.document.extId,
           text: text.replace("~SESSION_LINKS~", doc.sessions.map((s) => s.link).join("\n")),
+        };
+      }) : Object.keys(this.formattedSessions).map((userId) => {
+        return {
+          extId: this.formattedSessions[userId][0].extId,
+          text: this.text_format.replace("~SESSION_LINKS~", this.formattedSessions[userId].map((s) => s.link).join("\n")),
         };
       });
 

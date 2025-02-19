@@ -13,10 +13,38 @@
     >
       <div id="hotZone" class="hot-zone"></div>
       <div id="sidepane" ref="sidepane">
-        <div id="spacer"></div>
+        <div id="spacer" />
+        <!-- Edits Section: Only visible when there are edits and no annotations -->
+      <div class="edits-section" v-if="showEdits">
+        <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
+          <h4 class="group-header">{{ dateCategory }}</h4>
 
-        <!-- Placeholders Section -->
-        <div class="placeholders-section" v-if="placeholders && placeholders.length > 0">
+          <div v-for="(group, exactDate) in dateGroups" :key="exactDate">
+            <h5 class="date-header">{{ exactDate }}</h5>
+
+            <ul class="list-group">
+              <li v-for="edit in group" :key="edit.id" class="list-group-item">
+                <SideCard>
+                  <template #header>
+                    {{ edit.timeLabel }} - Created by User {{ edit.userId }}
+                  </template>
+                  <template #body>
+                    <p>{{ edit.text }}</p>
+                  </template>
+                  <template #footer>
+                    <button class="btn btn-primary btn-sm" @click="handleEditClick(edit)">
+                      Show
+                    </button>
+                  </template>
+                </SideCard>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Placeholders Section -->
+      <div class="placeholders-section" v-if="placeholders && placeholders.length > 0">
           <h6 class="section-header">Placeholders</h6>
           <ul id="placeholder-list" class="list-group">
             <li
@@ -43,8 +71,7 @@
             </li>
           </ul>
         </div>
-
-        <ul id="anno-list" class="list-group" v-if="!placeholders || placeholders.length === 0">
+        <ul id="anno-list" class="list-group" v-if="showAnnotations">
           <li v-if="documentComments.length === 0">
             <p class="text-center">No elements</p>
           </li>
@@ -138,6 +165,11 @@ export default {
       required: false,
       default: true,
     },
+    edits: {
+      type: Array,
+      required: true, 
+      default: () => []
+    },
     placeholders: {
       type: Array,
       required: true, 
@@ -156,6 +188,12 @@ export default {
     };
   },
   computed: {
+    showEdits() {
+      return this.edits && Object.keys(this.edits).length > 0 && this.documentComments.length === 0;
+    },
+    showAnnotations() {
+      return !this.showEdits|| this.placeholders.length !== 0; // Show annotations only if `showEdits` is false
+    },
     study() {
       if (this.studySession) {
         return this.$store.getters["table/study/get"](this.studySession.studyId);
@@ -280,6 +318,9 @@ export default {
     this.initHoverController()
   },
   methods: {
+    handleEditClick(edit) {
+      this.$emit("add-edit", edit.text);
+    },
     handlePlaceholderClick(placeholder) {
       this.$emit("add-placeholder", placeholder.text);
       console.log("Clicked placeholder:", placeholder);
@@ -560,6 +601,30 @@ export default {
   right: 0px;
   z-index: 999;
   display: none;
+}
+
+.edits-section {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 10px;
+}
+
+.section-header {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+#edit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-group-item {
+  border: none;
+  background-color: transparent;
+  margin-top: 8px;
 }
 
 .placeholders-section {
