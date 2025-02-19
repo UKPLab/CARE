@@ -13,64 +13,38 @@
     >
       <div id="hotZone" class="hot-zone"></div>
       <div id="sidepane" ref="sidepane">
-        <div id="spacer" />
+        <div id="spacer"></div>
+
         <!-- Edits Section: Only visible when there are edits and no annotations -->
-      <div class="edits-section" v-if="showEdits">
-        <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
-          <h4 class="group-header">{{ dateCategory }}</h4>
+        <div class="edits-section" v-if="showEdits">
+          <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
+            <h4 class="group-header">{{ dateCategory }}</h4>
 
-          <div v-for="(group, exactDate) in dateGroups" :key="exactDate">
-            <h5 class="date-header">{{ exactDate }}</h5>
+            <div v-for="(group, exactDate) in dateGroups" :key="exactDate">
+              <h5 class="date-header">{{ exactDate }}</h5>
 
-            <ul class="list-group">
-              <li v-for="edit in group" :key="edit.id" class="list-group-item">
-                <SideCard>
-                  <template #header>
-                    {{ edit.timeLabel }} - Created by User {{ edit.userId }}
-                  </template>
-                  <template #body>
-                    <p>{{ edit.text }}</p>
-                  </template>
-                  <template #footer>
-                    <button class="btn btn-primary btn-sm" @click="handleEditClick(edit)">
-                      Show
-                    </button>
-                  </template>
-                </SideCard>
-              </li>
-            </ul>
+              <ul class="list-group">
+                <li v-for="edit in group" :key="edit.id" class="list-group-item">
+                  <SideCard>
+                    <template #header>
+                      {{ edit.timeLabel }} - Created by User {{ edit.userId }}
+                    </template>
+                    <template #body>
+                      <p>{{ edit.text }}</p>
+                    </template>
+                    <template #footer>
+                      <button class="btn btn-primary btn-sm" @click="handleEditClick(edit)">
+                        Show
+                      </button>
+                    </template>
+                  </SideCard>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Placeholders Section -->
-      <div class="placeholders-section" v-if="placeholders && placeholders.length > 0">
-          <h6 class="section-header">Placeholders</h6>
-          <ul id="placeholder-list" class="list-group">
-            <li
-              v-for="placeholder in placeholders"
-              :key="placeholder.id"
-              class="list-group-item"
-            >
-              <SideCard>
-                <template #header>
-                  {{ placeholder.label }}
-                </template>
-                <template #body>
-                  <p>{{ placeholder.text }}</p>
-                </template>
-                <template #footer>
-                  <button
-                    class="btn btn-primary btn-sm"
-                    @click="handlePlaceholderClick(placeholder)"
-                  >
-                    Add
-                  </button>
-                </template>
-              </SideCard>
-            </li>
-          </ul>
-        </div>
+        <!-- Annotations Section: Always visible unless edits exist -->
         <ul id="anno-list" class="list-group" v-if="showAnnotations">
           <li v-if="documentComments.length === 0">
             <p class="text-center">No elements</p>
@@ -116,7 +90,7 @@
         </ul>
       </div>
     </div>
-    <ConfirmModal ref="leavePageConf" />
+    <ConfirmModal ref="leavePageConf"/>
   </div>
 </template>
 
@@ -124,7 +98,7 @@
 import SideCard from "./card/Card.vue";
 import AnnoCard from "./card/AnnoCard.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import { scrollElement } from "@/assets/anchoring/scroll";
+import {scrollElement} from "@/assets/anchoring/scroll";
 
 /** Sidebar component of the Annotator
  *
@@ -134,7 +108,7 @@ import { scrollElement } from "@/assets/anchoring/scroll";
  */
 export default {
   name: "AnnotationSidebar",
-  components: { SideCard, AnnoCard, ConfirmModal},
+  components: {SideCard, AnnoCard, ConfirmModal},
   inject: {
     documentId: {
       type: Number,
@@ -167,12 +141,7 @@ export default {
     },
     edits: {
       type: Array,
-      required: true, 
-      default: () => []
-    },
-    placeholders: {
-      type: Array,
-      required: true, 
+      required: true,
       default: () => []
     },
   },
@@ -192,7 +161,7 @@ export default {
       return this.edits && Object.keys(this.edits).length > 0 && this.documentComments.length === 0;
     },
     showAnnotations() {
-      return !this.showEdits|| this.placeholders.length !== 0; // Show annotations only if `showEdits` is false
+      return !this.showEdits; // Show annotations only if `showEdits` is false
     },
     study() {
       if (this.studySession) {
@@ -209,7 +178,7 @@ export default {
     studySessionIds() {
       if (this.study) {
         return this.$store.getters["table/study_session/getByKey"]("studyId", this.studySession.studyId)
-        .map(s => s.id);
+          .map(s => s.id);
       }
       return null;
     },
@@ -287,9 +256,9 @@ export default {
     },
     show(newVal) {
       if (newVal) {
-        this .width = this .originalWidth;
-        this .isFixed = false;
-        this .isHovering = false;
+        this.width = this.originalWidth;
+        this.isFixed = false;
+        this.isHovering = false;
       }
     }
   },
@@ -310,7 +279,12 @@ export default {
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "sidebarScroll",
-          data: {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId, annotationId: annotationId}
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            annotationId: annotationId
+          }
         });
       }
     })
@@ -320,10 +294,6 @@ export default {
   methods: {
     handleEditClick(edit) {
       this.$emit("add-edit", edit.text);
-    },
-    handlePlaceholderClick(placeholder) {
-      this.$emit("add-placeholder", placeholder.text);
-      console.log("Clicked placeholder:", placeholder);
     },
     hover(annotationId) {
       if (annotationId) {
@@ -359,7 +329,7 @@ export default {
       const scrollContainer = this.$refs.sidepane;
       await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
 
-      if(this.$refs["annocard" + commentId]){
+      if (this.$refs["annocard" + commentId]) {
         this.$refs["annocard" + commentId][0].putFocus();
       }
     },
@@ -377,12 +347,12 @@ export default {
       if (this.documentComments.filter(c => c.draft).length > 0) {
         return new Promise((resolve, reject) => {
           this.$refs.leavePageConf.open(
-              "Unsaved Annotations",
-              "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",
-              null,
-              function (val) {
-                return resolve(val);
-              });
+            "Unsaved Annotations",
+            "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",
+            null,
+            function (val) {
+              return resolve(val);
+            });
         });
       } else {
         return true;
@@ -616,30 +586,6 @@ export default {
 }
 
 #edit-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.list-group-item {
-  border: none;
-  background-color: transparent;
-  margin-top: 8px;
-}
-
-.placeholders-section {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 10px;
-}
-
-.section-header {
-  font-weight: bold;
-  font-size: 1rem;
-  margin-bottom: 8px;
-}
-
-#placeholder-list {
   list-style: none;
   padding: 0;
   margin: 0;

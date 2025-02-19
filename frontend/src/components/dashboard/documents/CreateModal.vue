@@ -15,12 +15,7 @@
               Choose document type...
             </option>
             <option value="1">General HTML Document</option>
-            <option
-              v-if="isAdmin"
-              value="2"
-            >
-              Document that will be shown within the Modal
-            </option>
+            <option value="2">Study Modal Document (only usable in studies)</option>
           </select>
           <div class="invalid-feedback">
             Please select a valid document type.
@@ -65,11 +60,6 @@ export default {
       documentType: 1, // Default for General HTML document type
     };
   },
-  computed: {
-    isAdmin() {
-      return this.$store.getters["auth/isAdmin"];
-    },
-  },
   methods: {
     open() {
       this.name = "";
@@ -81,16 +71,6 @@ export default {
         this.eventBus.emit("toast", {
           title: "No name for document",
           message: "Please enter a name for the document!",
-          variant: "danger",
-        });
-        return;
-      }
-
-      // Ensure only admins can create Modal-type documents
-      if (this.documentType === 2 && !this.isAdmin) {
-        this.eventBus.emit("toast", {
-          title: "Permission Denied",
-          message: "Only admins can create Modal-type documents.",
           variant: "danger",
         });
         return;
