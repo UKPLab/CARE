@@ -13,9 +13,40 @@
     >
       <div id="hotZone" class="hot-zone"></div>
       <div id="sidepane" ref="sidepane">
-        <div id="spacer" />
-        <ul id="anno-list" class="list-group">
-          <li v-if="documentComments.length === 0">
+      <div id="spacer"></div>
+
+      <!-- Edits Section: Only visible when there are edits and no annotations -->
+      <div class="edits-section" v-if="showEdits">
+        <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
+          <h4 class="group-header">{{ dateCategory }}</h4>
+
+          <div v-for="(group, exactDate) in dateGroups" :key="exactDate">
+            <h5 class="date-header">{{ exactDate }}</h5>
+
+            <ul class="list-group">
+              <li v-for="edit in group" :key="edit.id" class="list-group-item">
+                <SideCard>
+                  <template #header>
+                    {{ edit.timeLabel }} - Created by User {{ edit.userId }}
+                  </template>
+                  <template #body>
+                    <p>{{ edit.text }}</p>
+                  </template>
+                  <template #footer>
+                    <button class="btn btn-primary btn-sm" @click="handleEditClick(edit)">
+                      Show
+                    </button>
+                  </template>
+                </SideCard>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Annotations Section: Always visible unless edits exist -->
+      <ul id="anno-list" class="list-group" v-if="showAnnotations">
+        <li v-if="documentComments.length === 0">
             <p class="text-center">No elements</p>
           </li>
           <li
@@ -64,6 +95,7 @@
 </template>
 
 <script>
+import SideCard from "./card/Card.vue";
 import AnnoCard from "./card/AnnoCard.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { scrollElement } from "@/assets/anchoring/scroll";
@@ -76,7 +108,7 @@ import { scrollElement } from "@/assets/anchoring/scroll";
  */
 export default {
   name: "AnnotationSidebar",
-  components: {AnnoCard, ConfirmModal},
+  components: { SideCard, AnnoCard, ConfirmModal},
   inject: {
     documentId: {
       type: Number,
@@ -107,6 +139,11 @@ export default {
       required: false,
       default: true,
     },
+    edits: {
+      type: Array,
+      required: true, 
+      default: () => []
+    },
   },
   data() {
     return {
@@ -120,6 +157,12 @@ export default {
     };
   },
   computed: {
+    showEdits() {
+      return this.edits && Object.keys(this.edits).length > 0 && this.documentComments.length === 0;
+    },
+    showAnnotations() {
+      return !this.showEdits; // Show annotations only if `showEdits` is false
+    },
     study() {
       if (this.studySession) {
         return this.$store.getters["table/study/get"](this.studySession.studyId);
@@ -244,6 +287,9 @@ export default {
     this.initHoverController()
   },
   methods: {
+    handleEditClick(edit) {
+      this.$emit("add-edit", edit.text);
+    },
     hover(annotationId) {
       if (annotationId) {
         const annotation = this.$store.getters['table/annotation/get'](annotationId);
@@ -520,5 +566,29 @@ export default {
   right: 0px;
   z-index: 999;
   display: none;
+}
+
+.edits-section {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 10px;
+}
+
+.section-header {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+#edit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-group-item {
+  border: none;
+  background-color: transparent;
+  margin-top: 8px;
 }
 </style>
