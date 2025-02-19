@@ -152,7 +152,8 @@ export default {
     ExpandMenu,
     Sidebar,
     Loader,
-    ExportAnnos
+    ExportAnnos,
+    TopBarButton
   },
   provide() {
     return {
@@ -167,12 +168,14 @@ export default {
       default: null
     },
     acceptStats: {
+      type: Boolean,
+      required: false,
       default: () => false
     },
-    dataFromStudy: {
+    studyData: {
       type: Array,
       required: false,
-      default: [],
+      default: () => [],
     }
   },
   props: {

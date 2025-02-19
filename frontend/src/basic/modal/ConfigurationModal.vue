@@ -29,7 +29,7 @@
 
 <script>
 import BasicModal from "@/basic/Modal.vue";
-import Placeholder from "@/basic/placeholder/Placeholder.vue";
+import Placeholder from "@/basic/modal/configuration/Placeholder.vue";
 import { extractPlaceholder } from "@/assets/editor/placeholder.js";
 
 /**
