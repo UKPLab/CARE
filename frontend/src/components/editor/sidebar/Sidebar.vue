@@ -5,7 +5,8 @@
       <div id="hotZone" class="hot-zone"></div>
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
-          <SidebarHistory v-if="content === 'history'"/>
+        <SidebarHistory v-if="content === 'history'"/>
+        <SidebarConfigurator v-if="content === 'configurator'"/>
       </div>
     </div>
   </div>
@@ -14,6 +15,7 @@
 <script>
 
 import SidebarHistory from "@/components/editor/sidebar/History.vue";
+import SidebarConfigurator from "@/components/editor/sidebar/Configurator.vue";
 
 /** Sidebar component of the Editor
  *
@@ -23,7 +25,7 @@ import SidebarHistory from "@/components/editor/sidebar/History.vue";
  */
 export default {
   name: "EditorSidebar",
-  components: {SidebarHistory},
+  components: {SidebarConfigurator, SidebarHistory},
   props: {
     content: {
       type: String,
@@ -136,6 +138,7 @@ export default {
     display: none;
   }
 }
+
 #hoverHotZone {
   position: fixed;
   height: 100%;
