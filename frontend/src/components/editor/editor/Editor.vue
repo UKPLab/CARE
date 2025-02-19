@@ -53,7 +53,7 @@ import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import LoadIcon from "@/basic/Icon.vue";
 import { dbToDelta, deltaToDb } from "editor-delta-conversion";
-import { Editor } from './editorStore.js';
+import { Editor } from "@/components/editor/editorStore.js";
 import { downloadDocument } from "@/assets/utils.js";
 import {computed} from "vue";
 

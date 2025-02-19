@@ -2,7 +2,7 @@
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
-        <Editor ref="editor"/>
+        <Editor ref="editor" :document-id="documentId" :study-step-id="studyStepId" :active="!sidebarDisabled"/>
       </div>
       <Sidebar
         v-if="!sidebarDisabled && sidebarContent !== null"
