@@ -1,37 +1,41 @@
 'use strict';
 
 const projects = [
-  {
-    name: "Default Project",
-    description: "The default project",
-    public: true,
-    userId: null
-  }
+    {
+        name: "Default Project",
+        description: "The default project",
+        public: true,
+        userId: null
+    }
 ];
 
 module.exports = {
-  async up (queryInterface, Sequelize) {
-    const projectInsertions = await queryInterface.bulkInsert(
-      'project',
-      projects.map(p => ({
-          name: p.name,
-          description: p.description
-      })),
-      { returning: true }
-  );
+    async up(queryInterface, Sequelize) {
+        const projectInsertions = await queryInterface.bulkInsert(
+            'project',
+            projects.map(p => ({
+                name: p.name,
+                description: p.description,
+                public: p.public,
+                userId: p.userId,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            })),
+            {returning: true}
+        );
 
-  const projectMap = {};
-  projectInsertions.forEach((p, index) => {
-    projectMap[projects[index].name] = p.id;
-  });
+        const projectMap = {};
+        projectInsertions.forEach((p, index) => {
+            projectMap[projects[index].name] = p.id;
+        });
 
-  },
+    },
 
-  async down (queryInterface, Sequelize) {
-    const projectNames = projects.map(p => p.name);
+    async down(queryInterface, Sequelize) {
+        const projectNames = projects.map(p => p.name);
 
-    await queryInterface.bulkDelete('project', {
-          name: projectNames
-      }, {});
-  }
+        await queryInterface.bulkDelete('project', {
+            name: projectNames
+        }, {});
+    }
 };
