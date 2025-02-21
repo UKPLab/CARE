@@ -31,6 +31,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import Placeholder from "@/basic/modal/configuration/Placeholder.vue";
 import { extractPlaceholder } from "@/assets/editor/placeholder.js";
+import quill from "quill";
 
 /**
  * Configuration Modal for User Input
@@ -63,10 +64,10 @@ export default {
       if (response.success) {
         const { deltas } = response.data || {};
         if (deltas?.ops) {
-          let quill = new Quill(document.createElement('div'));
-          quill.setContents(deltas.ops);
-          const docText = quill.getText(); // Extract text content from deltas
-          this.placeholders = extractPlaceholder(docText, /~nlp\[d\+\]~/g);
+          let quillNew = new quill(document.createElement('div'));
+          quillNew.setContents(deltas.ops);
+          const docText = quillNew.getText(); // Extract text content from deltas
+          this.placeholders = extractPlaceholder(docText, /~nlp\[\d+\]~/g);
           if (configuration?.fields?.[0]?.fields) {
             this.formData = this.placeholders.map(() => {
               const fieldData = {};
