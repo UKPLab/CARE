@@ -140,7 +140,7 @@ export default {
       return this.$store.getters["table/document/get"](this.documentId);
     },
     sidebarContent() {
-      if (this.document?.type === 2 || this.document?.type === 3) {
+      if (this.document?.type === 2) {
         return 'configurator';
       }
       if (this.historyContent) {
