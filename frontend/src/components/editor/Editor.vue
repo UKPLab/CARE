@@ -137,7 +137,7 @@ export default {
       return false;
     },
     document() {
-      return this.$store.getters["table/document/getById"](this.documentId);
+      return this.$store.getters["table/document/get"](this.documentId);
     },
     sidebarContent() {
       if (this.historyContent) {
