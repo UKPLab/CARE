@@ -23,6 +23,7 @@
           v-model="formData[field.name]"
           :options="skillMap"
           :required="field.required"
+          :key="'field-' + field.name + '-' + index"
         />
 
         <input
@@ -33,6 +34,7 @@
           :placeholder="field.placeholder"
           v-model="formData[field.name]"
           :required="field.required"
+          :key="'field-' + field.name + '--' + index"
         />
       </div>
     </div>
