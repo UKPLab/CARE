@@ -8,20 +8,11 @@
         <h6 class="text-secondary mb-3">Preview of the document:</h6>
 
         <div v-for="(placeholder, index) in placeholders" :key="index">
-          <div v-if="selectionReq && !nlpSkills.length">
-            <span>Loading skills...</span>
-          </div>
-          <FormSelect
-            v-else-if="selectionReq && nlpSkills.length"
-            v-model="formData[index].skillName"
-            :options="skillMap"
-          />
           <Placeholder
-            v-else
             :placeholder="placeholder"
             :fields="data.fields[0]?.fields || []"
             :index="index"
-            v-model="formData[index]" 
+            v-model="formData[index]"
             :key="index"
           />
         </div>
@@ -40,7 +31,6 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import Placeholder from "@/basic/modal/configuration/Placeholder.vue";
-import FormSelect from "@/basic/form/Select.vue";
 import { extractPlaceholder } from "@/assets/editor/placeholder.js";
 import quill from "quill";
 
@@ -55,7 +45,7 @@ import quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: { BasicModal, Placeholder, FormSelect },
+  components: { BasicModal, Placeholder },
   data() {
     return {
       data: { 
@@ -66,19 +56,6 @@ export default {
       studyStepId: null
     };
   },
-  computed: {
-  nlpSkills() {
-    const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
-    return skills && typeof skills === "object" ? Object.values(skills) : [];
-  },
-  skillMap(){
-    return { options: this.nlpSkills.map(skill => ({ value: skill.name, name: skill.name })) };
-  },
-  selectionReq(){
-    return this.data.fields[0]?.fields.some(field => field.name === 'skillName');
-  },
-},
-
   methods: {
     open(configuration, studyStepId, documentId) {
       this.studyStepId = studyStepId;
@@ -161,7 +138,7 @@ export default {
       });
       return isValid;
     },
-  },  
+  },
 };
 </script>
 
