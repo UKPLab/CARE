@@ -2,11 +2,11 @@
   <div class="placeholder-container">
     <!-- Preview Before -->
     <p class="mb-2">
-        <span class="text-dark">
-          {{
+      <span class="text-dark">
+        {{
             placeholder.previewBefore.length > 100 ? placeholder.previewBefore.slice(0, 100) + '...' : placeholder.previewBefore
-          }}
-        </span>
+        }}
+      </span>
     </p>
 
     <h6 class="text-secondary mb-3">Add here the information for the placeholder:</h6>
@@ -17,7 +17,16 @@
         <label :for="'field-' + field.name + '-' + index" class="form-label">
           {{ field.label }}
         </label>
+
+        <FormSelect
+          v-if="field.name === 'skillName' && nlpSkills.length"
+          v-model="formData[field.name]"
+          :options="skillMap"
+          :required="field.required"
+        />
+
         <input
+          v-else
           type="text"
           class="form-control"
           :id="'field-' + field.name + '-' + index"
@@ -30,16 +39,18 @@
 
     <!-- Preview After -->
     <p class="mt-2">
-        <span class="text-dark">
-          {{
+      <span class="text-dark">
+        {{
             placeholder.previewAfter.length > 100 ? placeholder.previewAfter.slice(0, 100) + '...' : placeholder.previewAfter
-          }}
-        </span>
+        }}
+      </span>
     </p>
   </div>
 </template>
 
 <script>
+import FormSelect from "@/basic/form/Select.vue"; // Import FormSelect
+
 /**
  * Placeholder Component for configuration modal
  *
@@ -47,17 +58,17 @@
  */
 export default {
   name: "ConfigurationPlaceholder",
+  components: { FormSelect },
   props: {
-    placeholder:
-      {
-        type: Object,
-        required: true,
-        default: ""
-      },
+    placeholder: {
+      type: Object,
+      required: true,
+      default: () => ({})
+    },
     fields: {
       type: Array,
       required: true,
-      default: []
+      default: () => []
     },
     index: {
       type: Number,
@@ -67,7 +78,24 @@ export default {
     formData: {
       type: Object,
       required: true,
-      default: {}
+      default: () => ({})
+    }
+  },
+  computed: {
+    nlpSkills() {
+      const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
+      return skills && typeof skills === "object" ? Object.values(skills) : [];
+    },
+    skillMap() {
+      return { options: this.nlpSkills.map(skill => ({ value: skill.name, name: skill.name })) };
+    },
+  },
+  watch: {
+    formData: {
+      deep: true,
+      handler(newValue) {
+        this.$emit('update:modelValue', newValue);
+      }
     }
   }
 };
@@ -83,4 +111,3 @@ export default {
   font-weight: bold;
 }
 </style>
-  
