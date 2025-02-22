@@ -62,15 +62,16 @@ export default {
   name: "ConfigurationPlaceholder",
   components: { FormSelect },
   props: {
-    placeholder: {
-      type: Object,
-      required: true,
-      default: () => ({})
-    },
+    placeholder:
+      {
+        type: Object,
+        required: true,
+        default: ""
+      },
     fields: {
       type: Array,
       required: true,
-      default: () => []
+      default: []
     },
     index: {
       type: Number,
@@ -80,25 +81,21 @@ export default {
     formData: {
       type: Object,
       required: true,
-      default: () => ({})
+      default: {}
     }
   },
   computed: {
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
+      console.log("FORM DATA", this.formData);
+      console.log("index", this.index);
+      console.log("fields", this.fields);
+      console.log("placeholder", this.placeholder);
       return skills && typeof skills === "object" ? Object.values(skills) : [];
     },
     skillMap() {
       return { options: this.nlpSkills.map(skill => ({ value: skill.name, name: skill.name })) };
     },
-  },
-  watch: {
-    formData: {
-      deep: true,
-      handler(newValue) {
-        this.$emit('update:modelValue', newValue);
-      }
-    }
   }
 };
 </script>
