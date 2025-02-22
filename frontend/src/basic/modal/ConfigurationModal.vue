@@ -67,16 +67,17 @@ export default {
           if (deltas?.ops) {
             let quillNew = new quill(document.createElement('div'));
             quillNew.setContents(deltas.ops);
-            const docText = quillNew.getText();
+            const docText = quillNew.getText(); // Extract text content from deltas
             this.placeholders = extractPlaceholder(docText, /~nlp\[\d+\]~/g);
             if (configuration?.fields?.[0]?.fields) {
               this.formData = this.placeholders.map(() => {
                 const fieldData = {};
                 configuration.fields[0].fields.forEach((field) => {
-                  fieldData[field.name] = field.name === 'skillName' ? "" : ""; 
+                  fieldData[field.name] = ""; 
                 });
                 return fieldData;
               });
+              console.log("form data 0 called", this.formData);
             } else {
               this.formData = [];
               console.warn("No fields configuration found for placeholders.");
@@ -126,6 +127,7 @@ export default {
       let isValid = true;
       this.data.fields.forEach((placeholder, index) => {
         placeholder.fields.forEach((field) => {
+          console.log("form data 1", this.formData);
           if (field.required && !this.formData[index][field.name]) {
             isValid = false;
             this.eventBus.emit("toast", {
