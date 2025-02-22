@@ -7,14 +7,24 @@
       <div v-if="placeholders.length">
         <h6 class="text-secondary mb-3">Preview of the document:</h6>
 
-        <Placeholder
-          v-for="(placeholder, index) in placeholders"
-          :key="index"
-          :placeholder="placeholder"
-          :fields="data.fields[0]?.fields || []"
-          :index="index"
-          v-model="formData[index]" 
-        />
+        <div v-for="(placeholder, index) in placeholders" :key="index">
+          <div v-if="selectionReq && !nlpSkills.length">
+            <span>Loading skills...</span>
+          </div>
+          <FormSelect
+            v-else-if="selectionReq && nlpSkills.length"
+            v-model="formData[index].skillName"
+            :options="skillMap"
+          />
+          <Placeholder
+            v-else
+            :placeholder="placeholder"
+            :fields="data.fields[0]?.fields || []"
+            :index="index"
+            v-model="formData[index]" 
+            :key="index"
+          />
+        </div>
       </div>
       <div v-else>
         <p>No placeholders found in the document.</p>
@@ -30,6 +40,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import Placeholder from "@/basic/modal/configuration/Placeholder.vue";
+import FormSelect from "@/basic/form/Select.vue";
 import { extractPlaceholder } from "@/assets/editor/placeholder.js";
 import quill from "quill";
 
@@ -44,7 +55,7 @@ import quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: { BasicModal, Placeholder },
+  components: { BasicModal, Placeholder, FormSelect },
   data() {
     return {
       data: { 
@@ -55,53 +66,66 @@ export default {
       studyStepId: null
     };
   },
+  computed: {
+  nlpSkills() {
+    const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
+    return skills && typeof skills === "object" ? Object.values(skills) : [];
+  },
+  skillMap(){
+    return { options: this.nlpSkills.map(skill => ({ value: skill.name, name: skill.name })) };
+  },
+  selectionReq(){
+    return this.data.fields[0]?.fields.some(field => field.name === 'skillName');
+  },
+},
+
   methods: {
     open(configuration, studyStepId, documentId) {
-    this.studyStepId = studyStepId;
-    const requestData = { documentId, studyStepId, studySessionId: this.studySessionId || null };
+      this.studyStepId = studyStepId;
+      const requestData = { documentId, studyStepId, studySessionId: this.studySessionId || null };
 
-    this.$socket.emit("documentGet", requestData, (response) => {
-      if (response.success) {
-        const { deltas } = response.data || {};
-        if (deltas?.ops) {
-          let quillNew = new quill(document.createElement('div'));
-          quillNew.setContents(deltas.ops);
-          const docText = quillNew.getText(); // Extract text content from deltas
-          this.placeholders = extractPlaceholder(docText, /~nlp\[\d+\]~/g);
-          if (configuration?.fields?.[0]?.fields) {
-            this.formData = this.placeholders.map(() => {
-              const fieldData = {};
-              configuration.fields[0].fields.forEach((field) => {
-                fieldData[field.name] = ""; 
+      this.$socket.emit("documentGet", requestData, (response) => {
+        if (response.success) {
+          const { deltas } = response.data || {};
+          if (deltas?.ops) {
+            let quillNew = new quill(document.createElement('div'));
+            quillNew.setContents(deltas.ops);
+            const docText = quillNew.getText();
+            this.placeholders = extractPlaceholder(docText, /~nlp\[\d+\]~/g);
+            if (configuration?.fields?.[0]?.fields) {
+              this.formData = this.placeholders.map(() => {
+                const fieldData = {};
+                configuration.fields[0].fields.forEach((field) => {
+                  fieldData[field.name] = field.name === 'skillName' ? "" : ""; 
+                });
+                return fieldData;
               });
-              return fieldData;
-            });
+            } else {
+              this.formData = [];
+              console.warn("No fields configuration found for placeholders.");
+            }
+
+            this.data = configuration || { fields: [] };
+
+            this.$refs.configurationModal.open();
           } else {
-            this.formData = [];
-            console.warn("No fields configuration found for placeholders.");
+            console.error("Invalid document content:", response);
+            this.eventBus.emit("toast", {
+              title: "Document Error",
+              message: "The document content is invalid or empty. Please try again.",
+              variant: "danger",
+            });
           }
-
-          this.data = configuration || { fields: [] };
-
-          this.$refs.configurationModal.open();
         } else {
-          console.error("Invalid document content:", response);
+          console.error("Failed to fetch document content:", response);
           this.eventBus.emit("toast", {
             title: "Document Error",
-            message: "The document content is invalid or empty. Please try again.",
+            message: response.message || "Failed to fetch the document.",
             variant: "danger",
           });
         }
-      } else {
-        console.error("Failed to fetch document content:", response);
-        this.eventBus.emit("toast", {
-          title: "Document Error",
-          message: response.message || "Failed to fetch the document.",
-          variant: "danger",
-        });
-      }
-    });
-  },
+      });
+    },
     close() {
       this.$refs.configurationModal.close();
     },
@@ -137,41 +161,41 @@ export default {
       });
       return isValid;
     },
-  },
+  },  
 };
 </script>
 
 <style scoped>
 .configuration-container {
-max-height: 400px;
-overflow-y: auto;
-background: #f8f9fa;
-border-radius: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #f8f9fa;
+  border-radius: 0.5rem;
 }
 
 .form-label {
-font-weight: bold;
+  font-weight: bold;
 }
 
 .text-primary {
-color: #007bff !important;
+  color: #007bff !important;
 }
 
 .text-secondary {
-color: #6c757d !important;
+  color: #6c757d !important;
 }
 
 .text-muted {
-color: #6c757d !important;
+  color: #6c757d !important;
 }
 
 .btn-outline-secondary {
-transition: all 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .btn-outline-secondary:hover {
-background-color: #6c757d;
-color: #fff;
+  background-color: #6c757d;
+  color: #fff;
 }
 
 .text-primary {
