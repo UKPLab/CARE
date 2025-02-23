@@ -144,7 +144,7 @@ export default {
             documentId: this.studyStep.documentId, //TODO: Recheck which documentId to be saved
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: "nlp_" + this.requests[requestId].uniqueId,
+            key: this.requests[requestId].uniqueId,
             value: this.nlpResults[this.requestId]
           });
           this.$store.commit("service/removeResults", {
@@ -198,7 +198,19 @@ export default {
           let skill = field.fields.find(f => f.name === "skillName");
           let dataSource = field.fields.find(f => f.name === "dataSource");
           let output = field.fields.find(f => f.name === "output");
-          this.request(skill, dataSource, output, field);
+          this.request(skill, dataSource, output, (field.type + "_" + field)); //TODO: Check if the configuration is always having the same order of fields
+          /*
+          CONFIGURATION IN THE STUDY STEP LOOKS LIKE THIS:
+          configuration: {
+          fields: [
+            {
+              type: "placeholder",
+              pattern: "/~nlp\[(\d+)\]~/g",
+              required: true,
+              function: "nlp", 
+              fields: [
+                {........
+          */
         }
       }
     }
@@ -233,7 +245,7 @@ export default {
       this.requests[requestId]["input"] = input;
       // TODO: Should documentDataSave be done for each of these requests?
 
-      if (this.documentData["studyStepId"] === this.studyStepId && this.documentData["key"] === "nlp_" + uniqueId) {
+      if (this.documentData["studyStepId"] === this.studyStepId && this.documentData["key"] === uniqueId) {
         await this.$socket.emit("serviceRequest",
           {
             service: "NLPService",
