@@ -1,19 +1,16 @@
 <template>
   <div class="placeholder-container">
-    <!-- Preview Before -->
-    <p class="mb-2">
-      <span class="text-dark">
-        {{
-            placeholder.previewBefore.length > 100 ? placeholder.previewBefore.slice(0, 100) + '...' : placeholder.previewBefore
-        }}
+    <!-- Placeholder Number with Color -->
+    <h6 class="text-secondary mb-3">
+      <span :style="{ color: placeholderColor, fontWeight: 'bold' }">
+        #{{ index + 1 }}
       </span>
-    </p>
-
-    <h6 class="text-secondary mb-3">Add here the information for the placeholder:</h6>
+      Add here the information for the placeholder:
+    </h6>
 
     <!-- Input Fields -->
     <div v-if="fields.length">
-      <div v-for="field in fields" :key="field.name" class="mb-3">
+      <div v-for="field in filteredFields" :key="field.name" class="mb-3">
         <label :for="'field-' + field.name + '-' + index" class="form-label">
           {{ field.label }}
         </label>
@@ -38,15 +35,6 @@
         />
       </div>
     </div>
-
-    <!-- Preview After -->
-    <p class="mt-2">
-      <span class="text-dark">
-        {{
-            placeholder.previewAfter.length > 100 ? placeholder.previewAfter.slice(0, 100) + '...' : placeholder.previewAfter
-        }}
-      </span>
-    </p>
   </div>
 </template>
 
@@ -62,16 +50,15 @@ export default {
   name: "ConfigurationPlaceholder",
   components: { FormSelect },
   props: {
-    placeholder:
-      {
-        type: Object,
-        required: true,
-        default: ""
-      },
+    placeholder: {
+      type: Object,
+      required: true,
+      default: () => ({})
+    },
     fields: {
       type: Array,
       required: true,
-      default: []
+      default: () => []
     },
     index: {
       type: Number,
@@ -81,31 +68,38 @@ export default {
     formData: {
       type: Object,
       required: true,
-      default: {}
+      default: () => ({})
+    },
+    placeholderColor: { 
+      type: String,
+      required: true,
+      default: "#000"
     }
   },
   computed: {
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
-      console.log("FORM DATA", this.formData);
-      console.log("index", this.index);
-      console.log("fields", this.fields);
-      console.log("placeholder", this.placeholder);
       return skills && typeof skills === "object" ? Object.values(skills) : [];
     },
     skillMap() {
       return { options: this.nlpSkills.map(skill => ({ value: skill.name, name: skill.name })) };
     },
-  }
+    filteredFields() {
+      return this.fields.filter(field => !(this.hasSkillName && (field.name === 'dataSource' || field.name === 'output')));
+    },
+    hasSkillName() {
+      return this.fields.some(field => field.name === 'skillName');
+    }
+  },
 };
 </script>
 
 <style scoped>
 .placeholder-container {
+  width: 100%;
   padding: 10px;
   border-bottom: 1px solid #ddd;
 }
-
 .form-label {
   font-weight: bold;
 }

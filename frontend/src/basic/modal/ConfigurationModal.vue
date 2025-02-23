@@ -3,24 +3,41 @@
     <template #title>
       <h5 class="modal-title text-primary">Configure NLP Placeholders</h5>
     </template>
+
     <template #body>
       <div v-if="placeholders.length">
-        <h6 class="text-secondary mb-3">Preview of the document:</h6>
+        <!-- Short Preview with Placeholder Labels -->
+        <div class="short-preview p-3 mb-3 border rounded">
+          <h6 class="text-secondary mb-2">Quick Preview:</h6>
+          <p v-html="shortPreview"></p>
+          <div class="legend mt-2">
+            <span v-for="(placeholder, index) in placeholders" 
+                  :key="index" 
+                  :style="{ color: placeholderColors[index] }" 
+                  class="legend-item">
+            </span>
+          </div>
+        </div>
 
-        <div v-for="(placeholder, index) in placeholders" :key="index">
-          <Placeholder
-            :placeholder="placeholder"
-            :fields="data.fields[0]?.fields || []"
-            :index="index"
-            v-model="formData[index]"
-            :key="index"
-          />
+        <!-- Placeholder Input Fields Only -->
+        <h6 class="text-secondary mb-3">Placeholder Inputs:</h6>
+        <div class="placeholder-list">
+          <div v-for="(placeholder, index) in placeholders" :key="index" class="placeholder-item">
+            <Placeholder
+              :placeholder="placeholder"
+              :fields="data.fields[0]?.fields || []"
+              :index="index"
+              v-model:formData="formData[index]"  
+              :placeholderColor="placeholderColors[index]" 
+            />
+          </div>
         </div>
       </div>
       <div v-else>
         <p>No placeholders found in the document.</p>
       </div>
     </template>
+
     <template #footer>
       <button class="btn btn-primary" @click="submit">Submit</button>
       <button class="btn btn-secondary" @click="close">Close</button>
@@ -32,7 +49,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import Placeholder from "@/basic/modal/configuration/Placeholder.vue";
 import { extractPlaceholder } from "@/assets/editor/placeholder.js";
-import quill from "quill";
+import Quill from "quill";
 
 /**
  * Configuration Modal for User Input
@@ -53,7 +70,9 @@ export default {
       },
       placeholders: [],
       formData: [],
-      studyStepId: null
+      placeholderColors: [],
+      studyStepId: null,
+      shortPreview: "",
     };
   },
   methods: {
@@ -65,26 +84,28 @@ export default {
         if (response.success) {
           const { deltas } = response.data || {};
           if (deltas?.ops) {
-            let quillNew = new quill(document.createElement('div'));
-            quillNew.setContents(deltas.ops);
-            const docText = quillNew.getText(); // Extract text content from deltas
-            this.placeholders = extractPlaceholder(docText, /~nlp\[\d+\]~/g);
+            let quill = new Quill(document.createElement("div"));
+            quill.setContents(deltas.ops);
+            const docText = quill.getText();
+
+            this.placeholders = this.extractAndSortPlaceholders(docText);
+            this.generatePlaceholderColors();
+            this.generateShortPreview(docText);
+
             if (configuration?.fields?.[0]?.fields) {
               this.formData = this.placeholders.map(() => {
                 const fieldData = {};
                 configuration.fields[0].fields.forEach((field) => {
-                  fieldData[field.name] = ""; 
+                  fieldData[field.name] = "";
                 });
                 return fieldData;
               });
-              console.log("form data 0 called", this.formData);
             } else {
               this.formData = [];
               console.warn("No fields configuration found for placeholders.");
             }
 
             this.data = configuration || { fields: [] };
-
             this.$refs.configurationModal.open();
           } else {
             console.error("Invalid document content:", response);
@@ -102,6 +123,31 @@ export default {
             variant: "danger",
           });
         }
+      });
+    },
+    extractAndSortPlaceholders(text) {
+      const regex = /~nlp\[(\d+)\]~/g;
+      let match;
+      const extracted = [];
+
+      while ((match = regex.exec(text)) !== null) {
+        extracted.push({ text: match[0], number: parseInt(match[1], 10) });
+      }
+
+      // Sort by extracted number
+      return extracted.sort((a, b) => a.number - b.number);
+    },
+    generatePlaceholderColors() {
+      const colors = [
+        "#ff5733", "#33c3ff", "#ff33f6", "#33ff57", "#ffc133", "#a833ff", "#ff338f"
+      ];
+      this.placeholderColors = this.placeholders.map((_, index) => colors[index % colors.length]);
+    },
+    generateShortPreview(text) {
+      this.shortPreview = text.replace(/~nlp\[(\d+)\]~/g, (match, num) => {
+        const colorIndex = this.placeholders.findIndex(p => p.number == num);
+        const color = this.placeholderColors[colorIndex] || "#000";
+        return `<span style="color: ${color}; font-weight: bold;">#${num}</span>`;
       });
     },
     close() {
@@ -125,9 +171,14 @@ export default {
     },
     validateForm() {
       let isValid = true;
-      this.data.fields.forEach((placeholder, index) => {
-        placeholder.fields.forEach((field) => {
-          console.log("form data 1", this.formData);
+      this.data.fields.forEach((placeholder, index) => {        
+        placeholder.fields.forEach((field) => {    
+          if(field.required && field.name === "skillName"){
+            this.formData[index]["dataSource"] = this.formData[index]["skillName"] === "skill_eic"? 
+              {v1:"firstVersion", v2:"currentVersion"} : 
+                {v1:"firstVersion", v2:"currentVersion", v3:"latestVersion"};
+            this.formData[index]["output"] = " ";
+          }
           if (field.required && !this.formData[index][field.name]) {
             isValid = false;
             this.eventBus.emit("toast", {
@@ -146,35 +197,35 @@ export default {
 
 <style scoped>
 .configuration-container {
-  max-height: 400px;
-  overflow-y: auto;
-  background: #f8f9fa;
-  border-radius: 0.5rem;
+max-height: 400px;
+overflow-y: auto;
+background: #f8f9fa;
+border-radius: 0.5rem;
 }
 
 .form-label {
-  font-weight: bold;
+font-weight: bold;
 }
 
 .text-primary {
-  color: #007bff !important;
+color: #007bff !important;
 }
 
 .text-secondary {
-  color: #6c757d !important;
+color: #6c757d !important;
 }
 
 .text-muted {
-  color: #6c757d !important;
+color: #6c757d !important;
 }
 
 .btn-outline-secondary {
-  transition: all 0.3s ease;
+transition: all 0.3s ease;
 }
 
 .btn-outline-secondary:hover {
-  background-color: #6c757d;
-  color: #fff;
+background-color: #6c757d;
+color: #fff;
 }
 
 .text-primary {
@@ -191,5 +242,36 @@ export default {
 
 .text-muted {
   color: #6c757d !important;
+}
+
+.short-preview {
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  font-size: 14px;
+}
+
+.legend {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.legend-item {
+  font-weight: bold;
+}
+
+.placeholder-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.placeholder-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 </style>
