@@ -97,16 +97,73 @@ module.exports = (sequelize, DataTypes) => {
                     ? sequelize.models.document.docTypes.DOC_TYPE_HTML
                     : sequelize.models.document.docTypes.DOC_TYPE_MODAL;
 
-                if (data.documentId === null) { // create a new document
+                if (data.documentId === null) { // Create a new document
 
                     const newDocument = await sequelize.models.document.add({
-                        name: `Document for study ${study.id}, step ${data.workflowStepId}`,
+                        name: `New document for study ${study.id}`,
                         type: expectedDocType,
                         userId: study.userId,
                         hideInFrontend: true
                     }, {transaction: options.transaction});
 
+                    if (data.workflowStepId) {
+                        const workflowStep = await sequelize.models.workflow_step.getById(data.workflowStepId, { transaction: options.transaction });
+                      
+                        if (workflowStep && workflowStep.workflowStepDocument) {
+                          // Fetch the original workflow step entry referenced by workflowStep.workflowStepDocument
+                          const originalEntry = await sequelize.models.workflow_step.getById(workflowStep.workflowStepDocument, { transaction: options.transaction });
+                      
+                          // Only process if the original entry exists and its stepType equals 2
+                          if (originalEntry && originalEntry.stepType === 2) {
+                            // Using the transaction changes, find the study_step that corresponds to the original workflow step
+                            const referencedStudyStep = options.transaction.changes.find(change =>
+                              change.constructor.name === "study_step" &&
+                              change.dataValues.workflowStepId === originalEntry.id
+                            );
+                            
+                            if (referencedStudyStep) {
+                              const refDocId = referencedStudyStep.dataValues.documentId;
+                              const referencedDocument = options.transaction.changes.find(change =>
+                                change.constructor.name === "document" &&
+                                change.dataValues.id === refDocId
+                              );
+                              
+                              if (referencedDocument) {
+                                // Copy the delta file from the referenced document to the new document
+                                const originalFilePath = path.join(UPLOAD_PATH, `${referencedDocument.dataValues.hash}.delta`);
+                                const newFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
+                                await fs.copyFile(originalFilePath, newFilePath);
+      
+                                const existingEdits = await sequelize.models.document_edit.findAll({
+                                  where: { documentId: referencedDocument.dataValues.id },
+                                  raw: true,
+                                  transaction: options.transaction
+                                });
+                        
+                                if (existingEdits.length > 0) {
+                                  const newEdits = existingEdits.map(edit => ({
+                                    documentId: newDocument.id,
+                                    studySessionId: null,
+                                    studyStepId: null,
+                                    userId: edit.userId,
+                                    draft: edit.draft,
+                                    offset: edit.offset,
+                                    operationType: edit.operationType,
+                                    span: edit.span,
+                                    text: edit.text,
+                                    attributes: edit.attributes
+                                  }));
+                        
+                                  await sequelize.models.document_edit.bulkCreate(newEdits, { transaction: options.transaction });
+                                }
+                              }
+                            } 
+                          } 
+                        } 
+                      }
+
                     data.documentId = newDocument.id;
+
                 } else {
                     const document = await sequelize.models.document.getById(data.documentId);
 
