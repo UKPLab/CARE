@@ -3,6 +3,7 @@
     ref="stepperModal"
     name="stepperModal"
     lg
+    @hide="$emit('hide')"
   >
     <template #title>
       <slot name="title"/>
@@ -35,7 +36,6 @@
     <template #footer>
       <div v-if="!$slots['error']" class="btn-group">
         <slot name="buttons"/>
-
         <BasicButton
           v-if="currentStep !== 0"
           title="Previous"
@@ -94,7 +94,7 @@ export default {
       default: () => []
     },
   },
-  emits: ["stepChange", "submit"],
+  emits: ["stepChange", "submit", 'hide'],
   data() {
     return {
       currentStep: 0
@@ -116,6 +116,12 @@ export default {
     close() {
       this.$refs.stepperModal.close();
     },
+    hide() {
+      this.$refs.stepperModal.hide();
+    },
+    show() {
+      this.$refs.stepperModal.show();
+    },
     reset() {
       this.currentStep = 0;
     },
@@ -131,6 +137,15 @@ export default {
     },
     setWaiting(value) {
       this.$refs.stepperModal.waiting = value;
+    },
+    getProgressId() {
+      return this.$refs.stepperModal.getProgressId();
+    },
+    startProgress(){
+      return this.$refs.stepperModal.startProgress();
+    },
+    stopProgress(){
+      return this.$refs.stepperModal.stopProgress();
     },
   }
 }
@@ -198,29 +213,5 @@ export default {
 
 .content-container {
   height: 100%;
-}
-
-/* Preview */
-.preview-table-container {
-  height: 100%;
-  white-space: nowrap;
-  overflow-x: scroll;
-}
-
-.confirm-container,
-.result-container {
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-}
-
-.link-container {
-  margin-top: 15px;
-
-  button:first-child {
-    margin-right: 0.5rem;
-  }
 }
 </style>
