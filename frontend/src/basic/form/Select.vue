@@ -1,17 +1,23 @@
 <template>
-  <FormElement ref="formElement" :data-table="dataTable" :options="options">
-    <template #element="{blur}">
+  <FormElement
+    ref="formElement"
+    :data-table="dataTable"
+    :options="options"
+  >
+    <template #element="{ blur }">
       <select
         v-if="Array.isArray(options.options)"
         v-model="currentData"
-        :class="selectClass" class="form-select"
+        :class="selectClass"
+        class="form-select"
         @blur="blur(currentData !== -1)"
       >
         <option
-                v-for="option in selectOptions"
-                :key="option.value"
-                :class="option.class"
-                :value="option.value"
+          v-for="option in selectOptions"
+          :key="option.value"
+          :class="option.class"
+          :value="option.value"
+          :disabled="option.disabled"
         >
           {{ option.name }}
         </option>
@@ -23,23 +29,23 @@
         @blur="blur(currentData > 0)"
       >
         <option
-                v-for="option in selectOptions"
-                :key="option.id"
-                :value="option[options.options.value]"
-        >{{ option[options.options.name] }}
+          v-for="option in selectOptions"
+          :key="option.id"
+          :value="option[options.options.value]"
+        >
+          {{ option[options.options.name] }}
         </option>
       </select>
-
     </template>
   </FormElement>
 </template>
 
 <script>
-import FormElement from "@/basic/form/Element.vue"
+import FormElement from "@/basic/form/Element.vue";
 
 export default {
   name: "FormSelect",
-  components: {FormElement},
+  components: { FormElement },
   inject: {
     formData: {
       default: () => null,
@@ -64,17 +70,17 @@ export default {
       type: Object,
       required: false,
       default: () => null,
-    }
+    },
   },
   emits: ["update:modelValue"],
   data() {
     return {
       currentData: -1,
-    }
+    };
   },
   computed: {
     selectClass() {
-      const option = this.selectOptions.find(c => c.value === this.currentData);
+      const option = this.selectOptions.find((c) => c.value === this.currentData);
       if (option) {
         return option.class;
       }
@@ -85,9 +91,7 @@ export default {
       if (Array.isArray(this.options.options)) {
         baseOptions = this.options.options;
       } else if (this.options.options.filter) {
-        baseOptions = this.$store.getters[
-          "table/" + this.options.options.table + "/getFiltered"
-        ]((e) =>
+        baseOptions = this.$store.getters["table/" + this.options.options.table + "/getFiltered"]((e) =>
           this.options.options.filter.every((f) => {
             let sourceValue = e[f.key];
             if (f.mapping) {
@@ -100,30 +104,26 @@ export default {
               case "parentData":
                 return sourceValue === this.parentValue[f.value];
               default:
-                return sourceValue === f.value
+                return sourceValue === f.value;
             }
-          }
-        ));
+          })
+        );
       } else {
-        baseOptions = this.$store.getters[
-          "table/" + this.options.options.table + "/getAll"
-        ];
+        baseOptions = this.$store.getters["table/" + this.options.options.table + "/getAll"];
       }
 
       // Filter according to additional Options and add to baseOptions
       if (this.options.options.additionalOptions) {
-        const mappingFilter = this.options.options.filter.find(
-          (filter) => filter.type === "parentData"
-        );
+        const mappingFilter = this.options.options.filter.find((filter) => filter.type === "parentData");
         const mapping = mappingFilter?.mapping;
 
-        // Determine parentType from parentValue 
+        // Determine parentType from parentValue
         const parentType = this.parentValue?.[mappingFilter?.value];
 
         // Filter `additionalOptions` to include only those matching the current `parentType`
         const additionalOptions = this.options.options.additionalOptions.filter((option) => {
-          const stepType = mapping[option.type]; 
-          return stepType === parentType; 
+          const stepType = mapping[option.type];
+          return stepType === parentType;
         });
 
         baseOptions = [...baseOptions, ...additionalOptions];
@@ -149,7 +149,8 @@ export default {
           this.currentData = this.options.default;
         } else {
           if (this.selectOptions && this.selectOptions.length > 0) {
-            if (this.options.table) { // in case we use a vuex table for the select options
+            // in case we use a vuex table for the select options
+            if (this.options.table) {
               this.currentData = this.selectOptions[0][this.options.options.value];
             } else {
               this.currentData = this.selectOptions[0].value;
@@ -162,11 +163,9 @@ export default {
     },
     validate() {
       return this.$refs.formElement.validate(this.currentData);
-    }
+    },
   },
-}
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

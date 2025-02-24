@@ -1,7 +1,6 @@
 <template>
-  <Loader v-if="loadingConfig" :loading="true" class="pageLoader" />
+  <Loader v-if="loadingConfig" :loading="true" class="pageLoader"/>
   <span v-else>
-    <NLPService ref="nlp" :data="data.data" :skill="skill" @response="response" :disabled="true" hidden />
     <BasicModal
       ref="modal"
       :name="studyStep?.configuration?.name || 'Modal'"
@@ -28,16 +27,16 @@
       </div>
       <div v-else>
         <div
-            class="feedback-container p-3"
-            :style="{ color: studyStep?.configuration?.textColor || '' }"
-          >
+          class="feedback-container p-3"
+          :style="{ color: studyStep?.configuration?.textColor || '' }"
+        >
             <p v-if="!documentText">
               No content available for this step.
             </p>
 
           <!-- TODO: Remove check for output once the configuration is fixed-->
             <p v-if="output">
-            Output of the {{skill}}: {{ output }}
+            Output of the {{ skill }}: {{ output }}
           </p>
             <div v-else v-html="documentText"></div>
           </div>
@@ -47,14 +46,14 @@
         <div v-if="!waiting">
           <BasicButton
             v-if="!isLastStep"
-            @click="closeModal({ nextStep: true })"
             :title="studyStep?.configuration?.nextButtonText || 'Next'"
+            @click="closeModal({ nextStep: true })"
           />
           <BasicButton
             v-if="isLastStep"
-            @click="closeModal({ endStudy: true })"
             :title="studyStep?.configuration?.finishButtonText || 'Finish Study'"
             :class="studyStep?.configuration?.finishButtonClass || 'btn btn-danger'"
+            @click="closeModal({ endStudy: true })"
           />
         </div>
       </template>    
@@ -66,7 +65,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
-import NLPService from "@/basic/NLPService.vue";
+import {v4 as uuid} from "uuid";
 
 /**
  * A Modal as per the configuration of the study step
@@ -74,19 +73,9 @@ import NLPService from "@/basic/NLPService.vue";
  *
  * @author: Juliane Bechert, Manu Sundar Raj Nandyal
  */
-  export default {
-  name: "Modal",
-  components: { BasicButton, BasicModal, NLPService },
-  props: {
-    studyStepId: { 
-      type: Number,
-      required: true 
-    },
-    isLastStep: {
-      type: Boolean,
-      default: false 
-    },
-  },
+export default {
+  name: "StepModal",
+  components: {BasicButton, BasicModal},
   inject: {
     studySessionId: {
       type: Number,
@@ -98,44 +87,81 @@ import NLPService from "@/basic/NLPService.vue";
       required: false,
       default: null
     },
-    readonly: {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false,
     },
-    dataFromStudy: {
+    studyData: {
       type: Array,
       required: false,
-      default: [],
+      default: () => [],
     }
   },
-  data() { 
+  props: {
+    studyStepId: {
+      type: Number,
+      required: true
+    },
+    isLastStep: {
+      type: Boolean,
+      default: false
+    },
+  },
+  data() {
     return {
-      loadingConfig: true, 
-      data: {
-        data: "" // This input data is also wrong, because the data should contain everything from the configuration and not just the input for the NLP service
-      }, 
-      skill: "skill_eic", // to be read from the configuration
+      loadingConfig: true,
       documentText: null, // Holds the parsed content of the delta document
-      output: null, // Holds the output from the NLP service
       waiting: false, // Holds the status of the NLP service which is waiting for the response
+      requests: {},
     };
   },
   computed: {
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
-    },    
+    },
     configuration() {
       return this.studyStep && this.studyStep.configuration ? this.studyStep.configuration : null;
-    }
+    },
+    nlpResults() {
+      return this.$store.getters["service/getResults"]("NLPService");
+    },
+    nlpRequestTimeout() {
+      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
+    },
+  },
+  watch: {
+    nlpResults: function (results) {
+      for (let requestId in this.requests) {
+        if (requestId in results) {
+          //TODO: Should the nlp results be sent individually or as a whole?
+          // this.$emit("response", this.nlpResults[this.requestId]);
+          this.$emit("documentDataSave", {
+            userId: this.userId,
+            documentId: this.requests[requestId].output, //TODO: Recheck what the output holds
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            key: "placeholder_/~nlp\[(\d+)\]~/g_" + this.requests[requestId].skill, // Example: placeholder_/~nlp\[(\d+)\]~/g_skill_eic
+            value: this.nlpResults[this.requestId]
+          });
+          this.$store.commit("service/removeResults", {
+            service: "NLPService",
+            requestId: requestId
+          });
+          delete this.requests[requestId];
+        }
+      }
+      if (Object.keys(this.requests).length === 0) {
+        this.waiting = false;
+      }
+    },
   },
   created() {
-    if(this.configuration){
-      this.data = this.configuration;
+    if (this.configuration) {
       this.loadingConfig = false;
     }
     // Delete this after the configuration is implemented
-    else{
+    else {
       this.data = {
         "Feedback": "This is a placeholder for the feedback. The configuration is not implemented yet.",
       };
@@ -146,7 +172,7 @@ import NLPService from "@/basic/NLPService.vue";
         documentId: this.studyStep && this.studyStep.documentId ? this.studyStep.documentId : 0,
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
-       },
+      },
       (response) => {
         if (response && response.success && response.data && response.data.deltas) {
           const quill = new Quill(document.createElement("div"));
@@ -159,16 +185,22 @@ import NLPService from "@/basic/NLPService.vue";
     );
   },
   mounted() {
-    // TODO: Check this part after it is known how to read the pattern of the NLP service, also check for the nlp?
-    if(this.configuration && "functionality" in this.configuration){
+
+    if (this.configuration && 'fields' in this.configuration && Array.isArray(this.configuration.fields)) {
       this.waiting = true;
+      for (let i = 0; i < this.configuration.fields.length; i++) {
+        let field = this.configuration.fields[i];
+
+        if (field.function === "nlp") {
+          let skill = field.fields.find(f => f.name === "skillName");
+          let dataSource = field.fields.find(f => f.name === "dataSource");
+          let output = field.fields.find(f => f.name === "output");
+          this.request(skill, dataSource, output);
+        }
+      }
     }
-    if(this.configuration && "functionality" in this.configuration){
-      // this.skill = "skillName" in this.configuration.firstOpen? this.configuration.firstOpen.skillName : this.skill;
-      // TODO: if functionality, check for nlp pattern and should be possible for multiple nlp calls
-      this.$refs.nlp.request();
-    }
-    this.$refs.modal.open(); 
+
+    this.$refs.modal.open();
   },
   methods: {
     open(data) {
@@ -179,56 +211,90 @@ import NLPService from "@/basic/NLPService.vue";
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    response(response) {
-      this.output = response;
-      this.waiting = false;
-    }
+    async request(skill, dataSource, output) {
+      const requestId = uuid();
+      this.requests[requestId] = {
+        skill: "",
+        dataSource: "",
+        output: "",
+        input: "",
+        result: ""
+      };
+
+      // TODO: Save the value of below directly in the this.requests[requestId]
+      let dataSourceDoc = this.$store.getters["table/document/get"](dataSource); // TODO : Recheck what the dataSource holds
+      // TODO: Should documentGet be done for each of these requests?
+      let data = ""; // TODO : Recheck how to get the data
+      let outputDoc = this.$store.getters["table/document/get"](output); // TODO : Recheck what the output holds
+      // TODO: Should documentDataSave be done for each of these requests?
+      await this.$socket.emit("serviceRequest",
+        {
+          service: "NLPService",
+          data: {
+            id: requestId,
+            name: skill,
+            data: data
+          }
+        }
+      );
+
+      setTimeout(() => {
+        if (requestId) {
+          this.eventBus.emit('toast', {
+            title: "NLP Service Request",
+            message: "Timeout in request for skill " + skill + " - Request failed!",
+            variant: "danger"
+          });
+        }
+      }, this.nlpRequestTimeout);
+
+    },
   },
 };
 </script>
 <style scoped>
 .feedback-container {
-    max-height: 400px;
-    overflow-y: auto;
-    background: #f8f9fa;
-    border-radius: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #f8f9fa;
+  border-radius: 0.5rem;
 }
 
 .row {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
 .modal-title {
-    font-weight: bold;
-    text-transform: uppercase;
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
 .text-primary {
-    color: #007bff !important;
+  color: #007bff !important;
 }
 
 .text-secondary {
-    color: #6c757d !important;
+  color: #6c757d !important;
 }
 
 .text-muted {
-    color: #6c757d !important;
+  color: #6c757d !important;
 }
 
 .fw-bold {
-    font-weight: 700 !important;
+  font-weight: 700 !important;
 }
 
 .fw-semibold {
-    font-weight: 600 !important;
+  font-weight: 600 !important;
 }
 
 .btn-outline-secondary {
-    transition: all 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .btn-outline-secondary:hover {
-    background-color: #6c757d;
-    color: #fff;
+  background-color: #6c757d;
+  color: #fff;
 }
 </style>
