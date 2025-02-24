@@ -17,7 +17,7 @@
       title="Show History"
       class="btn rounded-circle ms-2"
       type="button"
-      @click="toogleHistory"
+      @click="toggleHistory"
     >
       <LoadIcon
         :color="'#777777'"
@@ -137,7 +137,7 @@ export default {
       return false;
     },
     document() {
-      return this.$store.getters["table/document/getById"](this.documentId);
+      return this.$store.getters["table/document/get"](this.documentId);
     },
     sidebarContent() {
       if (this.historyContent) {
@@ -150,7 +150,7 @@ export default {
     }
   },
   methods: {
-    toogleHistory() {
+    toggleHistory() {
       if (this.historyContent) {
         this.historyContent = false;
       } else {
