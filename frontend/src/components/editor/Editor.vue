@@ -57,7 +57,7 @@
  *
  * @autor Dennis Zyska, Juliane Bechert
  */
-import Sidebar from "@/components/editor/sidebar/History.vue";
+import Sidebar from "@/components/editor/sidebar/Sidebar.vue";
 import Editor from "@/components/editor/editor/Editor.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import LoadIcon from "@/basic/Icon.vue";
@@ -140,12 +140,12 @@ export default {
       return this.$store.getters["table/document/get"](this.documentId);
     },
     sidebarContent() {
-      if (this.historyContent) {
-        return 'history';
-      }
       if (this.document?.type === 2) {
         return 'configurator';
       }
+      if (this.historyContent) {
+        return 'history';
+      }      
       return null;
     }
   },
