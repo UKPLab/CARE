@@ -1,41 +1,34 @@
 <template>
-  <!-- Placeholders Section -->
-  <div v-if="placeholders && placeholders.length > 0" class="placeholders-section">
-    <h6 class="section-header">Placeholders</h6>
-    <ul id="placeholder-list" class="list-group">
+  <div>
+    <h3 class="sidebar-title">Placeholders</h3>
+    <ul class="list-group">
       <li
         v-for="placeholder in placeholders"
         :key="placeholder.id"
         class="list-group-item"
       >
-        <SideCard>
-          <template #header>
-            {{ placeholder.label }}
-          </template>
-          <template #body>
-            <p>{{ placeholder.text }}</p>
-          </template>
-          <template #footer>
-            <button
-              class="btn btn-primary btn-sm"
-              @click="handlePlaceholderClick(placeholder)"
-            >
-              Add
-            </button>
-          </template>
-        </SideCard>
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="ms-2 me-auto">
+            <div class="fw-bold">{{ placeholder.label }}</div>
+            <p class="mb-1">{{ placeholder.text }}</p>
+          </div>
+          <button
+            class="btn btn-primary btn-sm"
+            @click="handlePlaceholderClick(placeholder)"
+          >
+            Add
+          </button>
+        </div>
       </li>
     </ul>
   </div>
-
 </template>
 
+
 <script>
-import SideCard from "@/components/annotator/sidebar/card/Card.vue";
 
 export default {
   name: "SidebarConfigurator",
-  components: {SideCard},
   inject: {
     studySessionId: {
       type: Number,
@@ -55,14 +48,32 @@ export default {
         {id: "placeholder1", label: "Placeholder to insert a link", text: "~link[d+]~"},
         {id: "placeholder2", label: "Placeholder to insert an NLP model", text: "~nlp[d+]~"},
       ],
+      placeholderCounts: {
+        link: 0,
+        nlp: 0,
+      },
     };
   },
   methods: {
     handlePlaceholderClick(placeholder) {
-      this.eventBus.emit("editorInsertText", {
-        documentId: this.documentId,
-        text: placeholder.text
-      });
+      let placeholderType = null;
+      if (placeholder.text.includes("~link[d+]~")) {
+        placeholderType = "link";
+      } else if (placeholder.text.includes("~nlp[d+]~")) {
+        placeholderType = "nlp";
+      }
+      if (placeholderType) {
+        this.placeholderCounts[placeholderType] += 1;
+        const newPlaceholderText = placeholder.text.replace(
+          "[d+]",
+          `[${this.placeholderCounts[placeholderType]}]`
+        );
+
+        this.eventBus.emit("editorInsertText", {
+          documentId: this.documentId,
+          text: newPlaceholderText,
+        });
+      } 
     },
   },
 };
@@ -70,27 +81,10 @@ export default {
 
 <style scoped>
 
-.list-group-item {
-  border: none;
-  background-color: transparent;
-  margin-top: 8px;
-}
-
-.placeholders-section {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 10px;
-}
-
-.section-header {
+.sidebar-title {
+  font-size: 1.4rem;
   font-weight: bold;
-  font-size: 1rem;
-  margin-bottom: 8px;
-}
-
-#placeholder-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  margin-top: 2px;
+  margin-bottom: 10px;
 }
 </style>

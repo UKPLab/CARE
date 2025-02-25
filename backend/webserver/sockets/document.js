@@ -731,6 +731,17 @@ module.exports = class DocumentSocket extends Socket {
             value: data.value
         }, {transaction: options.transaction});  
 
+        // TODO: Get this checked
+        let skillDataOps = new Delta({ [data.key]: dbToDelta(data.value) });
+        let skillData = {
+            documentId: data.documentId,
+            studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
+            ops: skillDataOps
+        };
+
+        await this.editDocument(skillData);
+
         options.transaction.afterCommit(() => {
             this.emit("document_dataRefresh", documentData);
         });

@@ -129,6 +129,9 @@ export default {
     nlpRequestTimeout() {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
     },
+    documentData() {
+      return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
+    },
   },
   watch: {
     nlpResults: function (results) {
@@ -138,10 +141,10 @@ export default {
           // this.$emit("response", this.nlpResults[this.requestId]);
           this.$emit("documentDataSave", {
             userId: this.userId,
-            documentId: this.requests[requestId].output, //TODO: Recheck what the output holds
+            documentId: this.studyStep.documentId, //TODO: Recheck which documentId to be saved
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: "placeholder_/~nlp\[(\d+)\]~/g_" + this.requests[requestId].skill, // Example: placeholder_/~nlp\[(\d+)\]~/g_skill_eic
+            key: this.requests[requestId].uniqueId,
             value: this.nlpResults[this.requestId]
           });
           this.$store.commit("service/removeResults", {
@@ -195,7 +198,19 @@ export default {
           let skill = field.fields.find(f => f.name === "skillName");
           let dataSource = field.fields.find(f => f.name === "dataSource");
           let output = field.fields.find(f => f.name === "output");
-          this.request(skill, dataSource, output);
+          this.request(skill, dataSource, output, (field.type + "_" + field)); //TODO: Check if the configuration is always having the same order of fields
+          /*
+          CONFIGURATION IN THE STUDY STEP LOOKS LIKE THIS:
+          configuration: {
+          fields: [
+            {
+              type: "placeholder",
+              pattern: "/~nlp\[(\d+)\]~/g",
+              required: true,
+              function: "nlp", 
+              fields: [
+                {........
+          */
         }
       }
     }
@@ -211,42 +226,47 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    async request(skill, dataSource, output) {
+    async request(skill, dataSource, output, uniqueId) {
       const requestId = uuid();
       this.requests[requestId] = {
-        skill: "",
-        dataSource: "",
-        output: "",
+        skill: skill,
+        dataSource: dataSource,
+        output: output,
         input: "",
-        result: ""
+        result: "",
+        uniqueId: uniqueId
       };
 
-      // TODO: Save the value of below directly in the this.requests[requestId]
-      let dataSourceDoc = this.$store.getters["table/document/get"](dataSource); // TODO : Recheck what the dataSource holds
-      // TODO: Should documentGet be done for each of these requests?
-      let data = ""; // TODO : Recheck how to get the data
-      let outputDoc = this.$store.getters["table/document/get"](output); // TODO : Recheck what the output holds
+      // TODO: Save the value of below directly in the this.requests[requestId]// TODO : Recheck what the dataSource holds? Ans.{v1 and v2}
+      
+      let input = Object.keys(dataSource).includes("v2") ? 
+        {v1: this.studyData[this.studyStep.previousStepId][dataSource.v1], v2: this.studyData[this.studyStepId][dataSource.v2]} : 
+          {v1: this.studyData[this.studyStepId][dataSource.v1]};
+      this.requests[requestId]["input"] = input;
       // TODO: Should documentDataSave be done for each of these requests?
-      await this.$socket.emit("serviceRequest",
-        {
-          service: "NLPService",
-          data: {
-            id: requestId,
-            name: skill,
-            data: data
-          }
-        }
-      );
 
-      setTimeout(() => {
-        if (requestId) {
-          this.eventBus.emit('toast', {
-            title: "NLP Service Request",
-            message: "Timeout in request for skill " + skill + " - Request failed!",
-            variant: "danger"
-          });
-        }
-      }, this.nlpRequestTimeout);
+      if (this.documentData["studyStepId"] === this.studyStepId && this.documentData["key"] === uniqueId) {
+        await this.$socket.emit("serviceRequest",
+          {
+            service: "NLPService",
+            data: {
+              id: requestId,
+              name: skill,
+              data: input
+            }
+          }
+        );
+
+        setTimeout(() => {
+          if (requestId) {
+            this.eventBus.emit('toast', {
+              title: "NLP Service Request",
+              message: "Timeout in request for skill " + skill + " - Request failed!",
+              variant: "danger"
+            });
+          }
+        }, this.nlpRequestTimeout);        
+      }      
 
     },
   },
