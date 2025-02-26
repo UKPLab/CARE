@@ -72,7 +72,6 @@ module.exports = (sequelize, DataTypes) => {
 
         }
 
-
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -85,6 +84,40 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'studyStepId',
                 as: 'studyStep',
             });
+        }
+
+        /**
+         * TODO: Method description to be provided
+         * @param {*} documentId 
+         * @param {*} studySessionId 
+         * @param {*} studyStepId 
+         * @param {*} transaction 
+         */
+        static async copyEdits(documentId, studySessionId, studyStepId, transaction) {
+            const sourceEdits = await this.findAll({
+                where: {
+                    documentId: documentId,
+                    studySessionId: studySessionId ,
+                    studyStepId: studyStepId
+                },
+                transaction
+            });
+
+            console.log('sourceEdits:', sourceEdits);
+            // Create new edits keeping the studyStepId
+            const newEdits = sourceEdits.map(edit => ({
+                ...edit.toJSON(),
+                id: undefined, // Let the database assign a new ID
+                // studySessionId: studySessionId,
+                studyStepId: studyStepId,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }));
+
+            console.log({newEdits});
+            if (newEdits.length > 0) {
+                await this.bulkCreate(newEdits, { transaction });
+            }
         }
     }
 

@@ -630,34 +630,65 @@ module.exports = class DocumentSocket extends Socket {
 
                 this.emit("document_editRefresh", edits);
             } else {
+                // Get the current step information
+                const currentStep = await this.models['study_step'].findByPk(data['studyStepId']);
+                
+                console.log('currentStep:', currentStep);
+                console.log('studySessionId:', data['studySessionId']);
+
                 const edits = await this.models['document_edit'].findAll({
                     where: {
                         documentId: document.id,
-                        studySessionId: data['studySessionId'],
-                        studyStepId: data['studyStepId'],
-                        draft: true
-                    }
+                        draft: true,
+                        [Op.or]: [
+                            { studySessionId: null }, // base document edits
+                            {
+                                studySessionId: data['studySessionId'],
+                                studyStepId: {
+                                    [Op.or]: [
+                                        null,
+                                        data['studyStepId']
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    order: [['createdAt', 'ASC']]
                 });
+
+                console.log('edits:', edits); 
+                
                 delta = delta.compose(dbToDelta(edits));
                             
-                    if(data['studySessionId'] !== null && data['studyStepId'] !== null) {
-                        const previousStudyStepId = await this.getPreviousStepId(data['studyStepId']);
-                        let previousDelta = await this.loadDocument(deltaFilePath);
-                        const previousEdits = await this.models['document_edit'].findAll({
-                            where: {
-                                documentId: document.id,
-                                studySessionId: data['studySessionId'],
-                                studyStepId: previousStudyStepId,
-                                draft: true
-                            }
-                        });
-                        previousDelta = previousDelta.compose(dbToDelta(previousEdits));
-                        return {document: document, deltas: delta, firstVersion: previousDelta};
-                    }
-                    else{
-                        return {document: document, deltas: delta};
-                    }
+                if(data['studySessionId'] !== null && data['studyStepId'] !== null) {
+                    const previousStudyStepId = await this.getPreviousStepId(data['studyStepId']);
+                    let previousDelta = await this.loadDocument(deltaFilePath);
+                    
+                    console.log('previousStudyStepId:', previousStudyStepId); 
+
+                    const previousEdits = await this.models['document_edit'].findAll({
+                        where: {
+                            documentId: document.id,
+                            draft: true,
+                            [Op.or]: [
+                                { studySessionId: null },
+                                {
+                                    studySessionId: data['studySessionId'],
+                                    studyStepId: previousStudyStepId
+                                }
+                            ]
+                        },
+                        order: [['createdAt', 'ASC']]
+                    });
+
+                    console.log('previousEdits:', previousEdits); 
+                    
+                    previousDelta = previousDelta.compose(dbToDelta(previousEdits));
+                    return {document: document, deltas: delta, firstVersion: previousDelta};
+                } else {
+                    return {document: document, deltas: delta};
                 }
+            }
         } else {
             const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
             if (!fs.existsSync(filePath)) {

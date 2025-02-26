@@ -112,7 +112,6 @@ module.exports = (sequelize, DataTypes) => {
 
             },
             beforeUpdate: async (studySession, options) => {
-
                 // Check if study step changed
                 if (studySession._previousDataValues.studyStepId !== studySession.studyStepId) {
                     await sequelize.models.study.checkStudyOpen(studySession.studyId);
@@ -121,6 +120,36 @@ module.exports = (sequelize, DataTypes) => {
 
                     let stepInPreviousStepPath = false;
                     let studyStep = studySteps.find(step => step.id === studySession.studyStepId);
+
+                    // Check for first time entry and document copying
+                    const currentStep = await sequelize.models.study_step.findByPk(studySession.studyStepId, {
+                        transaction: options.transaction
+                    });
+                    
+                    if (currentStep && currentStep.studyStepDocument) {
+                        // Check if we already have edits for this step
+                        console.log('studySessionId', studySession.id);
+                        console.log('studyStepId', studySession.studyStepId);
+                        const existingEdits = await sequelize.models.document_edit.findOne({
+                            where: {
+                                studySessionId: studySession.id,
+                                studyStepId: studySession.studyStepId
+                            },
+                            transaction: options.transaction
+                        });
+
+                        console.log({existingEdits});
+                        if (!existingEdits) {
+                            
+                            // Copy edits from the associated document
+                            await sequelize.models.document_edit.copyEdits(
+                                currentStep.studyStepDocument,
+                                studySession.id,
+                                studySession.studyStepId,
+                                options.transaction
+                            );
+                        }
+                    }
 
                     while (studyStep && studyStep.studyStepPrevious !== null && !stepInPreviousStepPath) {
                         if (studyStep.studyStepPrevious === studySession._previousDataValues.studyStepIdMax) {
@@ -141,7 +170,6 @@ module.exports = (sequelize, DataTypes) => {
                         studySession.start = new Date();
                     }
                 }
-
             },
         }
     });
