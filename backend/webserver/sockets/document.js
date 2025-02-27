@@ -630,64 +630,43 @@ module.exports = class DocumentSocket extends Socket {
 
                 this.emit("document_editRefresh", edits);
             } else {
-                // Get the current step information
-                const currentStep = await this.models['study_step'].findByPk(data['studyStepId']);
-                
-                console.log('currentStep:', currentStep);
-                console.log('studySessionId:', data['studySessionId']);
-
+                // Get the edits for the base document
                 const edits = await this.models['document_edit'].findAll({
                     where: {
                         documentId: document.id,
-                        draft: true,
-                        [Op.or]: [
-                            { studySessionId: null }, // base document edits
-                            {
-                                studySessionId: data['studySessionId'],
-                                studyStepId: {
-                                    [Op.or]: [
-                                        null,
-                                        data['studyStepId']
-                                    ]
-                                }
-                            }
-                        ]
+                        studySessionId: data['studySessionId'],
+                        studyStepId: data['studyStepId'],
+                        draft: true
                     },
-                    order: [['createdAt', 'ASC']]
+                    
                 });
-
-                console.log('edits:', edits); 
                 
                 delta = delta.compose(dbToDelta(edits));
-                            
+
                 if(data['studySessionId'] !== null && data['studyStepId'] !== null) {
-                    const previousStudyStepId = await this.getPreviousStepId(data['studyStepId']);
-                    let previousDelta = await this.loadDocument(deltaFilePath);
+                    const currentStep = await this.models['study_step'].findByPk(data['studyStepId']);
                     
-                    console.log('previousStudyStepId:', previousStudyStepId); 
-
-                    const previousEdits = await this.models['document_edit'].findAll({
-                        where: {
-                            documentId: document.id,
-                            draft: true,
-                            [Op.or]: [
-                                { studySessionId: null },
-                                {
+                    if (currentStep && currentStep.studyStepDocument) {
+                        // Get the first version from the source document
+                        const sourceStep = await this.models['study_step'].findByPk(currentStep.studyStepDocument);
+                        if (sourceStep) {
+                            let firstVersion = await this.loadDocument(deltaFilePath);
+                            
+                            const sourceEdits = await this.models['document_edit'].findAll({
+                                where: {
+                                    documentId: sourceStep.documentId,
                                     studySessionId: data['studySessionId'],
-                                    studyStepId: previousStudyStepId
-                                }
-                            ]
-                        },
-                        order: [['createdAt', 'ASC']]
-                    });
+                                    studyStepId: sourceStep.id
+                                },
+                                order: [['createdAt', 'ASC']]
+                            });
 
-                    console.log('previousEdits:', previousEdits); 
-                    
-                    previousDelta = previousDelta.compose(dbToDelta(previousEdits));
-                    return {document: document, deltas: delta, firstVersion: previousDelta};
-                } else {
-                    return {document: document, deltas: delta};
+                            firstVersion = firstVersion.compose(dbToDelta(sourceEdits));
+                            return {document: document, deltas: delta, firstVersion: firstVersion};
+                        }
+                    }
                 }
+                return {document: document, deltas: delta};
             }
         } else {
             const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
