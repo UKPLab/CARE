@@ -125,29 +125,33 @@ module.exports = (sequelize, DataTypes) => {
                     const currentStep = await sequelize.models.study_step.findByPk(studySession.studyStepId, {
                         transaction: options.transaction
                     });
-                    
+
+                    // Check if this step has an associated studyStepDocument
                     if (currentStep && currentStep.studyStepDocument) {
-                        // Check if we already have edits for this step
-                        console.log('studySessionId', studySession.id);
-                        console.log('studyStepId', studySession.studyStepId);
-                        const existingEdits = await sequelize.models.document_edit.findOne({
-                            where: {
-                                studySessionId: studySession.id,
-                                studyStepId: studySession.studyStepId
-                            },
+                        // Get the source document from the associated study step
+                        const sourceStep = await sequelize.models.study_step.findByPk(currentStep.studyStepDocument, {
                             transaction: options.transaction
                         });
 
-                        console.log({existingEdits});
-                        if (!existingEdits) {
-                            
-                            // Copy edits from the associated document
-                            await sequelize.models.document_edit.copyEdits(
-                                currentStep.studyStepDocument,
-                                studySession.id,
-                                studySession.studyStepId,
-                                options.transaction
-                            );
+                        if (sourceStep) {
+                            // Check if we already have edits for this step
+                            const existingEdits = await sequelize.models.document_edit.findOne({
+                                where: {
+                                    studySessionId: studySession.id,
+                                    studyStepId: studySession.studyStepId
+                                },
+                                transaction: options.transaction
+                            });
+
+                            if (!existingEdits) {
+                                // Copy edits from document_edit
+                                await sequelize.models.document_edit.copyEdits({
+                                    sourceStep,
+                                    currentStep,
+                                    studySessionId: studySession.id,
+                                    transaction: options.transaction
+                                });
+                            }
                         }
                     }
 

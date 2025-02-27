@@ -86,37 +86,33 @@ module.exports = (sequelize, DataTypes) => {
             });
         }
 
-        /**
-         * TODO: Method description to be provided
-         * @param {*} documentId 
-         * @param {*} studySessionId 
-         * @param {*} studyStepId 
-         * @param {*} transaction 
-         */
-        static async copyEdits(documentId, studySessionId, studyStepId, transaction) {
+       /**
+        * TODO: 
+        * @param {*} 
+        */
+        static async copyEdits({sourceStep, currentStep, studySessionId, transaction}) {
+            // Copy all edits from the source document's session
             const sourceEdits = await this.findAll({
                 where: {
-                    documentId: documentId,
-                    studySessionId: studySessionId ,
-                    studyStepId: studyStepId
+                    documentId: sourceStep.documentId,
+                    studySessionId: studySessionId,
+                    studyStepId: sourceStep.id
                 },
                 transaction
             });
 
-            console.log('sourceEdits:', sourceEdits);
-            // Create new edits keeping the studyStepId
-            const newEdits = sourceEdits.map(edit => ({
-                ...edit.toJSON(),
-                id: undefined, // Let the database assign a new ID
-                // studySessionId: studySessionId,
-                studyStepId: studyStepId,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            }));
+            // Create new edits for the current step
+            if (sourceEdits.length > 0) {
+                const newEdits = sourceEdits.map(edit => ({
+                    ...edit.toJSON(),
+                    id: undefined,
+                    documentId: currentStep.documentId,
+                    studyStepId: currentStep.id,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }));
 
-            console.log({newEdits});
-            if (newEdits.length > 0) {
-                await this.bulkCreate(newEdits, { transaction });
+                await this.bulkCreate(newEdits, {transaction});
             }
         }
     }
