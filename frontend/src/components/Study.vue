@@ -12,14 +12,18 @@
     ref="studyFinishModal"
     :study-session-id="studySessionId"
     :show-time-up="timeUp"
-    @finish="finalFinish({studySessionId: this.studySessionId})"
+    @finish="finalFinish({ studySessionId: this.studySessionId })"
   />
 
   <Teleport to="#topbarCustomPlaceholder">
     <div class="d-flex justify-content-between align-items-center w-100">
-
       <TopBarButton
-        v-if="currentStudyStep && currentStudyStep.allowBackward && currentStudyStep && currentStudyStep.studyStepPrevious !== null"
+        v-if="
+          currentStudyStep &&
+          currentStudyStep.allowBackward &&
+          currentStudyStep &&
+          currentStudyStep.studyStepPrevious !== null
+        "
         class="btn btn-outline-primary me-3"
         title="Previous"
         @click="updateStep(currentStudyStep.studyStepPrevious)"
@@ -28,12 +32,19 @@
       </TopBarButton>
 
       <TopBarButton
-        v-if="!readOnlyComputed && studySession && lastStep && currentStudyStep && currentStudyStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
+        v-if="
+          !readOnlyComputed &&
+          studySession &&
+          lastStep &&
+          currentStudyStep &&
+          currentStudyStep.stepType !== 3 &&
+          studySession.studyStepId === lastStep.id
+        "
         class="btn btn-outline-secondary mx-3"
-        :title="(studySession.end) ? 'Finish Study Again' : 'Finish Study'"
+        :title="studySession.end ? 'Finish Study Again' : 'Finish Study'"
         @click="finish"
       >
-        {{ (studySession.end) ? 'Finish Study Again' : 'Finish Study' }}
+        {{ studySession.end ? "Finish Study Again" : "Finish Study" }}
       </TopBarButton>
 
       <TopBarButton
@@ -55,28 +66,43 @@
           icon-name="stopwatch"
         />
         <span
-          :class="{'text-danger':timeLeft < (5 * 60)}"
+          :class="{ 'text-danger': timeLeft < 5 * 60 }"
           class="middle"
-        ><b>Time Left:</b> {{ timeLeftHuman }}</span>
+          ><b>Time Left:</b> {{ timeLeftHuman }}</span
+        >
       </TopBarButton>
     </div>
   </Teleport>
-  
+
   <div v-if="studySessionId !== 0">
-    <div v-for="(s, index) in studySteps" :key="index">
+    <div
+      v-for="(s, index) in studySteps"
+      :key="index"
+    >
       <div v-show="s.id === currentStudyStepId">
-        <Annotator v-if="s.stepType === 1 && (studyTrajectory.includes(s.id) || readOnly)"
-                   :document-id="s.documentId" :study-step-id="s.id" :active="activeSteps[index]" @error="error"/>
+        <Annotator
+          v-if="s.stepType === 1 && (studyTrajectory.includes(s.id) || readOnly)"
+          :document-id="s.documentId"
+          :study-step-id="s.id"
+          :active="activeSteps[index]"
+          @error="error"
+        />
       </div>
       <div v-show="s.id === currentStudyStepId">
         <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
-        <Editor v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)" :document-id="s.documentId"
-                :study-step-id="s.id" :active="activeSteps[index]" @update:data="studyData[s.id] = $event"/>
+        <Editor
+          v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)"
+          :document-id="s.documentId"
+          :study-step-id="s.id"
+          :active="activeSteps[index]"
+          @update:data="studyData[s.id] = $event"
+        />
       </div>
       <div v-show="s.id === currentStudyStepId">
         <StepModal
           v-if="s.stepType === 3 && studyTrajectory.includes(s.id)"
-          :study-step-id="s.id" :is-last-step="s.id === lastStep.id"
+          :study-step-id="s.id"
+          :is-last-step="s.id === lastStep.id"
           @close="handleModalClose"
         />
       </div>
@@ -85,7 +111,6 @@
     </div>
   </div>
 </template>
-
 
 <script>
 /**
@@ -102,13 +127,13 @@ import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-import {computed} from "vue";
+import { computed } from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
-import {nextTick} from "vue";
+import { nextTick } from "vue";
 
 export default {
   name: "StudyRoute",
-  components: {LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, StepModal},
+  components: { LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, StepModal },
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
@@ -117,21 +142,21 @@ export default {
     };
   },
   props: {
-    'studyHash': {
+    studyHash: {
       type: String,
       required: false,
-      default: null
+      default: null,
     },
-    'initStudySessionId': {
+    initStudySessionId: {
       type: Number,
       required: false,
       default: 0,
     },
-    'readOnly': {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false,
-    }
+    },
   },
   data() {
     return {
@@ -144,26 +169,26 @@ export default {
   },
   computed: {
     activeSteps() {
-      return this.studySteps.map(step => step.id === this.currentStudyStepId);
+      return this.studySteps.map((step) => step.id === this.currentStudyStepId);
     },
     studySession() {
       if (this.studySessionId !== 0) {
-        return this.$store.getters['table/study_session/get'](this.studySessionId);
+        return this.$store.getters["table/study_session/get"](this.studySessionId);
       }
       return null;
     },
     study() {
       if (this.studySession) {
-        return this.$store.getters['table/study/get'](this.studySession.studyId);
+        return this.$store.getters["table/study/get"](this.studySession.studyId);
       }
       if (this.studyHash) {
-        return this.$store.getters['table/study/getByHash'](this.studyHash);
+        return this.$store.getters["table/study/getByHash"](this.studyHash);
       }
       return null;
     },
     studySteps() {
       if (this.studyId !== 0) {
-        return this.$store.getters['table/study_step/getByKey']("studyId", this.studyId);
+        return this.$store.getters["table/study_step/getByKey"]("studyId", this.studyId);
       } else {
         return [];
       }
@@ -171,27 +196,25 @@ export default {
     nextStudyStep() {
       if (this.currentStudyStep) {
         // Find the next step by looking for a step where `studyStepPrevious` matches `currentStudyStep.id`
-        return this.studySteps.find(step => step.studyStepPrevious === this.currentStudyStep.id);
+        return this.studySteps.find((step) => step.studyStepPrevious === this.currentStudyStep.id);
       }
     },
     lastStep() {
-      const previousStepIds = this.studySteps
-        .map(step => step.studyStepPrevious)
-        .filter(id => id !== null); // Excluding null to avoid the first step
-      const lastStep = this.studySteps.find(step => !previousStepIds.includes(step.id));
+      const previousStepIds = this.studySteps.map((step) => step.studyStepPrevious).filter((id) => id !== null); // Excluding null to avoid the first step
+      const lastStep = this.studySteps.find((step) => !previousStepIds.includes(step.id));
       return lastStep;
     },
     firstStep() {
-      return (this.studySteps) ? this.studySteps.find(step => step.studyStepPrevious === null) : null;
+      return this.studySteps ? this.studySteps.find((step) => step.studyStepPrevious === null) : null;
     },
     studyTrajectory() {
       if (!this.studySession) return [];
       let studyTrajectory = [];
-      let studyStep = this.$store.getters['table/study_step/get'](this.studySession.studyStepIdMax);
+      let studyStep = this.$store.getters["table/study_step/get"](this.studySession.studyStepIdMax);
       while (studyStep) {
         studyTrajectory.push(studyStep.id);
         studyStep = studyStep.studyStepPrevious
-          ? this.$store.getters['table/study_step/get'](studyStep.studyStepPrevious)
+          ? this.$store.getters["table/study_step/get"](studyStep.studyStepPrevious)
           : null;
       }
       return studyTrajectory;
@@ -221,9 +244,7 @@ export default {
       return Math.round(this.timeLeft / 60) + "min";
     },
     currentStudyStep() {
-      return (this.currentStudyStepId)
-        ? this.$store.getters['table/study_step/get'](this.currentStudyStepId)
-        : null;
+      return this.currentStudyStepId ? this.$store.getters["table/study_step/get"](this.currentStudyStepId) : null;
     },
     currentStudyStepId() {
       if (this.readOnlyComputed && this.firstStep) {
@@ -261,7 +282,7 @@ export default {
       console.log("populateStudyData studySteps", this.studySteps);
       if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
         this.studyData = this.studySteps.reduce((acc, step) => {
-          acc[step.id] = {};  // Initialize each stepId with an empty object
+          acc[step.id] = {}; // Initialize each stepId with an empty object
           return acc;
         }, {});
       }
@@ -269,7 +290,8 @@ export default {
   },
   watch: {
     studySession() {
-      if (this.study && this.study.timeLimit > 0 && this.studySession) {  //studySession required, otherwise not all data may be there yet
+      if (this.study && this.study.timeLimit > 0 && this.studySession) {
+        //studySession required, otherwise not all data may be there yet
         if (this.timerInterval) {
           clearInterval(this.timerInterval);
           this.timerInterval = null;
@@ -289,7 +311,7 @@ export default {
         await nextTick();
         this.populateStudyData;
       }
-    }
+    },
   },
   async mounted() {
     this.studySessionId = this.initStudySessionId;
@@ -300,10 +322,10 @@ export default {
   sockets: {
     studyError: function (data) {
       if (data.studyHash === this.studyHash) {
-        this.eventBus.emit('toast', {
+        this.eventBus.emit("toast", {
           title: "Study Error",
           message: data.message,
-          variant: "danger"
+          variant: "danger",
         });
         this.error();
         this.$router.push("/");
@@ -313,26 +335,30 @@ export default {
   methods: {
     getStudyData() {
       if (this.studyHash) {
-        this.$socket.emit("appDataByHash", {
-          table: "study",
-          hash: this.studyHash
-        }, (response) => {
-          if (!response.success) {
-            this.eventBus.emit('toast', {
-              title: "Access Error!",
-              message: response.message,
-              variant: "danger"
-            });
-            this.$router.push("/");
-          } else {
-            if (this.studySessionId === 0 ||
-              (this.studySession &&
-                this.studySession.start === null &&
-                this.studySession.userId === this.userId)) {
-              this.$refs.studyModal.open();
+        this.$socket.emit(
+          "appDataByHash",
+          {
+            table: "study",
+            hash: this.studyHash,
+          },
+          (response) => {
+            if (!response.success) {
+              this.eventBus.emit("toast", {
+                title: "Access Error!",
+                message: response.message,
+                variant: "danger",
+              });
+              this.$router.push("/");
+            } else {
+              if (
+                this.studySessionId === 0 ||
+                (this.studySession && this.studySession.start === null && this.studySession.userId === this.userId)
+              ) {
+                this.$refs.studyModal.open();
+              }
             }
           }
-        })
+        );
       }
     },
     start(data) {
@@ -350,27 +376,31 @@ export default {
       }
     },
     finalFinish(data) {
-      this.$socket.emit("appDataUpdate", {
-        table: "study_session",
-        data: {
-          id: data.studySessionId,
-          end: Date.now()
+      this.$socket.emit(
+        "appDataUpdate",
+        {
+          table: "study_session",
+          data: {
+            id: data.studySessionId,
+            end: Date.now(),
+          },
+        },
+        (result) => {
+          if (result.success) {
+            this.eventBus.emit("toast", {
+              title: "Study Session finished",
+              message: "Study session has been finished",
+              variant: "success",
+            });
+          } else {
+            this.eventBus.emit("toast", {
+              title: "Study Session not finished",
+              message: result.message,
+              variant: "danger",
+            });
+          }
         }
-      }, (result) => {
-        if (result.success) {
-          this.eventBus.emit('toast', {
-            title: "Study Session finished",
-            message: "Study session has been finished",
-            variant: "success"
-          });
-        } else {
-          this.eventBus.emit('toast', {
-            title: "Study Session not finished",
-            message: result.message,
-            variant: "danger"
-          });
-        }
-      });
+      );
       this.$refs.studyFinishModal.close();
     },
     finish() {
@@ -385,9 +415,7 @@ export default {
           this.updateStep(nextStep.id);
         }
       } else if (event.previousStep && this.currentWorkflowStep.allowBackward) {
-        const previousStep = this.studySteps.find(
-          step => step.id === this.currentStudyStep.studyStepPrevious
-        );
+        const previousStep = this.studySteps.find((step) => step.id === this.currentStudyStep.studyStepPrevious);
         if (previousStep) {
           this.updateStep(previousStep.id);
         }
@@ -397,23 +425,27 @@ export default {
       if (this.readOnlyComputed) {
         this.localStudyStepId = step;
       } else {
-        this.$socket.emit("appDataUpdate", {
-          table: "study_session",
-          data: {
-            id: this.studySessionId,
-            studyStepId: step
+        this.$socket.emit(
+          "appDataUpdate",
+          {
+            table: "study_session",
+            data: {
+              id: this.studySessionId,
+              studyStepId: step,
+            },
           },
-        }, (result) => {
-          if (!result.success) {
-            this.eventBus.emit('toast', {
-              title: "Study Step update failed",
-              message: result.message,
-              variant: "danger"
-            });
+          (result) => {
+            if (!result.success) {
+              this.eventBus.emit("toast", {
+                title: "Study Step update failed",
+                message: result.message,
+                variant: "danger",
+              });
+            }
           }
-        });
+        );
       }
-    }
+    },
   },
 };
 </script>
