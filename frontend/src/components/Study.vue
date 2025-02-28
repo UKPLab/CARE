@@ -1,6 +1,6 @@
 <template>
   <StudyModal
-    v-if="studySessionId === 0 || (this.studySession && this.studySession.start === null)"
+    v-if="studySessionId === 0 || (studySession && studySession.start === null)"
     ref="studyModal"
     :study-id="studyId"
     :study-closed="studyClosed"
@@ -12,7 +12,7 @@
     ref="studyFinishModal"
     :study-session-id="studySessionId"
     :show-time-up="timeUp"
-    @finish="finalFinish({ studySessionId: this.studySessionId })"
+    @finish="finalFinish({ studySessionId: studySessionId })"
   />
 
   <Teleport to="#topbarCustomPlaceholder">
@@ -119,7 +119,7 @@
  * Loads a document in study mode; if a study session is provided, the session is loaded instead. Otherwise,
  * the user is prompted to start a study (or resume an existing session).
  *
- * @author Dennis Zyska, Manu Sundar Raj Nandyal
+ * @author Dennis Zyska, Manu Sundar Raj Nandyal, Linyin Huang
  */
 import StudyModal from "@/components/study/StudyModal.vue";
 import Annotator from "./annotator/Annotator.vue";
