@@ -349,8 +349,17 @@ module.exports = class DocumentSocket extends Socket {
      * @param {object} data {documentId: number, studySessionId: number}
      * @return {Promise<void>}
      */
-    async getData(data) {
-        if (await this.checkDocumentAccess(data.documentId)) {
+    async getData(data, options) {
+        if (!data.documentId || !await this.checkDocumentAccess(data.documentId)) {
+            throw new Error("No access to document");
+        }
+
+
+        const document = await this.models['document'].getById(data['documentId']);
+        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
+            await this.getDocument({...data, "history": true}, options);
+        } else {
+
             if (data.studySessionId && data.studySessionId !== 0) {
                 const studySession = await this.models['study_session'].getById(data.studySessionId);
                 const study = await this.models['study'].getById(studySession.studyId);
@@ -425,10 +434,9 @@ module.exports = class DocumentSocket extends Socket {
 
             // send additional data like tags
             await this.getSocket('TagSocket').sendTags();
-
-        } else {
-            this.sendToast("Error accessing document", "Access Error", "danger");
         }
+
+
     }
 
     /**
@@ -614,7 +622,7 @@ module.exports = class DocumentSocket extends Socket {
                 throw new Error("Document not found");
             }
             let delta = await this.loadDocument(deltaFilePath);
-    
+
             if (data.history) {
                 const edits = await this.models['document_edit'].findAll({
                     where: {
@@ -732,14 +740,6 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("documentGetData", async (data) => {
-            try {
-                await this.getData(data);
-            } catch (e) {
-                this.logger.info("Error loading document data: " + e);
-                this.sendToast("Internal server error. Error loading document data.", "Internal server error", "danger");
-            }
-        });
 
         this.socket.on("documentPublish", async (data) => {
             try {
@@ -806,6 +806,8 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
+
+        this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.addDocument, {}, true);
