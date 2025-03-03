@@ -74,41 +74,32 @@
     </div>
   </Teleport>
 
-  <div v-if="studySessionId !== 0">
-    <div
-      v-for="(s, index) in studySteps"
-      :key="index"
-    >
-      <div v-show="s.id === currentStudyStepId">
-        <Annotator
-          v-if="s.stepType === 1 && (studyTrajectory.includes(s.id) || readOnly)"
-          :document-id="s.documentId"
-          :study-step-id="s.id"
-          :active="activeSteps[index]"
-          @error="error"
-        />
-      </div>
-      <div v-show="s.id === currentStudyStepId">
-        <div v-if="s.stepType === 2">Test {{ studyTrajectory }}</div>
-        <Editor
-          v-if="s.stepType === 2 && (studyTrajectory.includes(s.id) || readOnly)"
-          :document-id="s.documentId"
-          :study-step-id="s.id"
-          :active="activeSteps[index]"
-          @update:data="studyData[s.id] = $event"
-        />
-      </div>
-      <div v-show="s.id === currentStudyStepId">
-        <StepModal
-          v-if="s.stepType === 3 && studyTrajectory.includes(s.id)"
-          :study-step-id="s.id"
-          :is-last-step="s.id === lastStep.id"
-          @close="handleModalClose"
-        />
-      </div>
-
-      <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
-    </div>
+  <div
+    v-if="studySessionId !== 0"
+    class="study-container"
+  >
+    <Annotator
+      v-if="currentStep.stepType === 1 && (studyTrajectory.includes(currentStep.id) || readOnly)"
+      :document-id="currentStep.documentId"
+      :study-step-id="currentStep.id"
+      :active="true"
+      @error="error"
+    />
+    <Editor
+      v-if="currentStep.stepType === 2 && (studyTrajectory.includes(currentStep.id) || readOnly)"
+      :document-id="currentStep.documentId"
+      :study-step-id="currentStep.id"
+      :active="true"
+      @update:data="studyData[currentStep.id] = $event"
+    />
+    <StepModal
+      v-if="currentStep.stepType === 3 && studyTrajectory.includes(currentStep.id)"
+      :study-step-id="currentStep.id"
+      :is-last-step="currentStep.id === lastStep.id"
+      @close="handleModalClose"
+    />
+    <!-- TODO: Do we still need to keep the following TODO? -->
+    <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
   </div>
 </template>
 
@@ -168,8 +159,8 @@ export default {
     };
   },
   computed: {
-    activeSteps() {
-      return this.studySteps.map((step) => step.id === this.currentStudyStepId);
+    currentStep() {
+      return this.studySteps.find((step) => step.id === this.currentStudyStepId) || {};
     },
     studySession() {
       if (this.studySessionId !== 0) {
