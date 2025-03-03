@@ -87,8 +87,14 @@ module.exports = (sequelize, DataTypes) => {
         }
 
        /**
-        * TODO: 
-        * @param {*} 
+        * Copy edits from source step to the next step
+        * 
+        * @param {Object} param - the parameter object
+        * @param {Object} param.sourceStep - the sourceStep object
+        * @param {Object} param.currentStep - the currentStep object
+        * @param {number} param.studySessionId - the ID of study session
+        * @param {Object} param.transaction - the transaction object
+        * @returns {Promise<*>}
         */
         static async copyEdits({sourceStep, currentStep, studySessionId, transaction}) {
             // Copy all edits from the source document's session
