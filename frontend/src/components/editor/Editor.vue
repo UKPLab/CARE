@@ -130,11 +130,11 @@ export default {
       return this.readOnly;
     },
     showHistory() {
-      const showHistoryForUser = this.$store.getters["settings/getValue"]('editor.edits.showHistoryForUser') === "true";
-      if (this.isAdmin || showHistoryForUser) {
-        return true;
+      if (this.readOnly) {
+        return false;
       }
-      return false;
+      const showHistoryForUser = this.$store.getters["settings/getValue"]('editor.edits.showHistoryForUser') === "true";
+      return this.isAdmin || showHistoryForUser;
     },
     document() {
       return this.$store.getters["table/document/get"](this.documentId);
