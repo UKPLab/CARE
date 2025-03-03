@@ -44,19 +44,28 @@
       </template>
       <template #footer>
         <div v-if="!waiting">
+          <!-- Button for the next step -->
           <BasicButton
             v-if="!isLastStep"
             :title="studyStep?.configuration?.nextButtonText || 'Next'"
             @click="closeModal({ nextStep: true })"
           />
+          <!-- Button for the last step -->
           <BasicButton
-            v-if="isLastStep"
+            v-if="isLastStep && !readOnly"
             :title="studyStep?.configuration?.finishButtonText || 'Finish Study'"
             :class="studyStep?.configuration?.finishButtonClass || 'btn btn-danger'"
             @click="closeModal({ endStudy: true })"
           />
+          <!-- Button for returning to the dashboard when in read-only mode -->
+          <BasicButton
+            v-if="isLastStep && readOnly"
+            :title="'Return to Studies'"
+            :class="'btn btn-primary'"
+            @click="$router.push('/dashboard/studies')"
+          />
         </div>
-      </template>    
+      </template>
     </BasicModal>
   </span>
 </template>
