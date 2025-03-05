@@ -17,7 +17,7 @@
       title="Show History"
       class="btn rounded-circle ms-2"
       type="button"
-      @click="toogleHistory"
+      @click="toggleHistory"
     >
       <LoadIcon
         :color="'#777777'"
@@ -57,7 +57,7 @@
  *
  * @autor Dennis Zyska, Juliane Bechert
  */
-import Sidebar from "@/components/editor/sidebar/History.vue";
+import Sidebar from "@/components/editor/sidebar/Sidebar.vue";
 import Editor from "@/components/editor/editor/Editor.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import LoadIcon from "@/basic/Icon.vue";
@@ -130,27 +130,27 @@ export default {
       return this.readOnly;
     },
     showHistory() {
-      const showHistoryForUser = this.$store.getters["settings/getValue"]('editor.edits.showHistoryForUser') === "true";
-      if (this.isAdmin || showHistoryForUser) {
-        return true;
+      if (this.readOnly) {
+        return false;
       }
-      return false;
+      const showHistoryForUser = this.$store.getters["settings/getValue"]('editor.edits.showHistoryForUser') === "true";
+      return this.isAdmin || showHistoryForUser;
     },
     document() {
-      return this.$store.getters["table/document/getById"](this.documentId);
+      return this.$store.getters["table/document/get"](this.documentId);
     },
     sidebarContent() {
-      if (this.historyContent) {
-        return 'history';
-      }
       if (this.document?.type === 2) {
         return 'configurator';
       }
+      if (this.historyContent) {
+        return 'history';
+      }      
       return null;
     }
   },
   methods: {
-    toogleHistory() {
+    toggleHistory() {
       if (this.historyContent) {
         this.historyContent = false;
       } else {

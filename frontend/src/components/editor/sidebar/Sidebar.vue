@@ -41,7 +41,7 @@ export default {
   height: 100%;
   width: 100%;
   position: relative;
-  transform: translateX(100%);
+  /*transform: translateX(100%); lead to errors with the Configurator.vue*/
   transition: transform 0.3s ease;
   position: absolute;
 }

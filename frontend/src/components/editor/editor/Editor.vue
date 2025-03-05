@@ -13,9 +13,11 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll;"
         >
-          <div id="editor-container"
-               @paste="onPaste"
-               @copy="onCopy">
+          <div 
+            :id="`editor-container-${studyStepId}`"
+            @paste="onPaste"
+            @copy="onCopy"
+          >
           </div>
         </div>
       </div>
@@ -56,7 +58,6 @@ import LoadIcon from "@/basic/Icon.vue";
 import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from "@/components/editor/editorStore.js";
 import {downloadDocument} from "@/assets/utils.js";
-import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 
 const Delta = Quill.import('delta');
@@ -121,13 +122,14 @@ export default {
     this.documentHash = this.$route.params.documentHash;
   },
   mounted() {
-    const editorContainer = document.getElementById('editor-container');
+    const editorId = `editor-container-${this.studyStepId}`;
+    const editorContainer = document.getElementById(editorId);
 
     if (editorContainer) {
       this.editor = new Editor(editorContainer, this.editorOptions);
 
       if (this.toolbarVisible) {
-        const toolbarButtons = document.querySelectorAll('.ql-toolbar button');
+        const toolbarButtons = document.querySelectorAll(`#${editorId} .ql-toolbar button`);
         toolbarButtons.forEach(button => {
           const format = button.className.match(/ql-(\w+)/);
           if (format) {
