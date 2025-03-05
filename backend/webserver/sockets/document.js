@@ -735,10 +735,11 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Save document data
+     * Save additional document data for a particular document/study_session/study_step like the nlpResults, links etc., to the document_data table.
+     * 
      * @param {*} data {userId: number, documentId: number, studySessionId: number, studyStepId: number, key: string, value: any}
      * @param {*} options {transaction: Transaction}
-     * @returns {Promise<void>}
+     * @returns {Promise<void>} - A promise that resolves when the data has been saved.
      */
     async saveData(data, options) {
         const documentData = await this.models['document_data'].add({
@@ -749,17 +750,6 @@ module.exports = class DocumentSocket extends Socket {
             key: data.key,
             value: data.value
         }, {transaction: options.transaction});
-
-        // TODO: Get this checked
-        let skillDataOps = new Delta({[data.key]: dbToDelta(data.value)});
-        let skillData = {
-            documentId: data.documentId,
-            studySessionId: data.studySessionId,
-            studyStepId: data.studyStepId,
-            ops: skillDataOps
-        };
-
-        await this.editDocument(skillData);
 
         options.transaction.afterCommit(() => {
             this.emit("document_dataRefresh", documentData);
