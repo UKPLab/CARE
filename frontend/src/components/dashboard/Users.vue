@@ -3,6 +3,12 @@
     <template #headerElements>
       <BasicButton
         class="btn btn-secondary btn-sm me-1"
+        title="Download Users"
+        icon="download"
+        @click="downloadUsers"
+      />
+      <BasicButton
+        class="btn btn-secondary btn-sm me-1"
         title="Upload Password"
         @click="$refs.uploadModal.open()"
       />
@@ -61,6 +67,7 @@ import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
+import {downloadObjectsAs} from "@/assets/utils";
 
 /**
  * Display user list by users' role
@@ -123,6 +130,28 @@ export default {
       return this.$store.getters["admin/getUsersByRole"].map((user) => {
         return this.formatUserData(user);
       });
+    },
+    usersExport() {
+      return this.users.filter(user => !user.deleted).map((user) => {
+        return {
+          ID: user.id,
+          "First Name": user.firstName,
+          "Last Name": user.lastName,
+          User: user.userName,
+          Email: user.email,
+          "Accept Terms": user.acceptTerms,
+          "Accept Stats": user.acceptStats,
+          "Accept Data Sharing": user.acceptDataSharing,
+          "Accept Date": user.acceptedAt,
+          "Last Login": user.lastLoginAt,
+          "Created": user.createdAt,
+          "External ID": user.extId,
+          "Roles": user.roles.map(role => this.systemRoles.find((r) => r.id === role)?.name).join(", "),
+        };
+      });
+    },
+    systemRoles() {
+      return this.$store.getters["admin/getSystemRoles"];
     },
     buttons() {
       return [
@@ -247,6 +276,10 @@ export default {
           );
         }
       });
+    },
+    downloadUsers() {
+      const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_users';
+      downloadObjectsAs(this.usersExport, filename, "csv");
     },
   },
 };

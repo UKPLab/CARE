@@ -22,7 +22,15 @@ module.exports = class UserSocket extends Socket {
      * @returns {Promise<Awaited<*&{creator_name: string|*|undefined}>[]>}
      */
     async updateCreatorName(data, key = "userId", targetName = "creator_name") {
-        return await inject(data, async (userId) => await this.models["user"].getUserName(userId), targetName, key);
+        return await inject(data, async (userId) => {
+            if (userId in this.server.cache["userName"]) {
+                return this.server.cache["userName"][userId];
+            } else {
+                const userName = await this.models["user"].getUserName(userId);
+                this.server.cache["userName"][userId] = userName;
+                return userName;
+            }
+        }, targetName, key);
     }
 
     /**
