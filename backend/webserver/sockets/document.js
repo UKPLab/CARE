@@ -89,7 +89,7 @@ module.exports = class DocumentSocket extends Socket {
             //TODO this not the right way, when we upload a delta file, this should be included directly into the document_edit db
             // Handle HTML and MODAL document types
             const documentType = data.type === docTypes.DOC_TYPE_MODAL ? docTypes.DOC_TYPE_MODAL : docTypes.DOC_TYPE_HTML;
-    
+
             doc = await this.models["document"].add({
                 type: documentType,
                 name: data.name.replace(/.delta$/, ""),
@@ -226,7 +226,7 @@ module.exports = class DocumentSocket extends Socket {
             const doc = await this.models['document'].getById(documentId);
 
             if (await this.checkDocumentAccess(doc.id)) {
-                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) { 
+                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
                     const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
                     let delta = new Delta();
 
@@ -305,7 +305,7 @@ module.exports = class DocumentSocket extends Socket {
             }
 
             // TODO: Check if document type is HTML
-            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) { 
+            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
 
                 const edits = await this.models['document_edit'].findAll({
                     where: {documentId: documentId, studySessionId: null, draft: true},
@@ -610,14 +610,14 @@ module.exports = class DocumentSocket extends Socket {
             throw new Error("You do not have access to this document");
         }
 
-        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) { 
+        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
             const deltaFilePath = `${UPLOAD_PATH}/${document.hash}.delta`;
 
             if (!fs.existsSync(deltaFilePath)) {
                 throw new Error("Document not found");
             }
             let delta = await this.loadDocument(deltaFilePath);
-    
+
             if (data.history) {
                 const edits = await this.models['document_edit'].findAll({
                     where: {
@@ -630,43 +630,44 @@ module.exports = class DocumentSocket extends Socket {
 
                 this.emit("document_editRefresh", edits);
             } else {
-                // Get the edits for the base document
-                const edits = await this.models['document_edit'].findAll({
-                    where: {
-                        documentId: document.id,
-                        studySessionId: data['studySessionId'],
-                        studyStepId: data['studyStepId'],
-                        draft: true
-                    },
-                    
-                });
-                
-                delta = delta.compose(dbToDelta(edits));
 
-                if(data['studySessionId'] !== null && data['studyStepId'] !== null) {
-                    const currentStep = await this.models['study_step'].findByPk(data['studyStepId']);
-                    
-                    if (currentStep && currentStep.studyStepDocument) {
-                        // Get the first version from the source document
-                        const sourceStep = await this.models['study_step'].findByPk(currentStep.studyStepDocument);
-                        if (sourceStep) {
-                            let firstVersion = await this.loadDocument(deltaFilePath);
-                            
-                            const sourceEdits = await this.models['document_edit'].findAll({
-                                where: {
-                                    documentId: sourceStep.documentId,
-                                    studySessionId: data['studySessionId'],
-                                    studyStepId: sourceStep.id
-                                },
-                                order: [['createdAt', 'ASC']]
-                            });
+                if (data['studySessionId'] == null && data['studyStepId'] == null) {
 
-                            firstVersion = firstVersion.compose(dbToDelta(sourceEdits));
-                            return {document: document, deltas: delta, firstVersion: firstVersion};
-                        }
-                    }
+                    // Get the edits for the base document
+                    const edits = await this.models['document_edit'].findAll({
+                        where: {
+                            documentId: document.id,
+                            studySessionId: data['studySessionId'],
+                            studyStepId: data['studyStepId'],
+                            draft: true
+                        },
+
+                    });
+
+                    delta = delta.compose(dbToDelta(edits));
+                    return {document: document, deltas: delta};
+                } else {
+
+                    // Get the edits for the base document
+                    const edits = await this.models['document_edit'].findAll({
+                        where: {
+                            documentId: document.id,
+                        },
+                        order: [['createdAt', 'ASC']]
+                    });
+
+                    return {
+                        document: document,
+                        deltas: delta.compose(dbToDelta(edits
+                            .filter(edit => edit.draft &&
+                                (edit.studySessionId === data['studySessionId'] || edit.studySessionId === null)))),
+                        firstVersion: delta.compose(dbToDelta(edits
+                            .filter(edit => edit.draft &&
+                                (edit.studySessionId === null || edit.studySessionId === data['studySessionId']) &&
+                                (edit.studyStepId === null || edit.studyStepId !== data['studyStepId']))))
+                    };
+
                 }
-                return {document: document, deltas: delta};
             }
         } else {
             const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
@@ -676,7 +677,7 @@ module.exports = class DocumentSocket extends Socket {
             const file = fs.readFileSync(filePath);
             return {document: document, file: file};
         }
-    } 
+    }
 
     /**
      * Helper method to get the previous step ID for a given study step ID
@@ -685,24 +686,24 @@ module.exports = class DocumentSocket extends Socket {
      */
     async getPreviousStepId(studyStepId) {
         const step = await this.models['study_step'].getById(studyStepId);
-    
+
         if (!step) return null;
-    
+
         let previousStepId = step.studyStepPrevious;
-    
+
         if (!previousStepId) return null;
-    
+
         const previousStep = await this.models['study_step'].getById(previousStepId);
-    
+
         if (previousStep &&
             previousStep.stepType === step.stepType &&
             previousStep.documentId === step.documentId) {
             return previousStep.id;
         }
-    
+
         return null;
     }
-    
+
 
     /**
      * Uploads review links to a Moodle assignment as feedback comments.
@@ -723,26 +724,26 @@ module.exports = class DocumentSocket extends Socket {
             options: data.options,
             feedback: data.feedback,
         });
-    }    
+    }
 
     /**
      * Save document data
      * @param {*} data {userId: number, documentId: number, studySessionId: number, studyStepId: number, key: string, value: any}
      * @param {*} options {transaction: Transaction}
-     * @returns {Promise<void>} 
+     * @returns {Promise<void>}
      */
     async saveData(data, options) {
         const documentData = await this.models['document_data'].add({
             userId: data.userId,
             documentId: data.documentId,
             studySessionId: data.studySessionId,
-            studyStepId: data.studyStepId,            
+            studyStepId: data.studyStepId,
             key: data.key,
             value: data.value
-        }, {transaction: options.transaction});  
+        }, {transaction: options.transaction});
 
         // TODO: Get this checked
-        let skillDataOps = new Delta({ [data.key]: dbToDelta(data.value) });
+        let skillDataOps = new Delta({[data.key]: dbToDelta(data.value)});
         let skillData = {
             documentId: data.documentId,
             studySessionId: data.studySessionId,
@@ -755,7 +756,7 @@ module.exports = class DocumentSocket extends Socket {
         options.transaction.afterCommit(() => {
             this.emit("document_dataRefresh", documentData);
         });
-        return documentData;      
+        return documentData;
     }
 
     init() {
