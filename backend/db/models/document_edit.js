@@ -89,36 +89,36 @@ module.exports = (sequelize, DataTypes) => {
        /**
         * Copy edits from source step to the next step
         * 
-        * @param {Object} param - the parameter object
-        * @param {Object} param.sourceStep - the sourceStep object
-        * @param {Object} param.currentStep - the currentStep object
-        * @param {number} param.studySessionId - the ID of study session
-        * @param {Object} param.transaction - the transaction object
+        * @param {Object} sourceStep - the object with the source step information
+        * @param {Object} destStep - the object with the destination step information
+        * @param {number} studySessionId - the ID of study session
+        * @param {Object} transaction - the transaction object
         * @returns {Promise<*>}
         */
-        static async copyEdits({sourceStep, currentStep, studySessionId, transaction}) {
+        static async copyEditsByStep(sourceStep, destStep, studySessionId, transaction) {
             // Copy all edits from the source document's session
             const sourceEdits = await this.findAll({
                 where: {
                     documentId: sourceStep.documentId,
                     studySessionId: studySessionId,
-                    studyStepId: sourceStep.id
+                    studyStepId: sourceStep.id,
+                    deleted: false
                 },
-                transaction
-            });
+                raw: true,
+            }, {transaction: transaction});
 
             // Create new edits for the current step
             if (sourceEdits.length > 0) {
                 const newEdits = sourceEdits.map(edit => ({
-                    ...edit.toJSON(),
+                    ...edit,
                     id: undefined,
-                    documentId: currentStep.documentId,
-                    studyStepId: currentStep.id,
+                    documentId: destStep.documentId,
+                    studyStepId: destStep.id,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }));
 
-                await this.bulkCreate(newEdits, {transaction});
+                await this.bulkCreate(newEdits, {transaction: transaction});
             }
         }
     }

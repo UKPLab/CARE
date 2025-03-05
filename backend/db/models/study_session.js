@@ -145,12 +145,12 @@ module.exports = (sequelize, DataTypes) => {
 
                             if (!existingEdits) {
                                 // Copy edits from document_edit
-                                await sequelize.models.document_edit.copyEdits({
+                                await sequelize.models.document_edit.copyEditsByStep(
                                     sourceStep,
                                     currentStep,
-                                    studySessionId: studySession.id,
-                                    transaction: options.transaction
-                                });
+                                    studySession.id,
+                                    options.transaction
+                                );
                             }
                         }
                     }
