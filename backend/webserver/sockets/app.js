@@ -331,6 +331,7 @@ module.exports = class AppSocket extends Socket {
 
         this.createSocket("subscribeAppData", this.subscribeAppData, {}, false);
         this.createSocket("unsubscribeAppData", this.unsubscribeAppData, {}, false);
+        this.createSocket("ping", async (data, options) => { this.socket.emit("ping", data); }, {}, false);
 
         this.socket.on("appInit", async (data) => {
             try {
