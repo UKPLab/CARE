@@ -43,7 +43,7 @@ module.exports = (sequelize, DataTypes) => {
                     ],
                     additionalOptions: [
                         {
-                            type: sequelize.models.document.docTypes.DOC_TYPE_HTML, 
+                            type: sequelize.models.document.docTypes.DOC_TYPE_HTML,
                             name: "New Empty Document",
                             value: null
                         }
@@ -58,7 +58,7 @@ module.exports = (sequelize, DataTypes) => {
          * @param studyId
          * @returns {Promise<StudyStep>}
          */
-        static async getFirstStep(studyId, options ) {
+        static async getFirstStep(studyId, options) {
             const firstStep = await this.findOne({
                 where: {
                     studyId: studyId,
@@ -80,7 +80,7 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<Array>} - List of associated study steps.
          */
         static async getStudyStepsByDocumentId(documentId) {
-            return await this.findAll({ where: { documentId } });
+            return await this.findAll({where: {documentId}});
         }
 
         /**
@@ -97,16 +97,80 @@ module.exports = (sequelize, DataTypes) => {
                     ? sequelize.models.document.docTypes.DOC_TYPE_HTML
                     : sequelize.models.document.docTypes.DOC_TYPE_MODAL;
 
-                if (data.documentId === null) { // create a new document
+                if (data.documentId === null) { // Create a new document
 
                     const newDocument = await sequelize.models.document.add({
-                        name: `Document for study ${study.id}, step ${data.workflowStepId}`,
+                        name: `Document Study ${study.id}`,
                         type: expectedDocType,
                         userId: study.userId,
                         hideInFrontend: true
                     }, {transaction: options.transaction});
 
+                    if (data.workflowStepId) {
+                        const workflowStep = await sequelize.models.workflow_step.getById(data.workflowStepId, {transaction: options.transaction});
+
+                        if (workflowStep && workflowStep.workflowStepDocument) {
+
+                            // Fetch the original workflow step entry referenced by workflowStep.workflowStepDocument
+                            const originalEntry = await sequelize.models.workflow_step.getById(workflowStep.workflowStepDocument, {transaction: options.transaction});
+                            if (originalEntry && originalEntry.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR) {
+
+                                const referencedStudyStep = await sequelize.models.study_step.findOne({
+                                    where: {
+                                        workflowStepId: originalEntry.id,
+                                        studyId: study.id,
+                                        deleted: false
+                                    },
+                                    transaction: options.transaction
+                                })
+
+                                if (!referencedStudyStep) {
+                                    throw new Error(`Referenced study step not found for workflow step ${originalEntry.id}`);
+                                }
+
+                                const referencedDocument = await sequelize.models.document.getById(
+                                    referencedStudyStep.dataValues.documentId,
+                                    {transaction: options.transaction});
+
+                                if (!referencedDocument) {
+                                    throw new Error(`Referenced document not found for study step ${referencedStudyStep.id}`);
+                                }
+
+                                console.log("referecedDocument", referencedDocument);
+
+                                // Copy the delta file from the referenced document to the new document
+                                const originalFilePath = path.join(UPLOAD_PATH, `${referencedDocument.hash}.delta`);
+                                const newFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
+                                await fs.copyFile(originalFilePath, newFilePath);
+
+                                const existingEdits = await sequelize.models.document_edit.findAll({
+                                    where: {
+                                        documentId: referencedDocument.id,
+                                        deleted: false
+                                    },
+                                    raw: true,
+                                    transaction: options.transaction
+                                });
+
+                                if (existingEdits.length > 0) {
+                                    const newEdits = existingEdits.map(edit => ({
+                                        ...edit,
+                                        id: undefined,
+                                        documentId: newDocument.id,
+                                        createdAt: new Date(),
+                                        updatedAt: new Date()
+                                    }));
+
+                                    await sequelize.models.document_edit.bulkCreate(newEdits, {transaction: options.transaction});
+                                }
+
+
+                            }
+                        }
+                    }
+
                     data.documentId = newDocument.id;
+
                 } else {
                     const document = await sequelize.models.document.getById(data.documentId);
 
@@ -131,13 +195,13 @@ module.exports = (sequelize, DataTypes) => {
                     const newFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
 
                     await fs.copyFile(originalFilePath, newFilePath);
-        
+
                     // Copy data from `document_edit` table
                     const existingEdits = await sequelize.models.document_edit.findAll({
-                        where: { documentId: document.id },
+                        where: {documentId: document.id},
                         raw: true
                     });
-        
+
                     if (existingEdits.length > 0) {
                         const newEdits = existingEdits.map(edit => ({
                             documentId: newDocument.id,
@@ -151,8 +215,8 @@ module.exports = (sequelize, DataTypes) => {
                             text: edit.text,
                             attributes: edit.attributes
                         }));
-        
-                        await sequelize.models.document_edit.bulkCreate(newEdits, { transaction: options.transaction });
+
+                        await sequelize.models.document_edit.bulkCreate(newEdits, {transaction: options.transaction});
                         console.log(`Copied ${newEdits.length} edits from document ${document.id} to new study document ${newDocument.id}`);
                     } else {
                         console.log(`No edits found for document ${document.id}, skipping edit copy.`);
