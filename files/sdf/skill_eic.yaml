@@ -1,0 +1,19 @@
+name: skill_eic
+description: This is a skill for edit intent classification with the fine-tuned Leo-LM 13b model
+input:
+  data:
+    v1:
+      type: string
+      description: The html string of the original document.
+    v2:
+      type: string
+      description: The html string of the revised document.
+  example:
+    text: ""
+output:
+  data:
+    type: list
+    description: A list of arrays containing the edits with edit action and edit intent labels.
+  example: [[0, 'id-X_v2_3@0', 'id-X_v1_3@0', '2. Theoretischer Hintergrund Changed', '2. Theoretischer Hintergrund', 'Modify', 'Other'], 
+                    [0, 'id-X_v2_5@1', 'id-X_v1_5@1', 'Laut dem Renewable Energy Market Update der Internationalen Energieagentur (IEA) stieg der Anteil erneuerbarer Energien am weltweiten Energiemix kontinuierlich an, wobei erneuerbare Energien im Jahr 2025 bereits rund 59,9% des globalen Stromverbrauchs ausmachten (IEA, 2021).', 'Laut dem Renewable Energy Market Update der Internationalen Energieagentur (IEA) stieg der Anteil erneuerbarer Energien am weltweiten Energiemix kontinuierlich an, wobei erneuerbare Energien im Jahr 2020 bereits rund 29,9% des globalen Stromverbrauchs ausmachen (IEA, 2021).', 'Modify', 'Fact/Evidence'], 
+                    [0, 'id-X_v2_2@0', '', 'This sentence is added to provide more information. ', '', 'Add', 'Claim']]

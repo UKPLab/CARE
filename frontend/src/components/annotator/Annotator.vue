@@ -22,7 +22,7 @@
         </div>
         <Sidebar
           v-if="!sidebarDisabled"
-          ref="sidebar" :show="isSidebarVisible"
+          ref="sidebar" class="sidebar-container" :show="isSidebarVisible"
         />
       </div>
     </div>
@@ -54,8 +54,6 @@
           class="btn rounded-circle"
           @click="toggleNlp"
         >
-
-
           <LoadIcon
             :color="(!nlpActive) ?'#777777':'#097969'"
             :size="18"
@@ -154,7 +152,8 @@ export default {
     ExpandMenu,
     Sidebar,
     Loader,
-    ExportAnnos
+    ExportAnnos,
+    TopBarButton
   },
   provide() {
     return {
@@ -169,8 +168,15 @@ export default {
       default: null
     },
     acceptStats: {
+      type: Boolean,
+      required: false,
       default: () => false
     },
+    studyData: {
+      type: Array,
+      required: false,
+      default: () => [],
+    }
   },
   props: {
     approve: {

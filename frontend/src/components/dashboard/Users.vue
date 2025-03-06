@@ -3,6 +3,12 @@
     <template #headerElements>
       <BasicButton
         class="btn btn-secondary btn-sm me-1"
+        title="Download Users"
+        icon="download"
+        @click="downloadUsers"
+      />
+      <BasicButton
+        class="btn btn-secondary btn-sm me-1"
         title="Upload Password"
         @click="$refs.uploadModal.open()"
       />
@@ -36,17 +42,18 @@
     ref="detailsModal"
     @update-user="fetchUsers"
   />
-  <RightsModal ref="rightsModal"/>
-  <PasswordModal ref="passwordModal"/>
+  <RightsModal ref="rightsModal" />
+  <PasswordModal ref="passwordModal" />
   <ImportModal
     ref="importModal"
     @update-user="fetchUsers"
   />
-  <UploadModal ref="uploadModal"/>
+  <UploadModal ref="uploadModal" />
   <UserAddModal
     ref="userAddModal"
     @update-user="fetchUsers"
   />
+  <ConfirmModal ref="confirmModal" />
 </template>
 
 <script>
@@ -54,11 +61,13 @@ import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
-import PasswordModal from "./users/PasswordModal.vue";
 import RightsModal from "./users/RightsModal.vue";
 import ImportModal from "./users/ImportModal.vue";
 import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import PasswordModal from "@/basic/modal/PasswordModal.vue";
+import {downloadObjectsAs} from "@/assets/utils";
 
 /**
  * Display user list by users' role
@@ -77,6 +86,7 @@ export default {
     ImportModal,
     UploadModal,
     UserAddModal,
+    ConfirmModal,
   },
   props: {
     admin: {
@@ -94,10 +104,11 @@ export default {
         borderless: false,
         small: false,
         pagination: 10,
+        search: true,
         sort: {
           column: "id",
           order: "ASC",
-        }
+        },
       },
       columns: [
         {name: "ID", key: "id", sortable: true},
@@ -107,6 +118,7 @@ export default {
         {name: "Email", key: "email"},
         {name: "Accept Terms", key: "acceptTerms", sortable: true},
         {name: "Accept Stats", key: "acceptStats", sortable: true},
+        {name: "Accept Data Sharing", key: "acceptDataSharing", sortable: true},
         {name: "Last Login", key: "lastLoginAt", sortable: true},
       ],
       // Possible values for role here are all the roles in the DB.
@@ -118,6 +130,28 @@ export default {
       return this.$store.getters["admin/getUsersByRole"].map((user) => {
         return this.formatUserData(user);
       });
+    },
+    usersExport() {
+      return this.users.filter(user => !user.deleted).map((user) => {
+        return {
+          ID: user.id,
+          "First Name": user.firstName,
+          "Last Name": user.lastName,
+          User: user.userName,
+          Email: user.email,
+          "Accept Terms": user.acceptTerms,
+          "Accept Stats": user.acceptStats,
+          "Accept Data Sharing": user.acceptDataSharing,
+          "Accept Date": user.acceptedAt,
+          "Last Login": user.lastLoginAt,
+          "Created": user.createdAt,
+          "External ID": user.extId,
+          "Roles": user.roles.map(role => this.systemRoles.find((r) => r.id === role)?.name).join(", "),
+        };
+      });
+    },
+    systemRoles() {
+      return this.$store.getters["admin/getSystemRoles"];
     },
     buttons() {
       return [
@@ -147,6 +181,17 @@ export default {
           title: "Reset Password",
           action: "resetPassword",
           icon: "person-lock",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+        },
+        {
+          title: "Delete User",
+          action: "deleteUser",
+          icon: "trash",
           options: {
             iconOnly: true,
             specifiers: {
@@ -184,9 +229,11 @@ export default {
           this.openResetPasswordModal(data.params);
           break;
         case "editReviews":
-          this.openEditReviewsModal(data.params)
+          this.openEditReviewsModal(data.params);
           break;
-
+        case "deleteUser":
+          this.deleteUser(data.params);
+          break;
       }
     },
     openUserDetailsModal(user) {
@@ -197,6 +244,42 @@ export default {
     },
     openResetPasswordModal(user) {
       this.$refs.passwordModal.open(user.id);
+    },
+    deleteUser(user) {
+      this.$refs.confirmModal.open("Delete User", "Are you sure you want to delete this user?", null, (val) => {
+        if (val) {
+          this.$socket.emit(
+            "appDataUpdate",
+            {
+              table: "user",
+              data: {
+                id: user.id,
+                deleted: true,
+              },
+            },
+            (result) => {
+              if (result.success) {
+                this.eventBus.emit("toast", {
+                  title: "User deleted",
+                  message: "User has been deleted",
+                  variant: "success",
+                });
+                this.fetchUsers();
+              } else {
+                this.eventBus.emit("toast", {
+                  title: "User not deleted",
+                  message: result.message,
+                  variant: "danger",
+                });
+              }
+            }
+          );
+        }
+      });
+    },
+    downloadUsers() {
+      const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_users';
+      downloadObjectsAs(this.usersExport, filename, "csv");
     },
   },
 };

@@ -1,10 +1,26 @@
 <template>
-  <Modal ref="createModal" lg name="documentUpload">
+  <Modal ref="createModal" lg name="documentCreate">
     <template #title>Create new document</template>
     <template #body>
       <div class="modal-body justify-content-center flex-grow-1 d-flex">
         <div class="flex-grow-1">
-          <label class="form-label">Name of the document:</label>
+          <label class="form-label">Type of document:</label>
+          <select
+            v-model="documentType"
+            class="form-select form-select-sm selector"
+            allowClear="true"
+            name="documentType"
+          >
+            <option disabled hidden selected value="">
+              Choose document type...
+            </option>
+            <option value="1">General HTML Document</option>
+            <option value="2">Study Modal Document (only usable in studies)</option>
+          </select>
+          <div class="invalid-feedback">
+            Please select a valid document type.
+          </div>
+          <label class="form-label mt-3">Name of the document:</label>
           <input class="form-control" name="file" type="text" v-model="name"
                  @keyup.enter="create"/>
         </div>
@@ -41,11 +57,13 @@ export default {
   data() {
     return {
       name: "",
+      documentType: 1, // Default for General HTML document type
     };
   },
   methods: {
     open() {
       this.name = "";
+      this.documentType = 1; // Reset to default type
       this.$refs.createModal.openModal();
     },
     create() {
@@ -57,10 +75,11 @@ export default {
         });
         return;
       }
+
       this.$refs.createModal.waiting = true;
 
       this.$socket.emit("documentCreate", {
-        type: 1,
+        type: this.documentType, 
         name: this.name,
       }, (res) => {
         if (res.success) {

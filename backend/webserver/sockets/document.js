@@ -87,8 +87,11 @@ module.exports = class DocumentSocket extends Socket {
 
         if (fileType === ".delta") {
             //TODO this not the right way, when we upload a delta file, this should be included directly into the document_edit db
+            // Handle HTML and MODAL document types
+            const documentType = data.type === docTypes.DOC_TYPE_MODAL ? docTypes.DOC_TYPE_MODAL : docTypes.DOC_TYPE_HTML;
+
             doc = await this.models["document"].add({
-                type: docTypes.DOC_TYPE_HTML,
+                type: documentType,
                 name: data.name.replace(/.delta$/, ""),
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: this.userId,
@@ -223,7 +226,7 @@ module.exports = class DocumentSocket extends Socket {
             const doc = await this.models['document'].getById(documentId);
 
             if (await this.checkDocumentAccess(doc.id)) {
-                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
+                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
                     const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
                     let delta = new Delta();
 
@@ -244,7 +247,7 @@ module.exports = class DocumentSocket extends Socket {
                     this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
                     return delta;
                 } else {
-                    throw new Error("Non-HTML documents are not supported for this operation");
+                    throw new Error("Non-HTML/MODAL documents are not supported for this operation");
                 }
             } else {
                 throw new Error("You do not have access to this document");
@@ -302,7 +305,7 @@ module.exports = class DocumentSocket extends Socket {
             }
 
             // TODO: Check if document type is HTML
-            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
+            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
 
                 const edits = await this.models['document_edit'].findAll({
                     where: {documentId: documentId, studySessionId: null, draft: true},
@@ -333,7 +336,7 @@ module.exports = class DocumentSocket extends Socket {
 
                 this.logger.info("Deltas file updated successfully.");
             } else {
-                throw new Error("Non-HTML documents are not supported for this operation");
+                throw new Error("Non-HTML/MODAL documents are not supported for this operation");
             }
 
         } catch (err) {
@@ -349,8 +352,17 @@ module.exports = class DocumentSocket extends Socket {
      * @param {object} data {documentId: number, studySessionId: number}
      * @return {Promise<void>}
      */
-    async getData(data) {
-        if (await this.checkDocumentAccess(data.documentId)) {
+    async getData(data, options) {
+        if (!data.documentId || !await this.checkDocumentAccess(data.documentId)) {
+            throw new Error("No access to document");
+        }
+
+
+        const document = await this.models['document'].getById(data['documentId']);
+        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
+            await this.getDocument({...data, "history": true}, options);
+        } else {
+
             if (data.studySessionId && data.studySessionId !== 0) {
                 const studySession = await this.models['study_session'].getById(data.studySessionId);
                 const study = await this.models['study'].getById(studySession.studyId);
@@ -425,10 +437,9 @@ module.exports = class DocumentSocket extends Socket {
 
             // send additional data like tags
             await this.getSocket('TagSocket').sendTags();
-
-        } else {
-            this.sendToast("Error accessing document", "Access Error", "danger");
         }
+
+
     }
 
     /**
@@ -607,24 +618,65 @@ module.exports = class DocumentSocket extends Socket {
             throw new Error("You do not have access to this document");
         }
 
-        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML) {
+        if (document.type === this.models['document'].docTypes.DOC_TYPE_HTML || document.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
             const deltaFilePath = `${UPLOAD_PATH}/${document.hash}.delta`;
 
             if (!fs.existsSync(deltaFilePath)) {
                 throw new Error("Document not found");
             }
             let delta = await this.loadDocument(deltaFilePath);
-            const edits = await this.models['document_edit'].findAll({
-                where: {
-                    documentId: document.id,
-                    studySessionId: data['studySessionId'],
-                    studyStepId: data['studyStepId'],
-                    draft: true
-                }
-            });
-            delta = delta.compose(dbToDelta(edits));
-            return {document: document, deltas: delta}
 
+            if (data.history) {
+                const edits = await this.models['document_edit'].findAll({
+                    where: {
+                        documentId: document.id,
+                        studySessionId: data.studySessionId,
+                        studyStepId: data.studyStepId
+                    },
+                    raw: true
+                });
+
+                this.emit("document_editRefresh", edits);
+            } else {
+
+                if (data['studySessionId'] == null && data['studyStepId'] == null) {
+
+                    // Get the edits for the base document
+                    const edits = await this.models['document_edit'].findAll({
+                        where: {
+                            documentId: document.id,
+                            studySessionId: data['studySessionId'],
+                            studyStepId: data['studyStepId'],
+                            draft: true
+                        },
+
+                    });
+
+                    delta = delta.compose(dbToDelta(edits));
+                    return {document: document, deltas: delta};
+                } else {
+
+                    // Get the edits for the base document
+                    const edits = await this.models['document_edit'].findAll({
+                        where: {
+                            documentId: document.id,
+                        },
+                        order: [['createdAt', 'ASC']]
+                    });
+
+                    return {
+                        document: document,
+                        deltas: delta.compose(dbToDelta(edits
+                            .filter(edit => edit.draft &&
+                                (edit.studySessionId === data['studySessionId'] || edit.studySessionId === null)))),
+                        firstVersion: delta.compose(dbToDelta(edits
+                            .filter(edit => edit.draft &&
+                                (edit.studySessionId === null || edit.studySessionId === data['studySessionId']) &&
+                                (edit.studyStepId === null || edit.studyStepId !== data['studyStepId']))))
+                    };
+
+                }
+            }
         } else {
             const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
             if (!fs.existsSync(filePath)) {
@@ -634,6 +686,32 @@ module.exports = class DocumentSocket extends Socket {
             return {document: document, file: file};
         }
     }
+
+    /**
+     * Helper method to get the previous step ID for a given study step ID
+     * @param {number} studyStepId - The ID of the study step
+     * @returns {Promise<number|null>} - The ID of the previous study step, or null if not found
+     */
+    async getPreviousStepId(studyStepId) {
+        const step = await this.models['study_step'].getById(studyStepId);
+
+        if (!step) return null;
+
+        let previousStepId = step.studyStepPrevious;
+
+        if (!previousStepId) return null;
+
+        const previousStep = await this.models['study_step'].getById(previousStepId);
+
+        if (previousStep &&
+            previousStep.stepType === step.stepType &&
+            previousStep.documentId === step.documentId) {
+            return previousStep.id;
+        }
+
+        return null;
+    }
+
 
     /**
      * Uploads review links to a Moodle assignment as feedback comments.
@@ -654,6 +732,39 @@ module.exports = class DocumentSocket extends Socket {
             options: data.options,
             feedback: data.feedback,
         });
+    }
+
+    /**
+     * Save document data
+     * @param {*} data {userId: number, documentId: number, studySessionId: number, studyStepId: number, key: string, value: any}
+     * @param {*} options {transaction: Transaction}
+     * @returns {Promise<void>}
+     */
+    async saveData(data, options) {
+        const documentData = await this.models['document_data'].add({
+            userId: data.userId,
+            documentId: data.documentId,
+            studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
+            key: data.key,
+            value: data.value
+        }, {transaction: options.transaction});
+
+        // TODO: Get this checked
+        let skillDataOps = new Delta({[data.key]: dbToDelta(data.value)});
+        let skillData = {
+            documentId: data.documentId,
+            studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
+            ops: skillDataOps
+        };
+
+        await this.editDocument(skillData);
+
+        options.transaction.afterCommit(() => {
+            this.emit("document_dataRefresh", documentData);
+        });
+        return documentData;
     }
 
     init() {
@@ -719,14 +830,6 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("documentGetData", async (data) => {
-            try {
-                await this.getData(data);
-            } catch (e) {
-                this.logger.info("Error loading document data: " + e);
-                this.sendToast("Internal server error. Error loading document data.", "Internal server error", "danger");
-            }
-        });
 
         this.socket.on("documentPublish", async (data) => {
             try {
@@ -793,6 +896,8 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
+
+        this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.addDocument, {}, true);
@@ -800,5 +905,6 @@ module.exports = class DocumentSocket extends Socket {
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);
+        this.createSocket("documentDataSave", this.saveData, {}, true);
     }
 };
