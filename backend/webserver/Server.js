@@ -36,6 +36,8 @@ module.exports = class Server {
 
         this.app = express();
         this.socket = null;
+        this.cache = {};
+        this.cache['userName'] = {};
 
         this.rpcs = {};
         this.sockets = {};

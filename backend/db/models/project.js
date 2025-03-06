@@ -17,42 +17,21 @@ module.exports = (sequelize, DataTypes) => {
                 default: "",
             },
             {
-                key: "userId",
-                label: "User ID of the document",
-                placeholder: "#",
-                type: "text",
-                required: false,
-                default: "",
-            },
-            {
-                key: "public",
-                label: "Is the document published?",
-                type: "switch",
-                required: false,
-                default: false
-            },
-            {
-                key: "closed",
-                label: "Is the project closed?",
-                type: "date",
-                required: false,
-                default: null
-            },
-            {
-                key: "deleted",
-                label: "Is the project deleted?",
-                type: "switch",
-                required: false,
-                default: false
-            },
-            {
                 key: "description",
                 label: "Description of the project:",
                 placeholder: "My project description",
                 type: "textarea",
                 required: false,
                 default: "",
-            },         
+            },
+            {
+                key: "public",
+                label: "Is the project public?",
+                type: "switch",
+                required: false,
+                default: false
+            },
+
                 
         ]
 
@@ -74,7 +53,10 @@ module.exports = (sequelize, DataTypes) => {
         description: DataTypes.TEXT,
         public: DataTypes.BOOLEAN,
         closed: DataTypes.DATE,
-        deleted: DataTypes.BOOLEAN
+        updatedAt: DataTypes.DATE,
+        deleted: DataTypes.BOOLEAN,
+        deletedAt: DataTypes.DATE,
+        createdAt: DataTypes.DATE,
     }, {
         sequelize: sequelize,
         modelName: 'project',

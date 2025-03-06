@@ -34,7 +34,7 @@ import Annotator from "@/components/annotator/Annotator.vue";
 import ReviewModal from "@/components/study/ReviewModal.vue";
 import ReportModal from "@/components/study/ReportModal.vue";
 import { computed } from "vue";
-import Editor from "./editor/Editor.vue";
+import Editor from "./editor/editor/Editor.vue";
 
 /**
  *  Document view in reviewing mode

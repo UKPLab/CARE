@@ -76,7 +76,7 @@ module.exports = {
         allowNull: false,
         defaultValue: false
       },
-      workflowStepDocument: {
+      studyStepDocument: {
         type: Sequelize.INTEGER,
         references: {
           model: 'study_step',
