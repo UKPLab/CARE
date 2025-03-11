@@ -39,13 +39,11 @@
               Output of the {{ skill }}: {{ output }}
             </p>
             <div v-else v-html="documentText"></div>
-            <Chart
-              v-if="chartData"
-              :chartType="chartType"
-              :chartData="chartData"
-              :chartOptions="chartOptions"
-              :key="chartType+chartData+chartOptions"
-            />
+            <div v-for="(chart, index) in charts" :key="'chart-' + index" class="chart-container mb-5">
+              <h5>{{ chart.title }}</h5>
+              <p>{{ chart.explanation }}</p>
+              <Chart :chartInput="chart.input" :id="'chart' + index"/>
+            </div>
           </div>
         </div>      
       </template>
@@ -131,29 +129,116 @@ export default {
       documentText: null,
       waiting: false,
       requests: {},
-      chartType: 'bar',
-      chartData: null,
-      chartOptions: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-          },
-          title: {
-            display: true,
-            text: 'Sample Chart',
-          },
+      charts: [
+        {
+          title: "Horizontal bar chart",
+          explanation: "Horizontal bar chart",
+          input:{            
+            type: "bar",
+            data: {
+              labels: ["A", "B", "C", "D", "E", "F", "H"],
+              datasets: [
+                {
+                  label: "Frequency",
+                  data: [65, 59, 80, 81, 56, 55, 40],
+                  backgroundColor: "rgba(255, 99, 132, 0.5)",
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+                title: {
+                  display: true,
+                  text: "Frequency",
+                },
+              },
+              indexAxis: "y"
+            },
+          }
         },
-        indexAxis: 'y',
-        scales: {
-          x: {
-            stacked: true,
-          },
-          y: {
-            stacked: true,
-          },
+        {
+          title: "Stacked horizontal bar chart",
+          explanation: "Stacked horizontal bar chart",
+          input:{            
+            type: "bar",
+            data: {
+              labels: ["A", "B", "C", "D", "E", "F", "H"],
+              datasets: [
+                {
+                  label: 'Dataset 1',
+                  data: [65, 59, 80, 81, 56, 55, 40],
+                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                },
+                {
+                  label: 'Dataset 2',
+                  data: [28, 48, 40, 19, 86, 27, 90],
+                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                }
+              ],
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+                title: {
+                  display: true,
+                  text: "Frequency",
+                },
+              },
+              indexAxis: "y",
+              scales: {
+                x: {
+                  stacked: true,
+                },
+                y: {
+                  stacked: true,
+                },
+              }, 
+            },
+          }
         },
-      },
+        {
+          title: "Grouped horizontal bar chart",
+          explanation: "Grouped horizontal bar chart",
+          input:{            
+            type: "bar",
+            data: {
+              labels: ["A", "B", "C", "D", "E", "F", "H"],
+              datasets: [
+                {
+                  label: 'Dataset 1',
+                  data: [65, 59, 80, 81, 56, 55, 40],
+                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                },
+                {
+                  label: 'Dataset 2',
+                  data: [28, 48, 40, 19, 86, 27, 90],
+                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                }
+              ],
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+                title: {
+                  display: true,
+                  text: "Frequency",
+                },
+              },
+              indexAxis: "y",
+            },
+          }
+        },
+      ],
     };
   },
   computed: {
@@ -227,22 +312,6 @@ export default {
       }
     );
 
-    // TODO-REMOVE after change: Example dataset for the chart
-    this.chartData = {
-      labels: ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
-      datasets: [
-        {
-          label: 'Dataset 1',
-          data: [65, 59, 80, 81, 56, 55, 40],
-          backgroundColor: 'rgba(255, 99, 132, 0.5)',
-        },
-        {
-          label: 'Dataset 2',
-          data: [28, 48, 40, 19, 86, 27, 90],
-          backgroundColor: 'rgba(54, 162, 235, 0.5)',
-        }
-      ]
-    };
   },
   mounted() {
 

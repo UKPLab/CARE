@@ -1,5 +1,7 @@
 <template>
-  <canvas ref="chartCanvas" :id="chartType + JSON.stringify(chartOptions)"></canvas>
+  <div>
+  <canvas ref="chartCanvas"> </canvas>
+  </div>
 </template>
 
 <script>
@@ -15,20 +17,7 @@ import { debounce } from 'lodash';
 export default {
   name: 'ChartComponent',
   props: {
-    chartType: {
-      type: String,
-      required: true,
-      validator: (value) => {
-        return [
-          'bar', 'line', 'pie', 'doughnut', 'radar', 'polarArea', 'bubble', 'scatter',
-        ].includes(value);
-      },
-    },
-    chartData: {
-      type: Object,
-      required: true,
-    },
-    chartOptions: {
+    chartInput: {
       type: Object,
       default: () => ({}),
     },
@@ -36,39 +25,25 @@ export default {
   data() {
     return {
       chartInstance: null,
-      previousChartData: null,
-      previousChartType: null,
-      previousChartOptions: null,
+      previousChartInput: null,
     };
   },
   mounted() {
     Chart.register(...registerables);
-    this.renderChart();
+    //this.renderChart();
+    const ctx = this.$refs.chartCanvas.getContext('2d');
+      this.chartInstance = new Chart(ctx, {
+        type: this.chartInput["type"],	
+        data: this.chartInput["data"],
+        options: this.chartInput["options"],
+      });
+      console.log("Instance",this.chartInstance);
   },
   beforeUnmount() {
     this.destroyChart();
   },
   methods: {
-    renderChart: debounce(function () {
-      if (
-        this.previousChartData === this.chartData &&
-        this.previousChartType === this.chartType &&
-        this.previousChartOptions === this.chartOptions
-      ) {
-        return;
-      }
-
-      this.previousChartData = this.chartData;
-      this.previousChartType = this.chartType;
-      this.previousChartOptions = this.chartOptions;
-
-      this.destroyChart();
-      const ctx = this.$refs.chartCanvas.getContext('2d');
-      this.chartInstance = new Chart(ctx, {
-        type: this.chartType,
-        data: this.chartData,
-        options: this.chartOptions,
-      });
+    renderChart: debounce(function () {           
     }, 100), 
     destroyChart() {
       if (this.chartInstance) {
@@ -77,14 +52,7 @@ export default {
     },
   },
   watch: {
-    chartData: {
-      handler: 'renderChart',
-      deep: true,
-    },
-    chartType: {
-      handler: 'renderChart',
-    },
-    chartOptions: {
+    chartInput: {
       handler: 'renderChart',
       deep: true,
     },
