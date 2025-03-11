@@ -33,75 +33,27 @@ const workflows = [
     name: "Ruhr-Uni Bochum Project",
     description: "Ruhr-Uni Bochum Project: Correct a document over two revisions with edits overview.",
     steps: [
-      { stepType: 2, allowBackward: false, workflowStepDocument: null },
-      { stepType: 3, allowBackward: false, workflowStepDocument: null,
+      { stepType: 2, allowBackward: false, workflowStepDocument: null }, 
+      { stepType: 3, allowBackward: false, workflowStepDocument: null, 
         configuration: {
-          fields: [
+          services: [
             {
-              type: "placeholder",
-              pattern: "/~nlp\[(\d+)\]~/g",
-              required: true,
-              function: "nlp", 
-              fields: [
-                {
-                  name: "skillName",
-                  label: "Skill Name",
-                  placeholder: "Enter NLP skill name",
-                  required: true,
-                  default: "Text Analysis",
-                },
-                {
-                  name: "dataSource",
-                  label: "Data Source",
-                  placeholder: "Enter the data source",
-                  required: true,
-                  default: "Editor Document",
-                },
-                {
-                  name: "output",
-                  label: "Output",
-                  placeholder: "Location where expected output should be saved",
-                  required: true,
-                  default: "HTML Document",
-                },
-              ],
-            },
+              name: "nlpEditComparison",
+              type: "nlpRequest",
+              required: true
+            }
           ],
         },
       },
-      { stepType: 2, allowBackward: false, workflowStepDocument: 1 },
-      { stepType: 3, allowBackward: false, workflowStepDocument: null,
+      { stepType: 2, allowBackward: false, workflowStepDocument: 1 }, 
+      { stepType: 3, allowBackward: false, workflowStepDocument: null, 
         configuration: {
-          fields: [
+          services: [
             {
-              type: "placeholder",
-              pattern: "/~nlp\[(\d+)\]~/g",
-              required: true,
-              function: "nlp", 
-              fields: [
-                {
-                  name: "skillName",
-                  label: "Skill Name",
-                  placeholder: "Enter NLP skill name",
-                  required: true,
-                  default: "Text Analysis",
-                },
-                {
-                  name: "dataSource",
-                  label: "Data Source",
-                  placeholder: "Enter the data source",
-                  required: true,
-                  default: "Editor Document",
-                },
-                {
-                  name: "output",
-                  label: "Output",
-                  placeholder: "Location where expected output should be saved",
-                  required: true,
-                  default: "HTML Document",
-                },
-              ],
-            },
+              name: "nlpEditComparison",
+              type: "nlpRequest",
+              required: true
+            }
           ],
         },
       },
