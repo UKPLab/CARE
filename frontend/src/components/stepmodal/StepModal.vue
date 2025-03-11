@@ -16,29 +16,36 @@
         </h5>
       </template>  
       <template #body>
-      <div
-        v-if="waiting"
-        class="justify-content-center flex-grow-1 d-flex"
-        role="status"
-      >
-        <div class="spinner-border m-5">
-          <span class="visually-hidden">Loading...</span>          
-        </div>
-      </div>
-      <div v-else>
         <div
-          class="feedback-container p-3"
-          :style="{ color: studyStep?.configuration?.textColor || '' }"
+          v-if="waiting"
+          class="justify-content-center flex-grow-1 d-flex"
+          role="status"
         >
+          <div class="spinner-border m-5">
+            <span class="visually-hidden">Loading...</span>          
+          </div>
+        </div>
+        <div v-else>
+          <div
+            class="feedback-container p-3"
+            :style="{ color: studyStep?.configuration?.textColor || '' }"
+          >
             <p v-if="!documentText">
               No content available for this step.
             </p>
 
           <!-- TODO: Remove check for output once the configuration is fixed-->
             <p v-if="output">
-            Output of the {{ skill }}: {{ output }}
-          </p>
+              Output of the {{ skill }}: {{ output }}
+            </p>
             <div v-else v-html="documentText"></div>
+            <Chart
+              v-if="chartData"
+              :chartType="chartType"
+              :chartData="chartData"
+              :chartOptions="chartOptions"
+              :key="chartType+chartData+chartOptions"
+            />
           </div>
         </div>      
       </template>
@@ -75,6 +82,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
 import {v4 as uuid} from "uuid";
+import Chart from "./Chart.vue";
 
 /**
  * A Modal as per the configuration of the study step
@@ -84,7 +92,7 @@ import {v4 as uuid} from "uuid";
  */
 export default {
   name: "StepModal",
-  components: {BasicButton, BasicModal},
+  components: { BasicButton, BasicModal, Chart }, // Add ChartComponent to components
   inject: {
     studySessionId: {
       type: Number,
@@ -120,9 +128,32 @@ export default {
   data() {
     return {
       loadingConfig: true,
-      documentText: null, // Holds the parsed content of the delta document
-      waiting: false, // Holds the status of the NLP service which is waiting for the response
+      documentText: null,
+      waiting: false,
       requests: {},
+      chartType: 'bar',
+      chartData: null,
+      chartOptions: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: 'Sample Chart',
+          },
+        },
+        indexAxis: 'y',
+        scales: {
+          x: {
+            stacked: true,
+          },
+          y: {
+            stacked: true,
+          },
+        },
+      },
     };
   },
   computed: {
@@ -195,6 +226,23 @@ export default {
         }
       }
     );
+
+    // TODO-REMOVE after change: Example dataset for the chart
+    this.chartData = {
+      labels: ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+      datasets: [
+        {
+          label: 'Dataset 1',
+          data: [65, 59, 80, 81, 56, 55, 40],
+          backgroundColor: 'rgba(255, 99, 132, 0.5)',
+        },
+        {
+          label: 'Dataset 2',
+          data: [28, 48, 40, 19, 86, 27, 90],
+          backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        }
+      ]
+    };
   },
   mounted() {
 
