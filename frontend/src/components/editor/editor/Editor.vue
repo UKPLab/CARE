@@ -118,79 +118,6 @@ export default {
       firstVersion: null,
     };
   },
-  created() {
-    this.documentHash = this.$route.params.documentHash;
-  },
-  mounted() {
-    const editorId = `editor-container-${this.studyStepId}`;
-    const editorContainer = document.getElementById(editorId);
-
-    if (editorContainer) {
-      this.editor = new Editor(editorContainer, this.editorOptions);
-
-      if (this.toolbarVisible) {
-        const toolbarButtons = document.querySelectorAll(`#${editorId} .ql-toolbar button`);
-        toolbarButtons.forEach(button => {
-          const format = button.className.match(/ql-(\w+)/);
-          if (format) {
-            button.setAttribute('title', format[1]);
-          }
-        });
-      }
-
-      this.editor.getEditor().enable(!this.readOnly);
-      this.editor.getEditor().on('text-change', this.handleTextChange);
-      this.eventBus.on('editorSelectEdit', (data) => {
-        if (data.documentId === this.documentId) {
-          this.setEditInEditor(data.editId);
-        }
-      });
-      this.eventBus.on('editorInsertText', (data) => {
-        if (data.documentId === this.documentId) {
-          this.insertTextAtCursor(data.text);
-        }
-      });
-    }
-
-    this.$socket.emit("documentGet",
-      {
-        documentId: this.documentId,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId
-      },
-      (res) => {
-        if (res.success) {
-          this.initializeEditorWithContent(res['data']['deltas']);
-
-          let quill = new Quill(document.createElement('div'));
-          quill.setContents(res['data']['firstVersion']);
-          this.firstVersion = quill.root.innerHTML;
-          let currentVersion = this.editor.getEditor().root.innerHTML;
-
-          let studyData = {
-            firstVersion: this.firstVersion,
-            currentVersion: currentVersion,
-          };
-          this.$emit("update:data", studyData);
-        } else {
-          this.handleDocumentError(res.error);
-        }
-      }
-    );
-
-    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
-  },
-  sockets: {
-    connect() {
-      this.$socket.emit("documentOpen", {documentId: this.documentId});
-    },
-    documentError(error) {
-      this.handleDocumentError(error);
-    }
-  },
-  unmounted() {
-    this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId});
-  },
   computed: {
     user() {
       return this.$store.getters["auth/getUser"];
@@ -296,6 +223,80 @@ export default {
 
       }
     },
+  },
+  created() {
+    this.documentHash = this.$route.params.documentHash;
+  },
+  mounted() {
+    const editorId = `editor-container-${this.studyStepId}`;
+    const editorContainer = document.getElementById(editorId);
+
+    if (editorContainer) {
+      this.editor = new Editor(editorContainer, this.editorOptions);
+
+      if (this.toolbarVisible) {
+        const toolbarButtons = document.querySelectorAll(`#${editorId} .ql-toolbar button`);
+        toolbarButtons.forEach(button => {
+          const format = button.className.match(/ql-(\w+)/);
+          if (format) {
+            button.setAttribute('title', format[1]);
+          }
+        });
+      }
+
+      this.editor.getEditor().enable(!this.readOnly);
+      this.editor.getEditor().on('text-change', this.handleTextChange);
+      this.eventBus.on('editorSelectEdit', (data) => {
+        if (data.documentId === this.documentId) {
+          this.setEditInEditor(data.editId);
+        }
+      });
+      this.eventBus.on('editorInsertText', (data) => {
+        console.log('editorInsertText 1');
+        if (data.documentId === this.documentId) {
+          this.insertTextAtCursor(data.text);
+        }
+      });
+    }
+
+    this.$socket.emit("documentGet",
+      {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId
+      },
+      (res) => {
+        if (res.success) {
+          this.initializeEditorWithContent(res['data']['deltas']);
+
+          let quill = new Quill(document.createElement('div'));
+          quill.setContents(res['data']['firstVersion']);
+          this.firstVersion = quill.root.innerHTML;
+          let currentVersion = this.editor.getEditor().root.innerHTML;
+
+          let studyData = {
+            firstVersion: this.firstVersion,
+            currentVersion: currentVersion,
+          };
+          this.$emit("update:data", studyData);
+        } else {
+          this.handleDocumentError(res.error);
+        }
+      }
+    );
+
+    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
+  },
+  sockets: {
+    connect() {
+      this.$socket.emit("documentOpen", {documentId: this.documentId});
+    },
+    documentError(error) {
+      this.handleDocumentError(error);
+    }
+  },
+  unmounted() {
+    this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId});
   },
   methods: {
     clearEditor() {
