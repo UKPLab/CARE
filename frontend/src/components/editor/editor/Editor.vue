@@ -246,17 +246,20 @@ export default {
 
       this.editor.getEditor().enable(!this.readOnly);
       this.editor.getEditor().on('text-change', this.handleTextChange);
-      this.eventBus.on('editorSelectEdit', (data) => {
+      // Store event handler references for cleanup
+      this.selectEditHandler = (data) => {
         if (data.documentId === this.documentId) {
           this.setEditInEditor(data.editId);
         }
-      });
-      this.eventBus.on('editorInsertText', (data) => {
-        console.log('editorInsertText 1');
+      };
+      this.eventBus.on("editorSelectEdit", this.selectEditHandler);
+      
+      this.insertTextHandler = (data) => {
         if (data.documentId === this.documentId) {
           this.insertTextAtCursor(data.text);
         }
-      });
+      };
+      this.eventBus.on("editorInsertText", this.insertTextHandler);
     }
 
     this.$socket.emit("documentGet",
@@ -296,6 +299,9 @@ export default {
     }
   },
   unmounted() {
+    this.eventBus.off("editorSelectEdit", this.selectEditHandler);
+    this.eventBus.off("editorInsertText", this.insertTextHandler);
+    
     this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId});
   },
   methods: {
