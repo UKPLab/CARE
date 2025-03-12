@@ -1,5 +1,9 @@
 <template>
-  <BasicModal ref="configurationModal" lg name="configurationModal">
+  <BasicModal
+    ref="configurationModal"
+    lg
+    name="configurationModal"
+  >
     <template #title>
       <h5 class="modal-title text-primary">Configure NLP Placeholders</h5>
     </template>
@@ -11,10 +15,12 @@
           <h6 class="text-secondary mb-2">Quick Preview:</h6>
           <p v-html="shortPreview"></p>
           <div class="legend mt-2">
-            <span v-for="(placeholder, index) in placeholders" 
-                  :key="index" 
-                  :style="{ color: placeholderColors[index] }" 
-                  class="legend-item">
+            <span
+              v-for="(placeholder, index) in placeholders"
+              :key="index"
+              :style="{ color: placeholderColors[index] }"
+              class="legend-item"
+            >
             </span>
           </div>
         </div>
@@ -22,13 +28,17 @@
         <!-- Placeholder Input Fields Only -->
         <h6 class="text-secondary mb-3">Placeholder Inputs:</h6>
         <div class="placeholder-list">
-          <div v-for="(placeholder, index) in placeholders" :key="index" class="placeholder-item">
+          <div
+            v-for="(placeholder, index) in placeholders"
+            :key="index"
+            class="placeholder-item"
+          >
             <Placeholder
               :placeholder="placeholder"
               :fields="data.fields[0]?.fields || []"
               :index="index"
-              v-model:formData="formData[index]"  
-              :placeholderColor="placeholderColors[index]" 
+              v-model:formData="formData[index]"
+              :placeholderColor="placeholderColors[index]"
             />
           </div>
         </div>
@@ -39,8 +49,18 @@
     </template>
 
     <template #footer>
-      <button class="btn btn-primary" @click="submit">Submit</button>
-      <button class="btn btn-secondary" @click="close">Close</button>
+      <button
+        class="btn btn-primary"
+        @click="submit"
+      >
+        Submit
+      </button>
+      <button
+        class="btn btn-secondary"
+        @click="close"
+      >
+        Close
+      </button>
     </template>
   </BasicModal>
 </template>
@@ -65,8 +85,8 @@ export default {
   components: { BasicModal, Placeholder },
   data() {
     return {
-      data: { 
-        fields: [] 
+      data: {
+        fields: [],
       },
       placeholders: [],
       formData: [],
@@ -138,14 +158,12 @@ export default {
       return extracted.sort((a, b) => a.number - b.number);
     },
     generatePlaceholderColors() {
-      const colors = [
-        "#ff5733", "#33c3ff", "#ff33f6", "#33ff57", "#ffc133", "#a833ff", "#ff338f"
-      ];
+      const colors = ["#ff5733", "#33c3ff", "#ff33f6", "#33ff57", "#ffc133", "#a833ff", "#ff338f"];
       this.placeholderColors = this.placeholders.map((_, index) => colors[index % colors.length]);
     },
     generateShortPreview(text) {
       this.shortPreview = text.replace(/~nlp\[(\d+)\]~/g, (match, num) => {
-        const colorIndex = this.placeholders.findIndex(p => p.number == num);
+        const colorIndex = this.placeholders.findIndex((p) => p.number == num);
         const color = this.placeholderColors[colorIndex] || "#000";
         return `<span style="color: ${color}; font-weight: bold;">#${num}</span>`;
       });
@@ -171,12 +189,13 @@ export default {
     },
     validateForm() {
       let isValid = true;
-      this.data.fields.forEach((placeholder, index) => {        
-        placeholder.fields.forEach((field) => {    
-          if(field.required && field.name === "skillName"){
-            this.formData[index]["dataSource"] = this.formData[index]["skillName"] === "skill_eic"? 
-              {v1:"firstVersion", v2:"currentVersion"} : 
-                {v1:"firstVersion", v2:"currentVersion", v3:"latestVersion"};
+      this.data.fields.forEach((placeholder, index) => {
+        placeholder.fields.forEach((field) => {
+          if (field.required && field.name === "skillName") {
+            this.formData[index]["dataSource"] =
+              this.formData[index]["skillName"] === "skill_eic"
+                ? { v1: "firstVersion", v2: "currentVersion" }
+                : { v1: "firstVersion", v2: "currentVersion", v3: "latestVersion" };
             this.formData[index]["output"] = " ";
           }
           if (field.required && !this.formData[index][field.name]) {
@@ -197,35 +216,35 @@ export default {
 
 <style scoped>
 .configuration-container {
-max-height: 400px;
-overflow-y: auto;
-background: #f8f9fa;
-border-radius: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #f8f9fa;
+  border-radius: 0.5rem;
 }
 
 .form-label {
-font-weight: bold;
+  font-weight: bold;
 }
 
 .text-primary {
-color: #007bff !important;
+  color: #007bff !important;
 }
 
 .text-secondary {
-color: #6c757d !important;
+  color: #6c757d !important;
 }
 
 .text-muted {
-color: #6c757d !important;
+  color: #6c757d !important;
 }
 
 .btn-outline-secondary {
-transition: all 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .btn-outline-secondary:hover {
-background-color: #6c757d;
-color: #fff;
+  background-color: #6c757d;
+  color: #fff;
 }
 
 .text-primary {
