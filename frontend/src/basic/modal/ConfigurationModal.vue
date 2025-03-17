@@ -1,12 +1,70 @@
 <template>
-  <BasicModal
-    ref="configurationModal"
-    lg
-    name="configurationModal"
+  <!-- TODO: Validation and step-change to be implemented -->
+  <StepperModal
+    ref="configurationStepper"
+    name="configurationStepper"
+    :steps="[{ title: 'NLP Services' }, { title: 'Placeholders' }]"
+    :validation="[]"
+    submit-text="Save Configuration"
+    @step-change="handleStepChange"
+    @submit="submit"
   >
     <template #title>
-      <h5 class="modal-title text-primary">Configure NLP Placeholders</h5>
+      <h5 class="modal-title text-primary">Configuration</h5>
     </template>
+    <!-- Step 1: NLP Services -->
+    <template #step-1>
+      <div class="service-config">
+        <div v-if="serviceConfig && serviceConfig.services && serviceConfig.services.length">
+          <div
+            v-for="(service, index) in serviceConfig.services"
+            :key="index"
+            class="service-item mb-4 p-3 border rounded"
+          >
+            <h6 class="fw-bold">Service Configuration: {{ service.name }}</h6>
+
+            <!-- TODO: Replace FormSelect with Form -->
+            <!-- Skill Selection -->
+            <div class="mb-3">
+              <label class="form-label">Select NLP Skill:</label>
+              <FormSelect
+                v-model="serviceFormData[index].skillName"
+                :options="skillMap"
+                @change="updateDataSourceOptions(index)"
+              />
+            </div>
+
+            <!-- TODO: Move it to step 2 -->
+            <!-- Input Mapping -->
+            <div
+              v-if="serviceFormData[index].skillName"
+              class="mb-3 data-mapping"
+            >
+              <h6 class="text-secondary">Input Mapping</h6>
+              <div
+                v-for="input in getSkillInputs(serviceFormData[index].skillName)"
+                :key="input"
+                class="mb-2"
+              >
+                <label class="form-label">{{ input }}:</label>
+                <FormSelect
+                  v-model="serviceFormData[index].dataSource[input]"
+                  :options="{ options: availableDataSources }"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          v-else
+          class="alert alert-info"
+        >
+          No service configurations found for this step.
+        </div>
+      </div>
+    </template>
+    <!-- Step 2: Placeholders -->
+    <template #step-2></template>
 
     <template #body>
       <div v-if="placeholders.length">
@@ -48,7 +106,7 @@
       </div>
     </template>
 
-    <template #footer>
+    <!-- <template #footer>
       <button
         class="btn btn-primary"
         @click="submit"
@@ -61,12 +119,13 @@
       >
         Close
       </button>
-    </template>
-  </BasicModal>
+    </template> -->
+  </StepperModal>
 </template>
 
 <script>
-import BasicModal from "@/basic/Modal.vue";
+import StepperModal from "@/basic/modal/StepperModal.vue";
+import FormSelect from "@/basic/form/Select.vue";
 import Placeholder from "@/basic/modal/configuration/Placeholder.vue";
 import { extractPlaceholder } from "@/assets/editor/placeholder.js";
 import Quill from "quill";
@@ -78,11 +137,11 @@ import Quill from "quill";
  * It supports placeholders for NLP models, links, and other custom fields.
  * Users can provide data that will be processed and stored as part of the workflow configuration.
  *
- * @author: Juliane Bechert
+ * @author: Juliane Bechert, Linyin Huang
  */
 export default {
   name: "ConfigurationModal",
-  components: { BasicModal, Placeholder },
+  components: { StepperModal, Placeholder, FormSelect },
   data() {
     return {
       data: {
@@ -91,13 +150,53 @@ export default {
       placeholders: [],
       formData: [],
       placeholderColors: [],
+      serviceConfig: null,
+      serviceFormData: [],
       studyStepId: null,
+      documentId: null,
       shortPreview: "",
     };
   },
+  computed: {
+    nlpSkills() {
+      const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
+      return skills && typeof skills === "object" ? Object.values(skills) : [];
+    },
+    skillMap() {
+      return {
+        options: this.nlpSkills.map((skill) => ({
+          value: skill.name,
+          name: skill.name,
+        })),
+      };
+    },
+    availableDataSources() {
+      // Data sources from previous steps
+      return [
+        { value: "firstVersion", name: "First Version (Editor)" },
+        { value: "currentVersion", name: "Current Version (Editor)" },
+        { value: "lastVersion", name: "Last Version (Editor)" },
+        { value: "datasaving", name: "Data Savings (Modal)" },
+      ];
+    },
+  },
   methods: {
+    // TODO: Simplify this open method
     open(configuration, studyStepId, documentId) {
       this.studyStepId = studyStepId;
+      this.documentId = documentId;
+      this.serviceConfig = configuration;
+
+      // Initialize service form data
+      if (configuration?.services?.length) {
+        this.serviceFormData = configuration.services.map(() => ({
+          skillName: "",
+          dataSource: {},
+        }));
+      } else {
+        this.serviceFormData = [];
+      }
+
       const requestData = { documentId, studyStepId, studySessionId: this.studySessionId || null };
 
       this.$socket.emit("documentGet", requestData, (response) => {
@@ -126,7 +225,7 @@ export default {
             }
 
             this.data = configuration || { fields: [] };
-            this.$refs.configurationModal.open();
+            this.$refs.configurationStepper.open();
           } else {
             console.error("Invalid document content:", response);
             this.eventBus.emit("toast", {
@@ -144,6 +243,27 @@ export default {
           });
         }
       });
+    },
+    getSkillInputs(skillName) {
+      // Find the skill in the skills list
+      const skill = this.nlpSkills.find((s) => s.name === skillName);
+      if (!skill) return [];
+
+      // Return the input keys (v1, v2, etc.)
+      return Object.keys(skill.inputs || {});
+    },
+    updateDataSourceOptions(index) {
+      // Clear and initialize dataSource object with keys from skill inputs
+      const skillName = this.serviceFormData[index].skillName;
+      const inputs = this.getSkillInputs(skillName);
+
+      const dataSource = {};
+      inputs.forEach((input) => {
+        dataSource[input] = "";
+      });
+
+      this.serviceFormData[index].dataSource = dataSource;
+      // this.validateSteps();
     },
     extractAndSortPlaceholders(text) {
       const regex = /~nlp\[(\d+)\]~/g;
@@ -169,7 +289,7 @@ export default {
       });
     },
     close() {
-      this.$refs.configurationModal.close();
+      this.$refs.configurationStepper.close();
     },
     submit() {
       if (this.validateForm()) {
@@ -179,7 +299,7 @@ export default {
         };
 
         this.$emit("updateConfiguration", configData);
-        this.$refs.configurationModal.close();
+        this.$refs.configurationStepper.close();
         this.eventBus.emit("toast", {
           title: "Configuration Updated",
           message: "The configuration data has been successfully updated.",
