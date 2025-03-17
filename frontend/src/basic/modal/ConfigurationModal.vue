@@ -27,6 +27,7 @@
             <!-- Skill Selection -->
             <div class="mb-3">
               <label class="form-label">Select NLP Skill:</label>
+              <!-- FIXME: Get the wrong value -->
               <FormSelect
                 v-model="serviceFormData[index].skillName"
                 :options="skillMap"
@@ -36,7 +37,7 @@
 
             <!-- TODO: Move it to step 2 -->
             <!-- Input Mapping -->
-            <div
+            <!-- <div
               v-if="serviceFormData[index].skillName"
               class="mb-3 data-mapping"
             >
@@ -52,7 +53,7 @@
                   :options="{ options: availableDataSources }"
                 />
               </div>
-            </div>
+            </div> -->
           </div>
         </div>
         <div
@@ -64,13 +65,12 @@
       </div>
     </template>
     <!-- Step 2: Placeholders -->
-    <template #step-2></template>
-
-    <template #body>
+    <template #step-2>
       <div v-if="placeholders.length">
         <!-- Short Preview with Placeholder Labels -->
         <div class="short-preview p-3 mb-3 border rounded">
           <h6 class="text-secondary mb-2">Quick Preview:</h6>
+          <!-- FIXME: Do not use v-html -->
           <p v-html="shortPreview"></p>
           <div class="legend mt-2">
             <span
@@ -79,55 +79,48 @@
               :style="{ color: placeholderColors[index] }"
               class="legend-item"
             >
+              {{ placeholder.type === "text" ? "TEXT" : "CHART" }} #{{ placeholder.number }}
             </span>
           </div>
         </div>
 
-        <!-- Placeholder Input Fields Only -->
-        <h6 class="text-secondary mb-3">Placeholder Inputs:</h6>
+        <!-- Placeholder Configuration -->
         <div class="placeholder-list">
           <div
             v-for="(placeholder, index) in placeholders"
             :key="index"
-            class="placeholder-item"
+            class="placeholder-item mb-3 p-3 border rounded"
           >
-            <Placeholder
-              :placeholder="placeholder"
-              :fields="data.fields[0]?.fields || []"
-              :index="index"
-              v-model:formData="formData[index]"
-              :placeholderColor="placeholderColors[index]"
-            />
+            <h6 class="mb-2">
+              <span :style="{ color: placeholderColors[index], fontWeight: 'bold' }">
+                {{ placeholder.type === "text" ? "Text" : "Chart" }} Placeholder #{{ placeholder.number }}
+              </span>
+            </h6>
+
+            <!-- Data Source -->
+            <div class="mb-3">
+              <label class="form-label">Data Source:</label>
+              <FormSelect
+                v-model="placeholderFormData[index].dataSource"
+                :options="{ options: availableDataSources }"
+              />
+            </div>
           </div>
         </div>
       </div>
-      <div v-else>
+      <div
+        v-else
+        class="alert alert-info"
+      >
         <p>No placeholders found in the document.</p>
       </div>
     </template>
-
-    <!-- <template #footer>
-      <button
-        class="btn btn-primary"
-        @click="submit"
-      >
-        Submit
-      </button>
-      <button
-        class="btn btn-secondary"
-        @click="close"
-      >
-        Close
-      </button>
-    </template> -->
   </StepperModal>
 </template>
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
-import Placeholder from "@/basic/modal/configuration/Placeholder.vue";
-import { extractPlaceholder } from "@/assets/editor/placeholder.js";
 import Quill from "quill";
 
 /**
@@ -141,13 +134,14 @@ import Quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: { StepperModal, Placeholder, FormSelect },
+  components: { StepperModal, FormSelect },
   data() {
     return {
       data: {
         fields: [],
       },
       placeholders: [],
+      placeholderFormData: [],
       formData: [],
       placeholderColors: [],
       serviceConfig: null,
@@ -191,14 +185,18 @@ export default {
       if (configuration?.services?.length) {
         this.serviceFormData = configuration.services.map(() => ({
           skillName: "",
-          dataSource: {},
+          dataInput: {},
         }));
       } else {
         this.serviceFormData = [];
       }
 
-      const requestData = { documentId, studyStepId, studySessionId: this.studySessionId || null };
-
+      // Get document content to extract placeholders
+      const requestData = {
+        documentId,
+        studyStepId,
+        studySessionId: this.studySessionId || null,
+      };
       this.$socket.emit("documentGet", requestData, (response) => {
         if (response.success) {
           const { deltas } = response.data || {};
@@ -207,24 +205,19 @@ export default {
             quill.setContents(deltas.ops);
             const docText = quill.getText();
 
-            this.placeholders = this.extractAndSortPlaceholders(docText);
+            // Extract placeholders
+            this.placeholders = this.extractPlaceholders(docText);
             this.generatePlaceholderColors();
             this.generateShortPreview(docText);
 
-            if (configuration?.fields?.[0]?.fields) {
-              this.formData = this.placeholders.map(() => {
-                const fieldData = {};
-                configuration.fields[0].fields.forEach((field) => {
-                  fieldData[field.name] = "";
-                });
-                return fieldData;
-              });
-            } else {
-              this.formData = [];
-              console.warn("No fields configuration found for placeholders.");
-            }
+            // Initialize placeholder form data with correct type based on extraction
+            this.placeholderFormData = this.placeholders.map((placeholder) => ({
+              // No need for type selection now - using extracted type
+              dataSource: "",
+              chartType: placeholder.type === "chart" ? "bar" : undefined,
+            }));
 
-            this.data = configuration || { fields: [] };
+            // this.validateSteps();
             this.$refs.configurationStepper.open();
           } else {
             console.error("Invalid document content:", response);
@@ -245,8 +238,11 @@ export default {
       });
     },
     getSkillInputs(skillName) {
+      console.log(skillName, "getSkillInputs");
+      console.log(this.nlpSkills, "getSkillInputs 1");
       // Find the skill in the skills list
       const skill = this.nlpSkills.find((s) => s.name === skillName);
+      console.log({ skill });
       if (!skill) return [];
 
       // Return the input keys (v1, v2, etc.)
@@ -255,23 +251,40 @@ export default {
     updateDataSourceOptions(index) {
       // Clear and initialize dataSource object with keys from skill inputs
       const skillName = this.serviceFormData[index].skillName;
+      console.log(skillName);
       const inputs = this.getSkillInputs(skillName);
 
-      const dataSource = {};
+      const dataInput = {};
       inputs.forEach((input) => {
-        dataSource[input] = "";
+        dataInput[input] = "";
       });
 
-      this.serviceFormData[index].dataSource = dataSource;
+      this.serviceFormData[index].dataInput = dataInput;
       // this.validateSteps();
     },
-    extractAndSortPlaceholders(text) {
-      const regex = /~nlp\[(\d+)\]~/g;
+    extractPlaceholders(text) {
+      // Extract both text and chart placeholders
+      const textRegex = /~text\[(\d+)\]~/g;
+      const chartRegex = /~chart\[(\d+)\]~/g;
       let match;
       const extracted = [];
 
-      while ((match = regex.exec(text)) !== null) {
-        extracted.push({ text: match[0], number: parseInt(match[1], 10) });
+      // Extract text placeholders
+      while ((match = textRegex.exec(text)) !== null) {
+        extracted.push({
+          text: match[0],
+          number: parseInt(match[1], 10),
+          type: "text",
+        });
+      }
+
+      // Extract chart placeholders
+      while ((match = chartRegex.exec(text)) !== null) {
+        extracted.push({
+          text: match[0],
+          number: parseInt(match[1], 10),
+          type: "chart",
+        });
       }
 
       // Sort by extracted number
@@ -288,6 +301,12 @@ export default {
         return `<span style="color: ${color}; font-weight: bold;">#${num}</span>`;
       });
     },
+    handleStepChange(step) {
+      console.log({ step });
+      console.log(this.serviceFormData, "formData");
+      // this.validateSteps();
+    },
+    validateSteps() {},
     close() {
       this.$refs.configurationStepper.close();
     },
@@ -335,13 +354,6 @@ export default {
 </script>
 
 <style scoped>
-.configuration-container {
-  max-height: 400px;
-  overflow-y: auto;
-  background: #f8f9fa;
-  border-radius: 0.5rem;
-}
-
 .form-label {
   font-weight: bold;
 }
@@ -351,35 +363,6 @@ export default {
 }
 
 .text-secondary {
-  color: #6c757d !important;
-}
-
-.text-muted {
-  color: #6c757d !important;
-}
-
-.btn-outline-secondary {
-  transition: all 0.3s ease;
-}
-
-.btn-outline-secondary:hover {
-  background-color: #6c757d;
-  color: #fff;
-}
-
-.text-primary {
-  color: #007bff !important;
-}
-
-.text-secondary {
-  color: #6c757d !important;
-}
-
-.text-dark {
-  color: #343a40 !important;
-}
-
-.text-muted {
   color: #6c757d !important;
 }
 
@@ -398,19 +381,5 @@ export default {
 
 .legend-item {
   font-weight: bold;
-}
-
-.placeholder-list {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.placeholder-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 </style>
