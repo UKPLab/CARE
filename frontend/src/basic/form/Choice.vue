@@ -29,14 +29,16 @@
                     :data-table="true"
                     :options="field"
                   />
-
                   <!-- Render Gear Icon if Configuration Exists -->
-                  <span
+                  <span 
                     v-if="item.hasConfiguration"
                     class="ms-2"
-                    @click="openModal(item.configuration, item.id)"
                   >
-                    <i class="bi bi-gear" title="View Configuration" style="cursor: pointer;"></i>
+                    <ConfigurationModal
+                      v-model="item.configuration"
+                      :study-step-id="item.id"
+                      :document-id="currentData.find((entry) => entry.id === item.id)?.documentId"
+                    />
                   </span>
                 </div>
               </div>
@@ -46,10 +48,11 @@
       </table>
     </template>
   </FormElement>
-  <ConfigurationModal
+  <!-- TODO: comment it out for later config update adjustment -->
+  <!-- <ConfigurationModal
     ref="configurationModal"
     @updateConfiguration="handleConfigurationUpdate"
-  />
+  /> -->
 </template>
 
 <script>
@@ -57,18 +60,17 @@ import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
-import {sorter} from "@/assets/utils";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 /**
  * Show a table to insert new elements
  *
- * @autor Dennis Zyska, Juliane Bechert
+ * @autor Dennis Zyska, Juliane Bechert, Linyin Huang
  */
 export default {
   name: "FormChoice",
-  components: {FormElement, FormDefault, FormSelect, ConfigurationModal},
+  components: { FormElement, FormDefault, FormSelect, ConfigurationModal },
   inject: {
     formData: {
       default: () => null,
@@ -206,16 +208,17 @@ export default {
       });
       return allValid;
     },
-    handleConfigurationUpdate(configData) {
-      const { studyStepId, configuration } = configData;
-      const stepIndex = this.currentData.findIndex((item) => item.id === studyStepId);
-      if (stepIndex !== -1) {
-        this.currentData[stepIndex] = {
-          ...this.currentData[stepIndex],
-          configuration, 
-        };
-      }     
-    },
+    // TODO: comment it out for later config update adjustment
+    // handleConfigurationUpdate(configData) {
+    //   const { studyStepId, configuration } = configData;
+    //   const stepIndex = this.currentData.findIndex((item) => item.id === studyStepId);
+    //   if (stepIndex !== -1) {
+    //     this.currentData[stepIndex] = {
+    //       ...this.currentData[stepIndex],
+    //       configuration, 
+    //     };
+    //   }     
+    // },
     prepareSubmitData(data) {
       return data.map((item) => {
         const tempConfig = this.temporaryConfigurations[item.id];
@@ -224,20 +227,6 @@ export default {
         }
         return item;
       });
-    },
-    openModal(configuration, studyStepId) {
-      const currentEntry = this.currentData.find((entry) => entry.id === studyStepId);
-      if (!currentEntry || !currentEntry.documentId) {
-        this.eventBus.emit("toast", {
-          title: "Document Error",
-          message: "You need to selected a document.",
-          variant: "danger",
-        });
-        return;
-      }
-      const documentId = currentEntry.documentId;
-
-      this.$refs.configurationModal.open(configuration, studyStepId, documentId);
     },
   },
 };
