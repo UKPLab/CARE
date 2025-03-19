@@ -1,43 +1,53 @@
 <template>
-  <!-- TODO: Validation and step-change to be implemented -->
-  <StepperModal
-    ref="configurationStepper"
-    name="configurationStepper"
-    :steps="[{ title: 'NLP Services' }, { title: 'Placeholders' }]"
-    :validation="[]"
-    submit-text="Save Configuration"
-    @step-change="handleStepChange"
-    @submit="submit"
-  >
-    <template #title>
-      <h5 class="modal-title text-primary">Configuration</h5>
-    </template>
-    <!-- Step 1: NLP Services -->
-    <template #step-1>
-      <div class="service-config">
-        <div v-if="serviceConfig && serviceConfig.services && serviceConfig.services.length">
-          <div
-            v-for="(service, index) in serviceConfig.services"
-            :key="index"
-            class="service-item mb-4 p-3 border rounded"
-          >
-            <h6 class="fw-bold">Service Configuration: {{ service.name }}</h6>
+  <div class="config-field">
+    <button
+      class="btn btn-sm btn-outline-secondary"
+      @click="openModal"
+    >
+      <i
+        class="bi bi-gear"
+        title="Edit Configuration"
+      ></i>
+    </button>
+    <!-- TODO: Validation and step-change to be implemented -->
+    <StepperModal
+      ref="configurationStepper"
+      name="configurationStepper"
+      :steps="[{ title: 'NLP Services' }, { title: 'Placeholders' }]"
+      :validation="[]"
+      submit-text="Save Configuration"
+      @step-change="handleStepChange"
+      @submit="submit"
+    >
+      <template #title>
+        <h5 class="modal-title text-primary">Configuration</h5>
+      </template>
+      <!-- Step 1: NLP Services -->
+      <template #step-1>
+        <div class="service-config">
+          <div v-if="serviceConfig && serviceConfig.services && serviceConfig.services.length">
+            <div
+              v-for="(service, index) in serviceConfig.services"
+              :key="index"
+              class="service-item mb-4 p-3 border rounded"
+            >
+              <h6 class="fw-bold">Service Configuration: {{ service.name }}</h6>
 
-            <!-- TODO: Replace FormSelect with Form -->
-            <!-- Skill Selection -->
-            <div class="mb-3">
-              <label class="form-label">Select NLP Skill:</label>
-              <!-- FIXME: Get the wrong value -->
-              <FormSelect
-                v-model="serviceFormData[index].skillName"
-                :options="skillMap"
-                @change="updateDataSourceOptions(index)"
-              />
-            </div>
+              <!-- TODO: Replace FormSelect with Form -->
+              <!-- Skill Selection -->
+              <div class="mb-3">
+                <label class="form-label">Select NLP Skill:</label>
+                <!-- FIXME: Get the wrong value -->
+                <FormSelect
+                  v-model="serviceFormData[index].skillName"
+                  :options="skillMap"
+                  @change="updateDataSourceOptions(index)"
+                />
+              </div>
 
-            <!-- TODO: Move it to step 2 -->
-            <!-- Input Mapping -->
-            <!-- <div
+              <!-- TODO: Keep this at step 1 -->
+              <!-- Input Mapping -->
+              <!-- <div
               v-if="serviceFormData[index].skillName"
               class="mb-3 data-mapping"
             >
@@ -54,68 +64,69 @@
                 />
               </div>
             </div> -->
+            </div>
+          </div>
+          <div
+            v-else
+            class="alert alert-info"
+          >
+            No service configurations found for this step.
+          </div>
+        </div>
+      </template>
+      <!-- Step 2: Placeholders -->
+      <template #step-2>
+        <div v-if="placeholders.length">
+          <!-- Short Preview with Placeholder Labels -->
+          <div class="short-preview p-3 mb-3 border rounded">
+            <h6 class="text-secondary mb-2">Quick Preview:</h6>
+            <!-- FIXME: Do not use v-html -->
+            <p v-html="shortPreview"></p>
+            <div class="legend mt-2">
+              <span
+                v-for="(placeholder, index) in placeholders"
+                :key="index"
+                :style="{ color: placeholderColors[index] }"
+                class="legend-item"
+              >
+                {{ placeholder.type === "text" ? "TEXT" : "CHART" }} #{{ placeholder.number }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Placeholder Configuration -->
+          <div class="placeholder-list">
+            <div
+              v-for="(placeholder, index) in placeholders"
+              :key="index"
+              class="placeholder-item mb-3 p-3 border rounded"
+            >
+              <h6 class="mb-2">
+                <span :style="{ color: placeholderColors[index], fontWeight: 'bold' }">
+                  {{ placeholder.type === "text" ? "Text" : "Chart" }} Placeholder #{{ placeholder.number }}
+                </span>
+              </h6>
+
+              <!-- Data Source -->
+              <div class="mb-3">
+                <label class="form-label">Data Source:</label>
+                <FormSelect
+                  v-model="placeholderFormData[index].dataSource"
+                  :options="{ options: availableDataSources }"
+                />
+              </div>
+            </div>
           </div>
         </div>
         <div
           v-else
           class="alert alert-info"
         >
-          No service configurations found for this step.
+          <p>No placeholders found in the document.</p>
         </div>
-      </div>
-    </template>
-    <!-- Step 2: Placeholders -->
-    <template #step-2>
-      <div v-if="placeholders.length">
-        <!-- Short Preview with Placeholder Labels -->
-        <div class="short-preview p-3 mb-3 border rounded">
-          <h6 class="text-secondary mb-2">Quick Preview:</h6>
-          <!-- FIXME: Do not use v-html -->
-          <p v-html="shortPreview"></p>
-          <div class="legend mt-2">
-            <span
-              v-for="(placeholder, index) in placeholders"
-              :key="index"
-              :style="{ color: placeholderColors[index] }"
-              class="legend-item"
-            >
-              {{ placeholder.type === "text" ? "TEXT" : "CHART" }} #{{ placeholder.number }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Placeholder Configuration -->
-        <div class="placeholder-list">
-          <div
-            v-for="(placeholder, index) in placeholders"
-            :key="index"
-            class="placeholder-item mb-3 p-3 border rounded"
-          >
-            <h6 class="mb-2">
-              <span :style="{ color: placeholderColors[index], fontWeight: 'bold' }">
-                {{ placeholder.type === "text" ? "Text" : "Chart" }} Placeholder #{{ placeholder.number }}
-              </span>
-            </h6>
-
-            <!-- Data Source -->
-            <div class="mb-3">
-              <label class="form-label">Data Source:</label>
-              <FormSelect
-                v-model="placeholderFormData[index].dataSource"
-                :options="{ options: availableDataSources }"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div
-        v-else
-        class="alert alert-info"
-      >
-        <p>No placeholders found in the document.</p>
-      </div>
-    </template>
-  </StepperModal>
+      </template>
+    </StepperModal>
+  </div>
 </template>
 
 <script>
@@ -135,6 +146,23 @@ import Quill from "quill";
 export default {
   name: "ConfigurationModal",
   components: { StepperModal, FormSelect },
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => ({}),
+    },
+    documentId: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    studyStepId: {
+      type: Number,
+      required: true,
+      default: null,
+    },
+  },
+  emits: ["update:modelValue"],
   data() {
     return {
       data: {
@@ -146,8 +174,6 @@ export default {
       placeholderColors: [],
       serviceConfig: null,
       serviceFormData: [],
-      studyStepId: null,
-      documentId: null,
       shortPreview: "",
     };
   },
@@ -174,16 +200,20 @@ export default {
       ];
     },
   },
+  watch: {
+    documentId: {
+      handler(newDocumentId) {
+        if (newDocumentId) {
+          this.initializeModal();
+        }
+      },
+    },
+  },
   methods: {
-    // TODO: Simplify this open method
-    open(configuration, studyStepId, documentId) {
-      this.studyStepId = studyStepId;
-      this.documentId = documentId;
-      this.serviceConfig = configuration;
-
-      // Initialize service form data
-      if (configuration?.services?.length) {
-        this.serviceFormData = configuration.services.map(() => ({
+    initializeModal() {
+      this.serviceConfig = this.modelValue || {};
+      if (this.serviceConfig?.services?.length) {
+        this.serviceFormData = this.serviceConfig.services.map(() => ({
           skillName: "",
           dataInput: {},
         }));
@@ -191,12 +221,17 @@ export default {
         this.serviceFormData = [];
       }
 
-      // Get document content to extract placeholders
+      // Fetch document content to extract placeholders
+      this.fetchDocument();
+    },
+    fetchDocument() {
+      if (!this.documentId || !this.studyStepId) return;
       const requestData = {
-        documentId,
-        studyStepId,
+        documentId: this.documentId,
+        studyStepId: this.studyStepId,
         studySessionId: this.studySessionId || null,
       };
+
       this.$socket.emit("documentGet", requestData, (response) => {
         if (response.success) {
           const { deltas } = response.data || {};
@@ -216,9 +251,7 @@ export default {
               dataSource: "",
               chartType: placeholder.type === "chart" ? "bar" : undefined,
             }));
-
             // this.validateSteps();
-            this.$refs.configurationStepper.open();
           } else {
             console.error("Invalid document content:", response);
             this.eventBus.emit("toast", {
@@ -237,21 +270,28 @@ export default {
         }
       });
     },
+    openModal() {
+      if (!this.documentId) {
+        this.eventBus.emit("toast", {
+          title: "Document Error",
+          message: "You need to select a document.",
+          variant: "danger",
+        });
+        return;
+      }
+      this.$refs.configurationStepper.open();
+    },
+
     getSkillInputs(skillName) {
-      console.log(skillName, "getSkillInputs");
-      console.log(this.nlpSkills, "getSkillInputs 1");
       // Find the skill in the skills list
       const skill = this.nlpSkills.find((s) => s.name === skillName);
-      console.log({ skill });
       if (!skill) return [];
-
       // Return the input keys (v1, v2, etc.)
       return Object.keys(skill.inputs || {});
     },
     updateDataSourceOptions(index) {
       // Clear and initialize dataSource object with keys from skill inputs
       const skillName = this.serviceFormData[index].skillName;
-      console.log(skillName);
       const inputs = this.getSkillInputs(skillName);
 
       const dataInput = {};
@@ -302,8 +342,6 @@ export default {
       });
     },
     handleStepChange(step) {
-      console.log({ step });
-      console.log(this.serviceFormData, "formData");
       // this.validateSteps();
     },
     validateSteps() {},
@@ -317,7 +355,7 @@ export default {
           configuration: this.formData,
         };
 
-        this.$emit("updateConfiguration", configData);
+        this.$emit("update:modelValue", configData);
         this.$refs.configurationStepper.close();
         this.eventBus.emit("toast", {
           title: "Configuration Updated",
