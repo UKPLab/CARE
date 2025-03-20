@@ -45,12 +45,14 @@ export default {
     return {
       isSidebarVisible: true,
       placeholders: [
-        {id: "placeholder1", label: "Placeholder to insert text", text: "~text[d+]~"},
-        {id: "placeholder2", label: "Placeholder to insert a chart", text: "~chart[d+]~"},
+        { id: "placeholder1", label: "Text placeholder", text: "~text[d+]~" },
+        { id: "placeholder2", label: "Single chart", text: "~chart[d+]~" },
+        { id: "placeholder3", label: "Comparison chart", text: "~comparison[d+]~" },
       ],
       placeholderCounts: {
         text: 0,
         chart: 0,
+        comparison: 0,
       },
     };
   },
@@ -61,6 +63,8 @@ export default {
         placeholderType = "text";
       } else if (placeholder.text.includes("~chart[d+]~")) {
         placeholderType = "chart";
+      } else if (placeholder.text.includes("~comparison[d+]~")) {
+        placeholderType = "comparison";
       }
       if (placeholderType) {
         this.placeholderCounts[placeholderType] += 1;
