@@ -2,7 +2,7 @@
   <div class="config-field">
     <button
       class="btn btn-sm btn-outline-secondary"
-      @click="openModal"
+      @click="openModal($event)"
     >
       <i
         class="bi bi-gear"
@@ -261,7 +261,8 @@ export default {
         }
       });
     },
-    openModal() {
+    openModal(evt) {
+      evt.preventDefault();
       if (!this.documentId) {
         this.eventBus.emit("toast", {
           title: "Document Error",
