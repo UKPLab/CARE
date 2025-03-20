@@ -89,7 +89,7 @@
                 :style="{ color: placeholderColors[index] }"
                 class="legend-item"
               >
-                {{ placeholder.type === "text" ? "TEXT" : "CHART" }} #{{ placeholder.number }}
+                {{ placeholder.type }} #{{ placeholder.number }}
               </span>
             </div>
           </div>
@@ -103,7 +103,7 @@
             >
               <h6 class="mb-2">
                 <span :style="{ color: placeholderColors[index], fontWeight: 'bold' }">
-                  {{ placeholder.type === "text" ? "Text" : "Chart" }} Placeholder #{{ placeholder.number }}
+                  {{ placeholder.type }} Placeholder #{{ placeholder.number }}
                 </span>
               </h6>
 
@@ -303,9 +303,12 @@ export default {
       // this.validateSteps();
     },
     extractPlaceholders(text) {
-      // Extract both text and chart placeholders
+      // TODO: Types of placeholders are hard coded. Should rethink its implementation.
+      // Extract placeholders
       const textRegex = /~text\[(\d+)\]~/g;
       const chartRegex = /~chart\[(\d+)\]~/g;
+      const comparisonRegex = /~comparison\[(\d+)\]~/g;
+
       let match;
       const extracted = [];
 
@@ -324,6 +327,15 @@ export default {
           text: match[0],
           number: parseInt(match[1], 10),
           type: "chart",
+        });
+      }
+
+      // Extract comparison placeholders
+      while ((match = comparisonRegex.exec(text)) !== null) {
+        extracted.push({
+          text: match[0],
+          number: parseInt(match[1], 10),
+          type: "comparison",
         });
       }
 
