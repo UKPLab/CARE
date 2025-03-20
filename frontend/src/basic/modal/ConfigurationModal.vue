@@ -13,7 +13,7 @@
     <StepperModal
       ref="configurationStepper"
       name="configurationStepper"
-      :steps="[{ title: 'NLP Services' }, { title: 'Placeholders' }]"
+      :steps="[{ title: 'Services' }, { title: 'Placeholders' }]"
       :validation="[]"
       submit-text="Save Configuration"
       @step-change="handleStepChange"
@@ -32,38 +32,32 @@
               class="service-item mb-4 p-3 border rounded"
             >
               <h6 class="fw-bold">Service Configuration: {{ service.name }}</h6>
-
-              <!-- TODO: Replace FormSelect with Form -->
               <!-- Skill Selection -->
               <div class="mb-3">
                 <label class="form-label">Select NLP Skill:</label>
-                <!-- FIXME: Get the wrong value -->
                 <FormSelect
-                  v-model="serviceFormData[index].skillName"
+                  v-model="selectedServices[index].skillName"
                   :options="skillMap"
-                  @change="updateDataSourceOptions(index)"
                 />
               </div>
-
-              <!-- TODO: Keep this at step 1 -->
               <!-- Input Mapping -->
-              <!-- <div
-              v-if="serviceFormData[index].skillName"
-              class="mb-3 data-mapping"
-            >
-              <h6 class="text-secondary">Input Mapping</h6>
               <div
-                v-for="input in getSkillInputs(serviceFormData[index].skillName)"
-                :key="input"
-                class="mb-2"
+                v-if="selectedServices[index].skillName"
+                class="mb-3"
               >
-                <label class="form-label">{{ input }}:</label>
-                <FormSelect
-                  v-model="serviceFormData[index].dataSource[input]"
-                  :options="{ options: availableDataSources }"
-                />
+                <h6 class="text-secondary">Input Mapping</h6>
+                <div
+                  v-for="input in getSkillInputs(selectedServices[index].skillName)"
+                  :key="input"
+                  class="mb-2"
+                >
+                  <label class="form-label">{{ input }}:</label>
+                  <FormSelect
+                    v-model="selectedServices[index].dataInput"
+                    :options="{ options: availableDataSources }"
+                  />
+                </div>
               </div>
-            </div> -->
             </div>
           </div>
           <div
@@ -93,7 +87,6 @@
               </span>
             </div>
           </div>
-
           <!-- Placeholder Configuration -->
           <div class="placeholder-list">
             <div
@@ -173,7 +166,7 @@ export default {
       formData: [],
       placeholderColors: [],
       serviceConfig: null,
-      serviceFormData: [],
+      selectedServices: [],
       shortPreview: "",
     };
   },
@@ -191,7 +184,6 @@ export default {
       };
     },
     availableDataSources() {
-      // Data sources from previous steps
       return [
         { value: "firstVersion", name: "First Version (Editor)" },
         { value: "currentVersion", name: "Current Version (Editor)" },
@@ -213,12 +205,12 @@ export default {
     initializeModal() {
       this.serviceConfig = this.modelValue || {};
       if (this.serviceConfig?.services?.length) {
-        this.serviceFormData = this.serviceConfig.services.map(() => ({
+        this.selectedServices = this.serviceConfig.services.map(() => ({
           skillName: "",
           dataInput: {},
         }));
       } else {
-        this.serviceFormData = [];
+        this.selectedServices = [];
       }
 
       // Fetch document content to extract placeholders
@@ -281,26 +273,12 @@ export default {
       }
       this.$refs.configurationStepper.open();
     },
-
     getSkillInputs(skillName) {
       // Find the skill in the skills list
       const skill = this.nlpSkills.find((s) => s.name === skillName);
-      if (!skill) return [];
+      if (!skill) return {};
       // Return the input keys (v1, v2, etc.)
-      return Object.keys(skill.inputs || {});
-    },
-    updateDataSourceOptions(index) {
-      // Clear and initialize dataSource object with keys from skill inputs
-      const skillName = this.serviceFormData[index].skillName;
-      const inputs = this.getSkillInputs(skillName);
-
-      const dataInput = {};
-      inputs.forEach((input) => {
-        dataInput[input] = "";
-      });
-
-      this.serviceFormData[index].dataInput = dataInput;
-      // this.validateSteps();
+      return Object.keys(skill.config.input.data || {});
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
