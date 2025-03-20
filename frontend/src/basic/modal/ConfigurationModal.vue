@@ -99,12 +99,11 @@
                   {{ placeholder.type }} Placeholder #{{ placeholder.number }}
                 </span>
               </h6>
-
               <!-- Data Source -->
               <div class="mb-3">
                 <label class="form-label">Data Source:</label>
                 <FormSelect
-                  v-model="placeholderFormData[index].dataSource"
+                  v-model="placeholderFormData[index].dataInput"
                   :options="{ options: availableDataSources }"
                 />
               </div>
@@ -240,7 +239,7 @@ export default {
             // Initialize placeholder form data with correct type based on extraction
             this.placeholderFormData = this.placeholders.map((placeholder) => ({
               // No need for type selection now - using extracted type
-              dataSource: "",
+              dataInput: "",
               chartType: placeholder.type === "chart" ? "bar" : undefined,
             }));
             // this.validateSteps();
