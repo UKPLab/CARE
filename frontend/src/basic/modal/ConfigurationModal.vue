@@ -354,6 +354,7 @@ export default {
         });
       }
     },
+    // NOTE: Please do not review the following method. This method has not been properly updated.
     validateForm() {
       let isValid = true;
       this.data.fields.forEach((placeholder, index) => {
