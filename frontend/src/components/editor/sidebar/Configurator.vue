@@ -45,22 +45,26 @@ export default {
     return {
       isSidebarVisible: true,
       placeholders: [
-        {id: "placeholder1", label: "Placeholder to insert a link", text: "~link[d+]~"},
-        {id: "placeholder2", label: "Placeholder to insert an NLP model", text: "~nlp[d+]~"},
+        { id: "placeholder1", label: "Text placeholder", text: "~text[d+]~" },
+        { id: "placeholder2", label: "Single chart", text: "~chart[d+]~" },
+        { id: "placeholder3", label: "Comparison chart", text: "~comparison[d+]~" },
       ],
       placeholderCounts: {
-        link: 0,
-        nlp: 0,
+        text: 0,
+        chart: 0,
+        comparison: 0,
       },
     };
   },
   methods: {
     handlePlaceholderClick(placeholder) {
       let placeholderType = null;
-      if (placeholder.text.includes("~link[d+]~")) {
-        placeholderType = "link";
-      } else if (placeholder.text.includes("~nlp[d+]~")) {
-        placeholderType = "nlp";
+      if (placeholder.text.includes("~text[d+]~")) {
+        placeholderType = "text";
+      } else if (placeholder.text.includes("~chart[d+]~")) {
+        placeholderType = "chart";
+      } else if (placeholder.text.includes("~comparison[d+]~")) {
+        placeholderType = "comparison";
       }
       if (placeholderType) {
         this.placeholderCounts[placeholderType] += 1;
