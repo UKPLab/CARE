@@ -97,6 +97,7 @@
       :study-step-id="currentStep.id"
       :is-last-step="currentStep.id === lastStep.id"
       @close="handleModalClose"
+      @update:data="studyData[currentStep.id] = $event"
     />
     <!-- TODO: Do we still need to keep the following TODO? -->
     <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->

@@ -90,7 +90,7 @@ import Chart from "./Chart.vue";
  */
 export default {
   name: "StepModal",
-  components: { BasicButton, BasicModal, Chart }, // Add ChartComponent to components
+  components: { BasicButton, BasicModal, Chart },
   inject: {
     studySessionId: {
       type: Number,
@@ -129,6 +129,7 @@ export default {
       documentText: null,
       waiting: false,
       requests: {},
+      modalData: {},
       charts: [
         {
           title: "Horizontal bar chart",
@@ -245,6 +246,13 @@ export default {
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
     },
+    studySteps() {
+      if (this.studyStep.studyId !== 0) {
+        return this.$store.getters["table/study_step/getByKey"]("studyId", this.studyStep.studyId);
+      } else {
+        return [];
+      }
+    },
     configuration() {
       return this.studyStep && this.studyStep.configuration ? this.studyStep.configuration : null;
     },
@@ -257,25 +265,32 @@ export default {
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
     },
+    currentStepIndex() {
+      return this.studySteps? this.studySteps.findIndex(step => step.id === this.studyStepId):0;
+    },
   },
   watch: {
     nlpResults: function (results) {
       for (let requestId in this.requests) {
         if (requestId in results) {
-          //TODO: Should the nlp results be sent individually or as a whole?
-          // this.$emit("response", this.nlpResults[this.requestId]);
+          //TODO: Recheck this part
           this.$emit("documentDataSave", {
             userId: this.userId,
-            documentId: this.studyStep.documentId, //TODO: Recheck which documentId to be saved
+            documentId: this.studyStep.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
             key: this.requests[requestId].uniqueId,
             value: this.nlpResults[this.requestId]
           });
+          
           this.$store.commit("service/removeResults", {
             service: "NLPService",
             requestId: requestId
           });
+
+          this.modalData["dataSavings"][this.requests[requestId].uniqueId] = this.nlpResults[requestId];
+          this.$emit("update:data", this.modalData);
+
           delete this.requests[requestId];
         }
       }
@@ -314,31 +329,22 @@ export default {
 
   },
   mounted() {
-
-    if (this.configuration && 'fields' in this.configuration && Array.isArray(this.configuration.fields)) {
+    if (this.configuration && "services" in this.configuration[this.currentStepIndex] && Array.isArray(this.configuration[this.currentStepIndex].services)) {
       this.waiting = true;
-      for (let i = 0; i < this.configuration.fields.length; i++) {
-        let field = this.configuration.fields[i];
+      for (let i = 0; i < this.configuration[this.currentStepIndex].services.length; i++) {
+        let service = this.configuration[this.currentStepIndex].services[i];
 
-        if (field.function === "nlp") {
-          let skill = field.fields.find(f => f.name === "skillName");
-          let dataSource = field.fields.find(f => f.name === "dataSource");
-          let output = field.fields.find(f => f.name === "output");
-          this.request(skill, dataSource, output, (field.type + "_" + field)); //TODO: Check if the configuration is always having the same order of fields
-          /*
-          CONFIGURATION IN THE STUDY STEP LOOKS LIKE THIS:
-          configuration: {
-          fields: [
-            {
-              type: "placeholder",
-              pattern: "/~nlp\[(\d+)\]~/g",
-              required: true,
-              function: "nlp", 
-              fields: [
-                {........
-          */
+        if (service.type === "nlpRequest") {
+          let skill = service["skill"];
+          let dataSource = service["inputs"];
+          this.request(skill, dataSource, ("service_" + service["name"] + "_classes"));
         }
       }
+
+      if(!"dataSavings" in this.modalData){ 
+        this.modalData["dataSavings"] = {};
+      }
+      this.$emit("update:data", this.modalData);
     }
 
     this.$refs.modal.open();
@@ -352,26 +358,32 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    async request(skill, dataSource, output, uniqueId) {
+    async request(skill, dataSource, uniqueId) {
       const requestId = uuid();
       this.requests[requestId] = {
         skill: skill,
         dataSource: dataSource,
-        output: output,
         input: "",
         result: "",
         uniqueId: uniqueId
       };
 
-      // TODO: Save the value of below directly in the this.requests[requestId]// TODO : Recheck what the dataSource holds? Ans.{v1 and v2}
-      
-      let input = Object.keys(dataSource).includes("v2") ? 
-        {v1: this.studyData[this.studyStep.previousStepId][dataSource.v1], v2: this.studyData[this.studyStepId][dataSource.v2]} : 
-          {v1: this.studyData[this.studyStepId][dataSource.v1]};
-      this.requests[requestId]["input"] = input;
+      let input;
+      if(Object.keys(dataSource).includes("v1") && Object.keys(dataSource).includes("v2")){
+        let v1StepIndex = this.findIndexInStudySteps(dataSource.v1["stepId"]);
+        let v2StepIndex = this.findIndexInStudySteps(dataSource.v2["stepId"]);
+        let v1Input = v1StepIndex > -1 ? this.studyData[v1StepIndex][dataSource.v1["dataSource"]] : "";
+        let v2Input = v2StepIndex > -1 ? this.studyData[v2StepIndex][dataSource.v2["dataSource"]] : "";
+        input = {"v1": v1Input, "v2": v2Input};
+      }
+      else{
+        let index = this.findIndexInStudySteps(dataSource["stepId"]);
+        input = index > -1 ? this.studyData[index][dataSource["dataSource"]] : "";
+      }
+      this.requests[requestId]["input"] = input; 
       // TODO: Should documentDataSave be done for each of these requests?
 
-      if (this.documentData["studyStepId"] === this.studyStepId && this.documentData["key"] === uniqueId) {
+      if (!(this.documentData["studyStepId"] === this.studyStepId && this.documentData["key"] === uniqueId)) {
         await this.$socket.emit("serviceRequest",
           {
             service: "NLPService",
@@ -394,6 +406,9 @@ export default {
         }, this.nlpRequestTimeout);        
       }      
 
+    },
+    findIndexInStudySteps(stepId) {
+      return this.studySteps.findIndex(step => step.id === stepId);
     },
   },
 };
