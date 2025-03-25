@@ -270,17 +270,14 @@ export default {
     nlpResults: function (results) {
       for (let requestId in this.requests) {
         if (requestId in results) {
-          //TODO: Recheck this part
           this.$socket.emit("documentDataSave", {
             userId: this.userId,
             documentId: this.studyStep.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
             key: this.requests[requestId].uniqueId,
-            value: this.nlpResults[this.requestId]
+            value: this.nlpResults[requestId]
           });
-          console.log("NLP Results: ", this.nlpResults[requestId]);
-          console.log("modalData: ", this.modalData);
           this.modalData["dataSavings"][this.requests[requestId].uniqueId] = this.nlpResults[requestId];
           this.$emit("update:data", this.modalData);
 
@@ -339,12 +336,10 @@ export default {
         if (service.type === "nlpRequest") {
           let skill = service["skill"];
           let dataSource = service["inputs"];
-          this.request(skill, dataSource, ("service_" + service["name"] + "_classes"));
+          this.request(skill, dataSource, ("service_" + service["name"]));
         }
       }
       
-      console.log("services length: ", this.configuration["services"].length);
-      console.log("modalData in mounted: ", this.modalData);
       this.$emit("update:data", this.modalData);
     }
 
