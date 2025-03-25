@@ -271,7 +271,7 @@ export default {
       for (let requestId in this.requests) {
         if (requestId in results) {
           //TODO: Recheck this part
-          this.$emit("documentDataSave", {
+          this.$socket.emit("documentDataSave", {
             userId: this.userId,
             documentId: this.studyStep.documentId,
             studySessionId: this.studySessionId,
