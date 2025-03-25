@@ -265,9 +265,6 @@ export default {
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
     },
-    currentStepIndex() {
-      return this.studySteps? this.studySteps.findIndex(step => step.id === this.studyStepId):0;
-    },
   },
   watch: {
     nlpResults: function (results) {
@@ -282,15 +279,15 @@ export default {
             key: this.requests[requestId].uniqueId,
             value: this.nlpResults[this.requestId]
           });
-          
-          this.$store.commit("service/removeResults", {
-            service: "NLPService",
-            requestId: requestId
-          });
-
+          console.log("NLP Results: ", this.nlpResults[requestId]);
+          console.log("modalData: ", this.modalData);
           this.modalData["dataSavings"][this.requests[requestId].uniqueId] = this.nlpResults[requestId];
           this.$emit("update:data", this.modalData);
 
+          this.$store.commit("service/removeResults", {
+            service: "NLPService",
+            requestId: requestId
+          });        
           delete this.requests[requestId];
         }
       }
@@ -329,10 +326,15 @@ export default {
 
   },
   mounted() {
-    if (this.configuration && "services" in this.configuration[this.currentStepIndex] && Array.isArray(this.configuration[this.currentStepIndex].services)) {
+    if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
       this.waiting = true;
-      for (let i = 0; i < this.configuration[this.currentStepIndex].services.length; i++) {
-        let service = this.configuration[this.currentStepIndex].services[i];
+      
+      if(!("dataSavings" in this.modalData)){ 
+        this.modalData["dataSavings"] = {};
+      }
+            
+      for (let i = 0; i < this.configuration["services"].length; i++) {
+        let service = this.configuration["services"][i];
 
         if (service.type === "nlpRequest") {
           let skill = service["skill"];
@@ -340,10 +342,9 @@ export default {
           this.request(skill, dataSource, ("service_" + service["name"] + "_classes"));
         }
       }
-
-      if(!"dataSavings" in this.modalData){ 
-        this.modalData["dataSavings"] = {};
-      }
+      
+      console.log("services length: ", this.configuration["services"].length);
+      console.log("modalData in mounted: ", this.modalData);
       this.$emit("update:data", this.modalData);
     }
 
@@ -370,14 +371,14 @@ export default {
 
       let input;
       if(Object.keys(dataSource).includes("v1") && Object.keys(dataSource).includes("v2")){
-        let v1StepIndex = this.findIndexInStudySteps(dataSource.v1["stepId"]);
-        let v2StepIndex = this.findIndexInStudySteps(dataSource.v2["stepId"]);
+        let v1StepIndex = this.studySteps.findIndex(step => step.id === dataSource.v1["stepId"]) + 1; // +1 because studySteps is an array and studyData is an object
+        let v2StepIndex = this.studySteps.findIndex(step => step.id === dataSource.v2["stepId"]) + 1;
         let v1Input = v1StepIndex > -1 ? this.studyData[v1StepIndex][dataSource.v1["dataSource"]] : "";
         let v2Input = v2StepIndex > -1 ? this.studyData[v2StepIndex][dataSource.v2["dataSource"]] : "";
         input = {"v1": v1Input, "v2": v2Input};
       }
       else{
-        let index = this.findIndexInStudySteps(dataSource["stepId"]);
+        let index = this.studySteps.findIndex(step => step.id === dataSource["stepId"]);;
         input = index > -1 ? this.studyData[index][dataSource["dataSource"]] : "";
       }
       this.requests[requestId]["input"] = input; 
@@ -396,7 +397,7 @@ export default {
         );
 
         setTimeout(() => {
-          if (requestId) {
+          if (this.requests[requestId]) {
             this.eventBus.emit('toast', {
               title: "NLP Service Request",
               message: "Timeout in request for skill " + skill + " - Request failed!",
@@ -406,9 +407,6 @@ export default {
         }, this.nlpRequestTimeout);        
       }      
 
-    },
-    findIndexInStudySteps(stepId) {
-      return this.studySteps.findIndex(step => step.id === stepId);
     },
   },
 };
