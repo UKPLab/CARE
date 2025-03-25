@@ -314,8 +314,13 @@ export default {
               break;
             case 2: // Editor
               // download edits + html
-              step_folder.file('edits.json', JSON.stringify(this.edits.filter(edit => edit.documentId === step.documentId), null, 2));
-              deltas = dbToDelta(this.edits.filter(edit => edit.documentId === step.documentId));
+                const edits = this.edits.filter(edit => (
+                    edit.documentId === step.documentId && edit.studyStepId === null && edit.studySessionId === null
+                ) || (
+                    edit.documentId === step.documentId && edit.studyStepId === step.id && edit.studySessionId === session.id
+                ));
+              step_folder.file('edits.json', JSON.stringify(edits), null, 2);
+              deltas = dbToDelta(edits);
               quill.setContents(deltas);
               step_folder.file('html.html', quill.getSemanticHTML());
               step_folder.file('text.txt', quill.getText());
