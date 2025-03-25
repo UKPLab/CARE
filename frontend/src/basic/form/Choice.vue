@@ -38,6 +38,7 @@
                       v-model="item.configuration"
                       :study-step-id="item.id"
                       :document-id="currentData.find((entry) => entry.id === item.id)?.documentId"
+                      @update:model-value="(configData) => handleConfigUpdate(configData, item.id)"
                     />
                   </span>
                 </div>
@@ -48,11 +49,6 @@
       </table>
     </template>
   </FormElement>
-  <!-- TODO: comment it out for later config update adjustment -->
-  <!-- <ConfigurationModal
-    ref="configurationModal"
-    @updateConfiguration="handleConfigurationUpdate"
-  /> -->
 </template>
 
 <script>
@@ -60,6 +56,7 @@ import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
+// TODO: Remove this
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -90,16 +87,14 @@ export default {
   emits: ["update:modelValue"],
   data() {
     return {
-      currentData: this.modelValue && this.modelValue.length > 0
-        ? [...this.modelValue]
-        : [],
-      temporaryConfigurations: {}, 
+      currentData: this.modelValue && this.modelValue.length > 0 ? [...this.modelValue] : [],
     };
   },
   computed: {
     fields() {
       return this.$store.getters[`table/${this.options.options.table}/getFields`];
     },
+    // TODO: Simplify this
     choices() {
       if (this.options.options.choices) {
         const choicesConfig = this.options.options.choices;
@@ -151,28 +146,23 @@ export default {
     modelValue: {
       handler(newValue) {
         if (JSON.stringify(newValue) !== JSON.stringify(this.currentData)) {
-          this.currentData = this.choices.map((c, index) => {
-            const tempConfig = this.temporaryConfigurations[c.id] || {};
-            return this.fields.reduce((acc, field) => {
+          this.currentData = this.choices.map((choice, index) => ({
+            ...this.fields.reduce((acc, field) => {
               acc[field.key] = newValue[index]?.[field.key] || null;
-              acc["id"] = c.id; 
-              acc["configuration"] = tempConfig; 
               return acc;
-            }, {});
-          });
+            }, {}),
+            id: choice.id,
+            configuration: newValue[index]?.configuration || {}
+          }));
         }
       },
-      immediate: true,
       deep: true,
+      immediate: true,
     },
     currentData: {
       handler(newData) {
-        const preparedData = this.prepareSubmitData(newData); 
-        const previousValue = JSON.stringify(this.modelValue);
-        const currentValue = JSON.stringify(preparedData);
-
-        if (previousValue !== currentValue) {
-          this.$emit("update:modelValue", preparedData);
+        if (JSON.stringify(this.modelValue) !== JSON.stringify(newData)) {
+          this.$emit("update:modelValue", newData);
         }
       },
       deep: true,
@@ -195,38 +185,30 @@ export default {
       },
       deep: true,
       immediate: true,
-    }
+    },
   },
   methods: {
-    validate() { 
-      const allValid = this.choices
-      .every((item, index) => {
-        return this.fields.every(field => {
+    validate() {
+      const allValid = this.choices.every((item, index) => {
+        return this.fields.every((field) => {
           const fieldKey = field.key;
-          return this.currentData[index]?.[fieldKey] !== null; 
+          return this.currentData[index]?.[fieldKey] !== null;
         });
       });
       return allValid;
     },
-    // TODO: comment it out for later config update adjustment
-    // handleConfigurationUpdate(configData) {
-    //   const { studyStepId, configuration } = configData;
-    //   const stepIndex = this.currentData.findIndex((item) => item.id === studyStepId);
-    //   if (stepIndex !== -1) {
-    //     this.currentData[stepIndex] = {
-    //       ...this.currentData[stepIndex],
-    //       configuration, 
-    //     };
-    //   }     
-    // },
-    prepareSubmitData(data) {
-      return data.map((item) => {
-        const tempConfig = this.temporaryConfigurations[item.id];
-        if (tempConfig) {
-          return { ...item, configuration: { firstOpen: [{ nlp: tempConfig }] } };
-        }
-        return item;
-      });
+    handleConfigUpdate(configData, itemId) {
+      const itemIndex = this.currentData.findIndex((item) => item.id === itemId);
+
+      if (itemIndex !== -1) {
+        const updatedCurrentData = [...this.currentData];
+        updatedCurrentData[itemIndex] = {
+          ...updatedCurrentData[itemIndex],
+          configuration: configData,
+        };
+
+        this.currentData = updatedCurrentData;
+      }
     },
   },
 };
