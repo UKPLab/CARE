@@ -3,6 +3,7 @@
   <span v-else>
     <BasicModal
       ref="modal"
+      studyStep?.configuration?.modalSize || lg
       :name="studyStep?.configuration?.name || 'Modal'"
       :class="modalClasses"
       :style="{ backgroundColor: studyStep?.configuration?.backgroundColor || '' }"
@@ -49,7 +50,6 @@
       </template>
       <template #footer>
         <div v-if="!waiting">
-          <!-- Button for the next step -->
           <BasicButton
             v-if="!isLastStep"
             :title="studyStep?.configuration?.nextButtonText || 'Next'"
