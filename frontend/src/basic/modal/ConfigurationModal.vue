@@ -25,9 +25,9 @@
       <!-- Step 1: NLP Services -->
       <template #step-1>
         <div class="service-config">
-          <div v-if="serviceConfig && serviceConfig.services && serviceConfig.services.length">
+          <div v-if="stepConfig && stepConfig.services && stepConfig.services.length">
             <div
-              v-for="(service, index) in serviceConfig.services"
+              v-for="(service, index) in stepConfig.services"
               :key="index"
               class="service-item mb-4 p-3 border rounded"
             >
@@ -36,25 +36,26 @@
               <div class="mb-3">
                 <label class="form-label">Select NLP Skill:</label>
                 <FormSelect
-                  v-model="selectedServices[index].skillName"
+                  v-model="selectedSkills[index].skillName"
                   :options="skillMap"
                 />
               </div>
               <!-- Input Mapping -->
               <div
-                v-if="selectedServices[index].skillName"
+                v-if="selectedSkills[index].skillName"
                 class="mb-3"
               >
                 <h6 class="text-secondary">Input Mapping</h6>
                 <div
-                  v-for="input in getSkillInputs(selectedServices[index].skillName)"
+                  v-for="input in getSkillInputs(selectedSkills[index].skillName)"
                   :key="input"
                   class="mb-2"
                 >
                   <label class="form-label">{{ input }}:</label>
                   <FormSelect
-                    v-model="selectedServices[index].dataInput"
+                    :model-value="selectedSkills[index].dataInput?.[input]?.dataSource"
                     :options="{ options: availableDataSources }"
+                    @update:model-value="(dataSource) => updateDataInput(index, input, dataSource)"
                   />
                 </div>
               </div>
@@ -95,7 +96,12 @@
               class="placeholder-item mb-3 p-3 border rounded"
             >
               <h6 class="mb-2">
-                <span :style="{ color: placeholderColors[index], fontWeight: 'bold' }">
+                <span
+                  :style="{
+                    color: placeholderColors[index],
+                    fontWeight: 'bold',
+                  }"
+                >
                   {{ placeholder.type }} Placeholder #{{ placeholder.number }}
                 </span>
               </h6>
@@ -164,8 +170,8 @@ export default {
       placeholderFormData: [],
       formData: [],
       placeholderColors: [],
-      serviceConfig: null,
-      selectedServices: [],
+      stepConfig: null,
+      selectedSkills: [],
       shortPreview: "",
     };
   },
@@ -186,7 +192,6 @@ export default {
       return [
         { value: "firstVersion", name: "First Version (Editor)" },
         { value: "currentVersion", name: "Current Version (Editor)" },
-        { value: "lastVersion", name: "Last Version (Editor)" },
         { value: "datasaving", name: "Data Savings (Modal)" },
       ];
     },
@@ -202,14 +207,14 @@ export default {
   },
   methods: {
     initializeModal() {
-      this.serviceConfig = this.modelValue || {};
-      if (this.serviceConfig?.services?.length) {
-        this.selectedServices = this.serviceConfig.services.map(() => ({
+      this.stepConfig = this.modelValue || {};
+      if (this.stepConfig?.services?.length) {
+        this.selectedSkills = this.stepConfig.services.map(() => ({
           skillName: "",
           dataInput: {},
         }));
       } else {
-        this.selectedServices = [];
+        this.selectedSkills = [];
       }
 
       // Fetch document content to extract placeholders
@@ -238,9 +243,8 @@ export default {
 
             // Initialize placeholder form data with correct type based on extraction
             this.placeholderFormData = this.placeholders.map((placeholder) => ({
-              // No need for type selection now - using extracted type
               dataInput: "",
-              chartType: placeholder.type === "chart" ? "bar" : undefined,
+              type: placeholder.type,
             }));
             // this.validateSteps();
           } else {
@@ -338,21 +342,65 @@ export default {
     close() {
       this.$refs.configurationStepper.close();
     },
-    submit() {
-      if (this.validateForm()) {
-        const configData = {
-          studyStepId: this.studyStepId,
-          configuration: this.formData,
-        };
+    updateDataInput(index, input, dataSource) {
+      // Create copies to avoid direct mutation
+      const updatedSkills = [...this.selectedSkills];
+      const updatedSkill = { ...updatedSkills[index] };
 
-        this.$emit("update:modelValue", configData);
-        this.$refs.configurationStepper.close();
-        this.eventBus.emit("toast", {
-          title: "Configuration Updated",
-          message: "The configuration data has been successfully updated.",
-          variant: "success",
-        });
+      // Initialize dataInput if it doesn't exist
+      if (!updatedSkill.dataInput) {
+        updatedSkill.dataInput = {};
+      } else {
+        updatedSkill.dataInput = { ...updatedSkill.dataInput };
       }
+
+      // Update the specific input
+      updatedSkill.dataInput[input] = {
+        stepId: this.studyStepId,
+        dataSource: dataSource,
+      };
+
+      // Update the array with the modified skill
+      updatedSkills[index] = updatedSkill;
+
+      // Replace the entire array
+      this.selectedSkills = updatedSkills;
+    },
+    submit() {
+      if (!this.validateForm() || !this.stepConfig?.services?.length) return;
+      const { services } = this.stepConfig;
+      const configData = {
+        services: services.map((service, index) => ({
+          name: service.name,
+          type: service.type,
+          skill: this.selectedSkills[index].skillName,
+          inputs: this.selectedSkills[index].dataInput,
+        })),
+        placeholders: {
+          text: this.placeholderFormData
+            .filter((_, index) => this.placeholders[index].type === "text")
+            .map((data) => ({
+              input: { stepId: this.studyStepId, dataSource: data.dataInput },
+            })),
+          chart: this.placeholderFormData
+            .filter((_, index) => this.placeholders[index].type === "chart")
+            .map((data) => ({
+              input: { stepId: this.studyStepId, dataSource: data.dataInput },
+            })),
+          comparison: this.placeholderFormData
+            .filter((_, index) => this.placeholders[index].type === "comparison")
+            .map((data) => ({
+              input: [{ stepId: this.studyStepId, dataSource: data.dataInput }],
+            })),
+        },
+      };
+      this.$emit("update:modelValue", configData);
+      this.$refs.configurationStepper.close();
+      this.eventBus.emit("toast", {
+        title: "Configuration Updated",
+        message: "The configuration data has been successfully updated.",
+        variant: "success",
+      });
     },
     // NOTE: Please do not review the following method. This method has not been properly updated.
     validateForm() {
@@ -363,7 +411,11 @@ export default {
             this.formData[index]["dataSource"] =
               this.formData[index]["skillName"] === "skill_eic"
                 ? { v1: "firstVersion", v2: "currentVersion" }
-                : { v1: "firstVersion", v2: "currentVersion", v3: "latestVersion" };
+                : {
+                    v1: "firstVersion",
+                    v2: "currentVersion",
+                    v3: "latestVersion",
+                  };
             this.formData[index]["output"] = " ";
           }
           if (field.required && !this.formData[index][field.name]) {
