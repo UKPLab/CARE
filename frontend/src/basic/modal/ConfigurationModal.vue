@@ -106,13 +106,31 @@
                 </span>
               </h6>
               <!-- Data Source -->
-              <div class="mb-3">
-                <label class="form-label">Data Source:</label>
-                <FormSelect
-                  v-model="placeholderFormData[index].dataInput"
-                  :options="{ options: availableDataSources }"
-                />
-              </div>
+              <template v-if="placeholder.type === 'comparison'">
+                <div class="mb-3">
+                  <label class="form-label">Data Source:</label>
+                  <FormSelect
+                    v-model="placeholderFormData[index].dataInput[0]"
+                    :options="{ options: availableDataSources }"
+                  />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Data Source:</label>
+                  <FormSelect
+                    v-model="placeholderFormData[index].dataInput[1]"
+                    :options="{ options: availableDataSources }"
+                  />
+                </div>
+              </template>
+              <template v-else>
+                <div class="mb-3">
+                  <label class="form-label">Data Source:</label>
+                  <FormSelect
+                    v-model="placeholderFormData[index].dataInput"
+                    :options="{ options: availableDataSources }"
+                  />
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -243,7 +261,7 @@ export default {
 
             // Initialize placeholder form data with correct type based on extraction
             this.placeholderFormData = this.placeholders.map((placeholder) => ({
-              dataInput: "",
+              dataInput: placeholder.type === "comparison" ? ["", ""] : "",
               type: placeholder.type,
             }));
             // this.validateSteps();
@@ -377,21 +395,9 @@ export default {
           inputs: this.selectedSkills[index].dataInput,
         })),
         placeholders: {
-          text: this.placeholderFormData
-            .filter((_, index) => this.placeholders[index].type === "text")
-            .map((data) => ({
-              input: { stepId: this.studyStepId, dataSource: data.dataInput },
-            })),
-          chart: this.placeholderFormData
-            .filter((_, index) => this.placeholders[index].type === "chart")
-            .map((data) => ({
-              input: { stepId: this.studyStepId, dataSource: data.dataInput },
-            })),
-          comparison: this.placeholderFormData
-            .filter((_, index) => this.placeholders[index].type === "comparison")
-            .map((data) => ({
-              input: [{ stepId: this.studyStepId, dataSource: data.dataInput }],
-            })),
+          text: this.formatPlaceholder("text"),
+          chart: this.formatPlaceholder("chart"),
+          comparison: this.formatPlaceholder("comparison"),
         },
       };
       this.$emit("update:modelValue", configData);
@@ -401,6 +407,24 @@ export default {
         message: "The configuration data has been successfully updated.",
         variant: "success",
       });
+    },
+    /**
+     * Formats placeholder data based on the specified type
+     * @param {string} type - The type of placeholder to format. There are three types: 'text', 'chart', and 'comparison'
+     * @returns {Array<{input: Object|Array<Object>}>} An array of formatted placeholder objects
+     */
+    formatPlaceholder(type) {
+      return this.placeholderFormData
+        .filter((_, index) => this.placeholders[index].type === type)
+        .map((data) => ({
+          input:
+            type === "comparison"
+              ? [
+                  { stepId: this.studyStepId, dataSource: data.dataInput[0] },
+                  { stepId: this.studyStepId, dataSource: data.dataInput[1] },
+                ]
+              : { stepId: this.studyStepId, dataSource: data.dataInput },
+        }));
     },
     // NOTE: Please do not review the following method. This method has not been properly updated.
     validateForm() {
