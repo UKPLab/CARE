@@ -177,10 +177,16 @@ export default {
       required: true,
       default: null,
     },
+    stepNumber: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
   emits: ["update:modelValue"],
   data() {
     return {
+      currentStep: 0,
       data: {
         fields: [],
       },
@@ -207,11 +213,53 @@ export default {
       };
     },
     availableDataSources() {
-      return [
-        { value: "firstVersion", name: "First Version (Editor)" },
-        { value: "currentVersion", name: "Current Version (Editor)" },
-        { value: "datasaving", name: "Data Savings (Modal)" },
-      ];
+      // Base sources that are always available
+      let sources = [];
+
+      if (this.stepNumber === 2) {
+        sources = [
+          { value: "firstVersion", name: "First Version (Editor 1)" },
+          { value: "currentVersion", name: "Current Version (Editor 1)" },
+        ];
+      } else if (this.stepNumber === 4) {
+        sources = [
+          { value: "firstVersion", name: "First Version (Editor 1)" },
+          { value: "currentVersion", name: "Current Version (Editor 1)" },
+          { value: "firstVersionEditor2", name: "First Version (Editor 2)" },
+          { value: "currentVersionEditor2", name: "Current Version (Editor 2)" },
+        ];
+      }
+
+      // TODO: The following logic is not flexible. Is it possible to check the skill.config.output.data? 
+      // const skill = this.nlpSkills.find(s => s.name === skillName);
+      // if (!skill) return;
+      if (this.currentStep === 1 && this.selectedSkills.length > 0) {
+        const { services } = this.stepConfig;
+        services.forEach((s) => {
+          this.selectedSkills.forEach((skill) => {
+            const { skillName } = skill;
+            if (!skillName) return;
+
+            if (skillName === "skill_eic") {
+              sources.push({
+                value: `service_${s.name}_results`,
+                name: `${skillName} - Results`,
+              });
+              sources.push({
+                value: `service_${s.name}_classes`,
+                name: `${skillName} - Classes`,
+              });
+            } else {
+              sources.push({
+                value: `service_${s.name}_results`,
+                name: `${skillName} - Results`,
+              });
+            }
+          });
+        });
+      }
+
+      return sources;
     },
   },
   watch: {
@@ -354,6 +402,7 @@ export default {
       });
     },
     handleStepChange(step) {
+      this.currentStep = step;
       // this.validateSteps();
     },
     validateSteps() {},
