@@ -37,6 +37,7 @@
                     <ConfigurationModal
                       v-model="item.configuration"
                       :study-step-id="item.id"
+                      :step-number="item.stepNumber"
                       :document-id="currentData.find((entry) => entry.id === item.id)?.documentId"
                       @update:model-value="(configData) => handleConfigUpdate(configData, item.id)"
                     />
