@@ -9,12 +9,11 @@
         title="Edit Configuration"
       ></i>
     </button>
-    <!-- TODO: Validation and step-change to be implemented -->
     <StepperModal
       ref="configurationStepper"
       name="configurationStepper"
       :steps="[{ title: 'Services' }, { title: 'Placeholders' }]"
-      :validation="[]"
+      :validation="stepValid"
       submit-text="Save Configuration"
       @step-change="handleStepChange"
       @submit="submit"
@@ -53,7 +52,7 @@
                 >
                   <label class="form-label">{{ input }}:</label>
                   <FormSelect
-                    :model-value="selectedSkills[index].dataInput?.[input]?.dataSource"
+                    :model-value="selectedSkills[index].dataInput?.input?.dataSource"
                     :options="{ options: availableDataSources }"
                     @update:model-value="(dataSource) => updateDataInput(index, input, dataSource)"
                   />
@@ -200,6 +199,19 @@ export default {
     };
   },
   computed: {
+    stepValid() {
+      return [
+        // Step 1: Check if all services have skill name and data input
+        this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0),
+        // Step 2: Check if all placeholders have non-empty string input
+        this.placeholderFormData.every((data) => {
+          if (Array.isArray(data.dataInput)) {
+            return data.dataInput.every((input) => input !== "");
+          }
+          return data.dataInput !== "";
+        }),
+      ];
+    },
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return skills && typeof skills === "object" ? Object.values(skills) : [];
@@ -230,7 +242,7 @@ export default {
         ];
       }
 
-      // TODO: The following logic is not flexible. Is it possible to check the skill.config.output.data? 
+      // TODO: The following logic is not flexible. Is it possible to check the skill.config.output.data?
       // const skill = this.nlpSkills.find(s => s.name === skillName);
       // if (!skill) return;
       if (this.currentStep === 1 && this.selectedSkills.length > 0) {
@@ -312,7 +324,6 @@ export default {
               dataInput: placeholder.type === "comparison" ? ["", ""] : "",
               type: placeholder.type,
             }));
-            // this.validateSteps();
           } else {
             console.error("Invalid document content:", response);
             this.eventBus.emit("toast", {
@@ -403,9 +414,7 @@ export default {
     },
     handleStepChange(step) {
       this.currentStep = step;
-      // this.validateSteps();
     },
-    validateSteps() {},
     close() {
       this.$refs.configurationStepper.close();
     },
