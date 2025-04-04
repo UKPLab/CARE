@@ -73,12 +73,6 @@ export default {
       default: null,
     },
   },
-  unmounted() {
-    if (this.currentVersion) {
-      this.currentVersion.isCurrentVersion = false;
-    }
-    this.eventBus.emit("editorSelectEdit", -1);
-  },
   computed: {
     allEdits() {
       return this.$store.getters["table/document_edit/getFiltered"](
@@ -171,6 +165,12 @@ export default {
     historyGroupTime() {
       return parseInt(this.$store.getters["settings/getValue"]('editor.edits.historyGroupTime'));
     },
+  },
+  unmounted() {
+    if (this.currentVersion) {
+      this.currentVersion.isCurrentVersion = false;
+    }
+    this.eventBus.emit("editorSelectEdit", -1);
   },
   methods: {
     selectEdit(edit) {
