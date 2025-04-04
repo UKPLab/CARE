@@ -443,7 +443,7 @@ export default {
       this.selectedSkills = updatedSkills;
     },
     submit() {
-      if (!this.validateForm() || !this.stepConfig?.services?.length) return;
+      if (!this.stepConfig?.services?.length) return;
       const { services } = this.stepConfig;
       const configData = {
         services: services.map((service, index) => ({
@@ -483,34 +483,6 @@ export default {
                 ]
               : { stepId: this.studyStepId, dataSource: data.dataInput },
         }));
-    },
-    // NOTE: Please do not review the following method. This method has not been properly updated.
-    validateForm() {
-      let isValid = true;
-      this.data.fields.forEach((placeholder, index) => {
-        placeholder.fields.forEach((field) => {
-          if (field.required && field.name === "skillName") {
-            this.formData[index]["dataSource"] =
-              this.formData[index]["skillName"] === "skill_eic"
-                ? { v1: "firstVersion", v2: "currentVersion" }
-                : {
-                    v1: "firstVersion",
-                    v2: "currentVersion",
-                    v3: "latestVersion",
-                  };
-            this.formData[index]["output"] = " ";
-          }
-          if (field.required && !this.formData[index][field.name]) {
-            isValid = false;
-            this.eventBus.emit("toast", {
-              title: "Validation Error",
-              message: `${field.label} is required.`,
-              variant: "danger",
-            });
-          }
-        });
-      });
-      return isValid;
     },
   },
 };
