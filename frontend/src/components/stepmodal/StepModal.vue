@@ -35,15 +35,19 @@
               No content available for this step.
             </p>
 
-          <!-- TODO: Remove check for output once the configuration is fixed-->
+            <!-- TODO: Remove check for output once the configuration is fixed-->
             <p v-if="output">
               Output of the {{ skill }}: {{ output }}
             </p>
             <div v-else v-html="documentText"></div>
-            <div v-for="(chart, index) in charts" :key="'chart-' + index" class="chart-container mb-5">
-              <h5>{{ chart.title }}</h5>
-              <p>{{ chart.explanation }}</p>
-              <Chart :chartInput="chart.input" :id="'chart' + index"/>
+
+            <div v-for="(entry, index) in matchedPlaceholderContent" :key="'placeholder-' + index" class="mb-4">
+              <template v-if="entry.type === 'text'">
+                <p>{{ entry.value }}</p>
+              </template>
+              <template v-else-if="entry.type === 'chart'">
+                <Chart :chartInput="entry.value" :id="'chart' + index"/>
+              </template>
             </div>
           </div>
         </div>      
@@ -247,14 +251,12 @@ export default {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
     },
     studySteps() {
-      if (this.studyStep.studyId !== 0) {
-        return this.$store.getters["table/study_step/getByKey"]("studyId", this.studyStep.studyId);
-      } else {
-        return [];
-      }
+      return this.studyStep.studyId !== 0
+        ? this.$store.getters["table/study_step/getByKey"]("studyId", this.studyStep.studyId)
+        : [];
     },
     configuration() {
-      return this.studyStep && this.studyStep.configuration ? this.studyStep.configuration : null;
+      return this.studyStep?.configuration || null;
     },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -265,6 +267,62 @@ export default {
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
     },
+    placeholders(){
+      return this.studyStep?.configuration?.placeholders || null;
+    },
+    matchedPlaceholderContent() {
+      const result = [];
+      if (!this.placeholders || !this.documentText) return result;
+
+      const matches = this.matchKeys();
+
+      for (const { key, index } of matches) {
+        const placeholderArr = this.placeholders[key];
+        if (!placeholderArr || placeholderArr.length <= index) continue;
+
+        const entry = placeholderArr[index];
+
+        if (key === "text") {
+          const { stepId, dataSource } = entry;
+          const docEntry = this.documentData.find(d => d.studyStepId === stepId && d.key === dataSource);
+          if (docEntry?.value) {
+            result.push({ type: "text", value: docEntry.value });
+          }
+
+        } else if (key === "chart") {
+          const { stepId, dataSource } = entry;
+          const docEntry = this.documentData.find(d => d.studyStepId === stepId && d.key === dataSource);
+
+          if (docEntry?.value && typeof docEntry.value === "object") {
+            const baseChart = JSON.parse(JSON.stringify(this.charts[0])); // Horizontal bar chart
+            baseChart.data.title = "";
+            baseChart.data.labels = Object.keys(docEntry.value);
+            baseChart.data.datasets[0].data = Object.values(docEntry.value);
+            result.push({ type: "chart", value: baseChart });
+          }
+
+        } else if (key === "comparison") {
+          const inputs = entry.input;
+          if (Array.isArray(inputs) && inputs.length === 2) {
+            const input1 = this.documentData.find(d => d.studyStepId === inputs[0].stepId && d.key === inputs[0].dataSource);
+            const input2 = this.documentData.find(d => d.studyStepId === inputs[1].stepId && d.key === inputs[1].dataSource);
+
+            if (input1?.value && input2?.value && typeof input1.value === "object" && typeof input2.value === "object") {
+              const baseChart = JSON.parse(JSON.stringify(this.charts[1])); // Stacked horizontal bar chart
+              const labels = Object.keys(input1.value);
+              baseChart.data.title = "";
+              baseChart.data.labels = labels;
+              baseChart.data.datasets[0].data = labels.map(label => input1.value[label] || 0);
+              baseChart.data.datasets[1].data = labels.map(label => input2.value[label] || 0);
+              result.push({ type: "chart", value: baseChart });
+            }
+          }
+        }
+      }
+
+      return result;
+    }
+
   },
   watch: {
     nlpResults: function (results) {
@@ -306,12 +364,12 @@ export default {
     }
     this.$socket.emit("documentGet",
       {
-        documentId: this.studyStep && this.studyStep.documentId ? this.studyStep.documentId : 0,
+        documentId: this.studyStep?.documentId ? this.studyStep.documentId : 0,
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
       },
       (response) => {
-        if (response && response.success && response.data && response.data.deltas) {
+        if (response?.success && response.data?.deltas) {
           const quill = new Quill(document.createElement("div"));
           quill.setContents(response.data.deltas);
           this.documentText = quill.root.innerHTML;
@@ -325,21 +383,18 @@ export default {
   mounted() {
     if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
       this.waiting = true;
-      
+
       if(!("dataSavings" in this.modalData)){ 
         this.modalData["dataSavings"] = {};
       }
-            
-      for (let i = 0; i < this.configuration["services"].length; i++) {
-        let service = this.configuration["services"][i];
 
+      for (const service of this.configuration.services) {
         if (service.type === "nlpRequest") {
-          let skill = service["skill"];
-          let dataSource = service["inputs"];
-          this.request(skill, dataSource, ("service_" + service["name"]));
+          const { skill, inputs: dataSource, name } = service;
+          this.request(skill, dataSource, ("service_" + name));
         }
       }
-      
+
       this.$emit("update:data", this.modalData);
     }
 
@@ -356,40 +411,32 @@ export default {
     },
     async request(skill, dataSource, uniqueId) {
       const requestId = uuid();
-      this.requests[requestId] = {
-        skill: skill,
-        dataSource: dataSource,
-        input: "",
-        result: "",
-        uniqueId: uniqueId
-      };
+      this.requests[requestId] = { skill, dataSource, input: "", result: "", uniqueId };
 
       let input;
-      if(Object.keys(dataSource).includes("v1") && Object.keys(dataSource).includes("v2")){
-        let v1StepIndex = this.studySteps.findIndex(step => step.id === dataSource.v1["stepId"]) + 1; // +1 because studySteps is an array and studyData is an object
-        let v2StepIndex = this.studySteps.findIndex(step => step.id === dataSource.v2["stepId"]) + 1;
-        let v1Input = v1StepIndex > -1 ? this.studyData[v1StepIndex][dataSource.v1["dataSource"]] : "";
-        let v2Input = v2StepIndex > -1 ? this.studyData[v2StepIndex][dataSource.v2["dataSource"]] : "";
-        input = {"v1": v1Input, "v2": v2Input};
+      if("v1" in dataSource && "v2" in dataSource){
+        const v1Index = this.studySteps.findIndex(step => step.id === dataSource.v1.stepId);
+        const v2Index = this.studySteps.findIndex(step => step.id === dataSource.v2.stepId);
+        const v1Input = v1Index > -1 ? this.studyData[v1Index + 1][dataSource.v1.dataSource] : ""; // +1 because studySteps is an array and studyData is an object
+        const v2Input = v2Index > -1 ? this.studyData[v2Index + 1][dataSource.v2.dataSource] : "";
+        input = { v1: v1Input, v2: v2Input };
+      } else {
+        const index = this.studySteps.findIndex(step => step.id === dataSource.stepId);
+        input = index > -1 ? this.studyData[index][dataSource.dataSource] : "";
       }
-      else{
-        let index = this.studySteps.findIndex(step => step.id === dataSource["stepId"]);;
-        input = index > -1 ? this.studyData[index][dataSource["dataSource"]] : "";
-      }
-      this.requests[requestId]["input"] = input; 
-      // TODO: Should documentDataSave be done for each of these requests?
+
+      this.requests[requestId].input = input;
 
       if (!(this.documentData["studyStepId"] === this.studyStepId && this.documentData["key"] === uniqueId)) {
-        await this.$socket.emit("serviceRequest",
-          {
-            service: "NLPService",
-            data: {
-              id: requestId,
-              name: skill,
-              data: input
+        await this.$socket.emit("serviceRequest", {
+          service: "NLPService",
+          data: { 
+             id: requestId,
+             name: skill,
+             data: input
             }
-          }
-        );
+        }
+      );
 
         setTimeout(() => {
           if (this.requests[requestId]) {
@@ -399,11 +446,25 @@ export default {
               variant: "danger"
             });
           }
-        }, this.nlpRequestTimeout);        
-      }      
-
+        }, this.nlpRequestTimeout);
+      }
     },
-  },
+    matchKeys() {
+      if (!this.placeholders || !this.documentText) return [];
+
+      const placeholderKeys = Object.keys(this.placeholders);
+      const pattern = new RegExp(`\\b(${placeholderKeys.join('|')})\\b`, 'g');
+      const matches = [...this.documentText.matchAll(pattern)];
+
+      const occurrenceCount = {};
+      return matches.map(match => {
+        const key = match[1];
+        if (!occurrenceCount[key]) occurrenceCount[key] = 0;
+        else occurrenceCount[key]++;
+        return { key, index: occurrenceCount[key] };
+      });
+    }
+  }
 };
 </script>
 <style scoped>
