@@ -55,7 +55,7 @@
  *
  * This component provides the Quill editor component and a sidebar for different functionalities (e.g. version history).
  *
- * @autor Dennis Zyska, Juliane Bechert
+ * @author Dennis Zyska, Juliane Bechert, Linyin Huang
  */
 import Sidebar from "@/components/editor/sidebar/Sidebar.vue";
 import Editor from "@/components/editor/editor/Editor.vue";
@@ -116,7 +116,8 @@ export default {
   data() {
     return {
       isSidebarVisible: false,
-      historyContent: false,
+      hasHistory: false,
+      sidebarContent: null,
     };
   },
   computed: {
@@ -139,22 +140,34 @@ export default {
     document() {
       return this.$store.getters["table/document/get"](this.documentId);
     },
-    sidebarContent() {
-      if (this.document?.type === 2) {
-        return 'configurator';
+  },
+  watch: {
+    "document.type": {
+      immediate: true,
+      handler(newType) {
+        if (newType === 2) {
+          this.sidebarContent = "configurator";
+        }
       }
-      if (this.historyContent) {
-        return 'history';
-      }      
-      return null;
+    },
+    hasHistory: {
+      handler(newVal) {
+        if (newVal) {
+          this.sidebarContent = "history";
+        } else if (this.document?.type === 2) {
+          this.sidebarContent = "configuration";
+        } else {
+          this.sidebarContent = null;
+        }
+      }
     }
   },
   methods: {
     toggleHistory() {
-      if (this.historyContent) {
-        this.historyContent = false;
+      if (this.hasHistory) {
+        this.hasHistory = false;
       } else {
-        this.historyContent = true;
+        this.hasHistory = true;
         this.$socket.emit(
           "documentGet",
           {
