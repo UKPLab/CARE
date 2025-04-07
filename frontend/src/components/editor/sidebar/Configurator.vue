@@ -66,7 +66,42 @@ export default {
       },
     };
   },
+  mounted() {
+    this.editorContentHandler = (data) => {
+      if (data.documentId === this.documentId) {
+        this.updatePlaceholderCounts(data.content);
+      }
+    };
+    this.eventBus.on("editorContentUpdated", this.editorContentHandler);
+  },
+  unmounted() {
+    this.eventBus.off("editorContentUpdated", this.editorContentHandler);
+  },
   methods: {
+    updatePlaceholderCounts(editorContent) {
+      // Reset counts
+      Object.keys(this.placeholderCounts).forEach((key) => {
+        this.placeholderCounts[key] = 0;
+      });
+
+      // Count placeholders in the content
+      if (editorContent) {
+        const textMatches = editorContent.match(/~text~/g);
+        if (textMatches) {
+          this.placeholderCounts.text = textMatches.length;
+        }
+
+        const chartMatches = editorContent.match(/~chart~/g);
+        if (chartMatches) {
+          this.placeholderCounts.chart = chartMatches.length;
+        }
+
+        const comparisonMatches = editorContent.match(/~comparison~/g);
+        if (comparisonMatches) {
+          this.placeholderCounts.comparison = comparisonMatches.length;
+        }
+      }
+    },
     handlePlaceholderClick(placeholder) {
       let placeholderType = null;
       if (placeholder.text.includes("~text")) {
@@ -77,8 +112,6 @@ export default {
         placeholderType = "comparison";
       }
       if (placeholderType) {
-        this.placeholderCounts[placeholderType] += 1;
-
         this.eventBus.emit("editorInsertText", {
           documentId: this.documentId,
           text: placeholder.text,
