@@ -1,29 +1,38 @@
 <template>
-  <div>
-    <h3 class="sidebar-title">Placeholders</h3>
-    <ul class="list-group">
-      <li
-        v-for="placeholder in placeholders"
-        :key="placeholder.id"
-        class="list-group-item"
-      >
-        <div class="d-flex align-items-center">
-          <div class="ms-2 me-auto">
-            <div class="fw-bold">{{ placeholder.label }}</div>
-            <p class="mb-1">{{ placeholder.text }}</p>
+  <div class="card shadow mb-4 configurator">
+    <div class="card-header bg-white">
+      <h3 class="card-title fw-bold mb-0">Placeholders</h3>
+    </div>
+    <div class="card-body p-0">
+      <ul class="list-group list-group-flush">
+        <li
+          v-for="placeholder in placeholders"
+          :key="placeholder.id"
+          class="list-group-item"
+        >
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <div class="icon-container rounded p-2 text-primary">
+                <i :class="placeholder.icon"></i>
+              </div>
+              <div>
+                <h5 class="mb-1">{{ placeholder.label }}</h5>
+                <p class="text-muted small mb-0">{{ placeholder.description }}</p>
+              </div>
+            </div>
+            <div class="d-flex align-items-center">
+              <span class="badge rounded-pill me-2 text-primary">{{ placeholderCounts[placeholder.id] }}</span>
+              <button
+                class="btn btn-primary btn-sm d-flex align-items-center"
+                @click="handlePlaceholderClick(placeholder)"
+              >
+                <i class="bi bi-plus-lg me-1"></i> Add
+              </button>
+            </div>
           </div>
-          <div class="btn-container">
-            <span class="badge bg-primary rounded-pill">{{ placeholderCounts[placeholder.id] }}</span>
-            <button
-              class="btn btn-primary btn-sm mt-2"
-              @click="handlePlaceholderClick(placeholder)"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-      </li>
-    </ul>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -46,9 +55,9 @@ export default {
     return {
       isSidebarVisible: true,
       placeholders: [
-        { id: "text", label: "Text placeholder", text: "~text~" },
-        { id: "chart", label: "Single chart", text: "~chart~" },
-        { id: "comparison", label: "Comparison chart", text: "~comparison~" },
+        { id: "text", label: "Text placeholder", text: "~text~", description: "Add text content blocks", icon: "bi bi-type" },
+        { id: "chart", label: "Single chart", text: "~chart~", description: "Visualize data with a chart", icon: "bi bi-bar-chart" },
+        { id: "comparison", label: "Comparison chart", text: "~comparison~", description: "Compare multiple data sets", icon: "bi bi-bar-chart-steps" },
       ],
       placeholderCounts: {
         text: 0,
@@ -81,16 +90,31 @@ export default {
 </script>
 
 <style scoped>
-.sidebar-title {
-  font-size: 1.4rem;
-  font-weight: bold;
-  margin-top: 2px;
-  margin-bottom: 10px;
+.configurator {
+  --bg-color: rgb(219, 234, 254);
+  --icon-container-size: 36px;
 }
 
-.btn-container {
+.list-group-item {
+  padding: 0.825rem;
+}
+
+.icon-container {
+  width: var(--icon-container-size);
+  height: var(--icon-container-size);
   display: flex;
-  flex-direction: column;
+  margin-right: 0.625rem;
   align-items: center;
+  justify-content: center;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+}
+
+.list-group-item:hover {
+  background-color: #f8f9fa;
+}
+
+.badge {
+  background-color: var(--bg-color);
 }
 </style>
