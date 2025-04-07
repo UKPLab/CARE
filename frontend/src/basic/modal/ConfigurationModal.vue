@@ -364,9 +364,9 @@ export default {
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
       // Extract placeholders
-      const textRegex = /~text\[(\d+)\]~/g;
-      const chartRegex = /~chart\[(\d+)\]~/g;
-      const comparisonRegex = /~comparison\[(\d+)\]~/g;
+      const textRegex = /~text~/g;
+      const chartRegex = /~chart~/g;
+      const comparisonRegex = /~comparison~/g;
 
       let match;
       const extracted = [];
@@ -406,7 +406,7 @@ export default {
       this.placeholderColors = this.placeholders.map((_, index) => colors[index % colors.length]);
     },
     generateShortPreview(text) {
-      this.shortPreview = text.replace(/~nlp\[(\d+)\]~/g, (match, num) => {
+      this.shortPreview = text.replace(/~nlp~/g, (match, num) => {
         const colorIndex = this.placeholders.findIndex((p) => p.number == num);
         const color = this.placeholderColors[colorIndex] || "#000";
         return `<span style="color: ${color}; font-weight: bold;">#${num}</span>`;
