@@ -74,12 +74,12 @@ export default {
           this.$refs.modal.close();
           this.eventBus.emit("toast", {
             title: "Password updated",
-            message: response.message,
+            message: "Successfully reset password!",
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Fail to reset password",
+            title: "Failed to reset password",
             message: response.message,
             variant: "danger",
           });

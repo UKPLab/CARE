@@ -6,7 +6,7 @@ const navElements = [
     groupId: "Default",
     icon: "inboxes-fill",
     order: 13,
-    admin: true, // TODO change to false (only for EiwA true)
+    admin: false,
     path: "projects",
     component: "Projects",
   },

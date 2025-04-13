@@ -17,7 +17,10 @@
           collapsable collapsed @collapse="collapse(s.id, $event)"
         >
           <template #body>
-            <StudySessionTable :study-id="s.id"/>
+            <StudySessionTable 
+              :study-id="s.id"
+              :current-user-only="true"
+            />
           </template>
           <template #footer>
             <LoadIcon

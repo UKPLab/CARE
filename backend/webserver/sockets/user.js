@@ -265,6 +265,22 @@ module.exports = class UserSocket extends Socket {
 
     }
 
+    /**
+     * Reset user's password
+     * @param {Object} data
+     * @param {number} data.userId - The ID ｀of the user
+     * @param {string} data.password - The new password
+     * @param {Object} options - Sequelize transaction options.
+     * @returns {void}
+     */
+    async resetUserPwd(data, options) {
+        const {userId, password} = data;
+        if (!await this.isAdmin() && userId !== this.userId) {
+            throw new Error("User rights and argument mismatch");
+        }
+        await this.models["user"].resetUserPwd(userId, password);
+    }
+
     init() {
         this.createSocket("userGetData", this.sendUserData, {}, false);
 
@@ -314,23 +330,8 @@ module.exports = class UserSocket extends Socket {
                 this.logger.error(error);
             }
         });
-
-        // Reset user's password
-        this.socket.on("userResetPwd", async (data, callback) => {
-            const {userId, password} = data;
-            try {
-                await this.models["user"].resetUserPwd(userId, password);
-                callback({
-                    success: true, message: "Successfully reset password!",
-                });
-            } catch (error) {
-                callback({
-                    success: false, message: "Failed to reset password",
-                });
-                this.logger.error(error);
-            }
-        });
-
+        
+        this.createSocket("userResetPwd", this.resetUserPwd, {}, false);
         this.createSocket("userGetDetails", this.models["user"].getUserDetails, {}, false);
         this.createSocket("userConsentUpdate", this.updateUserConsent, {}, true);
         this.createSocket("userBulkCreate", this.bulkCreateUsers, {}, false);
