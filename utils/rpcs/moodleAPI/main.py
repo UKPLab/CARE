@@ -116,6 +116,19 @@ def create_app():
             response = {"success": False, "message": "error: " + str(e)}
             return response
     
+    @sio.on("getAssignmentInfoFromCourse")
+    def getAssignmentInfoFromCourse(sid, data):
+        try:
+            logger.info(f"Received call: {data} from {sid}")
+            api = Moodle(data['options']['apiKey'], data['options']['apiUrl'])
+            assignments = api.get_assignment_ids_from_course(data['options']['courseID'])
+            response = {"success": True, "data": assignments}
+            return response
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            response = {"success": False, "message": "error: " + str(e)}
+            return response
+    
     logger.info("Creating App...")
     app = socketio.WSGIApp(sio)
     return app
