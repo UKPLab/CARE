@@ -336,7 +336,7 @@ export default {
             key: this.requests[requestId].uniqueId,
             value: this.nlpResults[requestId]
           });
-          this.modalData["dataSavings"][this.requests[requestId].uniqueId] = this.nlpResults[requestId];
+          this.modalData[this.requests[requestId].uniqueId] = this.nlpResults[requestId];
           this.$emit("update:data", this.modalData);
 
           this.$store.commit("service/removeResults", {
@@ -384,10 +384,6 @@ export default {
     if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
       this.waiting = true;
 
-      if(!("dataSavings" in this.modalData)){ 
-        this.modalData["dataSavings"] = {};
-      }
-
       for (const service of this.configuration.services) {
         if (service.type === "nlpRequest") {
           const { skill, inputs: dataSource, name } = service;
@@ -411,12 +407,12 @@ export default {
     },
     async request(skill, dataSource, uniqueId) {
       const requestId = uuid();
-      this.requests[requestId] = { skill, dataSource, input: "", result: "", uniqueId };
+      this.requests[requestId] = { skill, dataSource, input: "", response: "", uniqueId };
 
       let input;
-      if("v1" in dataSource && "v2" in dataSource){
-        const v1Index = this.studySteps.findIndex(step => step.id === dataSource.v1.stepId);
-        const v2Index = this.studySteps.findIndex(step => step.id === dataSource.v2.stepId);
+      if(skill==="skill_eic"){
+        const v1Index = "v1" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v1.stepId):-1;
+        const v2Index = "v2" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v2.stepId):-1;
         const v1Input = v1Index > -1 ? this.studyData[v1Index + 1][dataSource.v1.dataSource] : ""; // +1 because studySteps is an array and studyData is an object
         const v2Input = v2Index > -1 ? this.studyData[v2Index + 1][dataSource.v2.dataSource] : "";
         input = { v1: v1Input, v2: v2Input };
@@ -427,7 +423,7 @@ export default {
 
       this.requests[requestId].input = input;
 
-      if (!(this.documentData["studyStepId"] === this.studyStepId && this.documentData["key"] === uniqueId)) {
+      if (!Object.keys(this.documentData).some(key => key.startsWith(uniqueId) && this.documentData[key]["studyStepId"] === this.studyStepId)) {
         await this.$socket.emit("serviceRequest", {
           service: "NLPService",
           data: { 

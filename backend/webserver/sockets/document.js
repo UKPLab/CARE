@@ -745,7 +745,7 @@ module.exports = class DocumentSocket extends Socket {
         if (data.value !== null && data.value instanceof Object) {
             for (let key in data.value) {
                 let documentData = await this.models['document_data'].add({
-                    userId: data.userId,
+                    userId: this.userId,
                     documentId: data.documentId,
                     studySessionId: data.studySessionId,
                     studyStepId: data.studyStepId,
@@ -753,9 +753,6 @@ module.exports = class DocumentSocket extends Socket {
                     value: data.value[key]
                 }, {transaction: options.transaction});
 
-                options.transaction.afterCommit(() => {
-                    this.emit("document_dataRefresh", documentData);
-                });
             }
         }
         else {
@@ -768,9 +765,6 @@ module.exports = class DocumentSocket extends Socket {
                 value: data.value
             }, {transaction: options.transaction});
 
-            options.transaction.afterCommit(() => {
-                this.emit("document_dataRefresh", documentData);
-            });
         }
 
         return documentData;
