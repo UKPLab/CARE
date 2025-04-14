@@ -37,25 +37,30 @@ module.exports = class StatisticSocket extends Socket {
     }
 
     /**
-     * Send statistics to the user
-     * @returns {Promise<void>}
+     * Get statistics
+     * @param {Object} data - The data object containing the userId
+     * @param {Number} data.userId - The userId to get statistics for (optional)
+     * @param {Object} options - not used
+     *
+     * @returns {Promise<Object>} - The statistics data
+     *
+     * @throws {Error} - If the user does not have permission to access the data
      */
-    async sendStats() {
-        if (await this.isAdmin()) {
-            const stats = await this.models['statistic'].getAll();
-            const users = [...new Set(stats.map(stat => stat.userId))];
+    async getStats(data, options) {
+        if (!await this.isAdmin()) {
+            throw new Error("You don't have permission to access this data");
+        }
 
-            const agreeingUsers = await Promise.all(users.filter(async u => (await this.models["user"].getById(u)).acceptStats));
-            const filteredStats = stats.filter(stat => agreeingUsers.includes(stat.userId));
-
-            this.socket.emit("statsData", {success: true, statistics: filteredStats});
+        if (data.userId) {
+            return await this.models['statistic'].getAllByKey('userId', data.userId);
         } else {
-            this.socket.emit("statsData", {success: false, message: "User rights and argument mismatch"});
-            this.logger.error("User right and request parameter mismatch. Admin rights required.");
+            return await this.models['statistic'].getAll();
         }
     }
 
     init() {
+
+        this.createSocket("statsGet", this.getStats, {}, false);
 
         this.socket.on("stats", async (data) => {
             try {
@@ -81,16 +86,6 @@ module.exports = class StatisticSocket extends Socket {
                     userId: data.userId,
                     message: "Failed to retrieve stats for users"
                 });
-                this.logger.error("Can't load statistics due to error " + e.toString());
-            }
-
-        });
-
-        this.socket.on("statsGetAll", async () => {
-            try {
-                await this.sendStats();
-            } catch (e) {
-                this.socket.emit("statsData", {success: false, message: "Failed to retrieve stats for all"});
                 this.logger.error("Can't load statistics due to error " + e.toString());
             }
 
