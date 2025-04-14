@@ -181,14 +181,19 @@ export default {
       required: true,
       default: 0,
     },
+    workflowSteps: {
+      type: Array,
+      required: true,
+      default: () => [],
+    },
   },
   emits: ["update:modelValue"],
   data() {
     return {
-      currentStep: 0,
       data: {
         fields: [],
       },
+      currentStepperStep: 0,
       placeholders: [],
       placeholderFormData: [],
       formData: [],
@@ -225,53 +230,7 @@ export default {
       };
     },
     availableDataSources() {
-      // Base sources that are always available
-      let sources = [];
-
-      if (this.stepNumber === 2) {
-        sources = [
-          { value: "firstVersion", name: "First Version (Editor 1)" },
-          { value: "currentVersion", name: "Current Version (Editor 1)" },
-        ];
-      } else if (this.stepNumber === 4) {
-        sources = [
-          { value: "firstVersion", name: "First Version (Editor 1)" },
-          { value: "currentVersion", name: "Current Version (Editor 1)" },
-          { value: "firstVersionEditor2", name: "First Version (Editor 2)" },
-          { value: "currentVersionEditor2", name: "Current Version (Editor 2)" },
-        ];
-      }
-
-      // TODO: The following logic is not flexible. Is it possible to check the skill.config.output.data?
-      // const skill = this.nlpSkills.find(s => s.name === skillName);
-      // if (!skill) return;
-      if (this.currentStep === 1 && this.selectedSkills.length > 0) {
-        const { services } = this.stepConfig;
-        services.forEach((s) => {
-          this.selectedSkills.forEach((skill) => {
-            const { skillName } = skill;
-            if (!skillName) return;
-
-            if (skillName === "skill_eic") {
-              sources.push({
-                value: `service_${s.name}_results`,
-                name: `${skillName} - Results`,
-              });
-              sources.push({
-                value: `service_${s.name}_classes`,
-                name: `${skillName} - Classes`,
-              });
-            } else {
-              sources.push({
-                value: `service_${s.name}_results`,
-                name: `${skillName} - Results`,
-              });
-            }
-          });
-        });
-      }
-
-      return sources;
+      return this.getSourcesUpToCurrentStep(this.studyStepId);
     },
   },
   watch: {
@@ -413,7 +372,7 @@ export default {
       });
     },
     handleStepChange(step) {
-      this.currentStep = step;
+      this.currentStepperStep = step;
     },
     close() {
       this.$refs.configurationStepper.close();
@@ -483,6 +442,63 @@ export default {
                 ]
               : { stepId: this.studyStepId, dataSource: data.dataInput },
         }));
+    },
+    /**
+     * Construct and get all the available data sources up to the stepId 
+     * @param {number} stepId - The ID of the workflow step
+     * @returns {Array<Object>} An array of data source object, consisting of value and name
+     */
+    getSourcesUpToCurrentStep(stepId) {
+      const sources = [];
+      const stepCollector = this.workflowSteps.filter((step) => step.id <= stepId);
+      
+      stepCollector.forEach((step, index) => {
+        const stepIndex = index + 1;
+        switch (step.stepType) {
+          // Editor
+          case 2:
+            sources.push(
+              { value: "firstVersion", name: `First Version (Step ${stepIndex})` },
+              { value: "currentVersion", name: `Current Version (Step ${stepIndex})` }
+            );
+            break;
+          // Modal
+          case 3:
+            if (step.id < this.studyStepId || this.currentStepperStep === 1) {
+              sources.push(...this.getSkillSources(stepIndex));
+            }
+            break;
+        }  
+      });
+
+      return sources;
+    },
+    /**
+     * Get the output from the nlpSkill
+     * @param {number} stepIndex - The index of the step that indicates which step the user is at in the whole workflow.
+     * @returns {Array<Object>} An array of objects derived from nlpSkill
+     */
+    getSkillSources(stepIndex) {
+      const sources = [];
+
+      if (!this.selectedSkills.length) return sources;
+
+      const { services } = this.stepConfig;
+
+      services.forEach((service) => {
+        this.selectedSkills.forEach(({ skillName }) => {
+          const skill = this.nlpSkills.find((s) => s.name === skillName);
+          const result = Object.keys(skill.config.output.data || {});
+          result.forEach((r) =>
+            sources.push({
+              value: `service_${service.name}_${r}`,
+              name: `${skillName}_${r} (Step ${stepIndex})`,
+            })
+          );
+        });
+      });
+
+      return sources;
     },
   },
 };
