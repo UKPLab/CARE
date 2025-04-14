@@ -142,7 +142,6 @@ export default {
       documentText: null,
       waiting: false,
       requests: {},
-      modalData: {},
       charts: [
         {
           title: "Horizontal bar chart",
@@ -330,34 +329,51 @@ export default {
       }
 
       return result;
-    }
-
+    },
+    specificDocumentData() {
+      return this.$store.getters["table/document_data/getByKey"]("documentId", this.studyStep?.documentId);
+    },
   },
   watch: {
     nlpResults: function (results) {
       for (let requestId in this.requests) {
         if (requestId in results) {
-          this.$socket.emit("documentDataSave", {
-            userId: this.userId,
-            documentId: this.studyStep.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            key: this.requests[requestId].uniqueId,
-            value: this.nlpResults[requestId]
-          });
-          this.modalData[this.requests[requestId].uniqueId] = this.nlpResults[requestId];
-          this.$emit("update:data", this.modalData);
+          const result = this.nlpResults[requestId];
+          const uniqueId = this.requests[requestId].uniqueId;
+
+          for (const key in result) {
+            if (result.hasOwnProperty(key)) {
+              const keyName = uniqueId + "_" + key;
+              const value = result[key];
+              
+              this.$socket.emit("documentDataSave", {
+                documentId: this.studyStep?.documentId,
+                studySessionId: this.studySessionId,
+                studyStepId: this.studyStepId,
+                key: keyName,
+                value: value,
+              });
+
+            }
+          }
 
           this.$store.commit("service/removeResults", {
             service: "NLPService",
-            requestId: requestId
-          });        
+            requestId: requestId,
+          });
           delete this.requests[requestId];
         }
       }
+
       if (Object.keys(this.requests).length === 0) {
         this.waiting = false;
       }
+    },
+    specificDocumentData: {
+      handler(newData) {
+        this.$emit("update:data", this.specificDocumentData);
+      },
+      deep: true,
     },
   },
   created() {
@@ -399,8 +415,6 @@ export default {
           this.request(skill, dataSource, ("service_" + name));
         }
       }
-
-      this.$emit("update:data", this.modalData);
     }
 
     this.$refs.modal.open();
@@ -422,17 +436,17 @@ export default {
       if(skill==="skill_eic"){
         const v1Index = "v1" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v1.stepId):-1;
         const v2Index = "v2" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v2.stepId):-1;
-        const v1Input = v1Index > -1 ? this.studyData[v1Index + 1][dataSource.v1.dataSource] : ""; // +1 because studySteps is an array and studyData is an object
-        const v2Input = v2Index > -1 ? this.studyData[v2Index + 1][dataSource.v2.dataSource] : "";
+        const v1Input = v1Index > -1 ? this.studyData[v1Index+1][dataSource["v1"]["dataSource"]] : "";
+        const v2Input = v2Index > -1 ? this.studyData[v2Index+1][dataSource["v2"]["dataSource"]] : "";
         input = { v1: v1Input, v2: v2Input };
       } else {
         const index = this.studySteps.findIndex(step => step.id === dataSource.stepId);
-        input = index > -1 ? this.studyData[index][dataSource.dataSource] : "";
+        input = index > -1 ? this.studyData[index+1][dataSource["dataSource"]] : "";
       }
 
       this.requests[requestId].input = input;
 
-      if (!Object.keys(this.documentData).some(key => key.startsWith(uniqueId) && this.documentData[key]["studyStepId"] === this.studyStepId)) {
+      if (!Object.keys(this.documentData).some(key => this.documentData[key]["studySessionId"] === this.studySessionId && key.startsWith(uniqueId) && this.documentData[key]["studyStepId"] === this.studyStepId)) {
         await this.$socket.emit("serviceRequest", {
           service: "NLPService",
           data: { 

@@ -742,30 +742,15 @@ module.exports = class DocumentSocket extends Socket {
      * @returns {Promise<void>} - A promise that resolves when the data has been saved.
      */
     async saveData(data, options) {
-        if (data.value !== null && data.value instanceof Object) {
-            for (let key in data.value) {
-                let documentData = await this.models['document_data'].add({
-                    userId: this.userId,
-                    documentId: data.documentId,
-                    studySessionId: data.studySessionId,
-                    studyStepId: data.studyStepId,
-                    key: data.key + "_" + key,
-                    value: data.value[key]
-                }, {transaction: options.transaction});
-
-            }
-        }
-        else {
-            let documentData = await this.models['document_data'].add({
-                userId: data.userId,
-                documentId: data.documentId,
-                studySessionId: data.studySessionId,
-                studyStepId: data.studyStepId,
-                key: data.key,
-                value: data.value
-            }, {transaction: options.transaction});
-
-        }
+             
+        let documentData = await this.models['document_data'].add({
+            userId: this.userId,
+            documentId: data.documentId,
+            studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
+            key: data.key,
+            value: data.value
+        }, {transaction: options.transaction});
 
         return documentData;
     }
