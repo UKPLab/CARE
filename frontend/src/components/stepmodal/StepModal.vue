@@ -92,7 +92,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
 import {v4 as uuid} from "uuid";
-import Chart from "./Chart.vue";
+import Chart from "./placeholders/Chart.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
