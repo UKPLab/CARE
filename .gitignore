@@ -20,6 +20,8 @@ frontend/node_modules
 utils/modules/editor-delta-conversion/node_modules
 utils/modules/editor-delta-conversion/coverage
 
+#node_modules
+node_modules
 
 yarn-error.log
 .tox
