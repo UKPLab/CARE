@@ -207,10 +207,11 @@ module.exports = class AppSocket extends Socket {
 
     /**
      * Send all data needed for the frontend app for initialization
-     * @param {[object]} data
+     * @param {Object} data - The input data from the frontend
+     * @param {Object} options - not used
      * @return {Promise<void>}
      */
-    async sendInit(data) {
+    async sendInit(data, options) {
         try {
             await this.sendUser();
             await this.sendTables();
@@ -323,6 +324,19 @@ module.exports = class AppSocket extends Socket {
         this.socket.appDataSubscriptions["tables"][tableName].delete(data);
     }
 
+    /**
+     * Send overall settings including user setting
+     * @param {Object} data - The input data from the frontend
+     * @param {string} data.key - The key in the user setting table
+     * @param {string} data.value - The value in the user setting table
+     * @param {Object} options not used
+     * @return {Promise<*>}
+     */
+    async sendOverallSetting(data, options) {
+        await this.models["user_setting"].set(data.key, data.value, this.userId);
+        await this.sendSettings();
+    }
+
     init() {
 
         this.createSocket("appDataUpdate", this.updateAppData, {}, true);
@@ -331,23 +345,7 @@ module.exports = class AppSocket extends Socket {
 
         this.createSocket("subscribeAppData", this.subscribeAppData, {}, false);
         this.createSocket("unsubscribeAppData", this.unsubscribeAppData, {}, false);
-        this.createSocket("ping", async (data, options) => { this.socket.emit("ping", data); }, {}, false);
-
-        this.socket.on("appInit", async (data) => {
-            try {
-                await this.sendInit(data);
-            } catch (err) {
-                this.logger.error(err.message);
-            }
-        });
-
-        this.socket.on("appSettingSet", async (data) => {
-            try {
-                await this.models["user_setting"].set(data.key, data.value, this.userId);
-                await this.sendSettings();
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
+        this.createSocket("appInit", this.sendInit, {}, false);
+        this.createSocket("appSettingSet", this.sendOverallSetting, {}, false);
     }
 };

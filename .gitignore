@@ -15,6 +15,7 @@ backend/coverage
 # ignore build files
 dist/
 frontend/node_modules
+node_modules
 
 #modules
 utils/modules/editor-delta-conversion/node_modules

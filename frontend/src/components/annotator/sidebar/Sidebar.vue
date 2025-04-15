@@ -336,6 +336,14 @@ export default {
         annotationId: null,
         commentId: null,
         anonymous: this.anonymized
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Comment not updated",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
     },
     async leave() {

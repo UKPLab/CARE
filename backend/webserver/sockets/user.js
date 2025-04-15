@@ -300,7 +300,10 @@ module.exports = class UserSocket extends Socket {
             }
         });
 
+        // TODO refactor together: this.createSocket("userGetByRole", this.getRoleOfUser, {}, false);
+
         // Get right associated with the user
+        // TODO refactor together
         this.socket.on("userGetRight", async (userId) => {
             try {
                 const userRight = await this.models["user"].getUserRights(userId);
@@ -315,6 +318,7 @@ module.exports = class UserSocket extends Socket {
             }
         });
 
+        /*
         // Update user's following data: firstName, lastName, email, roles
         this.socket.on("userUpdateDetails", async (data, callback) => {
             const {userId, userData} = data;
@@ -330,7 +334,10 @@ module.exports = class UserSocket extends Socket {
                 this.logger.error(error);
             }
         });
-        
+
+         */
+
+        this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true); //TODO not sure about true for the transaction
         this.createSocket("userResetPwd", this.resetUserPwd, {}, false);
         this.createSocket("userGetDetails", this.models["user"].getUserDetails, {}, false);
         this.createSocket("userConsentUpdate", this.updateUserConsent, {}, true);

@@ -1,18 +1,18 @@
 <template>
   <SideCard
-    :loading="loading()"
-    :shake="shake"
+      :loading="loading()"
+      :shake="shake"
   >
     <template #header>
       <div class="row">
         <div class="col">
           {{ comment.creator_name }}
           <Collaboration
-            ref="collab"
-            :target-id="commentId"
-            :document-id="documentId"
-            target-type="comment"
-            @collab-status="toEditMode"
+              ref="collab"
+              :target-id="commentId"
+              :document-id="documentId"
+              target-type="comment"
+              @collab-status="toEditMode"
           />
         </div>
         <div class="col text-end">
@@ -28,102 +28,102 @@
 
     <template #body>
       <div
-        v-if="annotationId"
-        :style="'border-color:#' + color"
-        :title="tagName"
-        class="blockquote card-text annoBlockquote"
-        data-placement="top"
-        data-toogle="tooltip"
-        @click="scrollTo(annotationId)"
+          v-if="annotationId"
+          :style="'border-color:#' + color"
+          :title="tagName"
+          class="blockquote card-text annoBlockquote"
+          data-placement="top"
+          data-toogle="tooltip"
+          @click="scrollTo(annotationId)"
       >
         <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
       </div>
       <Comment
-        ref="main_comment"
-        :comment-id="commentId"
-        :edit="editedByMyself"
-        :level="0"
-        @save-card="save()"
+          ref="main_comment"
+          :comment-id="commentId"
+          :edit="editedByMyself"
+          :level="0"
+          @save-card="save()"
       />
     </template>
 
     <template #footer>
       <div class="ms-auto">
         <div
-          v-if="editedByMyself"
-          class="row"
+            v-if="editedByMyself"
+            class="row"
         >
           <div class="col text-end">
             <SidebarButton
-              :loading="false"
-              :props="$props"
-              icon="save-fill"
-              title="Save"
-              @click="save"
+                :loading="false"
+                :props="$props"
+                icon="save-fill"
+                title="Save"
+                @click="save"
             />
             <SidebarButton
-              :loading="false"
-              :props="$props"
-              icon="x-square-fill"
-              title="Cancel"
-              @click="cancel"
+                :loading="false"
+                :props="$props"
+                icon="x-square-fill"
+                title="Cancel"
+                @click="cancel"
             />
           </div>
         </div>
         <div
-          v-else
-          class="row"
+            v-else
+            class="row"
         >
           <div class="col">
             <button
-              v-if="numberReplies > 0"
-              class="btn btn-sm"
-              data-placement="top"
-              data-toggle="tooltip"
-              title="Reply"
-              type="button"
-              @click="showReplies = !showReplies"
+                v-if="numberReplies > 0"
+                class="btn btn-sm"
+                data-placement="top"
+                data-toggle="tooltip"
+                title="Reply"
+                type="button"
+                @click="showReplies = !showReplies"
             >
               <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
               <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
             </button>
           </div>
           <div
-            class="col text-end"
+              class="col text-end"
           >
             <SidebarButton
-              v-if="settingResponse && !readonly"
-              :loading="false"
-              :props="$props"
-              icon="reply-fill"
-              title="Reply"
-              @click="$refs.main_comment.reply();showReplies = true"
+                v-if="settingResponse && !readonly"
+                :loading="false"
+                :props="$props"
+                icon="reply-fill"
+                title="Reply"
+                @click="$refs.main_comment.reply();showReplies = true"
             />
             <NLPService
-              v-if="summarizationAvailable && comment.userId === userId && !readonly"
-              :data="summarizationRequestData"
-              :skill="summarizationSkillName"
-              icon-name="file-text"
-              title="Summarize"
-              type="button"
-              @response="summarizeResponse"
+                v-if="summarizationAvailable && comment.userId === userId && !readonly"
+                :data="summarizationRequestData"
+                :skill="summarizationSkillName"
+                icon-name="file-text"
+                title="Summarize"
+                type="button"
+                @response="summarizeResponse"
             />
-            <VoteButtons :comment="comment" />
+            <VoteButtons :comment="comment"/>
             <SidebarButton
-              v-if="comment.userId === userId && !readonly"
-              :loading="false"
-              :props="$props"
-              icon="pencil-square"
-              title="Edit"
-              @click="edit"
+                v-if="comment.userId === userId && !readonly"
+                :loading="false"
+                :props="$props"
+                icon="pencil-square"
+                title="Edit"
+                @click="edit"
             />
             <SidebarButton
-              v-if="comment.userId === userId && !readonly"
-              :loading="false"
-              :props="$props"
-              icon="trash3"
-              title="Delete"
-              @click="remove"
+                v-if="comment.userId === userId && !readonly"
+                :loading="false"
+                :props="$props"
+                icon="trash3"
+                title="Delete"
+                @click="remove"
             />
           </div>
         </div>
@@ -132,16 +132,16 @@
 
     <template #thread>
       <div
-        v-if="showReplies"
-        class="d-grid gap-1 my-2"
+          v-if="showReplies"
+          class="d-grid gap-1 my-2"
       >
         <span
-          v-for="c in childComments"
-          :key="c.id"
+            v-for="c in childComments"
+            :key="c.id"
         >
           <Comment
-            :comment-id="c.id"
-            :level="1"
+              :comment-id="c.id"
+              :level="1"
           />
         </span>
       </div>
@@ -226,12 +226,12 @@ export default {
     },
     childComments() {
       return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId).sort(
-        function (a, b) {
-          let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
-          if (keyA < keyB) return -1;
-          if (keyA > keyB) return 1;
-          return 0;
-        }
+          function (a, b) {
+            let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
+            if (keyA < keyB) return -1;
+            if (keyA > keyB) return 1;
+            return 0;
+          }
       );
     },
     comment() {
@@ -282,7 +282,7 @@ export default {
         return false;
       if (this.annotation)
         return this.annotation.text !== null && this.annotation.text.length >= this.summarizationMinAnnoLength
-          && this.summarizationActivated;
+            && this.summarizationActivated;
       return null;
     },
   },
@@ -352,6 +352,14 @@ export default {
         this.$socket.emit('annotationUpdate', {
           "annotationId": this.annotation.id,
           "tagId": JSON.stringify(this.annotation.tagId),
+        }, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: "Annotation Update Failed",
+              message: res.message,
+              variant: "danger",
+            });
+          }
         });
       }
 
@@ -367,6 +375,15 @@ export default {
           this.$socket.emit('annotationGet', {
             "annotationId": this.annotation.id,
             "documentId": this.documentId
+          }, (result) => {
+            if (!result.success) {
+              this.eventBus.emit("toast", {
+                title: "Annotation not retrieved",
+                message: result.message,
+                variant: "danger",
+              });
+
+            }
           });
         }
       } else {
@@ -375,6 +392,14 @@ export default {
         } else {
           this.$socket.emit('commentGet', {
             "commentId": this.comment.id,
+          }, (res) => {
+            if (!res.success) {
+              this.eventBus.emit("toast", {
+                title: "Comments not retrieved",
+                message: res.message,
+                variant: "danger",
+              });
+            }
           });
         }
       }
@@ -387,11 +412,27 @@ export default {
           "annotationId": this.annotation.id,
           "tagId": JSON.stringify(this.annotation.tagId),
           "deleted": true
+        }, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: "Annotation Update Failed",
+              message: res.message,
+              variant: "danger",
+            });
+          }
         });
       } else {
         this.$socket.emit('commentUpdate', {
           "commentId": this.comment.id,
           "deleted": true
+        }, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: "Comment not updated",
+              message: res.message,
+              variant: "danger",
+            });
+          }
         });
       }
     },
@@ -409,6 +450,14 @@ export default {
         "studyStepId": this.studyStepId,
         "text": "Summarization: " + data[0]['summary_text'],
         "userId": "Bot"
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Comment not updated",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
       this.showReplies = true;
     },
