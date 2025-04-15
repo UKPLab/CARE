@@ -69,6 +69,7 @@ module.exports = class StatisticSocket extends Socket {
                         action: data.action,
                         data: JSON.stringify(data.data),
                         userId: this.userId,
+                        session: this.socket.id,
                         timestamp: new Date(),
                     })
                 }
