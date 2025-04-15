@@ -59,6 +59,16 @@ const workflows = [
       },
     ],
   },
+  {
+    name: "Ruhr-Uni Bochum Project (Control)",
+    description: "Ruhr-Uni Bochum Project: Correct a document over two revisions with edits overview.",
+    steps: [
+      { stepType: 2, allowBackward: false, workflowStepDocument: null }, 
+      { stepType: 3, allowBackward: false, workflowStepDocument: null },
+      { stepType: 2, allowBackward: false, workflowStepDocument: 1 }, 
+      { stepType: 3, allowBackward: false, workflowStepDocument: null },
+    ],
+  },
 ];
 
 module.exports = { 
