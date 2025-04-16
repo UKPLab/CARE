@@ -17,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
         action: DataTypes.STRING,
         data: DataTypes.TEXT,
         userId: DataTypes.INTEGER,
+        session: DataTypes.STRING,
         timestamp: DataTypes.DATE,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
