@@ -29,16 +29,16 @@
                     :data-table="true"
                     :options="field"
                   />
-                  <!-- Render Gear Icon if Configuration Exists -->
-                  <span 
+                  <span
                     v-if="item.hasConfiguration"
                     class="ms-2"
                   >
                     <ConfigurationModal
-                      v-model="item.configuration"
+                      :model-value="item.configuration"
                       :study-step-id="item.id"
                       :step-number="item.stepNumber"
                       :document-id="currentData.find((entry) => entry.id === item.id)?.documentId"
+                      :workflow-steps="workflowSteps"
                       @update:model-value="(configData) => handleConfigUpdate(configData, item.id)"
                     />
                   </span>
@@ -94,6 +94,11 @@ export default {
   computed: {
     fields() {
       return this.$store.getters[`table/${this.options.options.table}/getFields`];
+    },
+    workflowSteps() {
+      if (!this.formData) return [];
+      const { workflowId } = this.formData;
+      return this.$store.getters["table/workflow_step/getAll"].filter((step) => step.workflowId === workflowId);
     },
     // TODO: Simplify this
     choices() {
