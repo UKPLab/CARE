@@ -155,7 +155,7 @@ export default {
         if (newVal) {
           this.sidebarContent = "history";
         } else if (this.document?.type === 2) {
-          this.sidebarContent = "configuration";
+          this.sidebarContent = "configurator";
         } else {
           this.sidebarContent = null;
         }
