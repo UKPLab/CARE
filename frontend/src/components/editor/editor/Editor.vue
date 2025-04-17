@@ -108,7 +108,6 @@ export default {
   emits: ["update:data"],
   data() {
     return {
-      content: "",
       documentHash: this.$route.params.documentHash,
       deltaBuffer: [],
       deltaDataBuffer: [],
@@ -260,6 +259,10 @@ export default {
         }
       };
       this.eventBus.on("editorInsertText", this.insertTextHandler);
+
+      setTimeout(() => {
+        this.emitContentForPlaceholders();
+      }, 500);
     }
 
     this.$socket.emit("documentGet",
@@ -329,6 +332,8 @@ export default {
           this.deltaBuffer.push(placeholderDelta);
           this.debouncedProcessDelta();
           quill.setSelection(range.index + text.length);
+
+          this.emitContentForPlaceholders();
         } else {
           this.eventBus.emit("toast", {
             title: "No Cursor Position",
@@ -370,10 +375,21 @@ export default {
         }
       }
     },
+    emitContentForPlaceholders() {
+      if (this.editor) {
+        const content = this.editor.getEditor().root.innerHTML;
+        this.eventBus.emit("editorContentUpdated", {
+          documentId: this.documentId,
+          content: content,
+        });
+      }
+    },
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
+        
+        this.emitContentForPlaceholders();
       }
     },
     processDelta() {
@@ -415,13 +431,13 @@ export default {
       }
     },
     async initializeEditorWithContent(deltas) {
-      this.content = deltas;
-
       if (this.editor) {
         this.editor.getEditor().setContents(deltas);
       }
       this.documentLoaded = true;
       this.applyAdditionalEdits();
+
+      this.emitContentForPlaceholders();
     },
     applyAdditionalEdits() {
       if (this.unappliedEdits.length > 0) {
