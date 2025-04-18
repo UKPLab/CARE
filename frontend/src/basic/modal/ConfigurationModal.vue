@@ -52,9 +52,9 @@
                 >
                   <label class="form-label">{{ input }}:</label>
                   <FormSelect
-                    :model-value="selectedSkills[index].dataInput?.input?.dataSource"
-                    :options="{ options: availableDataSources }"
-                    @update:model-value="(dataSource) => updateDataInput(index, input, dataSource)"
+                    :options="{ options: availableDataSources}"
+                    :value-as-object="true"
+                    @update:model-value="(source) => updateDataInput(index, input, source)"
                   />
                 </div>
               </div>
@@ -110,6 +110,7 @@
                   <label class="form-label">Data Source:</label>
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput[0]"
+                    :value-as-object="true"
                     :options="{ options: availableDataSources }"
                   />
                 </div>
@@ -117,6 +118,7 @@
                   <label class="form-label">Data Source:</label>
                   <FormSelect
                     v-model="placeholderFormData[index].dataInput[1]"
+                    :value-as-object="true"
                     :options="{ options: availableDataSources }"
                   />
                 </div>
@@ -125,7 +127,8 @@
                 <div class="mb-3">
                   <label class="form-label">Data Source:</label>
                   <FormSelect
-                    v-model="placeholderFormData[index].dataInput"
+                    v-model="placeholderFormData[index]"
+                    :value-as-object="true"
                     :options="{ options: availableDataSources }"
                   />
                 </div>
@@ -282,6 +285,7 @@ export default {
             this.placeholderFormData = this.placeholders.map((placeholder) => ({
               dataInput: placeholder.type === "comparison" ? ["", ""] : "",
               type: placeholder.type,
+              stepId: 0,
             }));
           } else {
             console.error("Invalid document content:", response);
@@ -377,7 +381,8 @@ export default {
     close() {
       this.$refs.configurationStepper.close();
     },
-    updateDataInput(index, input, dataSource) {
+    updateDataInput(index, input, source) {
+      if (!source) return;
       // Create copies to avoid direct mutation
       const updatedSkills = [...this.selectedSkills];
       const updatedSkill = { ...updatedSkills[index] };
@@ -389,10 +394,10 @@ export default {
         updatedSkill.dataInput = { ...updatedSkill.dataInput };
       }
 
-      // Update the specific input
+      // Update the specific input with the source's stepId
       updatedSkill.dataInput[input] = {
-        stepId: this.studyStepId,
-        dataSource: dataSource,
+        stepId: source.stepId,
+        dataSource: source.value,
       };
 
       // Update the array with the modified skill
@@ -437,10 +442,10 @@ export default {
           input:
             type === "comparison"
               ? [
-                  { stepId: this.studyStepId, dataSource: data.dataInput[0] },
-                  { stepId: this.studyStepId, dataSource: data.dataInput[1] },
+                  { stepId: data.dataInput[0].stepId, dataSource: data.dataInput[0].value },
+                  { stepId: data.dataInput[1].stepId, dataSource: data.dataInput[1].value },
                 ]
-              : { stepId: this.studyStepId, dataSource: data.dataInput },
+              : { stepId: data.stepId, dataSource: data.value },
         }));
     },
     /**
@@ -458,8 +463,8 @@ export default {
           // Editor
           case 2:
             sources.push(
-              { value: "firstVersion", name: `First Version (Step ${stepIndex})` },
-              { value: "currentVersion", name: `Current Version (Step ${stepIndex})` }
+              { value: "firstVersion", name: `First Version (Step ${stepIndex})`, stepId: stepIndex },
+              { value: "currentVersion", name: `Current Version (Step ${stepIndex})`, stepId: stepIndex }
             );
             break;
           // Modal
@@ -493,6 +498,7 @@ export default {
             sources.push({
               value: `service_${service.name}_${r}`,
               name: `${skillName}_${r} (Step ${stepIndex})`,
+              stepId: stepIndex
             })
           );
         });
