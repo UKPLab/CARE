@@ -670,9 +670,10 @@ module.exports = class DocumentSocket extends Socket {
                             .filter(edit => edit.draft &&
                                 (edit.studySessionId === data['studySessionId'] || edit.studySessionId === null)))),
                         firstVersion: delta.compose(dbToDelta(edits
-                            .filter(edit => edit.draft &&
-                                (edit.studySessionId === null || edit.studySessionId === data['studySessionId']) &&
-                                (edit.studyStepId === null || edit.studyStepId !== data['studyStepId']))))
+                            .filter(edit =>
+                                (edit.studySessionId === data['studySessionId'] && 
+                                    (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
+                                ),
                     };
 
                 }
