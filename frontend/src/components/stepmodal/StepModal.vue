@@ -68,11 +68,11 @@
           />
           <!-- Button for the last step in read-only mode -->
           <BasicButton
-            v-if="isLastStep && readOnly"
+            v-if="isAdmin && isLastStep && readOnly"
             title="Export Study Data"
             class="btn me-1 btn-outline-secondary"
             icon="cloud-arrow-down"
-            @click="downloadStudyData"
+            @click="exportStudyData"
           />
           <!-- Button for returning to the dashboard when in read-only mode -->
           <BasicButton
@@ -333,6 +333,9 @@ export default {
     specificDocumentData() {
       return this.$store.getters["table/document_data/getByKey"]("documentId", this.studyStep?.documentId);
     },
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
+    },
   },
   watch: {
     nlpResults: function (results) {
@@ -483,9 +486,11 @@ export default {
         return { key, index: occurrenceCount[key] };
       });
     },
-    async downloadStudyData() {
-      const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_study_data';
-      downloadObjectsAs(this.studyData, filename, 'json');
+    async exportStudyData() {
+      if (this.isAdmin){
+        const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_study_data';
+        downloadObjectsAs(this.studyData, filename, 'json');
+      }
     },
   }
 };
