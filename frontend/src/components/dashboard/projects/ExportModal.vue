@@ -191,7 +191,7 @@ export default {
       return this.$store.getters["table/study_session/getFiltered"]((s) => this.studies.map(study => study.id).includes(s.studyId));
     },
     edits() {
-      return this.$store.getters["table/document_edit/getAll"];
+      return this.$store.getters["table/document_edit/getFiltered"]((e) => e.text !== '\n\nDo you find the feedback helpful?');
     },
     documents() {
       return this.$store.getters["table/document/getAll"];
@@ -302,18 +302,25 @@ export default {
           step_folder.file('step.json', JSON.stringify(step, null, 2));
           step_folder.file('document.json', JSON.stringify(this.documents.find(doc => doc.id === step.documentId), null, 2));
           let deltas = undefined;
+          let relevantComments;
           switch (step.stepType) {
             case 1: // Annotator
               // download inline annotations
               step_folder.file('annotations.json', JSON.stringify(this.annotations.filter(ann => ann.studyStepId === step.id), null, 2));
-              step_folder.file('comments.json', JSON.stringify(this.comments.filter(comm => comm.studyStepId === step.id), null, 2));
-              step_folder.file('comment_votes.json', JSON.stringify(this.commentVotes.filter(vote => vote.studyStepId === step.id), null, 2));
+              relevantComments = this.comments.filter(comm => comm.studyStepId === step.id);
+              step_folder.file('comments.json', JSON.stringify(relevantComments, null, 2));
+              step_folder.file('comment_votes.json', JSON.stringify(this.commentVotes.filter(vote => relevantComments.map(comm => comm.id).includes(vote.commentId)), null, 2));
 
               break;
             case 2: // Editor
               // download edits + html
-              step_folder.file('edits.json', JSON.stringify(this.edits.filter(edit => edit.documentId === step.documentId), null, 2));
-              deltas = dbToDelta(this.edits.filter(edit => edit.documentId === step.documentId));
+                const edits = this.edits.filter(edit => (
+                    edit.documentId === step.documentId && edit.studyStepId === null && edit.studySessionId === null
+                ) || (
+                    edit.documentId === step.documentId && edit.studyStepId === step.id && edit.studySessionId === session.id
+                ));
+              step_folder.file('edits.json', JSON.stringify(edits), null, 2);
+              deltas = dbToDelta(edits);
               quill.setContents(deltas);
               step_folder.file('html.html', quill.getSemanticHTML());
               step_folder.file('text.txt', quill.getText());

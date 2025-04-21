@@ -3,6 +3,7 @@
   <span v-else>
     <BasicModal
       ref="modal"
+      studyStep?.configuration?.modalSize || lg
       :name="studyStep?.configuration?.name || 'Modal'"
       :class="modalClasses"
       :style="{ backgroundColor: studyStep?.configuration?.backgroundColor || '' }"
@@ -16,35 +17,43 @@
         </h5>
       </template>  
       <template #body>
-      <div
-        v-if="waiting"
-        class="justify-content-center flex-grow-1 d-flex"
-        role="status"
-      >
-        <div class="spinner-border m-5">
-          <span class="visually-hidden">Loading...</span>          
-        </div>
-      </div>
-      <div v-else>
         <div
-          class="feedback-container p-3"
-          :style="{ color: studyStep?.configuration?.textColor || '' }"
+          v-if="waiting"
+          class="justify-content-center flex-grow-1 d-flex"
+          role="status"
         >
+          <div class="spinner-border m-5">
+            <span class="visually-hidden">Loading...</span>          
+          </div>
+        </div>
+        <div v-else>
+          <div
+            class="feedback-container p-3"
+            :style="{ color: studyStep?.configuration?.textColor || '' }"
+          >
             <p v-if="!documentText">
               No content available for this step.
             </p>
 
-          <!-- TODO: Remove check for output once the configuration is fixed-->
+            <!-- TODO: Remove check for output once the configuration is fixed-->
             <p v-if="output">
-            Output of the {{ skill }}: {{ output }}
-          </p>
+              Output of the {{ skill }}: {{ output }}
+            </p>
             <div v-else v-html="documentText"></div>
+
+            <div v-for="(entry, index) in matchedPlaceholderContent" :key="'placeholder-' + index" class="mb-4">
+              <template v-if="entry.type === 'text'">
+                <p>{{ entry.value }}</p>
+              </template>
+              <template v-else-if="entry.type === 'chart'">
+                <Chart :chartInput="entry.value" :id="'chart' + index"/>
+              </template>
+            </div>
           </div>
         </div>      
       </template>
       <template #footer>
         <div v-if="!waiting">
-          <!-- Button for the next step -->
           <BasicButton
             v-if="!isLastStep"
             :title="studyStep?.configuration?.nextButtonText || 'Next'"
@@ -56,6 +65,14 @@
             :title="studyStep?.configuration?.finishButtonText || 'Finish Study'"
             :class="studyStep?.configuration?.finishButtonClass || 'btn btn-danger'"
             @click="closeModal({ endStudy: true })"
+          />
+          <!-- Button for the last step in read-only mode -->
+          <BasicButton
+            v-if="isAdmin && isLastStep && readOnly"
+            title="Export Study Data"
+            class="btn me-1 btn-outline-secondary"
+            icon="cloud-arrow-down"
+            @click="exportStudyData"
           />
           <!-- Button for returning to the dashboard when in read-only mode -->
           <BasicButton
@@ -75,6 +92,8 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
 import {v4 as uuid} from "uuid";
+import Chart from "./placeholders/Chart.vue";
+import {downloadObjectsAs} from "@/assets/utils";
 
 /**
  * A Modal as per the configuration of the study step
@@ -84,7 +103,7 @@ import {v4 as uuid} from "uuid";
  */
 export default {
   name: "StepModal",
-  components: {BasicButton, BasicModal},
+  components: { BasicButton, BasicModal, Chart },
   inject: {
     studySessionId: {
       type: Number,
@@ -120,17 +139,132 @@ export default {
   data() {
     return {
       loadingConfig: true,
-      documentText: null, // Holds the parsed content of the delta document
-      waiting: false, // Holds the status of the NLP service which is waiting for the response
+      documentText: null,
+      waiting: false,
       requests: {},
+      charts: [
+        {
+          title: "Horizontal bar chart",
+          explanation: "Horizontal bar chart",
+          input:{            
+            type: "bar",
+            data: {
+              labels: ["A", "B", "C", "D", "E", "F", "H"],
+              datasets: [
+                {
+                  label: "Frequency",
+                  data: [65, 59, 80, 81, 56, 55, 40],
+                  backgroundColor: "rgba(255, 99, 132, 0.5)",
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+                title: {
+                  display: true,
+                  text: "Frequency",
+                },
+              },
+              indexAxis: "y"
+            },
+          }
+        },
+        {
+          title: "Stacked horizontal bar chart",
+          explanation: "Stacked horizontal bar chart",
+          input:{            
+            type: "bar",
+            data: {
+              labels: ["A", "B", "C", "D", "E", "F", "H"],
+              datasets: [
+                {
+                  label: 'Dataset 1',
+                  data: [65, 59, 80, 81, 56, 55, 40],
+                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                },
+                {
+                  label: 'Dataset 2',
+                  data: [28, 48, 40, 19, 86, 27, 90],
+                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                }
+              ],
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+                title: {
+                  display: true,
+                  text: "Frequency",
+                },
+              },
+              indexAxis: "y",
+              scales: {
+                x: {
+                  stacked: true,
+                },
+                y: {
+                  stacked: true,
+                },
+              }, 
+            },
+          }
+        },
+        {
+          title: "Grouped horizontal bar chart",
+          explanation: "Grouped horizontal bar chart",
+          input:{            
+            type: "bar",
+            data: {
+              labels: ["A", "B", "C", "D", "E", "F", "H"],
+              datasets: [
+                {
+                  label: 'Dataset 1',
+                  data: [65, 59, 80, 81, 56, 55, 40],
+                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                },
+                {
+                  label: 'Dataset 2',
+                  data: [28, 48, 40, 19, 86, 27, 90],
+                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                }
+              ],
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+                title: {
+                  display: true,
+                  text: "Frequency",
+                },
+              },
+              indexAxis: "y",
+            },
+          }
+        },
+      ],
     };
   },
   computed: {
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
     },
+    studySteps() {
+      return this.studyStep.studyId !== 0
+        ? this.$store.getters["table/study_step/getByKey"]("studyId", this.studyStep.studyId)
+        : [];
+    },
     configuration() {
-      return this.studyStep && this.studyStep.configuration ? this.studyStep.configuration : null;
+      return this.studyStep?.configuration || null;
     },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -141,31 +275,108 @@ export default {
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
     },
+    placeholders(){
+      return this.studyStep?.configuration?.placeholders || null;
+    },
+    matchedPlaceholderContent() {
+      const result = [];
+      if (!this.placeholders || !this.documentText) return result;
+
+      const matches = this.matchKeys();
+
+      for (const { key, index } of matches) {
+        const placeholderArr = this.placeholders[key];
+        if (!placeholderArr || placeholderArr.length <= index) continue;
+
+        const entry = placeholderArr[index];
+
+        if (key === "text") {
+          const { stepId, dataSource } = entry;
+          const docEntry = this.documentData.find(d => d.studyStepId === stepId && d.key === dataSource);
+          if (docEntry?.value) {
+            result.push({ type: "text", value: docEntry.value });
+          }
+
+        } else if (key === "chart") {
+          const { stepId, dataSource } = entry;
+          const docEntry = this.documentData.find(d => d.studyStepId === stepId && d.key === dataSource);
+
+          if (docEntry?.value && typeof docEntry.value === "object") {
+            const baseChart = JSON.parse(JSON.stringify(this.charts[0])); // Horizontal bar chart
+            baseChart.data.title = "";
+            baseChart.data.labels = Object.keys(docEntry.value);
+            baseChart.data.datasets[0].data = Object.values(docEntry.value);
+            result.push({ type: "chart", value: baseChart });
+          }
+
+        } else if (key === "comparison") {
+          const inputs = entry.input;
+          if (Array.isArray(inputs) && inputs.length === 2) {
+            const input1 = this.documentData.find(d => d.studyStepId === inputs[0].stepId && d.key === inputs[0].dataSource);
+            const input2 = this.documentData.find(d => d.studyStepId === inputs[1].stepId && d.key === inputs[1].dataSource);
+
+            if (input1?.value && input2?.value && typeof input1.value === "object" && typeof input2.value === "object") {
+              const baseChart = JSON.parse(JSON.stringify(this.charts[1])); // Stacked horizontal bar chart
+              const labels = Object.keys(input1.value);
+              baseChart.data.title = "";
+              baseChart.data.labels = labels;
+              baseChart.data.datasets[0].data = labels.map(label => input1.value[label] || 0);
+              baseChart.data.datasets[1].data = labels.map(label => input2.value[label] || 0);
+              result.push({ type: "chart", value: baseChart });
+            }
+          }
+        }
+      }
+
+      return result;
+    },
+    specificDocumentData() {
+      return this.$store.getters["table/document_data/getByKey"]("documentId", this.studyStep?.documentId);
+    },
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
+    },
   },
   watch: {
     nlpResults: function (results) {
       for (let requestId in this.requests) {
         if (requestId in results) {
-          //TODO: Should the nlp results be sent individually or as a whole?
-          // this.$emit("response", this.nlpResults[this.requestId]);
-          this.$emit("documentDataSave", {
-            userId: this.userId,
-            documentId: this.studyStep.documentId, //TODO: Recheck which documentId to be saved
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            key: this.requests[requestId].uniqueId,
-            value: this.nlpResults[this.requestId]
-          });
+          const result = this.nlpResults[requestId];
+          const uniqueId = this.requests[requestId].uniqueId;
+
+          for (const key in result) {
+            if (result.hasOwnProperty(key)) {
+              const keyName = uniqueId + "_" + key;
+              const value = result[key];
+              
+              this.$socket.emit("documentDataSave", {
+                documentId: this.studyStep?.documentId,
+                studySessionId: this.studySessionId,
+                studyStepId: this.studyStepId,
+                key: keyName,
+                value: value,
+              });
+
+            }
+          }
+
           this.$store.commit("service/removeResults", {
             service: "NLPService",
-            requestId: requestId
+            requestId: requestId,
           });
           delete this.requests[requestId];
         }
       }
+
       if (Object.keys(this.requests).length === 0) {
         this.waiting = false;
       }
+    },
+    specificDocumentData: {
+      handler(newData) {
+        this.$emit("update:data", this.specificDocumentData);
+      },
+      deep: true,
     },
   },
   created() {
@@ -181,12 +392,12 @@ export default {
     }
     this.$socket.emit("documentGet",
       {
-        documentId: this.studyStep && this.studyStep.documentId ? this.studyStep.documentId : 0,
+        documentId: this.studyStep?.documentId ? this.studyStep.documentId : 0,
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
       },
       (response) => {
-        if (response && response.success && response.data && response.data.deltas) {
+        if (response?.success && response.data?.deltas) {
           const quill = new Quill(document.createElement("div"));
           quill.setContents(response.data.deltas);
           this.documentText = quill.root.innerHTML;
@@ -195,31 +406,16 @@ export default {
         }
       }
     );
+
   },
   mounted() {
-
-    if (this.configuration && 'fields' in this.configuration && Array.isArray(this.configuration.fields)) {
+    if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
       this.waiting = true;
-      for (let i = 0; i < this.configuration.fields.length; i++) {
-        let field = this.configuration.fields[i];
 
-        if (field.function === "nlp") {
-          let skill = field.fields.find(f => f.name === "skillName");
-          let dataSource = field.fields.find(f => f.name === "dataSource");
-          let output = field.fields.find(f => f.name === "output");
-          this.request(skill, dataSource, output, (field.type + "_" + field)); //TODO: Check if the configuration is always having the same order of fields
-          /*
-          CONFIGURATION IN THE STUDY STEP LOOKS LIKE THIS:
-          configuration: {
-          fields: [
-            {
-              type: "placeholder",
-              pattern: "/~nlp\[(\d+)\]~/g",
-              required: true,
-              function: "nlp", 
-              fields: [
-                {........
-          */
+      for (const service of this.configuration.services) {
+        if (service.type === "nlpRequest") {
+          const { skill, inputs: dataSource, name } = service;
+          this.request(skill, dataSource, ("service_" + name));
         }
       }
     }
@@ -235,50 +431,68 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    async request(skill, dataSource, output, uniqueId) {
+    async request(skill, dataSource, uniqueId) {
       const requestId = uuid();
-      this.requests[requestId] = {
-        skill: skill,
-        dataSource: dataSource,
-        output: output,
-        input: "",
-        result: "",
-        uniqueId: uniqueId
-      };
+      this.requests[requestId] = { skill, dataSource, input: "", response: "", uniqueId };
 
-      // TODO: Save the value of below directly in the this.requests[requestId]// TODO : Recheck what the dataSource holds? Ans.{v1 and v2}
-      
-      let input = Object.keys(dataSource).includes("v2") ? 
-        {v1: this.studyData[this.studyStep.previousStepId][dataSource.v1], v2: this.studyData[this.studyStepId][dataSource.v2]} : 
-          {v1: this.studyData[this.studyStepId][dataSource.v1]};
-      this.requests[requestId]["input"] = input;
-      // TODO: Should documentDataSave be done for each of these requests?
+      let input;
+      if(skill==="skill_eic"){
+        const v1Index = "v1" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v1.stepId):-1;
+        const v2Index = "v2" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v2.stepId):-1;
+        const v1Input = v1Index > -1 ? this.studyData[v1Index+1][dataSource["v1"]["dataSource"]] : "";
+        const v2Input = v2Index > -1 ? this.studyData[v2Index+1][dataSource["v2"]["dataSource"]] : "";
+        input = { v1: v1Input, v2: v2Input };
+      } else {
+        const index = this.studySteps.findIndex(step => step.id === dataSource.stepId);
+        input = index > -1 ? this.studyData[index+1][dataSource["dataSource"]] : "";
+      }
 
-      if (this.documentData["studyStepId"] === this.studyStepId && this.documentData["key"] === uniqueId) {
-        await this.$socket.emit("serviceRequest",
-          {
-            service: "NLPService",
-            data: {
-              id: requestId,
-              name: skill,
-              data: input
+      this.requests[requestId].input = input;
+
+      if (!Object.keys(this.documentData).some(key => this.documentData[key]["studySessionId"] === this.studySessionId && key.startsWith(uniqueId) && this.documentData[key]["studyStepId"] === this.studyStepId)) {
+        await this.$socket.emit("serviceRequest", {
+          service: "NLPService",
+          data: { 
+             id: requestId,
+             name: skill,
+             data: input
             }
-          }
-        );
+        }
+      );
 
         setTimeout(() => {
-          if (requestId) {
+          if (this.requests[requestId]) {
             this.eventBus.emit('toast', {
               title: "NLP Service Request",
               message: "Timeout in request for skill " + skill + " - Request failed!",
               variant: "danger"
             });
           }
-        }, this.nlpRequestTimeout);        
-      }      
-
+        }, this.nlpRequestTimeout);
+      }
     },
-  },
+    matchKeys() {
+      if (!this.placeholders || !this.documentText) return [];
+
+      const placeholderKeys = Object.keys(this.placeholders);
+      const pattern = new RegExp(`\\b(${placeholderKeys.join('|')})\\b`, 'g');
+      const matches = [...this.documentText.matchAll(pattern)];
+
+      const occurrenceCount = {};
+      return matches.map(match => {
+        const key = match[1];
+        if (!occurrenceCount[key]) occurrenceCount[key] = 0;
+        else occurrenceCount[key]++;
+        return { key, index: occurrenceCount[key] };
+      });
+    },
+    async exportStudyData() {
+      if (this.isAdmin){
+        const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_study_data';
+        downloadObjectsAs(this.studyData, filename, 'json');
+      }
+    },
+  }
 };
 </script>
 <style scoped>

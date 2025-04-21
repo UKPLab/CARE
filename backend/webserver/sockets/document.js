@@ -670,9 +670,10 @@ module.exports = class DocumentSocket extends Socket {
                             .filter(edit => edit.draft &&
                                 (edit.studySessionId === data['studySessionId'] || edit.studySessionId === null)))),
                         firstVersion: delta.compose(dbToDelta(edits
-                            .filter(edit => edit.draft &&
-                                (edit.studySessionId === null || edit.studySessionId === data['studySessionId']) &&
-                                (edit.studyStepId === null || edit.studyStepId !== data['studyStepId']))))
+                            .filter(edit =>
+                                (edit.studySessionId === data['studySessionId'] && 
+                                    (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
+                                ),
                     };
 
                 }
@@ -735,14 +736,16 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Save document data
+     * Save additional document data for a particular document/study_session/study_step like the nlpResults, links etc., to the document_data table.
+     * 
      * @param {*} data {userId: number, documentId: number, studySessionId: number, studyStepId: number, key: string, value: any}
      * @param {*} options {transaction: Transaction}
-     * @returns {Promise<void>}
+     * @returns {Promise<void>} - A promise that resolves when the data has been saved.
      */
     async saveData(data, options) {
-        const documentData = await this.models['document_data'].add({
-            userId: data.userId,
+             
+        let documentData = await this.models['document_data'].add({
+            userId: this.userId,
             documentId: data.documentId,
             studySessionId: data.studySessionId,
             studyStepId: data.studyStepId,
@@ -750,20 +753,6 @@ module.exports = class DocumentSocket extends Socket {
             value: data.value
         }, {transaction: options.transaction});
 
-        // TODO: Get this checked
-        let skillDataOps = new Delta({[data.key]: dbToDelta(data.value)});
-        let skillData = {
-            documentId: data.documentId,
-            studySessionId: data.studySessionId,
-            studyStepId: data.studyStepId,
-            ops: skillDataOps
-        };
-
-        await this.editDocument(skillData);
-
-        options.transaction.afterCommit(() => {
-            this.emit("document_dataRefresh", documentData);
-        });
         return documentData;
     }
 

@@ -113,7 +113,6 @@ module.exports = (sequelize, DataTypes) => {
                     ...edit,
                     id: undefined,
                     documentId: destStep.documentId,
-                    studyStepId: destStep.id,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }));
