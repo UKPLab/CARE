@@ -108,7 +108,6 @@ export default {
   emits: ["update:data"],
   data() {
     return {
-      content: "",
       documentHash: this.$route.params.documentHash,
       deltaBuffer: [],
       deltaDataBuffer: [],
@@ -117,79 +116,6 @@ export default {
       data: {},
       firstVersion: null,
     };
-  },
-  created() {
-    this.documentHash = this.$route.params.documentHash;
-  },
-  mounted() {
-    const editorId = `editor-container-${this.studyStepId}`;
-    const editorContainer = document.getElementById(editorId);
-
-    if (editorContainer) {
-      this.editor = new Editor(editorContainer, this.editorOptions);
-
-      if (this.toolbarVisible) {
-        const toolbarButtons = document.querySelectorAll(`#${editorId} .ql-toolbar button`);
-        toolbarButtons.forEach(button => {
-          const format = button.className.match(/ql-(\w+)/);
-          if (format) {
-            button.setAttribute('title', format[1]);
-          }
-        });
-      }
-
-      this.editor.getEditor().enable(!this.readOnly);
-      this.editor.getEditor().on('text-change', this.handleTextChange);
-      this.eventBus.on('editorSelectEdit', (data) => {
-        if (data.documentId === this.documentId) {
-          this.setEditInEditor(data.editId);
-        }
-      });
-      this.eventBus.on('editorInsertText', (data) => {
-        if (data.documentId === this.documentId) {
-          this.insertTextAtCursor(data.text);
-        }
-      });
-    }
-
-    this.$socket.emit("documentGet",
-      {
-        documentId: this.documentId,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId
-      },
-      (res) => {
-        if (res.success) {
-          this.initializeEditorWithContent(res['data']['deltas']);
-
-          let quill = new Quill(document.createElement('div'));
-          quill.setContents(res['data']['firstVersion']);
-          this.firstVersion = quill.root.innerHTML;
-          let currentVersion = this.editor.getEditor().root.innerHTML;
-
-          let studyData = {
-            firstVersion: this.firstVersion,
-            currentVersion: currentVersion,
-          };
-          this.$emit("update:data", studyData);
-        } else {
-          this.handleDocumentError(res.error);
-        }
-      }
-    );
-
-    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
-  },
-  sockets: {
-    connect() {
-      this.$socket.emit("documentOpen", {documentId: this.documentId});
-    },
-    documentError(error) {
-      this.handleDocumentError(error);
-    }
-  },
-  unmounted() {
-    this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId});
   },
   computed: {
     user() {
@@ -297,6 +223,90 @@ export default {
       }
     },
   },
+  created() {
+    this.documentHash = this.$route.params.documentHash;
+  },
+  mounted() {
+    const editorId = `editor-container-${this.studyStepId}`;
+    const editorContainer = document.getElementById(editorId);
+
+    if (editorContainer) {
+      this.editor = new Editor(editorContainer, this.editorOptions);
+
+      if (this.toolbarVisible) {
+        const toolbarButtons = document.querySelectorAll(`#${editorId} .ql-toolbar button`);
+        toolbarButtons.forEach(button => {
+          const format = button.className.match(/ql-(\w+)/);
+          if (format) {
+            button.setAttribute('title', format[1]);
+          }
+        });
+      }
+
+      this.editor.getEditor().enable(!this.readOnly);
+      this.editor.getEditor().on('text-change', this.handleTextChange);
+      // Store event handler references for cleanup
+      this.selectEditHandler = (data) => {
+        if (data.documentId === this.documentId) {
+          this.setEditInEditor(data.editId);
+        }
+      };
+      this.eventBus.on("editorSelectEdit", this.selectEditHandler);
+      
+      this.insertTextHandler = (data) => {
+        if (data.documentId === this.documentId) {
+          this.insertTextAtCursor(data.text);
+        }
+      };
+      this.eventBus.on("editorInsertText", this.insertTextHandler);
+
+      setTimeout(() => {
+        this.emitContentForPlaceholders();
+      }, 500);
+    }
+
+    this.$socket.emit("documentGet",
+      {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId
+      },
+      (res) => {
+        if (res.success) {
+          this.initializeEditorWithContent(res['data']['deltas']);
+
+          let quill = new Quill(document.createElement('div'));
+          quill.setContents(res['data']['firstVersion']);
+          this.firstVersion = quill.root.innerHTML;
+          let currentVersion = this.editor.getEditor().root.innerHTML;
+
+          let studyData = {
+            firstVersion: this.firstVersion,
+            currentVersion: currentVersion,
+          };
+          this.$emit("update:data", studyData);
+        } else {
+          this.handleDocumentError(res.error);
+        }
+      }
+    );
+
+    this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
+  },
+  sockets: {
+    connect() {
+      this.$socket.emit("documentOpen", {documentId: this.documentId});
+    },
+    documentError(error) {
+      this.handleDocumentError(error);
+    }
+  },
+  unmounted() {
+    this.eventBus.off("editorSelectEdit", this.selectEditHandler);
+    this.eventBus.off("editorInsertText", this.insertTextHandler);
+    
+    this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId});
+  },
   methods: {
     clearEditor() {
       if (this.editor) {
@@ -322,6 +332,8 @@ export default {
           this.deltaBuffer.push(placeholderDelta);
           this.debouncedProcessDelta();
           quill.setSelection(range.index + text.length);
+
+          this.emitContentForPlaceholders();
         } else {
           this.eventBus.emit("toast", {
             title: "No Cursor Position",
@@ -363,10 +375,21 @@ export default {
         }
       }
     },
+    emitContentForPlaceholders() {
+      if (this.editor) {
+        const content = this.editor.getEditor().root.innerHTML;
+        this.eventBus.emit("editorContentUpdated", {
+          documentId: this.documentId,
+          content: content,
+        });
+      }
+    },
     handleTextChange(delta, oldContents, source) {
       if (source === "user") {
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
+        
+        this.emitContentForPlaceholders();
       }
     },
     processDelta() {
@@ -408,13 +431,13 @@ export default {
       }
     },
     async initializeEditorWithContent(deltas) {
-      this.content = deltas;
-
       if (this.editor) {
         this.editor.getEditor().setContents(deltas);
       }
       this.documentLoaded = true;
       this.applyAdditionalEdits();
+
+      this.emitContentForPlaceholders();
     },
     applyAdditionalEdits() {
       if (this.unappliedEdits.length > 0) {

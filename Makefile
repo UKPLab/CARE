@@ -33,12 +33,7 @@ help:
 	@echo "make modules          				Install npm packages in all utils/modules subdirectories"
 
 .PHONY: doc
-doc: doc_asyncapi doc_sphinx
-
-.PHONY: doc_asyncapi
-doc_asyncapi:
-	@echo "Building asyncapi documentation"
-	@docker run --rm -v ${CURDIR}/docs/api.yml:/app/api.yml -v ${CURDIR}/docs/api:/app/output asyncapi/generator:1.14.0 --force-write -o ./output api.yml @asyncapi/html-template
+doc: doc_sphinx
 
 .PHONY: doc_sphinx
 doc_sphinx:
