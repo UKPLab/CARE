@@ -131,14 +131,6 @@ module.exports = class StudySessionSocket extends Socket {
         this.createSocket("studySessionSubscribe", this.subscribeToStudySession, {}, false)
         this.createSocket("studySessionUnsubscribe", this.unsubscribeFromStudySession, {}, false);
 
-        this.socket.on("studySessionGetAll", async (data) => {
-            try {
-                await this.sendSessions((data.userId) ? data.userId : null);
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
-
         this.createSocket("studySessionStart", this.startStudySession, {}, true);
 
         this.socket.on("studySessionGetByHash", async (data, callback) => {
