@@ -473,50 +473,39 @@ module.exports = class DocumentSocket extends Socket {
      * and if so, it applies the edits to the document and sends the updated document to the client.
      *
      * @param {object} data {documentId: number, "ops" array consisting of [offset: number, operationType: number, span: number, text: string, attributes: Object]}
+     * @param {object} options - the options for the transaction
+     * @return {Promise<void>}
      */
-    async editDocument(data) {
-        const transaction = await database.sequelize.transaction();
-        try {
-            const {documentId, studySessionId, studyStepId, ops} = data;
-            let appliedEdits = [];
+    async editDocument(data, options) {
+        const {documentId, studySessionId, studyStepId, ops} = data;
+        let appliedEdits = [];
 
-            await ops.reduce(async (promise, op) => {
-                await promise;
-                const entryData = {
-                    userId: this.userId,
-                    draft: true,
-                    documentId,
-                    studySessionId: studySessionId || null,
-                    studyStepId: studyStepId || null,
-                    ...op
-                };
+        await ops.reduce(async (promise, op) => {
+            await promise;
+            const entryData = {
+                userId: this.userId,
+                draft: true,
+                documentId,
+                studySessionId: studySessionId || null,
+                studyStepId: studyStepId || null,
+                ...op
+            };
 
-                const savedEdit = await this.models['document_edit'].add(entryData, transaction);
+            const savedEdit = await this.models['document_edit'].add(entryData);
 
-                appliedEdits.push({
-                    ...savedEdit,
-                    applied: true
-                });
-            }, Promise.resolve());
-
-            await transaction.commit();
-
-            // Check if studySessionId is not null or zero
-            if (studySessionId !== null) {
-                this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
-                return;
-            }
-
-            this.emit("document_editRefresh", appliedEdits);
-        } catch (error) {
-            await transaction.rollback();
-            this.logger.error("Error editing document: " + error.message);
-            this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
-            this.socket.emit("documentEditError", {
-                success: false,
-                message: "Failed to edit document due to server error"
+            appliedEdits.push({
+                ...savedEdit,
+                applied: true
             });
+        }, Promise.resolve());
+
+        // Check if studySessionId is not null or zero
+        if (studySessionId !== null) {
+            this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+            return;
         }
+
+        this.emit("document_editRefresh", appliedEdits);
     }
 
     /**
@@ -749,6 +738,7 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
         
+        /*
         this.socket.on("documentEdit", async (data) => {
             try {
                 await this.editDocument(data);
@@ -775,9 +765,10 @@ module.exports = class DocumentSocket extends Socket {
                 });
             }
         });
+        */
 
         this.createSocket("documentEdit", this.editDocument, {}, true);
-        this.createSocket("documentSubscribe", this.socket.join("doc:" + data.documentId), {}, false);
+        this.createSocket("documentSubscribe", this.socket.join("doc:" + this.documentId), {}, false);
         this.createSocket("documentGetDeltas", this.sendDocumentDeltas, {}, false);
         this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);

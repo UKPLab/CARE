@@ -338,10 +338,13 @@ export default {
       }
     },
     processDelta() {
+      const quill = this.editor.getEditor();
       if (this.deltaBuffer.length > 0) {
         const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
         const dbOps = deltaToDb(combinedDelta.ops);
         if (dbOps.length > 0) {
+          const backup = quill.getContents();
+
           this.$socket.emit("documentEdit", {
             documentId: this.documentId,
             studySessionId: this.studySessionId || null,
@@ -349,6 +352,7 @@ export default {
             ops: dbOps
           }, (res) => {
             if (!res.success) {
+              quill.setContents(backup);
               this.eventBus.emit("toast", {
                 title: "Previous edit failed; try again",
                 message: res.message,
@@ -357,8 +361,7 @@ export default {
             }
           });
         }         
-        // Error throw if there is an error, try again error, reset the previous state 
-
+       
         this.deltaBuffer = [];
       }
     },
