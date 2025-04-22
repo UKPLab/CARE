@@ -114,16 +114,21 @@ module.exports = class StudySessionSocket extends Socket {
         this.socket.leave("study:" + data.studyId);
     }
 
-    async init() {
-        this.socket.on("studySessionSubscribe", async (data) => {
-            try {
-                this.socket.join("study:" + data.studyId);
-                await this.sendSessionsByStudyId(data.studyId);
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
+    /**
+     * Subscribe to a study session
+     *
+     * @param {object} data
+     * @param {number} data.studyId - A study id
+     * @param {object} options - Transaction options
+     * @returns {Promise<void>}
+     */
+    async subscribeToStudySession(data, options) {
+        this.socket.join("study:" + data.studyId);
+        await this.sendSessionsByStudyId(data.studyId);
+    }
 
+    async init() {
+        this.createSocket("studySessionSubscribe", this.subscribeToStudySession, {}, false)
         this.createSocket("studySessionUnsubscribe", this.unsubscribeFromStudySession, {}, false);
 
         this.socket.on("studySessionGet", async (data) => {
