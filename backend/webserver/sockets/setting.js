@@ -22,20 +22,18 @@ module.exports = class SettingSocket extends Socket {
         }
     }
 
-    init() {
-
-        this.socket.on("settingGetData", async (data) => {
-            if (await this.isAdmin()) {
-                this.socket.emit("settingData", await this.models['setting'].getAll(true));
-                try {
-                    this.socket.emit("settingData", await this.models['setting'].getAll(true));
-                } catch (err) {
-                    this.logger.error(err);
-                }
-            }
-        });
-
-        this.createSocket("settingSave", this.saveSettings, {}, false);
+    /**
+     * Get settings
+     * @returns {Promise<void>}
+     */
+    async getSettings() {
+        if (await this.isAdmin()) {
+            this.socket.emit("settingData", await this.models['setting'].getAll(true));
+        }
     }
 
+    init() {
+        this.createSocket("settingGetData", this.getSettings, {}, false)
+        this.createSocket("settingSave", this.saveSettings, {}, false);
+    }
 }
