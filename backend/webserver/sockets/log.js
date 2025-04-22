@@ -14,7 +14,7 @@ module.exports = class LoggerSocket extends Socket {
      * @param data
      * @returns {void}
      */
-    async log(data) {
+    async log(data, options) {
         if (process.env.LOGGING_ALLOW_FRONTEND === 'true') {
             if (data.meta) {
                 this.logger.log(data.level, data.message, data.meta);

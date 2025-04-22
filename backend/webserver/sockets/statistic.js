@@ -81,23 +81,31 @@ module.exports = class StatisticSocket extends Socket {
         }
     }
 
+    /**
+     * Get a user's statistics
+     *
+     * @param {Object} data - The data object containing the userId
+     * @param {Number} data.userId - The user's ID
+     * @param {Object} options - not used
+     *
+     * @returns {Promise<void>} - The statistics data
+     */
+    async getStatsByUser(data, options) {
+        try {
+            await this.sendStatsByUser(data.userId);
+        } catch (e) {
+            this.socket.emit("statsData", {
+                success: false,
+                userId: data.userId,
+                message: "Failed to retrieve stats for users"
+            });
+            this.logger.error("Can't load statistics due to error " + e.toString());
+        }
+    }
 
     init() {
         this.createSocket("statsGet", this.getStats, {}, false);
         this.createSocket("stats", this.addStats, {}, true);
-
-        this.socket.on("statsGetByUser", async (data) => {
-            try {
-                await this.sendStatsByUser(data.userId);
-            } catch (e) {
-                this.socket.emit("statsData", {
-                    success: false,
-                    userId: data.userId,
-                    message: "Failed to retrieve stats for users"
-                });
-                this.logger.error("Can't load statistics due to error " + e.toString());
-            }
-
-        });
+        this.createSocket("statsGetByUser", this.getStatsByUser, {}, true);
     }
 }
