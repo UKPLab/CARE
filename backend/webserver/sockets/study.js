@@ -114,37 +114,6 @@ module.exports = class StudySocket extends Socket {
     }
 
     /**
-     * Publish a study
-     * @param {object} data
-     * @return {Promise<void>}
-     */
-    async publishStudy(data) {
-        const doc = await this.models['document'].getById(data.documentId);
-        if (this.checkUserAccess(doc.userId)) {
-            let study;
-            if (data.id) {
-                study = await this.models['study'].updateById(data.id, data);
-                this.emit("studyRefresh", study);
-            } else {
-                study = await this.addStudy(data);
-            }
-
-            if (study) {
-                this.socket.emit("studyPublished", {success: true, studyHash: study.hash});
-            } else {
-                this.socket.emit("studyPublished", {
-                    success: false, message: "Error publishing study."
-                });
-            }
-        } else {
-            this.logger.error("No permission to publish study: " + data.documentId);
-            this.socket.emit("studyPublished", {
-                success: false, message: "No permission to publish study"
-            });
-        }
-    }
-
-    /**
      * Save the current study as a template (create a new study with template: true)
      * @param {object} data
      * @param {number} data.id - the id of the study to save as template
@@ -229,18 +198,6 @@ module.exports = class StudySocket extends Socket {
                 await this.sendStudyByHash(data.studyHash);
             } catch (err) {
                 this.logger.error(err);
-            }
-        });
-
-        this.socket.on("studyPublish", async (data) => {
-            try {
-                await this.publishStudy(data)
-            } catch (e) {
-                this.logger.error(e);
-                this.socket.emit("studyPublished", {
-                    success: false, message: "Error while publishing study"
-                });
-
             }
         });
 
