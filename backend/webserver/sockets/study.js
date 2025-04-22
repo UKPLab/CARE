@@ -29,27 +29,6 @@ module.exports = class StudySocket extends Socket {
     }
 
     /**
-     * Send all studies to the client
-     * @param {number|null} userId if null, all studies will be sent (admin only)
-     * @returns {Promise<*>}
-     */
-    async sendStudies(userId = null) {
-        try {
-            if (await this.isAdmin()) {
-                if (userId) {
-                    this.emit("studyRefresh", await this.models['study'].getAllByKey('userId', userId));
-                } else {
-                    this.emit("studyRefresh", await this.models['study'].getAll());
-                }
-            } else {
-                this.emit("studyRefresh", await this.models['study'].getAllByKey('userId', this.userId));
-            }
-        } catch (err) {
-            this.logger.error(err);
-        }
-    }
-
-    /**
      * Send a study by id
      * @param {number} studyId
      * @returns {Promise<void>}
@@ -132,14 +111,6 @@ module.exports = class StudySocket extends Socket {
         this.socket.on("studyGet", async (data) => {
             try {
                 await this.sendStudy(data.studyId);
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
-
-        this.socket.on("studyGetAll", async (data) => {
-            try {
-                await this.sendStudies((data && data.userId) ? data.userId : null);
             } catch (err) {
                 this.logger.error(err);
             }

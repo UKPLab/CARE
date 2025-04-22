@@ -30,20 +30,21 @@ describe("Test Websockets - Studies", () => {
     //     });
     // });
 
-    test("Add Session to study", (done) => {
-        clientSocket.on("study_sessionRefresh", (data) => {
-            expect(data.length).toBeGreaterThan(0);
-            done();
-        })
-        clientSocket.on("studyPublished", (data) => {
-            expect(data).toHaveProperty("success", true);
-            clientSocket.emit("studyGetAll")
-        })
-        clientSocket.emit("studyPublish", {
-            name: "Test Study 2",
-            documentId: 1,
-        });
-    })
+    // // NOTE: commented out because 'studyGetAll' was not used anywhere else, and got removed
+    // test("Add Session to study", (done) => {
+    //     clientSocket.on("study_sessionRefresh", (data) => {
+    //         expect(data.length).toBeGreaterThan(0);
+    //         done();
+    //     })
+    //     clientSocket.on("studyPublished", (data) => {
+    //         expect(data).toHaveProperty("success", true);
+    //         clientSocket.emit("studyGetAll")
+    //     })
+    //     clientSocket.emit("studyPublish", {
+    //         name: "Test Study 2",
+    //         documentId: 1,
+    //     });
+    // })
 
     afterEach(() => {
         if (clientSocket.connected) {
