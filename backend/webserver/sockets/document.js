@@ -674,7 +674,7 @@ module.exports = class DocumentSocket extends Socket {
             options: data.options,
             feedback: data.feedback,
         });
-    }
+    }    
 
     init() {
 
@@ -748,27 +748,7 @@ module.exports = class DocumentSocket extends Socket {
                 this.sendToast("Error while publishing document", "Error", "danger");
             }
         });
-
-        this.socket.on("documentSubscribe", (data) => {
-            try {
-                this.socket.join("doc:" + data.documentId);
-                this.logger.debug("Subscribe document " + data.documentId);
-            } catch (e) {
-                this.logger.error(e);
-                this.sendToast("Error subscribe document", "Error", "danger");
-            }
-        });
-
-        this.socket.on("documentUnsubscribe", (data) => {
-            try {
-                this.socket.leave("doc:" + data.documentId);
-                this.logger.debug("Unsubscribe document " + data.documentId);
-            } catch (e) {
-                this.logger.error(e);
-                this.sendToast("Error unsubscribe document", "Error", "danger");
-            }
-        });
-
+        
         this.socket.on("documentEdit", async (data) => {
             try {
                 await this.editDocument(data);
@@ -796,20 +776,9 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        /*
-        this.socket.on("documentGetDeltas", async (data) => {
-            try {
-                await this.sendDocumentDeltas(data.documentId);
-            } catch (e) {
-                this.logger.error("Error handling sendDocumentDeltas request: ", e);
-                this.sendToast("Error handling sendDocumentDeltas request!", "Error", "danger");
-            }
-        });
-        */
-
+        this.createSocket("documentEdit", this.editDocument, {}, true);
+        this.createSocket("documentSubscribe", this.socket.join("doc:" + data.documentId), {}, false);
         this.createSocket("documentGetDeltas", this.sendDocumentDeltas, {}, false);
-
-
         this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);
         this.createSocket("documentCreate", this.createDocument, {}, true);
