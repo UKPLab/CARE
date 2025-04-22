@@ -80,9 +80,15 @@ export default {
       return this.$store.getters["table/study_session/get"](this.studySessionId);
     },
     study() {
+      if (!this.studySession) {
+        return null;
+      }
       return this.$store.getters["table/study/get"](this.studySession.studyId);
     },
     anonymize() {
+      if (!this.study) {
+        return false;
+      }
       return this.study.anonymize;
     }
 

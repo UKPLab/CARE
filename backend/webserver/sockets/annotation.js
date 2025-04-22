@@ -75,7 +75,13 @@ module.exports = class AnnotationSocket extends Socket {
      * @param {Object} options containing transactions
      * @param options.transaction the DB transaction
      * @param {number} data.annotationId the id of the annotation to update
+     * @param {number} data.documentId the id of the document to update
+     * @param {number} data.studySessionId the id of the study session
+     * @param {number} data.studyStepId the id of the study step
+     * @param {number} data.tagId the id of the tag
+     * @param {string} data.selectors the selectors of the annotation
      * @param {boolean} data.deleted indicates if the data is deleted
+     * @param {boolean} data.anonymous indicates if the data is anonymous
      * @borrows ?!?!
      * @returns {Promise<void>}
      */
@@ -83,16 +89,12 @@ module.exports = class AnnotationSocket extends Socket {
         if (data.annotationId && data.annotationId !== 0) { //modify
             const origAnnotation = await this.models['annotation'].getById(data.annotationId, {transaction: options.transaction});
 
-            if (!this.checkUserAccess(origAnnotation.userId)) {
+            if (!(await this.checkUserAccess(origAnnotation.userId))) {
                 throw Error("You have no permission to change this annotation");
             }
 
             data.draft = false;
             const newAnno = await this.models['annotation'].updateById(data.annotationId, data, {transaction: options.transaction});
-
-            if (data.deleted) {
-                await this.getSocket("CommentSocket").deleteChildCommentsByAnnotation(newAnno, {transaction: options.transaction});
-            }
             this.emitDoc(newAnno.documentId, "annotationRefresh", newAnno); //fixme msg sent twice due to collab, revise
         } else { //create new
             //todo document the data attributes in the doc string; possibly use borrows
@@ -117,7 +119,7 @@ module.exports = class AnnotationSocket extends Socket {
                 anonymous: annotation.anonymous !== undefined ? data.anonymous : false,
             }, {transaction: options.transaction});
 
-            this.emitDoc(newAnno.documentId, "annotationRefresh", newAnno); //fixme msg sent twice due to collab, revise
+            this.emitDoc(annotation.documentId, "annotationRefresh", annotation); //fixme msg sent twice due to collab, revise
         }
     }
 
@@ -154,11 +156,8 @@ module.exports = class AnnotationSocket extends Socket {
 
     init() {
         this.createSocket("annotationGet", this.sendAnnotation, {}, false);
-
         this.createSocket("annotationUpdate", this.updateAnnotation, {}, true);
-
         this.createSocket("annotationGetByDocument", this.getAnnotationsByDoc, {}, false);
-
         this.createSocket("annotationExportByDocument", this.exportAnnotationsByDocument, {}, false);
     }
 

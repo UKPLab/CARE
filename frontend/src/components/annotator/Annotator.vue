@@ -450,6 +450,8 @@ export default {
       return await this.$refs.sidebar.leave();
     },
     downloadAnnotations(outputType) {
+
+
       this.$refs.export.requestExport([this.documentId], outputType, true);
     },
     onCopy() {
