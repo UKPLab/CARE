@@ -12,33 +12,6 @@ module.exports = class StudySessionSocket extends Socket {
 
     /**
      * Send all study sessions to the client
-     * @param {number} userId
-     * @returns {Promise<void>}
-     */
-    async sendSessions(userId = null) {
-        if (await this.isAdmin()) {
-            if (userId) {
-                const studies = await this.models['study'].getAllByKey('userId', userId);
-                const sessionsPerStudy = await Promise.all(studies.map(async s => await this.models['study_session'].getAllByKey("studyId", s.id)))
-                this.emit("study_sessionRefresh", sessionsPerStudy.flat(1));
-            } else {
-                this.emit("study_sessionRefresh", await this.models['study_session'].getAll());
-            }
-        } else {
-            const userStudySessions = await this.models["study_session"].getAllByKey("userId", this.userId);
-            const studyIds = [...new Set(userStudySessions.map(s => s.studyId))];
-
-            // get studies (to verify they exist still)
-            let studies = await Promise.all(studyIds.map(async sid => await this.models["study"].getById(sid)));
-            studies = studies.filter(s => s !== null && s !== undefined)
-
-            const sessionsPerStudy = studies.map(study => userStudySessions.filter(session => session.studyId === study.id));
-            this.emit("study_sessionRefresh", sessionsPerStudy.flat(1));
-        }
-    }
-
-    /**
-     * Send all study sessions to the client
      *
      * @param studyId
      * @return {Promise<void>}
@@ -49,32 +22,6 @@ module.exports = class StudySessionSocket extends Socket {
             this.emit("study_sessionRefresh", await this.models['study_session'].getAllByKey("studyId", studyId));
         } else {
             this.sendToast("You are not allowed to see this study", "Error", "Danger");
-        }
-    }
-
-    /**
-     * Send a study session by hash
-     * @param {string} studySessionHash
-     * @returns {Promise<void>}
-     */
-    async sendSessionGetByHash(studySessionHash) {
-        const session = await this.models['study_session'].getByHash(studySessionHash);
-        if (session) {
-            const study = await this.models['study'].getById(session.studyId);
-            //CHeck User Access prüfen
-            //Ändern: Returnen ob Zugriff oder nicht
-            if (await this.checkUserAccess(session.userId) || await this.checkUserAccess(study.userId)) {
-                this.emit("studyRefresh", study);
-                this.emit("study_sessionRefresh", session);
-            } else {
-                this.socket.emit("studySessionError", {
-                    studySessionHash: studySessionHash, message: "No access rights"
-                });
-            }
-        } else {
-            this.socket.emit("studySessionError", {
-                studySessionHash: studySessionHash, message: "Not found"
-            });
         }
     }
 
