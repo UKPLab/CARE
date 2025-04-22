@@ -14,37 +14,6 @@ const {inject} = require("../../utils/generic");
 module.exports = class StudySocket extends Socket {
 
     /**
-     * Add a new study
-     * @param study
-     * @returns {Promise<void>}
-     */
-    async addStudy(study) {
-        study.userId = this.userId;
-        if (this.getSocket("DocumentSocket")) {
-            this.getSocket("DocumentSocket").saveDocument(study.documentId);
-        }
-        const newStudy = await this.models['study'].add(study);
-        this.emit("studyRefresh", newStudy);
-        return newStudy;
-    }
-
-    /**
-     * Send a study by id
-     * @param {number} studyId
-     * @returns {Promise<void>}
-     */
-    async sendStudy(studyId) {
-        const study = await this.models['study'].getById(studyId);
-        if (study) {
-            this.emit("studyRefresh", study);
-        } else {
-            this.socket.emit("studyError", {
-                studyHash: data.studyHash, message: "Not found!"
-            });
-        }
-    }
-
-    /**
      * Save the current study as a template (create a new study with template: true)
      * @param {object} data
      * @param {number} data.id - the id of the study to save as template
@@ -107,15 +76,6 @@ module.exports = class StudySocket extends Socket {
     }
 
     async init() {
-
-        this.socket.on("studyGet", async (data) => {
-            try {
-                await this.sendStudy(data.studyId);
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
-
         this.createSocket("studySaveAsTemplate", this.saveStudyAsTemplate, {}, true);
         this.createSocket("studyCloseBulk", this.closeBulk, {}, false);
 
