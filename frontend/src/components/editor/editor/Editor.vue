@@ -347,8 +347,17 @@ export default {
             studySessionId: this.studySessionId || null,
             studyStepId: this.studyStepId || null,
             ops: dbOps
+          }, (res) => {
+            if (!res.success) {
+              this.eventBus.emit("toast", {
+                title: "Previous edit failed; try again",
+                message: res.message,
+                variant: "danger",
+              });
+            }
           });
-        }
+        }         
+        // Error throw if there is an error, try again error, reset the previous state 
 
         this.deltaBuffer = [];
       }

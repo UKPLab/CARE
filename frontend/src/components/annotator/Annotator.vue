@@ -435,7 +435,15 @@ export default {
       });
 
       // Join Room for document updates
-      this.$socket.emit("documentSubscribe", {documentId: this.documentId});
+      this.$socket.emit("documentSubscribe", {documentId: this.documentId}, (res) => {
+            if (!res.success) {
+              this.eventBus.emit("toast", {
+                title: "Document subscribe error",
+                message: res.message,
+                variant: "danger",
+              });
+            }
+          });
 
       // check for available nlp support (for now hard-coded sentiment analysis)
       if (this.nlpEnabled) {
