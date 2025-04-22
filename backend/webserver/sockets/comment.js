@@ -46,58 +46,19 @@ module.exports = class CommentSocket extends Socket {
      * @return {Promise<void>}
      */
     async updateComment(data, options) {
-        const origComment = await this.models['comment'].getById(data.commentId);
+        const origComment = await this.models['comment'].getById(data.commentId, {transaction: options.transaction});
 
         if (origComment.userId === await this.models['user'].getUserIdByName("Bot")) {
-            const parentComment = await this.models['comment'].getById(origComment.parentCommentId);
-            if (!this.checkUserAccess(parentComment.userId)) {
+            const parentComment = await this.models['comment'].getById(origComment.parentCommentId, {transaction: options.transaction});
+            if (!(await this.checkUserAccess(parentComment.userId))) {
                 throw Error("You are not allowed to edit this comment.");
             }
-        } else if (!this.checkUserAccess(origComment.userId)) {
+        } else if (!(await this.checkUserAccess(origComment.userId))) {
             throw Error("You are not allowed to edit this comment.");
         }
 
-        if (comment.deleted) {
-            await this.deleteChildComments(data, {transaction:options.transaction});
-        }
-
-        const newComment = await this.models['comment'].updateById(data.commentId, Object.assign(data.comment, {draft: false}), {transaction: options.transaction});
+        const newComment = await this.models['comment'].updateById(data.commentId, Object.assign(data, {draft: false}), {transaction: options.transaction});
         this.emitDoc(newComment.documentId, "commentRefresh", newComment);
-    }
-
-    /**
-     * Delete all child comments
-     * @param {Object} data the input to the function
-     * @param {number} data.commentId the id of the parent comment to be deleted
-     * @param {Object} options containing the current DB transaction
-     * @return {Promise<void>}
-     */
-    async deleteChildComments(data, options) {
-        const comments = await this.models["comment"].getAllByKey("parentCommentId", data.commentId);
-        await Promise.all(comments
-            .filter(c => this.checkUserAccess(c.userId))
-            .map(async comment => {
-                await this.updateComment(comment.id, Object.assign(comment, {deleted: true}, {transaction:options.transaction}));
-            }));
-    }
-
-    /**
-     * Delete all child comments of an annotation
-     * Note: Used in AnnotationSocket
-     * @param {Object} data contains the inputs
-     * @param {number} data.annotationId the annotation id whose comments should be deleted
-     * @param {Object} options contains transaction object
-     * @return {Promise<void>}
-     */
-    async deleteChildCommentsByAnnotation(data, options) {
-        try {
-            const comment = await this.models['comment'].getByKey("annotationId", data.annotationId);
-
-            //todo
-            await this.updateComment(comment.id, Object.assign(comment, {deleted: true}));
-        } catch (e) {
-            this.logger.info("Error during deletion of comments: " + e);
-        }
     }
 
     /**
@@ -116,7 +77,7 @@ module.exports = class CommentSocket extends Socket {
                     data.userId = await this.models['user'].getUserIdByName("Bot");
                     data.draft = false;
                 }
-            } else if (!this.checkUserAccess(data.userId)) {
+            } else if (!(await this.checkUserAccess(data.userId))) {
                 throw Error("You are not allowed to add a comment.");
             }
         } else {
@@ -158,14 +119,14 @@ module.exports = class CommentSocket extends Socket {
      * Add or update a comment if it has already existed
      * @param {object} data - The input data from the frontend
      * @param {number} data.commentId - The id of the comment
-     * @param {object} options - not used
+     * @param {object} options - holds the transaction
      * @return {Promise<void>}
      */
     async addOrUpdateComment(data, options) {
-        if(data.commentId) {
-            await this.updateComment(data.commentId, data);
+        if (data.commentId) {
+            await this.updateComment(data, options);
         } else {
-            await this.addComment(data);
+            await this.addComment(data, options);
         }
     }
 
@@ -181,29 +142,30 @@ module.exports = class CommentSocket extends Socket {
         this.emit("commentRefresh", comments);
     }
 
-    init() {
+    /**
+     * Export comments by document
+     * @param {object} data
+     * @param {number} data.documentId - The id of the document
+     * @param options - not used
+     * @returns {Promise<void>}
+     */
+    async exportByDocument(data, options) {
+        const comments = await this.updateCreatorName(await this.models['comment'].getAllByKey('documentId', data.documentId));
 
-        this.createSocket("commentGet", this.sendComment, {}, false);
-        this.createSocket("commentUpdate", this.addOrUpdateComment, {}, false);
-        this.createSocket("commentGetByDocument", this.getCommentsByDocument, {}, false);
-
-        // TODO: What to do if the error will be thrown out using another socket event? refactor
-        this.socket.on("commentExportByDocument", async (data) => {
-            try {
-                const comments = await this.updateCreatorName(await this.models['comment'].getAllByKey('documentId', data.documentId));
-
-                this.socket.emit("commentExport", {
-                    "success": true,
-                    "documentId": data.documentId,
-                    "objs": await Promise.all(comments.map(async (c) => await this.commentFormat(c)))
-                });
-
-            } catch (e) {
-                this.logger.info("Error during exporting of comments: " + e);
-                this.sendToast("Internal Server Error: Could not export comments by document", "Internal server error", "danger");
-                this.socket.emit("commentExport", {"success": false, "documentId": data.documentId});
-            }
+        //TODO
+        this.socket.emit("commentExport", {
+            "success": true,
+            "documentId": data.documentId,
+            "objs": await Promise.all(comments.map(async (c) => await this.commentFormat(c)))
         });
+
+    }
+
+    init() {
+        this.createSocket("commentGet", this.sendComment, {}, false);
+        this.createSocket("commentUpdate", this.addOrUpdateComment, {}, true);
+        this.createSocket("commentGetByDocument", this.getCommentsByDocument, {}, false);
+        this.createSocket("commentExportByDocument", this.exportByDocument, {}, false);
     }
 
 }
