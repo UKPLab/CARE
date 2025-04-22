@@ -50,54 +50,6 @@ module.exports = class StudySocket extends Socket {
     }
 
     /**
-     * Send a study by hash
-     * @param {string} studyHash
-     * @returns {Promise<void>}
-     */
-    async sendStudyByHash(studyHash) {
-        const study = await this.models['study'].getByHash(studyHash);
-        // TODO: study db info, workflows in study where the studies are referenced , workflow steps, study step 
-        if (study) {
-            const workflow = await this.models['workflow'].getById(study.workflowId);
-            if (workflow) {
-                const workflowSteps = await this.models['workflow_step'].getAllByKey('workflowId', workflow.id);
-                if (workflowSteps) {
-                    const studySteps = await this.models['study_step'].getAllByKey('studyId', study.id);
-                    const studySession = await this.models['study_session'].findAll({
-                        where:
-                            {"userId": this.userId, "studyId": study.id}, raw: true,
-                    });
-                    this.emit("workflowRefresh", workflow);
-                    this.emit("workflow_stepRefresh", workflowSteps);
-                    this.emit("study_stepRefresh", studySteps);
-                    this.emit("study_sessionRefresh", studySession);
-                    this.emit("studyRefresh", await inject(study, async (x) => {
-                            return await this.models['study_session'].count({
-                                where: {
-                                    studyId: x
-                                }
-                            });
-                        }, "totalNumberOfOpenedSessions", "id")
-                    );
-
-                } else {
-                    this.socket.emit("studyError", {
-                        studyHash: studyHash, message: "No workflow steps found!"
-                    });
-                }
-            } else {
-                this.socket.emit("studyError", {
-                    studyHash: studyHash, message: "No workflow found!"
-                });
-            }
-        } else {
-            this.socket.emit("studyError", {
-                studyHash: studyHash, message: "Not found!"
-            });
-        }
-    }
-
-    /**
      * Send a study by id
      * @param {number} studyId
      * @returns {Promise<void>}
@@ -188,14 +140,6 @@ module.exports = class StudySocket extends Socket {
         this.socket.on("studyGetAll", async (data) => {
             try {
                 await this.sendStudies((data && data.userId) ? data.userId : null);
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
-
-        this.socket.on("studyGetByHash", async (data) => {
-            try {
-                await this.sendStudyByHash(data.studyHash);
             } catch (err) {
                 this.logger.error(err);
             }
