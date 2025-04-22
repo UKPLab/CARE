@@ -162,11 +162,7 @@ module.exports = class StudySocket extends Socket {
                 hash: undefined,
                 template: true,
             };
-            const newStudy = await this.models['study'].add(newStudyData, {transaction: options.transaction});
-            options.transaction.afterCommit(() => {
-                this.emit("studyRefresh", newStudy);
-            });
-            return newStudy;
+            return await this.models['study'].add(newStudyData, {transaction: options.transaction});
         } else {
             throw new Error("No permission to save study as template");
         }
