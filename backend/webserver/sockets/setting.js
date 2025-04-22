@@ -35,15 +35,7 @@ module.exports = class SettingSocket extends Socket {
             }
         });
 
-        this.socket.on("settingSave", async (data) => {
-            try {
-                await this.saveSettings(data);
-            } catch (err) {
-                this.sendToast("Settings not saved: " + err, "Error", "danger");
-                this.logger.error(err);
-            }
-        });
-
+        this.createSocket("settingSave", this.saveSettings, {}, false);
     }
 
 }
