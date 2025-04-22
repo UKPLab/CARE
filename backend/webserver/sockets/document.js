@@ -215,44 +215,43 @@ module.exports = class DocumentSocket extends Socket {
     /**
      * Send merged deltas (from disk and database) to client (for HTML documents)
      *
-     * @param {number} documentId
+     * @param {object} data 
+     * @param {number} data.documentId - The ID of the document to send deltas for.
+     * @param {object} options - The options for the transaction.
      * @returns {Promise<void>}
      */
-    async sendDocumentDeltas(documentId) {
-        try {
-            const doc = await this.models['document'].getById(documentId);
+    async sendDocumentDeltas(data, options) {
+        const documentId = data.documentId;        
+        const doc = await this.models['document'].getById(documentId);
 
-            if (await this.checkDocumentAccess(doc.id)) {
-                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
-                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
-                    let delta = new Delta();
+        if (await this.checkDocumentAccess(doc.id)) {
+            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML) { // HTML document type
+                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
+                let delta = new Delta();
 
-                    if (fs.existsSync(deltaFilePath)) {
-                        delta = await this.loadDocument(deltaFilePath);
-                    } else {
-                        this.logger.warn("No delta file found for document: " + documentId);
-                    }
-
-                    const edits = await this.models['document_edit'].findAll({
-                        where: {documentId: documentId, studySessionId: null, draft: true},
-                        raw: true
-                    });
-
-                    const dbDelta = dbToDelta(edits);
-                    delta = delta.compose(dbDelta);
-
-                    this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
-                    return delta;
+                if (fs.existsSync(deltaFilePath)) {
+                    delta = await this.loadDocument(deltaFilePath);
                 } else {
-                    throw new Error("Non-HTML documents are not supported for this operation");
+                    this.logger.warn("No delta file found for document: " + documentId);
                 }
+
+                const edits = await this.models['document_edit'].findAll({
+                    where: {documentId: documentId, studySessionId: null, draft: true},
+                    raw: true
+                });
+
+                const dbDelta = dbToDelta(edits);
+                delta = delta.compose(dbDelta);
+
+                this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
+                return delta;
             } else {
-                throw new Error("You do not have access to this document");
+                throw new Error("Non-HTML documents are not supported for this operation");
             }
-        } catch (error) {
-            this.logger.error("An error occurred while sending the merged deltas:", error);
-            this.sendToast(error.message, "Error", "danger");
+        } else {
+            throw new Error("You do not have access to this document");
         }
+        
     }
 
     /**
@@ -797,6 +796,7 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
+        /*
         this.socket.on("documentGetDeltas", async (data) => {
             try {
                 await this.sendDocumentDeltas(data.documentId);
@@ -805,6 +805,9 @@ module.exports = class DocumentSocket extends Socket {
                 this.sendToast("Error handling sendDocumentDeltas request!", "Error", "danger");
             }
         });
+        */
+
+        this.createSocket("documentGetDeltas", this.sendDocumentDeltas, {}, false);
 
 
         this.createSocket("documentGetData", this.getData, {}, false);
