@@ -27,20 +27,25 @@ module.exports = class LoggerSocket extends Socket {
             }
         }
     }
+    /**
+     * Get log messages
+     *
+     * @param data - The log entry selection criteria
+     * @param data.filter - Log entry filter
+     * @param data.order - Log entry order
+     * @param data.limit - Log entry limit
+     * @param data.page - Log entry page
+     * @param options - Unused
+     * @returns {void}
+     */
+    async getAllLogs(data, options) {
+        if (await this.isAdmin()) {
+            this.socket.emit("logAll", await this.updateCreatorName(await this.models['log'].getLogs(data)));
+        }
+    }
 
     init() {
         this.createSocket("log", this.log, {}, false);
-
-        this.socket.on("logGetAll", async (data) => {
-            try {
-                if (await this.isAdmin()) {
-                    this.socket.emit("logAll", await this.updateCreatorName(await this.models['log'].getLogs(data)));
-                }
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
-
-
+        this.createSocket("logGetAll", this.getAllLogs, {}, false);
     }
 }
