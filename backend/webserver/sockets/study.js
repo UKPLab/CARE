@@ -154,7 +154,7 @@ module.exports = class StudySocket extends Socket {
     async saveStudyAsTemplate(data, options) {
         const currentStudy = await this.models['study'].getById(data['id']);
 
-        if (this.checkUserAccess(currentStudy.userId)) {
+        if (await this.checkUserAccess(currentStudy.userId)) {
 
             const newStudyData = {
                 ...currentStudy,
