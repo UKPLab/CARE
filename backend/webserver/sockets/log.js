@@ -11,7 +11,11 @@ module.exports = class LoggerSocket extends Socket {
     /**
      * Log a message
      *
-     * @param data
+     * @param data - The data to log
+     * @param data.level - The log level
+     * @param data.message - The log message
+     * @param data.metadata - Optional log message metadata
+     * @param options - Unused
      * @returns {void}
      */
     async log(data, options) {
@@ -25,15 +29,7 @@ module.exports = class LoggerSocket extends Socket {
     }
 
     init() {
-
-        this.socket.on("log", (data) => {
-            try {
-                this.log(data);
-            } catch (e) {
-                this.logger.error("Can't log message: " + JSON.stringify(data));
-            }
-
-        });
+        this.createSocket("log", this.log, {}, false);
 
         this.socket.on("logGetAll", async (data) => {
             try {
