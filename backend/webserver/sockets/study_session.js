@@ -130,18 +130,6 @@ module.exports = class StudySessionSocket extends Socket {
     async init() {
         this.createSocket("studySessionSubscribe", this.subscribeToStudySession, {}, false)
         this.createSocket("studySessionUnsubscribe", this.unsubscribeFromStudySession, {}, false);
-
         this.createSocket("studySessionStart", this.startStudySession, {}, true);
-
-        this.socket.on("studySessionGetByHash", async (data, callback) => {
-            try {
-                //Callback mit Zugriff ja oder nein (retunren)
-                await this.sendSessionGetByHash(data.studySessionHash)
-            } catch (err) {
-                this.socket.emit("studySessionError", {studySessionHash: data.studySessionHash, message: err});
-                this.logger.error(err);
-            }
-        });
-
     }
 }
