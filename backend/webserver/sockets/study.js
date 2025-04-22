@@ -1,7 +1,4 @@
 const Socket = require("../Socket.js");
-const {v4: uuidv4} = require('uuid');
-const {Op} = require("sequelize");
-const {inject} = require("../../utils/generic");
 
 /**
  * Handle all studies through websocket
