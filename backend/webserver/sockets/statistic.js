@@ -58,24 +58,33 @@ module.exports = class StatisticSocket extends Socket {
         }
     }
 
-    init() {
-
-        this.createSocket("statsGet", this.getStats, {}, false);
-
-        this.socket.on("stats", async (data) => {
-            try {
-                if (this.user.acceptStats) {
-                    await this.models["statistic"].add({
-                        action: data.action,
-                        data: JSON.stringify(data.data),
-                        userId: this.userId,
-                        timestamp: new Date(),
-                    })
-                }
-            } catch (e) {
-                this.logger.error("Can't add statistics: " + JSON.stringify(data) + " due to error " + e.toString());
+    /**
+     * Add statistics
+     * @param {Object} data - The data object containing the userId
+     * @param {Number} data.action - The type of action (e.g. 'mouseMove')
+     * @param {Object} options - not used
+     *
+     * @returns {Promise<void>} - The statistics data
+     */
+    async addStats(data, options) {
+        try {
+            if (this.user.acceptStats) {
+                await this.models["statistic"].add({
+                    action: data.action,
+                    data: JSON.stringify(data.data),
+                    userId: this.userId,
+                    timestamp: new Date(),
+                })
             }
-        });
+        } catch (e) {
+            this.logger.error("Can't add statistics: " + JSON.stringify(data) + " due to error " + e.toString());
+        }
+    }
+
+
+    init() {
+        this.createSocket("statsGet", this.getStats, {}, false);
+        this.createSocket("stats", this.addStats, {}, true);
 
         this.socket.on("statsGetByUser", async (data) => {
             try {
@@ -91,6 +100,4 @@ module.exports = class StatisticSocket extends Socket {
 
         });
     }
-
-
 }
