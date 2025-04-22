@@ -14,20 +14,21 @@ describe("Test Websockets - Studies", () => {
     });
 
 
-    test("Add Study - Get study by Hash", (done) => {
-        clientSocket.on("studyRefresh", (data) => {
-            expect(data.find(study => study.name === "Test Study")).toBeTruthy();
-            done();
-        })
-        clientSocket.on("studyPublished", (data) => {
-            expect(data).toHaveProperty("success", true);
-            clientSocket.emit("studyGetByHash", {studyHash: data['studyHash']})
-        })
-        clientSocket.emit("studyPublish", {
-            name: "Test Study",
-            documentId: 1,
-        });
-    });
+    // // NOTE: commented out because 'studyPublish' was not used anywhere else, and got removed
+    // test("Add Study - Get study by Hash", (done) => {
+    //     clientSocket.on("studyRefresh", (data) => {
+    //         expect(data.find(study => study.name === "Test Study")).toBeTruthy();
+    //         done();
+    //     })
+    //     clientSocket.on("studyPublished", (data) => {
+    //         expect(data).toHaveProperty("success", true);
+    //         clientSocket.emit("studyGetByHash", {studyHash: data['studyHash']})
+    //     })
+    //     clientSocket.emit("studyPublish", {
+    //         name: "Test Study",
+    //         documentId: 1,
+    //     });
+    // });
 
     test("Add Session to study", (done) => {
         clientSocket.on("study_sessionRefresh", (data) => {
