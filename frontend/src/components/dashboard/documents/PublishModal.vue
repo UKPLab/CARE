@@ -104,22 +104,25 @@ export default {
       }
     },
     publish() {
-      this.sockets.subscribe("documentPublished", (data) => {
-        this.sockets.unsubscribe('documentPublished');
-        if (data.success) {
-          this.success = true;
-          this.$refs.publishModal.waiting = false;
-          this.eventBus.emit('toast', {
-            title: "Document published",
-            message: "Successful published tagset!",
-            variant: "success"
-          });
-        } else {
-          this.$refs.publishModal.close();
-          this.eventBus.emit('toast', {title: "Document not published", message: data.message, variant: "danger"});
-        }
-      });
-      this.$socket.emit("documentPublish", {documentId: this.id});
+      this.$socket.emit("documentPublish", {documentId: this.id}, (res) => {
+          if (!res.success) {
+            this.$refs.publishModal.close();
+            this.eventBus.emit("toast", {
+              title: "Document not published",
+              message: res.message,
+              variant: "danger",
+            });
+          } else {
+            this.success = true;
+            this.$refs.publishModal.waiting = false;
+            this.eventBus.emit('toast', {
+              title: "Document published",
+              message: "Successful published tagset!",
+              variant: "success"
+            });
+          }
+        });
+
       this.$refs.publishModal.waiting = true;
     },
     close() {
