@@ -131,23 +131,6 @@ module.exports = class StudySessionSocket extends Socket {
         this.createSocket("studySessionSubscribe", this.subscribeToStudySession, {}, false)
         this.createSocket("studySessionUnsubscribe", this.unsubscribeFromStudySession, {}, false);
 
-        this.socket.on("studySessionGet", async (data) => {
-            try {
-                if (data.studyId) {
-                    const study = await this.models['study'].getById(data.studyId);
-                    if (this.checkUserAccess(study.userId)) {
-                        this.emit("study_sessionRefresh", await this.models['study_session'].getAllByKey("studyId", data.studyId));
-                    } else {
-                        this.sendToast("You are not allowed to see this study", "Error", "Danger");
-                    }
-                } else {
-                    this.emit("study_sessionRefresh", await this.models['study_session'].getById(data.studySessionId));
-                }
-            } catch (err) {
-                this.logger.error(err);
-            }
-        });
-
         this.socket.on("studySessionGetAll", async (data) => {
             try {
                 await this.sendSessions((data.userId) ? data.userId : null);
