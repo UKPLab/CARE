@@ -414,8 +414,8 @@ export default {
 
       for (const service of this.configuration.services) {
         if (service.type === "nlpRequest") {
-          const { skill, inputs: dataSource, name } = service;
-          this.request(skill, dataSource, ("service_" + name));
+          const { skill, inputs: inputs, name } = service;
+          this.request(skill, inputs, ("service_" + name));
         }
       }
     }
@@ -431,21 +431,19 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    async request(skill, dataSource, uniqueId) {
+    async request(skill, inputs, uniqueId) {
       const requestId = uuid();
-      this.requests[requestId] = { skill, dataSource, input: "", response: "", uniqueId };
+      this.requests[requestId] = { skill, inputs, input: "", response: "", uniqueId };
 
       let input;
-      if(skill==="skill_eic"){
-        const v1Index = "v1" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v1.stepId):-1;
-        const v2Index = "v2" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v2.stepId):-1;
-        const v1Input = v1Index > -1 ? this.studyData[v1Index+1][dataSource["v1"]["dataSource"]] : "";
-        const v2Input = v2Index > -1 ? this.studyData[v2Index+1][dataSource["v2"]["dataSource"]] : "";
-        input = { v1: v1Input, v2: v2Input };
-      } else {
-        const index = this.studySteps.findIndex(step => step.id === dataSource.stepId);
-        input = index > -1 ? this.studyData[index+1][dataSource["dataSource"]] : "";
-      }
+
+      Object.entries(inputs).forEach( ([entry, value]) => {        
+        const stepId = value.stepId;        
+        const studyStep = this.studySteps?.[stepId - 1];
+        const index = this.studySteps?.findIndex(step => step.id === studyStep?.id);
+        const inputValue = index > -1 ? this.studyData[index+1][value["dataSource"]] : "";
+        input = { ...input, [entry]: inputValue };
+      });     
 
       this.requests[requestId].input = input;
 
