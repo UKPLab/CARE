@@ -333,12 +333,15 @@ export default {
 
       let match;
       const extracted = [];
+      let textCounter = 1;
+      let chartCounter = 1;
+      let comparisonCounter = 1;
 
       // Extract text placeholders
       while ((match = textRegex.exec(text)) !== null) {
         extracted.push({
           text: match[0],
-          number: parseInt(match[1], 10),
+          number: textCounter++,
           type: "text",
         });
       }
@@ -347,7 +350,7 @@ export default {
       while ((match = chartRegex.exec(text)) !== null) {
         extracted.push({
           text: match[0],
-          number: parseInt(match[1], 10),
+          number: chartCounter++,
           type: "chart",
         });
       }
@@ -356,14 +359,22 @@ export default {
       while ((match = comparisonRegex.exec(text)) !== null) {
         extracted.push({
           text: match[0],
-          number: parseInt(match[1], 10),
+          number: comparisonCounter++,
           type: "comparison",
         });
       }
 
-      // Sort by extracted number
-      return extracted.sort((a, b) => a.number - b.number);
+      // Sort by type and then by number
+      return extracted.sort((a, b) => {
+        if (a.type === b.type) {
+          return a.number - b.number;
+        }
+        // Order: text -> chart -> comparison
+        const typeOrder = { text: 0, chart: 1, comparison: 2 };
+        return typeOrder[a.type] - typeOrder[b.type];
+      });
     },
+    // TODO: Check if the colors are accessible.
     generatePlaceholderColors() {
       const colors = ["#ff5733", "#33c3ff", "#ff33f6", "#33ff57", "#ffc133", "#a833ff", "#ff338f"];
       this.placeholderColors = this.placeholders.map((_, index) => colors[index % colors.length]);
