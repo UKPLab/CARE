@@ -34,7 +34,7 @@
         class="btn-group"
       >
         <slot name="success-footer">
-          <slot name="buttons"/>
+          <slot name="buttons" />
           <button
             class="btn btn-secondary"
             @click="$refs.coordinatorModal.close()"
@@ -48,7 +48,7 @@
         class="btn-group"
       >
         <slot name="footer">
-          <slot name="buttons"/>
+          <slot name="buttons" />
           <button
             class="btn btn-secondary"
             type="button"
@@ -72,7 +72,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
-import {sorter} from "@/assets/utils.js";
+import { sorter } from "@/assets/utils.js";
 
 /**
  * Basic Coordinator to add or edit database entries
@@ -94,7 +94,7 @@ import {sorter} from "@/assets/utils.js";
  */
 export default {
   name: "BasicCoordinator",
-  components: {BasicModal, BasicForm},
+  components: { BasicModal, BasicForm },
   props: {
     title: {
       type: String,
@@ -175,24 +175,28 @@ export default {
     },
     submit() {
       if (this.$refs.form.validate()) {
-        const data = {...this.data};
+        const data = { ...this.data };
         this.$emit("submit", data);
-        this.$socket.emit("appDataUpdate", {
-          table: this.table,
-          data: data,
-        }, (result) => {
-          if (result.success) {
-            this.showSuccess();
-            this.$emit("success", result.data);
-          } else {
-            this.$refs.coordinatorModal.waiting = false;
-            this.eventBus.emit("toast", {
-              title: "Could not save",
-              message: result.message,
-              variant: "danger",
-            });
+        this.$socket.emit(
+          "appDataUpdate",
+          {
+            table: this.table,
+            data: data,
+          },
+          (result) => {
+            if (result.success) {
+              this.showSuccess();
+              this.$emit("success", result.data);
+            } else {
+              this.$refs.coordinatorModal.waiting = false;
+              this.eventBus.emit("toast", {
+                title: "Could not save",
+                message: result.message,
+                variant: "danger",
+              });
+            }
           }
-        });
+        );
         this.$refs.coordinatorModal.waiting = true;
       }
     },
@@ -209,7 +213,7 @@ export default {
     },
     getData(id, copy = false) {
       if (id === 0) {
-        return {...this.defaultValue, ...this.overrideDefaultValues};
+        return { ...this.defaultValue, ...this.overrideDefaultValues };
       } else {
         return this.getDataFromStore(id, this.table, this.fields, copy);
       }
@@ -232,18 +236,19 @@ export default {
             ? data[field.key]
             : // if type is table, get the data from the store
             ["table", "choice"].includes(field.type) && this.$store.getters["table/" + field.options.table + "/hasFields"]
-              ? sorter(this.$store.getters["table/" + field.options.table + "/getFiltered"]((e) => e[field.options.id] === id), field.options.sort)
-                .filter((e) => e[field.options.key] === data[field.key])
-                .map((e) =>
-                this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"], copy)
+            ? sorter(
+                this.$store.getters["table/" + field.options.table + "/getFiltered"]((e) => e[field.options.id] === id),
+                field.options.sort
               )
-              : // else use the default value
+                .filter((e) => e[field.options.key] === data[field.key])
+                .map((e) => this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"], copy))
+            : // else use the default value
               null;
         return acc;
       }, {});
 
       if (!copy) {
-        return_data = {...return_data, ...{id: data.id}};
+        return_data = { ...return_data, ...{ id: data.id } };
       }
 
       return return_data;
