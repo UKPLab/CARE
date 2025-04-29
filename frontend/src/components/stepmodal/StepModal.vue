@@ -45,6 +45,9 @@
               <template v-if="entry.type === 'text'">
                 <p>{{ entry.value }}</p>
               </template>
+              <template v-else-if="entry.type === 'text'">
+                <Text :text="entry.value" :id="'text' + index"/>
+              </template>
               <template v-else-if="entry.type === 'chart'">
                 <Chart :chartInput="entry.value" :id="'chart' + index"/>
               </template>
