@@ -45,11 +45,15 @@
               <template v-if="entry.type === 'text'">
                 <p>{{ entry.value }}</p>
               </template>
-              <template v-else-if="entry.type === 'text'">
+              <template v-show="entry.type === 'text'">
                 <Text :text="entry.value" :id="'text' + index"/>
               </template>
-              <template v-else-if="entry.type === 'chart'">
+              <template v-show="entry.type === 'chart'">
                 <Chart :chartInput="entry.value" :id="'chart' + index"/>
+              </template>
+              <!-- Change input for comparison to take two different charts -->
+              <template v-show="entry.type === 'comparison'">
+                <Comparison :dataSetA="entry.value" :dataSetB="entry.value" :id="'chart' + index"/>
               </template>
             </div>
           </div>
@@ -95,7 +99,9 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
 import {v4 as uuid} from "uuid";
+import Text from "./placeholders/Text.vue";
 import Chart from "./placeholders/Chart.vue";
+import Comparison from "./placeholders/Comparison.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
@@ -106,7 +112,7 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "StepModal",
-  components: { BasicButton, BasicModal, Chart },
+  components: { BasicButton, BasicModal, Text, Chart, Comparison },
   inject: {
     studySessionId: {
       type: Number,
