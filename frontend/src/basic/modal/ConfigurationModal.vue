@@ -193,13 +193,9 @@ export default {
   emits: ["update:modelValue"],
   data() {
     return {
-      data: {
-        fields: [],
-      },
       currentStepperStep: 0,
       placeholders: [],
       placeholderFormData: [],
-      formData: [],
       placeholderColors: [],
       stepConfig: null,
       selectedSkills: [],
@@ -246,6 +242,18 @@ export default {
     },
   },
   methods: {
+    openModal(evt) {
+      evt.preventDefault();
+      if (!this.documentId) {
+        this.eventBus.emit("toast", {
+          title: "Document Error",
+          message: "You need to select a document.",
+          variant: "danger",
+        });
+        return;
+      }
+      this.$refs.configurationStepper.open();
+    },
     initializeModal() {
       this.stepConfig = this.modelValue || {};
       if (this.stepConfig?.services?.length) {
@@ -304,18 +312,6 @@ export default {
           });
         }
       });
-    },
-    openModal(evt) {
-      evt.preventDefault();
-      if (!this.documentId) {
-        this.eventBus.emit("toast", {
-          title: "Document Error",
-          message: "You need to select a document.",
-          variant: "danger",
-        });
-        return;
-      }
-      this.$refs.configurationStepper.open();
     },
     getSkillInputs(skillName) {
       // Find the skill in the skills list
