@@ -52,8 +52,9 @@
                 >
                   <label class="form-label">{{ input }}:</label>
                   <FormSelect
-                    :options="{ options: availableDataSources}"
+                    :options="{ options: availableDataSources }"
                     :value-as-object="true"
+                    :model-value="getFormattedDataInput(index, input)"
                     @update:model-value="(source) => updateDataInput(index, input, source)"
                   />
                 </div>
@@ -127,7 +128,7 @@
                 <div class="mb-3">
                   <label class="form-label">Data Source:</label>
                   <FormSelect
-                    v-model="placeholderFormData[index]"
+                    v-model="placeholderFormData[index].dataInput"
                     :value-as-object="true"
                     :options="{ options: availableDataSources }"
                   />
@@ -158,6 +159,7 @@ import Quill from "quill";
  * This modal dynamically renders input fields based on the provided configuration.
  * It supports placeholders for NLP models, links, and other custom fields.
  * Users can provide data that will be processed and stored as part of the workflow configuration.
+ * It handles both creation and update scenarios.
  *
  * @author: Juliane Bechert, Linyin Huang
  */
@@ -200,6 +202,7 @@ export default {
       stepConfig: null,
       selectedSkills: [],
       shortPreview: "",
+      isUpdateMode: false,
     };
   },
   computed: {
@@ -209,10 +212,10 @@ export default {
         this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0),
         // Step 2: Check if all placeholders have non-empty string input
         this.placeholderFormData.every((data) => {
-          if (Array.isArray(data.dataInput)) {
-            return data.dataInput.every((input) => input !== "");
+          if (data.type === "comparison") {
+            return data.dataInput[0] && data.dataInput[1];
           }
-          return data.dataInput !== "";
+          return !!data.dataInput;
         }),
       ];
     },
@@ -233,13 +236,27 @@ export default {
     },
   },
   watch: {
+    modelValue: {
+      handler(newValue) {
+        this.isUpdateMode = newValue && newValue.placeholders;
+        this.initializeModal();
+      },
+      immediate: true,
+      deep: true,
+    },
     documentId: {
       handler(newDocumentId) {
         if (newDocumentId) {
-          this.initializeModal();
+          this.fetchDocument();
         }
       },
     },
+  },
+  mounted() {
+    this.initializeModal();
+    if (this.documentId) {
+      this.fetchDocument();
+    }
   },
   methods: {
     openModal(evt) {
@@ -256,17 +273,26 @@ export default {
     },
     initializeModal() {
       this.stepConfig = this.modelValue || {};
+
+      // Initialize services
       if (this.stepConfig?.services?.length) {
-        this.selectedSkills = this.stepConfig.services.map(() => ({
-          skillName: "",
-          dataInput: {},
-        }));
+        this.selectedSkills = this.stepConfig.services.map((service) => {
+          // Handle update case
+          if (service.skill) {
+            return {
+              skillName: service.skill,
+              dataInput: service.inputs || {},
+            };
+          }
+          // Handle create case
+          return {
+            skillName: "",
+            dataInput: {},
+          };
+        });
       } else {
         this.selectedSkills = [];
       }
-
-      // Fetch document content to extract placeholders
-      this.fetchDocument();
     },
     fetchDocument() {
       if (!this.documentId || !this.studyStepId) return;
@@ -290,11 +316,7 @@ export default {
             this.generateShortPreview(docText);
 
             // Initialize placeholder form data with correct type based on extraction
-            this.placeholderFormData = this.placeholders.map((placeholder) => ({
-              dataInput: placeholder.type === "comparison" ? ["", ""] : "",
-              type: placeholder.type,
-              stepId: 0,
-            }));
+            this.initializePlaceholderFormData();
           } else {
             console.error("Invalid document content:", response);
             this.eventBus.emit("toast", {
@@ -312,6 +334,44 @@ export default {
           });
         }
       });
+    },
+    initializePlaceholderFormData() {
+      // Create placeholderFormData structure based on placeholders
+      const formData = [];
+
+      for (let i = 0; i < this.placeholders.length; i++) {
+        const placeholder = this.placeholders[i];
+        const type = placeholder.type;
+
+        // Default form data structure
+        let data = {
+          type,
+          dataInput: type === "comparison" ? [null, null] : null,
+        };
+
+        // If in update mode, try to fill in existing data based on its type
+        if (this.isUpdateMode && this.stepConfig.placeholders) {
+          const typeArray = this.stepConfig.placeholders[type] || [];
+          const index = placeholder.number - 1;
+
+          if (typeArray[index]) {
+            if (type === "comparison") {
+              data.dataInput = Array.isArray(typeArray[index].input) ? typeArray[index].input.map((input) => this.findPlaceholderDataSource(input)) : [null, null];
+            } else {
+              data.dataInput = this.findPlaceholderDataSource(typeArray[index].input);
+            }
+          }
+        }
+
+        formData.push(data);
+      }
+
+      this.placeholderFormData = formData;
+    },
+    findPlaceholderDataSource(input) {
+      if (!input) return null;
+
+      return this.availableDataSources.find((source) => source.stepId === input.stepId && source.value === input.dataSource) || null;
     },
     getSkillInputs(skillName) {
       // Find the skill in the skills list
@@ -390,28 +450,29 @@ export default {
     },
     updateDataInput(index, input, source) {
       if (!source) return;
-      // Create copies to avoid direct mutation
-      const updatedSkills = [...this.selectedSkills];
-      const updatedSkill = { ...updatedSkills[index] };
 
-      // Initialize dataInput if it doesn't exist
-      if (!updatedSkill.dataInput) {
-        updatedSkill.dataInput = {};
-      } else {
-        updatedSkill.dataInput = { ...updatedSkill.dataInput };
+      // Deep clone to avoid reference issues
+      const updatedSkills = JSON.parse(JSON.stringify(this.selectedSkills));
+
+      // Ensure dataInput exists
+      if (!updatedSkills[index].dataInput) {
+        updatedSkills[index].dataInput = {};
       }
 
-      // Update the specific input with the source's stepId
-      updatedSkill.dataInput[input] = {
+      updatedSkills[index].dataInput[input] = {
         stepId: source.stepId,
         dataSource: source.value,
       };
 
-      // Update the array with the modified skill
-      updatedSkills[index] = updatedSkill;
-
       // Replace the entire array
       this.selectedSkills = updatedSkills;
+    },
+    getFormattedDataInput(index, input) {
+      const dataInput = this.selectedSkills[index]?.dataInput?.[input];
+      if (!dataInput) return null;
+
+      // Return the source object that matches this data input
+      return this.availableDataSources.find((source) => source.stepId === dataInput.stepId && source.value === dataInput.dataSource);
     },
     submit() {
       if (!this.stepConfig?.services?.length) return;
@@ -444,26 +505,36 @@ export default {
      */
     formatPlaceholder(type) {
       return this.placeholderFormData
-        .filter((_, index) => this.placeholders[index].type === type)
-        .map((data) => ({
-          input:
-            type === "comparison"
-              ? [
-                  { stepId: data.dataInput[0].stepId, dataSource: data.dataInput[0].value },
-                  { stepId: data.dataInput[1].stepId, dataSource: data.dataInput[1].value },
-                ]
-              : { stepId: data.stepId, dataSource: data.value },
-        }));
+        .filter((data) => data.type === type)
+        .map((data) => {
+          if (type === "comparison") {
+            return {
+              input: data.dataInput.map((source) => ({
+                stepId: source ? source.stepId : null,
+                dataSource: source ? source.value : null,
+              })),
+            };
+          } else {
+            return {
+              input: data.dataInput
+                ? {
+                    stepId: data.dataInput.stepId,
+                    dataSource: data.dataInput.value,
+                  }
+                : null,
+            };
+          }
+        });
     },
     /**
-     * Construct and get all the available data sources up to the stepId 
+     * Construct and get all the available data sources up to the stepId
      * @param {number} stepId - The ID of the workflow step
      * @returns {Array<Object>} An array of data source object, consisting of value and name
      */
     getSourcesUpToCurrentStep(stepId) {
       const sources = [];
       const stepCollector = this.workflowSteps.filter((step) => step.id <= stepId);
-      
+
       stepCollector.forEach((step, index) => {
         const stepIndex = index + 1;
         switch (step.stepType) {
@@ -480,7 +551,7 @@ export default {
               sources.push(...this.getSkillSources(stepIndex));
             }
             break;
-        }  
+        }
       });
 
       return sources;
@@ -499,13 +570,17 @@ export default {
 
       services.forEach((service) => {
         this.selectedSkills.forEach(({ skillName }) => {
+          if (!skillName) return;
+
           const skill = this.nlpSkills.find((s) => s.name === skillName);
+          if (!skill || !skill.config || !skill.config.output || !skill.config.output.data) return;
+
           const result = Object.keys(skill.config.output.data || {});
           result.forEach((r) =>
             sources.push({
               value: `service_${service.name}_${r}`,
               name: `${skillName}_${r} (Step ${stepIndex})`,
-              stepId: stepIndex
+              stepId: stepIndex,
             })
           );
         });
