@@ -35,19 +35,21 @@
               No content available for this step.
             </p>
 
-            <!-- TODO: Remove check for output once the configuration is fixed-->
-            <p v-if="output">
-              Output of the {{ skill }}: {{ output }}
-            </p>
-            <div v-else v-html="documentText"></div>
-
-            <div v-for="(entry, index) in matchedPlaceholderContent" :key="'placeholder-' + index" class="mb-4">
-              <template v-if="entry.type === 'text'">
-                <p>{{ entry.value }}</p>
-              </template>
-              <template v-else-if="entry.type === 'chart'">
-                <Chart :chartInput="entry.value" :id="'chart' + index"/>
-              </template>
+            <div v-else>
+              <div v-for="(segment, index) in documentSegments" :key="'segment-' + index">
+                <template v-if="segment.type === 'plainText'">
+                  {{ segment.value }}
+                </template>
+                <template v-else-if="segment.type === 'text'">
+                  <Text :input="segment.value" />
+                </template>
+                <template v-else-if="segment.type === 'chart'">
+                  <Chart :chartInput="segment.value" />
+                </template>
+                <template v-else-if="segment.type === 'comparison'">
+                  <Comparison :input="segment.value" />
+                </template>
+              </div>
             </div>
           </div>
         </div>      
@@ -92,7 +94,9 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
 import {v4 as uuid} from "uuid";
+import Text from "./placeholders/Text.vue";
 import Chart from "./placeholders/Chart.vue";
+import Comparison from "./placeholders/Comparison.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
@@ -103,7 +107,7 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "StepModal",
-  components: { BasicButton, BasicModal, Chart },
+  components: { BasicButton, BasicModal, Text, Chart, Comparison },
   inject: {
     studySessionId: {
       type: Number,
@@ -278,58 +282,48 @@ export default {
     placeholders(){
       return this.studyStep?.configuration?.placeholders || null;
     },
-    matchedPlaceholderContent() {
-      const result = [];
-      if (!this.placeholders || !this.documentText) return result;
+    documentSegments() {
+        if (!this.documentText || !this.placeholders) return [];
 
-      const matches = this.matchKeys();
+        const segments = [];
+        const regex = /~(.*?)~/g;
+        let match;
+        let lastIndex = 0;
 
-      for (const { key, index } of matches) {
-        const placeholderArr = this.placeholders[key];
-        if (!placeholderArr || placeholderArr.length <= index) continue;
+        const placeholderCounters = Object.keys(this.placeholders).reduce((acc, key) => {
+          acc[key] = 0;
+          return acc;
+        }, {});
 
-        const entry = placeholderArr[index];
+        while ((match = regex.exec(this.documentText)) !== null) {
+          const placeholderKey = match[1];
 
-        if (key === "text") {
-          const { stepId, dataSource } = entry;
-          const docEntry = this.documentData.find(d => d.studyStepId === stepId && d.key === dataSource);
-          if (docEntry?.value) {
-            result.push({ type: "text", value: docEntry.value });
+          if (match.index > lastIndex) {
+            segments.push({ type: 'plainText', value: this.documentText.slice(lastIndex, match.index) });
           }
 
-        } else if (key === "chart") {
-          const { stepId, dataSource } = entry;
-          const docEntry = this.documentData.find(d => d.studyStepId === stepId && d.key === dataSource);
+          if (this.placeholders[placeholderKey]) {
+            const placeholderIndex = placeholderCounters[placeholderKey];
+            const placeholderConfig = this.placeholders[placeholderKey][placeholderIndex];
 
-          if (docEntry?.value && typeof docEntry.value === "object") {
-            const baseChart = JSON.parse(JSON.stringify(this.charts[0])); // Horizontal bar chart
-            baseChart.data.title = "";
-            baseChart.data.labels = Object.keys(docEntry.value);
-            baseChart.data.datasets[0].data = Object.values(docEntry.value);
-            result.push({ type: "chart", value: baseChart });
-          }
-
-        } else if (key === "comparison") {
-          const inputs = entry.input;
-          if (Array.isArray(inputs) && inputs.length === 2) {
-            const input1 = this.documentData.find(d => d.studyStepId === inputs[0].stepId && d.key === inputs[0].dataSource);
-            const input2 = this.documentData.find(d => d.studyStepId === inputs[1].stepId && d.key === inputs[1].dataSource);
-
-            if (input1?.value && input2?.value && typeof input1.value === "object" && typeof input2.value === "object") {
-              const baseChart = JSON.parse(JSON.stringify(this.charts[1])); // Stacked horizontal bar chart
-              const labels = Object.keys(input1.value);
-              baseChart.data.title = "";
-              baseChart.data.labels = labels;
-              baseChart.data.datasets[0].data = labels.map(label => input1.value[label] || 0);
-              baseChart.data.datasets[1].data = labels.map(label => input2.value[label] || 0);
-              result.push({ type: "chart", value: baseChart });
+            if (placeholderConfig) {
+              const resolvedSegment = this.resolvePlaceholder(placeholderKey, placeholderConfig);
+              if (resolvedSegment) {
+                segments.push(resolvedSegment);
+              }
+              placeholderCounters[placeholderKey] += 1;
             }
           }
-        }
-      }
 
-      return result;
-    },
+          lastIndex = regex.lastIndex;
+        }
+
+        if (lastIndex < this.documentText.length) {
+          segments.push({ type: 'plainText', value: this.documentText.slice(lastIndex) });
+        }
+
+        return segments;
+      },
     specificDocumentData() {
       return this.$store.getters["table/document_data/getByKey"]("documentId", this.studyStep?.documentId);
     },
@@ -414,8 +408,8 @@ export default {
 
       for (const service of this.configuration.services) {
         if (service.type === "nlpRequest") {
-          const { skill, inputs: dataSource, name } = service;
-          this.request(skill, dataSource, ("service_" + name));
+          const { skill, inputs: inputs, name } = service;
+          this.request(skill, inputs, ("service_" + name));
         }
       }
     }
@@ -431,21 +425,19 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    async request(skill, dataSource, uniqueId) {
+    async request(skill, inputs, uniqueId) {
       const requestId = uuid();
-      this.requests[requestId] = { skill, dataSource, input: "", response: "", uniqueId };
+      this.requests[requestId] = { skill, inputs, input: "", response: "", uniqueId };
 
       let input;
-      if(skill==="skill_eic"){
-        const v1Index = "v1" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v1.stepId):-1;
-        const v2Index = "v2" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v2.stepId):-1;
-        const v1Input = v1Index > -1 ? this.studyData[v1Index+1][dataSource["v1"]["dataSource"]] : "";
-        const v2Input = v2Index > -1 ? this.studyData[v2Index+1][dataSource["v2"]["dataSource"]] : "";
-        input = { v1: v1Input, v2: v2Input };
-      } else {
-        const index = this.studySteps.findIndex(step => step.id === dataSource.stepId);
-        input = index > -1 ? this.studyData[index+1][dataSource["dataSource"]] : "";
-      }
+
+      Object.entries(inputs).forEach( ([entry, value]) => {        
+        const stepId = value.stepId;        
+        const studyStep = this.studySteps?.[stepId - 1];
+        const index = this.studySteps?.findIndex(step => step.id === studyStep?.id);
+        const inputValue = index > -1 ? this.studyData[index+1][value["dataSource"]] : "";
+        input = { ...input, [entry]: inputValue };
+      });     
 
       this.requests[requestId].input = input;
 
@@ -471,26 +463,56 @@ export default {
         }, this.nlpRequestTimeout);
       }
     },
-    matchKeys() {
-      if (!this.placeholders || !this.documentText) return [];
-
-      const placeholderKeys = Object.keys(this.placeholders);
-      const pattern = new RegExp(`\\b(${placeholderKeys.join('|')})\\b`, 'g');
-      const matches = [...this.documentText.matchAll(pattern)];
-
-      const occurrenceCount = {};
-      return matches.map(match => {
-        const key = match[1];
-        if (!occurrenceCount[key]) occurrenceCount[key] = 0;
-        else occurrenceCount[key]++;
-        return { key, index: occurrenceCount[key] };
-      });
-    },
     async exportStudyData() {
       if (this.isAdmin){
         const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_study_data';
         downloadObjectsAs(this.studyData, filename, 'json');
       }
+    },
+    resolveStudyData(stepId, dataSource) {
+      const studyStep = this.studySteps?.[stepId - 1];
+      const index = this.studySteps?.findIndex(step => step.id === studyStep?.id);
+      return index > -1 ? this.studyData[index + 1][dataSource] : "";
+    },
+
+    resolvePlaceholder(placeholderKey, placeholderConfig) {
+      const { input } = placeholderConfig;
+
+      switch (placeholderKey) {
+        case 'text':
+          if (input) {
+            const studyDataEntry = this.resolveStudyData(input.stepId, input.dataSource);
+            return { type: 'text', value: studyDataEntry };
+          }
+          break;
+
+        case 'chart':
+          if (input) {
+            const studyDataEntry = this.resolveStudyData(input.stepId, input.dataSource);
+            return { type: 'chart', value: studyDataEntry };
+          }
+          break;
+
+        case 'comparison':
+          if (Array.isArray(input)) {
+            const comparisonData = input.map(({ stepId, dataSource }) => {
+              return this.resolveStudyData(stepId, dataSource);
+            });
+
+            return { type: 'comparison', value: comparisonData };
+          }
+          break;
+
+        default:
+          this.eventBus.emit("toast", {
+            title: "Placeholder Error",
+            message: "Unhandled placeholder type:" + placeholderKey,
+            variant: "danger",
+          });
+          break;
+      }
+
+      return null;
     },
   }
 };
