@@ -72,9 +72,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
-import {testData}  from "../assets/testData.js";
 import { sorter } from "@/assets/utils.js";
-
 
 /**
  * Basic Coordinator to add or edit database entries
@@ -162,9 +160,7 @@ export default {
       if (this.fields) {
         this.reset();
         this.overrideDefaultValues = defaultValues;
-        // TODO: Comment this out for testing.
-        // this.data = this.getData(id, copy);
-        this.data = testData;
+        this.data = this.getData(id, copy);
         this.$refs.coordinatorModal.open();
       } else {
         this.eventBus.emit("toast", {
