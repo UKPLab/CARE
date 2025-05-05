@@ -32,6 +32,7 @@ services:
       - ./docs/build:/content-server/docs/build
       - ./docs/api:/content-server/docs/api
       - ./files:/content-server/files
+      - ./logs:/backend/logs
     depends_on:
       - postgres
     ports:
