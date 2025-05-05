@@ -202,21 +202,14 @@ module.exports = (sequelize, DataTypes) => {
                         raw: true
                     });
 
-                    const newEdits = sourceEdits.map(edit => ({
-                    ...edit,
-                    id: undefined,
-                    documentId: destStep.documentId,
-                    updatedAt: new Date()
-                 }));
-
                     if (existingEdits.length > 0) {
                         const newEdits = existingEdits.map(edit => ({
                             ...edit,
                             id: undefined,
-                            studySessionId: null,
-                            studyStepId: null,
                             documentId: newDocument.id,
                             updatedAt: new Date(),
+                            studySessionId: null,
+                            studyStepId: null,
                         }));
 
                         await sequelize.models.document_edit.bulkCreate(newEdits, {transaction: options.transaction});
