@@ -38,7 +38,7 @@
             <div v-else>
               <div v-for="(segment, index) in documentSegments" :key="'segment-' + index">
                 <template v-if="segment.type === 'plainText'">
-                  {{ segment.value }}
+                  <span v-html="segment.value"></span>
                 </template>
                 <template v-else-if="segment.type === 'text'">
                   <Text :input="segment.value" />
@@ -429,15 +429,10 @@ export default {
       const requestId = uuid();
       this.requests[requestId] = { skill, inputs, input: "", response: "", uniqueId };
 
-      let input;
-
-      Object.entries(inputs).forEach( ([entry, value]) => {        
-        const stepId = value.stepId;        
-        const studyStep = this.studySteps?.[stepId - 1];
-        const index = this.studySteps?.findIndex(step => step.id === studyStep?.id);
-        const inputValue = index > -1 ? this.studyData[index+1][value["dataSource"]] : "";
-        input = { ...input, [entry]: inputValue };
-      });     
+      const input = Object.entries(inputs).reduce((acc, [entry, value]) => {
+        acc[entry] = this.studyData[value.stepId][value.dataSource];
+        return acc;
+      }, {});
 
       this.requests[requestId].input = input;
 
@@ -469,34 +464,26 @@ export default {
         downloadObjectsAs(this.studyData, filename, 'json');
       }
     },
-    resolveStudyData(stepId, dataSource) {
-      const studyStep = this.studySteps?.[stepId - 1];
-      const index = this.studySteps?.findIndex(step => step.id === studyStep?.id);
-      return index > -1 ? this.studyData[index + 1][dataSource] : "";
-    },
-
     resolvePlaceholder(placeholderKey, placeholderConfig) {
-      const { input } = placeholderConfig;
 
       switch (placeholderKey) {
         case 'text':
-          if (input) {
-            const studyDataEntry = this.resolveStudyData(input.stepId, input.dataSource);
-            return { type: 'text', value: studyDataEntry };
-          }
+          const index = placeholderConfig["input"]["stepId"];
+          const dataSource = placeholderConfig["input"]["dataSource"];
+          return { type: 'text', value: this.studyData[index][dataSource] };
           break;
 
         case 'chart':
-          if (input) {
-            const studyDataEntry = this.resolveStudyData(input.stepId, input.dataSource);
-            return { type: 'chart', value: studyDataEntry };
-          }
+          const chartStepId = placeholderConfig["input"]["stepId"];
+          const chartDataSource = placeholderConfig["input"]["dataSource"];
+          return { type: 'text', value: this.studyData[chartStepId][chartDataSource] };
           break;
 
         case 'comparison':
-          if (Array.isArray(input)) {
-            const comparisonData = input.map(({ stepId, dataSource }) => {
-              return this.resolveStudyData(stepId, dataSource);
+          if (Array.isArray(placeholderConfig?.input)) {
+            const comparisonData = placeholderConfig.input.map(({ stepId, dataSource }) => {
+              const index = stepId;
+              return { type: 'text', value: this.studyData[index][dataSource] };
             });
 
             return { type: 'comparison', value: comparisonData };

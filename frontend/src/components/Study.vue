@@ -84,20 +84,21 @@
       :study-step-id="currentStep.id"
       :active="true"
       @error="error"
+      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
     <Editor
       v-if="currentStep.stepType === 2 && (studyTrajectory.includes(currentStep.id) || readOnly)"
       :document-id="currentStep.documentId"
       :study-step-id="currentStep.id"
       :active="true"
-      @update:data="studyData[currentStep.id] = $event"
+      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
     <StepModal
       v-if="currentStep.stepType === 3 && studyTrajectory.includes(currentStep.id)"
       :study-step-id="currentStep.id"
       :is-last-step="currentStep.id === lastStep.id"
       @close="handleModalClose"
-      @update:data="studyData[currentStep.id] = $event"
+      @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
     <!-- TODO: Do we still need to keep the following TODO? -->
     <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
@@ -271,10 +272,9 @@ export default {
     },
     async populateStudyData() {
       await nextTick();
-      console.log("populateStudyData studySteps", this.studySteps);
       if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
-        this.studyData = this.studySteps.reduce((acc, step) => {
-          acc[step.id] = {}; // Initialize each stepId with an empty object
+        this.studyData = this.studySteps.reduce((acc, step, index) => {
+          acc[index + 1] = {};
           return acc;
         }, {});
       }
