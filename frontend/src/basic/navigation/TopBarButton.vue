@@ -90,7 +90,7 @@ export default {
             "icon": this.icon, 
             "props": this.props,
             ...(this.studySessionId ? { studySessionId: this.studySessionId } : {}),
-            ...(this.currentStudyStep ? { currentStudyStep: this.currentStudyStep } : {}),
+            ...(this.currentStudyStep.id ? { currentStudyStep: this.currentStudyStep.id } : {}),
             ...(this.documentId ? { documentId: this.documentId } : {})
             }
         });
