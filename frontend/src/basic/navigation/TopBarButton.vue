@@ -42,6 +42,9 @@ export default {
     currentStudyStep: { 
       default: () => null 
     },
+    documentId: { 
+      default: () => null 
+    } 
   },
   props: {
     icon: {
@@ -79,7 +82,6 @@ export default {
   methods: {
     action() {
       this.$emit("click")
-      console.log("karim", this.currentStep)
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "clickTopBarButton",
@@ -89,6 +91,7 @@ export default {
             "props": this.props,
             ...(this.studySessionId ? { studySessionId: this.studySessionId } : {}),
             ...(this.currentStudyStep ? { currentStudyStep: this.currentStudyStep } : {}),
+            ...(this.documentId ? { documentId: this.documentId } : {})
             }
         });
       }
