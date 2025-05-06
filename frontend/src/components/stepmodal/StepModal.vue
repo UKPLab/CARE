@@ -146,116 +146,6 @@ export default {
       documentText: null,
       waiting: false,
       requests: {},
-      charts: [
-        {
-          title: "Horizontal bar chart",
-          explanation: "Horizontal bar chart",
-          input:{            
-            type: "bar",
-            data: {
-              labels: ["A", "B", "C", "D", "E", "F", "H"],
-              datasets: [
-                {
-                  label: "Frequency",
-                  data: [65, 59, 80, 81, 56, 55, 40],
-                  backgroundColor: "rgba(255, 99, 132, 0.5)",
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: "top",
-                },
-                title: {
-                  display: true,
-                  text: "Frequency",
-                },
-              },
-              indexAxis: "y"
-            },
-          }
-        },
-        {
-          title: "Stacked horizontal bar chart",
-          explanation: "Stacked horizontal bar chart",
-          input:{            
-            type: "bar",
-            data: {
-              labels: ["A", "B", "C", "D", "E", "F", "H"],
-              datasets: [
-                {
-                  label: 'Dataset 1',
-                  data: [65, 59, 80, 81, 56, 55, 40],
-                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                },
-                {
-                  label: 'Dataset 2',
-                  data: [28, 48, 40, 19, 86, 27, 90],
-                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                }
-              ],
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: "top",
-                },
-                title: {
-                  display: true,
-                  text: "Frequency",
-                },
-              },
-              indexAxis: "y",
-              scales: {
-                x: {
-                  stacked: true,
-                },
-                y: {
-                  stacked: true,
-                },
-              }, 
-            },
-          }
-        },
-        {
-          title: "Grouped horizontal bar chart",
-          explanation: "Grouped horizontal bar chart",
-          input:{            
-            type: "bar",
-            data: {
-              labels: ["A", "B", "C", "D", "E", "F", "H"],
-              datasets: [
-                {
-                  label: 'Dataset 1',
-                  data: [65, 59, 80, 81, 56, 55, 40],
-                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                },
-                {
-                  label: 'Dataset 2',
-                  data: [28, 48, 40, 19, 86, 27, 90],
-                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                }
-              ],
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: "top",
-                },
-                title: {
-                  display: true,
-                  text: "Frequency",
-                },
-              },
-              indexAxis: "y",
-            },
-          }
-        },
-      ],
     };
   },
   computed: {
@@ -509,10 +399,47 @@ export default {
           if (Array.isArray(placeholderConfig?.input)) {
             const comparisonData = placeholderConfig.input.map(({ stepId, dataSource }) => {
               const comparisonElement = Object.values(this.studyData[stepId]).find(item => item.key === dataSource);
-              return { type: 'comparison', value: comparisonElement?.value || null };
+              return comparisonElement?.value || null;
             });
 
-            return { type: 'comparison', value: comparisonData };
+            const datasets = comparisonData.map((value, index) => {
+              return {
+                label: `Dataset ${index + 1}`,
+                data: value ? Object.values(value) : [],
+                backgroundColor: `rgba(${index === 0 ? '255, 99, 132' : '54, 162, 235'}, 0.5)`
+              };
+            });
+
+            const tempInput = {
+              type: 'bar',
+              data: {
+                labels: comparisonData[0] ? Object.keys(comparisonData[0]) : [],
+                datasets,
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                  },
+                  title: {
+                    display: true,
+                    text: 'Comparison Chart',
+                  },
+                },
+                indexAxis: 'y',
+                scales: {
+                  x: {
+                    stacked: true,
+                  },
+                  y: {
+                    stacked: true,
+                  },
+                },
+              },
+            };
+
+            return { type: 'chart', value: tempInput };
           }
           break;
 
