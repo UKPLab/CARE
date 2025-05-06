@@ -39,7 +39,7 @@ export default {
     studySessionId: { 
       default: () => null 
     },
-    currentStep: { 
+    currentStudyStep: { 
       default: () => null 
     },
   },
@@ -87,8 +87,8 @@ export default {
             "title": this.title, 
             "icon": this.icon, 
             "props": this.props,
-            "studySessionId": this.studySessionId,
-            "currentStep": this.currentStep,
+            ...(this.studySessionId ? { studySessionId: this.studySessionId } : {}),
+            ...(this.currentStudyStep ? { currentStudyStep: this.currentStudyStep } : {}),
             }
         });
       }
