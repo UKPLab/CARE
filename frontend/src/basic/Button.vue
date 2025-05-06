@@ -21,9 +21,10 @@ export default {
   name: "BasicButton",
   components: {LoadIcon},
   inject: {
-    acceptStats: {
-      default: () => false
-    }
+    acceptStats: { default: () => false },
+    studySessionId: { default: () => null },
+    currentStudyStep: { default: () => null },
+    documentId: { default: () => null } 
   },
   props: {
     icon: {
@@ -59,7 +60,14 @@ export default {
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "clickCardButton",
-          data: {"title": this.title, "icon": this.icon, "props": this.props}
+          data: {
+            "title": this.title, 
+            "icon": this.icon, 
+            "props": this.studyId,
+            ...(this.studySessionId ? { studySessionId: this.studySessionId } : {}),
+            ...(this.currentStudyStep ? { currentStudyStep: this.currentStudyStep } : {}),
+            ...(this.documentId ? { documentId: this.documentId } : {})
+          }
         });
       }
     }
