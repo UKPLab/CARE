@@ -470,20 +470,19 @@ export default {
         case 'text':
           const textStepId = placeholderConfig["input"]["stepId"];
           const textDataSource = placeholderConfig["input"]["dataSource"];
-          const textElement = this.studyData[textStepId].find(item => item.key === textDataSource);
+          const textElement = Object.values(this.studyData[textStepId]).find(item => item.key === textDataSource);
           return { type: 'text', value: textElement?.value || null };
 
         case 'chart':
           const chartStepId = placeholderConfig["input"]["stepId"];
           const chartDataSource = placeholderConfig["input"]["dataSource"];
-          const chartElement = this.studyData[chartStepId].find(item => item.key === chartDataSource);
-          console.log("Chart element", chartElement);
+          const chartElement = Object.values(this.studyData[chartStepId]).find(item => item.key === chartDataSource);
           return { type: 'chart', value: chartElement?.value || null };
 
         case 'comparison':
           if (Array.isArray(placeholderConfig?.input)) {
             const comparisonData = placeholderConfig.input.map(({ stepId, dataSource }) => {
-              const comparisonElement = this.studyData[stepId].find(item => item.key === dataSource);
+              const comparisonElement = Object.values(this.studyData[stepId]).find(item => item.key === dataSource);
               return { type: 'comparison', value: comparisonElement?.value || null };
             });
 
