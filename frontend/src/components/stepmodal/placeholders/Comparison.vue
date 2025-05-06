@@ -33,40 +33,7 @@ export default {
   },
   computed: {
     combinedInput() {
-      if (this.input.length !== 2) {
-        return null;
-      }
-
-      const datasets = this.input.map((value, index) => {
-        return {
-          label: `Dataset ${index + 1}`,
-          data: Object.values(value),
-          backgroundColor: `rgba(${index === 0 ? '255, 99, 132' : '54, 162, 235'}, 0.5)`
-        };
-      });
-
-      
-      return {
-        type: 'bar',
-        data: {
-          labels: Object.keys(this.input[0]),
-          datasets,
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: true,
-              text: 'Comparison Chart',
-            },
-            indexAxis: "y",
-          },
-        },
-      };
-      
+      return null; // Placeholder logic removed as it is now handled in StepModal.vue
     },
   },
 };
