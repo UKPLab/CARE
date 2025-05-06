@@ -477,7 +477,33 @@ export default {
           const chartStepId = placeholderConfig["input"]["stepId"];
           const chartDataSource = placeholderConfig["input"]["dataSource"];
           const chartElement = Object.values(this.studyData[chartStepId]).find(item => item.key === chartDataSource);
-          return { type: 'chart', value: chartElement?.value || null };
+          let tempInput = {
+            type: "bar",
+            data: {
+              labels: Object.keys(chartElement?.value),
+              datasets: [
+                {
+                  label: " ",
+                  data: Object.values(chartElement?.value),
+                  backgroundColor: "rgba(255, 99, 132, 0.5)",
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+                title: {
+                  display: true,
+                  text: "",
+                },
+              },
+              indexAxis: "y"
+            },
+          };
+          return { type: 'chart', value: tempInput };
 
         case 'comparison':
           if (Array.isArray(placeholderConfig?.input)) {
