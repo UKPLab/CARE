@@ -468,22 +468,23 @@ export default {
 
       switch (placeholderKey) {
         case 'text':
-          const index = placeholderConfig["input"]["stepId"];
-          const dataSource = placeholderConfig["input"]["dataSource"];
-          return { type: 'text', value: this.studyData[index][dataSource] };
-          break;
+          const textStepId = placeholderConfig["input"]["stepId"];
+          const textDataSource = placeholderConfig["input"]["dataSource"];
+          const textElement = this.studyData[textStepId].find(item => item.key === textDataSource);
+          return { type: 'text', value: textElement?.value || null };
 
         case 'chart':
           const chartStepId = placeholderConfig["input"]["stepId"];
           const chartDataSource = placeholderConfig["input"]["dataSource"];
-          return { type: 'text', value: this.studyData[chartStepId][chartDataSource] };
-          break;
+          const chartElement = this.studyData[chartStepId].find(item => item.key === chartDataSource);
+          console.log("Chart element", chartElement);
+          return { type: 'chart', value: chartElement?.value || null };
 
         case 'comparison':
           if (Array.isArray(placeholderConfig?.input)) {
             const comparisonData = placeholderConfig.input.map(({ stepId, dataSource }) => {
-              const index = stepId;
-              return { type: 'text', value: this.studyData[index][dataSource] };
+              const comparisonElement = this.studyData[stepId].find(item => item.key === dataSource);
+              return { type: 'comparison', value: comparisonElement?.value || null };
             });
 
             return { type: 'comparison', value: comparisonData };
