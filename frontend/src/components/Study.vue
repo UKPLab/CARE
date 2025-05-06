@@ -130,7 +130,7 @@ export default {
     return {
       studySessionId: computed(() => this.studySessionId),
       readOnly: computed(() => this.readOnlyComputed),
-      studyData: computed(() => this.studyData),
+      currentStep: computed(() => this.currentStep),
     };
   },
   props: {

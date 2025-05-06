@@ -35,7 +35,13 @@ export default {
   inject: {
     acceptStats: {
       default: () => false
-    }
+    },
+    studySessionId: { 
+      default: () => null 
+    },
+    currentStep: { 
+      default: () => null 
+    },
   },
   props: {
     icon: {
@@ -73,10 +79,17 @@ export default {
   methods: {
     action() {
       this.$emit("click")
+      console.log("karim", this.currentStep)
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "clickTopBarButton",
-          data: {"title": this.title, "icon": this.icon, "props": this.props}
+          data: {
+            "title": this.title, 
+            "icon": this.icon, 
+            "props": this.props,
+            "studySessionId": this.studySessionId,
+            "currentStep": this.currentStep,
+            }
         });
       }
     }
