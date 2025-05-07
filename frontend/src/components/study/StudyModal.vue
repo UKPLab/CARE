@@ -160,6 +160,9 @@ export default {
     }
   },
   emits: ["start", "finish"],
+  inject: {
+    acceptStats: {default: () => false},
+  },
   data() {
     return {
       hash: null,
@@ -365,8 +368,8 @@ export default {
           this.$socket.emit("stats", {
             action: "clickStudySessionButton",
             data: {
-                title: data.action,
-                ...(this.studySessionId ? { studySessionId: this.studySessionId } : {}),
+                action: data.action,
+                ...(data.params.id ? { studySessionId: data.params.id } : {}),
               }
           });
         }
