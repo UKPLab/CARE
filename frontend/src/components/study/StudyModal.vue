@@ -160,9 +160,6 @@ export default {
     }
   },
   emits: ["start", "finish"],
-  inject: {
-    acceptStats: {default: () => false},
-  },
   data() {
     return {
       hash: null,
@@ -355,39 +352,24 @@ export default {
     sessionAction(data) {
       if (data.action === "finishSession") {
         this.$emit("finish", {studySessionId: data.params.id});
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "Finish Session",
-            data: {
-              ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
-            }
-          });
-        }
       }
       if (data.action === "resumeSession") {
         this.$emit("start", {studySessionId: data.params.id});
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "Start Session",
-            data: {
-              ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
-            }
-          });
-        }
         this.$refs.modal.close();
       }
       if (data.action === "startSession") {
         this.$emit("start", {studySessionId: data.params.id});
-        if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "Start Session",
-          data: {
-            ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
-            }
-        });
-      }
         this.$refs.modal.close();
       }
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "clickStudySessionButton",
+            data: {
+                title: data.action,
+                ...(this.studySessionId ? { studySessionId: this.studySessionId } : {}),
+              }
+          });
+        }
     }
   }
 }
