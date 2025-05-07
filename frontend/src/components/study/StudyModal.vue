@@ -160,6 +160,9 @@ export default {
     }
   },
   emits: ["start", "finish"],
+  inject: {
+    acceptStats: {default: () => false},
+  },
   data() {
     return {
       hash: null,
