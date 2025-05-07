@@ -480,6 +480,14 @@ module.exports = class DocumentSocket extends Socket {
         try {
             const {documentId, studySessionId, studyStepId, ops} = data;
             let appliedEdits = [];
+            
+            let orderCounter = await this.models['document_edit'].max('order', {
+                where: {
+                    documentId,
+                    studySessionId: studySessionId || null,
+                    studyStepId: studyStepId || null
+                }
+            }) || 0;
 
             await ops.reduce(async (promise, op) => {
                 await promise;
@@ -489,6 +497,7 @@ module.exports = class DocumentSocket extends Socket {
                     documentId,
                     studySessionId: studySessionId || null,
                     studyStepId: studyStepId || null,
+                    order: ++orderCounter,
                     ...op
                 };
 
