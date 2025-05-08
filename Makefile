@@ -104,6 +104,11 @@ build:
 build-frontend: frontend/node_modules/.uptodate
 	cd frontend && npm run frontend-build
 
+.PHONY: rpc_moodle_build
+rpc_moodle_build:
+	docker compose -f docker-compose.yml -f docker-dev.yml build rpc_moodle
+	docker compose -f docker-compose.yml -f docker-dev.yml up -d rpc_moodle
+
 .PHONY: build-clean
 build-clean:
 	@echo "Cleaning project code and database. WARNING: This will remove your current DB state."
