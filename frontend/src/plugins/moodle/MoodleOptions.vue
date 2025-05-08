@@ -10,7 +10,6 @@
 import { defineComponent } from "vue";
 import BasicForm from "@/basic/Form.vue";
 import deepEqual from "deep-equal";
-import { Value } from "pdfjs-dist/build/pdf.worker";
 
 export default defineComponent({
   components: { BasicForm },
@@ -134,9 +133,7 @@ export default defineComponent({
         if (typeof this.moodleOptions.assignmentID === 'string') {
           this.moodleOptions.assignmentID = Number(this.moodleOptions.assignmentID); // make sure it’s a number
         }
-        console.log('[DEBUG] moodleOptions about to be sent ->',
-                    JSON.parse(JSON.stringify(this.moodleOptions)));
-        
+
         if (!deepEqual(this.moodleOptions, this.modelValue)) {
           this.$emit("update:modelValue", this.moodleOptions);
         }
