@@ -480,6 +480,7 @@ module.exports = class DocumentSocket extends Socket {
         try {
             const {documentId, studySessionId, studyStepId, ops} = data;
             let appliedEdits = [];
+            let orderCounter = 1;
 
             await ops.reduce(async (promise, op) => {
                 await promise;
@@ -489,6 +490,7 @@ module.exports = class DocumentSocket extends Socket {
                     documentId,
                     studySessionId: studySessionId || null,
                     studyStepId: studyStepId || null,
+                    order: orderCounter++,
                     ...op
                 };
 
