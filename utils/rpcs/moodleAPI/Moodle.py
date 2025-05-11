@@ -70,7 +70,8 @@ class Moodle:
         assign_ids_with_names = []
         
         for assignment in course_assignments['courses'][0]['assignments']:
-            assign_ids_with_names.append((assignment['id'], assignment['name']))
+            # Use course‑module id so front‑end passes the value publish() expects
+            assign_ids_with_names.append((assignment['cmid'], assignment['name']))
             
         return assign_ids_with_names
 
