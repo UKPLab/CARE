@@ -393,54 +393,9 @@ export default {
               indexAxis: "y"
             },
           };
-          return { type: 'chart', value: tempInput };
-
-        case 'comparison':
-          if (Array.isArray(placeholderConfig?.input)) {
-            const comparisonData = placeholderConfig.input.map(({ stepId, dataSource }) => {
-              const comparisonElement = Object.values(this.studyData[stepId]).find(item => item.key === dataSource);
-              return comparisonElement?.value || null;
-            });
-
-            const datasets = comparisonData.map((value, index) => {
-              return {
-                label: `Dataset ${index + 1}`,
-                data: value ? Object.values(value) : [],
-                backgroundColor: `rgba(${index === 0 ? '255, 99, 132' : '54, 162, 235'}, 0.5)`
-              };
-            });
-
-            const tempInput = {
-              type: 'bar',
-              data: {
-                labels: comparisonData[0] ? Object.keys(comparisonData[0]) : [],
-                datasets,
-              },
-              options: {
-                responsive: true,
-                plugins: {
-                  legend: {
-                    position: 'top',
-                  },
-                  title: {
-                    display: true,
-                    text: 'Comparison Chart',
-                  },
-                },
-                indexAxis: 'y',
-                scales: {
-                  x: {
-                    stacked: true,
-                  },
-                  y: {
-                    stacked: true,
-                  },
-                },
-              },
-            };
-
-            return { type: 'chart', value: tempInput };
-          }
+          return { type: 'chart', value: tempInput };        
+          case 'comparison':          
+          return { type: 'comparison', config: placeholderConfig };
           break;
 
         default:
