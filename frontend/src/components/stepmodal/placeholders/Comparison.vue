@@ -30,7 +30,7 @@ export default {
       required: true,
     },
   },
-  computed: {
+  computed: {    
     chartConfig() {
       if (!this.input || !Array.isArray(this.input.input) || !this.studyData) {
         return null;
@@ -39,18 +39,27 @@ export default {
         const comparisonElement = Object.values(this.studyData[stepId] || {}).find(item => item.key === dataSource);
         return comparisonElement?.value || null;
       });
-      const datasets = comparisonData.map((value, index) => {
-        return {
-          label: this.input.labels?.[index] || `Dataset ${index + 1}`,
-          data: value ? Object.values(value) : [],
-          backgroundColor: `rgba(${index === 0 ? '255, 99, 132' : '54, 162, 235'}, 0.5)`
-        };
-      });
+      
+      const data1 = comparisonData[0] || {};
+      const data2 = comparisonData[1] || {};
+      
+      const { labels, dataset1, dataset2 } = this.processComparisonData(data1, data2);
       return {
         type: 'bar',
         data: {
-          labels: Object.keys(comparisonData?.[0] || {}),
-          datasets,
+          labels,
+          datasets: [
+            {
+              label: this.input.labels?.[0] || 'Dataset 1',
+              data: dataset1,
+              backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            },
+            {
+              label: this.input.labels?.[1] || 'Dataset 2',
+              data: dataset2,
+              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            }
+          ],
         },
         options: {
           responsive: true,
@@ -70,6 +79,37 @@ export default {
           },
         },
       };
+    },
+  },
+  methods: {
+    processComparisonData(data1, data2) {
+      const allKeys = Array.from(new Set([...Object.keys(data1 || {}), ...Object.keys(data2 || {})]));
+      const dataset1 = [];
+      const dataset2 = [];
+      const stack = [];
+
+      for (const key of allKeys) {
+        const v1 = data1?.[key] ?? 0;
+        const v2 = data2?.[key] ?? 0;
+          if (v1 === v2) {
+          // Case 1: Equal values - show first dataset completely, no stacking for second
+          dataset1.push(v1);
+          dataset2.push(0);
+          stack.push(0);
+        } else if (v1 < v2) {
+          // Case 2: First is smaller - show first completely, second stacks the difference
+          dataset1.push(v1);
+          dataset2.push(v2 - v1);
+          stack.push(1);
+        } else {
+          // Case 3: Second is smaller - show second completely, first stacks the difference
+          dataset1.push(v1 - v2);
+          dataset2.push(v2);
+          stack.push(2);
+        }
+      }
+      
+      return { labels: allKeys, dataset1, dataset2, stack };
     },
   },
 };
