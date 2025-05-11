@@ -134,6 +134,7 @@ module.exports = (sequelize, DataTypes) => {
             text: DataTypes.STRING,
             attributes: DataTypes.JSONB,
             deleted: DataTypes.BOOLEAN,
+            order: DataTypes.INTEGER,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE,
             deletedAt: DataTypes.DATE,
