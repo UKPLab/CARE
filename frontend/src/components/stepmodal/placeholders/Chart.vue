@@ -1,6 +1,6 @@
 <template>
-  <div>
-  <canvas ref="chartCanvas"> </canvas>
+  <div class="chart-container">
+    <canvas ref="chartCanvas"></canvas>
   </div>
 </template>
 
@@ -27,7 +27,88 @@ export default {
       chartInstance: null,
       previousChartInput: null,
     };
-  },
+  },  computed: {
+    chartConfig() {
+      // Default configuration
+      const defaultConfig = {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: ' ',
+              data: [],
+              backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: true,
+              text: '',
+            },
+          },
+          indexAxis: 'y'
+        },
+      };
+
+      // If the chart is already properly configured with type, data, and options, use it directly
+      if (this.chartInput.type && this.chartInput.data && this.chartInput.options) {
+        // Ensure responsive options are set
+        const options = {
+          ...this.chartInput.options,
+          responsive: true,
+          maintainAspectRatio: false
+        };
+        
+        return {
+          ...this.chartInput,
+          options
+        };
+      }
+
+      // Handle simplified data input
+      if (this.chartInput.rawData) {
+        const data = this.chartInput.rawData;
+        
+        return {
+          type: this.chartInput.chartType || defaultConfig.type,
+          data: {
+            labels: data ? Object.keys(data) : [],
+            datasets: [
+              {
+                label: this.chartInput.label || defaultConfig.data.datasets[0].label,
+                data: data ? Object.values(data) : [],
+                backgroundColor: this.chartInput.backgroundColor || defaultConfig.data.datasets[0].backgroundColor,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: this.chartInput.legendPosition || defaultConfig.options.plugins.legend.position,
+              },
+              title: {
+                display: true,
+                text: this.chartInput.title || defaultConfig.options.plugins.title.text,
+              },
+            },
+            indexAxis: this.chartInput.indexAxis || defaultConfig.options.indexAxis
+          },
+        };
+      }
+      
+      return this.chartInput;
+    }
+  },  
   mounted() {
     Chart.register(...registerables);
     //this.renderChart();
