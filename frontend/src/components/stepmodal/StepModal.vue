@@ -47,7 +47,7 @@
                   <Chart :chartInput="segment.value" />
                 </template>
                 <template v-else-if="segment.type === 'comparison'">
-                  <Comparison :input="segment.value" />
+                  <Comparison :input="segment.config" />
                 </template>
               </div>
             </div>
@@ -362,7 +362,8 @@ export default {
           const textDataSource = placeholderConfig["input"]["dataSource"];
           const textElement = Object.values(this.studyData[textStepId]).find(item => item.key === textDataSource);
           return { type: 'text', value: textElement?.value || null };
-          case 'chart':
+
+        case 'chart':
           const chartStepId = placeholderConfig["input"]["stepId"];
           const chartDataSource = placeholderConfig["input"]["dataSource"];
           const chartElement = Object.values(this.studyData[chartStepId]).find(item => item.key === chartDataSource);
@@ -393,21 +394,52 @@ export default {
             },
           };
           return { type: 'chart', value: tempInput };
-          case 'comparison':
+
+        case 'comparison':
           if (Array.isArray(placeholderConfig?.input)) {
             const comparisonData = placeholderConfig.input.map(({ stepId, dataSource }) => {
               const comparisonElement = Object.values(this.studyData[stepId]).find(item => item.key === dataSource);
               return comparisonElement?.value || null;
             });
 
-            return { 
-              type: 'comparison', 
-              value: {
-                data: comparisonData,
-                title: placeholderConfig.title || 'Comparison Chart',
-                labels: placeholderConfig.labels || null
-              }
+            const datasets = comparisonData.map((value, index) => {
+              return {
+                label: `Dataset ${index + 1}`,
+                data: value ? Object.values(value) : [],
+                backgroundColor: `rgba(${index === 0 ? '255, 99, 132' : '54, 162, 235'}, 0.5)`
+              };
+            });
+
+            const tempInput = {
+              type: 'bar',
+              data: {
+                labels: comparisonData[0] ? Object.keys(comparisonData[0]) : [],
+                datasets,
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                  },
+                  title: {
+                    display: true,
+                    text: 'Comparison Chart',
+                  },
+                },
+                indexAxis: 'y',
+                scales: {
+                  x: {
+                    stacked: true,
+                  },
+                  y: {
+                    stacked: true,
+                  },
+                },
+              },
             };
+
+            return { type: 'chart', value: tempInput };
           }
           break;
 

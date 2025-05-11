@@ -17,21 +17,28 @@ import Chart from "./Chart.vue";
 export default {
   name: "Comparison",
   components: { Chart },
+  inject: {
+    studyData: {
+      type: Object,
+      required: true,
+      default: () => null,
+    },
+  },
   props: {
     input: {
       type: Object,
       required: true,
-    }
+    },
   },
   computed: {
     chartConfig() {
-      if (!this.input || !Array.isArray(this.input.data)) {
+      if (!this.input || !Array.isArray(this.input.input) || !this.studyData) {
         return null;
       }
-
-      const comparisonData = this.input.data;
-      
-      // Create datasets for the chart
+      const comparisonData = this.input.input.map(({ stepId, dataSource }) => {
+        const comparisonElement = Object.values(this.studyData[stepId] || {}).find(item => item.key === dataSource);
+        return comparisonElement?.value || null;
+      });
       const datasets = comparisonData.map((value, index) => {
         return {
           label: this.input.labels?.[index] || `Dataset ${index + 1}`,
@@ -39,12 +46,10 @@ export default {
           backgroundColor: `rgba(${index === 0 ? '255, 99, 132' : '54, 162, 235'}, 0.5)`
         };
       });
-
-      // Return chart configuration
       return {
         type: 'bar',
         data: {
-          labels: Object.keys(comparisonData?.[0]),
+          labels: Object.keys(comparisonData?.[0] || {}),
           datasets,
         },
         options: {
@@ -60,12 +65,8 @@ export default {
           },
           indexAxis: 'y',
           scales: {
-            x: {
-              stacked: true,
-            },
-            y: {
-              stacked: true,
-            },
+            x: { stacked: true },
+            y: { stacked: true },
           },
         },
       };
