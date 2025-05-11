@@ -18,7 +18,11 @@ const Delta = require('quill-delta');
  * @returns {object} The Quill Delta object representation of the database entries.
  */
 function dbToDelta(dbEntries) {
-    return dbEntries.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).reduce((compositeDelta, edit) => {
+    return dbEntries.sort((a, b) => {
+                const timeCompare = new Date(a.createdAt) - new Date(b.createdAt);
+                if (timeCompare !== 0) return timeCompare;
+                return (a.order || 0) - (b.order || 0);
+            }).reduce((compositeDelta, edit) => {
             const { operationType, offset, span, text, attributes } = edit;
             let delta = new Delta();
 
