@@ -50,7 +50,6 @@ build:
   script:
     - make ENV=dev build
     - docker wait care_dev-docs_sphinx-1
-    - docker wait care_dev-docs_asyncapi-1
     - docker compose -p "care_dev"  rm -f -s -v
     - tar -czvf ${PWD}/docs.tar.gz ./docs/build
     - tar -czvf ${PWD}/doc_api.tar.gz ./docs/api
