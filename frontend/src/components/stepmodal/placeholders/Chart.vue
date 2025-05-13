@@ -8,6 +8,7 @@
 import { Chart, registerables } from 'chart.js';
 import { debounce } from 'lodash';
 
+
 /**
  * Component to render a chart based on the provided data and options.
  * This is mainly based on chart.js component. Flexible graphs can be built according to the data.
@@ -16,109 +17,72 @@ import { debounce } from 'lodash';
  */
 export default {
   name: 'ChartComponent',
+  inject: {
+    studyData: {
+      type: Object,
+      required: true,
+      default: () => null,
+    },
+  },
   props: {
     chartInput: {
       type: Object,
-      default: () => ({}),
+      required: true,
     },
   },
   data() {
     return {
       chartInstance: null,
-      previousChartInput: null,
     };
-  },  computed: {
+  },  
+  computed: {
     chartConfig() {
-      // Default configuration
-      const defaultConfig = {
+
+      if (this.chartInput?.type && this.chartInput?.data && this.chartInput?.options) {
+        return this.chartInput;
+      }
+
+      const stepId = this.chartInput.input.stepId;
+      const datasource = this.chartInput.input.dataSource;
+
+      const chartElement = Object.values(this.studyData[stepId] || {}).find(item => item.key === datasource);
+
+      const data = chartElement?.value;
+      const labels = Object.keys(data);
+      const dataset = Object.values(data);
+
+      return {
         type: 'bar',
         data: {
-          labels: [],
+          labels,
           datasets: [
             {
-              label: ' ',
-              data: [],
-              backgroundColor: 'rgba(255, 99, 132, 0.5)',
+              label: this.chartInput.label || 'Dataset',
+              data: dataset,
+              backgroundColor: "rgba(255, 99, 132, 0.5)",
             },
           ],
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false,
           plugins: {
             legend: {
               position: 'top',
             },
             title: {
               display: true,
-              text: '',
+              text: this.chartInput.title || 'Chart',
             },
           },
-          indexAxis: 'y'
+          indexAxis: 'y',
         },
       };
-
-      // If the chart is already properly configured with type, data, and options, use it directly
-      if (this.chartInput.type && this.chartInput.data && this.chartInput.options) {
-        // Ensure responsive options are set
-        const options = {
-          ...this.chartInput.options,
-          responsive: true,
-          maintainAspectRatio: false
-        };
-        
-        return {
-          ...this.chartInput,
-          options
-        };
-      }
-
-      // Handle simplified data input
-      if (this.chartInput.rawData) {
-        const data = this.chartInput.rawData;
-        
-        return {
-          type: this.chartInput.chartType || defaultConfig.type,
-          data: {
-            labels: data ? Object.keys(data) : [],
-            datasets: [
-              {
-                label: this.chartInput.label || defaultConfig.data.datasets[0].label,
-                data: data ? Object.values(data) : [],
-                backgroundColor: this.chartInput.backgroundColor || defaultConfig.data.datasets[0].backgroundColor,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: this.chartInput.legendPosition || defaultConfig.options.plugins.legend.position,
-              },
-              title: {
-                display: true,
-                text: this.chartInput.title || defaultConfig.options.plugins.title.text,
-              },
-            },
-            indexAxis: this.chartInput.indexAxis || defaultConfig.options.indexAxis
-          },
-        };
-      }
-      
-      return this.chartInput;
-    }
+    },
   },  
   mounted() {
     Chart.register(...registerables);
-    //this.renderChart();
     const ctx = this.$refs.chartCanvas.getContext('2d');
-      this.chartInstance = new Chart(ctx, {
-        type: this.chartInput["type"],	
-        data: this.chartInput["data"],
-        options: this.chartInput["options"],
-      });
-      console.log("Instance",this.chartInstance);
+    this.chartInstance = new Chart(ctx, this.chartConfig);
   },
   beforeUnmount() {
     this.destroyChart();

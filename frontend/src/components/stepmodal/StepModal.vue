@@ -18,7 +18,7 @@
       </template>  
       <template #body>
         <div
-          v-if="waiting"
+          v-if="waiting || !placeholdersReady"
           class="justify-content-center flex-grow-1 d-flex"
           role="status"
         >
@@ -44,7 +44,7 @@
                   <Text :input="segment.value" />
                 </template>
                 <template v-else-if="segment.type === 'chart'">
-                  <Chart :chartInput="segment.value" />
+                  <Chart :chartInput="segment.config" />
                 </template>
                 <template v-else-if="segment.type === 'comparison'">
                   <Comparison :input="segment.config" />
@@ -220,6 +220,12 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
+    placeholdersReady() {
+      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
+      const specificDataCount = Object.keys(this.specificDocumentData || {}).length;
+      const studyDataCount = Object.keys(this.studyData[realStepId] || {}).length;
+      return !this.waiting && Object.keys(this.requests).length === 0 && specificDataCount === studyDataCount;
+    },
   },
   watch: {
     nlpResults: function (results) {
@@ -259,6 +265,17 @@ export default {
     specificDocumentData: {
       handler(newData) {
         this.$emit("update:data", this.specificDocumentData);
+      },
+      deep: true,
+    },
+    studyData: {
+      handler(newData) {
+        if (Object.keys(this.requests).length > 0) {
+          this.waiting = true;
+        }
+        if (Object.keys(this.requests).length === 0) {
+          this.waiting = false;
+        }
       },
       deep: true,
     },
@@ -364,39 +381,10 @@ export default {
           return { type: 'text', value: textElement?.value || null };
 
         case 'chart':
-          const chartStepId = placeholderConfig["input"]["stepId"];
-          const chartDataSource = placeholderConfig["input"]["dataSource"];
-          const chartElement = Object.values(this.studyData[chartStepId]).find(item => item.key === chartDataSource);
-          let tempInput = {
-            type: "bar",
-            data: {
-              labels: Object.keys(chartElement?.value),
-              datasets: [
-                {
-                  label: " ",
-                  data: Object.values(chartElement?.value),
-                  backgroundColor: "rgba(255, 99, 132, 0.5)",
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: "top",
-                },
-                title: {
-                  display: true,
-                  text: "",
-                },
-              },
-              indexAxis: "y"
-            },
-          };
-          return { type: 'chart', value: tempInput };        
+          return { type: 'chart', config: placeholderConfig }; 
+
           case 'comparison':          
           return { type: 'comparison', config: placeholderConfig };
-          break;
 
         default:
           this.eventBus.emit("toast", {
