@@ -4,7 +4,7 @@
       <table class="table table-hover">
         <tbody>
           <tr
-            v-for="(item, index) in currentData"
+            v-for="(item, index) in choices"
             :key="'entry_' + index"
           >
             <td
@@ -12,12 +12,14 @@
               :key="field.key"
             >
               <div class="d-flex align-items-center">
-                <span class="badge bg-primary me-2"> <i class="bi bi-file-earmark-text"></i> {{ item.stepNumber }} </span>
+                <span class="badge bg-primary me-2">
+                  <i class="bi bi-file-earmark-text"></i> {{ item.stepNumber }}
+                </span>
                 <div class="flex-grow-1 d-flex align-items-center">
                   <FormSelect
                     v-if="field.type === 'select'"
                     :ref="'ref_' + field.key"
-                    v-model="item[field.key]"
+                    v-model="currentData[index][field.key]"
                     :data-table="true"
                     :parent-value="item"
                     :options="{ options: field.options }"
@@ -28,7 +30,7 @@
                   <FormDefault
                     v-else
                     :ref="'ref_' + field.key"
-                    v-model="item[field.key]"
+                    v-model="currentData[index][field.key]"
                     :data-table="true"
                     :options="field"
                   />
@@ -36,9 +38,10 @@
                     v-if="item.hasConfiguration"
                     class="ms-2"
                   >
+                    {{ currentData[index].configuration }}
                     <!-- TODO: Replace model-value with v-model -->
                     <ConfigurationModal
-                      :model-value="item.configuration"
+                      :model-value="currentData[index].configuration"
                       :study-step-id="item.id"
                       :step-number="item.stepNumber"
                       :document-id="currentData.find((entry) => entry.id === item.id)?.documentId"
@@ -155,18 +158,23 @@ export default {
   watch: {
     modelValue: {
       handler(newValue) {
-        if (JSON.stringify(newValue) !== JSON.stringify(this.currentData)) {
-          this.currentData = this.choices.map((choice, index) => ({
-            // TODO: Check this reduce method
-            ...choice,
-            ...this.fields.reduce((acc, field) => {
-              acc[field.key] = newValue[index]?.[field.key] || null;
-              return acc;
-            }, {}),
-            id: choice.id,
-            configuration: newValue[index]?.configuration || {},
-          }));
+        if (JSON.stringify(newValue) === JSON.stringify(this.currentData)) {
+          return;
         }
+
+        this.currentData = this.choices.map((choice) => {
+          // Find matched newValue entry by workflowStepId
+          const matchedValue = newValue.find((v) => v.workflowStepId === choice.id);
+
+          return {
+            ...this.fields.reduce((acc, field) => {
+              acc[field.key] = matchedValue?.[field.key] || null;
+              return acc;
+            }, {}), // documentId
+            id: choice.id, // workflowStepId
+            configuration: matchedValue?.configuration || {},
+          };
+        });
       },
       deep: true,
       immediate: true,
@@ -180,27 +188,28 @@ export default {
       deep: true,
       immediate: true,
     },
-    // NOTE: I don't understand why we need to watch choices
     choices: {
       handler(newValue, oldValue) {
         if (JSON.stringify(newValue) === JSON.stringify(oldValue)) {
           return;
         }
-
-        this.currentData = this.choices.map((c) => {
-          return this.fields.reduce((acc, field) => {
-            acc[field.key] = null;
-            // die workflowStepId
-            acc["id"] = c.id;
-            return acc;
-          }, {});
-        });
+        this.initializeCurrentData();
       },
       deep: true,
       immediate: true,
     },
   },
   methods: {
+    initializeCurrentData() {
+      this.currentData = this.choices.map((c) => {
+        return this.fields.reduce((acc, field) => {
+          acc[field.key] = null;
+          acc["id"] = c.id; // workflowStepId
+          acc["configuration"] = c.configuration || {};
+          return acc;
+        }, {});
+      });
+    },
     validate() {
       const allValid = this.choices.every((item, index) => {
         return this.fields.every((field) => {
