@@ -67,9 +67,9 @@ export default defineComponent({
 
         if (this.assignments.length > 0) {
           assignmentField.type = "select";
-          assignmentField.options = this.assignments.map((assignment) => ({
-            value: assignment[0],
-            name: assignment[1],
+          assignmentField.options = this.assignments.map(([id,title]) => ({
+            value: id,
+            name: title,
           }));
           assignmentField.icon = "list";
         } else {
@@ -126,6 +126,14 @@ export default defineComponent({
   watch: {
     moodleOptions: {
       handler() {
+
+        if (this.moodleOptions.assignmentID && typeof this.moodleOptions.assignmentID === 'object') {
+          this.moodleOptions.assignmentID = this.moodleOptions.assignmentID.value; 
+        }
+        if (typeof this.moodleOptions.assignmentID === 'string') {
+          this.moodleOptions.assignmentID = Number(this.moodleOptions.assignmentID); // make sure it’s a number
+        }
+
         if (!deepEqual(this.moodleOptions, this.modelValue)) {
           this.$emit("update:modelValue", this.moodleOptions);
         }
