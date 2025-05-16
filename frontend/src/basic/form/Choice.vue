@@ -19,13 +19,14 @@
                   <FormSelect
                     v-if="field.type === 'select'"
                     :ref="'ref_' + field.key"
-                    v-model="currentData[index][field.key]"
+                    :model-value="getFieldValue(index, field.key)"
                     :data-table="true"
                     :parent-value="choice"
                     :options="{ options: field.options }"
                     :placeholder="field.label"
                     class="flex-grow-1"
                     style="min-width: 200px; max-width: 800px"
+                    @update:model-value="(val) => updateFieldValue(index, field.key, val)"
                   />
                   <FormDefault
                     v-else
@@ -171,6 +172,7 @@ export default {
               return acc;
             }, {}), // documentId
             id: choice.id, // workflowStepId
+            parentDocumentId: matchedValue?.parentDocumentId || null,
             configuration: matchedValue?.configuration || {},
           };
         });
@@ -226,6 +228,29 @@ export default {
         updatedCurrentData[itemIndex] = {
           ...updatedCurrentData[itemIndex],
           configuration: configData,
+        };
+
+        this.currentData = updatedCurrentData;
+      }
+    },
+    getFieldValue(index, fieldKey) {
+      const item = this.currentData[index];
+
+      // If there is a parentDocumentId in the current item, use it for select fields
+      if (item && item.parentDocumentId) {
+        return item.parentDocumentId;
+      }
+
+      // Otherwise use the current value
+      return item ? item[fieldKey] : null;
+    },
+    updateFieldValue(index, fieldKey, value) {
+      if (index >= 0 && index < this.currentData.length) {
+        // Create a new array to trigger the watcher
+        const updatedCurrentData = [...this.currentData];
+        updatedCurrentData[index] = {
+          ...updatedCurrentData[index],
+          [fieldKey]: value,
         };
 
         this.currentData = updatedCurrentData;
