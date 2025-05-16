@@ -4,7 +4,7 @@
       <table class="table table-hover">
         <tbody>
           <tr
-            v-for="(item, index) in choices"
+            v-for="(choice, index) in choices"
             :key="'entry_' + index"
           >
             <td
@@ -13,7 +13,7 @@
             >
               <div class="d-flex align-items-center">
                 <span class="badge bg-primary me-2">
-                  <i class="bi bi-file-earmark-text"></i> {{ item.stepNumber }}
+                  <i class="bi bi-file-earmark-text"></i> {{ choice.stepNumber }}
                 </span>
                 <div class="flex-grow-1 d-flex align-items-center">
                   <FormSelect
@@ -21,7 +21,7 @@
                     :ref="'ref_' + field.key"
                     v-model="currentData[index][field.key]"
                     :data-table="true"
-                    :parent-value="item"
+                    :parent-value="choice"
                     :options="{ options: field.options }"
                     :placeholder="field.label"
                     class="flex-grow-1"
@@ -35,18 +35,17 @@
                     :options="field"
                   />
                   <span
-                    v-if="item.hasConfiguration"
+                    v-if="choice.hasConfiguration"
                     class="ms-2"
                   >
-                    {{ currentData[index].configuration }}
                     <!-- TODO: Replace model-value with v-model -->
                     <ConfigurationModal
                       :model-value="currentData[index].configuration"
-                      :study-step-id="item.id"
-                      :step-number="item.stepNumber"
-                      :document-id="currentData.find((entry) => entry.id === item.id)?.documentId"
+                      :study-step-id="choice.id"
+                      :step-number="choice.stepNumber"
+                      :document-id="currentData.find((entry) => entry.id === choice.id)?.documentId"
                       :workflow-steps="workflowSteps"
-                      @update:model-value="(configData) => handleConfigUpdate(configData, item.id)"
+                      @update:model-value="(configData) => handleConfigUpdate(configData, choice.id)"
                     />
                   </span>
                 </div>
