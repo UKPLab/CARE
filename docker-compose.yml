@@ -10,13 +10,6 @@ services:
     volumes:
       - ./docs:/docs
     command: make html
-  docs_asyncapi:
-    image: asyncapi/generator
-    volumes:
-      - ./docs:/docs
-      - ./docs/api.yml:/app/api.yml
-      - ./docs/api:/app/output
-    command: --force-write --output /app/output /app/api.yml @asyncapi/html-template
   postgres:
     image: postgres:11.5-alpine
     healthcheck:
