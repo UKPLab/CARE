@@ -7,6 +7,8 @@
       :name="studyStep?.configuration?.name || 'Modal'"
       :class="modalClasses"
       :style="{ backgroundColor: studyStep?.configuration?.backgroundColor || '' }"
+      disableKeyboard
+      removeClose
     >
       <template #title>
         <h5
@@ -18,12 +20,29 @@
       </template>  
       <template #body>
         <div
-          v-if="waiting || !placeholdersReady"
+          v-if="waiting"
           class="justify-content-center flex-grow-1 d-flex"
           role="status"
         >
-          <div class="spinner-border m-5">
+          <div class="spinner-border m-5" v-if="!timeoutError">
             <span class="visually-hidden">Loading...</span>          
+          </div>
+          <div v-else>
+            <div class="d-flex flex-column align-items-center">
+              <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP support.</p>
+              <div class="d-flex gap-2">
+                <BasicButton
+                  title="Try Again"
+                  class="btn btn-warning"
+                  @click="retryNlpRequests"
+                />
+                <BasicButton
+                  title="Skip NLP Support"
+                  class="btn btn-secondary"
+                  @click="closeModal({ nextStep: true })"
+                />
+              </div>
+            </div>
           </div>
         </div>
         <div v-else>
@@ -144,8 +163,9 @@ export default {
     return {
       loadingConfig: true,
       documentText: null,
-      waiting: false,
+      waiting: true,
       requests: {},
+      timeoutError: false,
     };
   },
   computed: {
@@ -258,9 +278,11 @@ export default {
         }
       }
 
+      /*
       if (Object.keys(this.requests).length === 0) {
         this.waiting = false;
       }
+      */
     },
     specificDocumentData: {
       handler(newData) {
@@ -332,6 +354,7 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
+    // TODO: Replace this with an intermediate component between StepModal and NLPService (like, MultiNLPService)
     async request(skill, inputs, uniqueId) {
       const requestId = uuid();
       this.requests[requestId] = { skill, inputs, input: "", response: "", uniqueId };
@@ -361,8 +384,34 @@ export default {
               message: "Timeout in request for skill " + skill + " - Request failed!",
               variant: "danger"
             });
+            this.timeoutError = true; 
           }
         }, this.nlpRequestTimeout);
+      }
+    },
+    async retryNlpRequests() {
+      //this.timeoutError = false;
+      for (const requestId in this.requests) {
+        if (this.requests[requestId]) {
+          const { skill, input, uniqueId } = this.requests[requestId];
+
+          if (!Object.keys(this.documentData).some(key => this.documentData[key]["studySessionId"] === this.studySessionId && key.startsWith(uniqueId) && this.documentData[key]["studyStepId"] === this.studyStepId && this.documentData[key]["key"] === requestId)) {
+            await this.$socket.emit("serviceRequest", {
+              service: "NLPService",
+              data: {
+                id: requestId,
+                name: skill,
+                data: input,
+              },
+            });
+
+            setTimeout(() => {
+              if (this.requests[requestId]) {
+                this.timeoutError = true;
+              }
+            }, this.nlpRequestTimeout);
+          }
+        }
       }
     },
     async exportStudyData() {
@@ -380,10 +429,10 @@ export default {
           const textElement = Object.values(this.studyData[textStepId]).find(item => item.key === textDataSource);
           return { type: 'text', value: textElement?.value || null };
 
-        case 'chart':
-          return { type: 'chart', config: placeholderConfig }; 
+        case 'chart':          
+          return { type: 'chart', config: placeholderConfig };
 
-          case 'comparison':          
+        case 'comparison':          
           return { type: 'comparison', config: placeholderConfig };
 
         default:
