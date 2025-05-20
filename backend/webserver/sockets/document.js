@@ -62,6 +62,7 @@ module.exports = class DocumentSocket extends Socket {
      * @param {Object} data - The data object containing the document details.
      * @param {string} data.name - The name of the document.
      * @param {Buffer} data.file - The binary content of the document.
+     * @param {boolean} data.enableAnnotations - Indicates if annotations are enabled for the document.
      * @param {number} [data.userId] - The ID of the user who owns the document (optional).
      * @param {boolean} [data.isUploaded] - Indicates if the document is uploaded by an admin (optional).
      * @param {Object} options - The options object containing the transaction.
@@ -71,7 +72,7 @@ module.exports = class DocumentSocket extends Socket {
 
         let doc = null;
         let target = "";
-
+    
         if (!data['file']) {
             throw new Error("No file uploaded");
         }
@@ -127,12 +128,43 @@ module.exports = class DocumentSocket extends Socket {
         }
 
         fs.writeFileSync(target, data.file);
+        // annotations part
+        var annotations = [];
+        if (data["enableAnnotations"]) {
+            try {
+                annotations = await this.server.rpcs["PDFRPC"].getAnnotations({
+                    file: data['file'],
+                    document: doc,
+                    fileType: fileType,
+                });
+                if (annotations.length !== 0) {
+                    for (const extracted of annotations) {
+                        try {
+                            const newAnnotation = {
+                                documentId: doc.id,
+                                selectors: extracted.selectors,
+                                tagId: extracted.tagId,
+                                studySessionId: extracted.studySessionId,
+                                studyStepId: extracted.studyStepId,
+                                text: extracted.text || null,
+                                draft: true,
+                                userId: this.userId,
+                                anonymous: false,
+                            };
+                            await this.models['annotation'].add(newAnnotation);
+                        } catch (annotationErr) {
+                            throw new Error("Error adding annotation: " + annotationErr.message);
+                        }
+                    }
+                }
+            } catch (annotationRpcErr) {
+                throw new Error("Error extracting annotations: " + annotationRpcErr.message);
+            }
+        }
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         })
-
-        return doc;
-
+        return {doc, annotations};
     }
 
     /**
