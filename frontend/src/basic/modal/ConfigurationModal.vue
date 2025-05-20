@@ -52,10 +52,9 @@
                 >
                   <label class="form-label">{{ input }}:</label>
                   <FormSelect
+                    v-model="inputMappings[index][input]"
                     :options="{ options: availableDataSources }"
                     :value-as-object="true"
-                    :model-value="getFormattedDataInput(index, input)"
-                    @update:model-value="(source) => updateDataInput(index, input, source)"
                   />
                 </div>
               </div>
@@ -203,6 +202,7 @@ export default {
       selectedSkills: [],
       shortPreview: "",
       isUpdateMode: false,
+      inputMappings: [],
     };
   },
   computed: {
@@ -251,6 +251,20 @@ export default {
         }
       },
     },
+    inputMappings: {
+      handler(newMappings) {
+        if (!newMappings.length) return;
+
+        newMappings.forEach((mapping, index) => {
+          Object.entries(mapping).forEach(([input, source]) => {
+            if (source) {
+              this.updateDataInput(index, input, source);
+            }
+          });
+        });
+      },
+      deep: true,
+    },
   },
   mounted() {
     this.initializeModal();
@@ -290,9 +304,25 @@ export default {
             dataInput: {},
           };
         });
+        
+        // Initialize inputMappings after selectedSkills is populated
+        this.initializeInputMappings();
       } else {
         this.selectedSkills = [];
+        this.inputMappings = [];
       }
+    },
+    initializeInputMappings() {
+      this.inputMappings = this.selectedSkills.map((skill, idx) => {
+        const mapping = {};
+        if (skill.skillName) {
+          const inputs = this.getSkillInputs(skill.skillName);
+          inputs.forEach((input) => {
+            mapping[input] = this.getFormattedDataInput(idx, input);
+          });
+        }
+        return mapping;
+      });
     },
     fetchDocument() {
       if (!this.documentId || !this.studyStepId) return;
