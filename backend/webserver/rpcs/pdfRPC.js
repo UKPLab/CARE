@@ -63,6 +63,16 @@ module.exports = class PDFRPC extends RPC {
         }
     }
 
+     /**
+     * Retrieves annotations from a PDF file via the PDF RPC service.
+     *
+     * @param {Object} data - The data object containing the file and document info.
+     * @param {Buffer} data.file - The PDF file as a buffer or binary data.
+     * @param {Object} data.document - The document metadata object.
+     * @param {string} data.fileType - The file type (e.g., ".pdf").
+     * @returns {Promise<Array>} - Resolves to an array of annotation objects, each containing selectors, tagId, studySessionId, studyStepId, text, etc.
+     * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
+     */
     async getAnnotations(data) {
         try {
             const response = await this.request("annotations", data);
@@ -76,10 +86,19 @@ module.exports = class PDFRPC extends RPC {
             throw err;
         }
     }
-
-    async emmbedAnnotations(data) {
+    /**
+     * Embeds annotations into a PDF file via the PDF RPC service.
+     *
+     * @param {Object} data - The data object containing the file, annotations, and document info.
+     * @param {Buffer} data.file - The PDF file as a buffer or binary data.
+     * @param {Array} data.annotations - The annotations to embed.
+     * @param {Object} data.document - The document metadata object.
+     * @returns {Promise<Object>} - The response from the RPC service.
+     * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
+     */
+    async embedAnnotations(data) {
         try {
-            const response = await this.request("emmbedAnnotations", data);
+            const response = await this.request("embedAnnotations", data);
             if (!response['success']) {
                 this.logger.error("Error in request " + eventName + ": " + response['message']);
                 throw new Error(response['message']);
