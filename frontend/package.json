@@ -14,11 +14,6 @@
   "dependencies": {
     "@pgrabovets/json-view": "^2.7.1",
     "@popperjs/core": "^2.11.8",
-    "@tiptap/core": "^2.0.3",
-    "@tiptap/extension-character-count": "^2.0.3",
-    "@tiptap/pm": "^2.0.3",
-    "@tiptap/starter-kit": "^2.0.3",
-    "@tiptap/vue-3": "^2.0.3",
     "@vitejs/plugin-vue": "^2.3.4",
     "approx-string-match": "^2.0.0",
     "axios": "^0.27.2",
