@@ -56,3 +56,87 @@ To find the process, you can search for ``node`` in the system monitor.
 If you are sure no other node process is running, you can also terminate the process by executing ``killall node`` in the terminal.
 
 
+Importing a Production Database Locally
+---------------------------------------
+
+Sometimes you need the exact data that lives in the production system to reproduce or
+diagnose a bug.  The workflow below shows how to **export** the production database and
+static files, copy them to your workstation, and **restore** them for offline debugging.
+
+.. _db-backup-export:
+
+Export on the production server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: shell
+
+    # 1 – Find the running Postgres container
+    docker ps | grep xyz                 # replace “xyz” with a unique part of the container name
+
+    # 2 – Create the dump (Makefile target)
+    make CONTAINER=xyz-postgres-1 backup_db
+
+    # 3 – Inspect the dump folder
+    ls -l db_dumps/
+
+    # 4 – Prepare a non-root backup location
+    sudo mkdir -p /opt/backups/xyz
+    mkdir -p /opt/backups/xyz/$(date +%d-%m-%Y)/
+
+    # 5 – Copy the dump and related files
+    cp db_dumps/dump_dd-mm-yyyy_xx_yy_zz.sql \
+       /opt/backups/xyz/dd-mm-yyyy/
+    cp -r ./files /opt/backups/xyz/dd-mm-yyyy/
+
+    # 6 – Final check before leaving the server
+    ls -l /opt/backups/xyz/dd-mm-yyyy/
+
+.. _db-backup-download:
+
+Download to your local machine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: shell
+
+    # 1 – Create matching target folders
+    mkdir -p ~/projects/xyz/db_dumps
+    mkdir -p ~/projects/xyz/files
+
+    # 2 – Download the dump
+    scp username@yourServer.domain:/opt/backups/xyz/dd-mm-yyyy/dump_dd-mm-yyyy_xx_yy_zz.sql \
+        ~/projects/xyz/db_dumps/
+
+    # 3 – Download related files (LaTeX, PDFs, uploads, …)
+    scp -r username@yourServer.domain:/opt/backups/xyz/dd-mm-yyyy/files/* \
+        ~/projects/xyz/files/
+
+.. _db-backup-restore:
+
+Restore locally
+~~~~~~~~~~~~~~~
+
+From the **project root** (where the ``Makefile`` is located):
+
+.. code-block:: shell
+
+    make clean                        # drop any existing local database
+    make docker                       # build & start the Postgres container
+    make init                         # create empty tables / seed data
+    make recover_db CONTAINER=xyz-postgres-1 \
+                    DUMP=dump_dd-mm-yyyy_xx_yy_zz.sql
+
+.. note::
+
+   ``DUMP`` is **just the file name**, because the Makefile already prefixes
+   it with ``db_dumps/``.  Adjust the container name if yours differs.
+
+Restart services and start debugging
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: shell
+
+    make docker
+    make dev
+
+Your local instance now runs with the freshest production data, so you can
+reproduce bugs and test fixes without touching the live system.
