@@ -1,151 +1,70 @@
 <template>
-  <div class="card border-1 text-start">
-    <span class="text-start p-1 card-header">
-      <button
-          aria-expanded="false"
-          class="btn  btn-sm dropdown-toggle"
-          data-bs-toggle="dropdown"
-          type="button"
-      >
-        Paragraph
-      </button>
-      <ul class="dropdown-menu">
-        <li><button type="button"
-                    class="dropdown-item"
-                    @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-        >Heading 1</button></li>
-        <li><button type="button"
-                    class="dropdown-item"
-                    @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-        >Heading 2</button></li>
-        <li><button type="button"
-                    class="dropdown-item"
-                    @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-        >Heading 3</button></li>
-      </ul>
-
-      <LoadIcon
-          class="mx-1"
-          icon-name="type-bold"
-          @click="editor.chain().focus().toggleBold().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="type-italic"
-          @click="editor.chain().focus().toggleItalic().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="type-strikethrough"
-          @click="editor.chain().focus().toggleStrike().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="code"
-          @click="editor.chain().focus().toggleCode().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="code-square"
-          @click="editor.chain().focus().toggleCodeBlock().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="list-ul"
-          @click="editor.chain().focus().toggleBulletList().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="list-ol"
-          @click="editor.chain().focus().toggleOrderedList().run()"
-      />
-      <LoadIcon
-          class="ml-1"
-          icon-name="blockquote-left"
-          @click="editor.chain().focus().toggleBlockquote().run()"
-      />
-    </span>
-    <div class="card-body">
-      <editor-content :editor="editor"/>
-      <div v-if="editor && maxLength" class="">
-        {{ editor.storage.characterCount.characters() }}/{{ maxLength }} characters
-      </div>
-    </div>
+  <div>
+    <div ref="quillContainer"></div>
   </div>
 </template>
 
 <script>
-import {Editor, EditorContent} from '@tiptap/vue-3'
-import StarterKit from '@tiptap/starter-kit'
-import LoadIcon from "@/basic/Icon.vue";
-import CharacterCount from "@tiptap/extension-character-count"
+import { Editor } from "@/components/editor/editorStore"; 
+import "quill/dist/quill.snow.css";
 
 /**
- * Editor.vue - default component for a markdown text editor
+ * Editor.vue - default component for rich text editing using Quill
  *
  * Use this component to show a text editor with basic markdown features.
  *
- * @author: Dennis Zyska
+ * @author: Dennis Zyska, Juliane Bechert
  */
-export default {
+ export default {
   name: "BasicEditor",
-  components: {
-    LoadIcon,
-    EditorContent,
-  },
   props: {
     modelValue: {
       type: String,
       required: true
     },
-    maxLength: {
-      type: Number,
-      required: false,
-    }
   },
   emits: ["update:modelValue", "blur"],
-  data: function () {
+  data() {
     return {
-      editor: null,
-    }
+      editorWrapper: null,
+    };
   },
   watch: {
-    modelValue: function (newContent) {
-      if (this.editor.getHTML() !== newContent)
-        this.editor.commands.setContent(newContent);
-    }
-  },
-  beforeUnmount() {
-    this.editor.destroy()
+    modelValue(newVal) {
+      const editor = this.editorWrapper?.getEditor();
+      if (editor && editor.root.innerHTML !== newVal) {
+        editor.root.innerHTML = newVal;
+      }
+    },
   },
   mounted() {
-
-    this.editor = new Editor({
-      content: this.modelValue,
-      extensions: [
-        StarterKit,
-        CharacterCount.configure({
-          limit: this.maxLength,
-        }),
-      ],
-      parseOptions: {
-        preserveWhitespace: "full"
-      }
-
+    this.editorWrapper = new Editor(this.$refs.quillContainer, {
+      theme: "snow",
+      modules: {
+        toolbar: [
+          [{ header: [1, 2, 3, false] }],
+          ["bold", "italic", "underline", "strike"],
+          [{ list: "ordered" }, { list: "bullet" }],
+          ["blockquote", "code-block"],
+        ],
+      },
     });
-    this.editor.on('update', ({editor}) => {
-      this.$emit("update:modelValue", editor.getHTML());
-    })
-    this.editor.on("blur", () => {
-      this.$emit("blur");
-    })
-  },
-}
-</script>
 
-<style scoped>
-.ProseMirror * {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-</style>
+    const editor = this.editorWrapper.getEditor();
+    editor.root.innerHTML = this.modelValue;
+
+    editor.on("text-change", () => {
+      this.$emit("update:modelValue", editor.root.innerHTML);
+    });
+
+    editor.on("selection-change", (range) => {
+      if (!range) {
+        this.$emit("blur");
+      }
+    });
+  },
+  beforeUnmount() {
+    this.editorWrapper = null;
+  },
+};
+</script>
