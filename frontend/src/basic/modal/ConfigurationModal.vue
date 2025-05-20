@@ -474,6 +474,10 @@ export default {
     },
     handleStepChange(step) {
       this.currentStepperStep = step;
+      // Reinitialize placeholder form data when switching to step 2
+      if (step === 1 && this.isUpdateMode) {
+        this.initializePlaceholderFormData();
+      }
     },
     close() {
       this.$refs.configurationStepper.close();
