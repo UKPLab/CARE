@@ -24,10 +24,10 @@
           class="justify-content-center flex-grow-1 d-flex"
           role="status"
         >
-          <div class="spinner-border m-5" v-if="!timeoutError">
+          <div class="spinner-border m-5">
             <span class="visually-hidden">Loading...</span>          
           </div>
-          <div v-else>
+          <div v-if="anyNlpRequestsFailed">
             <div class="d-flex flex-column align-items-center">
               <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP support.</p>
               <div class="d-flex gap-2">
@@ -55,20 +55,19 @@
             </p>
 
             <div v-else>
-              <div v-for="(segment, index) in documentSegments" :key="'segment-' + index">
-                <template v-if="segment.type === 'plainText'">
-                  <span v-html="segment.value"></span>
-                </template>
-                <template v-else-if="segment.type === 'text'">
-                  <Text :input="segment.value" />
-                </template>
-                <template v-else-if="segment.type === 'chart'">
-                  <Chart :chartInput="segment.config" />
-                </template>
-                <template v-else-if="segment.type === 'comparison'">
-                  <Comparison :input="segment.config" />
-                </template>
-              </div>
+                <div v-for="(segment, index) in documentSegments" :key="'segment-' + index">
+                  <template v-if="segment.type === 'plainText'">
+                    <span v-html="segment.value"></span>
+                  </template>                    <template v-else-if="segment.type === 'text'">
+                    <Text :config="segment.config" />
+                  </template>
+                  <template v-else-if="segment.type === 'chart'">
+                    <Chart :config="segment.config" />
+                  </template>
+                  <template v-else-if="segment.type === 'comparison'">
+                    <Comparison :config="segment.config" />
+                  </template>
+                </div>
             </div>
           </div>
         </div>      
@@ -158,12 +157,12 @@ export default {
       type: Boolean,
       default: false
     },
-  },
+  },  
   data() {
     return {
       loadingConfig: true,
       documentText: null,
-      waiting: true,
+      waiting: false,
       requests: {},
       timeoutError: false,
     };
@@ -179,19 +178,43 @@ export default {
     },
     configuration() {
       return this.studyStep?.configuration || null;
-    },
+    },    
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
+    }, 
+    nlpResultsHandler() {
+      const requestIds = Object.keys(this.requests);
+      if (requestIds.length === 0) return [];
+      
+      return requestIds.map((requestId) => {
+        const resultExists = requestId in this.nlpResults;
+        const result = resultExists ? this.nlpResults[requestId] : null;
+
+        const isValid = resultExists && result && Object.keys(result).length > 0;
+        
+        return isValid;
+      });
+    },
+    allNlpRequestsCompleted() {
+      const statuses = this.nlpResultsHandler;
+      return statuses.length > 0 && statuses.every(status => status === true);
+    },
+    anyNlpRequestsFailed() {
+      const statuses = this.nlpResultsHandler;
+      return statuses.length > 0 && statuses.some(status => status === false);
+    },
+    openRequests() {
+      return Object.keys(this.requests).length > 0;
     },
     nlpRequestTimeout() {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
-    },
+    }, 
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
     },
     placeholders(){
       return this.studyStep?.configuration?.placeholders || null;
-    },
+    },    
     documentSegments() {
         if (!this.documentText || !this.placeholders) return [];
 
@@ -214,13 +237,10 @@ export default {
 
           if (this.placeholders[placeholderKey]) {
             const placeholderIndex = placeholderCounters[placeholderKey];
-            const placeholderConfig = this.placeholders[placeholderKey][placeholderIndex];
-
+            const placeholderConfig = this.placeholders[placeholderKey][placeholderIndex];            
             if (placeholderConfig) {
-              const resolvedSegment = this.resolvePlaceholder(placeholderKey, placeholderConfig);
-              if (resolvedSegment) {
-                segments.push(resolvedSegment);
-              }
+              const resolvedSegment = { type: placeholderKey, config: placeholderConfig };
+              segments.push(resolvedSegment);
               placeholderCounters[placeholderKey] += 1;
             }
           }
@@ -241,63 +261,96 @@ export default {
       return this.$store.getters['auth/isAdmin'];
     },
     placeholdersReady() {
+      if (!this.allNlpRequestsCompleted) return false;
+      if (!this.placeholders) return true;
       const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-      const specificDataCount = Object.keys(this.specificDocumentData || {}).length;
-      const studyDataCount = Object.keys(this.studyData[realStepId] || {}).length;
-      return !this.waiting && Object.keys(this.requests).length === 0 && specificDataCount === studyDataCount;
+      const studyDataForStep = this.studyData[realStepId] || {};
+      for (const key of Object.keys(this.placeholders)) {
+        for (const config of this.placeholders[key]) {
+          if (config.input && config.input.dataSource && config.input.stepId) {
+            const val = (this.studyData[config.input.stepId] || {})[config.input.dataSource];
+            if (!val || val.value === undefined) return false;
+          }
+        }
+      }
+      return true;
     },
   },
   watch: {
-    nlpResults: function (results) {
-      for (let requestId in this.requests) {
-        if (requestId in results) {
-          const result = this.nlpResults[requestId];
-          const uniqueId = this.requests[requestId].uniqueId;
-
-          for (const key in result) {
-            if (result.hasOwnProperty(key)) {
-              const keyName = uniqueId + "_" + key;
-              const value = result[key];
-              
-              this.$socket.emit("documentDataSave", {
-                documentId: this.studyStep?.documentId,
-                studySessionId: this.studySessionId,
-                studyStepId: this.studyStepId,
-                key: keyName,
-                value: value,
-              });
-
-            }
-          }
-
-          this.$store.commit("service/removeResults", {
-            service: "NLPService",
-            requestId: requestId,
-          });
-          delete this.requests[requestId];
-        }
-      }
-
-      /*
-      if (Object.keys(this.requests).length === 0) {
-        this.waiting = false;
-      }
-      */
-    },
     specificDocumentData: {
       handler(newData) {
         this.$emit("update:data", this.specificDocumentData);
       },
       deep: true,
     },
+    //TODO: wrong implementation    
     studyData: {
       handler(newData) {
-        if (Object.keys(this.requests).length > 0) {
+        const uniqueIds = Object.values(this.requests).map(r => r.uniqueId);
+        const allAvailable = uniqueIds.every(uniqueId => {
+          return Object.values(this.studyData).some(stepData => {
+            if (!stepData) return false;
+            return Object.keys(stepData).some(key => key.startsWith(uniqueId));
+          });
+        });
+        if (allAvailable) {
+          this.waiting = false;
+        } else {
           this.waiting = true;
         }
-        if (Object.keys(this.requests).length === 0) {
+      },
+      deep: true,
+    },
+    nlpResultsHandler: {
+      handler(currentStatuses, previousStatuses) {
+        if (
+          !previousStatuses ||
+          currentStatuses.length !== previousStatuses.length ||
+          !currentStatuses.some((status, i) => status !== previousStatuses[i])
+        ) {
+          return;
+        }
+
+        const requestIds = Object.keys(this.requests);
+        let completedCount = 0;
+
+        for (let i = 0; i < currentStatuses.length; i++) {
+          if (currentStatuses[i] === true) {
+            completedCount++;
+
+            if (previousStatuses[i] === false) {
+              const requestId = requestIds[i];
+              const result = this.nlpResults[requestId];
+              const uniqueId = this.requests[requestId].uniqueId;
+
+              if (result) {
+                Object.keys(result).forEach(key => {
+                  const keyName = uniqueId + "_" + key;
+                  const value = result[key];
+                  this.$socket.emit("documentDataSave", {
+                    documentId: this.studyStep?.documentId,
+                    studySessionId: this.studySessionId,
+                    studyStepId: this.studyStepId,
+                    key: keyName,
+                    value: value,
+                  });
+                });
+              }
+
+              this.$store.commit("service/removeResults", {
+                service: "NLPService",
+                requestId: requestId,
+              });
+            }
+          }
+        }
+
+        //TODO: move this to studyData check
+        if (completedCount === currentStatuses.length && completedCount > 0) {
+          this.requests = {};
           this.waiting = false;
         }
+
       },
       deep: true,
     },
@@ -306,13 +359,7 @@ export default {
     if (this.configuration) {
       this.loadingConfig = false;
     }
-    // Delete this after the configuration is implemented
-    else {
-      this.data = {
-        "Feedback": "This is a placeholder for the feedback. The configuration is not implemented yet.",
-      };
-      this.loadingConfig = false;
-    }
+
     this.$socket.emit("documentGet",
       {
         documentId: this.studyStep?.documentId ? this.studyStep.documentId : 0,
@@ -366,7 +413,14 @@ export default {
 
       this.requests[requestId].input = input;
 
-      if (!Object.keys(this.documentData).some(key => this.documentData[key]["studySessionId"] === this.studySessionId && key.startsWith(uniqueId) && this.documentData[key]["studyStepId"] === this.studyStepId)) {
+      // Check if data already exists in documentData
+      const dataExists = Object.keys(this.documentData).some(key => 
+        this.documentData[key]["studySessionId"] === this.studySessionId && 
+        key.startsWith(uniqueId) && 
+        this.documentData[key]["studyStepId"] === this.studyStepId
+      );
+      
+      if (!dataExists) {
         await this.$socket.emit("serviceRequest", {
           service: "NLPService",
           data: { 
@@ -374,77 +428,61 @@ export default {
              name: skill,
              data: input
             }
-        }
-      );
+        });
 
         setTimeout(() => {
-          if (this.requests[requestId]) {
-            this.eventBus.emit('toast', {
-              title: "NLP Service Request",
-              message: "Timeout in request for skill " + skill + " - Request failed!",
-              variant: "danger"
-            });
-            this.timeoutError = true; 
-          }
-        }, this.nlpRequestTimeout);
-      }
+            if (this.requests[requestId]) {
+              this.eventBus.emit('toast', {
+                title: "NLP Service Request",
+                message: "Timeout in request for skill " + skill + " - Request failed!",
+                variant: "danger"
+              });
+              this.timeoutError = true;
+            }
+          }, this.nlpRequestTimeout);
+        }
     },
     async retryNlpRequests() {
-      //this.timeoutError = false;
-      for (const requestId in this.requests) {
-        if (this.requests[requestId]) {
-          const { skill, input, uniqueId } = this.requests[requestId];
+      this.timeoutError = false;
+      
+      const statuses = this.nlpResultsHandler;
+      const requestIds = Object.keys(this.requests);
+      
+      for (let i = 0; i < statuses.length; i++) {
+        if (statuses[i] === false) {
+          const requestId = requestIds[i];
+          if (this.requests[requestId]) {
+            const { skill, input, uniqueId } = this.requests[requestId];
+            
+            if (!Object.keys(this.documentData).some(key => 
+              this.documentData[key]["studySessionId"] === this.studySessionId && 
+              key.startsWith(uniqueId) && 
+              this.documentData[key]["studyStepId"] === this.studyStepId
+            )) {
+              await this.$socket.emit("serviceRequest", {
+                service: "NLPService",
+                data: {
+                  id: requestId,
+                  name: skill,
+                  data: input,
+                },
+              });
 
-          if (!Object.keys(this.documentData).some(key => this.documentData[key]["studySessionId"] === this.studySessionId && key.startsWith(uniqueId) && this.documentData[key]["studyStepId"] === this.studyStepId && this.documentData[key]["key"] === requestId)) {
-            await this.$socket.emit("serviceRequest", {
-              service: "NLPService",
-              data: {
-                id: requestId,
-                name: skill,
-                data: input,
-              },
-            });
-
-            setTimeout(() => {
-              if (this.requests[requestId]) {
-                this.timeoutError = true;
-              }
-            }, this.nlpRequestTimeout);
+              setTimeout(() => {
+                if (this.requests[requestId]) {
+                  this.timeoutError = true;
+                }
+              }, this.nlpRequestTimeout);
+            }
           }
         }
       }
-    },
+    },    
     async exportStudyData() {
       if (this.isAdmin){
         const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_study_data';
         downloadObjectsAs(this.studyData, filename, 'json');
       }
-    },
-    resolvePlaceholder(placeholderKey, placeholderConfig) {
-
-      switch (placeholderKey) {
-        case 'text':
-          const textStepId = placeholderConfig["input"]["stepId"];
-          const textDataSource = placeholderConfig["input"]["dataSource"];
-          const textElement = Object.values(this.studyData[textStepId]).find(item => item.key === textDataSource);
-          return { type: 'text', value: textElement?.value || null };
-
-        case 'chart':          
-          return { type: 'chart', config: placeholderConfig };
-
-        case 'comparison':          
-          return { type: 'comparison', config: placeholderConfig };
-
-        default:
-          this.eventBus.emit("toast", {
-            title: "Placeholder Error",
-            message: "Unhandled placeholder type:" + placeholderKey,
-            variant: "danger",
-          });
-          break;
-      }
-
-      return null;
     },
   }
 };
