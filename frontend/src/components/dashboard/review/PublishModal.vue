@@ -160,8 +160,14 @@ export default {
         Object.values(this.moodleOptions).every(v => v !== ""),
       ];
     },
-    users() {
+    // users() {
+    //   return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
+    // },
+    usersWithExtId() {
       return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
+    },
+    allUsers() {
+      return this.$store.getters["table/user/getAll"];
     },
     studies() {
       return this.$store.getters["table/study/getFiltered"]((s) => s.closed);
@@ -192,7 +198,7 @@ export default {
           return null;
         }
 
-        const user = this.users.find((u) => u.id === document.userId);
+        const user = this.usersWithExtId.find((u) => u.id === document.userId);
         if (!user) {
           return null;
         }
@@ -215,7 +221,7 @@ export default {
       return this.selectedDocuments.flatMap(d => d.sessionIds.map(sId => {
         const session = this.studySessions.find((s) => sId === s.id);
         const study = this.studies.find((s) => s.id === session.studyId);
-        const user = this.users.find((u) => u.id === session.userId);
+        const user = this.allUsers.find((u) => u.id === session.userId);
 
         return {
           studyName: study.name,
@@ -227,7 +233,7 @@ export default {
           link: window.location.origin + "/review/" + session.hash,
           documentName: d.documentName,
           document: d,
-          extId: user.extId,
+          extId: (user) ? user.extId: "",
           start: session.start,
           end: session.end,
           hash: session.hash,
