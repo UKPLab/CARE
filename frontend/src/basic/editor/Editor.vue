@@ -20,7 +20,11 @@ import "quill/dist/quill.snow.css";
   props: {
     modelValue: {
       type: String,
-      required: true
+      required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: ["update:modelValue", "blur"],
@@ -38,20 +42,26 @@ import "quill/dist/quill.snow.css";
     },
   },
   mounted() {
-    this.editorWrapper = new Editor(this.$refs.quillContainer, {
-      theme: "snow",
-      modules: {
-        toolbar: [
+    const toolbarConfig = this.readOnly
+      ? false
+      : [
           [{ header: [1, 2, 3, false] }],
           ["bold", "italic", "underline", "strike"],
           [{ list: "ordered" }, { list: "bullet" }],
           ["blockquote", "code-block"],
-        ],
+        ];
+
+    this.editorWrapper = new Editor(this.$refs.quillContainer, {
+      theme: "snow",
+      modules: {
+        toolbar: toolbarConfig,
       },
+      readOnly: this.readOnly,
     });
 
     const editor = this.editorWrapper.getEditor();
     editor.root.innerHTML = this.modelValue;
+    editor.enable(!this.readOnly);
 
     editor.on("text-change", () => {
       this.$emit("update:modelValue", editor.root.innerHTML);
