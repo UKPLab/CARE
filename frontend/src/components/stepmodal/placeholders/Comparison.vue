@@ -1,6 +1,5 @@
 <template>
-  <div class="comparison-container">
-    <Chart v-if="chartConfig" :chartInput="chartConfig" />
+  <div class="comparison-container">    <Chart v-if="chartConfig" :config="chartConfig" />
     <p v-else class="text-muted"> ~ Placeholder data missing or invalid ~ </p>
   </div>
 </template>
@@ -23,19 +22,19 @@ export default {
       required: true,
       default: () => null,
     },
-  },
+  },  
   props: {
-    input: {
+    config: {
       type: Object,
       required: true,
     },
   },
   computed: {    
     chartConfig() {
-      if (!this.input || !Array.isArray(this.input.input) || !this.studyData) {
+      if (!this.config || !Array.isArray(this.config.input) || !this.studyData) {
         return null;
       }
-      const comparisonData = this.input.input.map(({ stepId, dataSource }) => {
+      const comparisonData = this.config.input.map(({ stepId, dataSource }) => {
         const comparisonElement = Object.values(this.studyData[stepId] || {}).find(item => item.key === dataSource);
         return comparisonElement?.value || null;
       });
@@ -50,26 +49,25 @@ export default {
           labels,
           datasets: [
             {
-              label: this.input.labels?.[0] || 'Dataset 1',
+              label: this.config.labels?.[0] || 'Dataset 1',
               data: dataset1,
               backgroundColor: 'rgba(255, 99, 132, 0.5)',
             },
             {
-              label: this.input.labels?.[1] || 'Dataset 2',
+              label: this.config.labels?.[1] || 'Dataset 2',
               data: dataset2,
               backgroundColor: 'rgba(54, 162, 235, 0.5)',
             }
           ],
         },
         options: {
-          responsive: true,
-          plugins: {
+          responsive: true,          plugins: {
             legend: {
               position: 'top',
             },
             title: {
               display: true,
-              text: this.input.title || 'Comparison Chart',
+              text: this.config.title || 'Comparison Chart',
             },
           },
           indexAxis: 'y',

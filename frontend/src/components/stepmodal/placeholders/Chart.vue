@@ -23,9 +23,9 @@ export default {
       required: true,
       default: () => null,
     },
-  },
+  },  
   props: {
-    chartInput: {
+    config: {
       type: Object,
       required: true,
     },
@@ -38,26 +38,25 @@ export default {
   computed: {
     chartConfig() {
 
-      if (this.chartInput?.type && this.chartInput?.data && this.chartInput?.options) {
-        return this.chartInput;
+      if (this.config?.type && this.config?.data && this.config?.options) {
+        return this.config;
       }
 
-      const stepId = this.chartInput.input.stepId;
-      const datasource = this.chartInput.input.dataSource;
+      const stepId = this.config.input.stepId;
+      const datasource = this.config.input.dataSource;
 
       const chartElement = Object.values(this.studyData[stepId] || {}).find(item => item.key === datasource);
 
       const data = chartElement?.value;
       const labels = Object.keys(data);
-      const dataset = Object.values(data);
-
+      const dataset = Object.values(data);      
       return {
         type: 'bar',
         data: {
           labels,
           datasets: [
             {
-              label: this.chartInput.label || 'Dataset',
+              label: this.config.label || 'Dataset',
               data: dataset,
               backgroundColor: "rgba(255, 99, 132, 0.5)",
             },
@@ -71,7 +70,7 @@ export default {
             },
             title: {
               display: true,
-              text: this.chartInput.title || 'Chart',
+              text: this.config.title || 'Chart',
             },
           },
           indexAxis: 'y',
@@ -95,9 +94,9 @@ export default {
         this.chartInstance.destroy();
       }
     },
-  },
+  },  
   watch: {
-    chartInput: {
+    config: {
       handler: 'renderChart',
       deep: true,
     },

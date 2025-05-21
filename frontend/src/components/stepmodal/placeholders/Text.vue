@@ -1,6 +1,6 @@
 <template>
   <div class="text-placeholder">
-    <p v-if="input">{{ input }}</p>
+    <p v-if="textContent">{{ textContent }}</p>
     <p v-else class="text-muted"> ~ Placeholder data missing ~ </p>
   </div>
 </template>
@@ -13,11 +13,33 @@
  */
 export default {
   name: "Text",
-  props: {
-    input: {
-      type: String,
+  inject: {
+    studyData: {
+      type: Array,
       required: false,
-      default: '',
+      default: () => [],
+    }
+  },  
+  props: {
+    config: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    }
+  },
+  computed: {
+    textContent() {
+      if (!this.config?.input?.stepId || !this.config?.input?.dataSource) {
+        return null;
+      }
+      
+      const { stepId, dataSource } = this.config.input;
+      if (!this.studyData[stepId]) {
+        return null;
+      }
+      
+      const textElement = Object.values(this.studyData[stepId]).find(item => item.key === dataSource);
+      return textElement?.value || null;
     }
   }
 };
