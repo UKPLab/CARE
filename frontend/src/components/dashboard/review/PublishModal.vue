@@ -160,9 +160,6 @@ export default {
         Object.values(this.moodleOptions).every(v => v !== ""),
       ];
     },
-    // users() {
-    //   return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
-    // },
     usersWithExtId() {
       return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
     },
