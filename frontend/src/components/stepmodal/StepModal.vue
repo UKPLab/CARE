@@ -290,7 +290,7 @@ export default {
         const stepDataArr = this.studyData[realStepId] || [];
         const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
         const uniqueIds = Object.values(this.requests).map(r => r.uniqueId);
-        //TODO: It only checks for one of the results containing the uniqueID, but there could be multiple results for the same uniqueID and of them are required
+        //TODO: It only checks for one of the results containing the uniqueID, but there could be multiple results for the same uniqueID and all of them are required
         const allAvailable = uniqueIds.every(uniqueId =>
           stepDataList.some(entry => entry && entry.key && entry.key.startsWith(uniqueId))
         );
@@ -321,12 +321,14 @@ export default {
           return;
         }
         const requestIds = Object.keys(this.requests);
+        //TODO: use .flatMap instead of for-loop(multiple changes required)
         for (let i = 0; i < currentStatuses.length; i++) {
           if (currentStatuses[i] === true && previousStatuses[i] === false) {
             const requestId = requestIds[i];
             const result = this.nlpResults[requestId];
             const uniqueId = this.requests[requestId].uniqueId;
             if (result) {
+              //TODO: Send dict of keys which can be handled in the sockets
               Object.keys(result).forEach(key => {
                 const keyName = uniqueId + "_" + key;
                 const value = result[key];
@@ -438,12 +440,14 @@ export default {
       const statuses = this.nlpResultsHandler;
       const requestIds = Object.keys(this.requests);
       
+      //TODO: Simplify it with .flatMap()
       for (let i = 0; i < statuses.length; i++) {
         if (statuses[i] === false) {
           const requestId = requestIds[i];
           if (this.requests[requestId]) {
             const { skill, input, uniqueId } = this.requests[requestId];
             
+            //TODO: only done for document_data, check it for studyData itself
             if (!Object.keys(this.documentData).some(key => 
               this.documentData[key]["studySessionId"] === this.studySessionId && 
               key.startsWith(uniqueId) && 
