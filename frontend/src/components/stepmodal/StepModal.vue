@@ -24,10 +24,10 @@
           class="justify-content-center flex-grow-1 d-flex"
           role="status"
         >
-          <div class="spinner-border m-5">
+          <div class="spinner-border m-5" v-if="!timeoutError">
             <span class="visually-hidden">Loading...</span>          
           </div>
-          <div v-if="anyNlpRequestsFailed">
+          <div v-else>
             <div class="d-flex flex-column align-items-center">
               <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP support.</p>
               <div class="d-flex gap-2">
@@ -190,7 +190,8 @@ export default {
         const resultExists = requestId in this.nlpResults;
         const result = resultExists ? this.nlpResults[requestId] : null;
 
-        const isValid = resultExists && result && Object.keys(result).length > 0;
+        console.log("NLP result for requestId:", requestId, "exists:", resultExists, "result:", result);
+        const isValid = resultExists && Object.keys(result).length > 0;
         
         return isValid;
       });
@@ -283,17 +284,26 @@ export default {
       },
       deep: true,
     },
-    //TODO: wrong implementation    
     studyData: {
       handler(newData) {
+        const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
+        const stepDataArr = this.studyData[realStepId] || [];
+        const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
         const uniqueIds = Object.values(this.requests).map(r => r.uniqueId);
-        const allAvailable = uniqueIds.every(uniqueId => {
-          return Object.values(this.studyData).some(stepData => {
-            if (!stepData) return false;
-            return Object.keys(stepData).some(key => key.startsWith(uniqueId));
+        //TODO: It only checks for one of the results containing the uniqueID, but there could be multiple results for the same uniqueID and of them are required
+        const allAvailable = uniqueIds.every(uniqueId =>
+          stepDataList.some(entry => entry && entry.key && entry.key.startsWith(uniqueId))
+        );
+
+        console.log("All available:", allAvailable, "Unique IDs:", uniqueIds, "Step Data Array:", stepDataArr);
+        if (allAvailable && this.allNlpRequestsCompleted) {
+          Object.keys(this.requests).forEach(requestId => {
+            this.$store.commit('service/removeResults', {
+              service: 'NLPService',
+              requestId: requestId
+            });
           });
-        });
-        if (allAvailable) {
+          this.requests = {};
           this.waiting = false;
         } else {
           this.waiting = true;
@@ -310,49 +320,29 @@ export default {
         ) {
           return;
         }
-
         const requestIds = Object.keys(this.requests);
-        let completedCount = 0;
-
         for (let i = 0; i < currentStatuses.length; i++) {
-          if (currentStatuses[i] === true) {
-            completedCount++;
-
-            if (previousStatuses[i] === false) {
-              const requestId = requestIds[i];
-              const result = this.nlpResults[requestId];
-              const uniqueId = this.requests[requestId].uniqueId;
-
-              if (result) {
-                Object.keys(result).forEach(key => {
-                  const keyName = uniqueId + "_" + key;
-                  const value = result[key];
-                  this.$socket.emit("documentDataSave", {
-                    documentId: this.studyStep?.documentId,
-                    studySessionId: this.studySessionId,
-                    studyStepId: this.studyStepId,
-                    key: keyName,
-                    value: value,
-                  });
+          if (currentStatuses[i] === true && previousStatuses[i] === false) {
+            const requestId = requestIds[i];
+            const result = this.nlpResults[requestId];
+            const uniqueId = this.requests[requestId].uniqueId;
+            if (result) {
+              Object.keys(result).forEach(key => {
+                const keyName = uniqueId + "_" + key;
+                const value = result[key];
+                this.$socket.emit("documentDataSave", {
+                  documentId: this.studyStep?.documentId,
+                  studySessionId: this.studySessionId,
+                  studyStepId: this.studyStepId,
+                  key: keyName,
+                  value: value,
                 });
-              }
-
-              this.$store.commit("service/removeResults", {
-                service: "NLPService",
-                requestId: requestId,
               });
             }
           }
         }
-
-        //TODO: move this to studyData check
-        if (completedCount === currentStatuses.length && completedCount > 0) {
-          this.requests = {};
-          this.waiting = false;
-        }
-
       },
-      deep: true,
+      deep: true
     },
   },
   created() {
