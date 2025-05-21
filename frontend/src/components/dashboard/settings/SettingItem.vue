@@ -24,7 +24,7 @@
                       <h5 class="card-title">{{ setting.key }}</h5>
                       <h6 class="card-subtitle mb-2 text-muted">{{ setting.description }}</h6>
                       <p class="card-text">
-                        <div v-if="setting.type === 'html'">
+                        <div v-if="setting.type === 'json'">
                           <EditorModal v-model="setting.value" :title="'Edit ' + setting.key"></EditorModal>
                         </div>
                         <div v-else-if="setting.type === 'boolean' || setting.type === 'bool'" class="form-check form-switch">
