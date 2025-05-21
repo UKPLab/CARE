@@ -33,6 +33,11 @@ export default {
       default: false,
       description: "If true, only shows sessions for the current user",
     },
+    showClosed: {
+      type: Boolean,
+      default: false,
+      description: "If true, shows only closed sessions for the current user",
+    }
   },
   emits: ["update", "session-deleted", "session-opened"],
   data() {
@@ -122,6 +127,19 @@ export default {
           title: "Start session",
           action: "startSession",
         },
+        {
+          icon: "box-arrow-in-right",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+              "btn-sm": true,
+            },
+          },
+          filter: [{ key: "showInspectButton", value: true }],
+          title: "Inspect session",
+          action: "reviewSession", 
+        }
       ];
       if (!this.currentUserOnly) {
         buttons.push({
@@ -165,7 +183,9 @@ export default {
       return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
     },
     studySessions() {
-      if (!this.study || this.studyClosed) return [];
+      if (!this.study) return [];
+
+      if (this.studyClosed && !this.showClosed) return [];
 
       // TODO: Need to clarify what this line means.Since there is no function that updates the value of `this.showFinished`,
       // `this.showFinished` will always be true, which means the filter function won't filter anything.
@@ -178,6 +198,9 @@ export default {
       }
 
       return sessions.map((s) => this.processSession(s));
+    },
+    studyResumable() {
+      return this.study ? this.study.resumable : false;
     },
     studyClosed() {
       if (this.study) {
@@ -207,11 +230,12 @@ export default {
       processedSession.finished = session.end !== null;
 
       if (this.currentUserOnly) {
-        processedSession.resumable = this.study.resumable;
-        processedSession.showResumeButton = session.resumable && session.start && !this.studyClosed;
+        processedSession.resumable = this.studyResumable;
+        processedSession.showResumeButton = this.studyResumable && session.start !== undefined  && session.start !== null && !this.studyClosed;
         processedSession.showDeleteButton =
           this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
         processedSession.showStartButton = !session.start && !this.studyClosed;
+        processedSession.showInspectButton = this.studyClosed && this.showClosed
       } else {
         processedSession.showDeleteButton =
           this.$store.getters["auth/getUserId"] === this.study.createdByUserId || this.$store.getters["auth/isAdmin"];
@@ -242,6 +266,9 @@ export default {
         }
         case "startSession":
           this.$router.push("/session/" + data.params.hash);
+          break;
+        case "reviewSession":
+          this.$router.push("/review/" + data.params.hash);
           break;
         case "copyStudySessionLink":
           this.copyURL(data.params.hash);
