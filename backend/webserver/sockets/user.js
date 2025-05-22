@@ -63,24 +63,6 @@ module.exports = class UserSocket extends Socket {
     }
 
     /**
-     * Send all user data to the client (only for admins)
-     * @return {Promise<void>}
-     */
-    async sendUserData() {
-        if (await this.isAdmin()) {
-            const users = await this.models["user"].getAll();
-            const mappedUsers = users.map((x) => this.minimalFields(x));
-
-            this.socket.emit("userData", {success: true, users: mappedUsers});
-        } else {
-            this.socket.emit("userData", {
-                success: false, message: "User rights and argument mismatch",
-            });
-            this.logger.error("User right and request parameter mismatch");
-        }
-    }
-
-    /**
      * Get users by their roleu.status === "duplicate"
      * @param {string} role - The role of the users to fetch. Possible values: "student", "mentor", "all"
      * @returns {string[]} An array of users.
@@ -282,7 +264,6 @@ module.exports = class UserSocket extends Socket {
     }
 
     init() {
-        this.createSocket("userGetData", this.sendUserData, {}, false);
 
         // Get users by their role
         this.socket.on("userGetByRole", async (role) => {
