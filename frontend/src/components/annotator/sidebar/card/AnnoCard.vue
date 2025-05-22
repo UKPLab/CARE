@@ -351,7 +351,7 @@ export default {
       if (this.annotationId) {
         this.$socket.emit('annotationUpdate', {
           "annotationId": this.annotation.id,
-          "tagId": JSON.stringify(this.annotation.tagId),
+          "tagId": this.annotation.tagId,
         }, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
@@ -410,7 +410,7 @@ export default {
       if (this.annotationId) {
         this.$socket.emit('annotationUpdate', {
           "annotationId": this.annotation.id,
-          "tagId": JSON.stringify(this.annotation.tagId),
+          "tagId": this.annotation.tagId,
           "deleted": true
         }, (res) => {
           if (!res.success) {
