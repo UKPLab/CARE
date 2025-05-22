@@ -198,7 +198,7 @@ module.exports = class DocumentSocket extends Socket {
 
     /**
      * Send document by hash
-     * 
+     *
      * @param {object} data
      * @param {string} data.documentHash - The hash of the document to send.
      * @param {object} options - The options object containing the transaction.
@@ -212,19 +212,19 @@ module.exports = class DocumentSocket extends Socket {
         } else {
             this.logger.error("Document access error with documentId: " + document.id);
             this.sendToast("You don't have access to the document.", "Error loading documents", "Danger");
-        }    
+        }
     }
 
     /**
      * Send merged deltas (from disk and database) to client (for HTML documents)
      *
-     * @param {object} data 
+     * @param {object} data
      * @param {number} data.documentId - The ID of the document to send deltas for.
      * @param {object} options - The options for the transaction.
      * @returns {Promise<void>}
      */
     async sendDocumentDeltas(data, options) {
-        const documentId = data.documentId;        
+        const documentId = data.documentId;
         const doc = await this.models['document'].getById(documentId);
 
         if (await this.checkDocumentAccess(doc.id)) {
@@ -254,7 +254,7 @@ module.exports = class DocumentSocket extends Socket {
         } else {
             throw new Error("You do not have access to this document");
         }
-        
+
     }
 
     /**
@@ -443,8 +443,8 @@ module.exports = class DocumentSocket extends Socket {
 
     /**
      * Publish the document
-     * 
-     * @param {object} data 
+     *
+     * @param {object} data
      * @param {number} data.documentId - The ID of the document to publish.
      * @param {object} options - The options object containing the transaction.
      * @return {Promise<void>}
@@ -473,6 +473,7 @@ module.exports = class DocumentSocket extends Socket {
 async editDocument(data, options) {
     const {documentId, studySessionId, studyStepId, ops} = data;
     let appliedEdits = [];
+    let orderCounter = 1;
 
     await ops.reduce(async (promise, op) => {
         await promise;
@@ -482,9 +483,11 @@ async editDocument(data, options) {
             documentId,
             studySessionId: studySessionId || null,
             studyStepId: studyStepId || null,
+            order: orderCounter++,
             ...op
         };
 
+        // TODO transaction missing
         const savedEdit = await this.models['document_edit'].add(entryData);
 
         appliedEdits.push({
@@ -657,11 +660,11 @@ async editDocument(data, options) {
             options: data.options,
             feedback: data.feedback,
         });
-    }  
-    
+    }
+
     /**
      * Subscribe to a document
-     *  
+     *
      * @param {Object} data
      * @param {number} data.documentId - The ID of the document to subscribe to.
      * @param {Object} options - The options object containing the transaction.
@@ -723,7 +726,7 @@ async editDocument(data, options) {
                 this.sendToast(error, "Error getting all document data", "Error", "danger");
             }
         });
-        
+
        /*
         this.socket.on("documentEdit", async (data) => {
             try {
@@ -752,7 +755,7 @@ async editDocument(data, options) {
             }
         });
         */
-        
+
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
         this.createSocket("documentEdit", this.editDocument, {}, true);
