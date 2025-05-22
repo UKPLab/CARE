@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<void>}
          */
         static async deleteChildComments(commentId, options = {}) {
-            const comments = sequelize.models.comment.getAllByKey("parentCommentId", commentId);
+            const comments = await sequelize.models.comment.getAllByKey("parentCommentId", commentId);
             await Promise.all(comments.map(async comment => {
                 await sequelize.models.comment.deleteById(comment.id, {transaction: options.transaction});
             }));
