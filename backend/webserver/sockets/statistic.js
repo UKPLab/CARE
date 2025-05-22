@@ -107,6 +107,6 @@ module.exports = class StatisticSocket extends Socket {
     init() {
         this.createSocket("statsGet", this.getStats, {}, false);
         this.createSocket("stats", this.addStats, {}, false);
-        this.createSocket("statsGetByUser", this.getStatsByUser, {}, true);
+        this.createSocket("statsGetByUser", this.getStatsByUser, {}, false);
     }
 }
