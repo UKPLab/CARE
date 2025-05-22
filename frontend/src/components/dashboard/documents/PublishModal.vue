@@ -67,7 +67,6 @@ import BasicButton from "@/basic/Button.vue";
 The modal for publishing a document.
 
 Author: Dennis Zyska
-Source: -
 */
 export default {
   name: "PublishModal",
