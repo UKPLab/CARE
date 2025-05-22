@@ -55,6 +55,19 @@ The application should be available at http://localhost:9090
 
     The credentials for the admin user can be also found in the .env file!
 
+Rebuilding only the Moodle RPC container
+----------------------------------------
+
+If you touch any code under ``utils/rpcs/moodleAPI/`` run:
+
+.. code-block:: bash
+
+    $ make rpc_moodle_build
+
+This rebuilds the *rpc_moodle* image and restarts that service without
+affecting Postgres or the test-RPC container.
+
+
 Nginx / Certbot
 ---------------
 

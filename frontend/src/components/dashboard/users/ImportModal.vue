@@ -262,7 +262,7 @@ export default {
       downloadObjectsAs(users, filename, "csv");
     },
     uploadToMoodle() {
-      const users = this.createdUsers.map(({ extId, userName, password }) => ({ extId, userName, password }));
+      const users = this.createdUsers.map(({ extId, userName, initialPassword }) => ({ extId, userName, password: initialPassword }));
       this.$socket.emit("userPublishMoodle", { options: this.moodleOptions, users }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {

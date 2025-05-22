@@ -164,12 +164,21 @@ export default {
       return this.$store.getters["table/document_edit/getFiltered"](
         (e) => e.documentId === this.documentId
           && e.studySessionId === this.studySessionId
-          && e.studyStepId === this.studyStepId).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          && e.studyStepId === this.studyStepId
+      ).sort((a, b) => {
+        const timeCompare = new Date(a.createdAt) - new Date(b.createdAt);
+        if (timeCompare !== 0) return timeCompare;
+        return (a.order || 0) - (b.order || 0);
+      });
     },
     unappliedEdits() {
       return this.$store.getters["table/document_edit/getFiltered"](
         (e) => e.applied === false
-      ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      ).sort((a, b) => {
+        const timeCompare = new Date(a.createdAt) - new Date(b.createdAt);
+        if (timeCompare !== 0) return timeCompare;
+        return (a.order || 0) - (b.order || 0);
+      });
     },
     debounceTimeForEdits() {
       return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
