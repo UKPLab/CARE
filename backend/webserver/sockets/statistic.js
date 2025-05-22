@@ -58,39 +58,54 @@ module.exports = class StatisticSocket extends Socket {
         }
     }
 
-    init() {
-
-        this.createSocket("statsGet", this.getStats, {}, false);
-
-        this.socket.on("stats", async (data) => {
-            try {
-                if (this.user.acceptStats) {
-                    await this.models["statistic"].add({
-                        action: data.action,
-                        data: JSON.stringify(data.data),
-                        userId: this.userId,
-                        timestamp: new Date(),
-                    })
-                }
-            } catch (e) {
-                this.logger.error("Can't add statistics: " + JSON.stringify(data) + " due to error " + e.toString());
+    /**
+     * Add statistics
+     * @param {Object} data - The data object containing the userId
+     * @param {Number} data.action - The type of action (e.g. 'mouseMove')
+     * @param {Object} options - not used
+     *
+     * @returns {Promise<void>} - The statistics data
+     */
+    async addStats(data, options) {
+        try {
+            if (this.user.acceptStats) {
+                await this.models["statistic"].add({
+                    action: data.action,
+                    data: JSON.stringify(data.data),
+                    userId: this.userId,
+                    timestamp: new Date(),
+                })
             }
-        });
-
-        this.socket.on("statsGetByUser", async (data) => {
-            try {
-                await this.sendStatsByUser(data.userId);
-            } catch (e) {
-                this.socket.emit("statsData", {
-                    success: false,
-                    userId: data.userId,
-                    message: "Failed to retrieve stats for users"
-                });
-                this.logger.error("Can't load statistics due to error " + e.toString());
-            }
-
-        });
+        } catch (e) {
+            this.logger.error("Can't add statistics: " + JSON.stringify(data) + " due to error " + e.toString());
+        }
     }
 
+    /**
+     * Get a user's statistics
+     *
+     * @param {Object} data - The data object containing the userId
+     * @param {Number} data.userId - The user's ID
+     * @param {Object} options - not used
+     *
+     * @returns {Promise<void>} - The statistics data
+     */
+    async getStatsByUser(data, options) {
+        try {
+            await this.sendStatsByUser(data.userId);
+        } catch (e) {
+            this.socket.emit("statsData", {
+                success: false,
+                userId: data.userId,
+                message: "Failed to retrieve stats for users"
+            });
+            this.logger.error("Can't load statistics due to error " + e.toString());
+        }
+    }
 
+    init() {
+        this.createSocket("statsGet", this.getStats, {}, false);
+        this.createSocket("stats", this.addStats, {}, true);
+        this.createSocket("statsGetByUser", this.getStatsByUser, {}, true);
+    }
 }

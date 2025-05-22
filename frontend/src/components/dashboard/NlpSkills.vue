@@ -145,7 +145,18 @@ export default {
       }
     },
     changeSkillActiveStatus(skill_row, newActiveState) {
-      this.$socket.emit("settingSave", [{key: `annotator.nlp.${skill_row.name}.activated`, value: newActiveState}]);
+      this.$socket.emit(
+          "settingSave",
+          [{key: `annotator.nlp.${skill_row.name}.activated`, value: newActiveState}],
+          (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: "Settings not saved",
+              message: res.message,
+              variant: "danger",
+            });
+          }
+      });
     },
     getDetails(skill_row) {
       this.$refs["nlpSkillModal"].openModal(skill_row["name"]);
