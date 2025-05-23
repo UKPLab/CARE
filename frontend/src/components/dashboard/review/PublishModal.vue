@@ -160,10 +160,10 @@ export default {
         Object.values(this.moodleOptions).every(v => v !== ""),
       ];
     },
-    users() {
+    usersWithExtId() {
       return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
     },
-    allUsers() {
+    users() {
       return this.$store.getters["table/user/getAll"];
     },
     studies() {
@@ -195,7 +195,7 @@ export default {
           return null;
         }
 
-        const user = this.users.find((u) => u.id === document.userId);
+        const user = this.usersWithExtId.find((u) => u.id === document.userId);
         if (!user) {
           return null;
         }
@@ -218,7 +218,7 @@ export default {
       return this.selectedDocuments.flatMap(d => d.sessionIds.map(sId => {
         const session = this.studySessions.find((s) => sId === s.id);
         const study = this.studies.find((s) => s.id === session.studyId);
-        const user = this.allUsers.find((u) => u.id === session.userId);
+        const user = this.users.find((u) => u.id === session.userId);
 
         return {
           studyName: study.name,
