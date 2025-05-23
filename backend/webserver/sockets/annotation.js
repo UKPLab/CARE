@@ -10,31 +10,6 @@ const {pickObjectAttributeSubset} = require("../../utils/generic");
 module.exports = class AnnotationSocket extends Socket {
 
     /**
-     * Change the creator name of an annotation to the username for export
-     * @param annotation
-     * @return {Promise<*>}
-     */
-    async annotationFormat(annotation) {
-        const copyFields = [
-            "text",
-            "id",
-            "documentId",
-            "createdAt",
-            "updatedAt",
-            "studySessionId",
-            "studyStepId"
-        ]
-
-        let copied = pickObjectAttributeSubset(annotation, copyFields);
-        copied.userId = await this.models['user'].getUserName(annotation.userId);
-        copied.tag = (await this.models['tag'].getById(annotation.tagId)).name;
-
-        copied.studyId = annotation.studySessionId ? (await this.models["study_session"].getById(annotation.studySessionId)).studyId : null
-
-        return copied
-    }
-
-    /**
      * Send an annotation to the client by id
      * @param {Object} data the input data from the frontend
      * @param {Object} options not used
@@ -136,29 +111,10 @@ module.exports = class AnnotationSocket extends Socket {
             await this.models['annotation'].getAllByKey("documentId", data.documentId));
     }
 
-    /**
-     * Exports the annotations for a given document
-     * @param {Object} data the input to the function
-     * @param {number} data.documentId the document id for which we export annotations
-     * @param {Object} options not used
-     * @returns {Promise<void>}
-     */
-    async exportAnnotationsByDocument(data, options) {
-        const annotations = await this.updateCreatorName(await this.models['annotation'].getAllByKey("documentId", data.documentId));
-
-        //todo use callback for returning the result rather than a new message; fix in export frontend first
-        this.emit("annotationExport", {
-            "success": true,
-            "documentId": data.documentId,
-            "objs": await Promise.all(annotations.map(async (a) => await this.annotationFormat(a)))
-        });
-    }
-
     init() {
         this.createSocket("annotationGet", this.sendAnnotation, {}, false);
         this.createSocket("annotationUpdate", this.updateAnnotation, {}, true);
         this.createSocket("annotationGetByDocument", this.getAnnotationsByDoc, {}, false);
-        this.createSocket("annotationExportByDocument", this.exportAnnotationsByDocument, {}, false);
     }
 
 }
