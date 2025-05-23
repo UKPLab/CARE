@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<void>}
          */
         static async deleteByAnnotationId(annotationId, options = {}) {
-            const relevantComments = await sequelize.models.comment.getAllByKey('annotationId', annotationId, {transaction: options.transaction});
+            const relevantComments = await sequelize.models.comment.getAllByKey('annotationId', annotationId, {transaction: options.transaction}, true);
 
             for (const comment of relevantComments) {
                 await sequelize.models.comment.deleteById(comment.id, {transaction: options.transaction});
