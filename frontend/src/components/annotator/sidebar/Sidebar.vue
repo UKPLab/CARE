@@ -293,7 +293,7 @@ export default {
     hover(annotationId) {
       if (annotationId) {
         const annotation = this.$store.getters['table/annotation/get'](annotationId);
-        if ("anchors" in annotation && annotation.anchors != null) {
+        if (annotation && "anchors" in annotation && annotation.anchors != null) {
           annotation.anchors
             .filter(anchor => "highlights" in anchor)
             .forEach(anchor => anchor.highlights.map((highlight) => {
@@ -308,7 +308,7 @@ export default {
     unhover(annotationId) {
       if (annotationId) {
         const annotation = this.$store.getters['table/annotation/get'](annotationId);
-        if ("anchors" in annotation && annotation.anchors != null) {
+        if (annotation && "anchors" in annotation && annotation.anchors != null) {
           annotation.anchors
             .filter(anchor => "highlights" in anchor)
             .forEach(anchor => anchor.highlights.map((highlight) => {

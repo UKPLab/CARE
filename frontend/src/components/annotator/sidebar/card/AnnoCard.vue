@@ -348,7 +348,7 @@ export default {
       this.eventBus.emit('pdfScroll', annotationId);
     },
     save() {
-      if (this.annotationId) {
+      if (this.annotationId && this.annotation) {
         this.$socket.emit('annotationUpdate', {
           "annotationId": this.annotation.id,
           "tagId": this.annotation.tagId,
@@ -361,10 +361,10 @@ export default {
             });
           }
         });
-      }
 
-      this.$refs.main_comment.save();
-      this.$refs.collab.removeCollab();
+        this.$refs.main_comment.save();
+        this.$refs.collab.removeCollab();
+      }
     },
     cancel() {
       if (this.annotationId) {
