@@ -65,7 +65,7 @@
             />
           </li>
 
-          <li v-if="!readonly" id="addPageNote">
+          <li v-if="!readOnly" id="addPageNote">
             <button
               class="btn btn-light"
               type="button"
@@ -124,7 +124,7 @@ export default {
       required: false,
       default: null,
     },
-    readonly: {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false,
