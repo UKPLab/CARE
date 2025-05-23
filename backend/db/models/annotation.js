@@ -37,7 +37,14 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize,
         modelName: 'annotation',
-        tableName: 'annotation'
+        tableName: 'annotation',
+        hooks: {
+            afterUpdate: async (annotation, options) => {
+                if (annotation.deleted && !annotation._previousDataValues.deleted) {
+                    await sequelize.models.comment.deleteByAnnotationId(annotation.id, {transaction: options.transaction});
+                }
+            }
+        }
     });
     return Annotation;
 };
