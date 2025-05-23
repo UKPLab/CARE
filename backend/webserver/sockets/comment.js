@@ -10,34 +10,6 @@ const {pickObjectAttributeSubset} = require("../../utils/generic");
 module.exports = class CommentSocket extends Socket {
 
     /**
-     * Format comments for export in frontend
-     * @param comment
-     * @return {Promise<*>}
-     */
-    async commentFormat(comment) {
-        const copyFields = [
-            "id",
-            "text",
-            "documentId",
-            "createdAt",
-            "updatedAt",
-            "studySessionId",
-            "studyStepId"
-        ]
-
-        let copied = pickObjectAttributeSubset(comment, copyFields);
-        copied.userId = await this.models['user'].getUserName(comment.userId);
-
-        copied.tags = JSON.parse(comment.tags);
-
-        copied.annotationId = comment.annotationId ? comment.annotationId : null;
-        copied.parentCommentId = comment.parentCommentId ? comment.parentCommentId : null;
-        copied.studyId = comment.studySessionId !== null ? (await this.models["study_session"].getById(comment.studySessionId)).studyId : null;
-
-        return copied;
-    }
-
-    /**
      * Update comments
      * @param {Object} data containing the inputs
      * @param {number} data.commentId the id of the comment
@@ -142,30 +114,10 @@ module.exports = class CommentSocket extends Socket {
         this.emit("commentRefresh", comments);
     }
 
-    /**
-     * Export comments by document
-     * @param {object} data
-     * @param {number} data.documentId - The id of the document
-     * @param options - not used
-     * @returns {Promise<void>}
-     */
-    async exportByDocument(data, options) {
-        const comments = await this.updateCreatorName(await this.models['comment'].getAllByKey('documentId', data.documentId));
-
-        //TODO
-        this.socket.emit("commentExport", {
-            "success": true,
-            "documentId": data.documentId,
-            "objs": await Promise.all(comments.map(async (c) => await this.commentFormat(c)))
-        });
-
-    }
-
     init() {
         this.createSocket("commentGet", this.sendComment, {}, false);
         this.createSocket("commentUpdate", this.addOrUpdateComment, {}, true);
         this.createSocket("commentGetByDocument", this.getCommentsByDocument, {}, false);
-        this.createSocket("commentExportByDocument", this.exportByDocument, {}, false);
     }
 
 }
