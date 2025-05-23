@@ -160,8 +160,11 @@ export default {
         Object.values(this.moodleOptions).every(v => v !== ""),
       ];
     },
-    users() {
+    usersWithExtId() {
       return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
+    },
+    users() {
+      return this.$store.getters["table/user/getAll"];
     },
     studies() {
       return this.$store.getters["table/study/getFiltered"]((s) => s.closed);
@@ -192,7 +195,7 @@ export default {
           return null;
         }
 
-        const user = this.users.find((u) => u.id === document.userId);
+        const user = this.usersWithExtId.find((u) => u.id === document.userId);
         if (!user) {
           return null;
         }
@@ -227,7 +230,7 @@ export default {
           link: window.location.origin + "/review/" + session.hash,
           documentName: d.documentName,
           document: d,
-          extId: user.extId,
+          extId: (user) ? user.extId: "",
           start: session.start,
           end: session.end,
           hash: session.hash,
