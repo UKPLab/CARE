@@ -160,7 +160,7 @@ export default {
         Object.values(this.moodleOptions).every(v => v !== ""),
       ];
     },
-    usersWithExtId() {
+    users() {
       return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
     },
     allUsers() {
@@ -195,7 +195,7 @@ export default {
           return null;
         }
 
-        const user = this.usersWithExtId.find((u) => u.id === document.userId);
+        const user = this.users.find((u) => u.id === document.userId);
         if (!user) {
           return null;
         }
