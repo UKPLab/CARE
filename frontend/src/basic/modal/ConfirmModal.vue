@@ -17,14 +17,14 @@
     </template>
     <template #footer>
       <button
-        class="btn btn-primary"
+        class="btn btn-secondary"
         type="button"
         @click="abort()"
       >
         Abort
       </button>
       <button
-        class="btn btn-secondary"
+        class="btn btn-primary"
         type="button"
         @click="confirm()"
       >

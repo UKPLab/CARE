@@ -65,7 +65,7 @@
             />
           </li>
 
-          <li v-if="!readonly" id="addPageNote">
+          <li v-if="!readOnly" id="addPageNote">
             <button
               class="btn btn-light"
               type="button"
@@ -124,7 +124,7 @@ export default {
       required: false,
       default: null,
     },
-    readonly: {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false,
@@ -293,7 +293,7 @@ export default {
     hover(annotationId) {
       if (annotationId) {
         const annotation = this.$store.getters['table/annotation/get'](annotationId);
-        if ("anchors" in annotation && annotation.anchors != null) {
+        if (annotation && "anchors" in annotation && annotation.anchors != null) {
           annotation.anchors
             .filter(anchor => "highlights" in anchor)
             .forEach(anchor => anchor.highlights.map((highlight) => {
@@ -308,7 +308,7 @@ export default {
     unhover(annotationId) {
       if (annotationId) {
         const annotation = this.$store.getters['table/annotation/get'](annotationId);
-        if ("anchors" in annotation && annotation.anchors != null) {
+        if (annotation && "anchors" in annotation && annotation.anchors != null) {
           annotation.anchors
             .filter(anchor => "highlights" in anchor)
             .forEach(anchor => anchor.highlights.map((highlight) => {
@@ -336,6 +336,14 @@ export default {
         annotationId: null,
         commentId: null,
         anonymous: this.anonymized
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Comment not updated",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
     },
     async leave() {
