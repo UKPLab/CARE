@@ -730,23 +730,16 @@ async editDocument(data, options) {
      * @returns {Promise<Array>} - A promise that resolves when the data has been saved.
      */
     async saveData(data, options) {
-        const savedDocumentData = [];
-        
-        for (const key of Object.keys(data.result)) {
-            const keyName = data.uniqueId + "_" + key;
-            const value = data.result[key];                             
-            const documentData = await this.models['document_data'].add({
-                userId: this.userId,
-                documentId: data.documentId,
-                studySessionId: data.studySessionId,
-                studyStepId: data.studyStepId,
-                key: keyName,
-                value: value
-            },options);
-            savedDocumentData.push(documentData);
-        }
+        let documentData = await this.models['document_data'].add({
+            userId: this.userId,
+            documentId: data.documentId,
+            studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
+            key: data.key,
+            value: data.value
+        }, options);
 
-        return savedDocumentData;
+        return documentData;
     }
 
     init() {
