@@ -256,7 +256,7 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
-    // This is just a temporary logic implemented, waiting for confirmation
+    // TODO: Integrate this with the skill_definition file, example code is in NLPSkills to retrieve the timeout from the skill definition
     nlpTimeoutConfig() {
       const configTimeout = this.configuration?.timeout;
       if (configTimeout && !isNaN(Number(configTimeout))) {
