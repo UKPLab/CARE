@@ -256,6 +256,14 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
+    // This is just a temporary logic implemented, waiting for confirmation
+    nlpTimeoutConfig() {
+      const configTimeout = this.configuration?.timeout;
+      if (configTimeout && !isNaN(Number(configTimeout))) {
+        return Number(configTimeout);
+      }
+      return this.nlpRequestTimeout;
+    },
   },
   watch: {
     specificDocumentData: {
@@ -406,7 +414,7 @@ export default {
             });
             this.timeoutError = true;
           }
-        }, this.nlpRequestTimeout);
+        }, this.nlpTimeoutConfig);
       }
     },
     // TODO: Replace this with an intermediate component between StepModal and NLPService (like, MultiNLPService)
