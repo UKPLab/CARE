@@ -270,7 +270,7 @@ export default {
         const stepDataArr = this.studyData[realStepId] || [];
         const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
         const uniqueIds = Object.values(this.requests).map(r => r.uniqueId);
-        
+
         const allAvailable = uniqueIds.every(uniqueId => {
           const requestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
           if (!requestId || !this.nlpResults[requestId]) return false;
@@ -305,7 +305,6 @@ export default {
           return;
         }
         const requestIds = Object.keys(this.requests);
-        // Use .flatMap to find indices where result transitioned from false to true
         const readyIndices = currentStatuses.flatMap((status, i) => (status === true && previousStatuses[i] === false) ? i : []);
         readyIndices.forEach(i => {
           const requestId = requestIds[i];
