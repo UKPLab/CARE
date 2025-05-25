@@ -150,7 +150,6 @@ export default {
     ExpandMenu,
     Sidebar,
     Loader,
-    ExportAnnos,
     TopBarButton
   },
   provide() {
