@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "chart.js": "^4.4.8"
+    "vue-print-nb": "^1.7.5"
   }
 }

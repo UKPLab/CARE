@@ -78,11 +78,17 @@ export default {
     },
     studySession() {
       return this.$store.getters["table/study_session/get"](this.studySessionId);
-    }, 
+    },
     study() {
+      if (!this.studySession) {
+        return null;
+      }
       return this.$store.getters["table/study/get"](this.studySession.studyId);
     },
     anonymize() {
+      if (!this.study) {
+        return false;
+      }
       return this.study.anonymize;
     }
 
@@ -126,6 +132,14 @@ export default {
         selectors: {target},
         tagId: tag.id,
         anonymous: this.anonymize,
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Annotation Update Failed",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
 
       this.isVisible = false;

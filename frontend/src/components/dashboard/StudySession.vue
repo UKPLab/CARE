@@ -34,6 +34,37 @@
       </div>
     </div>
   </div>
+
+  <div class="container">
+    <h1>Closed Study Sessions</h1>
+    <div v-if="!studiesClosed || studiesClosed.length === 0">
+      <p class="fs-6">
+        You have no closed study sessions.
+      </p>
+    </div>
+    <div v-else>
+      <hr>
+      <div
+        v-for="s in studiesClosed"
+        :key="s.id"
+      >
+        <Card
+          :title="s.title"
+          collapsable collapsed @collapse="collapse(s.id, $event)"
+        >
+          <template #body>
+            <StudySessionTable 
+              :study-id="s.id"
+              :current-user-only="true"
+              :show-closed="true"
+            />
+          </template>
+        </Card>
+        <hr>
+      </div>
+    </div>
+  </div>
+
   <Timer
     autostart
     @time-step="trigger++"
@@ -82,6 +113,9 @@ export default {
     },
     studiesFiltered() {
       return this.studies.filter(s => !this.isStudyClosed(s));
+    },
+    studiesClosed() {
+      return this.studies.filter(s => this.isStudyClosed(s));
     },
     sessionStudyIds() {
       return this.$store.getters["table/study_session/getByUser"](this.$store.getters["auth/getUserId"])
