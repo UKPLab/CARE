@@ -331,13 +331,17 @@ export default {
             const result = this.nlpResults[requestId];
             const uniqueId = this.requests[requestId].uniqueId;
             if (result) {
+              Object.keys(result).forEach(key => {
+                const keyName = uniqueId + "_" + key;
+                const value = result[key];
                 this.$socket.emit("documentDataSave", {
                   documentId: this.studyStep?.documentId,
                   studySessionId: this.studySessionId,
                   studyStepId: this.studyStepId,
-                  uniqueId: uniqueId,
-                  result: result
+                  key: keyName,
+                  value: value,
                 });
+              });
             }
           }
         }
