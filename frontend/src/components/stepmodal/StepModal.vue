@@ -182,7 +182,7 @@ export default {
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
     }, 
-    nlpResultsHandler() {
+    nlpResultsStatus() {
       const requestIds = Object.keys(this.requests);
       if (requestIds.length === 0) return [];
       
@@ -190,19 +190,14 @@ export default {
         const resultExists = requestId in this.nlpResults;
         const result = resultExists ? this.nlpResults[requestId] : null;
 
-        console.log("NLP result for requestId:", requestId, "exists:", resultExists, "result:", result);
         const isValid = resultExists && Object.keys(result).length > 0;
         
         return isValid;
       });
     },
     allNlpRequestsCompleted() {
-      const statuses = this.nlpResultsHandler;
+      const statuses = this.nlpResultsStatus;
       return statuses.length > 0 && statuses.every(status => status === true);
-    },
-    anyNlpRequestsFailed() {
-      const statuses = this.nlpResultsHandler;
-      return statuses.length > 0 && statuses.some(status => status === false);
     },
     openRequests() {
       return Object.keys(this.requests).length > 0;
@@ -261,21 +256,6 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
-    placeholdersReady() {
-      if (!this.allNlpRequestsCompleted) return false;
-      if (!this.placeholders) return true;
-      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-      const studyDataForStep = this.studyData[realStepId] || {};
-      for (const key of Object.keys(this.placeholders)) {
-        for (const config of this.placeholders[key]) {
-          if (config.input && config.input.dataSource && config.input.stepId) {
-            const val = (this.studyData[config.input.stepId] || {})[config.input.dataSource];
-            if (!val || val.value === undefined) return false;
-          }
-        }
-      }
-      return true;
-    },
   },
   watch: {
     specificDocumentData: {
@@ -290,6 +270,7 @@ export default {
         const stepDataArr = this.studyData[realStepId] || [];
         const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
         const uniqueIds = Object.values(this.requests).map(r => r.uniqueId);
+        
         const allAvailable = uniqueIds.every(uniqueId => {
           const requestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
           if (!requestId || !this.nlpResults[requestId]) return false;
@@ -314,7 +295,7 @@ export default {
       },
       deep: true,
     },
-    nlpResultsHandler: {
+    nlpResultsStatus: {
       handler(currentStatuses, previousStatuses) {
         if (
           !previousStatuses ||
@@ -324,27 +305,26 @@ export default {
           return;
         }
         const requestIds = Object.keys(this.requests);
-        //TODO: use .flatMap instead of for-loop(multiple changes required)
-        for (let i = 0; i < currentStatuses.length; i++) {
-          if (currentStatuses[i] === true && previousStatuses[i] === false) {
-            const requestId = requestIds[i];
-            const result = this.nlpResults[requestId];
-            const uniqueId = this.requests[requestId].uniqueId;
-            if (result) {
-              Object.keys(result).forEach(key => {
-                const keyName = uniqueId + "_" + key;
-                const value = result[key];
-                this.$socket.emit("documentDataSave", {
-                  documentId: this.studyStep?.documentId,
-                  studySessionId: this.studySessionId,
-                  studyStepId: this.studyStepId,
-                  key: keyName,
-                  value: value,
-                });
+        // Use .flatMap to find indices where result transitioned from false to true
+        const readyIndices = currentStatuses.flatMap((status, i) => (status === true && previousStatuses[i] === false) ? i : []);
+        readyIndices.forEach(i => {
+          const requestId = requestIds[i];
+          const result = this.nlpResults[requestId];
+          const uniqueId = this.requests[requestId].uniqueId;
+          if (result) {
+            Object.keys(result).forEach(key => {
+              const keyName = uniqueId + "_" + key;
+              const value = result[key];
+              this.$socket.emit("documentDataSave", {
+                documentId: this.studyStep?.documentId,
+                studySessionId: this.studySessionId,
+                studyStepId: this.studyStepId,
+                key: keyName,
+                value: value,
               });
-            }
+            });
           }
-        }
+        });
       },
       deep: true
     },
@@ -395,6 +375,41 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
+    hasResultsInStudyData(uniqueId) {
+      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
+      const stepDataArr = this.studyData[realStepId] || [];
+      const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
+      const foundRequestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
+      const expectedKeys = foundRequestId && this.nlpResults[foundRequestId] ? Object.keys(this.nlpResults[foundRequestId]) : [];
+      if (expectedKeys.length > 0) {
+        return expectedKeys.every(key =>
+          stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
+        );
+      }
+      return false;
+    },
+    async sendRequest(skill, input, uniqueId, requestId) {
+      if (!this.hasResultsInStudyData(uniqueId)) {
+        await this.$socket.emit("serviceRequest", {
+          service: "NLPService",
+          data: {
+            id: requestId,
+            name: skill,
+            data: input,
+          },
+        });
+        setTimeout(() => {
+          if (this.requests[requestId]) {
+            this.eventBus.emit('toast', {
+              title: "NLP Service Request",
+              message: "Timeout in request for skill " + skill + " - Request failed!",
+              variant: "danger"
+            });
+            this.timeoutError = true;
+          }
+        }, this.nlpRequestTimeout);
+      }
+    },
     // TODO: Replace this with an intermediate component between StepModal and NLPService (like, MultiNLPService)
     async request(skill, inputs, uniqueId) {
       const requestId = uuid();
@@ -407,75 +422,22 @@ export default {
 
       this.requests[requestId].input = input;
 
-      // Check if data already exists in documentData and studyData for all expected keys
-      let dataExists = false;
-      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
-      const stepDataArr = this.studyData[realStepId] || [];
-      const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
-      const foundRequestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
-      const expectedKeys = foundRequestId && this.nlpResults[foundRequestId]? Object.keys(this.nlpResults[foundRequestId]) : [];
-
-      if (expectedKeys.length > 0) {
-        dataExists = expectedKeys.every(key =>
-          stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
-        );
-      }      
-      
-      if (!dataExists) {
-        await this.$socket.emit("serviceRequest", {
-          service: "NLPService",
-          data: { 
-             id: requestId,
-             name: skill,
-             data: input
-            }
-        });
-
-        setTimeout(() => {
-            if (this.requests[requestId]) {
-              this.eventBus.emit('toast', {
-                title: "NLP Service Request",
-                message: "Timeout in request for skill " + skill + " - Request failed!",
-                variant: "danger"
-              });
-              this.timeoutError = true;
-            }
-          }, this.nlpRequestTimeout);
-        }
+      await this.sendRequest(skill, input, uniqueId, requestId);
     },
     async retryNlpRequests() {
       this.timeoutError = false;
       
-      const statuses = this.nlpResultsHandler;
+      const statuses = this.nlpResultsStatus;
       const requestIds = Object.keys(this.requests);
-      
-      //TODO: Simplify it with .flatMap()
-      for (let i = 0; i < statuses.length; i++) {
-        if (statuses[i] === false) {
-          const requestId = requestIds[i];
-          if (this.requests[requestId]) {
-            const { skill, input, uniqueId } = this.requests[requestId];
-            
-            if (!Object.keys(this.documentData).some(key => 
-              this.documentData[key]["studySessionId"] === this.studySessionId && 
-              key.startsWith(uniqueId) && 
-              this.documentData[key]["studyStepId"] === this.studyStepId
-            )) {
-              await this.$socket.emit("serviceRequest", {
-                service: "NLPService",
-                data: {
-                  id: requestId,
-                  name: skill,
-                  data: input,
-                },
-              });
-
-              setTimeout(() => {
-                if (this.requests[requestId]) {
-                  this.timeoutError = true;
-                }
-              }, this.nlpRequestTimeout);
-            }
+      const failedIndices = statuses.flatMap((status, i) => status === false ? i : []);
+      const retriedUniqueIds = new Set();
+      for (const i of failedIndices) {
+        const requestId = requestIds[i];
+        if (this.requests[requestId]) {
+          const { skill, input, uniqueId } = this.requests[requestId];
+          if (!retriedUniqueIds.has(uniqueId) && !this.hasResultsInStudyData(uniqueId)) {
+            retriedUniqueIds.add(uniqueId);
+            await this.sendRequest(skill, input, uniqueId, requestId);
           }
         }
       }
