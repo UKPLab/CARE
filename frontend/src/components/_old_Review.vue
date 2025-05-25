@@ -123,9 +123,11 @@ export default {
     }
   },
   mounted() {
-    this.$socket.emit("studySessionGetByHash", {
-      studySessionHash: this.studySessionHash
-    });
+    // // NOTE: commented out because this component is not used, and "studySessionGetByHash" was
+    // // deleted because this was the only usage
+    // this.$socket.emit("studySessionGetByHash", {
+    //   studySessionHash: this.studySessionHash
+    // });
   },
   methods: {
     evaluate() {
