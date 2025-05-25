@@ -227,27 +227,28 @@ module.exports = class DocumentSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendDocumentDeltas(data, options) {
-        const documentId = data.documentId;
-        const doc = await this.models['document'].getById(documentId);
+        try {
+            const documentId = data.documentId;
+            const doc = await this.models['document'].getById(documentId);
 
             if (await this.checkDocumentAccess(doc.id)) {
                 if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
                     const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
                     let delta = new Delta();
 
-                if (fs.existsSync(deltaFilePath)) {
-                    delta = await this.loadDocument(deltaFilePath);
-                } else {
-                    this.logger.warn("No delta file found for document: " + documentId);
-                }
+                    if (fs.existsSync(deltaFilePath)) {
+                        delta = await this.loadDocument(deltaFilePath);
+                    } else {
+                        this.logger.warn("No delta file found for document: " + documentId);
+                    }
 
-                const edits = await this.models['document_edit'].findAll({
-                    where: {documentId: documentId, studySessionId: null, draft: true},
-                    raw: true
-                });
+                    const edits = await this.models['document_edit'].findAll({
+                        where: {documentId: documentId, studySessionId: null, draft: true},
+                        raw: true
+                    });
 
-                const dbDelta = dbToDelta(edits);
-                delta = delta.compose(dbDelta);
+                    const dbDelta = dbToDelta(edits);
+                    delta = delta.compose(dbDelta);
 
                     this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
                     return delta;
