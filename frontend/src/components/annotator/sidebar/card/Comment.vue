@@ -344,18 +344,28 @@ export default {
   },
   methods: {
     save() {
-      this.$socket.emit('commentUpdate', {
-        "commentId": this.commentId,
-        "tags": JSON.stringify(this.comment.tags.sort()),
-        "text": this.comment.text,
-      });
-      if (this.$refs.collab) {
-        this.$refs.collab.removeCollab();
-      }
+      if (this.commentId && this.comment) {
+        this.$socket.emit('commentUpdate', {
+          "commentId": this.commentId,
+          "tags": JSON.stringify(this.comment.tags.sort()),
+          "text": this.comment.text,
+        }, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: "Comment not updated",
+              message: res.message,
+              variant: "danger",
+            });
+          }
+        });
+        if (this.$refs.collab) {
+          this.$refs.collab.removeCollab();
+        }
 
-      // send to model upon save (regardless of the server response on the update (!))
-      if (this.comment.text && this.nlp_active) {
-        this.requestNlpFeedback()
+        // send to model upon save (regardless of the server response on the update (!))
+        if (this.comment.text && this.nlp_active) {
+          this.requestNlpFeedback()
+        }
       }
     },
     saveOnDeactivated(active) {
@@ -373,6 +383,14 @@ export default {
       } else {
         this.$socket.emit('commentGet', {
           "commentId": this.comment.id,
+        }, (res) => {
+          if (!res.success) {
+              this.eventBus.emit("toast", {
+                title: "Comments not retrieved",
+                message: res.message,
+                variant: "danger",
+              });
+            }
         });
       }
       if (this.$refs.collab) {
@@ -384,6 +402,14 @@ export default {
       this.$socket.emit('commentUpdate', {
         "commentId": this.comment.id,
         "deleted": true
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Comment not updated",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
     },
     editComment() {
@@ -399,6 +425,14 @@ export default {
         "studySessionId": this.studySessionId,
         "studyStepId": this.studyStepId,
         "anonymous": this.anonymize,
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Comment not updated",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
     },
     saveCard() {
