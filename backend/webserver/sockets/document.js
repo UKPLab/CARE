@@ -722,27 +722,31 @@ async editDocument(data, options) {
             options: data.options,
             feedback: data.feedback,
         });
-    }
-
-    /**
+    }    /**
      * Save additional document data for a particular document/study_session/study_step like the nlpResults, links etc., to the document_data table.
      * 
      * @param {*} data {userId: number, documentId: number, studySessionId: number, studyStepId: number, key: string, value: any}
      * @param {*} options {transaction: Transaction}
-     * @returns {Promise<void>} - A promise that resolves when the data has been saved.
+     * @returns {Promise<Array>} - A promise that resolves when the data has been saved.
      */
     async saveData(data, options) {
-             
-        let documentData = await this.models['document_data'].add({
-            userId: this.userId,
-            documentId: data.documentId,
-            studySessionId: data.studySessionId,
-            studyStepId: data.studyStepId,
-            key: data.key,
-            value: data.value
-        }, {transaction: options.transaction});
+        const savedDocumentData = [];
+        
+        for (const key of Object.keys(data.result)) {
+            const keyName = data.uniqueId + "_" + key;
+            const value = data.result[key];                             
+            const documentData = await this.models['document_data'].add({
+                userId: this.userId,
+                documentId: data.documentId,
+                studySessionId: data.studySessionId,
+                studyStepId: data.studyStepId,
+                key: keyName,
+                value: value
+            },options);
+            savedDocumentData.push(documentData);
+        }
 
-        return documentData;
+        return savedDocumentData;
     }
 
     init() {
