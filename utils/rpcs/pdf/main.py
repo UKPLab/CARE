@@ -58,16 +58,20 @@ def create_app():
             annotations = []
             for page in doc:
                 for annot in page.annots():
+                    
                     logger.info(
-                        f'Annotation on page: {page.number} with type: {annot.type} and rect: {annot.rect} and color: {annot.colors} text: {annot.get_text()} textbox {annot.get_textbox()}'
+                        f'Annotation on page: {page.number} with type: {annot.type} and rect: {annot.rect} and color: {annot.colors} text: {annot.info["content"]} textbox: {page.get_textbox(annot.rect)}'
                     )
+                    
                     annotations.append({
                         "page": page.number,
                         "type": annot.type[1] if isinstance(annot.type, tuple) else annot.type,  # e.g., 'Highlight'
                         "rect": list(annot.rect),  # [x0, y0, x1, y1]
+                        "comment": annot.info.get("content", ""),  # Text content of the annotation
+                        "text": page.get_textbox(annot.rect),  # Text within the annotation rectangle
                         "color": annot.colors  # e.g., (1.0, 0.0, 0.0) for red
                     })
-            response = {"success": True, "data": annotations}
+            response = {"success": True,"message": "Annotations extracted successfully.", "data": annotations}
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
