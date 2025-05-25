@@ -290,12 +290,15 @@ export default {
         const stepDataArr = this.studyData[realStepId] || [];
         const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
         const uniqueIds = Object.values(this.requests).map(r => r.uniqueId);
-        //TODO: It only checks for one of the results containing the uniqueID, but there could be multiple results for the same uniqueID and all of them are required
-        const allAvailable = uniqueIds.every(uniqueId =>
-          stepDataList.some(entry => entry && entry.key && entry.key.startsWith(uniqueId))
-        );
+        const allAvailable = uniqueIds.every(uniqueId => {
+          const requestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
+          if (!requestId || !this.nlpResults[requestId]) return false;
+          const resultKeys = Object.keys(this.nlpResults[requestId]);
+          return resultKeys.every(key =>
+            stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
+          );
+        });
 
-        console.log("All available:", allAvailable, "Unique IDs:", uniqueIds, "Step Data Array:", stepDataArr);
         if (allAvailable && this.allNlpRequestsCompleted) {
           Object.keys(this.requests).forEach(requestId => {
             this.$store.commit('service/removeResults', {
@@ -328,18 +331,13 @@ export default {
             const result = this.nlpResults[requestId];
             const uniqueId = this.requests[requestId].uniqueId;
             if (result) {
-              //TODO: Send dict of keys which can be handled in the sockets
-              Object.keys(result).forEach(key => {
-                const keyName = uniqueId + "_" + key;
-                const value = result[key];
                 this.$socket.emit("documentDataSave", {
                   documentId: this.studyStep?.documentId,
                   studySessionId: this.studySessionId,
                   studyStepId: this.studyStepId,
-                  key: keyName,
-                  value: value,
+                  uniqueId: uniqueId,
+                  result: result
                 });
-              });
             }
           }
         }
