@@ -96,7 +96,7 @@ module.exports = class PDFRPC extends RPC {
      * @returns {Promise<Object>} - The response from the RPC service.
      * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
      */
-    async embedAnnotations(data) {
+    async embeddAnnotations(data) {
         try {
             const response = await this.request("embedAnnotations", data);
             if (!response['success']) {
