@@ -407,12 +407,19 @@ export default {
 
       this.requests[requestId].input = input;
 
-      // Check if data already exists in documentData
-      const dataExists = Object.keys(this.documentData).some(key => 
-        this.documentData[key]["studySessionId"] === this.studySessionId && 
-        key.startsWith(uniqueId) && 
-        this.documentData[key]["studyStepId"] === this.studyStepId
-      );
+      // Check if data already exists in documentData and studyData for all expected keys
+      let dataExists = false;
+      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
+      const stepDataArr = this.studyData[realStepId] || [];
+      const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
+      const foundRequestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
+      const expectedKeys = foundRequestId && this.nlpResults[foundRequestId]? Object.keys(this.nlpResults[foundRequestId]) : [];
+
+      if (expectedKeys.length > 0) {
+        dataExists = expectedKeys.every(key =>
+          stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
+        );
+      }      
       
       if (!dataExists) {
         await this.$socket.emit("serviceRequest", {
@@ -449,7 +456,6 @@ export default {
           if (this.requests[requestId]) {
             const { skill, input, uniqueId } = this.requests[requestId];
             
-            //TODO: only done for document_data, check it for studyData itself
             if (!Object.keys(this.documentData).some(key => 
               this.documentData[key]["studySessionId"] === this.studySessionId && 
               key.startsWith(uniqueId) && 
