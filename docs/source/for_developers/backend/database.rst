@@ -236,7 +236,9 @@ You can use the `afterUpdate` hook to detect when the `deleted` flag changes, an
         }
     }
 
-By comparing the current value (`instance.deleted`) to the previous one (`instance._previousDataValues.deleted`), you ensure the logic only runs when the value actually changes.
+.. note::
+
+   By comparing the current value (`instance.deleted`) to the previous one (`instance._previousDataValues.deleted`), you ensure the logic only runs when the value actually changes.
 
 Handling `individualHooks`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -261,4 +263,7 @@ Example use inside a model update utility:
 
     await this.update(data, options);
 
+.. note::
+
+   While this behavior is important to be aware of, it's not something we've encountered often in practice. In most cases, bulk updates work as expected without needing `individualHooks`.
 
