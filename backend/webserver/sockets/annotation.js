@@ -127,15 +127,17 @@ module.exports = class AnnotationSocket extends Socket {
 
     /**
      * Embed all annotations into the PDF for a document.
-     * @param {number} documentId - The ID of the document to embed annotations into. 
+     * @param {Object} data - The data containing the document ID and other parameters.
+     * @param {Object} options - Additional options for the emmfbedding process.
+     * @param {number} data.documentId - The ID of the document to embed annotations into. 
      * @returns {Promise<Object>} The response from the PDFRPC embedAnnotations call.
      */
-    async embedAnnotationsForDocument(documentId) {
-        console.log("Embedding annotations for document: " + documentId);
-        const annotations = await this.models['annotation'].getAllByKey("documentId", documentId);
+    async embedAnnotationsForDocument(data, options) {
+        console.log("Embedding annotations for document: " + data);
+        const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);
 
         // Get all comments for the document
-        const comments = await this.models['comment'].getAllByKey("documentId", documentId);
+        const comments = await this.models['comment'].getAllByKey("documentId", data.documentId);
 
         // For each annotation, get the corresponding tag and comments
         const annotationsWithTagsAndComments = await Promise.all(
@@ -156,7 +158,7 @@ module.exports = class AnnotationSocket extends Socket {
         );
 
         // ...rest of your code...
-        const document = await this.models['document'].getById(documentId);
+        const document = await this.models['document'].getById(data.documentId);
 
         const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
         if (!fs.existsSync(filePath)) {
@@ -183,36 +185,13 @@ module.exports = class AnnotationSocket extends Socket {
         // Optionally, you can return the new file path or buffer
         return {
             success: true,
-            documentId: documentId,
+            documentId: data.documentId,
             file: fs.readFileSync(newFilePath), // The new PDF file buffer
             hash: document.hash, // The new PDF file buffer
             message: "Annotations embedded successfully."
         };
     
     }
-
-    /**
-     * Return the original PDF file buffer for a document (no annotation embedding).
-     * @param {number} documentId - The ID of the document.
-     * @returns {Promise<Object>} The response with the file buffer.
-     */
-    async getOriginalPDFFile(documentId) {
-        const document = await this.models['document'].getById(documentId);
-        const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
-        if (!fs.existsSync(filePath)) {
-            throw new Error("PDF file not found");
-        }
-        const file = fs.readFileSync(filePath);
-        return {
-            success: true,
-            documentId: documentId,
-            file: file, // The original PDF file buffer
-            hash: document.hash,
-            message: "Original PDF file returned successfully."
-        };
-    }
-
-
     init() {
 
         this.socket.on("annotationGet", async (data) => {
@@ -247,7 +226,7 @@ module.exports = class AnnotationSocket extends Socket {
             }
         });
 
-        this.socket.on("annotationExportByDocument", async (data) => {
+        ("annotationExportByDocument", async (data) => {
             try {
                 const annotations = await this.updateCreatorName(await this.models['annotation'].getAllByKey("documentId", data.documentId));
 
@@ -262,40 +241,6 @@ module.exports = class AnnotationSocket extends Socket {
                 this.sendToast("Internal server error. Failed to load annotations.", "Internal server error", "danger");
             }
         });
-
-        this.socket.on("embeddAnnotations", async (data) => {
-            try {
-                console.log("Embedding annotations for document: " + data);
-                if(data.includeAnnotations) {
-                    const response = await this.embedAnnotationsForDocument(data.documentId);
-                    console.log("Response from embedding annotations: ", response);
-                    this.socket.emit("annotationEmbedd", {
-                        success: response.success,
-                        file: response.file, // The new PDF file buffer
-                        documentId: data.documentId,
-                        message: response.message,
-                        hash: response.hash // Optionally, the new PDF file buffer
-                    });
-                }
-                else {
-                    const response = await this.getOriginalPDFFile(data.documentId);
-                    this.socket.emit("annotationEmbedd", {
-                        success: response.success,
-                        documentId: response.documentId,
-                        file: response.file,
-                        message: response.message,
-                        hash: response.hash
-                    });
-                }
-            } catch (e) {
-                this.socket.emit("annotationEmbedd", {
-                    success: false,
-                    documentId: data.documentId,
-                    message: "Failed to embed annotations: " + e.message
-                });
-                this.logger.error("Error during embedding annotations: " + e);
-                this.sendToast("Internal server error. Failed to embed annotations.", "Internal server error", "danger");
-            }
-        });
+        this.createSocket("embeddAnnotations", this.embedAnnotationsForDocument, {}, false);
     }
 }
