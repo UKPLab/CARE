@@ -383,27 +383,6 @@ export default {
       const docIds = this.docs.map((i) => i.id);
       this.$refs.export.requestExport(docIds, "json");
     },
-    exportPDFWithAnnotations(params) {
-      console.log("Exporting PDF with annotations for document ID:", params);
-      this.$emit("documentExportPDFWithAnnotations", {
-        documentId: params.id,
-        userId: this.userId,
-      }, (res) => {
-        if (res.success) {
-          this.eventBus.emit("toast", {
-            title: "Export PDF with annotations",
-            message: "PDF with annotations successfully exported!",
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: "Export PDF with annotations failed",
-            message: res.message,
-            variant: "danger",
-          });
-        }
-      });
-    },
     studyCoordinator(row) {
       this.$refs.studyCoordinator.open(0, row.id);
     },
