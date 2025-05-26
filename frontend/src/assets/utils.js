@@ -179,6 +179,11 @@ export function downloadDocument(content, fileName, fileType = "") {
     let typeSet;
 
     switch (fileType) {
+        case "PDF":
+            typeSet = "application/pdf";
+            // Ensure fileName ends with .pdf
+            fileName = fileName.replace(/\.pdf$/i, "") + ".pdf"; // Remove any trailing .pdf and add .pdf
+            break;
         case "html":
             typeSet = "text/html;charset=utf-8";
             break;
