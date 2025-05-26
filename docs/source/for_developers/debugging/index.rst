@@ -26,24 +26,52 @@ Most of the commonly used browser support debugging tools, such as the developer
 The developer console is a very powerful tool, which allows you to inspect the DOM, the CSS, and the JavaScript code.
 In the following, we will describe some of the most useful features of the developer console.
 
+Basic Element Inspection
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The "Inspect Element" tool (the small cursor/mouse icon in the top-left corner of the developer tools) allows you to select and examine specific elements on the webpage:
+
+1. Open developer tools (``F12`` or right-click → "Inspect")
+2. Click the inspect element icon (cursor/mouse symbol) in the top-left of the developer tools
+3. Hover over any element on the webpage to see its HTML structure, CSS styles, and dimensions
+4. Click on an element to select it and view its properties in the Elements/Inspector tab
+
+This is particularly useful for:
+
+- Understanding the DOM structure of Vue.js components
+- Debugging CSS styling issues
+- Finding the HTML elements that correspond to your Vue.js components
+
 Inspect Websocket Connection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The websocket is used to communicate between the frontend and the backend. It is often necessary to inspect the websocket connection to see what data is sent and received between the frontend and the backend.
 
-To do so: ① Open the developer console and go to the network tab. ② Reload the page and at filter for ``websocket``. ③ The websocket connection should be listed there. Click on it to see the details.
+To do so:
+
+1. Open the developer console and go to the network tab.
+2. Reload the page and at filter for ``websocket``.
+3. The websocket connection should be listed there. Click on it to see the details.
 
 
 .. figure:: ./Websocket_Inspection.png
     :alt: Websocket_Inspection
 
-On the ``Response`` tab, you can see the messages that are transmitted between the frontend and the backend.
-Sometimes, it is necessary to reload the page again to see the messages.
+On the On the ``Message`` tab (or ``Responses``), you can see the messages that are transmitted between the frontend and the backend.
+
+.. note::
+
+    If messages are not immediately visible, refresh the page to ensure all WebSocket communications are captured.
+
+
 
 Inspect Vue.js Components
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The vue.js devtools are a very powerful tool to inspect the vue.js components.
+The vue.js devtools are a very powerful tool to inspect the vue.js components and they are browser extensions that can be installed from the Chrome Web Store (for Chrome/Edge) or Firefox Add-ons (for Firefox).
+Simply search for "Vue.js devtools" in your browser's extension store and install the official extension by Vue.js.
+
+To open the developer console, press ``F12`` in your browser (or right-click on the page and select "Inspect" or "Developer Tools").
 If you have installed the vue.js devtools in your browser, you can open them by clicking on the ``Vue`` tab in the developer console.
 There, you can see all the components that are currently loaded in the application, including the data and the computed properties of each component.
 
@@ -138,6 +166,22 @@ From the **project root** (where the ``Makefile`` is located):
 
    ``DUMP`` is **just the file name**, because the Makefile already prefixes
    it with ``db_dumps/``.  Adjust the container name if yours differs.
+
+When switching between different databases, the restored database will be preserved, but the data in ``.files`` will be lost. Therefore,
+it is necessary to manually copy the files data from the production server to the local machine when switching to a specific branch.
+One way to compromise here is to make a copy of the ``.files`` folder on an ``./archive`` directory locally.
+Then, when we switch to a specific branch, we can copy the files from the ``./archive`` directory to the ``.files`` folder.
+
+.. code-block:: shell
+
+    # 1 – Create a copy of the .files folder
+    cp -r .files ./archive/dd-mm-yyyy/
+
+    # 2 – Switch to a specific branch
+    git checkout <branch-name>
+
+    # 3 – Copy the files from the archive directory to the .files folder
+    cp -r ./archive/dd-mm-yyyy/files/* .files/
 
 Restart services and start debugging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
