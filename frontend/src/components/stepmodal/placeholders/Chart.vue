@@ -1,6 +1,7 @@
 <template>
   <div class="chart-container">
-    <canvas ref="chartCanvas"></canvas>
+    <canvas v-if="chartConfig" ref="chartCanvas"></canvas>
+    <p v-else class="text-muted"> ~ Placeholder data missing or invalid ~ </p>
   </div>
 </template>
 
@@ -37,19 +38,21 @@ export default {
   },  
   computed: {
     chartConfig() {
-
       if (this.config?.type && this.config?.data && this.config?.options) {
         return this.config;
       }
-
-      const stepId = this.config.input.stepId;
-      const datasource = this.config.input.dataSource;
-
+      const stepId = this.config?.input?.stepId;
+      const datasource = this.config?.input?.dataSource;
+      if (!stepId || !datasource || !this.studyData[stepId]) {
+        return null;
+      }
       const chartElement = Object.values(this.studyData[stepId] || {}).find(item => item.key === datasource);
-
       const data = chartElement?.value;
+      if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length === 0) {
+        return null;
+      }
       const labels = Object.keys(data);
-      const dataset = Object.values(data);      
+      const dataset = Object.values(data);
       return {
         type: 'bar',
         data: {
@@ -77,18 +80,20 @@ export default {
         },
       };
     },
-  },  
+  },
   mounted() {
     Chart.register(...registerables);
-    const ctx = this.$refs.chartCanvas.getContext('2d');
-    this.chartInstance = new Chart(ctx, this.chartConfig);
+    if (this.chartConfig) {
+      const ctx = this.$refs.chartCanvas.getContext('2d');
+      this.chartInstance = new Chart(ctx, this.chartConfig);
+    }
   },
   beforeUnmount() {
     this.destroyChart();
   },
   methods: {
-    renderChart: debounce(function () {           
-    }, 100), 
+    renderChart: debounce(function () {
+    }, 100),
     destroyChart() {
       if (this.chartInstance) {
         this.chartInstance.destroy();
