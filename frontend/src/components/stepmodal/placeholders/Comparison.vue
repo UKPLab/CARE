@@ -1,5 +1,6 @@
 <template>
-  <div class="comparison-container">    <Chart v-if="chartConfig" :config="chartConfig" />
+  <div class="comparison-container">
+    <Chart v-if="chartConfig" :config="chartConfig" />
     <p v-else class="text-muted"> ~ Placeholder data missing or invalid ~ </p>
   </div>
 </template>
@@ -7,7 +8,7 @@
 <script>
 /**
  * Component to render a comparison chart based on the provided input data.
- * This component is designed to compare two datasets on horizontal stacked bar chart.
+ * This component is designed to compare two datasets on a horizontal grouped bar chart.
  * 
  * @author: Manu Sundar Raj Nandyal
 */
@@ -38,11 +39,11 @@ export default {
         const comparisonElement = Object.values(this.studyData[stepId] || {}).find(item => item.key === dataSource);
         return comparisonElement?.value || null;
       });
-      
       const data1 = comparisonData[0] || {};
       const data2 = comparisonData[1] || {};
-      
-      const { labels, dataset1, dataset2 } = this.processComparisonData(data1, data2);
+      const labels = Array.from(new Set([...Object.keys(data1), ...Object.keys(data2)]));
+      const dataset1 = labels.map(label => data1[label] ?? 0);
+      const dataset2 = labels.map(label => data2[label] ?? 0);
       return {
         type: 'bar',
         data: {
@@ -61,7 +62,8 @@ export default {
           ],
         },
         options: {
-          responsive: true,          plugins: {
+          responsive: true,
+          plugins: {
             legend: {
               position: 'top',
             },
@@ -72,42 +74,11 @@ export default {
           },
           indexAxis: 'y',
           scales: {
-            x: { stacked: true },
-            y: { stacked: true },
+            x: { stacked: false },
+            y: { stacked: false },
           },
         },
       };
-    },
-  },
-  methods: {
-    processComparisonData(data1, data2) {
-      const allKeys = Array.from(new Set([...Object.keys(data1 || {}), ...Object.keys(data2 || {})]));
-      const dataset1 = [];
-      const dataset2 = [];
-      const stack = [];
-
-      for (const key of allKeys) {
-        const v1 = data1?.[key] ?? 0;
-        const v2 = data2?.[key] ?? 0;
-          if (v1 === v2) {
-          // Case 1: Equal values - show first dataset completely, no stacking for second
-          dataset1.push(v1);
-          dataset2.push(0);
-          stack.push(0);
-        } else if (v1 < v2) {
-          // Case 2: First is smaller - show first completely, second stacks the difference
-          dataset1.push(v1);
-          dataset2.push(v2 - v1);
-          stack.push(1);
-        } else {
-          // Case 3: Second is smaller - show second completely, first stacks the difference
-          dataset1.push(v1 - v2);
-          dataset2.push(v2);
-          stack.push(2);
-        }
-      }
-      
-      return { labels: allKeys, dataset1, dataset2, stack };
     },
   },
 };
