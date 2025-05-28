@@ -256,7 +256,7 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
-    // TODO: Integrate this with the skill_definition file, example code is in NLPSkills to retrieve the timeout from the skill definition
+    //TODO: This is subject to change, as the timeout functionality is yet to be discussed
     nlpTimeoutConfig() {
       const configTimeout = this.configuration?.timeout;
       if (configTimeout && !isNaN(Number(configTimeout))) {
@@ -360,7 +360,9 @@ export default {
 
   },
   mounted() {
-    if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
+    if (this.readOnly) {
+      this.waiting = false;
+    } else if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
       this.waiting = true;
 
       for (const service of this.configuration.services) {
