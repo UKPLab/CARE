@@ -16,7 +16,7 @@ Models
 ------
 
 Models are defined in the ``models`` folder.
-They are defined using the `Sequelize <http://docs.sequelizejs.com/>`_ ORM.
+They are defined using the `Sequelize ORM <http://docs.sequelizejs.com/>`_.
 
 The following entity relationship model (ERM) shows the relations between the different models:
 
@@ -176,6 +176,94 @@ convert it into a regular migration.
 4. Double check that you have set the down method accordingly -- you don't want
    to drop an entire table if you only add a few rows. Delete just these rows.
 
+Database Hooks
+--------------
 
+Definition and Purpose
+~~~~~~~~~~~~~~~~~~~~~~
 
+Sequelize models support lifecycle hooks, which are special functions that run **automatically** at key points during database operations — such as after a row is created, updated, or deleted.
+
+.. note::
+
+    For a full reference on available hooks and usage, see the official Sequelize documentation: `Sequelize Hook Documentation <https://sequelize.org/docs/v6/other-topics/hooks/>`_.
+
+Hooks improve **data consistency** and **encapsulation** by allowing you to:
+
+- Assign related data after creation
+- Cascade deletions or cleanup logic
+- Trigger logic in response to state changes (e.g., toggling a `public` or `deleted` flag)
+
+This ensures that important side effects happen reliably regardless of where the database call originates.
+
+Usage of `afterCreate` and `afterUpdate`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The most common lifecycle hooks used in CARE are:
+
+- ``afterCreate`` — runs after a new entry is added to the database
+- ``afterUpdate`` — runs after an existing entry is updated
+
+These hooks receive the **model instance** and the **options** object as arguments. The `options` object may include useful context or the active database transaction.
+
+.. code-block:: javascript
+
+    hooks: {
+        afterCreate: async (instance, options) => {
+            const { transaction, context } = options;
+            // e.g., assign roles after user creation
+        },
+        afterUpdate: async (instance, options) => {
+            const { transaction } = options;
+            // e.g., trigger logic if a specific flag was changed
+        }
+    }
+
+Cascade Logic Example
+~~~~~~~~~~~~~~~~~~~~~
+
+A common pattern is to perform **cascade deletion**: when a parent item is soft-deleted, its related children should be removed as well.
+
+You can use the `afterUpdate` hook to detect when the `deleted` flag changes, and trigger cleanup accordingly:
+
+.. code-block:: javascript
+
+    afterUpdate: async (instance, options) => {
+        if (instance.deleted && instance._previousDataValues.deleted === false) {
+            await SomeModel.deleteChildren(instance.id, {
+                transaction: options.transaction
+            });
+        }
+    }
+
+.. note::
+
+   By comparing the current value (`instance.deleted`) to the previous one (`instance._previousDataValues.deleted`), you ensure the logic only runs when the value actually changes.
+
+Handling `individualHooks`
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using `Model.update(...)`, Sequelize **does not run per-row hooks** like `afterUpdate` by default. It only runs them once for the entire bulk update.
+
+To ensure hooks are triggered **for every updated row**, you must enable:
+
+.. code-block:: javascript
+
+    individualHooks: true
+
+Example use inside a model update utility:
+
+.. code-block:: javascript
+
+    const options = {
+        where: { id },
+        transaction,
+        individualHooks: true
+    };
+
+    await this.update(data, options);
+
+.. note::
+
+   While this behavior is important to be aware of, it's not something we've encountered often in practice. In most cases, bulk updates work as expected without needing `individualHooks`.
 

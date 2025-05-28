@@ -10,3 +10,4 @@ This includes adding external services, changing the socket interface, and modif
    :glob:
 
    *
+   rpcs/moodle // TODO check for correct structure 
