@@ -39,8 +39,14 @@ export default {
         const comparisonElement = Object.values(this.studyData[stepId] || {}).find(item => item.key === dataSource);
         return comparisonElement?.value || null;
       });
-      const data1 = comparisonData[0] || {};
-      const data2 = comparisonData[1] || {};
+      const data1 = comparisonData[0];
+      const data2 = comparisonData[1];
+      if (
+        (!data1 || typeof data1 !== 'object' || Array.isArray(data1) || Object.keys(data1).length === 0) &&
+        (!data2 || typeof data2 !== 'object' || Array.isArray(data2) || Object.keys(data2).length === 0)
+      ) {
+        return null;
+      }
       const labels = Array.from(new Set([...Object.keys(data1), ...Object.keys(data2)]));
       const dataset1 = labels.map(label => data1[label] ?? 0);
       const dataset2 = labels.map(label => data2[label] ?? 0);
