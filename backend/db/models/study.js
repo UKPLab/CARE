@@ -350,11 +350,15 @@ module.exports = (sequelize, DataTypes) => {
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         projectId: DataTypes.INTEGER,
-        anonymize: DataTypes.BOOLEAN
+        anonymize: DataTypes.BOOLEAN,
+        parentStudyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null
+        }
     }, {
         sequelize: sequelize, modelName: 'study', tableName: 'study', hooks: {
             afterCreate: async (study, options) => {
-
                 // Skip step creation for template studies
                 if (study.template) {
                     return;
@@ -366,8 +370,34 @@ module.exports = (sequelize, DataTypes) => {
                 }
 
                 await Study.createStudySteps(study, options);
-
-            }, afterUpdate: async (study, options) => {
+            }, 
+            beforeUpdate: async (study, options) => {
+                // If this is a study update (not a close operation) and we have stepDocuments
+                if (options.context?.stepDocuments && !study.closed) {
+                    // Create a new study with the updated data
+                    const newStudyData = study.toJSON();
+                    delete newStudyData.id; // Remove the ID so a new one is generated
+                    delete newStudyData.hash; // Remove the hash so a new one is generated
+                    newStudyData.parentStudyId = study.id; // Set the parent study ID
+                    
+                    await Study.add(newStudyData, {
+                        transaction: options.transaction,
+                        context: options.context
+                    });
+                    
+                    // Close the old study
+                    await study.update({
+                        closed: new Date(),
+                        userIdClosed: options.context.userId
+                    }, {
+                        transaction: options.transaction
+                    });
+                    
+                    // Prevent the original update from proceeding
+                    return false;
+                }
+            },
+            afterUpdate: async (study, options) => {
                 const transaction = options.transaction;
 
                 if (study.deleted) {
