@@ -97,10 +97,12 @@ def create_app():
             # Open the PDF
             doc = pymupdf.open(file_target)
 
-            # Here you would embed the annotations into the PDF
-            # For now, this is a placeholder loop
-
             annotations = data.get("annotations", [])
+            if not annotations:
+                response = {"success": True, "message": "No annotations provided.", "data": data["file"]}
+                logger.info("No annotations provided, returning original PDF.")
+                return response
+            
             for annot in annotations:
                 # Extract page number from annotation selectors
                 page_number = None
