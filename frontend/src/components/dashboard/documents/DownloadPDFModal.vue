@@ -77,11 +77,12 @@ export default {
         includeAnnotations: this.downloadWithAnnotations,
       },
       (res) => {
-        this.isLoading = false;
+          console.log("Response from embeddAnnotations:", res);
+          console.log("Pending PDF download params in callback:", this.pendingPDFDownloadParams);  
         if (
           this.pendingPDFDownloadParams &&
-          res.data.document.id === this.pendingPDFDownloadParams.id &&
-          res.data.success
+          res.data.documentId === this.pendingPDFDownloadParams.id &&
+          res.success
         ) {
           downloadDocument(res.data.file,  this.pendingPDFDownloadParams.name, this.pendingPDFDownloadParams.typeName);
           this.$refs.pdfDownloadModal.close();
@@ -96,6 +97,7 @@ export default {
             message: res.data && res.data.message ? res.data.message : "Unknown error",
             variant: "danger",
           });
+          this.isLoading = false;
           this.$refs.pdfDownloadModal.close();
           console.warn("Document ID mismatch or pendingPDFDownloadParams is null in annotationEmbedd callback.");
         }
