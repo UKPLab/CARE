@@ -165,7 +165,7 @@ export default {
       return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
     },
     studySessions() {
-      if (!this.study || this.studyClosed) return [];
+      if (!this.study) return [];
 
       // TODO: Need to clarify what this line means.Since there is no function that updates the value of `this.showFinished`,
       // `this.showFinished` will always be true, which means the filter function won't filter anything.
