@@ -137,33 +137,20 @@ def create_app():
                 logger.info(f"Text: {exact}")
                 logger.info(f"Prefix: {prefix}")
                 logger.info(f"Suffix: {suffix}")
-                text_pos = None
+                full_rect = None
                 if page_number is not None:
                     doc_page = doc[page_number-1]
                     selected_rect = get_best_exact_rect(doc_page, exact, prefix, suffix)
+                    
                     if selected_rect is not None and not selected_rect.is_empty:
-                        annot_highlight_obj = doc_page.add_highlight_annot(selected_rect)
-                        annot_highlight_obj.set_colors(stroke=color)  # Default to red if no color provided
-                        annot_highlight_obj.update()  # Apply the color change
-                        for comment in annot.get("comments", []):
-                            if "text" in comment:
-                                logger.info(f"Adding text annotation: {comment['text']}")
-                                if comment["text"] is not None:
-                                    annot_text_obj = doc_page.add_text_annot(
-                                        selected_rect.top_left, comment["text"],
-                                        icon="Comment"  # Use a comment icon for text annotations
-                                    )
-                                    annot_text_obj.set_colors(stroke=color)  # Set the color of the text annotation
-                                    annot_text_obj.update()  # Apply the color change
-                                    logger.info(f"Text annotation object: {annot_text_obj}")
-
-                        logger.info(f"Annotation object: {annot_highlight_obj}")
-                        
-                        
+                        extracted_text = doc_page.get_textbox(selected_rect)
+                        logger.info(f"Extracted text: {extracted_text}")
+                        logger.warning(f"Extracted text '{extracted_text}' does not match expected text '{exact}'")
+                        full_rect = add_annotations(doc_page, selected_rect, extracted_text, exact, color)
+                        add_comment(doc_page, (selected_rect.x0, selected_rect.y0), annot.get("comments", []), color)
+                        logger.info(f"Full full rect: {full_rect}")
                     else:
                         logger.warning("No suitable rect found for annotation.")
-
-
             # Save the modified PDF
             logger.info(f"Saving PDF with annotations to {target}")
             doc.save(file_target, incremental=True,  encryption=0)
@@ -233,7 +220,98 @@ def create_app():
             "danger": (1, 0, 0),    # Red
         }
         return color_map.get(color_code, (1, 0, 0))  # Default to red if not found
+    def add_annotations(doc_page, selected_rect, extracted_text, original_text, color):
+        """
+        Expand the selected_rect forward word by word, highlighting each word,
+        and stop after highlighting as many words as in the original_text.
+        Returns a new rectangle covering from the start of selected_rect to the end.
+        """
+
+        logger.info(f"Starting highlight_long_text with extracted_text: {extracted_text!r}, original_text: {original_text!r}")
+        logger.info(f"Selected rect: {selected_rect}")
+
+            # First, check if the selected_rect's text matches the original_text
+        selected_text = doc_page.get_textbox(selected_rect).strip()
+        logger.info(f"Text in selected_rect: {selected_text!r}")
+
+        if selected_text == original_text.strip():
+            logger.info("Selected rect text matches original text. Highlighting selected_rect only.")
+            annot = doc_page.add_highlight_annot(selected_rect)
+            annot.set_colors(stroke=color)
+            annot.update()
+            logger.info(f"Highlighted selected_rect: {selected_rect}")
+            return selected_rect
+
+        words = doc_page.get_text("words")  # Each word: (x0, y0, x1, y1, "word", block_no, line_no, word_no)
+        logger.info(f"Found {len(words)} words on page")
+
+        found = False
+        result_text = extracted_text
+        rects = [selected_rect]
+        original_text_length = len(original_text.strip().split(" ")) if original_text else 0
+        
+        splits = original_text.strip().split(" ")
+        logger.info(f"Original text split into {len(splits)} parts: {splits}")
+        highlighted_count = 0
+
+        for i, word in enumerate(words):
+            x0, y0, x1, y1, text, *_ = word
+            word_rect = pymupdf.Rect(x0, y0, x1, y1)
+            logger.debug(f"Word {i}: rect={word_rect}, text={text!r}")
+            if found:
+                if highlighted_count >= original_text_length - 1:
+                    logger.info(f"Highlighted {highlighted_count} words, stopping as per original_text length.")
+                    break
+                result_text += (" " if not result_text.endswith(" ") else "") + text
+                rects.append(word_rect)
+                # Highlight this word
+                annot = doc_page.add_highlight_annot(word_rect)
+                annot.set_colors(stroke=color)
+                annot.update()
+                highlighted_count += 1
+                logger.info(f"Highlighted word {i}: {text!r} at {word_rect} (count: {highlighted_count})")
+                logger.info(f"Current concatenated text: {result_text!r}")
+            elif word_rect.intersects(selected_rect):
+                logger.info(f"Found starting word {i} intersecting selected_rect")
+                found = True
+                # Optionally highlight the starting word as well
+                annot = doc_page.add_highlight_annot(word_rect)
+                annot.set_colors(stroke=color)
+                annot.update()
+                logger.info(f"Highlighted starting word {i}: {text!r} at {word_rect}")
+
+        # If no words highlighted, just return the selected_rect
+        if len(rects) == 1:
+            logger.warning("No additional words highlighted, returning selected_rect")
+            return selected_rect
+
+        # Return the union of all collected rects
+        union_rect = rects[0]
+        for r in rects[1:]:
+            union_rect |= r
+        logger.info(f"Returning union rect: {union_rect}")
+        return union_rect
     
+    def add_comment(doc_page, position, comments, color):
+        """
+        Adds text annotations (comments) to the PDF page at the given position.
+        :param doc_page: The PDF page object.
+        :param position: The (x, y) tuple or point where the comment should be placed.
+        :param comments: List of comment dicts, each with a 'text' key.
+        :param color: RGB tuple for the annotation color.
+        """
+        for comment in comments:
+            if "text" in comment:
+                logger.info(f"Adding text annotation: {comment['text']}")
+                if comment["text"] is not None:
+                    annot_text_obj = doc_page.add_text_annot(
+                        position, comment["text"],
+                        icon="Comment"  # Use a comment icon for text annotations
+                    )
+                    annot_text_obj.set_colors(stroke=color)  # Set the color of the text annotation
+                    annot_text_obj.update()  # Apply the color change
+                    logger.info(f"Text annotation object: {annot_text_obj}")
+
 
     logger.info("Creating App...")
     app = socketio.WSGIApp(sio)
