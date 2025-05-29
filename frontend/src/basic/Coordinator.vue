@@ -90,7 +90,7 @@ import { sorter } from "@/assets/utils.js";
  * @slot footer: Use slot to overwrite footer for the modal
  * @emits submit: Submit event with the new data content
  *
- * @author: Dennis Zyska
+ * @author: Dennis Zyska, Linyin Huang
  */
 export default {
   name: "BasicCoordinator",
@@ -229,29 +229,56 @@ export default {
     getDataFromStore(id, table, fields, copy = false) {
       const data = this.$store.getters["table/" + table + "/get"](id);
 
-      let return_data = fields.reduce((acc, field) => {
+      let returnData = fields.reduce((acc, field) => {
         // if the key is in the data, use the data value
-        acc[field.key] =
-          field.key in data
-            ? data[field.key]
-            : // if type is table, get the data from the store
-            ["table", "choice"].includes(field.type) && this.$store.getters["table/" + field.options.table + "/hasFields"]
-            ? sorter(
-                this.$store.getters["table/" + field.options.table + "/getFiltered"]((e) => e[field.options.id] === id),
-                field.options.sort
-              )
-                .filter((e) => e[field.options.key] === data[field.key])
-                .map((e) => this.getDataFromStore(e.id, field.options.table, this.$store.getters["table/" + field.options.table + "/getFields"], copy))
-            : // else use the default value
-              null;
+        if (field.key in data) {
+          acc[field.key] = data[field.key];
+        } else if (
+          ["table", "choice"].includes(field.type) &&
+          field.options &&
+          field.options.table &&
+          this.$store.getters["table/" + field.options.table + "/hasFields"]
+        ) {
+          // Handle table/choice type fields that aren't directly in the data
+          acc[field.key] = sorter(
+            this.$store.getters["table/" + field.options.table + "/getFiltered"]((e) => e[field.options.id] === id),
+            field.options.sort
+          )
+            .filter((e) => e[field.options.key] === data[field.key])
+            .map((e) => {
+              // Create a copy of the original entry
+              const copyData = { ...e };
+
+              // TODO: Is it the best place to fetch the parentDocumentId?
+              // If this entry has a documentId, fetch the parent document ID
+              if (e.documentId) {
+                const document = this.$store.getters["table/document/get"](e.documentId);
+                if (document) {
+                  copyData.parentDocumentId = document.parentDocumentId;
+                }
+              }
+
+              // Get related data
+              const relatedData = this.getDataFromStore(
+                e.id,
+                field.options.table,
+                this.$store.getters["table/" + field.options.table + "/getFields"],
+                copy
+              );
+              // Merge while preserving original properties
+              return { ...copyData, ...relatedData };
+            });
+        } else {
+          acc[field.key] = null;
+        }
         return acc;
       }, {});
 
       if (!copy) {
-        return_data = { ...return_data, ...{ id: data.id } };
+        returnData = { ...returnData, ...{ id: data.id } };
       }
 
-      return return_data;
+      return returnData;
     },
   },
 };
