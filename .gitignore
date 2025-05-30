@@ -1,6 +1,7 @@
 
 # files dir
 files/*.pdf
+files/*.delta
 !files/8852a746-360e-4c31-add2-4d1c75bfb96d.pdf
 
 # database dumps
@@ -15,6 +16,7 @@ backend/coverage
 # ignore build files
 dist/
 frontend/node_modules
+node_modules
 
 #modules
 utils/modules/editor-delta-conversion/node_modules
