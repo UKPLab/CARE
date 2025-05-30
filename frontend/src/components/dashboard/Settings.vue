@@ -1,6 +1,12 @@
 <template>
   <div>
     <h1>Settings</h1>
+    <div class="alert alert-warning d-flex align-items-center mt-3" role="alert">
+      <LoadIcon class="me-2" iconName="exclamation-triangle-fill" />
+      <div>
+        Remember to click <strong>Save Settings</strong> after making changes.
+      </div>
+    </div>
     <div class="button-group">
       <button
         class="btn btn-primary me-2"
