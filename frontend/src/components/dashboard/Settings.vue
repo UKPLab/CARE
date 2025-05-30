@@ -60,19 +60,9 @@ export default {
       }, {});
     }
   },
-  sockets: {
-    settingData(data) {
-      this.settings = data.sort((a, b) => (a.key > b.key ? 1 : -1));
-      this.collapseFirst = this.settings.reduce((acc, setting) => {
-        const key = setting.key.split('.')[0];
-        acc[key] = true;
-        return acc;
-      }, {});
-    }
-  },
   mounted() {
     this.settings = null;
-    this.$socket.emit("settingGetData");
+    this.load();
   },
   methods: {
     nestSettings(obj, keys, setting) {
@@ -85,11 +75,40 @@ export default {
       }
     },
     save() {
-      this.$socket.emit("settingSave", this.settings);
+      this.$socket.emit("settingSave", this.settings, (res) => {
+        if (res.success) {
+          this.eventBus.emit("toast", {
+            title: "Success",
+            message: res.data,
+            variant: "success"
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Error Saving Settings",
+            message: res.message,
+            variant: "danger"
+          });
+        }
+      });
     },
     load() {
-      this.$socket.emit("settingGetData");
+      this.$socket.emit("settingGetData", null, (res) => {
+        if (res.success) {
+          this.settings = res.data.sort((a, b) => (a.key > b.key ? 1 : -1));
+          this.collapseFirst = this.settings.reduce((acc, setting) => {
+            const key = setting.key.split('.')[0];
+            acc[key] = true;
+            return acc;
+          }, {});
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Error Loading Settings",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     }
-  },
+  }
 };
 </script>
