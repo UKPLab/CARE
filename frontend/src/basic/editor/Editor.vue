@@ -40,7 +40,13 @@ import "quill/dist/quill.snow.css";
 
       let delta;
       try {
-        delta = typeof newVal === "string" ? JSON.parse(newVal) : newVal;
+          if (typeof newVal === "string" && newVal.trim() !== "") {
+          delta = JSON.parse(newVal);
+        } else if (typeof newVal === "object" && newVal !== null) {
+          delta = newVal;
+        } else {
+          delta = { ops: [] };
+        }
       } catch (e) {
         console.warn("Failed to parse modelValue:", e);
         return;
@@ -71,11 +77,16 @@ import "quill/dist/quill.snow.css";
     const editor = this.editorWrapper.getEditor();
 
     try {
-      const delta = typeof this.modelValue === "string"
-        ? JSON.parse(this.modelValue)
-        : this.modelValue;
+      let delta;
+        if (typeof this.modelValue === "string" && this.modelValue.trim() !== "") {
+          delta = JSON.parse(this.modelValue);
+        } else if (typeof this.modelValue === "object" && this.modelValue !== null) {
+          delta = this.modelValue;
+        } else {
+          delta = { ops: [] }; 
+        }
 
-      editor.setContents(delta);
+        editor.setContents(delta);
     } catch (e) {
       console.error("Failed to load initial modelValue:", e);
     }
