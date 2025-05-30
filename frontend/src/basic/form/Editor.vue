@@ -4,7 +4,7 @@
       <Editor
         :modelValue="currentData"
         @update:modelValue="update"
-        class="form-control p-0"
+        class="form-control p-0 editor-wrapper"
         @blur="blur(currentData)"
         :max-length="options.maxLength"
       />
@@ -56,5 +56,11 @@ export default {
 </script>
 
 <style scoped>
-
+.editor-wrapper {
+  min-height: 150px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+}
 </style>
