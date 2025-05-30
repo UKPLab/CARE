@@ -36,7 +36,12 @@ module.exports = class SettingSocket extends Socket {
         }
 
         for (const setting of data) {
-            await this.models["setting"].set(setting.key, setting.value, {
+            let value = setting.value;
+            if (typeof value === "object") {
+                value = JSON.stringify(value);
+            }
+
+            await this.models["setting"].set(setting.key, value, {
                 transaction: options.transaction,
             });
         }

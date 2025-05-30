@@ -175,7 +175,10 @@ export default {
     },
     submit() {
       if (this.$refs.form.validate()) {
-        const data = {...this.data};
+        const data = {
+          ...this.data,
+          description: JSON.stringify(this.data.description),
+        };
         this.$emit("submit", data);
         this.$socket.emit("appDataUpdate", {
           table: this.table,
