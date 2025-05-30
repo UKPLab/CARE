@@ -2,10 +2,11 @@
   <FormElement ref="formElement" :options="options">
     <template #element="{blur}">
       <Editor
-          v-model="currentData"
-          class="form-control p-0"
-          @blur="blur(currentData)"
-          :max-length="options.maxLength"
+        :modelValue="currentData"
+        @update:modelValue="update"
+        class="form-control p-0"
+        @blur="blur(currentData)"
+        :max-length="options.maxLength"
       />
     </template>
   </FormElement>
@@ -24,7 +25,7 @@ export default {
       required: true,
     },
     modelValue: {
-      type: String,
+      type: [String, Object],
       required: false,
       default: "",
     },
@@ -32,21 +33,21 @@ export default {
   emits: ["update:modelValue"],
   data() {
     return {
-      currentData: "",
-    }
+      currentData: this.modelValue,
+    };
   },
   watch: {
-    currentData() {
-      this.$emit("update:modelValue", this.currentData);
-    },
-    modelValue() {
-      this.currentData = this.modelValue;
-    },
-  },
-  mounted() {
-    this.currentData = this.modelValue;
+    modelValue(newVal) {
+      if (JSON.stringify(newVal) !== JSON.stringify(this.currentData)) {
+        this.currentData = newVal;
+      }
+    }
   },
   methods: {
+    update(newValue) {
+      this.currentData = newValue;
+      this.$emit("update:modelValue", newValue);
+    },
     validate() {
       return this.$refs.formElement.validate(this.currentData);
     }

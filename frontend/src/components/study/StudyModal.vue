@@ -46,9 +46,11 @@
           No more sessions available for this study.
         </div>
         <span v-else>
-          <div
+          <Editor
             v-if="study.description"
-            v-html="study.description"
+            :model-value="study.description"
+            :read-only="true"
+            class="ql-snow ql-container border"
           />
           <div v-else>
             Click "Start User Study" to start the user study.
@@ -131,8 +133,9 @@
 
 <script>
 import Modal from "@/basic/Modal.vue";
-import Loader from "@/basic/Loading.vue"
-import BasicTable from "@/basic/Table.vue"
+import Loader from "@/basic/Loading.vue";
+import BasicTable from "@/basic/Table.vue";
+import Editor from "@/basic/editor/Editor.vue";
 
 /**
  * Modal for accessing a study
@@ -143,7 +146,7 @@ import BasicTable from "@/basic/Table.vue"
  */
 export default {
   name: "StudyModal",
-  components: {Loader, BasicTable, Modal},
+  components: {Loader, BasicTable, Modal, Editor },
   props: {
     studyId: {
       type: Number,
