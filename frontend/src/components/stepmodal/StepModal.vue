@@ -7,6 +7,8 @@
       :name="studyStep?.configuration?.name || 'Modal'"
       :class="modalClasses"
       :style="{ backgroundColor: studyStep?.configuration?.backgroundColor || '' }"
+      disableKeyboard
+      removeClose
     >
       <template #title>
         <h5
@@ -22,8 +24,25 @@
           class="justify-content-center flex-grow-1 d-flex"
           role="status"
         >
-          <div class="spinner-border m-5">
+          <div class="spinner-border m-5" v-if="!timeoutError">
             <span class="visually-hidden">Loading...</span>          
+          </div>
+          <div v-else>
+            <div class="d-flex flex-column align-items-center">
+              <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP support.</p>
+              <div class="d-flex gap-2">
+                <BasicButton
+                  title="Try Again"
+                  class="btn btn-warning"
+                  @click="retryNlpRequests"
+                />
+                <BasicButton
+                  title="Skip NLP Support"
+                  class="btn btn-secondary"
+                  @click="closeModal({ nextStep: true })"
+                />
+              </div>
+            </div>
           </div>
         </div>
         <div v-else>
@@ -35,19 +54,20 @@
               No content available for this step.
             </p>
 
-            <!-- TODO: Remove check for output once the configuration is fixed-->
-            <p v-if="output">
-              Output of the {{ skill }}: {{ output }}
-            </p>
-            <div v-else v-html="documentText"></div>
-
-            <div v-for="(entry, index) in matchedPlaceholderContent" :key="'placeholder-' + index" class="mb-4">
-              <template v-if="entry.type === 'text'">
-                <p>{{ entry.value }}</p>
-              </template>
-              <template v-else-if="entry.type === 'chart'">
-                <Chart :chartInput="entry.value" :id="'chart' + index"/>
-              </template>
+            <div v-else>
+                <div v-for="(segment, index) in documentSegments" :key="'segment-' + index">
+                  <template v-if="segment.type === 'plainText'">
+                    <span v-html="segment.value"></span>
+                  </template>                    <template v-else-if="segment.type === 'text'">
+                    <Text :config="segment.config" />
+                  </template>
+                  <template v-else-if="segment.type === 'chart'">
+                    <Chart :config="segment.config" />
+                  </template>
+                  <template v-else-if="segment.type === 'comparison'">
+                    <Comparison :config="segment.config" />
+                  </template>
+                </div>
             </div>
           </div>
         </div>      
@@ -92,7 +112,9 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Quill from "quill";
 import {v4 as uuid} from "uuid";
+import Text from "./placeholders/Text.vue";
 import Chart from "./placeholders/Chart.vue";
+import Comparison from "./placeholders/Comparison.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 
 /**
@@ -103,7 +125,7 @@ import {downloadObjectsAs} from "@/assets/utils";
  */
 export default {
   name: "StepModal",
-  components: { BasicButton, BasicModal, Chart },
+  components: { BasicButton, BasicModal, Text, Chart, Comparison },
   inject: {
     studySessionId: {
       type: Number,
@@ -135,123 +157,14 @@ export default {
       type: Boolean,
       default: false
     },
-  },
+  },  
   data() {
     return {
       loadingConfig: true,
       documentText: null,
       waiting: false,
       requests: {},
-      charts: [
-        {
-          title: "Horizontal bar chart",
-          explanation: "Horizontal bar chart",
-          input:{            
-            type: "bar",
-            data: {
-              labels: ["A", "B", "C", "D", "E", "F", "H"],
-              datasets: [
-                {
-                  label: "Frequency",
-                  data: [65, 59, 80, 81, 56, 55, 40],
-                  backgroundColor: "rgba(255, 99, 132, 0.5)",
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: "top",
-                },
-                title: {
-                  display: true,
-                  text: "Frequency",
-                },
-              },
-              indexAxis: "y"
-            },
-          }
-        },
-        {
-          title: "Stacked horizontal bar chart",
-          explanation: "Stacked horizontal bar chart",
-          input:{            
-            type: "bar",
-            data: {
-              labels: ["A", "B", "C", "D", "E", "F", "H"],
-              datasets: [
-                {
-                  label: 'Dataset 1',
-                  data: [65, 59, 80, 81, 56, 55, 40],
-                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                },
-                {
-                  label: 'Dataset 2',
-                  data: [28, 48, 40, 19, 86, 27, 90],
-                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                }
-              ],
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: "top",
-                },
-                title: {
-                  display: true,
-                  text: "Frequency",
-                },
-              },
-              indexAxis: "y",
-              scales: {
-                x: {
-                  stacked: true,
-                },
-                y: {
-                  stacked: true,
-                },
-              }, 
-            },
-          }
-        },
-        {
-          title: "Grouped horizontal bar chart",
-          explanation: "Grouped horizontal bar chart",
-          input:{            
-            type: "bar",
-            data: {
-              labels: ["A", "B", "C", "D", "E", "F", "H"],
-              datasets: [
-                {
-                  label: 'Dataset 1',
-                  data: [65, 59, 80, 81, 56, 55, 40],
-                  backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                },
-                {
-                  label: 'Dataset 2',
-                  data: [28, 48, 40, 19, 86, 27, 90],
-                  backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                }
-              ],
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: "top",
-                },
-                title: {
-                  display: true,
-                  text: "Frequency",
-                },
-              },
-              indexAxis: "y",
-            },
-          }
-        },
-      ],
+      timeoutError: false,
     };
   },
   computed: {
@@ -265,90 +178,150 @@ export default {
     },
     configuration() {
       return this.studyStep?.configuration || null;
-    },
+    },    
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
+    }, 
+    nlpResultsStatus() {
+      const requestIds = Object.keys(this.requests);
+      if (requestIds.length === 0) return [];
+      
+      return requestIds.map((requestId) => {
+        const resultExists = requestId in this.nlpResults;
+        const result = resultExists ? this.nlpResults[requestId] : null;
+
+        const isValid = resultExists && Object.keys(result).length > 0;
+        
+        return isValid;
+      });
+    },
+    allNlpRequestsCompleted() {
+      const statuses = this.nlpResultsStatus;
+      return statuses.length > 0 && statuses.every(status => status === true);
+    },
+    openRequests() {
+      return Object.keys(this.requests).length > 0;
     },
     nlpRequestTimeout() {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
-    },
+    }, 
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
     },
     placeholders(){
       return this.studyStep?.configuration?.placeholders || null;
-    },
-    matchedPlaceholderContent() {
-      const result = [];
-      if (!this.placeholders || !this.documentText) return result;
+    },    
+    documentSegments() {
+        if (!this.documentText || !this.placeholders) return [];
 
-      const matches = this.matchKeys();
+        const segments = [];
+        const regex = /~(.*?)~/g;
+        let match;
+        let lastIndex = 0;
 
-      for (const { key, index } of matches) {
-        const placeholderArr = this.placeholders[key];
-        if (!placeholderArr || placeholderArr.length <= index) continue;
+        const placeholderCounters = Object.keys(this.placeholders).reduce((acc, key) => {
+          acc[key] = 0;
+          return acc;
+        }, {});
 
-        const entry = placeholderArr[index];
+        while ((match = regex.exec(this.documentText)) !== null) {
+          const placeholderKey = match[1];
 
-        if (key === "text") {
-          const { stepId, dataSource } = entry;
-          const docEntry = this.documentData.find(d => d.studyStepId === stepId && d.key === dataSource);
-          if (docEntry?.value) {
-            result.push({ type: "text", value: docEntry.value });
+          if (match.index > lastIndex) {
+            segments.push({ type: 'plainText', value: this.documentText.slice(lastIndex, match.index) });
           }
 
-        } else if (key === "chart") {
-          const { stepId, dataSource } = entry;
-          const docEntry = this.documentData.find(d => d.studyStepId === stepId && d.key === dataSource);
-
-          if (docEntry?.value && typeof docEntry.value === "object") {
-            const baseChart = JSON.parse(JSON.stringify(this.charts[0])); // Horizontal bar chart
-            baseChart.data.title = "";
-            baseChart.data.labels = Object.keys(docEntry.value);
-            baseChart.data.datasets[0].data = Object.values(docEntry.value);
-            result.push({ type: "chart", value: baseChart });
-          }
-
-        } else if (key === "comparison") {
-          const inputs = entry.input;
-          if (Array.isArray(inputs) && inputs.length === 2) {
-            const input1 = this.documentData.find(d => d.studyStepId === inputs[0].stepId && d.key === inputs[0].dataSource);
-            const input2 = this.documentData.find(d => d.studyStepId === inputs[1].stepId && d.key === inputs[1].dataSource);
-
-            if (input1?.value && input2?.value && typeof input1.value === "object" && typeof input2.value === "object") {
-              const baseChart = JSON.parse(JSON.stringify(this.charts[1])); // Stacked horizontal bar chart
-              const labels = Object.keys(input1.value);
-              baseChart.data.title = "";
-              baseChart.data.labels = labels;
-              baseChart.data.datasets[0].data = labels.map(label => input1.value[label] || 0);
-              baseChart.data.datasets[1].data = labels.map(label => input2.value[label] || 0);
-              result.push({ type: "chart", value: baseChart });
+          if (this.placeholders[placeholderKey]) {
+            const placeholderIndex = placeholderCounters[placeholderKey];
+            const placeholderConfig = this.placeholders[placeholderKey][placeholderIndex];            
+            if (placeholderConfig) {
+              const resolvedSegment = { type: placeholderKey, config: placeholderConfig };
+              segments.push(resolvedSegment);
+              placeholderCounters[placeholderKey] += 1;
             }
           }
-        }
-      }
 
-      return result;
-    },
+          lastIndex = regex.lastIndex;
+        }
+
+        if (lastIndex < this.documentText.length) {
+          segments.push({ type: 'plainText', value: this.documentText.slice(lastIndex) });
+        }
+
+        return segments;
+      },
     specificDocumentData() {
       return this.$store.getters["table/document_data/getByKey"]("documentId", this.studyStep?.documentId);
     },
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
+    //TODO: This is subject to change, as the timeout functionality is yet to be discussed
+    nlpTimeoutConfig() {
+      const configTimeout = this.configuration?.timeout;
+      if (configTimeout && !isNaN(Number(configTimeout))) {
+        return Number(configTimeout);
+      }
+      return this.nlpRequestTimeout;
+    },
   },
   watch: {
-    nlpResults: function (results) {
-      for (let requestId in this.requests) {
-        if (requestId in results) {
+    specificDocumentData: {
+      handler(newData) {
+        this.$emit("update:data", this.specificDocumentData);
+      },
+      deep: true,
+    },
+    studyData: {
+      handler(newData) {
+        const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
+        const stepDataArr = this.studyData[realStepId] || [];
+        const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
+        const uniqueIds = Object.values(this.requests).map(r => r.uniqueId);
+
+        const allAvailable = uniqueIds.every(uniqueId => {
+          const requestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
+          if (!requestId || !this.nlpResults[requestId]) return false;
+          const resultKeys = Object.keys(this.nlpResults[requestId]);
+          return resultKeys.every(key =>
+            stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
+          );
+        });
+
+        if (allAvailable && this.allNlpRequestsCompleted) {
+          Object.keys(this.requests).forEach(requestId => {
+            this.$store.commit('service/removeResults', {
+              service: 'NLPService',
+              requestId: requestId
+            });
+          });
+          this.requests = {};
+          this.waiting = false;
+        } else {
+          this.waiting = true;
+        }
+      },
+      deep: true,
+    },
+    nlpResultsStatus: {
+      handler(currentStatuses, previousStatuses) {
+        if (
+          !previousStatuses ||
+          currentStatuses.length !== previousStatuses.length ||
+          !currentStatuses.some((status, i) => status !== previousStatuses[i])
+        ) {
+          return;
+        }
+        const requestIds = Object.keys(this.requests);
+        const readyIndices = currentStatuses.flatMap((status, i) => (status === true && previousStatuses[i] === false) ? i : []);
+        readyIndices.forEach(i => {
+          const requestId = requestIds[i];
           const result = this.nlpResults[requestId];
           const uniqueId = this.requests[requestId].uniqueId;
-
-          for (const key in result) {
-            if (result.hasOwnProperty(key)) {
+          if (result) {
+            Object.keys(result).forEach(key => {
               const keyName = uniqueId + "_" + key;
               const value = result[key];
-              
               this.$socket.emit("documentDataSave", {
                 documentId: this.studyStep?.documentId,
                 studySessionId: this.studySessionId,
@@ -356,40 +329,18 @@ export default {
                 key: keyName,
                 value: value,
               });
-
-            }
+            });
           }
-
-          this.$store.commit("service/removeResults", {
-            service: "NLPService",
-            requestId: requestId,
-          });
-          delete this.requests[requestId];
-        }
-      }
-
-      if (Object.keys(this.requests).length === 0) {
-        this.waiting = false;
-      }
-    },
-    specificDocumentData: {
-      handler(newData) {
-        this.$emit("update:data", this.specificDocumentData);
+        });
       },
-      deep: true,
+      deep: true
     },
   },
   created() {
     if (this.configuration) {
       this.loadingConfig = false;
     }
-    // Delete this after the configuration is implemented
-    else {
-      this.data = {
-        "Feedback": "This is a placeholder for the feedback. The configuration is not implemented yet.",
-      };
-      this.loadingConfig = false;
-    }
+
     this.$socket.emit("documentGet",
       {
         documentId: this.studyStep?.documentId ? this.studyStep.documentId : 0,
@@ -409,13 +360,15 @@ export default {
 
   },
   mounted() {
-    if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
+    if (this.readOnly) {
+      this.waiting = false;
+    } else if (this.configuration && "services" in this.configuration && Array.isArray(this.configuration["services"])) {
       this.waiting = true;
 
       for (const service of this.configuration.services) {
         if (service.type === "nlpRequest") {
-          const { skill, inputs: dataSource, name } = service;
-          this.request(skill, dataSource, ("service_" + name));
+          const { skill, inputs: inputs, name } = service;
+          this.request(skill, inputs, ("service_" + name));
         }
       }
     }
@@ -431,35 +384,29 @@ export default {
       this.$emit("close", event);
       this.$refs.modal.close();
     },
-    async request(skill, dataSource, uniqueId) {
-      const requestId = uuid();
-      this.requests[requestId] = { skill, dataSource, input: "", response: "", uniqueId };
-
-      let input;
-      if(skill==="skill_eic"){
-        const v1Index = "v1" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v1.stepId):-1;
-        const v2Index = "v2" in dataSource? this.studySteps.findIndex(step => step.id === dataSource.v2.stepId):-1;
-        const v1Input = v1Index > -1 ? this.studyData[v1Index+1][dataSource["v1"]["dataSource"]] : "";
-        const v2Input = v2Index > -1 ? this.studyData[v2Index+1][dataSource["v2"]["dataSource"]] : "";
-        input = { v1: v1Input, v2: v2Input };
-      } else {
-        const index = this.studySteps.findIndex(step => step.id === dataSource.stepId);
-        input = index > -1 ? this.studyData[index+1][dataSource["dataSource"]] : "";
+    hasResultsInStudyData(uniqueId) {
+      const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
+      const stepDataArr = this.studyData[realStepId] || [];
+      const stepDataList = Array.isArray(stepDataArr) ? stepDataArr : [stepDataArr];
+      const foundRequestId = Object.keys(this.requests).find(rid => this.requests[rid].uniqueId === uniqueId);
+      const expectedKeys = foundRequestId && this.nlpResults[foundRequestId] ? Object.keys(this.nlpResults[foundRequestId]) : [];
+      if (expectedKeys.length > 0) {
+        return expectedKeys.every(key =>
+          stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
+        );
       }
-
-      this.requests[requestId].input = input;
-
-      if (!Object.keys(this.documentData).some(key => this.documentData[key]["studySessionId"] === this.studySessionId && key.startsWith(uniqueId) && this.documentData[key]["studyStepId"] === this.studyStepId)) {
+      return false;
+    },
+    async sendRequest(skill, input, uniqueId, requestId) {
+      if (!this.hasResultsInStudyData(uniqueId)) {
         await this.$socket.emit("serviceRequest", {
           service: "NLPService",
-          data: { 
-             id: requestId,
-             name: skill,
-             data: input
-            }
-        }
-      );
-
+          data: {
+            id: requestId,
+            name: skill,
+            data: input,
+          },
+        });
         setTimeout(() => {
           if (this.requests[requestId]) {
             this.eventBus.emit('toast', {
@@ -467,25 +414,43 @@ export default {
               message: "Timeout in request for skill " + skill + " - Request failed!",
               variant: "danger"
             });
+            this.timeoutError = true;
           }
-        }, this.nlpRequestTimeout);
+        }, this.nlpTimeoutConfig);
       }
     },
-    matchKeys() {
-      if (!this.placeholders || !this.documentText) return [];
+    // TODO: Replace this with an intermediate component between StepModal and NLPService (like, MultiNLPService)
+    async request(skill, inputs, uniqueId) {
+      const requestId = uuid();
+      this.requests[requestId] = { skill, inputs, input: "", response: "", uniqueId };
 
-      const placeholderKeys = Object.keys(this.placeholders);
-      const pattern = new RegExp(`\\b(${placeholderKeys.join('|')})\\b`, 'g');
-      const matches = [...this.documentText.matchAll(pattern)];
+      const input = Object.entries(inputs).reduce((acc, [entry, value]) => {
+        acc[entry] = this.studyData[value.stepId][value.dataSource];
+        return acc;
+      }, {});
 
-      const occurrenceCount = {};
-      return matches.map(match => {
-        const key = match[1];
-        if (!occurrenceCount[key]) occurrenceCount[key] = 0;
-        else occurrenceCount[key]++;
-        return { key, index: occurrenceCount[key] };
-      });
+      this.requests[requestId].input = input;
+
+      await this.sendRequest(skill, input, uniqueId, requestId);
     },
+    async retryNlpRequests() {
+      this.timeoutError = false;
+      
+      const statuses = this.nlpResultsStatus;
+      const requestIds = Object.keys(this.requests);
+      const failedIndices = statuses.flatMap((status, i) => status === false ? i : []);
+      const retriedUniqueIds = new Set();
+      for (const i of failedIndices) {
+        const requestId = requestIds[i];
+        if (this.requests[requestId]) {
+          const { skill, input, uniqueId } = this.requests[requestId];
+          if (!retriedUniqueIds.has(uniqueId) && !this.hasResultsInStudyData(uniqueId)) {
+            retriedUniqueIds.add(uniqueId);
+            await this.sendRequest(skill, input, uniqueId, requestId);
+          }
+        }
+      }
+    },    
     async exportStudyData() {
       if (this.isAdmin){
         const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_study_data';

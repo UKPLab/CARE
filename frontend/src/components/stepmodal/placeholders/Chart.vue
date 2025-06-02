@@ -1,12 +1,14 @@
 <template>
-  <div>
-  <canvas ref="chartCanvas"> </canvas>
+  <div class="chart-container">
+    <canvas v-if="chartConfig" ref="chartCanvas"></canvas>
+    <p v-else class="text-muted"> ~ Placeholder data missing or invalid ~ </p>
   </div>
 </template>
 
 <script>
 import { Chart, registerables } from 'chart.js';
 import { debounce } from 'lodash';
+
 
 /**
  * Component to render a chart based on the provided data and options.
@@ -16,43 +18,90 @@ import { debounce } from 'lodash';
  */
 export default {
   name: 'ChartComponent',
-  props: {
-    chartInput: {
+  inject: {
+    studyData: {
       type: Object,
-      default: () => ({}),
+      required: true,
+      default: () => null,
+    },
+  },  
+  props: {
+    config: {
+      type: Object,
+      required: true,
     },
   },
   data() {
     return {
       chartInstance: null,
-      previousChartInput: null,
     };
+  },  
+  computed: {
+    chartConfig() {
+      if (this.config?.type && this.config?.data && this.config?.options) {
+        return this.config;
+      }
+      const stepId = this.config?.input?.stepId;
+      const datasource = this.config?.input?.dataSource;
+      if (!stepId || !datasource || !this.studyData[stepId]) {
+        return null;
+      }
+      const chartElement = Object.values(this.studyData[stepId] || {}).find(item => item.key === datasource);
+      const data = chartElement?.value;
+      if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length === 0) {
+        return null;
+      }
+      const labels = Object.keys(data);
+      const dataset = Object.values(data);
+      return {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: this.config.label || 'Dataset',
+              data: dataset,
+              backgroundColor: "rgba(255, 99, 132, 0.5)",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: true,
+              text: this.config.title || 'Chart',
+            },
+          },
+          indexAxis: 'y',
+        },
+      };
+    },
   },
   mounted() {
     Chart.register(...registerables);
-    //this.renderChart();
-    const ctx = this.$refs.chartCanvas.getContext('2d');
-      this.chartInstance = new Chart(ctx, {
-        type: this.chartInput["type"],	
-        data: this.chartInput["data"],
-        options: this.chartInput["options"],
-      });
-      console.log("Instance",this.chartInstance);
+    if (this.chartConfig) {
+      const ctx = this.$refs.chartCanvas.getContext('2d');
+      this.chartInstance = new Chart(ctx, this.chartConfig);
+    }
   },
   beforeUnmount() {
     this.destroyChart();
   },
   methods: {
-    renderChart: debounce(function () {           
-    }, 100), 
+    renderChart: debounce(function () {
+    }, 100),
     destroyChart() {
       if (this.chartInstance) {
         this.chartInstance.destroy();
       }
     },
-  },
+  },  
   watch: {
-    chartInput: {
+    config: {
       handler: 'renderChart',
       deep: true,
     },
