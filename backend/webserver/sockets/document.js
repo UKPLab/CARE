@@ -227,41 +227,37 @@ module.exports = class DocumentSocket extends Socket {
      * @returns {Promise<void>}
      */
     async sendDocumentDeltas(data, options) {
-        try {
-            const documentId = data.documentId;
-            const doc = await this.models['document'].getById(documentId);
+        const documentId = data.documentId;
+        const doc = await this.models['document'].getById(documentId);
 
-            if (await this.checkDocumentAccess(doc.id)) {
-                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
-                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
-                    let delta = new Delta();
+        if (await this.checkDocumentAccess(doc.id)) {
+            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
+                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
+                let delta = new Delta();
 
-                    if (fs.existsSync(deltaFilePath)) {
-                        delta = await this.loadDocument(deltaFilePath);
-                    } else {
-                        this.logger.warn("No delta file found for document: " + documentId);
-                    }
-
-                    const edits = await this.models['document_edit'].findAll({
-                        where: {documentId: documentId, studySessionId: null, draft: true},
-                        raw: true
-                    });
-
-                    const dbDelta = dbToDelta(edits);
-                    delta = delta.compose(dbDelta);
-
-                    this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
-                    return delta;
+                if (fs.existsSync(deltaFilePath)) {
+                    delta = await this.loadDocument(deltaFilePath);
                 } else {
-                    throw new Error("Non-HTML/MODAL documents are not supported for this operation");
+                    this.logger.warn("No delta file found for document: " + documentId);
                 }
+
+                const edits = await this.models['document_edit'].findAll({
+                    where: {documentId: documentId, studySessionId: null, draft: true},
+                    raw: true
+                });
+
+                const dbDelta = dbToDelta(edits);
+                delta = delta.compose(dbDelta);
+
+                this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
+                return delta;
             } else {
-                throw new Error("You do not have access to this document");
+                throw new Error("Non-HTML/Modal documents are not supported for this operation");
             }
-        } catch (error) {
-            this.logger.error("An error occurred while sending the merged deltas:", error);
-            this.sendToast(error.message, "Error", "danger");
+        } else {
+            throw new Error("You do not have access to this document");
         }
+
     }
 
     /**
@@ -660,7 +656,7 @@ async editDocument(data, options) {
                                 (edit.studySessionId === data['studySessionId'] || edit.studySessionId === null)))),
                         firstVersion: delta.compose(dbToDelta(edits
                             .filter(edit =>
-                                (edit.studySessionId === data['studySessionId'] && 
+                                (edit.studySessionId === data['studySessionId'] &&
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
                                 ),
                     };
@@ -722,14 +718,29 @@ async editDocument(data, options) {
             options: data.options,
             feedback: data.feedback,
         });
-    }    /**
+    }
+
+    /**
+     * Subscribe to a document
+     *
+     * @param {Object} data
+     * @param {number} data.documentId - The ID of the document to subscribe to.
+     * @param {Object} options - The options object containing the transaction.
+     * @returns {Promise<void>}
+     */
+    async subscribeDocument(data, options) {
+        this.socket.join("doc:" + data.documentId);
+    }
+
+    /**
      * Save additional document data for a particular document/study_session/study_step like the nlpResults, links etc., to the document_data table.
-     * 
+     *
      * @param {*} data {userId: number, documentId: number, studySessionId: number, studyStepId: number, key: string, value: any}
      * @param {*} options {transaction: Transaction}
-     * @returns {Promise<Array>} - A promise that resolves when the data has been saved.
+     * @returns {Promise<void>} - A promise that resolves when the data has been saved.
      */
     async saveData(data, options) {
+
         let documentData = await this.models['document_data'].add({
             userId: this.userId,
             documentId: data.documentId,
@@ -737,7 +748,7 @@ async editDocument(data, options) {
             studyStepId: data.studyStepId,
             key: data.key,
             value: data.value
-        }, options);
+        }, {transaction: options.transaction});
 
         return documentData;
     }
