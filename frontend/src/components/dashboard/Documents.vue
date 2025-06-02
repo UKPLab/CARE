@@ -2,39 +2,32 @@
   <Card title="Documents">
     <template #headerElements>
       <BasicButton
-        class="btn-secondary btn-sm me-1"
-        icon="cloud-arrow-down"
-        title="Export All"
-        @click="exportAll()"
+          class="btn-primary btn-sm me-1"
+          title="Add document"
+          text="Add"
+          @click="$refs.uploadModal.open()"
       />
       <BasicButton
-        class="btn-primary btn-sm me-1"
-        title="Add document"
-        text="Add"
-        @click="$refs.uploadModal.open()"
-      />
-      <BasicButton
-        v-if="showCreateButton"
-        class="btn-primary btn-sm"
-        title="Create document"
-        text="Create"
-        @click="$refs.createModal.open()"
+          v-if="showCreateButton"
+          class="btn-primary btn-sm"
+          title="Create document"
+          text="Create"
+          @click="$refs.createModal.open()"
       />
     </template>
     <template #body>
       <BasicTable
-        :columns="columns"
-        :data="docs"
-        :options="options"
-        :buttons="buttons"
-        @action="action"
+          :columns="columns"
+          :data="docs"
+          :options="options"
+          :buttons="buttons"
+          @action="action"
       />
       <EditorDownload ref="editorDownload"/>
     </template>
   </Card>
   <PublishModal ref="publishModal"/>
   <StudyModal ref="studyCoordinator"/>
-  <ExportAnnos ref="export"/>
   <ConfirmModal ref="deleteConf"/>
   <UploadModal ref="uploadModal"/>
   <CreateModal ref="createModal"/>
@@ -43,7 +36,6 @@
 
 <script>
 import PublishModal from "./documents/PublishModal.vue";
-import ExportAnnos from "@/basic/download/ExportAnnos.vue";
 import Card from "@/basic/Card.vue";
 import BasicTable from "@/basic/Table.vue";
 import StudyModal from "./coordinator/Study.vue";
@@ -68,7 +60,6 @@ export default {
   subscribeTable: ["document", "study"],
   components: {
     StudyModal,
-    ExportAnnos,
     UploadModal,
     Card,
     BasicTable,
@@ -244,20 +235,20 @@ export default {
     },
     docs() {
       return this.documents
-        .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false)
-        .map((d) => {
-          let newD = {...d};
-          newD.typeName = d.type === 0 ? "PDF" : d.type === 1 ? "HTML" : "MODAL";
-          newD.publicBadge = {
-            class: newD.public ? "bg-success" : "bg-danger",
-            text: newD.public ? "Yes" : "No",
-          };
-          return newD;
-        });
+          .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false)
+          .map((d) => {
+            let newD = {...d};
+            newD.typeName = d.type === 0 ? "PDF" : d.type === 1 ? "HTML" : "MODAL";
+            newD.publicBadge = {
+              class: newD.public ? "bg-success" : "bg-danger",
+              text: newD.public ? "Yes" : "No",
+            };
+            return newD;
+          });
     },
     studiesEnabled() {
       return (
-        this.$store.getters["settings/getValue"]("app.study.enabled") === "true"
+          this.$store.getters["settings/getValue"]("app.study.enabled") === "true"
       );
     },
     showCreateButton() {
@@ -298,43 +289,43 @@ export default {
     },
     async deleteDoc(row) {
       const studies = this.$store.getters["table/study/getFiltered"](
-        (e) => e.documentId === row.id
+          (e) => e.documentId === row.id
       );
       let warning;
       if (studies && studies.length > 0) {
         warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${
-          studies.length
+            studies.length
         } ${studies.length !== 1 ? "studies" : "study"}
          running on this document. Deleting it will delete the ${
-          studies.length !== 1 ? "studies" : "study"
+            studies.length !== 1 ? "studies" : "study"
         }!`;
       } else {
         warning = "";
       }
 
       this.$refs.deleteConf.open(
-        "Delete Document",
-        "Are you sure you want to delete the document?",
-        warning,
-        function (val) {
-          if (val) {
-            this.$socket.emit("appDataUpdate", {
-              table: "document",
-              data: {
-                id: row.id,
-                deleted: true
-              }
-            }, (result) => {
-              if (!result.success) {
-                this.eventBus.emit('toast', {
-                  title: "Document delete failed",
-                  message: result.message,
-                  variant: "danger"
-                });
-              }
-            });
+          "Delete Document",
+          "Are you sure you want to delete the document?",
+          warning,
+          function (val) {
+            if (val) {
+              this.$socket.emit("appDataUpdate", {
+                table: "document",
+                data: {
+                  id: row.id,
+                  deleted: true
+                }
+              }, (result) => {
+                if (!result.success) {
+                  this.eventBus.emit('toast', {
+                    title: "Document delete failed",
+                    message: result.message,
+                    variant: "danger"
+                  });
+                }
+              });
+            }
           }
-        }
       );
     },
     renameDoc(row) {
@@ -348,10 +339,6 @@ export default {
     },
     publishDoc(row) {
       this.$refs.publishModal.open(row.id);
-    },
-    exportAll() {
-      const docIds = this.docs.map((i) => i.id);
-      this.$refs.export.requestExport(docIds, "json");
     },
     studyCoordinator(row) {
       this.$refs.studyCoordinator.open(0, row.id);
