@@ -141,8 +141,6 @@ import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
-import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-
 
 export default {
   name: "AnnotatorView",
