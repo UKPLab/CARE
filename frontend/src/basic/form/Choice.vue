@@ -3,24 +3,30 @@
     <template #element>
       <table class="table table-hover">
         <tbody>
-        <tr v-for="(item, index) in choices" :key="'entry_' + index">
-          <td v-for="field in fields" :key="field.key">
-            <div class="d-flex align-items-center">
+          <tr
+            v-for="(choice, index) in choices"
+            :key="'entry_' + index"
+          >
+            <td
+              v-for="field in fields"
+              :key="field.key"
+            >
+              <div class="d-flex align-items-center">
                 <span class="badge bg-primary me-2">
-                  <i class="bi bi-file-earmark-text"></i> {{ item.stepNumber }}
+                  <i class="bi bi-file-earmark-text"></i> {{ choice.stepNumber }}
                 </span>
-
                 <div class="flex-grow-1 d-flex align-items-center">
                   <FormSelect
                     v-if="field.type === 'select'"
                     :ref="'ref_' + field.key"
-                    v-model="currentData[index][field.key]"
+                    :model-value="getFieldValue(index, field.key)"
                     :data-table="true"
-                    :parent-value="item"
-                    :options="{options: field.options}"
+                    :parent-value="choice"
+                    :options="{ options: field.options }"
                     :placeholder="field.label"
                     class="flex-grow-1"
-                    style="min-width: 200px; max-width: 800px;"
+                    style="min-width: 200px; max-width: 800px"
+                    @update:model-value="(val) => updateFieldValue(index, field.key, val)"
                   />
                   <FormDefault
                     v-else
@@ -30,16 +36,16 @@
                     :options="field"
                   />
                   <span
-                    v-if="item.hasConfiguration"
+                    v-if="choice.hasConfiguration"
                     class="ms-2"
                   >
                     <ConfigurationModal
-                      :model-value="item.configuration"
-                      :study-step-id="item.id"
-                      :step-number="item.stepNumber"
-                      :document-id="currentData.find((entry) => entry.id === item.id)?.documentId"
+                      :model-value="currentData[index].configuration"
+                      :study-step-id="choice.id"
+                      :step-number="choice.stepNumber"
+                      :document-id="currentData.find((entry) => entry.id === choice.id)?.documentId"
                       :workflow-steps="workflowSteps"
-                      @update:model-value="(configData) => handleConfigUpdate(configData, item.id)"
+                      @update:model-value="(configData) => handleConfigUpdate(configData, choice.id)"
                     />
                   </span>
                 </div>
@@ -151,16 +157,24 @@ export default {
   watch: {
     modelValue: {
       handler(newValue) {
-        if (JSON.stringify(newValue) !== JSON.stringify(this.currentData)) {
-          this.currentData = this.choices.map((choice, index) => ({
-            ...this.fields.reduce((acc, field) => {
-              acc[field.key] = newValue[index]?.[field.key] || null;
-              return acc;
-            }, {}),
-            id: choice.id,
-            configuration: newValue[index]?.configuration || {}
-          }));
+        if (JSON.stringify(newValue) === JSON.stringify(this.currentData)) {
+          return;
         }
+
+        this.currentData = this.choices.map((choice) => {
+          // Find matched newValue entry by workflowStepId
+          const matchedValue = newValue.find((v) => v.workflowStepId === choice.id);
+
+          return {
+            ...this.fields.reduce((acc, field) => {
+              acc[field.key] = matchedValue?.[field.key] || null;
+              return acc;
+            }, {}), // documentId
+            id: choice.id, // workflowStepId
+            parentDocumentId: matchedValue?.parentDocumentId || null,
+            configuration: matchedValue?.configuration || {},
+          };
+        });
       },
       deep: true,
       immediate: true,
@@ -179,21 +193,23 @@ export default {
         if (JSON.stringify(newValue) === JSON.stringify(oldValue)) {
           return;
         }
-
-        this.currentData = this.choices.map((c) => {
-          return this.fields.reduce((acc, field) => {
-            acc[field.key] = null;
-            // die workflowStepId
-            acc["id"] = c.id;
-            return acc;
-          }, {});
-        });
+        this.initializeCurrentData();
       },
       deep: true,
       immediate: true,
     },
   },
   methods: {
+    initializeCurrentData() {
+      this.currentData = this.choices.map((c) => {
+        return this.fields.reduce((acc, field) => {
+          acc[field.key] = null;
+          acc["id"] = c.id; // workflowStepId
+          acc["configuration"] = c.configuration || {};
+          return acc;
+        }, {});
+      });
+    },
     validate() {
       const allValid = this.choices.every((item, index) => {
         return this.fields.every((field) => {
@@ -211,6 +227,29 @@ export default {
         updatedCurrentData[itemIndex] = {
           ...updatedCurrentData[itemIndex],
           configuration: configData,
+        };
+
+        this.currentData = updatedCurrentData;
+      }
+    },
+    getFieldValue(index, fieldKey) {
+      const item = this.currentData[index];
+
+      // If there is a parentDocumentId in the current item, use it for select fields
+      if (item && item.parentDocumentId) {
+        return item.parentDocumentId;
+      }
+
+      // Otherwise use the current value
+      return item ? item[fieldKey] : null;
+    },
+    updateFieldValue(index, fieldKey, value) {
+      if (index >= 0 && index < this.currentData.length) {
+        // Create a new array to trigger the watcher
+        const updatedCurrentData = [...this.currentData];
+        updatedCurrentData[index] = {
+          ...updatedCurrentData[index],
+          [fieldKey]: value,
         };
 
         this.currentData = updatedCurrentData;
