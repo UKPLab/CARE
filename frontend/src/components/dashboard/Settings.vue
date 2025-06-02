@@ -85,7 +85,15 @@ export default {
       }
     },
     save() {
-      this.$socket.emit("settingSave", this.settings);
+      this.$socket.emit("settingSave", this.settings, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Settings not saved",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
     load() {
       this.$socket.emit("settingGetData");

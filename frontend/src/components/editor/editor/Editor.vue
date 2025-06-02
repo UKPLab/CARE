@@ -13,7 +13,7 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll;"
         >
-          <div 
+          <div
             :id="`editor-container-${studyStepId}`"
             @paste="onPaste"
             @copy="onCopy"
@@ -40,9 +40,7 @@
       />
     </TopBarButton>
   </Teleport>
-
 </template>
-
 <script>
 /**
  * Editor component
@@ -261,7 +259,7 @@ export default {
         }
       };
       this.eventBus.on("editorSelectEdit", this.selectEditHandler);
-      
+
       this.insertTextHandler = (data) => {
         if (data.documentId === this.documentId) {
           this.insertTextAtCursor(data.text);
@@ -313,7 +311,7 @@ export default {
   unmounted() {
     this.eventBus.off("editorSelectEdit", this.selectEditHandler);
     this.eventBus.off("editorInsertText", this.insertTextHandler);
-    
+
     this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId});
   },
   methods: {
@@ -397,20 +395,32 @@ export default {
       if (source === "user") {
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
-        
+
         this.emitContentForPlaceholders();
       }
     },
     processDelta() {
+      const quill = this.editor.getEditor();
       if (this.deltaBuffer.length > 0) {
         let combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
         let dbOps = deltaToDb(combinedDelta.ops);
         if (dbOps.length > 0) {
+          const backup = quill.getContents();
+
           this.$socket.emit("documentEdit", {
             documentId: this.documentId,
             studySessionId: this.studySessionId || null,
             studyStepId: this.studyStepId || null,
             ops: dbOps
+          }, (res) => {
+            if (!res.success) {
+              quill.setContents(backup);
+              this.eventBus.emit("toast", {
+                title: "Previous edit failed; try again",
+                message: res.message,
+                variant: "danger",
+              });
+            }
           });
         }
 
