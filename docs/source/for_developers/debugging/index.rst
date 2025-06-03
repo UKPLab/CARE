@@ -26,22 +26,6 @@ Most of the commonly used browser support debugging tools, such as the developer
 The developer console is a very powerful tool, which allows you to inspect the DOM, the CSS, and the JavaScript code.
 In the following, we will describe some of the most useful features of the developer console.
 
-Basic Element Inspection
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-The "Inspect Element" tool (the small cursor/mouse icon in the top-left corner of the developer tools) allows you to select and examine specific elements on the webpage:
-
-1. Open developer tools (``F12`` or right-click → "Inspect")
-2. Click the inspect element icon (cursor/mouse symbol) in the top-left of the developer tools
-3. Hover over any element on the webpage to see its HTML structure, CSS styles, and dimensions
-4. Click on an element to select it and view its properties in the Elements/Inspector tab
-
-This is particularly useful for:
-
-- Understanding the DOM structure of Vue.js components
-- Debugging CSS styling issues
-- Finding the HTML elements that correspond to your Vue.js components
-
 Inspect Websocket Connection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -70,17 +54,46 @@ Inspect Vue.js Components
 
 The vue.js devtools are a very powerful tool to inspect the vue.js components and they are browser extensions that can be installed from the Chrome Web Store (for Chrome/Edge) or Firefox Add-ons (for Firefox).
 Simply search for "Vue.js devtools" in your browser's extension store and install the official extension by Vue.js.
+Once you have installed the vue.js devtools in your browser, you can open it by clicking on the ``Vue`` tab in the top bar of the developer tools. 
+(You might also have to unfold the top bar to see the ``Vue`` tab.)
 
-To open the developer console, press ``F12`` in your browser (or right-click on the page and select "Inspect" or "Developer Tools").
-If you have installed the vue.js devtools in your browser, you can open them by clicking on the ``Vue`` tab in the developer console.
-There, you can see all the components that are currently loaded in the application, including the data and the computed properties of each component.
+**Component Inspector Tool:**
 
-A very useful feature of the vue.js devtools is the ``Vuex`` module.
-It allows you to inspect the state of the application, including the state of the different vuex modules.
-Sometimes, it is necessary to reload the page again to see the vuex tab in the vue.js devtools.
+In the ``Components`` panel (the second icon from the left panel in the Vue.js DevTools), you can see all the components that are currently loaded in the application, including their data, props, computed properties, and event listeners.
+It also provides a special component inspector tool (the cursor/mouse icon in the top-right corner of the ``Components`` panel) that allows you to:
+
+1. Click the inspector icon (it shows "Select component in the page" on hover)
+2. Hover over any element on the webpage to highlight the corresponding Vue component
+3. Click on an element to select its Vue component in the component tree
+
+This tool is particularly useful for:
+
+- Quickly finding which Vue component is responsible for a specific part of the UI
+- Understanding the component hierarchy in complex interfaces
+- Debugging component rendering issues
 
 .. figure:: ./Vuex_Inspection.png
     :alt: Vuex_Inspection
+
+A very useful feature of the vue.js devtools is the ``Vuex`` module (the icon at the bottom of the left panel).
+It allows you to inspect the state of the application, including the state of the different vuex modules.
+Sometimes, it is necessary to reload the page again to see the vuex tab in the vue.js devtools.
+
+**Quick Vuex Debugging Tips:**
+
+- Use the Vuex tab to monitor state changes in real-time
+- Check the mutation log to see what actions are modifying the state
+- Use the "Time Travel" feature to step back through state changes
+- Export/import state for testing different scenarios
+
+.. tip::
+   
+   If Vuex tab doesn't appear, ensure:
+   
+   - Vue.js DevTools extension is installed and enabled
+   - You're running in development mode (``make dev``)
+   - The page has been refreshed after installing the extension
+   - Vuex store is properly configured in your application
 
 Stopping open processes
 -----------------------
@@ -106,8 +119,8 @@ Export on the production server
 
 .. code-block:: shell
 
-    # 1 – Find the running Postgres container
-    docker ps | grep xyz                 # replace “xyz” with a unique part of the container name
+    # 1 – Find the running Postgres container (the name will be always like xyz-postgres-1)
+    docker ps | grep xyz         # replace "xyz" with a unique part of the container name
 
     # 2 – Create the dump (Makefile target)
     make CONTAINER=xyz-postgres-1 backup_db
@@ -116,7 +129,6 @@ Export on the production server
     ls -l db_dumps/
 
     # 4 – Prepare a non-root backup location
-    sudo mkdir -p /opt/backups/xyz
     mkdir -p /opt/backups/xyz/$(date +%d-%m-%Y)/
 
     # 5 – Copy the dump and related files
@@ -124,13 +136,14 @@ Export on the production server
        /opt/backups/xyz/dd-mm-yyyy/
     cp -r ./files /opt/backups/xyz/dd-mm-yyyy/
 
-    # 6 – Final check before leaving the server
-    ls -l /opt/backups/xyz/dd-mm-yyyy/
-
 .. _db-backup-download:
 
-Download to your local machine
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transfer files and restore on the local development environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now that we have the database dump and related files in the backup directory on the deployment server, we need to transfer them to your local development environment.
+Since this is a git repository, you'll need to manually copy these files to your local working directory.
+The files (.pdf & .delta) are necessary to restore the production data on the local development environment, otherwise the actual data points behind the document entries and studies cannot be found.
 
 .. code-block:: shell
 
@@ -149,8 +162,6 @@ Download to your local machine
 
 .. _db-backup-restore:
 
-Restore locally
-~~~~~~~~~~~~~~~
 
 From the **project root** (where the ``Makefile`` is located):
 
@@ -160,36 +171,13 @@ From the **project root** (where the ``Makefile`` is located):
     make docker                       # build & start the Postgres container
     make init                         # create empty tables / seed data
     make recover_db CONTAINER=xyz-postgres-1 \
-                    DUMP=dump_dd-mm-yyyy_xx_yy_zz.sql
+                    DUMP=dump_dd-mm-yyyy_xx_yy_zz.sql     # DUMP is just the file name, because the Makefile already prefixes it with `db_dumps/`
 
 .. note::
 
-   ``DUMP`` is **just the file name**, because the Makefile already prefixes
-   it with ``db_dumps/``.  Adjust the container name if yours differs.
+   When switching between different branches, be aware that the database will be preserved, but the files in the ``.files`` directory might be affected. 
+   If you encounter issues with missing files after switching branches, you may need to manually restore the files from your backup.
+   A recommended way is to make a copy of the ``.files`` folder on a backup directory locally.
 
-When switching between different databases, the restored database will be preserved, but the data in ``.files`` will be lost. Therefore,
-it is necessary to manually copy the files data from the production server to the local machine when switching to a specific branch.
-One way to compromise here is to make a copy of the ``.files`` folder on an ``./archive`` directory locally.
-Then, when we switch to a specific branch, we can copy the files from the ``./archive`` directory to the ``.files`` folder.
-
-.. code-block:: shell
-
-    # 1 – Create a copy of the .files folder
-    cp -r .files ./archive/dd-mm-yyyy/
-
-    # 2 – Switch to a specific branch
-    git checkout <branch-name>
-
-    # 3 – Copy the files from the archive directory to the .files folder
-    cp -r ./archive/dd-mm-yyyy/files/* .files/
-
-Restart services and start debugging
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block:: shell
-
-    make docker
-    make dev
-
-Your local instance now runs with the freshest production data, so you can
+Your local instance now should run with the freshest production data, so you can
 reproduce bugs and test fixes without touching the live system.
