@@ -56,22 +56,67 @@ def create_app():
                 f.write(data["file"])
             doc = pymupdf.open(target)
             annotations = []
-            for page in doc:
+            whole_text = ""
+            
+            # Process each page once, collecting text and annotations
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                page_text = page.get_text()
+                whole_text += page_text
+                
                 for annot in page.annots():
-                    
                     logger.info(
-                        f'Annotation on page: {page.number} with type: {annot.type} and rect: {annot.rect} and color: {annot.colors} text: {annot.info["content"]} textbox: {page.get_textbox(annot.rect)}'
+                        f'Annotation on page: {page.number} with type: {annot.type} and rect: {annot.vertices} and color: {annot.colors} text: {annot.info["content"]} textbox: {page.get_textbox(annot.rect) } text: {annot.get_text("text")}'
                     )
+                    
+                    # Use the new function to get highlighted words (intersection + color check)
+                    words_on_page = page.get_text("words")
+                    highlighted_words = _extract_annot(annot, words_on_page)
+                    logger.info(f"Highlighted words: {highlighted_words}")  
+
+                    # Find the position of the annotated text in the page
+                    text_start = page_text.find(annot.get_text("text"))
+                    if text_start != -1:
+                        prefix_start = max(0, text_start - 30)
+                        prefix = page_text[prefix_start:text_start]
+                        
+                        text_end = text_start + len(annot.get_text("text"))
+                        suffix_end = min(len(page_text), text_end + 30)
+                        suffix = page_text[text_end:suffix_end]
+                    else:
+                        prefix = ""
+                        suffix = ""
+                    
+                    # Create tag information based on annotation color
+                    color_code, color_name, tag_id = get_color_code_from_annotation(annot.colors)
+                    tag_info = {
+                        "name": color_name,
+                        "description": color_name,
+                        "colorCode": color_code,
+                        "public": False,
+                        "id": tag_id
+                    }
                     
                     annotations.append({
                         "page": page.number,
-                        "type": annot.type[1] if isinstance(annot.type, tuple) else annot.type,  # e.g., 'Highlight'
-                        "rect": list(annot.rect),  # [x0, y0, x1, y1]
-                        "comment": annot.info.get("content", ""),  # Text content of the annotation
-                        "text": page.get_textbox(annot.rect),  # Text within the annotation rectangle
-                        "color": annot.colors  # e.g., (1.0, 0.0, 0.0) for red
+                        "type": annot.type[1] if isinstance(annot.type, tuple) else annot.type,
+                        "rect": list(annot.rect),
+                        "comment": annot.info.get("content", ""),
+                        "text": highlighted_words,  # Only return the highlighted words
+                        "color": annot.colors,
+                        "prefix": prefix,
+                        "suffix": suffix,
+                        "tag": tag_info
                     })
-            response = {"success": True,"message": "Annotations extracted successfully.", "data": annotations}
+            
+            response = {
+                "success": True,
+                "message": "Annotations extracted successfully.",
+                "data": {
+                    "annotations": annotations,
+                    "wholeText": whole_text
+                }
+            }
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
@@ -206,6 +251,26 @@ def create_app():
                 best_rect = exact_rect
 
         return best_rect
+    def get_color_code_from_annotation(colors):
+        """
+        Convert annotation RGB colors to tag color code
+        Returns one of: "info" (blue), "success" (green), "warning" (yellow), "danger" (red)
+        """
+        if not colors:
+            return "info"  # default color
+            
+        r, g, b = colors["stroke"] if isinstance(colors, dict) else colors
+        
+        # Check which color is dominant
+        if r > 0.5 and g < 0.3 and b < 0.3:
+            return "danger", "Weakness", 3 # red
+        elif g > 0.5 and r < 0.3 and b < 0.3:
+            return "success", "Strength", 2  # green
+        elif r > 0.5 and g > 0.5 and b < 0.3:
+            return "warning", "Highlight", 1  # yellow
+        else:
+            return "info", "Other", 4  # blue or default
+    
     def get_color_from_code(color_code):
         """
         Map a color code string to an RGB tuple for PyMuPDF.
@@ -314,6 +379,55 @@ def create_app():
                     annot_text_obj.update()  # Apply the color change
                     logger.info(f"Text annotation object: {annot_text_obj}")
 
+    _threshold_intersection = 0.1  # if the intersection is large enough.
+
+    def _check_contain(r_word, points):
+        """If `r_word` is contained in the rectangular area.
+
+        The area of the intersection should be large enough compared to the
+        area of the given word.
+
+        Args:
+            r_word (pymupdf.Rect): rectangular area of a single word.
+            points (list): list of points in the rectangular area of the
+                given part of a highlight.
+
+        Returns:
+            bool: whether `r_word` is contained in the rectangular area.
+        """
+        # `r` is mutable, so everytime a new `r` should be initiated.
+        r = pymupdf.Quad(points).rect
+        r.intersect(r_word)
+
+        if r.get_area("cm") >= r_word.get_area("cm") * _threshold_intersection:
+            contain = True
+        else:
+            contain = False
+        return contain
+
+    def _extract_annot(annot, words_on_page):
+        """Extract words in a given highlight.
+
+        Args:
+            annot (pymupdf.Annot): [description]
+            words_on_page (list): [description]
+
+        Returns:
+            str: words in the entire highlight.
+        """
+        quad_points = annot.vertices
+        quad_count = int(len(quad_points) / 4)
+        sentences = ['' for i in range(quad_count)]
+        for i in range(quad_count):
+            points = quad_points[i * 4: i * 4 + 4]
+            words = [
+                w for w in words_on_page if
+                _check_contain(pymupdf.Rect(w[:4]), points)
+            ]
+            sentences[i] = ' '.join(w[4] for w in words)
+        sentence = ' '.join(sentences)
+
+        return sentence
 
     logger.info("Creating App...")
     app = socketio.WSGIApp(sio)
