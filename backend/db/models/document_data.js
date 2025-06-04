@@ -39,9 +39,24 @@ module.exports = (sequelize, DataTypes) => {
             deletedAt: DataTypes.DATE,
         },
         {
-            sequelize: sequelize,
-            modelName: "document_data",
-            tableName: "document_data"
+            sequelize: sequelize, modelName: "document_data", tableName: "document_data", hooks: {
+                beforeCreate: async (documentData, options) => {
+                    const exists = await DocumentData.findOne({
+                        where: {
+                            studySessionId: documentData.studySessionId,
+                            studyStepId: documentData.studyStepId,
+                            key: documentData.key
+                        },
+                        transaction: options.transaction
+                    });
+                    if (exists) {
+                        await exists.update(
+                            {value: documentData.value},
+                            { transaction: options.transaction });
+                        return false;
+                    }
+                }
+            }
         }
     );
     return DocumentData;

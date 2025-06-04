@@ -350,11 +350,15 @@ module.exports = (sequelize, DataTypes) => {
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         projectId: DataTypes.INTEGER,
-        anonymize: DataTypes.BOOLEAN
+        anonymize: DataTypes.BOOLEAN,
+        parentStudyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null
+        }
     }, {
         sequelize: sequelize, modelName: 'study', tableName: 'study', hooks: {
             afterCreate: async (study, options) => {
-
                 // Skip step creation for template studies
                 if (study.template) {
                     return;
@@ -366,8 +370,38 @@ module.exports = (sequelize, DataTypes) => {
                 }
 
                 await Study.createStudySteps(study, options);
-
-            }, afterUpdate: async (study, options) => {
+            }, 
+            beforeUpdate: async (study, options) => {
+                // If this is a study update (not a close operation) and we have stepDocuments
+                if (options.context?.stepDocuments && !study.closed) {
+                    // Capture the updated data before we reset the instance
+                    const updatedData = study.toJSON();
+                    
+                    // Reload the original study data to reset all changes
+                    await study.reload({ transaction: options.transaction });
+                    
+                    // Create a new study with the updated data
+                    const newStudyData = { ...updatedData };
+                    delete newStudyData.id;
+                    delete newStudyData.hash;
+                    newStudyData.parentStudyId = study.id;
+                    
+                    // Create the new study version
+                    await Study.add(newStudyData, {
+                        transaction: options.transaction,
+                        context: options.context
+                    });
+                    
+                    study.setDataValue("closed", new Date());
+                    
+                    // Mark this as a versioning operation
+                    options._isVersioning = true;
+                    
+                    // Specify which fields to be updated. (If fields is provided, only those columns will be saved)
+                    options.fields = ["closed"];
+                }
+            },
+            afterUpdate: async (study, options) => {
                 const transaction = options.transaction;
 
                 if (study.deleted) {
@@ -375,16 +409,16 @@ module.exports = (sequelize, DataTypes) => {
                     await Study.deleteStudySessions(study, options);
                 }
 
-                if (study.closed) {
+                if (study.closed && !options._isVersioning) {
                     await Study.handleConfiguration(study, transaction);
                 }
 
+                // NOTE: Comment out the following update operation since we now use versioning.
                 // We only update if the context and stepDocuments are available
-                if (options.context && options.context.stepDocuments) {
-                    await Study.deleteStudySteps(study, options);
-                    await Study.createStudySteps(study, options);
-                }
-
+                // if (options.context && options.context.stepDocuments) {
+                //     await Study.deleteStudySteps(study, options);
+                //     await Study.createStudySteps(study, options);
+                // }
             }
         }
     });

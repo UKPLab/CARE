@@ -16,7 +16,7 @@
           v-for="option in selectOptions"
           :key="option.value"
           :class="option.class"
-          :value="option.value"
+          :value="valueAsObject ? option : option.value"
           :disabled="option.disabled"
         >
           {{ option.name }}
@@ -57,7 +57,7 @@ export default {
       required: true,
     },
     modelValue: {
-      type: [Number, String],
+      type: [Number, String, Object],
       required: false,
       default: -1,
     },
@@ -71,19 +71,23 @@ export default {
       required: false,
       default: () => null,
     },
+    valueAsObject: {
+      type: Boolean,
+      required: false,
+      default: false,
+      description: "If true, the modalValue will be an object",
+    },
   },
   emits: ["update:modelValue"],
   data() {
     return {
-      currentData: -1,
+      currentData: null,
     };
   },
   computed: {
     selectClass() {
-      const option = this.selectOptions.find((c) => c.value === this.currentData);
-      if (option) {
-        return option.class;
-      }
+      const option = this.selectOptions.find((c) => c.value === (this.valueAsObject ? this.currentData?.value : this.currentData));
+      return option ? option.class : "";
     },
     selectOptions() {
       let baseOptions = [];
@@ -144,7 +148,7 @@ export default {
   },
   methods: {
     updateData() {
-      if (this.modelValue === -1) {
+      if (this.modelValue === -1 || this.modelValue === null) {
         if (this.options.default) {
           this.currentData = this.options.default;
         } else {
@@ -153,7 +157,7 @@ export default {
             if (this.options.table) {
               this.currentData = this.selectOptions[0][this.options.options.value];
             } else {
-              this.currentData = this.selectOptions[0].value;
+              this.currentData = this.valueAsObject ? this.selectOptions[0] : this.selectOptions[0].value;
             }
           }
         }
