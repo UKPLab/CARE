@@ -1,28 +1,28 @@
 <template>
   <Loader
-    v-if="documentId && documentId === 0"
-    :loading="true"
-    class="pageLoader"
+      v-if="documentId && documentId === 0"
+      :loading="true"
+      class="pageLoader"
   />
   <span v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
         <div
-          id="viewerContainer"
-          ref="viewer"
-          class="col border mh-100 justify-content-center p-3"
-          style="overflow-y: scroll;"
+            id="viewerContainer"
+            ref="viewer"
+            class="col border mh-100 justify-content-center p-3"
+            style="overflow-y: scroll;"
         >
           <PDFViewer
-            ref="pdfViewer"
-            class="rounded border border-1 shadow-sm"
-            style="margin:auto"
+              ref="pdfViewer"
+              class="rounded border border-1 shadow-sm"
+              style="margin:auto"
           />
 
         </div>
         <Sidebar
-          v-if="!sidebarDisabled"
-          ref="sidebar" class="sidebar-container" :show="isSidebarVisible"
+            v-if="!sidebarDisabled"
+            ref="sidebar" class="sidebar-container" :show="isSidebarVisible"
         />
       </div>
     </div>
@@ -30,18 +30,18 @@
     <Teleport to="#topBarNavItems">
       <li class="nav-item">
         <TopBarButton
-          v-if="studySessionId === null && numStudyComments > 0"
-          :title="showAll ? 'Hide study comments' : 'Show study comments'"
-          class="btn rounded-circle"
-          @click="setSetting({key: 'annotator.showAllComments', value: !showAll})"
+            v-if="studySessionId === null && numStudyComments > 0"
+            :title="showAll ? 'Hide study comments' : 'Show study comments'"
+            class="btn rounded-circle"
+            @click="setSetting({key: 'annotator.showAllComments', value: !showAll})"
         >
           <span class="position-relative translate-middle top-100 start-100 fs-10 fw-light">
             {{ numStudyComments }}
           </span>
           <span>
             <LoadIcon
-              :icon-name="!showAll ? 'eye-slash-fill' : 'eye-fill'"
-              :size="18"
+                :icon-name="!showAll ? 'eye-slash-fill' : 'eye-fill'"
+                :size="18"
             />
           </span>
         </TopBarButton>
@@ -49,26 +49,26 @@
       <li class="nav-item">
 
         <TopBarButton
-          v-if="studySessionId && studySessionId !== 0 ? active && nlpEnabled : nlpEnabled"
-          :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
-          class="btn rounded-circle"
-          @click="toggleNlp"
+            v-if="studySessionId && studySessionId !== 0 ? active && nlpEnabled : nlpEnabled"
+            :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
+            class="btn rounded-circle"
+            @click="toggleNlp"
         >
           <LoadIcon
-            :color="(!nlpActive) ?'#777777':'#097969'"
-            :size="18"
-            icon-name="robot"
+              :color="(!nlpActive) ?'#777777':'#097969'"
+              :size="18"
+              icon-name="robot"
           />
         </TopBarButton>
         <TopBarButton
-          v-show="studySessionId && studySessionId !== 0 ? active : true"
-          :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
-          class="btn rounded-circle"
-          @click="toggleSidebar"
+            v-show="studySessionId && studySessionId !== 0 ? active : true"
+            :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
+            class="btn rounded-circle"
+            @click="toggleSidebar"
         >
           <LoadIcon
-            :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
-            :size="18"
+              :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
+              :size="18"
           />
         </TopBarButton>
       </li>
@@ -77,10 +77,10 @@
 
     <Teleport to="#topBarExtendMenuItems">
       <li><a
-        :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
-        class="dropdown-item"
-        href="#"
-        @click="downloadAnnotations('json')"
+          :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
+          class="dropdown-item"
+          href="#"
+          @click="downloadAnnotations"
       >Download
         Annotations</a></li>
     </Teleport>
@@ -88,36 +88,34 @@
     <Teleport to="#topbarCustomPlaceholder">
       <form class="hstack gap-3 container-fluid justify-content-center">
         <TopBarButton
-          v-if="review"
-          class="btn btn-outline-success me-2"
-          @click="$refs.reviewSubmit.open()"
+            v-if="review"
+            class="btn btn-outline-success me-2"
+            @click="$refs.reviewSubmit.open()"
         >Submit Review
         </TopBarButton>
         <TopBarButton
-          v-if="approve"
-          class="btn btn-outline-dark me-2"
-          @click="$refs.report.open()"
+            v-if="approve"
+            class="btn btn-outline-dark me-2"
+            @click="$refs.report.open()"
         >
           Report
         </TopBarButton>
         <TopBarButton
-          v-if="approve"
-          class="btn btn-outline-success me-2"
-          @click="decisionSubmit(true)"
+            v-if="approve"
+            class="btn btn-outline-success me-2"
+            @click="decisionSubmit(true)"
         >
           Accept
         </TopBarButton>
         <TopBarButton
-          v-if="approve"
-          class="btn btn-outline-danger me-2"
-          @click="decisionSubmit(false)"
+            v-if="approve"
+            class="btn btn-outline-danger me-2"
+            @click="decisionSubmit(false)"
         >
           Reject
         </TopBarButton>
       </form>
     </Teleport>
-
-    <ExportAnnos ref="export"/>
   </span>
 </template>
 
@@ -132,7 +130,6 @@
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
 import Loader from "@/basic/Loading.vue";
-import ExportAnnos from "@/basic/download/ExportAnnos.vue"
 import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
@@ -142,7 +139,8 @@ import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-
+import {mergeAnnotationsAndComments} from "@/assets/data";
+import {downloadObjectsAs} from "@/assets/utils";
 
 export default {
   name: "AnnotatorView",
@@ -152,7 +150,6 @@ export default {
     ExpandMenu,
     Sidebar,
     Loader,
-    ExportAnnos,
     TopBarButton
   },
   provide() {
@@ -231,9 +228,9 @@ export default {
   computed: {
     anchors() {
       return [].concat(
-        this.annotations.filter(a => a.anchors !== null)
-          .flatMap(a => a.anchors)
-          .filter(a => a !== undefined)
+          this.annotations.filter(a => a.anchors !== null)
+              .flatMap(a => a.anchors)
+              .filter(a => a !== undefined)
       )
     },
     showAll() {
@@ -242,16 +239,16 @@ export default {
     },
     annotations() {
       return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId)
-        .sort((a, b) => {
-          const a_noanchor = a.anchors === null || a.anchors.length === 0;
-          const b_noanchor = b.anchors === null || b.anchors.length === 0;
+          .sort((a, b) => {
+            const a_noanchor = a.anchors === null || a.anchors.length === 0;
+            const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
-          if (a_noanchor || b_noanchor) {
-            return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
-          }
+            if (a_noanchor || b_noanchor) {
+              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+            }
 
-          return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
-        });
+            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+          });
     },
     comments() {
       return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
@@ -304,8 +301,24 @@ export default {
     });
 
     // get tagsets
-    this.$socket.emit("tagSetGetAll");
-    this.$socket.emit("tagGetAll");
+    this.$socket.emit("tagSetGetAll", {}, (result) => {
+      if (!result.success) {
+        this.eventBus.emit('toast', {
+          title: "Tag Set Error",
+          message: result.message,
+          variant: "danger"
+        });
+      }
+    });
+    this.$socket.emit("tagGetAll", {}, (result) => {
+      if (!result.success) {
+        this.eventBus.emit('toast', {
+          title: "Tag Error",
+          message: result.message,
+          variant: "danger"
+        });
+      }
+    });
 
     // init component
     this.load();
@@ -372,8 +385,8 @@ export default {
 
         if (inPlaceholder) {
           const anchor = await this._waitForAnnotationToBeAnchored(
-            annotation,
-            3000
+              annotation,
+              3000
           );
           if (!anchor) {
             return;
@@ -427,7 +440,15 @@ export default {
       });
 
       // Join Room for document updates
-      this.$socket.emit("documentSubscribe", {documentId: this.documentId});
+      this.$socket.emit("documentSubscribe", {documentId: this.documentId}, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Document subscribe error",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
 
       // check for available nlp support (for now hard-coded sentiment analysis)
       if (this.nlpEnabled) {
@@ -441,8 +462,41 @@ export default {
     async leave() {
       return await this.$refs.sidebar.leave();
     },
-    downloadAnnotations(outputType) {
-      this.$refs.export.requestExport([this.documentId], outputType, true);
+    downloadAnnotations() {
+
+      const attributesToDelete = [
+        "draft",
+        "anonymous",
+        "createdAt",
+        "updatedAt",
+        "deleted",
+        "deletedAt",
+        "documentId",
+        "studySessionId",
+        "studyStepId",
+        "userId"
+      ];
+      const annotations = this.annotations.map(a => {
+        return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
+      });
+      // change tagId to tagName
+      annotations.forEach(a => {
+        if (a.tagId) {
+          const tag = this.$store.getters["table/tag/get"](a.tagId);
+          a.tag = tag.name;
+          delete a.tagId;
+        }
+      });
+
+      const comments = this.comments.map(c => {
+        return Object.fromEntries(Object.entries(c).filter(([key]) => !attributesToDelete.includes(key)));
+      });
+
+      const content = mergeAnnotationsAndComments(annotations, comments);
+
+      const filename = `annotations_${this.documentId}_${Date.now()}.json`;
+      downloadObjectsAs(content, filename, "json");
+
     },
     onCopy() {
       const selection = document.getSelection();

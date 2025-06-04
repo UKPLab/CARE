@@ -202,10 +202,13 @@ module.exports = class DocumentSocket extends Socket {
     /**
      * Send document by hash
      *
-     * @param documentHash
-     * @return {Promise<void>}
-     */
-    async sendByHash(documentHash) {
+     * @param {object} data
+     * @param {string} data.documentHash - The hash of the document to send.
+     * @param {object} options - The options object containing the transaction.
+     * @returns {Promise<void>}
+     * */
+    async sendByHash(data, options) {
+        const documentHash = data.documentHash;
         const document = await this.models['document'].getByHash(documentHash);
         if (await this.checkDocumentAccess(document.id)) {
             this.emit("documentRefresh", document);
@@ -218,44 +221,43 @@ module.exports = class DocumentSocket extends Socket {
     /**
      * Send merged deltas (from disk and database) to client (for HTML documents)
      *
-     * @param {number} documentId
+     * @param {object} data
+     * @param {number} data.documentId - The ID of the document to send deltas for.
+     * @param {object} options - The options for the transaction.
      * @returns {Promise<void>}
      */
-    async sendDocumentDeltas(documentId) {
-        try {
-            const doc = await this.models['document'].getById(documentId);
+    async sendDocumentDeltas(data, options) {
+        const documentId = data.documentId;
+        const doc = await this.models['document'].getById(documentId);
 
-            if (await this.checkDocumentAccess(doc.id)) {
-                if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
-                    const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
-                    let delta = new Delta();
+        if (await this.checkDocumentAccess(doc.id)) {
+            if (doc.type === this.models['document'].docTypes.DOC_TYPE_HTML || doc.type === this.models['document'].docTypes.DOC_TYPE_MODAL) {
+                const deltaFilePath = `${UPLOAD_PATH}/${doc.hash}.delta`;
+                let delta = new Delta();
 
-                    if (fs.existsSync(deltaFilePath)) {
-                        delta = await this.loadDocument(deltaFilePath);
-                    } else {
-                        this.logger.warn("No delta file found for document: " + documentId);
-                    }
-
-                    const edits = await this.models['document_edit'].findAll({
-                        where: {documentId: documentId, studySessionId: null, draft: true},
-                        raw: true
-                    });
-
-                    const dbDelta = dbToDelta(edits);
-                    delta = delta.compose(dbDelta);
-
-                    this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
-                    return delta;
+                if (fs.existsSync(deltaFilePath)) {
+                    delta = await this.loadDocument(deltaFilePath);
                 } else {
-                    throw new Error("Non-HTML/MODAL documents are not supported for this operation");
+                    this.logger.warn("No delta file found for document: " + documentId);
                 }
+
+                const edits = await this.models['document_edit'].findAll({
+                    where: {documentId: documentId, studySessionId: null, draft: true},
+                    raw: true
+                });
+
+                const dbDelta = dbToDelta(edits);
+                delta = delta.compose(dbDelta);
+
+                this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
+                return delta;
             } else {
-                throw new Error("You do not have access to this document");
+                throw new Error("Non-HTML/Modal documents are not supported for this operation");
             }
-        } catch (error) {
-            this.logger.error("An error occurred while sending the merged deltas:", error);
-            this.sendToast(error.message, "Error", "danger");
+        } else {
+            throw new Error("You do not have access to this document");
         }
+
     }
 
     /**
@@ -443,87 +445,68 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
-     * Publish document
-     * @param {number} documentId
+     * Publish the document
+     *
+     * @param {object} data
+     * @param {number} data.documentId - The ID of the document to publish.
+     * @param {object} options - The options object containing the transaction.
      * @return {Promise<void>}
-     */
-    async publishDocument(documentId) {
-        try {
-            const doc = await this.models['document'].getById(documentId)
+     * */
+    async publishDocument(data, options) {
+        const documentId = data.documentId;
+        const doc = await this.models['document'].getById(documentId)
 
-            if (await this.checkUserAccess(doc.userId)) {
-                this.socket.emit("documentRefresh", await this.updateCreatorName(
-                    await this.models['document'].updateById(doc.id, {public: true})));
-                this.socket.emit("documentPublished", {success: true});
-            } else {
-                this.logger.error("No permission to publish document: " + documentId);
-                this.socket.emit("documentPublished", {
-                    success: false, message: "No permission to publish document"
-                });
-            }
-        } catch (e) {
-            this.logger.error(e);
-            this.socket.emit("documentPublished", {
-                success: false, message: "Error while publishing document"
-            });
-
+        if (await this.checkUserAccess(doc.userId)) {
+            this.emit("documentRefresh", await this.models['document'].updateById(doc.id, {public: true}));
+        } else {
+            throw new Error("You do not have access to this document");
         }
     }
 
-    /**
+/**
      * Edits the document based on the provided data.
      *
      * This method is called when the client requests to edit a document. It first checks if the user has access to the document,
      * and if so, it applies the edits to the document and sends the updated document to the client.
      *
      * @param {object} data {documentId: number, "ops" array consisting of [offset: number, operationType: number, span: number, text: string, attributes: Object]}
+     * @param {object} options - the options for the transaction
+     * @return {Promise<void>}
      */
-    async editDocument(data) {
-        const transaction = await database.sequelize.transaction();
-        try {
-            const {documentId, studySessionId, studyStepId, ops} = data;
-            let appliedEdits = [];
-            let orderCounter = 1;
+async editDocument(data, options) {
+    const {documentId, studySessionId, studyStepId, ops} = data;
+    let appliedEdits = [];
+    let orderCounter = 1;
 
-            await ops.reduce(async (promise, op) => {
-                await promise;
-                const entryData = {
-                    userId: this.userId,
-                    draft: true,
-                    documentId,
-                    studySessionId: studySessionId || null,
-                    studyStepId: studyStepId || null,
-                    order: orderCounter++,
-                    ...op
-                };
+    await ops.reduce(async (promise, op) => {
+        await promise;
+        const entryData = {
+            userId: this.userId,
+            draft: true,
+            documentId,
+            studySessionId: studySessionId || null,
+            studyStepId: studyStepId || null,
+            order: orderCounter++,
+            ...op
+        };
 
-                const savedEdit = await this.models['document_edit'].add(entryData, transaction);
+        // TODO transaction missing
+        const savedEdit = await this.models['document_edit'].add(entryData);
 
-                appliedEdits.push({
-                    ...savedEdit,
-                    applied: true
-                });
-            }, Promise.resolve());
+        appliedEdits.push({
+            ...savedEdit,
+            applied: true
+        });
+    }, Promise.resolve());
 
-            await transaction.commit();
-
-            // Check if studySessionId is not null or zero
-            if (studySessionId !== null) {
-                this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
-                return;
-            }
-
-            this.emit("document_editRefresh", appliedEdits);
-        } catch (error) {
-            await transaction.rollback();
-            this.logger.error("Error editing document: " + error.message);
-            this.sendToast("Internal server error. Failed to edit document.", "Internal server error", "Danger");
-            this.socket.emit("documentEditError", {
-                success: false,
-                message: "Failed to edit document due to server error"
-            });
-        }
+    // Check if studySessionId is not null or zero
+    if (studySessionId !== null) {
+        this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+        return;
     }
+
+    this.emit("document_editRefresh", appliedEdits);
+}
 
     /**
      * Open the document and track it, if not already tracked
@@ -673,7 +656,7 @@ module.exports = class DocumentSocket extends Socket {
                                 (edit.studySessionId === data['studySessionId'] || edit.studySessionId === null)))),
                         firstVersion: delta.compose(dbToDelta(edits
                             .filter(edit =>
-                                (edit.studySessionId === data['studySessionId'] && 
+                                (edit.studySessionId === data['studySessionId'] &&
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
                                 ),
                     };
@@ -738,14 +721,26 @@ module.exports = class DocumentSocket extends Socket {
     }
 
     /**
+     * Subscribe to a document
+     *
+     * @param {Object} data
+     * @param {number} data.documentId - The ID of the document to subscribe to.
+     * @param {Object} options - The options object containing the transaction.
+     * @returns {Promise<void>}
+     */
+    async subscribeDocument(data, options) {
+        this.socket.join("doc:" + data.documentId);
+    }
+
+    /**
      * Save additional document data for a particular document/study_session/study_step like the nlpResults, links etc., to the document_data table.
-     * 
+     *
      * @param {*} data {userId: number, documentId: number, studySessionId: number, studyStepId: number, key: string, value: any}
      * @param {*} options {transaction: Transaction}
      * @returns {Promise<void>} - A promise that resolves when the data has been saved.
      */
     async saveData(data, options) {
-             
+
         let documentData = await this.models['document_data'].add({
             userId: this.userId,
             documentId: data.documentId,
@@ -811,46 +806,7 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-
-        this.socket.on("documentGetByHash", async (data) => {
-            try {
-                await this.sendByHash(data.documentHash);
-            } catch (e) {
-                this.logger.error(e);
-                this.socket.emit("documentError", {message: "Document not found!", documentHash: data.documentHash});
-            }
-        });
-
-
-        this.socket.on("documentPublish", async (data) => {
-            try {
-                await this.publishDocument(data.documentId);
-            } catch (e) {
-                this.logger.error(e);
-                this.sendToast("Error while publishing document", "Error", "danger");
-            }
-        });
-
-        this.socket.on("documentSubscribe", (data) => {
-            try {
-                this.socket.join("doc:" + data.documentId);
-                this.logger.debug("Subscribe document " + data.documentId);
-            } catch (e) {
-                this.logger.error(e);
-                this.sendToast("Error subscribe document", "Error", "danger");
-            }
-        });
-
-        this.socket.on("documentUnsubscribe", (data) => {
-            try {
-                this.socket.leave("doc:" + data.documentId);
-                this.logger.debug("Unsubscribe document " + data.documentId);
-            } catch (e) {
-                this.logger.error(e);
-                this.sendToast("Error unsubscribe document", "Error", "danger");
-            }
-        });
-
+       /*
         this.socket.on("documentEdit", async (data) => {
             try {
                 await this.editDocument(data);
@@ -877,17 +833,13 @@ module.exports = class DocumentSocket extends Socket {
                 });
             }
         });
+        */
 
-        this.socket.on("documentGetDeltas", async (data) => {
-            try {
-                await this.sendDocumentDeltas(data.documentId);
-            } catch (e) {
-                this.logger.error("Error handling sendDocumentDeltas request: ", e);
-                this.sendToast("Error handling sendDocumentDeltas request!", "Error", "danger");
-            }
-        });
-
-
+        this.createSocket("documentGetByHash", this.sendByHash, {}, false);
+        this.createSocket("documentPublish", this.publishDocument, {}, false);
+        this.createSocket("documentEdit", this.editDocument, {}, true);
+        this.createSocket("documentSubscribe", this.subscribeDocument, {}, false);
+        this.createSocket("documentGetDeltas", this.sendDocumentDeltas, {}, false);
         this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);
         this.createSocket("documentCreate", this.createDocument, {}, true);

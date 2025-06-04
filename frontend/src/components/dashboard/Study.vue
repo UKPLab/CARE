@@ -321,7 +321,7 @@ export default {
           study.createdAt = new Date(study.createdAt).toLocaleString()
           study.sessions = this.$store.getters["table/study_session/getFiltered"]((e) => e.studyId === study.id).length;
 
-          study.showEditButton = this.isAdmin || study.userId === this.userId;
+          study.showEditButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
           study.showDeleteButton = this.isAdmin || study.userId === this.userId;
           study.showCloseButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
           study.showTemplateButton = this.isAdmin || study.userId === this.userId;
