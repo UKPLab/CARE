@@ -43,12 +43,12 @@ module.exports = class CommentSocket extends Socket {
      * @param {object} comment
      * @return {Promise<void>}
      */
-    async updateComment(commentId, comment) {
+    async updateComment(commentId, comment, options = {}) {
         try {
-            const origComment = await this.models['comment'].getById(commentId);
+            const origComment = await this.models['comment'].getById(commentId, options);
 
             if (origComment.userId === await this.models['user'].getUserIdByName("Bot")) {
-                const parentComment = await this.models['comment'].getById(origComment.parentCommentId);
+                const parentComment = await this.models['comment'].getById(origComment.parentCommentId, options);
                 if (!this.checkUserAccess(parentComment.userId)) {
                     this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
                     return;
@@ -62,7 +62,7 @@ module.exports = class CommentSocket extends Socket {
                 await this.deleteChildComments(commentId);
             }
 
-            const newComment = await this.models['comment'].updateById(commentId, Object.assign(comment, {draft: false}));
+            const newComment = await this.models['comment'].updateById(commentId, Object.assign(comment, {draft: false}), options);
             this.emitDoc(newComment.documentId, "commentRefresh", newComment);
         } catch (e) {
             this.logger.error("Could not update comment in database. Error: " + e);
@@ -102,9 +102,10 @@ module.exports = class CommentSocket extends Socket {
     /**
      * Add a comment
      * @param {object} data comment object
+     * @param {object} [options] optional transaction options
      * @return {Promise<void>}
      */
-    async addComment(data) {
+    async addComment(data, options = {}) {
         if (data.userId !== undefined) {
             if (data.userId === 'Bot') {
                 const parentComment = await this.models['comment'].getById(data.parentCommentId);
@@ -137,10 +138,13 @@ module.exports = class CommentSocket extends Socket {
                 anonymous: data.anonymous !== undefined ? data.anonymous : false
             }
 
-            this.emit("commentRefresh", await this.models['comment'].add(newComment))
+            const comment = await this.models['comment'].add(newComment, options);
+            this.emit("commentRefresh", comment);
+            return comment;
         } catch (e) {
             this.logger.error("Could not add comment and/or comment to database. Error: " + e);
             this.sendToast("Internal server error. Failed to add comment.", "Internal server error", "danger");
+            throw e;
         }
     }
 
