@@ -96,10 +96,10 @@ module.exports = class AnnotationSocket extends Socket {
     /**
      * Add an annotation and send it to the client
      * @param {object} data new annotation data
+     * @param {object} [options] optional transaction options
      * @return {Promise<void>}
      */
-    async addAnnotation(data) {
-
+    async addAnnotation(data, options = {}) {
         const newAnnotation = {
             documentId: data.documentId,
             selectors: data.selectors,
@@ -112,17 +112,18 @@ module.exports = class AnnotationSocket extends Socket {
             anonymous: data.anonymous !== undefined ? data.anonymous : false,
         };
 
-        const annotation = await this.models['annotation'].add(newAnnotation);
+        const annotation = await this.models['annotation'].add(newAnnotation, options);
 
-        await this.getSocket("CommentSocket").addComment({
+        const comment = await this.getSocket("CommentSocket").addComment({
             documentId: annotation.documentId,
             studySessionId: annotation.studySessionId,
             studyStepId: annotation.studyStepId,
             annotationId: annotation.id,
             anonymous: annotation.anonymous !== undefined ? data.anonymous : false,
-        });
+        }, options);
 
         this.emit("annotationRefresh", annotation);
+        return {annotation, comment};
     }
 
     /**
