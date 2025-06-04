@@ -128,30 +128,62 @@ module.exports = class DocumentSocket extends Socket {
         }
 
         fs.writeFileSync(target, data.file);
-        // annotations part
-        var annotations = [];
+        // annotations part    
         if (data["enableAnnotations"]) {
+            var annotations = [];
             try {
-                annotations = await this.server.rpcs["PDFRPC"].getAnnotations({
+                data = await this.server.rpcs["PDFRPC"].getAnnotations({
                     file: data['file'],
                     document: doc,
                     fileType: fileType,
                 });
-                if (annotations.length !== 0) {
-                    for (const extracted of annotations) {
+                if (data.annotations.length !== 0) {
+                    for (const extracted of data.annotations) {
+                        let textPositions;
+                        try {
+                            textPositions = this.getTextPositions(extracted.text, data.wholeText);
+                        } catch (error) {
+                            this.logger.error("Error calculating text positions:", error);
+                            textPositions = { start: 0, end: extracted.text.length };
+                        }
+
+                        const selectors = {
+                            target: [{
+                                selector: [
+                                    {
+                                        type: "TextPositionSelector",
+                                        start: textPositions.start,
+                                        end: textPositions.end
+                                    },
+                                    {
+                                        type: "TextQuoteSelector",
+                                        exact: extracted.text || "",
+                                        prefix: extracted.prefix || "",
+                                        suffix: extracted.suffix || ""
+                                    },
+                                    {
+                                        type: "PagePositionSelector",
+                                        number: extracted.page + 1
+                                    }
+                                ]
+                            }]
+                        };
+                        
                         try {
                             const newAnnotation = {
                                 documentId: doc.id,
-                                selectors: extracted.selectors,
-                                tagId: extracted.tagId,
-                                studySessionId: extracted.studySessionId,
-                                studyStepId: extracted.studyStepId,
+                                selectors: selectors,
+                                tagId: extracted.tag.id,
+                                studySessionId: doc.studySessionId,
+                                studyStepId: doc.studyStepId,
                                 text: extracted.text || null,
-                                draft: true,
+                                draft: false,
                                 userId: this.userId,
                                 anonymous: false,
                             };
-                            await this.models['annotation'].add(newAnnotation);
+                            const {annotation, comment} = await this.getSocket('AnnotationSocket').addAnnotation(newAnnotation, {transaction:options.transaction});
+                            await this.getSocket('CommentSocket').updateComment(comment.id, {text:extracted.comment}, {transaction:options.transaction});
+                            
                         } catch (annotationErr) {
                             throw new Error("Error adding annotation: " + annotationErr.message);
                         }
@@ -709,6 +741,27 @@ module.exports = class DocumentSocket extends Socket {
             options: data.options,
             feedback: data.feedback,
         });
+    }
+
+    /**
+     * Get the start and end positions of exact text within whole text
+     * @param {string} exactText - The text to find positions for
+     * @param {string} wholeText - The complete text to search within
+     * @returns {{start: number, end: number}} Object containing start and end positions
+     * @throws {Error} If exact text is not found in whole text
+     */
+    getTextPositions(exactText, wholeText) {
+        // Clean and normalize both texts to handle potential differences
+        const normalizedExact = exactText.trim().replace(/\s+/g, ' ');
+        const normalizedWhole = wholeText.trim().replace(/\s+/g, ' ');
+
+        const start = normalizedWhole.indexOf(normalizedExact);
+        if (start === -1) {
+            throw new Error('Exact text not found in whole text');
+        }
+
+        const end = start + normalizedExact.length;
+        return { start, end };
     }
 
     init() {
