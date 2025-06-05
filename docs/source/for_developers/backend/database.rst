@@ -42,7 +42,39 @@ After that, you can run ``npx sequelize --help`` to see all available commands.
 To create a new migration, run ``npx sequelize migration:generate --name <name>``.
 This will create a new file in the ``migrations`` folder, containing a ``up`` and a ``down`` function.
 
+Each migration file in CARE follows a consistent structure and naming pattern to ensure reliable execution and easy readability.
 
+**File Name Structure:**
+
+.. code-block:: none
+
+    YYYYMMDDHHMMSS-action-target.js
+
+- ``YYYYMMDDHHMMSS``: A UTC timestamp ensuring chronological execution.
+- ``action``: What the migration does (e.g., `create`, `extend`, `drop`).
+- ``target``: The table or feature affected (e.g., `user`, `editor`, `study`).
+
+**Example:**
+
+.. code-block:: none
+
+    20240411143091-extend-setting-editor.js
+
+The ``action`` part of a migration filename typically falls into one of the following categories:
+
+- **create** — Introduces a new table or model  
+
+- **basic** — Inserts default records for a table (e.g., roles, tags, nav items)  
+
+- **extend** — Adds new columns or modifies existing tables  
+
+- **nlp_skill** — Adds metadata/settings/navigation for NLP-related features  
+
+- **stats** — Enables tracking, logging, or statistics functionality  
+
+- **transform** — Applies structural or content transformations to existing data  
+
+- **drop** — Removes obsolete tables or features  
 
 Adding a New Model
 ~~~~~~~~~~~~~~~~~~
