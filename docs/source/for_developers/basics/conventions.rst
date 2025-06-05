@@ -45,48 +45,52 @@ Reviewers should verify each item before approving changes.
 General
 ~~~~~~~
 
-- All ``TODO`` comments are addressed or justified.
-- Descriptive and consistent naming conventions are followed.
-- No unused or redundant variables.
-- Variable and function names are self-explanatory.
-- Code is properly indented and readable (passes linter).
-- Comments are meaningful, correctly spelled, and aligned with the code.
-- Functions are documented with correct parameters and clear descriptions.
-- Avoid repeated code blocks and unnecessary one-liners.
-- No ``console.log`` printouts — use the integrated logger in both frontend and backend.
+- All open TODOs in the code handled
+- All naming conventions are fulfilled
+
+        - No redundant or unused variables
+        - Variable names are self-explanatory
+
+- Lint: Code is adequately indented and readable
+- All comments properly (e.g., without spelling errors, consistent with the code)
+- All functions are documented properly (e.g., parameters correctly defined, description understandable)
+- Code structure adequate (e.g., no blocks of repeated code, no one-liners in functions)
+- No console.log printouts (i.e., always use integrated logger for handling messages) – check console in backend and browser!
 
 Backend
 ~~~~~~~
 
-- All socket methods use ``async/await`` and are documented.
-- All socket handlers are wrapped in ``try/catch`` blocks.
-- Maximum of four logic lines inside a ``try`` block — use helper methods if more needed.
-- No direct database access from socket classes — use DB models or ``MetaModel.js``.
-- Use database transactions for multiple dependent DB calls.
-- All socket methods use acknowledgment (callback) responses.
-- ``MetaModel.js`` is used when applicable.
-- Security: ``userId`` is never passed from the frontend; use ``this.userId`` in the backend.
+- All file handles in socket connection are async
+- All functions documented
+- All sockets defined in a try/catch block
+- All sockets contain maximal four code lines inside the try block (i.e., if more, it needs a separate function!)
+- Socket classes do not call the DB directly (always use predefined functions in DB Models or MetaModel class)
+- DB transactions are used if multiple DB calls are depending on each other
+- All sockets use acknowledgments as response message
+- MetaModel.js used for all possible functions
+- Security: No userId is set from the frontend, backend this.userId is always used
 
 Frontend
 ~~~~~~~~
 
-- Complies with the `Vue Style Guide <https://vuejs.org/style-guide/rules-essential.html>`_.
-- Component names are multi-word and do not include ``.vue``.
-- Props are defined with ``type`` and ``required`` attributes.
-- ``v-for`` loops include a unique ``:key`` (e.g., ``:key="item.id"``).
-- Avoid using ``v-if`` on the same element as ``v-for``.
-- Scoped styles are used inside components.
-- Computed properties remain simple and efficient.
-- Component options and element attributes follow recommended order.
-- Unused variables, props, and methods are removed.
-- Imports use ``@`` aliases unless importing siblings or subfolders.
-- Use base components (e.g., ``BasicButton``, ``BasicTable``, ``BasicIcon``).
-- Ensure safe handling of asynchronous or missing backend data.
-- Each component is responsible for loading its required data (in ``mounted`` or ``fetchData``).
+- Complied with Vue Styling Guidelines
+
+        - Vue component names without ".vue" and multi-word
+        - Use detailed prop definitions (e.g., type and required defined!)
+        - v-for loops use :key="<>.id" attribute
+        - No usage of v-if on the same element as v-for
+        - Component-scoped styling used
+        - Simple computed properties (i.e., no complex code in computes)
+        - Component/instance options order and element attribute order
+        
+- Check for stale variables and methods (e.g., remove unused functions and options)
+- Imports use "@" in path (except for same or one-level sub-directory imports)
+- Basic components are used (e.g., Icons, Buttons, Tables, etc.)
+- Safeguards for loaded variables from backend are available (i.e., what happens if receiving a variable from backend fails or needs time – user needs to be informed!)
+- Every component loads data needed by itself (i.e., in mounted or better via fetchData options)
 
 Documentation
 ~~~~~~~~~~~~~
 
-- Documentation builds without warnings or errors (e.g., using ``make doc_sphinx``).
-- Content is written in clear, understandable English.
-- Instructions should be accessible for non-technical users (DAU-friendly).
+- Documentation compiles without errors and is readable (i.e., make doc_sphinx)
+- Documentation is clearly written and helps a DAU to implement a feature
