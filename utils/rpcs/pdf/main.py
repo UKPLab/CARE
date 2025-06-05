@@ -71,7 +71,7 @@ def create_app():
                     
                     # Use the new function to get highlighted words (intersection + color check)
                     words_on_page = page.get_text("words")
-                    highlighted_words = _extract_annot(annot, words_on_page)
+                    highlighted_words = extract_annot(annot, words_on_page)
                     logger.info(f"Highlighted words: {highlighted_words}")  
 
                     # Find the position of the annotated text in the page
@@ -108,13 +108,25 @@ def create_app():
                         "suffix": suffix,
                         "tag": tag_info
                     })
+                # Delete all highlight annotations
+                    annot.update(fill_color=(0, 0, 0))
+                    logger.info(f"Deleted annot: {annot}")
+                    page.delete_annot(annot)
+                    
+
             
+            # After processing all pages and annotations, save the modified PDF
+            doc.save(target, incremental=True, encryption=0)
+            with open(target, "rb") as f:
+                file_bytes = f.read()
+
             response = {
                 "success": True,
                 "message": "Annotations extracted successfully.",
                 "data": {
                     "annotations": annotations,
-                    "wholeText": whole_text
+                    "wholeText": whole_text,
+                    "file": file_bytes
                 }
             }
             return response
@@ -199,12 +211,44 @@ def create_app():
                     else:
                         logger.warning("No suitable rect found for annotation.")
             # Save the modified PDF
-            logger.info(f"Saving PDF with annotations to {target}")
+            logger.info(f"Saving PDF with annotations to {file_target}")
             doc.save(file_target, incremental=True,  encryption=0)
             with open(file_target, "rb") as f:
                 file_bytes = f.read()
             #todo: return file 
             response = {"success": True, "message": "PDF with annotations saved successfully", "data": file_bytes}
+            return response
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            response = {"success": False, "message": "error: " + str(e)}
+            return response
+
+    @sio.on("deleteAllAnnotations")
+    def delete_all_annotations(sid, data):
+        logger.info(f"Received deleteAllAnnotations call: {data} from {sid}")
+        try:
+            doc_hash = data["document"]["hash"]
+            os.makedirs("uploads", exist_ok=True)
+            target = os.path.join("uploads",  f"{doc_hash}.pdf")
+            with open(target, "wb") as f:
+                f.write(data["file"])
+            doc = pymupdf.open(target)
+            # Remove all annotations from all pages
+            for page in doc:
+                annots = [a for a in page.annots()]
+                for annot in annots:
+                    page.delete_annot(annot)
+            # Save the modified PDF incrementally
+            doc.save(target, incremental=True, encryption=0)
+            with open(target, "rb") as f:
+                file_bytes = f.read()
+            response = {
+                "success": True,
+                "message": "All annotations deleted successfully.",
+                "data": {
+                    "file": file_bytes
+                }
+            }
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
@@ -381,7 +425,7 @@ def create_app():
 
     _threshold_intersection = 0.1  # if the intersection is large enough.
 
-    def _check_contain(r_word, points):
+    def check_contain(r_word, points):
         """If `r_word` is contained in the rectangular area.
 
         The area of the intersection should be large enough compared to the
@@ -405,7 +449,7 @@ def create_app():
             contain = False
         return contain
 
-    def _extract_annot(annot, words_on_page):
+    def extract_annot(annot, words_on_page):
         """Extract words in a given highlight.
 
         Args:
@@ -422,13 +466,16 @@ def create_app():
             points = quad_points[i * 4: i * 4 + 4]
             words = [
                 w for w in words_on_page if
-                _check_contain(pymupdf.Rect(w[:4]), points)
+                check_contain(pymupdf.Rect(w[:4]), points)
             ]
             sentences[i] = ' '.join(w[4] for w in words)
         sentence = ' '.join(sentences)
 
         return sentence
-
+    # def delete_annot(annot, page):
+    #     deleted = page.delete_annot(annot)
+    #     logger.info(f"Deleted annot: {deleted}")
+    
     logger.info("Creating App...")
     app = socketio.WSGIApp(sio)
     return app

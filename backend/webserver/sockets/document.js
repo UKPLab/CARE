@@ -115,20 +115,14 @@ module.exports = class DocumentSocket extends Socket {
             };
 
             await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
-        } else {
+        } else if (fileType === ".pdf") {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
                 name: data.name.replace(/.pdf$/, ""),
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
-            }, {transaction: options.transaction});
-
-            target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
-        }
-
-        fs.writeFileSync(target, data.file);
-        // annotations part    
+            }, {transaction: options.transaction});   
         if (data["enableAnnotations"]) {
             var annotations = [];
             try {
@@ -194,6 +188,17 @@ module.exports = class DocumentSocket extends Socket {
                 throw new Error("Error extracting annotations: " + annotationRpcErr.message);
             }
         }
+        const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+            file: data.file,
+            document: doc
+        });
+        if (file) {
+            data.file = file;
+        }   
+
+        target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+        fs.writeFileSync(target, data.file);
+    }
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         })

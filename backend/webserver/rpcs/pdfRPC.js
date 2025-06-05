@@ -110,4 +110,27 @@ module.exports = class PDFRPC extends RPC {
         }
     }
 
+    /**
+     * Deletes all annotations from a PDF file via the PDF RPC service.
+     *
+     * @param {Object} data - The data object containing the file and document info.
+     * @param {Buffer} data.file - The PDF file as a buffer or binary data.
+     * @param {Object} data.document - The document metadata object.
+     * @returns {Promise<Buffer>} - Resolves to the processed PDF file buffer with all annotations removed.
+     * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
+     */
+    async deleteAllAnnotations(data) {
+        try {
+            const response = await this.request("deleteAllAnnotations", data);
+            if (!response['success']) {
+                this.logger.error("Error in request deleteAllAnnotations: " + response['message']);
+                throw new Error(response['message']);
+            }
+            this.logger.info("Response from RPC service: " + response['message']);
+            return response['data'];
+        } catch (err) {
+            throw err;
+        }
+    }
+
 }
