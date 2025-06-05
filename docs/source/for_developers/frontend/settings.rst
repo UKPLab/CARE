@@ -1,7 +1,8 @@
 Settings
 ========
 
-CARE supports flexible application behavior through dynamic configuration of settings. This section shows how to create a new setting and use it in the frontend.
+CARE supports flexible, dynamic application behavior through a centralized system of configurable settings. These settings allow developers and administrators to customize the frontend and backend behavior without hardcoding values or redeploying the application. Settings are stored in the database, can be grouped by key namespaces, and support multiple data types.
+This section shows how to define a new setting, what types are supported, and how to use the setting in your Vue components.
 
 Example: Adding a New Setting
 -----------------------------
@@ -39,6 +40,12 @@ To add a new setting, define it similar to this example:
     };
 
 Don't forget to restart the server. The setting will now be available in the frontend.
+
+.. warning::
+
+   Changes made to settings in the frontend **are not automatically saved** to the database.
+   After modifying any setting through the UI, you **must** click the ``Save Settings`` button.
+   Otherwise, your changes will be lost and not persisted.
 
 Supported Setting Types
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,30 +133,3 @@ Example usage in a component:
                 }
             }
         };
-
-Where Settings Are Defined
---------------------------
-
-Settings in CARE are persisted in the database and managed through backend WebSocket handlers. They are exposed to the frontend dynamically.
-
-The main logic responsible for handling settings is located at:
-
-- **Backend (WebSocket server)**: ``backend/webserver/sockets/setting.js``  
-  This class defines how settings are saved and fetched using:
-
-  .. code-block:: javascript
-
-    this.createSocket("settingGetData", this.getSettings, {}, false)
-    this.createSocket("settingSave", this.saveSettings, {}, false);
-
-- **App-wide initialization**: ``backend/webserver/sockets/app.js``  
-  On app startup, the method ``sendSettings()`` sends all global and user-specific settings to the frontend.
-
-  .. code-block:: javascript
-
-    const settings = await this.models["setting"].getAll();
-    settings.forEach((s) => (returnSettings[s.key] = s.value));
-
-- **Frontend Dashboard UI**: ``frontend/src/components/dashboard/Settings.vue``
-
-    This page shows all defined settings grouped by key namespaces, supports editing, and requires pressing **Save Settings** to persist changes.
