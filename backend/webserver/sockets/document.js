@@ -182,6 +182,7 @@ module.exports = class DocumentSocket extends Socket {
                                 anonymous: false,
                             };
                             const {annotation, comment} = await this.getSocket('AnnotationSocket').addAnnotation(newAnnotation, {transaction:options.transaction});
+                            annotations.push(annotation);
                             await this.getSocket('CommentSocket').updateComment(comment.id, {text:extracted.comment}, {transaction:options.transaction});
                             
                         } catch (annotationErr) {
