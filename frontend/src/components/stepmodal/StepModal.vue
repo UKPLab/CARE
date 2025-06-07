@@ -204,7 +204,7 @@ export default {
       return Object.keys(this.requests).length > 0;
     },
     nlpRequestTimeout() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
+      return parseInt(this.$store.getters["settings/getValue"]('modal.nlp.request.timeout'));
     },
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
@@ -216,12 +216,9 @@ export default {
       if (!this.documentText) return [];
       
       if (!this.placeholders || Object.keys(this.placeholders).length === 0) {
-        if (!this.configuration || !Array.isArray(this.configuration.services) || this.configuration.services.length === 0) {
-          this.waiting = false;
-          return [{ type: 'plainText', value: this.documentText }];
-        }
         return [{ type: 'plainText', value: this.documentText }];
       }
+
       const segments = [];
       const regex = /~(.*?)~/g;
       let match;
@@ -266,14 +263,6 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
-    //TODO: This is subject to change, as the timeout functionality is yet to be discussed
-    nlpTimeoutConfig() {
-      const configTimeout = this.configuration?.timeout;
-      if (configTimeout && !isNaN(Number(configTimeout))) {
-        return Number(configTimeout);
-      }
-      return this.nlpRequestTimeout;
-    },
   },
   watch: {
     specificDocumentData: {
@@ -311,8 +300,6 @@ export default {
           });
           this.requests = {};
           this.waiting = false;
-        } else if (!this.readOnly) {
-          this.waiting = true;
         }
       },
       deep: true,
@@ -348,6 +335,14 @@ export default {
         });
       },
       deep: true
+    },
+    placeholders: {
+      handler(newData) {
+        if (this.placeholders == null || Object.keys(this.placeholders).length === 0) {   
+          this.waiting = false;   
+        }
+      },
+      immediate: true
     },
   },
   created() {
@@ -395,6 +390,10 @@ export default {
       this.$emit("update:data", this.specificDocumentData); 
     }
 
+    if(!this.requests || Object.keys(this.requests).length === 0) {
+      this.waiting = false;
+    }
+
     this.$refs.modal.open();
   },
   methods: {
@@ -438,7 +437,7 @@ export default {
             });
             this.timeoutError = true;
           }
-        }, this.nlpTimeoutConfig);
+        }, this.nlpRequestTimeout);
       }
     },
     // TODO: Replace this with an intermediate component between StepModal and NLPService (like, MultiNLPService)
