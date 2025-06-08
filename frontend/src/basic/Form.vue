@@ -63,6 +63,7 @@
             :ref="'ref_' + field.key"
             v-model="currentData[field.key]"
             :options="field"
+            @update:config-status="handleConfigStatusChange"
           />
           <FormPassword
             v-else-if="field.type === 'password'"
@@ -140,7 +141,7 @@ export default {
       required: true,
     },
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "update:configStatus"],
   data() {
     return {
       currentData: null,
@@ -195,6 +196,9 @@ export default {
         .map((child) => this.$refs[child][0].validate())
         .every(Boolean);
     },
+    handleConfigStatusChange(status) {
+      this.$emit("update:configStatus", status);
+    }
   },
 };
 </script>
