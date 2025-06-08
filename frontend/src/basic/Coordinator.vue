@@ -25,6 +25,7 @@
           ref="form"
           v-model="data"
           :fields="fields"
+          @update:config-status="handleConfigStatusChange"
         />
       </span>
     </template>
@@ -136,6 +137,7 @@ export default {
     return {
       data: {},
       success: false,
+      configStatus: {},
       overrideDefaultValues: {},
     };
   },
@@ -173,32 +175,50 @@ export default {
     close() {
       this.$refs.coordinatorModal.close();
     },
+    handleConfigStatusChange(status) {
+      this.configStatus = status;
+    },
     submit() {
-      if (this.$refs.form.validate()) {
-        const data = { ...this.data };
-        this.$emit("submit", data);
-        this.$socket.emit(
-          "appDataUpdate",
-          {
-            table: this.table,
-            data: data,
-          },
-          (result) => {
-            if (result.success) {
-              this.showSuccess();
-              this.$emit("success", result.data);
-            } else {
-              this.$refs.coordinatorModal.waiting = false;
-              this.eventBus.emit("toast", {
-                title: "Could not save",
-                message: result.message,
-                variant: "danger",
-              });
-            }
-          }
-        );
-        this.$refs.coordinatorModal.waiting = true;
+      const isValidated = this.$refs.form.validate();
+      const { hasIncompleteConfig, incompleteSteps } = this.configStatus;
+      
+      if (!isValidated) return;
+      if (hasIncompleteConfig) {
+        const stepMessage = incompleteSteps.length === 1 
+          ? `step ${incompleteSteps[0]}`
+          : `steps ${incompleteSteps.slice(0, -1).join(", ")} and ${incompleteSteps[incompleteSteps.length - 1]}`;
+        
+        this.eventBus.emit("toast", {
+          title: "Incomplete Configuration",
+          message: `You have incomplete configuration at ${stepMessage}`,
+          variant: "danger",
+        });
+        return;
       }
+
+      const data = { ...this.data };
+      this.$emit("submit", data);
+      this.$socket.emit(
+        "appDataUpdate",
+        {
+          table: this.table,
+          data: data,
+        },
+        (result) => {
+          if (result.success) {
+            this.showSuccess();
+            this.$emit("success", result.data);
+          } else {
+            this.$refs.coordinatorModal.waiting = false;
+            this.eventBus.emit("toast", {
+              title: "Could not save",
+              message: result.message,
+              variant: "danger",
+            });
+          }
+        }
+      );
+      this.$refs.coordinatorModal.waiting = true;
     },
     showSuccess() {
       this.success = true;
@@ -249,7 +269,6 @@ export default {
               // Create a copy of the original entry
               const copyData = { ...e };
 
-              // TODO: Is it the best place to fetch the parentDocumentId?
               // If this entry has a documentId, fetch the parent document ID
               if (e.documentId) {
                 const document = this.$store.getters["table/document/get"](e.documentId);

@@ -77,7 +77,8 @@ module.exports = (sequelize, DataTypes) => {
                     ],
                     name: "name"
                 }
-            }, required: true,
+            }, 
+            required: true,
         }, {
             key: "description",
             label: "Description of the study:",
@@ -255,6 +256,37 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * When a user updates a study, we create a new version of the study and close the old one
+         * @param {object} study - The study object
+         * @param {object} options - Sequelize options object
+         * @returns {Promise<void>}
+         */
+        static async updateStudy(study, options) {
+            // Capture the updated data before we reset the instance
+            const updatedData = study.toJSON();
+            // Reload the original study data to reset all changes
+            await study.reload({ transaction: options.transaction });
+            // Create a new study with the updated data
+            const newStudyData = { ...updatedData };
+            delete newStudyData.id;
+            delete newStudyData.hash;
+            newStudyData.parentStudyId = study.id;
+            // Create the new study version
+            await Study.add(newStudyData, {
+                transaction: options.transaction,
+                context: options.context
+            });
+
+            study.setDataValue("closed", new Date());
+
+            // Introduce the custom flag '_isVersioning' to mark this as a versioning operation
+            options._isVersioning = true;
+
+            // Specify which fields to be updated. (If fields is provided, only those columns will be saved)
+            options.fields = ["closed"];
+        }
+
+        /**
          * Handle possible configuration from study steps
          * @param {Object} study
          * @param {Object} transaction
@@ -374,31 +406,7 @@ module.exports = (sequelize, DataTypes) => {
             beforeUpdate: async (study, options) => {
                 // If this is a study update (not a close operation) and we have stepDocuments
                 if (options.context?.stepDocuments && !study.closed) {
-                    // Capture the updated data before we reset the instance
-                    const updatedData = study.toJSON();
-                    
-                    // Reload the original study data to reset all changes
-                    await study.reload({ transaction: options.transaction });
-                    
-                    // Create a new study with the updated data
-                    const newStudyData = { ...updatedData };
-                    delete newStudyData.id;
-                    delete newStudyData.hash;
-                    newStudyData.parentStudyId = study.id;
-                    
-                    // Create the new study version
-                    await Study.add(newStudyData, {
-                        transaction: options.transaction,
-                        context: options.context
-                    });
-                    
-                    study.setDataValue("closed", new Date());
-                    
-                    // Mark this as a versioning operation
-                    options._isVersioning = true;
-                    
-                    // Specify which fields to be updated. (If fields is provided, only those columns will be saved)
-                    options.fields = ["closed"];
+                    await Study.updateStudy(study, options);
                 }
             },
             afterUpdate: async (study, options) => {
@@ -409,6 +417,8 @@ module.exports = (sequelize, DataTypes) => {
                     await Study.deleteStudySessions(study, options);
                 }
 
+                // Check if this is a versioning operation (_isVersioning is a custom flag)
+                // Only when it is NOT a versioning operation, we will trigger handleConfiguration method.
                 if (study.closed && !options._isVersioning) {
                     await Study.handleConfiguration(study, transaction);
                 }
