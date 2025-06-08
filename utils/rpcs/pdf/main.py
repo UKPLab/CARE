@@ -8,6 +8,12 @@ import json
 __author__ = "Karim Ouf"
 
 def create_app():
+    """
+    Creates and configures the Socket.IO WSGI application for PDF annotation processing.
+    Sets up event handlers for connecting, calling, testing, extracting/removing annotations, embedding annotations, and deleting all annotations in PDF files.
+    Returns:
+        The configured WSGI application.
+    """
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger('gunicorn.error')
     logger.setLevel(logging.INFO)
@@ -16,10 +22,25 @@ def create_app():
 
     @sio.event
     def connect(sid, environ, auth):
+        """
+        Handles a new Socket.IO connection event.
+        Args:
+            sid: Session ID.
+            environ: WSGI environment.
+            auth: Authentication data.
+        """
         logger.info(f"Connection established with {sid}")
 
     @sio.on("call")
     def call(sid, data):
+        """
+        Handles a generic 'call' event for testing connectivity.
+        Args:
+            sid: Session ID.
+            data: Incoming data.
+        Returns:
+            A simple hello world response.
+        """
         logger.info(f"Received call: {data} from {sid}")
         try:
             response = {"success": True, "data": "Hello World!"}
@@ -31,6 +52,14 @@ def create_app():
 
     @sio.on("test")
     def test(sid, data):
+        """
+        Handles a 'test' event to save and open a PDF file for reading.
+        Args:
+            sid: Session ID.
+            data: Contains the PDF file and document hash.
+        Returns:
+            Success or error message after reading the PDF.
+        """
         logger.info(f"Received call: {data} from {sid}")
         try:
             doc_hash = data["document"]["hash"]
@@ -45,8 +74,17 @@ def create_app():
             response = {"success": False, "message": "error: " + str(e)}
             return response
 
-    @sio.on("annotations")
-    def annotations(sid, data):
+    @sio.on("annotationsExtract")
+    def extract_pdf_annotations(sid, data):
+        """
+        Extracts all annotations (such as highlights and comments) from a PDF file, collects their metadata and text, and then removes them from the document. 
+        Returns the extracted annotation data, the full text of the document, and the modified PDF file with annotations deleted.
+        Args:
+            sid: Socket.IO session id.
+            data: Dictionary containing the PDF file (as bytes) and document hash.
+        Returns:
+            A response dict with annotation data, full text, and the modified PDF file.
+        """
         logger.info(f"Received call: {data} from {sid}")
         try:
             doc_hash = data["document"]["hash"]
@@ -112,8 +150,6 @@ def create_app():
                     annot.update(fill_color=(0, 0, 0))
                     logger.info(f"Deleted annot: {annot}")
                     page.delete_annot(annot)
-                    
-
             
             # After processing all pages and annotations, save the modified PDF
             doc.save(target, incremental=True, encryption=0)
@@ -135,10 +171,16 @@ def create_app():
             response = {"success": False, "message": "error: " + str(e)}
             return response
 
-    #       create
-
     @sio.on("embedAnnotations")
     def embeddAnnotations(sid, data):
+        """
+        Embeds new annotations and comments into a PDF file based on provided annotation data.
+        Args:
+            sid: Session ID.
+            data: Contains the PDF file, document hash, and annotation details.
+        Returns:
+            The modified PDF file with embedded annotations, or the original if none provided.
+        """
         logger.info(f"Received call: {data} from {sid}")
         # Todo:add comment to annotate in pdf
         try:
@@ -225,6 +267,14 @@ def create_app():
 
     @sio.on("deleteAllAnnotations")
     def delete_all_annotations(sid, data):
+        """
+        Removes all annotations from a PDF file and returns the cleaned file.
+        Args:
+            sid: Session ID.
+            data: Contains the PDF file and document hash.
+        Returns:
+            The PDF file with all annotations removed.
+        """
         logger.info(f"Received deleteAllAnnotations call: {data} from {sid}")
         try:
             doc_hash = data["document"]["hash"]
@@ -257,8 +307,13 @@ def create_app():
 
     def search_with_reduction(doc_page, search_string, quads=False):
         """
-        Search for the string on the page, reducing one character at a time from the end until a match is found.
-        Returns the list of rects found (may be empty if nothing matches).
+        Searches for a string on the PDF page, reducing one character at a time from the end until a match is found.
+        Args:
+            doc_page: The PDF page object.
+            search_string: The string to search for.
+            quads: Whether to return quadrilaterals instead of rectangles.
+        Returns:
+            List of found rectangles (may be empty if nothing matches).
         """
         temp_string = search_string
         while temp_string:
@@ -270,7 +325,14 @@ def create_app():
     
     def get_best_exact_rect(doc_page, exact, prefix=None, suffix=None):
         """
-        Return the rect of the 'exact' string that is closest to prefix and suffix.
+        Finds the rectangle of the 'exact' string that is closest to the given prefix and suffix on the page.
+        Args:
+            doc_page: The PDF page object.
+            exact: The exact string to find.
+            prefix: Optional prefix string.
+            suffix: Optional suffix string.
+        Returns:
+            The best matching rectangle or None if not found.
         """
         def rect_midpoint(rect):
             return ((rect.x0 + rect.x1) / 2, (rect.y0 + rect.y1) / 2)
@@ -297,11 +359,14 @@ def create_app():
         return best_rect
     def get_color_code_from_annotation(colors):
         """
-        Convert annotation RGB colors to tag color code
-        Returns one of: "info" (blue), "success" (green), "warning" (yellow), "danger" (red)
+        Converts annotation RGB colors to a tag color code and name.
+        Args:
+            colors: RGB color tuple or dict.
+        Returns:
+            Tuple of (color code, color name, tag id).
         """
         if not colors:
-            return "info"  # default color
+            return "info", "Other", 4  # blue or default
             
         r, g, b = colors["stroke"] if isinstance(colors, dict) else colors
         
@@ -317,12 +382,11 @@ def create_app():
     
     def get_color_from_code(color_code):
         """
-        Map a color code string to an RGB tuple for PyMuPDF.
-        Options:
-            - "info": blue
-            - "success": green
-            - "warning": yellow
-            - "danger": red
+        Maps a color code string to an RGB tuple for PyMuPDF.
+        Args:
+            color_code: One of 'info', 'success', 'warning', 'danger'.
+        Returns:
+            Corresponding RGB tuple.
         """
         color_map = {
             "info": (0, 0, 1),      # Blue
@@ -333,11 +397,16 @@ def create_app():
         return color_map.get(color_code, (1, 0, 0))  # Default to red if not found
     def add_annotations(doc_page, selected_rect, extracted_text, original_text, color):
         """
-        Expand the selected_rect forward word by word, highlighting each word,
-        and stop after highlighting as many words as in the original_text.
-        Returns a new rectangle covering from the start of selected_rect to the end.
+        Expands the selected rectangle forward word by word, highlighting each word, and stops after highlighting as many words as in the original_text.
+        Args:
+            doc_page: The PDF page object.
+            selected_rect: The initial rectangle to start highlighting from.
+            extracted_text: The text extracted from the selected rectangle.
+            original_text: The full text to highlight.
+            color: RGB tuple for the highlight color.
+        Returns:
+            A new rectangle covering the highlighted area.
         """
-
         logger.info(f"Starting highlight_long_text with extracted_text: {extracted_text!r}, original_text: {original_text!r}")
         logger.info(f"Selected rect: {selected_rect}")
 
@@ -406,10 +475,11 @@ def create_app():
     def add_comment(doc_page, position, comments, color):
         """
         Adds text annotations (comments) to the PDF page at the given position.
-        :param doc_page: The PDF page object.
-        :param position: The (x, y) tuple or point where the comment should be placed.
-        :param comments: List of comment dicts, each with a 'text' key.
-        :param color: RGB tuple for the annotation color.
+        Args:
+            doc_page: The PDF page object.
+            position: The (x, y) tuple or point where the comment should be placed.
+            comments: List of comment dicts, each with a 'text' key.
+            color: RGB tuple for the annotation color.
         """
         for comment in comments:
             if "text" in comment:
@@ -426,20 +496,15 @@ def create_app():
     _threshold_intersection = 0.1  # if the intersection is large enough.
 
     def check_contain(r_word, points):
-        """If `r_word` is contained in the rectangular area.
-
-        The area of the intersection should be large enough compared to the
-        area of the given word.
-
-        Args:
-            r_word (pymupdf.Rect): rectangular area of a single word.
-            points (list): list of points in the rectangular area of the
-                given part of a highlight.
-
-        Returns:
-            bool: whether `r_word` is contained in the rectangular area.
         """
-        # `r` is mutable, so everytime a new `r` should be initiated.
+        Checks if a word rectangle is contained in the given highlight area.
+        The area of the intersection should be large enough compared to the area of the word.
+        Args:
+            r_word: pymupdf.Rect of a single word.
+            points: List of points in the highlight area.
+        Returns:
+            bool: Whether the word is contained in the highlight area.
+        """
         r = pymupdf.Quad(points).rect
         r.intersect(r_word)
 
@@ -450,14 +515,13 @@ def create_app():
         return contain
 
     def extract_annot(annot, words_on_page):
-        """Extract words in a given highlight.
-
+        """
+        Extracts the words in a given highlight annotation.
         Args:
-            annot (pymupdf.Annot): [description]
-            words_on_page (list): [description]
-
+            annot: The annotation object.
+            words_on_page: List of words on the page.
         Returns:
-            str: words in the entire highlight.
+            String of words in the entire highlight.
         """
         quad_points = annot.vertices
         quad_count = int(len(quad_points) / 4)
