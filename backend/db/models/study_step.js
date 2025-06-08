@@ -136,8 +136,6 @@ module.exports = (sequelize, DataTypes) => {
                                     throw new Error(`Referenced document not found for study step ${referencedStudyStep.id}`);
                                 }
 
-                                console.log("referecedDocument", referencedDocument);
-
                                 // Copy the delta file from the referenced document to the new document
                                 const originalFilePath = path.join(UPLOAD_PATH, `${referencedDocument.hash}.delta`);
                                 const newFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
