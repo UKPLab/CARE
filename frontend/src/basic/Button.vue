@@ -65,7 +65,7 @@ export default {
             ...(this.icon ? { icon: this.icon } : {}),
             ...(this.props ? { props: this.props } : {}),
             ...(this.studySessionId ? { studySessionId: this.studySessionId } : {}),
-            ...(this.currentStudyStep.id ? { currentStudyStepId: this.currentStudyStep.id } : {}),
+            ...(this.currentStudyStep && this.currentStudyStep.id ? { currentStudyStepId: this.currentStudyStep.id } : {}),
             ...(this.documentId ? { documentId: this.documentId } : {})
           }
         });
