@@ -28,11 +28,11 @@
             <input
               class="form-check-input"
               type="checkbox"
-              id="enableAnnotations"
-              v-model="data.enableAnnotations"
+              id="importAnnotations"
+              v-model="importAnnotations"
             />
-            <label class="form-check-label" for="enableAnnotations">
-              Enable annotations
+            <label class="form-check-label" for="importAnnotations">
+              Import annotations
             </label>
           </div>
         </div>
@@ -80,6 +80,7 @@ export default {
       uploading: false,
       show: false,
       data: {},
+      importAnnotations: false,
       fileFields: [
         {
           key: "file",
@@ -94,7 +95,7 @@ export default {
   methods: {
     open() {
       this.data.file = null;
-      this.data.enableAnnotations = false;
+      this.importAnnotations = false;
       this.$refs.uploadModal.open();
     },
     upload() {
@@ -112,14 +113,14 @@ export default {
       this.$refs.uploadModal.waiting = true;
       this.$socket.emit("documentAdd", {
         file: this.data.file,
-        enableAnnotations: this.data.enableAnnotations,
+        enableAnnotations: this.importAnnotations,
         name: fileName,
       }, (res) => {
         if (res.success) {
           this.$refs.uploadModal.waiting = false;
           this.eventBus.emit("toast", {
             title: "Uploaded file",
-            message: `File successfully uploaded! ${this.data.enableAnnotations ? `\n Added ${res.data.annotations.length} annotations` : ""}`,
+            message: `File successfully uploaded! ${this.importAnnotations ? `\n Added ${res.data.annotations.length} annotations` : ""}`,
             variant: "success",
           });
           this.$refs.uploadModal.close();

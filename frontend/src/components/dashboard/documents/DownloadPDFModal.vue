@@ -21,23 +21,20 @@
       <Loading :loading="isLoading" text="Preparing your PDF..." />
     </template>
     <template #footer>
-      <button
-        class="btn btn-secondary"
-        data-bs-dismiss="modal"
-        type="button"
-        @click="$refs.pdfDownloadModal.close()"
-        :disabled="isLoading"
-      >
-        Cancel
-      </button>
-      <button
-        class="btn btn-primary"
-        type="button"
-        @click="confirmPDFDownload"
-        :disabled="isLoading"
-      >
-        Download
-      </button>
+      <span class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          :disabled="isLoading"
+          title="Cancel"
+          @click="$refs.pdfDownloadModal.close()"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          :disabled="isLoading"
+          title="Download"
+          @click="confirmPDFDownload"
+        />
+      </span>
     </template>
   </Modal>
 </template>
@@ -45,15 +42,22 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import Loading from "@/basic/Loading.vue";
-import { downloadDocument } from "@/assets/utils"
+import BasicButton from "@/basic/Button.vue";
+import { downloadDocument } from "@/assets/utils";
 
-
+/**
+ * DownloadPDFModal - Modal for downloading a PDF document
+ *
+ * This modal allows the user to download a PDF document, with the option to include annotations.
+ *
+ * @author: Karim Ouf
+ */
 export default {
   name: "DownloadPDFModal",
-  components: { Modal, Loading },
+  components: { Modal, Loading, BasicButton },
   data() {
     return {
-      downloadWithAnnotations: false, // Default to false
+      downloadWithAnnotations: false,
       pendingPDFDownloadParams: null,
       isLoading: false,
     };
@@ -61,76 +65,95 @@ export default {
   methods: {
     open(params) {
       this.pendingPDFDownloadParams = params;
-      this.downloadWithAnnotations = false; // Default to false
+      this.downloadWithAnnotations = false; 
       this.isLoading = false;
       this.$refs.pdfDownloadModal.open();
     },
     confirmPDFDownload() {
-    console.log("Download PDF with annotations:", this.downloadWithAnnotations);
-    console.log("Pending PDF download params:", this.pendingPDFDownloadParams);
-    this.isLoading = true;
-    if( this.downloadWithAnnotations){
-    this.$socket.emit(
-      "embeddAnnotations",
-      {
-        documentId: this.pendingPDFDownloadParams.id,
-        includeAnnotations: this.downloadWithAnnotations,
-      },
-      (res) => {
-          console.log("Response from embeddAnnotations:", res);
-          console.log("Pending PDF download params in callback:", this.pendingPDFDownloadParams);  
-        if (
-          this.pendingPDFDownloadParams &&
-          res.data.documentId === this.pendingPDFDownloadParams.id &&
-          res.success
-        ) {
-          downloadDocument(res.data.file,  this.pendingPDFDownloadParams.name, this.pendingPDFDownloadParams.typeName);
-          this.$refs.pdfDownloadModal.close();
-          this.eventBus.emit("toast", {
-            title: "PDF downloaded successfully",
-            message: "Your PDF with annotations has been downloaded.",
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: "Failed to download the PDF",
-            message: res.data && res.data.message ? res.data.message : "Unknown error",
-            variant: "danger",
-          });
-          this.isLoading = false;
-          this.$refs.pdfDownloadModal.close();
-          console.warn("Document ID mismatch or pendingPDFDownloadParams is null in annotationEmbedd callback.");
-        }
+      this.isLoading = true;
+      if (this.downloadWithAnnotations) {
+        this.$socket.emit(
+          "annotationEmbedd",
+          {
+            documentId: this.pendingPDFDownloadParams.id,
+            includeAnnotations: this.downloadWithAnnotations,
+          },
+          (res) => {
+            if (
+              this.pendingPDFDownloadParams &&
+              res.data.documentId === this.pendingPDFDownloadParams.id &&
+              res.success
+            ) {
+              downloadDocument(
+                res.data.file,
+                this.pendingPDFDownloadParams.name,
+                this.pendingPDFDownloadParams.typeName
+              );
+              this.$refs.pdfDownloadModal.close();
+              this.eventBus.emit("toast", {
+                title: "PDF downloaded successfully",
+                message: "Your PDF with annotations has been downloaded.",
+                variant: "success",
+              });
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Failed to download the PDF",
+                message:
+                  res.data && res.data.message
+                    ? res.data.message
+                    : "Unknown error",
+                variant: "danger",
+              });
+              this.isLoading = false;
+              this.$refs.pdfDownloadModal.close();
+              console.warn(
+                "Document ID mismatch or pendingPDFDownloadParams is null in annotationEmbedd callback."
+              );
+            }
+          }
+        );
+      } else {
+        this.$socket.emit(
+          "documentGet",
+          {
+            documentId: this.pendingPDFDownloadParams.id,
+          },
+          (res) => {
+            this.isLoading = false;
+            if (
+              this.pendingPDFDownloadParams &&
+              res.data.document.id === this.pendingPDFDownloadParams.id &&
+              res.success
+            ) {
+              downloadDocument(
+                res.data.file,
+                this.pendingPDFDownloadParams.name,
+                this.pendingPDFDownloadParams.typeName
+              );
+              this.$refs.pdfDownloadModal.close();
+              this.eventBus.emit("toast", {
+                title: "PDF downloaded successfully",
+                message: "Your PDF has been downloaded.",
+                variant: "success",
+              });
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Failed to download the PDF",
+                message:
+                  res.data && res.data.message
+                    ? res.data.message
+                    : "Unknown error",
+                variant: "danger",
+              });
+              this.$refs.pdfDownloadModal.close();
+              console.warn(
+                "Document ID mismatch or pendingPDFDownloadParams is null in annotationEmbedd callback."
+              );
+            }
+          }
+        );
       }
-    );
-    }
-    else {
-      this.$socket.emit("documentGet", {
-        documentId: this.pendingPDFDownloadParams.id,
-      }, (res) => {
-        this.isLoading = false;
-        if (this.pendingPDFDownloadParams &&
-          res.data.document.id === this.pendingPDFDownloadParams.id &&
-          res.success){
-          downloadDocument(res.data.file, this.pendingPDFDownloadParams.name, this.pendingPDFDownloadParams.typeName);
-          this.$refs.pdfDownloadModal.close();
-          this.eventBus.emit("toast", {
-            title: "PDF downloaded successfully",
-            message: "Your PDF has been downloaded.",
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: "Failed to download the PDF",
-            message: res.data && res.data.message ? res.data.message : "Unknown error",
-            variant: "danger",
-          });
-          this.$refs.pdfDownloadModal.close();
-          console.warn("Document ID mismatch or pendingPDFDownloadParams is null in annotationEmbedd callback.");
-        }
-      });
-    }
-  }
+    },
   },
 };
 </script>

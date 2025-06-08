@@ -153,25 +153,19 @@ module.exports = class AnnotationSocket extends Socket {
                 return {
                     ...annotation,
                     tag: tag ? tag.colorCode : null,
-                    comments: annotationComments // array of comments for this annotation
+                    comments: annotationComments
                 };
             })
         );
 
-        // ...rest of your code...
         const document = await this.models['document'].getById(data.documentId);
 
-        const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
         if (!fs.existsSync(filePath)) {
             throw new Error("PDF file not found");
         }
         const file = fs.readFileSync(filePath);
 
-
-
-        console.log("Document to embed annotations: ", document);
-
-        // Call your PDFRPC to embed the annotations
+        // Call PDFRPC to embed the annotations
         const response = await this.server.rpcs["PDFRPC"].embeddAnnotations({
             file,
             annotations: annotationsWithTagsAndComments,
@@ -179,16 +173,15 @@ module.exports = class AnnotationSocket extends Socket {
         });
 
         console.log("Response from PDFRPC: ", response);
-        // Save the new PDF file
+        // Save the new PDF file (todo: check if necessary)
         const newFilePath = `${UPLOAD_PATH}/annotated_${document.hash}.pdf`;
         fs.writeFileSync(newFilePath, response);
-        console.log("New PDF file saved at: ", newFilePath);
-        // Optionally, you can return the new file path or buffer
+        
         return {
             success: true,
             documentId: data.documentId,
             file: fs.readFileSync(newFilePath), // The new PDF file buffer
-            hash: document.hash, // The new PDF file buffer
+            hash: document.hash, // the hash of the new PDF file
             message: "Annotations embedded successfully."
         };
     
@@ -242,6 +235,6 @@ module.exports = class AnnotationSocket extends Socket {
                 this.sendToast("Internal server error. Failed to load annotations.", "Internal server error", "danger");
             }
         });
-        this.createSocket("embeddAnnotations", this.embedAnnotationsForDocument, {}, false);
+        this.createSocket("annotationEmbedd", this.embedAnnotationsForDocument, {}, false);
     }
 }

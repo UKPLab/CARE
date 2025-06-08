@@ -2,11 +2,13 @@ const RPC = require("../RPC.js");
 const {io: io_client} = require("socket.io-client");
 
 /**
- * Connects to the Moodle RPC service
+ * PDFRPC - Handles PDF annotation operations via a remote RPC service
+ *
+ * This class provides methods to interact with a remote PDF RPC service for retrieving, embedding, and deleting annotations in PDF files, as well as other PDF-related operations.
  *
  * @class
- * @author Alexander Bürkle, Dennis Zyska, Nils Dycke
- * @classdesc This class connects to the Moodle RPC service and provides methods to interact with it.
+ * @author Alexander Bürkle, Dennis Zyska, Nils Dycke, Karim Ouf
+ * @classdesc Connects to the PDF RPC service and exposes PDF annotation and manipulation methods.
  * @extends RPC
  */
 module.exports = class PDFRPC extends RPC {
@@ -37,32 +39,6 @@ module.exports = class PDFRPC extends RPC {
         }
         return response;
     }
-
-
-    /**
-     * Retrieves users from a specified moodle course and returns the data as an array.
-     *
-     * @param {Object} data - The data object containing the course ID, Moodle URL and the API token.
-     * @param {number} data.courseID - The ID of the course to fetch users from.
-     * @param {string} data.options.apiKey - The API token for the Moodle instance
-     * @param {string} data.options.url - The URL of the Moodle instance.
-     * @returns {Promise<List>} - List of dictionaries, each containing the following keys: id, firstname, lastname, email, username, roles
-     * @throws {Error} If the RPC service call fails or returns an unsuccessful response.
-     */
-    async test(data) {
-        try {
-            const response = await this.request("test", data);
-            if (!response['success']) {
-                this.logger.error("Error in request " + eventName + ": " + response['message']);
-                throw new Error(response['message']);
-            }
-            this.logger.info("Response from RPC service: " + response['message']);
-            return response['data'];
-        } catch (err) {
-            throw err;
-        }
-    }
-
      /**
      * Retrieves annotations from a PDF file via the PDF RPC service.
      *
@@ -75,7 +51,7 @@ module.exports = class PDFRPC extends RPC {
      */
     async getAnnotations(data) {
         try {
-            const response = await this.request("annotations", data);
+            const response = await this.request("annotationsExtract", data);
             if (!response['success']) {
                 this.logger.error("Error in request " + eventName + ": " + response['message']);
                 throw new Error(response['message']);
