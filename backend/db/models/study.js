@@ -77,7 +77,8 @@ module.exports = (sequelize, DataTypes) => {
                     ],
                     name: "name"
                 }
-            }, required: true,
+            }, 
+            required: true,
         }, {
             key: "description",
             label: "Description of the study:",
@@ -278,7 +279,7 @@ module.exports = (sequelize, DataTypes) => {
 
             study.setDataValue("closed", new Date());
 
-            // Mark this as a versioning operation
+            // Introduce the custom flag '_isVersioning' to mark this as a versioning operation
             options._isVersioning = true;
 
             // Specify which fields to be updated. (If fields is provided, only those columns will be saved)
@@ -416,6 +417,8 @@ module.exports = (sequelize, DataTypes) => {
                     await Study.deleteStudySessions(study, options);
                 }
 
+                // Check if this is a versioning operation (_isVersioning is a custom flag)
+                // Only when it is NOT a versioning operation, we will trigger handleConfiguration method.
                 if (study.closed && !options._isVersioning) {
                     await Study.handleConfiguration(study, transaction);
                 }
