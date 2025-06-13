@@ -5,7 +5,7 @@ const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {Op} = require("sequelize");
-
+const {compileSchema, validateZip, validateZipWithSchema} = require("../../utils/zipValidator.js");
 
 const {dbToDelta} = require("editor-delta-conversion");
 
@@ -16,7 +16,7 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * Loading the document through websocket
  *
- * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal
+ * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal, Yiwei Wang
  * @type {DocumentSocket}
  */
 module.exports = class DocumentSocket extends Socket {
@@ -470,40 +470,40 @@ module.exports = class DocumentSocket extends Socket {
      * @param {object} options - the options for the transaction
      * @return {Promise<void>}
      */
-async editDocument(data, options) {
-    const {documentId, studySessionId, studyStepId, ops} = data;
-    let appliedEdits = [];
-    let orderCounter = 1;
+    async editDocument(data, options) {
+        const {documentId, studySessionId, studyStepId, ops} = data;
+        let appliedEdits = [];
+        let orderCounter = 1;
 
-    await ops.reduce(async (promise, op) => {
-        await promise;
-        const entryData = {
-            userId: this.userId,
-            draft: true,
-            documentId,
-            studySessionId: studySessionId || null,
-            studyStepId: studyStepId || null,
-            order: orderCounter++,
-            ...op
-        };
+        await ops.reduce(async (promise, op) => {
+            await promise;
+            const entryData = {
+                userId: this.userId,
+                draft: true,
+                documentId,
+                studySessionId: studySessionId || null,
+                studyStepId: studyStepId || null,
+                order: orderCounter++,
+                ...op
+            };
 
-        // TODO transaction missing
-        const savedEdit = await this.models['document_edit'].add(entryData);
+            // TODO transaction missing
+            const savedEdit = await this.models['document_edit'].add(entryData);
 
-        appliedEdits.push({
-            ...savedEdit,
-            applied: true
-        });
-    }, Promise.resolve());
+            appliedEdits.push({
+                ...savedEdit,
+                applied: true
+            });
+        }, Promise.resolve());
 
-    // Check if studySessionId is not null or zero
-    if (studySessionId !== null) {
-        this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
-        return;
+        // Check if studySessionId is not null or zero
+        if (studySessionId !== null) {
+            this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+            return;
+        }
+
+        this.emit("document_editRefresh", appliedEdits);
     }
-
-    this.emit("document_editRefresh", appliedEdits);
-}
 
     /**
      * Open the document and track it, if not already tracked
@@ -549,7 +549,7 @@ async editDocument(data, options) {
             const transaction = await this.server.db.sequelize.transaction();
 
             try {
-
+                // Download the main file (PDF)
                 const files = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl(
                     {
                         fileUrls: [file.fileUrl],
@@ -564,24 +564,224 @@ async editDocument(data, options) {
                     isUploaded: true
                 }, {transaction: transaction});
 
-                results.push(document['id']);
+                // Check if there are associated ZIP files for this submission
+                let zipDocument = null;
+                if (file.zipFile && file.zipFile.fileUrl) {
+                    try {
+                        // Download the associated ZIP file
+                        const zipFiles = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl(
+                            {
+                                fileUrls: [file.zipFile.fileUrl],
+                                options: data.options,
+                            }
+                        );
+
+                        // Validate ZIP content using database schema
+                        let zipValidation = null;
+                        if (zipFiles[0]) {
+                            zipValidation = await this.validateZipContent(zipFiles[0]);
+                        }
+
+                        // Save ZIP as a separate document linked to the main PDF
+                        zipDocument = await this.addDocument({
+                            file: zipFiles[0],
+                            name: file.zipFile.fileName,
+                            userId: file.userId,
+                            isUploaded: true,
+                            parentDocumentId: document.id,  // Link to main PDF
+                            hideInFrontend: false  // Make visible for admin management
+                        }, {transaction: transaction});
+
+                        // Store ZIP validation results in document metadata
+                        if (zipValidation) {
+                            await this.updateDocumentMetadata(zipDocument.id, {
+                                zipValidation: zipValidation,
+                                fileType: 'zip',
+                                role: 'source_files',
+                                linkedPdfId: document.id
+                            }, {transaction: transaction});
+                        }
+
+                        this.logger.info(`Associated ZIP file ${file.zipFile.fileName} with PDF ${file.fileName}`);
+
+                    } catch (zipError) {
+                        this.logger.warn(`Failed to download or process ZIP file for ${file.fileName}: ${zipError.message}`);
+                        // Continue with PDF-only import, don't fail the entire process
+                    }
+                }
+
+                // Store metadata about the file association
+                await this.updateDocumentMetadata(document.id, {
+                    fileType: 'pdf',
+                    role: 'main_document',
+                    hasAssociatedZip: zipDocument ? true : false,
+                    linkedZipId: zipDocument ? zipDocument.id : null,
+                    submissionId: file.submissionId || null,
+                    moodleUserId: file.extId || null
+                }, {transaction: transaction});
+
+                results.push({
+                    pdfDocumentId: document.id,
+                    zipDocumentId: zipDocument ? zipDocument.id : null,
+                    hasZip: zipDocument ? true : false,
+                    fileName: file.fileName,
+                    zipFileName: file.zipFile ? file.zipFile.fileName : null
+                });
 
                 await transaction.commit();
 
             } catch (e) {
-                this.logger.error(e.message);
+                this.logger.error("Error downloading submission:", e.message);
                 await transaction.rollback();
-
+                // Add failed result for tracking
+                results.push({
+                    error: true,
+                    fileName: file.fileName,
+                    message: e.message
+                });
             }
 
             // update frontend progress
             this.socket.emit("progressUpdate", {
-                id: data["progressId"], current: data.files.indexOf(file) + 1, total: data.files.length,
+                id: data["progressId"], 
+                current: data.files.indexOf(file) + 1, 
+                total: data.files.length,
             });
         }
 
         return results;
     }
+
+
+    /**
+     * Validate ZIP content using current database schema or provided schema
+     * @param {Buffer} zipBuffer - The ZIP file buffer
+     * @param {Object} [adhocSchema] - Optional adhoc schema to use instead of database schema
+     * @returns {Promise<Object>} - Validation result object
+     */
+    async validateZipContent(zipBuffer, adhocSchema = null) {
+        try {
+            if (adhocSchema) {
+                // Use provided schema (legacy mode for backwards compatibility)
+                // Convert from legacy format to new format
+                const schema = {
+                    required: adhocSchema.required_files || [],
+                    forbidden: adhocSchema.forbidden_files || [],
+                    allowedExtensions: adhocSchema.allowed_extensions || [],
+                    maxFileCount: adhocSchema.max_file_count || null,
+                    maxTotalSize: adhocSchema.max_total_size || null
+                };
+                return await validateZip(zipBuffer, schema);
+            } else {
+                // Use database-driven schema (new mode)
+                // Fetch schema from settings using the existing settings system
+                const schemaText = await this.models.setting.get("upload.zip.validationSchema");
+                return await validateZipWithSchema(zipBuffer, schemaText);
+            }
+        } catch (error) {
+            this.logger.error("ZIP validation error:", error);
+            return {
+                isValid: false,
+                violations: [`Validation failed: ${error.message}`],
+                summary: {}
+            };
+        }
+    }
+
+    /**
+     * Update document metadata
+     * @param {number} documentId - Document ID
+     * @param {Object} metadata - Metadata object to store
+     * @param {Object} options - Transaction options
+     * @returns {Promise<void>}
+     */
+    async updateDocumentMetadata(documentId, metadata, options = {}) {
+        await this.models['document'].updateById(documentId, {
+            metadata: JSON.stringify(metadata)
+        }, options);
+    }
+
+
+    /**
+     * Enhance submission data with file associations and categorization
+     * @param {Array} submissions - Raw submission data from Moodle
+     * @returns {Array} Enhanced submissions with file categorization
+     */
+    enhanceSubmissionsWithFileData(submissions) {
+        return submissions.map(submission => {
+            let enhancedSubmission = { ...submission };
+            
+            // If we have the new enhanced data structure from Python
+            if (submission.files && Array.isArray(submission.files)) {
+                const files = submission.files;
+                
+                // Separate PDFs and ZIPs
+                const pdfFiles = files.filter(file => 
+                    file.mimetype === 'application/pdf' || 
+                    file.filename.toLowerCase().endsWith('.pdf')
+                );
+                
+                const zipFiles = files.filter(file => 
+                    file.mimetype === 'application/zip' || 
+                    file.filename.toLowerCase().endsWith('.zip')
+                );
+                
+                const otherFiles = files.filter(file => 
+                    !pdfFiles.includes(file) && !zipFiles.includes(file)
+                );
+                
+                // Try to associate ZIP files with PDF files
+                enhancedSubmission.fileAssociations = this.associateFilesForSubmission(pdfFiles, zipFiles);
+                
+                // Add file summary
+                enhancedSubmission.fileSummary = {
+                    totalFiles: files.length,
+                    pdfCount: pdfFiles.length,
+                    zipCount: zipFiles.length,
+                    otherCount: otherFiles.length,
+                    hasPdf: pdfFiles.length > 0,
+                    hasZip: zipFiles.length > 0,
+                    isComplete: pdfFiles.length > 0 && zipFiles.length > 0
+                };
+                
+                // Keep the original files array for compatibility
+                enhancedSubmission.categorizedFiles = {
+                    pdfs: pdfFiles,
+                    zips: zipFiles,
+                    others: otherFiles
+                };
+                
+            } else if (submission.submissionURLs) {
+                // Legacy data structure - enhance what we can
+                const urls = submission.submissionURLs;
+                const pdfUrls = urls.filter(url => 
+                    url.filename.toLowerCase().endsWith('.pdf')
+                );
+                
+                enhancedSubmission.fileSummary = {
+                    totalFiles: urls.length,
+                    pdfCount: pdfUrls.length,
+                    zipCount: 0,
+                    otherCount: urls.length - pdfUrls.length,
+                    hasPdf: pdfUrls.length > 0,
+                    hasZip: false,
+                    isComplete: false
+                };
+            }
+            
+            return enhancedSubmission;
+        });
+    }
+
+    /**
+     * Get the base name of a file (without extension)
+     * @param {string} filename 
+     * @returns {string}
+     */
+    getFileBaseName(filename) {
+        return filename.replace(/\.[^/.]+$/, "").toLowerCase();
+    }
+
 
     /**
      * Send a document to the client
@@ -755,6 +955,155 @@ async editDocument(data, options) {
             }
         });
         */
+
+        this.socket.on("documentGetMoodleSubmissions", async (data, callback) => {
+            try {
+                if (!(await this.isAdmin())) { 
+                    throw new Error("You do not have permission to access Moodle submissions");
+                }
+                
+                const submissions = await this.documentGetMoodleSubmissions(data);
+                
+                // Enhance submissions with file associations
+                const enhancedSubmissions = this.enhanceSubmissionsWithFileData(submissions);
+                
+                callback({
+                    success: true,
+                    data: enhancedSubmissions
+                });
+            } catch (e) {
+                this.logger.error("Error getting Moodle submissions:", e);
+                callback({
+                    success: false,
+                    message: e.message
+                });
+            }
+        });
+
+        this.socket.on("documentGetSubmissionWithZips", async (data, callback) => {
+            try {
+                if (!(await this.isAdmin())) {
+                    throw new Error("You do not have permission to access submission files");
+                }
+                
+                const document = await this.models['document'].findByPk(data.documentId, {
+                    include: [{
+                        model: this.models['document'],
+                        as: 'parentDocument',
+                        required: false
+                    }]
+                });
+                
+                if (!document) {
+                    throw new Error("Document not found");
+                }
+                
+                let metadata = {};
+                try {
+                    metadata = document.metadata ? JSON.parse(document.metadata) : {};
+                } catch (e) {
+                    this.logger.warn("Failed to parse document metadata:", e);
+                }
+                
+                // Find associated ZIP file
+                let zipDocument = null;
+                if (metadata.linkedZipId) {
+                    zipDocument = await this.models['document'].findByPk(metadata.linkedZipId);
+                }
+                
+                callback({
+                    success: true,
+                    data: {
+                        mainDocument: document,
+                        zipDocument: zipDocument,
+                        metadata: metadata,
+                        hasZip: !!zipDocument
+                    }
+                });
+                
+            } catch (e) {
+                this.logger.error("Error getting submission with ZIPs:", e);
+                callback({
+                    success: false,
+                    message: e.message
+                });
+            }
+        });
+
+        this.socket.on("documentUploadZipForSubmission", async (data, callback) => {
+            try {
+                if (!(await this.isAdmin())) {
+                    throw new Error("You do not have permission to upload ZIP files");
+                }
+                
+                const mainDocument = await this.models['document'].findByPk(data.documentId);
+                if (!mainDocument) {
+                    throw new Error("Main document not found");
+                }
+                
+                const transaction = await this.server.db.sequelize.transaction();
+                
+                try {
+                    // Validate the uploaded ZIP using database schema
+                    const zipValidation = await this.validateZipContent(data.file);
+                    
+                    // Create ZIP document
+                    const zipDocument = await this.addDocument({
+                        file: data.file,
+                        name: data.fileName || 'uploaded_source.zip',
+                        userId: mainDocument.userId,
+                        isUploaded: true,
+                        parentDocumentId: mainDocument.id,
+                        hideInFrontend: false
+                    }, {transaction: transaction});
+                    
+                    // Update ZIP document metadata
+                    await this.updateDocumentMetadata(zipDocument.id, {
+                        zipValidation: zipValidation,
+                        fileType: 'zip',
+                        role: 'source_files',
+                        linkedPdfId: mainDocument.id,
+                        uploadedManually: true,
+                        uploadedBy: this.socket.user.id
+                    }, {transaction: transaction});
+                    
+                    // Update main document metadata to reference ZIP
+                    let mainMetadata = {};
+                    try {
+                        mainMetadata = mainDocument.metadata ? JSON.parse(mainDocument.metadata) : {};
+                    } catch (e) {
+                        this.logger.warn("Failed to parse main document metadata");
+                    }
+                    
+                    mainMetadata.hasAssociatedZip = true;
+                    mainMetadata.linkedZipId = zipDocument.id;
+                    
+                    await this.updateDocumentMetadata(mainDocument.id, mainMetadata, {transaction: transaction});
+                    
+                    await transaction.commit();
+                    
+                    callback({
+                        success: true,
+                        data: {
+                            zipDocumentId: zipDocument.id,
+                            validation: zipValidation,
+                            message: "ZIP file uploaded and associated successfully"
+                        }
+                    });
+                    
+                } catch (e) {
+                    await transaction.rollback();
+                    throw e;
+                }
+                
+            } catch (e) {
+                this.logger.error("Error uploading ZIP for submission:", e);
+                callback({
+                    success: false,
+                    message: e.message
+                });
+            }
+        });
 
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);

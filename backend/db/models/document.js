@@ -187,6 +187,7 @@ module.exports = (sequelize, DataTypes) => {
         parentDocumentId: DataTypes.INTEGER,
         hideInFrontend: DataTypes.BOOLEAN,
         projectId: DataTypes.INTEGER,
+        metadata: DataTypes.TEXT, // JSON field for storing ZIP associations and validation results
     }, {
         sequelize: sequelize,
         modelName: 'document',
