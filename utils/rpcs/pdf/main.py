@@ -394,7 +394,7 @@ def create_app():
             "warning": (1, 1, 0),   # Yellow
             "danger": (1, 0, 0),    # Red
         }
-        return color_map.get(color_code, (1, 0, 0))  # Default to red if not found
+        return ( 1, 1 ,0) #color_map.get(color_code, (1, 0, 0))  # Default to red if not found
     def add_annotations(doc_page, selected_rect, extracted_text, original_text, color):
         """
         Expands the selected rectangle forward word by word, highlighting each word, and stops after highlighting as many words as in the original_text.
