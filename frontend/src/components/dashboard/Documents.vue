@@ -243,8 +243,7 @@ export default {
           action: "exportHTMLDoc",
         });
       }
-      //to do : add condition to check if there is at least one PDF document
-      if (true) {
+      if (this.showPDFDownloadButton) {
         buttons.push({
           icon: "download",
           options: {
@@ -293,7 +292,6 @@ export default {
       return this.$store.getters["settings/getValue"]('editor.document.showButtonHTMLDownload') === 'true';
     },
     showPDFDownloadButton() {
-      // Show if setting is enabled and there is at least one PDF document
       return this.$store.getters["settings/getValue"]('editor.document.showButtonPDFDownload') === 'true'
     },
   },
