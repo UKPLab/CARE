@@ -119,22 +119,22 @@ Export on the production server
 
 .. code-block:: shell
 
-    # 1 – Find the running Postgres container (the name will be always like xyz-postgres-1)
-    docker ps | grep xyz         # replace "xyz" with a unique part of the container name
+    # 1 – Find the running Postgres container (the name will be always like <project_name>-postgres-1)
+    docker ps | grep <project_name>
 
     # 2 – Create the dump (Makefile target)
-    make CONTAINER=xyz-postgres-1 backup_db
+    make CONTAINER=<project_name>-postgres-1 backup_db
 
     # 3 – Inspect the dump folder
     ls -l db_dumps/
 
     # 4 – Prepare a non-root backup location
-    mkdir -p /opt/backups/xyz/$(date +%d-%m-%Y)/
+    mkdir -p /opt/backups/<project_name>/$(date +%d-%m-%Y)/
 
     # 5 – Copy the dump and related files
     cp db_dumps/dump_dd-mm-yyyy_xx_yy_zz.sql \
-       /opt/backups/xyz/dd-mm-yyyy/
-    cp -r ./files /opt/backups/xyz/dd-mm-yyyy/
+       /opt/backups/<project_name>/dd-mm-yyyy/
+    cp -r ./files /opt/backups/<project_name>/dd-mm-yyyy/
 
 .. _db-backup-download:
 
@@ -148,17 +148,17 @@ The files (.pdf & .delta) are necessary to restore the production data on the lo
 .. code-block:: shell
 
     # 1 – Create matching target folders
-    mkdir -p ~/projects/xyz/db_dumps
-    mkdir -p ~/projects/xyz/files
+    mkdir -p ~/projects/<project_name>/db_dumps
+    mkdir -p ~/projects/<project_name>/files
 
     # 2 – Download the dump
-    scp username@yourServer.domain:/opt/backups/xyz/dd-mm-yyyy/dump_dd-mm-yyyy_xx_yy_zz.sql \
-        ~/projects/xyz/db_dumps/
+    scp username@yourServer.domain:/opt/backups/<project_name>/dd-mm-yyyy/dump_dd-mm-yyyy_xx_yy_zz.sql \
+        ~/projects/<project_name>/db_dumps/
 
     # 3 – Download / Overwrite related files (LaTeX, PDFs, uploads, etc.)
     # If your shell interpreter doesn't need the apostrophe, please remove them from the source path.
-    scp -r username@yourServer.domain:`/opt/backups/xyz/dd-mm-yyyy/files/*` \
-        ~/projects/xyz/files/
+    scp -r username@yourServer.domain:`/opt/backups/<project_name>/dd-mm-yyyy/files/*` \
+        ~/projects/<project_name>/files/
 
 .. _db-backup-restore:
 
@@ -170,7 +170,7 @@ From the **project root** (where the ``Makefile`` is located):
     make clean                        # drop any existing local database
     make docker                       # build & start the Postgres container
     make init                         # create empty tables / seed data
-    make recover_db CONTAINER=xyz-postgres-1 \
+    make recover_db CONTAINER=<project_name>-postgres-1 \
                     DUMP=dump_dd-mm-yyyy_xx_yy_zz.sql     # DUMP is just the file name, because the Makefile already prefixes it with `db_dumps/`
 
 .. note::
