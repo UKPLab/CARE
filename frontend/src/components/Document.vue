@@ -58,7 +58,16 @@ export default {
     },
   },
   mounted() {
-    this.$socket.emit("documentGetByHash", {documentHash: this.documentHash});
+    this.$socket.emit("documentGetByHash", {documentHash: this.documentHash}, (res) => {
+      if (!res.success) {
+        this.documentId = res.documentId;
+        this.eventBus.emit("toast", {
+              title: "Document not found",
+              message: res.message,
+              variant: "danger",
+        });
+      }
+    });
   },
   sockets: {
     documentError: function (data) {

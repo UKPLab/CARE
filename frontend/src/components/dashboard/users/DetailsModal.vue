@@ -148,7 +148,7 @@ export default {
           this.$emit("updateUser");
           this.eventBus.emit("toast", {
             title: "User updated",
-            message: response.message,
+            message: "Successfully updated user!",
             variant: "success",
           });
         } else {
