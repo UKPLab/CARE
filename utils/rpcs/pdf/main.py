@@ -1,5 +1,4 @@
 import math
-import os
 import logging
 import socketio
 import pymupdf
@@ -53,7 +52,7 @@ def create_app():
     @sio.on("test")
     def test(sid, data):
         """
-        Handles a 'test' event to save and open a PDF file for reading.
+        Handles a 'test' event to open a PDF file for reading.
         Args:
             sid: Session ID.
             data: Contains the PDF file and document hash.
@@ -62,11 +61,7 @@ def create_app():
         """
         logger.info(f"Received call: {data} from {sid}")
         try:
-            doc_hash = data["document"]["hash"]
-            target = os.path.join("uploads", f"{doc_hash}.pdf")
-            with open(target, "wb") as f:
-                f.write(data["file"])
-            doc = pymupdf.open(target)
+            doc = pymupdf.open(stream=data["file"])
             response = {"success": True, "message": "PDF read successfully"}
             return response
         except Exception as e:
@@ -87,12 +82,7 @@ def create_app():
         """
         logger.info(f"Received call: {data} from {sid}")
         try:
-            doc_hash = data["document"]["hash"]
-            os.makedirs("uploads", exist_ok=True)
-            target = os.path.join("uploads",  f"{doc_hash}.pdf")
-            with open(target, "wb") as f:
-                f.write(data["file"])
-            doc = pymupdf.open(target)
+            doc = pymupdf.open(stream=data["file"])
             annotations = []
             whole_text = ""
             
@@ -151,10 +141,8 @@ def create_app():
                     logger.info(f"Deleted annot: {annot}")
                     page.delete_annot(annot)
             
-            # After processing all pages and annotations, save the modified PDF
-            doc.save(target, incremental=True, encryption=0)
-            with open(target, "rb") as f:
-                file_bytes = f.read()
+            # Get the modified PDF as a buffer
+            output_buffer = doc.write()
 
             response = {
                 "success": True,
@@ -162,7 +150,7 @@ def create_app():
                 "data": {
                     "annotations": annotations,
                     "wholeText": whole_text,
-                    "file": file_bytes
+                    "file": output_buffer
                 }
             }
             return response
@@ -182,19 +170,9 @@ def create_app():
             The modified PDF file with embedded annotations, or the original if none provided.
         """
         logger.info(f"Received call: {data} from {sid}")
-        # Todo:add comment to annotate in pdf
         try:
-        # Extract the document hash for file naming
-            doc_hash = data["document"]["hash"]
-            os.makedirs("uploads", exist_ok=True)
-            file_target = os.path.join("uploads", f"{doc_hash}.pdf")
-
-            # Write the PDF file buffer to disk
-            with open(file_target, "wb") as f:
-                f.write(data["file"])
-
-            # Open the PDF
-            doc = pymupdf.open(file_target)
+            # Open the PDF directly from memory
+            doc = pymupdf.open(stream=data["file"])
 
             annotations = data.get("annotations", [])
             if not annotations:
@@ -252,13 +230,10 @@ def create_app():
                         logger.info(f"Full full rect: {full_rect}")
                     else:
                         logger.warning("No suitable rect found for annotation.")
-            # Save the modified PDF
-            logger.info(f"Saving PDF with annotations to {file_target}")
-            doc.save(file_target, incremental=True,  encryption=0)
-            with open(file_target, "rb") as f:
-                file_bytes = f.read()
-            #todo: return file 
-            response = {"success": True, "message": "PDF with annotations saved successfully", "data": file_bytes}
+
+            # Save the modified PDF to memory
+            output_buffer = doc.write()
+            response = {"success": True, "message": "PDF with annotations saved successfully", "data": output_buffer}
             return response
         except Exception as e:
             logger.error(f"Error: {e}")
@@ -277,26 +252,19 @@ def create_app():
         """
         logger.info(f"Received deleteAllAnnotations call: {data} from {sid}")
         try:
-            doc_hash = data["document"]["hash"]
-            os.makedirs("uploads", exist_ok=True)
-            target = os.path.join("uploads",  f"{doc_hash}.pdf")
-            with open(target, "wb") as f:
-                f.write(data["file"])
-            doc = pymupdf.open(target)
+            doc = pymupdf.open(stream=data["file"])
             # Remove all annotations from all pages
             for page in doc:
                 annots = [a for a in page.annots()]
                 for annot in annots:
                     page.delete_annot(annot)
-            # Save the modified PDF incrementally
-            doc.save(target, incremental=True, encryption=0)
-            with open(target, "rb") as f:
-                file_bytes = f.read()
+            # Get the modified PDF as a buffer
+            output_buffer = doc.write()
             response = {
                 "success": True,
                 "message": "All annotations deleted successfully.",
                 "data": {
-                    "file": file_bytes
+                    "file": output_buffer
                 }
             }
             return response
@@ -357,29 +325,7 @@ def create_app():
                 best_rect = exact_rect
 
         return best_rect
-    def get_color_code_from_annotation(colors):
-        """
-        Converts annotation RGB colors to a tag color code and name.
-        Args:
-            colors: RGB color tuple or dict.
-        Returns:
-            Tuple of (color code, color name, tag id).
-        """
-        if not colors:
-            return "info", "Other", 4  # blue or default
-            
-        r, g, b = colors["stroke"] if isinstance(colors, dict) else colors
-        
-        # Check which color is dominant
-        if r > 0.5 and g < 0.3 and b < 0.3:
-            return "danger", "Weakness", 3 # red
-        elif g > 0.5 and r < 0.3 and b < 0.3:
-            return "success", "Strength", 2  # green
-        elif r > 0.5 and g > 0.5 and b < 0.3:
-            return "warning", "Highlight", 1  # yellow
-        else:
-            return "info", "Other", 4  # blue or default
-    
+
     def get_color_from_code(color_code):
         """
         Maps a color code string to an RGB tuple for PyMuPDF.
@@ -395,6 +341,7 @@ def create_app():
             "danger": (1, 0, 0),    # Red
         }
         return ( 1, 1 ,0) #color_map.get(color_code, (1, 0, 0))  # Default to red if not found
+
     def add_annotations(doc_page, selected_rect, extracted_text, original_text, color):
         """
         Expands the selected rectangle forward word by word, highlighting each word, and stops after highlighting as many words as in the original_text.
@@ -536,9 +483,6 @@ def create_app():
         sentence = ' '.join(sentences)
 
         return sentence
-    # def delete_annot(annot, page):
-    #     deleted = page.delete_annot(annot)
-    #     logger.info(f"Deleted annot: {deleted}")
     
     logger.info("Creating App...")
     app = socketio.WSGIApp(sio)
