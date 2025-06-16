@@ -68,8 +68,9 @@ module.exports = class CommentSocket extends Socket {
             parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
             anonymous: data.anonymous !== undefined ? data.anonymous : false
         };
-
-        this.emit("commentRefresh", await this.models['comment'].add(newComment, {transaction: options.transaction}));
+        const comment = await this.models['comment'].add(newComment, {transaction: options.transaction})
+        this.emit("commentRefresh", comment);
+        return comment;
     }
 
     /**
