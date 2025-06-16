@@ -137,8 +137,7 @@ module.exports = class DocumentSocket extends Socket {
                         try {
                             textPositions = this.getTextPositions(extracted.text, data.wholeText);
                         } catch (error) {
-                            this.logger.error("Error calculating text positions:", error);
-                            textPositions = { start: 0, end: extracted.text.length };
+                            throw new Error("Error calculating text positions: " + error.message);  
                         }
 
                         const selectors = {
