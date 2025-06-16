@@ -69,9 +69,9 @@ module.exports = class DocumentSocket extends Socket {
      * @returns {Promise<void>}
      */
     async addDocument(data, options) {
-
         let doc = null;
         let target = "";
+        let annotations = [];
     
         if (!data['file']) {
             throw new Error("No file uploaded");
@@ -123,90 +123,102 @@ module.exports = class DocumentSocket extends Socket {
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
             }, {transaction: options.transaction});   
-        if (data["enableAnnotations"]) {
-            var annotations = [];
-            try {
-                data = await this.server.rpcs["PDFRPC"].getAnnotations({
-                    file: data['file'],
-                    document: doc,
-                    fileType: fileType,
-                });
-                if (data.annotations.length !== 0) {
-                    for (const extracted of data.annotations) {
-                        let textPositions;
-                        try {
-                            textPositions = this.getTextPositions(extracted.text, data.wholeText);
-                        } catch (error) {
-                            throw new Error("Error calculating text positions: " + error.message);  
-                        }
 
-                        const selectors = {
-                            target: [{
-                                selector: [
-                                    {
-                                        type: "TextPositionSelector",
-                                        start: textPositions.start,
-                                        end: textPositions.end
-                                    },
-                                    {
-                                        type: "TextQuoteSelector",
-                                        exact: extracted.text || "",
-                                        prefix: extracted.prefix || "",
-                                        suffix: extracted.suffix || ""
-                                    },
-                                    {
-                                        type: "PagePositionSelector",
-                                        number: extracted.page + 1
-                                    }
-                                ]
-                            }]
-                        };
-                        
-                        try {
-                            const newAnnotation = {
-                                documentId: doc.id,
-                                selectors: selectors,
-                                tagId: extracted.tag.id,
-                                studySessionId: doc.studySessionId,
-                                studyStepId: doc.studyStepId,
-                                text: extracted.text || null,
-                                draft: false,
-                                userId: this.userId,
-                                anonymous: false,
-                            };
-                            const {annotation, comment} = await this.getSocket('AnnotationSocket').addAnnotation(newAnnotation, {transaction:options.transaction});
-                            annotations.push(annotation);
-                            await this.getSocket('CommentSocket').updateComment(comment.id, {text:extracted.comment}, {transaction:options.transaction});
-                            
-                        } catch (annotationErr) {
-                            throw new Error("Error adding annotation: " + annotationErr.message);
-                        }
-                    }
-                }
-            } catch (annotationRpcErr) {
-                throw new Error("Error extracting annotations: " + annotationRpcErr.message);
-            }
-        }
-        try {
-        const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
-            file: data.file,
-            document: doc
-        });
-            if (!file) {
-                throw new Error("Error deleting annotations: " + annotationRpcErr.message);
-            }
-            data.file = file;   
+            // First save the file without annotations
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
             fs.writeFileSync(target, data.file);
-        } catch (annotationRpcErr) {
-            throw new Error("Error deleting annotations: " + annotationRpcErr.message);
-        }
 
-       
-    }
+            if (data["enableAnnotations"]) {
+                try {
+                    const annotationData = await this.server.rpcs["PDFRPC"].getAnnotations({
+                        file: data['file'],
+                        document: doc,
+                        fileType: fileType,
+                    });
+
+                    if (annotationData.annotations.length !== 0) {
+                        for (const extracted of annotationData.annotations) {
+                            let textPositions;
+                            try {
+                                textPositions = this.getTextPositions(extracted.text, annotationData.wholeText);
+                            } catch (error) {
+                                throw new Error("Error calculating text positions: " + error.message);  
+                            }
+
+                            const selectors = {
+                                target: [{
+                                    selector: [
+                                        {
+                                            type: "TextPositionSelector",
+                                            start: textPositions.start,
+                                            end: textPositions.end
+                                        },
+                                        {
+                                            type: "TextQuoteSelector",
+                                            exact: extracted.text || "",
+                                            prefix: extracted.prefix || "",
+                                            suffix: extracted.suffix || ""
+                                        },
+                                        {
+                                            type: "PagePositionSelector",
+                                            number: extracted.page + 1
+                                        }
+                                    ]
+                                }]
+                            };
+                            
+                            try {
+                                const newAnnotation = {
+                                    documentId: doc.id,
+                                    selectors: selectors,
+                                    tagId: extracted.tag.id,
+                                    studySessionId: doc.studySessionId,
+                                    studyStepId: doc.studyStepId,
+                                    text: extracted.text || null,
+                                    draft: false,
+                                    userId: this.userId,
+                                    anonymous: false,
+                                };
+                                console.log("newAnnotation", newAnnotation);
+                                console.log("options", options);
+                                const {annotation, comment} = await this.getSocket('AnnotationSocket').updateAnnotation(newAnnotation, options);
+                                annotations.push(annotation);
+                                console.log("comment 1", comment);
+                                console.log("options 1", options);
+                                await this.getSocket('CommentSocket').updateComment({
+                                    commentId: comment.id,
+                                    text: extracted.comment,
+                                }, options);
+                                
+                                console.log("options 2", options);
+                                
+                            } catch (annotationErr) {
+                                throw new Error("Error adding annotation: " + annotationErr.message);
+                            }
+                        }
+                    }
+                } catch (annotationRpcErr) {
+                    throw new Error("Error extracting annotations: " + annotationRpcErr.message);
+                }
+            }
+            try {
+                const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+                    file: data.file,
+                    document: doc
+                });
+                if (!file) {
+                    throw new Error("Error deleting annotations");
+                }
+                data.file = file;   
+                target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+                fs.writeFileSync(target, data.file);
+            } catch (annotationRpcErr) {
+                throw new Error("Error deleting annotations: " + annotationRpcErr.message);
+            }
+        }
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
-        })
+        });
         return {doc, annotations};
     }
 

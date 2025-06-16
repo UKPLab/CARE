@@ -84,24 +84,23 @@ module.exports = class AnnotationSocket extends Socket {
                 studySessionId: data.studySessionId,
                 studyStepId: data.studyStepId,
                 text: (data.selectors && data.selectors.target) ? data.selectors.target[0].selector[1].exact : null,
-                draft: true,
+                draft: data.draft !== undefined ? data.draft : true,
                 userId: this.userId,
                 anonymous: data.anonymous !== undefined ? data.anonymous : false,
             };
 
-        const annotation = await this.models['annotation'].add(newAnnotation);
-
-        await this.getSocket("CommentSocket").addComment({
+        const annotation = await this.models['annotation'].add(newAnnotation, {transaction: options.transaction});
+        const comment = await this.getSocket("CommentSocket").addComment({
             documentId: annotation.documentId,
             studySessionId: annotation.studySessionId,
             studyStepId: annotation.studyStepId,
             annotationId: annotation.id,
             anonymous: annotation.anonymous !== undefined ? data.anonymous : false,
-        });
+        }, options);
 
             this.emitDoc(annotation.documentId, "annotationRefresh", annotation); //fixme msg sent twice due to collab, revise
+            return {annotation, comment};
         }
-        return {annotation, comment};
     }
 
     /**
@@ -128,7 +127,7 @@ module.exports = class AnnotationSocket extends Socket {
     async embedAnnotationsForDocument(data, options) {
         console.log("Embedding annotations for document: " + data);
         const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);
-
+        console.log("annotations", annotations);    
         // Get all comments for the document
         const comments = await this.models['comment'].getAllByKey("documentId", data.documentId);
 
@@ -149,8 +148,9 @@ module.exports = class AnnotationSocket extends Socket {
                 };
             })
         );
-
+        console.log("annotationsWithTagsAndComments", annotationsWithTagsAndComments);
         const document = await this.models['document'].getById(data.documentId);
+        const filePath = path.join(UPLOAD_PATH, `${document.hash}.pdf`);
 
         if (!fs.existsSync(filePath)) {
             throw new Error("PDF file not found");
@@ -163,20 +163,14 @@ module.exports = class AnnotationSocket extends Socket {
             annotations: annotationsWithTagsAndComments,
             document: document,
         });
-
-        console.log("Response from PDFRPC: ", response);
-        // Save the new PDF file (todo: check if necessary)
-        const newFilePath = `${UPLOAD_PATH}/annotated_${document.hash}.pdf`;
-        fs.writeFileSync(newFilePath, response);
         
         return {
             success: true,
             documentId: data.documentId,
-            file: fs.readFileSync(newFilePath), // The new PDF file buffer
-            hash: document.hash, // the hash of the new PDF file
+            file: response, // Send the response directly without saving
+            hash: document.hash,
             message: "Annotations embedded successfully."
         };
-    
     }
     init() {
         this.createSocket("annotationGet", this.sendAnnotation, {}, false);
