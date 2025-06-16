@@ -10,208 +10,114 @@ const {pickObjectAttributeSubset} = require("../../utils/generic");
 module.exports = class CommentSocket extends Socket {
 
     /**
-     * Format comments for export in frontend
-     * @param comment
-     * @return {Promise<*>}
-     */
-    async commentFormat(comment) {
-        const copyFields = [
-            "id",
-            "text",
-            "documentId",
-            "createdAt",
-            "updatedAt",
-            "studySessionId",
-            "studyStepId"
-        ]
-
-        let copied = pickObjectAttributeSubset(comment, copyFields);
-        copied.userId = await this.models['user'].getUserName(comment.userId);
-
-        copied.tags = JSON.parse(comment.tags);
-
-        copied.annotationId = comment.annotationId ? comment.annotationId : null;
-        copied.parentCommentId = comment.parentCommentId ? comment.parentCommentId : null;
-        copied.studyId = comment.studySessionId !== null ? (await this.models["study_session"].getById(comment.studySessionId)).studyId : null;
-
-        return copied;
-    }
-
-    /**
      * Update comments
-     * @param {number} commentId
-     * @param {object} comment
+     * @param {Object} data containing the inputs
+     * @param {number} data.commentId the id of the comment
+     * @param {object} data.comment the comment object
+     * @param {object} options containing transaction
      * @return {Promise<void>}
      */
-    async updateComment(commentId, comment, options = {}) {
-        try {
-            const origComment = await this.models['comment'].getById(commentId, options);
+    async updateComment(data, options) {
+        const origComment = await this.models['comment'].getById(data.commentId, {transaction: options.transaction});
 
-            if (origComment.userId === await this.models['user'].getUserIdByName("Bot")) {
-                const parentComment = await this.models['comment'].getById(origComment.parentCommentId, options);
-                if (!this.checkUserAccess(parentComment.userId)) {
-                    this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
-                    return;
-                }
-            } else if (!this.checkUserAccess(origComment.userId)) {
-                this.sendToast("You are not allowed to edit this comment.", "Access denied", "danger");
-                return;
+        if (origComment.userId === await this.models['user'].getUserIdByName("Bot")) {
+            const parentComment = await this.models['comment'].getById(origComment.parentCommentId, {transaction: options.transaction});
+            if (!(await this.checkUserAccess(parentComment.userId))) {
+                throw Error("You are not allowed to edit this comment.");
             }
-
-            if (comment.deleted) {
-                await this.deleteChildComments(commentId);
-            }
-
-            const newComment = await this.models['comment'].updateById(commentId, Object.assign(comment, {draft: false}), options);
-            this.emitDoc(newComment.documentId, "commentRefresh", newComment);
-        } catch (e) {
-            this.logger.error("Could not update comment in database. Error: " + e);
-            this.sendToast("Internal server error. Failed to update comment.", "Internal server error", "danger");
+        } else if (!(await this.checkUserAccess(origComment.userId))) {
+            throw Error("You are not allowed to edit this comment.");
         }
-    }
 
-    /**
-     * Delete all child comments
-     * @param {number} parentCommentId
-     * @return {Promise<void>}
-     */
-    async deleteChildComments(parentCommentId) {
-        const comments = await this.models["comment"].getAllByKey("parentCommentId", parentCommentId);
-        await Promise.all(comments
-            .filter(c => this.checkUserAccess(c.userId))
-            .map(async comment => {
-                await this.updateComment(comment.id, Object.assign(comment, {deleted: true}));
-            }));
-    }
-
-    /**
-     * Delete all child comments of an annotation
-     * Note: Used in AnnotationSocket
-     * @param {number} annotationId
-     * @return {Promise<void>}
-     */
-    async deleteChildCommentsByAnnotation(annotationId) {
-        try {
-            const comment = await this.models['comment'].getByKey("annotationId", annotationId);
-            await this.updateComment(comment.id, Object.assign(comment, {deleted: true}));
-        } catch (e) {
-            this.logger.info("Error during deletion of comments: " + e);
-        }
+        const newComment = await this.models['comment'].updateById(data.commentId, Object.assign(data, {draft: false}), {transaction: options.transaction});
+        this.emitDoc(newComment.documentId, "commentRefresh", newComment);
     }
 
     /**
      * Add a comment
      * @param {object} data comment object
-     * @param {object} [options] optional transaction options
+     * @param {object} options contains the transactions
      * @return {Promise<void>}
      */
-    async addComment(data, options = {}) {
+    async addComment(data, options) {
         if (data.userId !== undefined) {
             if (data.userId === 'Bot') {
                 const parentComment = await this.models['comment'].getById(data.parentCommentId);
                 if (!this.checkUserAccess(parentComment.userId)) {
-                    this.sendToast("You are not allowed to add a comment.", "Access denied", "danger");
-                    return;
+                    throw Error("You are not allowed to add a comment.");
                 } else {
                     data.userId = await this.models['user'].getUserIdByName("Bot");
                     data.draft = false;
                 }
-            } else if (!this.checkUserAccess(data.userId)) {
-                this.sendToast("You are not allowed to add a comment.", "Access denied", "danger");
-                return;
+            } else if (!(await this.checkUserAccess(data.userId))) {
+                throw Error("You are not allowed to add a comment.");
             }
         } else {
             data.userId = this.userId;
         }
 
-        try {
-            let newComment = {
-                tags: "[]",
-                draft: data.draft !== undefined ? data.draft : true,
-                text: data.text !== undefined ? data.text : null,
-                userId: data.userId,
-                documentId: data.documentId,
-                studySessionId: data.studySessionId,
-                studyStepId: data.studyStepId,
-                annotationId: data.annotationId !== undefined ? data.annotationId : null,
-                parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
-                anonymous: data.anonymous !== undefined ? data.anonymous : false
-            }
+        let newComment = {
+            tags: "[]",
+            draft: data.draft !== undefined ? data.draft : true,
+            text: data.text !== undefined ? data.text : null,
+            userId: data.userId,
+            documentId: data.documentId,
+            studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
+            annotationId: data.annotationId !== undefined ? data.annotationId : null,
+            parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+            anonymous: data.anonymous !== undefined ? data.anonymous : false
+        };
 
-            const comment = await this.models['comment'].add(newComment, options);
-            this.emit("commentRefresh", comment);
-            return comment;
-        } catch (e) {
-            this.logger.error("Could not add comment and/or comment to database. Error: " + e);
-            this.sendToast("Internal server error. Failed to add comment.", "Internal server error", "danger");
-            throw e;
-        }
+        this.emit("commentRefresh", await this.models['comment'].add(newComment, {transaction: options.transaction}));
     }
 
     /**
      * Send a comment to the client
-     * @param {number} commentId
+     * @param {object} data - The input data from the frontend
+     * @param {number} data.commentId - The id of the comment
+     * @param {object} options - not used
      * @return {Promise<void>}
      */
-    async sendComment(commentId) {
-        const comment = await this.models['comment'].getById(commentId);
+    async sendComment(data, options) {
+        const comment = await this.models['comment'].getById(data.commentId);
         if (!this.checkDocumentAccess(comment.documentId)) {
-            this.sendToast("You don't have access to this comment", "Error", "danger");
-            return;
+            throw new Error("You don't have access to this comment");
         }
         this.emit("commentRefresh", comment);
     }
 
+    /**
+     * Add or update a comment if it has already existed
+     * @param {object} data - The input data from the frontend
+     * @param {number} data.commentId - The id of the comment
+     * @param {object} options - holds the transaction
+     * @return {Promise<void>}
+     */
+    async addOrUpdateComment(data, options) {
+        if (data.commentId) {
+            await this.updateComment(data, options);
+        } else {
+            await this.addComment(data, options);
+        }
+    }
+
+    /**
+     * Get all the comments of a certain document
+     * @param {object} data - The input data from the frontend
+     * @param {number} data.documentId - The id of the document
+     * @param {object} options - not used
+     * @return {Promise<void>}
+     */
+    async getCommentsByDocument(data, options) {
+        const comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
+        this.emit("commentRefresh", comments);
+    }
+
     init() {
-
-        this.socket.on("commentGet", async (data) => {
-            try {
-                await this.sendComment(data.commentId);
-            } catch (e) {
-                this.logger.error("Could not get comment and/or comment in database. Error: " + e);
-                this.sendToast("Internal Server Error: Could not get comment", "Internal server error", "danger");
-            }
-        });
-
-        this.socket.on("commentUpdate", async (data) => {
-            try {
-                if (data.commentId && data.commentId !== 0) {
-                    await this.updateComment(data.commentId, data);
-                } else {
-                    await this.addComment(data);
-                }
-            } catch (e) {
-                this.logger.error("Could not update comment and/or comment in database. Error: " + e);
-                this.sendToast("Internal Server Error: Could not update comment", "Internal server error", "danger");
-            }
-        });
-
-        this.socket.on("commentGetByDocument", async (data) => {
-            try {
-                const comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
-                this.emit("commentRefresh", comments);
-            } catch (e) {
-                this.logger.info("Error during loading of comments: " + e);
-                this.sendToast("Internal Server Error: Could not load comments by document", "Internal server error", "danger");
-            }
-        });
-
-        this.socket.on("commentExportByDocument", async (data) => {
-            try {
-                const comments = await this.updateCreatorName(await this.models['comment'].getAllByKey('documentId', data.documentId));
-
-                this.socket.emit("commentExport", {
-                    "success": true,
-                    "documentId": data.documentId,
-                    "objs": await Promise.all(comments.map(async (c) => await this.commentFormat(c)))
-                });
-
-            } catch (e) {
-                this.logger.info("Error during exporting of comments: " + e);
-                this.sendToast("Internal Server Error: Could not export comments by document", "Internal server error", "danger");
-                this.socket.emit("commentExport", {"success": false, "documentId": data.documentId});
-            }
-        });
+        this.createSocket("commentGet", this.sendComment, {}, false);
+        this.createSocket("commentUpdate", this.addOrUpdateComment, {}, true);
+        this.createSocket("commentGetByDocument", this.getCommentsByDocument, {}, false);
     }
 
 }
