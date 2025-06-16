@@ -126,13 +126,13 @@ def create_app():
                         suffix = ""
                     
                     # Create tag information based on annotation color
-                    color_code, color_name, tag_id = get_color_code_from_annotation(annot.colors)
+                    #color_code, color_name, tag_id = get_color_code_from_annotation(annot.colors)
                     tag_info = {
-                        "name": color_name,
-                        "description": color_name,
-                        "colorCode": color_code,
+                        "name": "warning",
+                        "description": "warning",
+                        "colorCode": "warning",
                         "public": False,
-                        "id": tag_id
+                        "id": 1
                     }
                     
                     annotations.append({
