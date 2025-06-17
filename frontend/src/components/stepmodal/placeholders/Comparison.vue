@@ -42,7 +42,7 @@ export default {
       const data1 = comparisonData[0];
       const data2 = comparisonData[1];
       if (
-        (!data1 || typeof data1 !== 'object' || Array.isArray(data1) || Object.keys(data1).length === 0) &&
+        (!data1 || typeof data1 !== 'object' || Array.isArray(data1) || Object.keys(data1).length === 0) ||
         (!data2 || typeof data2 !== 'object' || Array.isArray(data2) || Object.keys(data2).length === 0)
       ) {
         return null;

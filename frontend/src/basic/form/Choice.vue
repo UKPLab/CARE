@@ -91,7 +91,7 @@ export default {
       default: () => [],
     },
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "update:configStatus"],
   data() {
     return {
       currentData: this.modelValue && this.modelValue.length > 0 ? [...this.modelValue] : [],
@@ -184,6 +184,7 @@ export default {
         if (JSON.stringify(this.modelValue) !== JSON.stringify(newData)) {
           this.$emit("update:modelValue", newData);
         }
+        this.$emit("update:configStatus", this.getConfigurationStatus());
       },
       deep: true,
       immediate: true,
@@ -254,6 +255,36 @@ export default {
 
         this.currentData = updatedCurrentData;
       }
+    },
+    isConfigurationIncomplete(configData) {
+      // If the configData includes services object and it should have placeholders object
+      if (Object.keys(configData).includes("services")) {
+        return !Object.keys(configData).includes("placeholders");
+      }
+      return false;
+    },
+    hasIncompleteConfiguration() {
+      return this.choices.some((choice, index) => {
+        if (choice.hasConfiguration) {
+          const configData = this.currentData[index]?.configuration || {};
+          return this.isConfigurationIncomplete(configData);
+        }
+        return false;
+      });
+    },
+    getConfigurationStatus() {
+      return {
+        hasIncompleteConfig: this.hasIncompleteConfiguration(),
+        incompleteSteps: this.choices
+          .filter((choice, index) => {
+            if (choice.hasConfiguration) {
+              const configData = this.currentData[index]?.configuration || {};
+              return this.isConfigurationIncomplete(configData);
+            }
+            return false;
+          })
+          .map((choice) => choice.stepNumber),
+      };
     },
   },
 };
