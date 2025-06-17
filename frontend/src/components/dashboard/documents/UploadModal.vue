@@ -62,6 +62,11 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
+import { extractTextFromPDF } from "@/assets/utils";
+import * as pdfjsLib from "pdfjs-dist/build/pdf.js";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 /**
  * Document upload component
@@ -98,7 +103,7 @@ export default {
       this.importAnnotations = false;
       this.$refs.uploadModal.open();
     },
-    upload() {
+    async upload() {
       const fileName = this.data.file.name;
       const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
       if (fileType !== ".pdf" && fileType !== ".delta") {
@@ -111,30 +116,52 @@ export default {
       }
 
       this.$refs.uploadModal.waiting = true;
-      this.$socket.emit("documentAdd", {
-        file: this.data.file,
-        enableAnnotations: this.importAnnotations,
-        name: fileName,
-      }, (res) => {
-        if (res.success) {
-          this.$refs.uploadModal.waiting = false;
-          this.eventBus.emit("toast", {
-            title: "Uploaded file",
-            message: `File successfully uploaded! ${this.importAnnotations ? `\n Added ${res.data.annotations.length} annotations` : ""}`,
-            variant: "success",
-          });
-          this.$refs.uploadModal.close();
-        } else {
-          this.eventBus.emit("toast", {
-            title: "Failed to upload the file",
-            message: res.message,
-            variant: "danger",
-          });
+      this.uploading = true;
+
+      try {
+        let extractedText = null;
+        if (fileType === ".pdf") {
+          // Load and extract text from PDF
+          const fileArrayBuffer = await this.data.file.arrayBuffer();
+          const loadingTask = pdfjsLib.getDocument(fileArrayBuffer);
+          const pdfDocument = await loadingTask.promise;
+          extractedText = await extractTextFromPDF(pdfDocument);
         }
-      });
+
+        this.$socket.emit("documentAdd", {
+          file: this.data.file,
+          enableAnnotations: this.importAnnotations,
+          name: fileName,
+          wholeText: extractedText // Send the extracted text with the upload
+        }, (res) => {
+          this.uploading = false;
+          if (res.success) {
+            this.$refs.uploadModal.waiting = false;
+            this.eventBus.emit("toast", {
+              title: "Uploaded file",
+              message: `File successfully uploaded! ${this.importAnnotations ? `\n Added ${res.data.annotations.length} annotations` : ""}`,
+              variant: "success",
+            });
+            this.$refs.uploadModal.close();
+          } else {
+            this.eventBus.emit("toast", {
+              title: "Failed to upload the file",
+              message: res.message,
+              variant: "danger",
+            });
+          }
+        });
+      } catch (error) {
+        this.uploading = false;
+        this.$refs.uploadModal.waiting = false;
+        this.eventBus.emit("toast", {
+          title: "Failed to process PDF",
+          message: "Error processing PDF: " + error.message,
+          variant: "danger",
+        });
+      }
     }
   },
-
 }
 </script>
 

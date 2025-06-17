@@ -257,3 +257,29 @@ export const sorter = function(arrayToSort, sortList) {
     return sortedList;
 
 }
+
+/**
+ * Extracts text content from a PDF document using PDF.js
+ * @param {Object} pdfDocument - The PDF.js document object
+ * @returns {Promise<string>} A promise that resolves to the extracted text
+ */
+export async function extractTextFromPDF(pdfDocument) {
+    let fullText = '';
+    
+    // Loop through all pages
+    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+        const page = await pdfDocument.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        
+        // Extract text from the page and normalize whitespace
+        const pageText = textContent.items
+            .map(item => item.str)
+            .join(' ')
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .trim();
+            
+        fullText += pageText + '\n';
+    }
+    
+    return fullText;
+}
