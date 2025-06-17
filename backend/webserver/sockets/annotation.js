@@ -125,9 +125,7 @@ module.exports = class AnnotationSocket extends Socket {
      * @returns {Promise<Object>} The response from the PDFRPC embedAnnotations call.
      */
     async embedAnnotationsForDocument(data, options) {
-        console.log("Embedding annotations for document: " + data);
-        const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);
-        console.log("annotations", annotations);    
+        const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);   
         // Get all comments for the document
         const comments = await this.models['comment'].getAllByKey("documentId", data.documentId);
 
@@ -138,7 +136,6 @@ module.exports = class AnnotationSocket extends Socket {
                 if (!tag) {
                     console.warn(`Tag with ID ${annotation.tagId} not found for annotation ${annotation.id}`);
                 }
-                console.log("Tag for annotation: ", tag);
                 // Find all comments for this annotation
                 const annotationComments = comments.filter(c => c.annotationId === annotation.id);
                 return {
@@ -148,7 +145,6 @@ module.exports = class AnnotationSocket extends Socket {
                 };
             })
         );
-        console.log("annotationsWithTagsAndComments", annotationsWithTagsAndComments);
         const document = await this.models['document'].getById(data.documentId);
         const filePath = path.join(UPLOAD_PATH, `${document.hash}.pdf`);
 
