@@ -52,7 +52,7 @@ Each migration file in CARE follows a consistent structure and naming pattern to
 
 - ``YYYYMMDDHHMMSS``: A UTC timestamp ensuring chronological execution.
 - ``action``: What the migration does (e.g., `create`, `extend`, `drop`).
-- ``target``: The table or feature affected (e.g., `user`, `editor`, `study`).
+- ``target``: The name of the database table affected by the migration (e.g., user, study, session).
 
 **Example:**
 
@@ -67,10 +67,6 @@ The ``action`` part of a migration filename typically falls into one of the foll
 - **basic** — Inserts default records for a table (e.g., roles, tags, nav items)  
 
 - **extend** — Adds new columns or modifies existing tables  
-
-- **nlp_skill** — Adds metadata/settings/navigation for NLP-related features  
-
-- **stats** — Enables tracking, logging, or statistics functionality  
 
 - **transform** — Applies structural or content transformations to existing data  
 
