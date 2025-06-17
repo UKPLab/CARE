@@ -22,7 +22,6 @@ node_modules
 utils/modules/editor-delta-conversion/node_modules
 utils/modules/editor-delta-conversion/coverage
 
-
 yarn-error.log
 .tox
 
