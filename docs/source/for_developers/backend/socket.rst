@@ -70,7 +70,7 @@ In the next section we elaborate on how to populate a socket by message listener
 
 Extending a Socket
 ------------------
-Let's assume we want to extend a socket ``TestSocket`` defined in ``backend/webserver/sockets/test.js``. Generally,
+Let's assume we want to extend a socket ``TestSocket`` defined in ``./backend/webserver/sockets/test.js``. Generally,
 socket logic should be kept lean and easy. The primary responsibility of a socket is to forward a new client request
 to another module for processing (e.g. the database interface), handle possible errors and send the results back to
 the client. In the following we explain the possible use-cases for extending a socket
@@ -134,7 +134,7 @@ Error and Rights Management
 When interacting with the database the key challenge is error handling, marshalling (i.e. the translation of the DB
 data representation into a suitable format for the frontend) and rights management.
 For now, we assume that we want to call an already defined database a model ``Test`` specified in
-``backend/db/models/test.js`` and integrate this call into the above example.
+``./backend/db/models/test.js`` and integrate this call into the above example.
 Let's also assume that only administrators are allowed to change this value.
 
 .. note::
@@ -230,8 +230,10 @@ We refer to the section on :doc:`./testing` for more information on how to test 
 Socket Communication Schema
 ---------------------------
 
-In order to streamline socket communication, especially when interacting with the database, CARE defines a standardized way to register and handle socket events using the ``createSocket`` method provided by backend/webserver/Socket.js. 
+In order to streamline socket communication, especially when interacting with the database, CARE defines a standardized way to register and handle socket events using the ``createSocket`` method provided by ``./backend/webserver/Socket.js``. 
 This schema helps to ensure consistent error handling, optional transaction safety, and frontend compatibility.
+
+.. _createSocket:
 
 createSocket: How it works
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -250,8 +252,17 @@ The ``createSocket`` method allows you to define a socket event with built-in su
 **Arguments:**
     - ``eventName``: Name of the socket event to register
     - ``func``: Async function handling the request, with parameters ``(data, options)``
-    - ``options``: Object passed through the socket pipeline (e.g., for DB access)
+    - ``options``: Object passed through the socket pipeline; can contain any contextual data (e.g., transaction info, user session, metadata)
     - ``transaction``: If ``true``, wraps execution in a Sequelize DB transaction
+
+.. warning::
+
+   If your handler function performs **any database write operations** (e.g., `create`, `update`), you **must** set ``transaction = true`` and use the provided transaction object inside the function. Failing to do so can result in inconsistent or partial data states.
+
+.. note::
+
+   The ``createSocket`` function should always be called within the ``init()`` method of socket classes located in ``./backend/webserver/sockets/*``.  
+   The handler function passed to it should be a **method of the class itself**, not an inline function or a function defined inside ``init()``.  
 
 See a full example of the usage of createSocket in :ref:`document-create-example`.
 
@@ -266,8 +277,20 @@ If your socket operation modifies data, set ``transaction = true``. This will:
 
 .. code-block:: javascript
 
-    this.createSocket("studySaveAsTemplate", this.saveStudyAsTemplate, {}, true);
+    init() {
+        this.createSocket("studySaveAsTemplate", this.saveStudyAsTemplate, {}, true);
+        }
 
+.. code-block:: javascript
+
+    /**
+    * Save the current study as a template (creates a new study with template: true).
+    * 
+    * @param {object} data - The input data from the socket call.
+    * @param {number} data.id - ID of the study to duplicate as a template.
+    * @param {object} options - Context passed through the socket pipeline. 
+    * @returns {Promise<object>} The newly created template study.
+    */
     async saveStudyAsTemplate(data, options) {
         const study = await this.models["study"].getById(data.id);
 
@@ -279,21 +302,35 @@ If your socket operation modifies data, set ``transaction = true``. This will:
                 template: true,
             }, {transaction: options.transaction});
 
+            // Code executed after transaction commit success (code only, without further DB changes!)
             options.transaction.afterCommit(() => {
                 this.emit("studyRefresh", template);
             });
 
-            return template;
+            return template; // The value sent back to the frontend via the socket callback
         } else {
             throw new Error("No permission to save study as template");
         }
     }
 
-See a further example of the transaction usage in :ref:`document-create-example`.
-
 .. note::
 
-    For a detailed explanation of how to notify the frontend after a transaction, including automatic tracking and manual `afterCommit` hooks, see :ref:`tracking-db-changes`.
+   - Socket handler functions should always include clear JSDoc-style docstrings describing the expected data parameters, transaction context, and return type.  
+     For full documentation standards, refer to: :doc:`../basics/conventions`.
+
+   - For a detailed explanation of how to notify the frontend after a transaction, including automatic tracking (via ``autoTable``) and manual ``afterCommit`` hooks, see: :ref:`tracking-db-changes`.
+
+
+See a further example of the transaction usage in :ref:`document-create-example`.
+
+**Transaction Failure Handling**
+
+If an error is thrown inside a socket using ``transaction = true``, the transaction will be **automatically rolled back**.
+
+.. warning::
+
+    Do **not** call ``transaction.commit()`` or ``transaction.rollback()`` manually when using ``createSocket``.  
+    These are handled automatically, and calling them yourself can lead to runtime errors — they can only be called **once** per transaction.
 
 Try-Catch Behavior
 ~~~~~~~~~~~~~~~~~~
@@ -301,6 +338,8 @@ Try-Catch Behavior
 Using ``createSocket`` wraps your function call in an automatic ``try-catch`` block. If an error is thrown:
     - The transaction is rolled back (if enabled)
     - A callback with ``success: false`` and the error message is sent to the frontend
+
+See the section above on :ref:`createSocket: How it works` for more details.
 
 No need to write:
 
@@ -320,10 +359,25 @@ Just throw an error inside your function:
         throw new Error("Access denied");
     }
 
-Frontend Error Display
-~~~~~~~~~~~~~~~~~~~~~~
+Socket Callback Responses
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Every socket event should handle both success and failure responses in the callback. CARE’s frontend uses a centralized event bus (`this.eventBus`) to manage UI interactions like toast notifications.
+When a socket event completes, a callback function on the frontend receives a standardized response object:
+
+.. code-block:: javascript
+
+    {
+        success: true,        // true if the backend handler completed without errors
+        data: {...},          // the return value from the backend function (if successful)
+        message: "..."        // an optional error message if an error was thrown
+    }
+
+This structure is automatically handled by ``createSocket``:
+
+- If the backend handler throws an error, ``success`` is set to ``false`` and ``message`` contains the error.
+- If the function returns a value, it is included as ``data`` and ``success`` is set to ``true``.
+
+The following example uses CARE’s global toast system to display success or failure. For full documentation on toast messages, see :doc:`../frontend/toasts`.
 
 .. code-block:: javascript
 
@@ -343,23 +397,15 @@ Every socket event should handle both success and failure responses in the callb
         }
     });
 
-See a further example of the usage of this.eventBus.emit in :ref:`document-create-example`.
-
-Transaction Failure Handling
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If an error is thrown inside a socket using ``transaction = true``, the transaction will be **automatically rolled back**.
-
-.. note::
-
-    You do **not** need to call ``rollback()`` manually when using ``createSocket``.
-
 .. _tracking-db-changes:
 
 Tracking DB Changes (afterCommit)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In some cases, you may need to manually notify the frontend after a successful transaction. This is necessary **only when automatic tracking via `autoTable` does not apply** — for example, when:
+In most cases, when using models with ``autoTable = true``, CARE will **automatically track database changes**  
+and push updates directly to the frontend. This includes creation, updates, and deletions — no need to manually emit a ``...Refresh`` event.
+
+However, in **special cases** where ``autoTable`` is not used or doesn't apply, you may need to manually notify the frontend after a successful transaction. Examples include:
 
 - Writing files to disk
 - Returning plain objects or custom responses
@@ -381,30 +427,10 @@ In these cases, you can register a manual `afterCommit` hook on the transaction 
         this.emit("documentRefresh", doc);
     });
 
-This ensures that your emit to the frontend occurs **only after** the transaction and any side-effects (like file operations) have completed successfully.
+.. warning::
 
-Docstring Standards
-~~~~~~~~~~~~~~~~~~~
-
-Each socket handler function should be documented using JSDoc-style comments. The docstring must include:
-
-- A short summary of what the function does
-- A full list of ``data`` sub-parameters, including type and purpose
-- Description of ``options`` if used
-- The return type and structure
-
-**Example:**
-
-.. code-block:: javascript
-
-    /**
-     * Create a new document for the user
-     * @param {object} data
-     * @param {number} data.type - The document type (1 = PDF, 2 = HTML)
-     * @param {string} data.name - The name of the document
-     * @param {object} options - Internal options (contains DB transaction if used)
-     * @returns {Promise<object>} The created document object
-     */
+    In normal use cases (e.g., with ``autoTable = true``), **you do not need to use `afterCommit()` or manually emit refresh events**.  
+    CARE tracks database changes automatically and handles frontend updates for you.
 
 .. _document-create-example:
 
@@ -424,16 +450,16 @@ Here is a full example showing how the backend and frontend work together when u
       if (res.success) {
         this.$refs.createModal.close();
         this.eventBus.emit("toast", {
-          message: "Document successfully created!",
-          title: "Success",
-          variant: "success",
+        title: "Success",
+        message: res.data, // This will be: "Document successfully created"
+        variant: "success",
         });
       } else {
         this.$refs.createModal.waiting = false;
         this.eventBus.emit("toast", {
-          message: res.message,
-          title: "Error",
-          variant: "danger",
+        title: "Error",
+        message: res.message, // This will be: "Missing required fields: name and type"
+        variant: "danger",
         });
       }
     });
@@ -442,7 +468,9 @@ Here is a full example showing how the backend and frontend work together when u
 
 .. code-block:: javascript
 
-    this.createSocket("documentCreate", this.createDocument, {}, true);
+    init() {
+        this.createSocket("documentCreate", this.createDocument, {}, true);
+        }
 
 **Backend: handler function implementation**
 
@@ -462,27 +490,31 @@ Here is a full example showing how the backend and frontend work together when u
         }, {transaction: options.transaction});
 
         options.transaction.afterCommit(() => {
-            this.emit("documentRefresh", doc);
+            // Backend log entry instead of manual frontend emit; frontend is auto-updated via autoTable
+            this.logger.info(`Document created (id: ${doc.id}) by user ${this.userId}`);
         });
 
-        return doc;
+        return "Document successfully created";
     }
 
 **What happens internally:**
 
 1. `createSocket` listens for `"documentCreate"` on the socket
+
 2. When the event is triggered from the frontend:
 
-   - The handler `createDocument` runs
-   - A Sequelize transaction is opened and passed as `options.transaction`
+   - The handler ``createDocument`` runs
+   - A Sequelize transaction is opened and passed as ``options.transaction``
+
 3. If the function completes without error:
 
    - The transaction is committed
-   - The `afterCommit` hook emits `"documentRefresh"` with the new document
-   - The frontend receives `{ success: true, data: doc }`
-   - A success toast is displayed
+   - The `afterCommit` hook logs a backend info message (no manual frontend emit is needed; updates are handled automatically via `autoTable`)
+   - The frontend receives ``{ success: true, data: "Document successfully created" }``
+   - A success toast is displayed using that message
+
 4. If an error is thrown:
 
    - The transaction is rolled back
-   - The frontend receives `{ success: false, message }`
-   - An error toast is displayed
+   - The frontend receives ``{ success: false, message: "..." }`` with the error message
+   - An error toast is displayed using that message
