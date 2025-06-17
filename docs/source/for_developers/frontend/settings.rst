@@ -39,13 +39,11 @@ To add a new setting, define it similar to this example:
         }
     };
 
-Don't forget to restart the server. The setting will now be available in the frontend.
 
-.. warning::
+.. note::
 
-   Changes made to settings in the frontend **are not automatically saved** to the database.
-   After modifying any setting through the UI, you **must** click the ``Save Settings`` button.
-   Otherwise, your changes will be lost and not persisted.
+   After running the migration, make sure to execute ``make init`` **before restarting the server**.  
+   This ensures the new settings are correctly applied and available in the frontend.
 
 Supported Setting Types
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,7 +97,9 @@ The ``type`` field of a setting defines how the setting is interpreted and rende
           description: "Terms and conditions text shown during registration"
       }
 
-You can mix and match these types depending on your use case. The value must always be provided as a **string**, regardless of type.
+.. note::
+
+    You can mix and match these types depending on your use case. The value must always be provided as a **string**, regardless of type.
 
 2. Use your Settings in the Frontend
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,27 +109,48 @@ You can access the setting value inside any component using Vuex:
 
         this.$store.getters["settings/getValue"]("editor.document.enableComments")
 
-Example usage in a component:
+Settings are always returned as strings, so their usage in components depends on the expected type.  
+You must manually parse them as needed based on the setting's ``type``.
+
+**Type: Boolean** 
 
 .. code-block:: none
 
-        <BasicButton
-            v-if="commentsEnabled"
-            text="Add Comment"
-            @click="addComment"
-        />
+    <BasicButton
+        v-if="commentsEnabled"
+        text="Add Comment"
+        @click="addComment"
+    />
 
 .. code-block:: javascript
 
-        export default {
-            computed: {
-                commentsEnabled() {
-                    return this.$store.getters["settings/getValue"]("editor.document.enableComments") === "true";
-                }
-            },
-            methods: {
-                addComment() {
-                    console.log("Add comment clicked");
-                }
+    export default {
+        computed: {
+            commentsEnabled() {
+                return this.$store.getters["settings/getValue"]("editor.document.enableComments") === "true";
             }
-        };
+        },
+        methods: {
+            addComment() {
+                console.log("Add comment clicked");
+            }
+        }
+    };
+
+**Type: Integer** 
+
+.. code-block:: javascript
+
+    export default {
+        computed: {
+            debounceTimeForEdits() {
+                return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
+            }
+        }
+    };
+
+.. warning::
+
+   Changes made to settings in the frontend **are not automatically saved** to the database.
+   After modifying any setting through the UI, you **must** click the ``Save Settings`` button.
+   Otherwise, your changes will be lost and not persisted.
