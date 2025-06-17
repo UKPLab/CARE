@@ -13,12 +13,6 @@
           icon="cloud-arrow-down"
           @click="downloadBehaviourData('json')"
       />
-      <BasicButton
-          class="btn btn-sm me-1"
-          title="Refresh"
-          icon="arrow-clockwise"
-          @click="loadUserData()"
-      />
     </template>
     <template #body>
       <BasicTable
@@ -66,6 +60,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 export default {
   name: "UserStatistics",
   components: {BasicTable, BasicButton, Card, ExportSingle},
+  subscribeTable: ["user"],
   props: {
     'admin': {
       type: Boolean,
@@ -112,7 +107,7 @@ export default {
   },
   computed: {
     users() {
-      return this.$store.getters["admin/getUsers"].map(u => {
+      return this.$store.getters["table/user/getAll"].map(u => {
         let uNew = {...u};
         uNew.lastLoginAt = u.lastLoginAt ? (new Date(u.lastLoginAt)).toLocaleDateString() : "-";
         return uNew;
@@ -134,13 +129,7 @@ export default {
       deep: true,
     },
   },
-  mounted() {
-    this.loadUserData();
-  },
   methods: {
-    loadUserData() {
-      this.$socket.emit("userGetData");
-    },
     async downloadBehaviourData(file_type = "csv") {
       new Promise((resolve) => {
         this.$socket.emit("statsGet", {}, (response) => {
