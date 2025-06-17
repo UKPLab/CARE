@@ -2,7 +2,7 @@
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
-        <Editor ref="editor"/>
+        <Editor ref="editor" @update:data="$emit('update:data', $event)" />
       </div>
       <Sidebar
         v-if="!sidebarDisabled && sidebarContent !== null"
@@ -17,7 +17,7 @@
       title="Show History"
       class="btn rounded-circle ms-2"
       type="button"
-      @click="toogleHistory"
+      @click="toggleHistory"
     >
       <LoadIcon
         :color="'#777777'"
@@ -55,9 +55,9 @@
  *
  * This component provides the Quill editor component and a sidebar for different functionalities (e.g. version history).
  *
- * @autor Dennis Zyska, Juliane Bechert
+ * @author Dennis Zyska, Juliane Bechert, Linyin Huang
  */
-import Sidebar from "@/components/editor/sidebar/History.vue";
+import Sidebar from "@/components/editor/sidebar/Sidebar.vue";
 import Editor from "@/components/editor/editor/Editor.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import LoadIcon from "@/basic/Icon.vue";
@@ -75,6 +75,7 @@ export default {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
       readOnly: computed(() => this.readOnlyOverwrite),
+      active: computed(() => this.active),
     }
   },
   inject: {
@@ -105,11 +106,17 @@ export default {
       required: false,
       default: null,
     },
+    active: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
   },
-
+  emits: ["update:data"],
   data() {
     return {
       isSidebarVisible: false,
+      hasHistory: false,
       sidebarContent: null,
     };
   },
@@ -124,19 +131,43 @@ export default {
       return this.readOnly;
     },
     showHistory() {
-      const showHistoryForUser = this.$store.getters["settings/getValue"]('editor.edits.showHistoryForUser') === "true";
-      if (this.isAdmin || showHistoryForUser) {
-        return true;
+      if (this.readOnly) {
+        return false;
       }
-      return false;
+      const showHistoryForUser = this.$store.getters["settings/getValue"]('editor.edits.showHistoryForUser') === "true";
+      return this.isAdmin || showHistoryForUser;
+    },
+    document() {
+      return this.$store.getters["table/document/get"](this.documentId);
     },
   },
+  watch: {
+    "document.type": {
+      immediate: true,
+      handler(newType) {
+        if (newType === 2) {
+          this.sidebarContent = "configurator";
+        }
+      }
+    },
+    hasHistory: {
+      handler(newVal) {
+        if (newVal) {
+          this.sidebarContent = "history";
+        } else if (this.document?.type === 2) {
+          this.sidebarContent = "configurator";
+        } else {
+          this.sidebarContent = null;
+        }
+      }
+    }
+  },
   methods: {
-    toogleHistory() {
-      if (this.sidebarContent === 'history') {
-        this.sidebarContent = null;
+    toggleHistory() {
+      if (this.hasHistory) {
+        this.hasHistory = false;
       } else {
-        this.sidebarContent = 'history';
+        this.hasHistory = true;
         this.$socket.emit(
           "documentGet",
           {
@@ -155,8 +186,6 @@ export default {
             }
           }
         );
-
-
       }
     },
     leave() {
@@ -187,7 +216,7 @@ export default {
 }
 
 .sidebar-container {
-  width:350px;
+  width: 350px;
   max-width: 350px;
   min-width: 350px;
   background-color: #f8f9fa;
