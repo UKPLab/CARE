@@ -1,6 +1,7 @@
 from moodle_api import moodle_api
 import requests
 from User import User
+import logging
 
 __author__ = "Alexander Bürkle, Dennis Zyska"
 
@@ -10,6 +11,7 @@ class Moodle:
         self.api_key = api_key
         self.url = url
         self.endpoint = endpoint
+        self.logger = logging.getLogger(__name__)
         moodle_api.URL = url
         moodle_api.KEY = api_key
      
@@ -221,9 +223,16 @@ class Moodle:
 
         submissions = moodle_api.call('mod_assign_get_submissions', assignmentids=[assignment_id])     
         
+        # Log the raw submissions structure for debugging
+        # self.logger.info(f"Raw submissions structure: {submissions}")
+        
         submission_infos = []  
         
         for sub in submissions['assignments'][0]['submissions']:
+            # Log each submission's raw data
+            # self.logger.info(f"Processing submission: {sub}")
+            print(f"Processing submission: {sub}")
+            
             submission_info = {}
             for user in users:
                 if sub['userid'] == user.id:   
@@ -240,6 +249,10 @@ class Moodle:
                             submission_urls.append({"filename": file_name, "fileurl": file_url})
             submission_info['submissionURLs'] = submission_urls
             submission_infos.append(submission_info)
+        
+        # Log the final processed data
+        # self.logger.info(f"Final submission_infos: {submission_infos}")
+        print(f"Final submission_infos: {submission_infos}")
         
         return submission_infos
                             
