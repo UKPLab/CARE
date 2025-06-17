@@ -96,10 +96,10 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
     },
     nlpSkills() {
-      return this.$store.getters["service/getNLPSkills"];
+      return this.$store.getters["service/getSkills"]("NLPService");
     },
     nlpResults() {
-      return this.$store.getters["service/getNLPResults"];
+      return this.$store.getters["service/getResults"]("NLPService");
     },
     nlpEnabled() {
       return this.$store.getters["settings/getValue"]("service.nlp.enabled") === "true" || this.nlpFallback;
@@ -118,7 +118,10 @@ export default {
     nlpResults: function (results) {
       if (this.requestId && this.requestId in results) {
         this.$emit("response", this.nlpResults[this.requestId]);
-        this.$store.commit("removeNLPResults", this.requestId);
+        this.$store.commit("service/removeResults", {
+          service: "NLPService", 
+          requestId: this.requestId 
+        });
         this.requestId = null;
       }
     },
