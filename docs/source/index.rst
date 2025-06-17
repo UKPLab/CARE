@@ -25,7 +25,7 @@ The project is developed at the `UKP Lab <https://www.informatik.tu-darmstadt.de
    for_developers/frontend/frontend
    for_developers/backend/backend
    for_developers/examples/examples
-   for_developers/debugging
+   for_developers/debugging/index
 
 
 .. toctree::
