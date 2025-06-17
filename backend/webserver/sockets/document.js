@@ -134,13 +134,14 @@ module.exports = class DocumentSocket extends Socket {
                         file: data['file'],
                         document: doc,
                         fileType: fileType,
+                        wholeText: data.wholeText
                     });
 
                     if (annotationData.annotations.length !== 0) {
                         for (const extracted of annotationData.annotations) {
                             let textPositions;
                             try {
-                                textPositions = this.getTextPositions(extracted.text, annotationData.wholeText);
+                                textPositions = this.getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
                                 throw new Error("Error calculating text positions: " + error.message);  
                             }
@@ -156,8 +157,8 @@ module.exports = class DocumentSocket extends Socket {
                                         {
                                             type: "TextQuoteSelector",
                                             exact: extracted.text || "",
-                                            prefix: extracted.prefix || "",
-                                            suffix: extracted.suffix || ""
+                                            prefix: textPositions.prefix || "",
+                                            suffix: textPositions.suffix || ""
                                         },
                                         {
                                             type: "PagePositionSelector",
@@ -757,24 +758,26 @@ async editDocument(data, options) {
     }
 
     /**
-     * Get the start and end positions of exact text within whole text
+     * Get the start and end positions of exact text within whole text, along with prefix and suffix
      * @param {string} exactText - The text to find positions for
      * @param {string} wholeText - The complete text to search within
-     * @returns {{start: number, end: number}} Object containing start and end positions
+     * @returns {{start: number, end: number, prefix: string, suffix: string}} Object containing start, end, prefix and suffix
      * @throws {Error} If exact text is not found in whole text
      */
     getTextPositions(exactText, wholeText) {
-        // Clean and normalize both texts to handle potential differences
-        const normalizedExact = exactText.trim().replace(/\s+/g, ' ');
-        const normalizedWhole = wholeText.trim().replace(/\s+/g, ' ');
-
-        const start = normalizedWhole.indexOf(normalizedExact);
+        const start = wholeText.indexOf(exactText);
         if (start === -1) {
             throw new Error('Exact text not found in whole text');
         }
 
-        const end = start + normalizedExact.length;
-        return { start, end };
+        const end = start + exactText.length;
+        
+        // Use the same context length calculation as in anchoring types
+        const contextLen = 32;
+        const prefix = wholeText.slice(Math.max(0, start - contextLen), start);
+        const suffix = wholeText.slice(end, Math.min(wholeText.length, end + contextLen));
+
+        return { start, end, prefix, suffix };
     }
 
     init() {
