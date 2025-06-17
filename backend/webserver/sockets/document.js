@@ -171,7 +171,7 @@ module.exports = class DocumentSocket extends Socket {
                                 const newAnnotation = {
                                     documentId: doc.id,
                                     selectors: selectors,
-                                    tagId: extracted.tag.id,
+                                    tagId: 1 , //always use the same tag for all annotations
                                     studySessionId: doc.studySessionId,
                                     studyStepId: doc.studyStepId,
                                     text: extracted.text || null,
@@ -179,18 +179,13 @@ module.exports = class DocumentSocket extends Socket {
                                     userId: this.userId,
                                     anonymous: false,
                                 };
-                                console.log("newAnnotation", newAnnotation);
-                                console.log("options", options);
                                 const {annotation, comment} = await this.getSocket('AnnotationSocket').updateAnnotation(newAnnotation, options);
                                 annotations.push(annotation);
-                                console.log("comment 1", comment);
-                                console.log("options 1", options);
                                 await this.getSocket('CommentSocket').updateComment({
                                     commentId: comment.id,
                                     text: extracted.comment,
                                 }, options);
                                 
-                                console.log("options 2", options);
                                 
                             } catch (annotationErr) {
                                 throw new Error("Error adding annotation: " + annotationErr.message);

@@ -115,16 +115,6 @@ def create_app():
                         prefix = ""
                         suffix = ""
                     
-                    # Create tag information based on annotation color
-                    #color_code, color_name, tag_id = get_color_code_from_annotation(annot.colors)
-                    tag_info = {
-                        "name": "warning",
-                        "description": "warning",
-                        "colorCode": "warning",
-                        "public": False,
-                        "id": 1
-                    }
-                    
                     annotations.append({
                         "page": page.number,
                         "type": annot.type[1] if isinstance(annot.type, tuple) else annot.type,
@@ -134,7 +124,6 @@ def create_app():
                         "color": annot.colors,
                         "prefix": prefix,
                         "suffix": suffix,
-                        "tag": tag_info
                     })
                 # Delete all highlight annotations
                     annot.update(fill_color=(0, 0, 0))
@@ -188,7 +177,7 @@ def create_app():
                 text_start = None
                 logger.info(f"Processing annotation: {annot}")
                 color_code = annot.get("tag", "danger")  # Default to "danger" if not provided
-                color = get_color_from_code(color_code)
+                color = (1, 1, 0) #always yellow for highlight
                 text_end = None
                 prefix = None
                 exact = None
@@ -325,23 +314,6 @@ def create_app():
                 best_rect = exact_rect
 
         return best_rect
-
-    def get_color_from_code(color_code):
-        """
-        Maps a color code string to an RGB tuple for PyMuPDF.
-        Args:
-            color_code: One of 'info', 'success', 'warning', 'danger'.
-        Returns:
-            Corresponding RGB tuple.
-        """
-        color_map = {
-            "info": (0, 0, 1),      # Blue
-            "success": (0, 1, 0),   # Green
-            "warning": (1, 1, 0),   # Yellow
-            "danger": (1, 0, 0),    # Red
-        }
-        return ( 1, 1 ,0) #color_map.get(color_code, (1, 0, 0))  # Default to red if not found
-
     def add_annotations(doc_page, selected_rect, extracted_text, original_text, color):
         """
         Expands the selected rectangle forward word by word, highlighting each word, and stops after highlighting as many words as in the original_text.
