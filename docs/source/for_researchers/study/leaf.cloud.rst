@@ -66,10 +66,6 @@ Create a new disk under *Volumes* → *Volumes* → *Create Volume*
 | Group              |                                           | No Group                      |
 +--------------------+-------------------------------------------+-------------------------------+
 
-**Storage Cost**: 0,000127 €/GB/h or 9,271 Cent/GB/Month
-
-→ 200 GB → 0,0254 €/h or 12,542 €/Month
-
 **Create Instance**
 
 Create an instance under *Compute* → *Instances* → *Launch Instance*
@@ -89,16 +85,6 @@ Create an instance under *Compute* → *Instances* → *Launch Instance*
 +-------------------------+------------------------------------+-----------------------------+
 | Key Pair                | Key Pair for SSH access            | Server-Login                |
 +-------------------------+------------------------------------+-----------------------------+
-
-**Server Capacities**:
-
-- eg1.a100x1.V12-84 (1x NVIDIA A100) - 2.21 €/h
-- eg1.a100x2.V25-164 (2x NVIDIA A100) - 4.4 €/h
-- eg1.a100x4.V50-324 (4x NVIDIA A100) - 8.83 €/h
-- eg1.a100x8.V100-680 (8x NVIDIA A100) - 17.66 €/h
-- eg1.v100x1.2xlarge (1x Nvidia V100) - 0.40 €/h
-- eg1.v100x2.4xlarge (2x Nvidia V100) - 0.80 €/h
-- eg1.v100x4.8xlarge (4x Nvidia V100) - 1.61 €/h
 
 With *Launch Instance* the instance will be created. This takes around two minutes.
 
@@ -184,6 +170,11 @@ This should look like this::
 Install broker for testing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. note::
+
+   For security, configure the firewall to only allow inbound requests from specific IP addresses,
+   especially before starting any network services like the broker.
+
 **Install Docker**
 
 From https://docs.docker.com/engine/install/debian/#install-using-the-repository : ::
@@ -206,7 +197,7 @@ From https://docs.docker.com/engine/install/debian/#install-using-the-repository
 **Install BrokerIO** ::
 
   sudo apt install git
-  git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/CARE_broker.git /srv/brokerio
+  git clone https://github.com/UKPLab/CARE_broker.git /srv/brokerio
   cd /srv/brokerio
   docker compose -f docker-compose.yml -p "brokerio" up --build -d
   docker ps
@@ -239,37 +230,30 @@ QR_Setup Guide
 **1.0 Before We Start**
 
 1. Start the Study Server via the Leaf.Cloud dashboard.  
-2. Save the Login Certificate: Save `Login-Linux.pem.crt` in a local folder named `leaf_cloud`.  
-3. Connect to the server using SSH (git bash in leaf_cloud):
+2. Save the Login Certificate: Save ``login.pem`` in a local folder named ``leaf_cloud``.  
+3. Connect to the server using SSH (e.g., from a terminal in ``leaf_cloud``):
 
 .. code-block:: bash
 
-    chmod 0600 Login-Linux.pem.crt
-    ssh -i Login-Linux.pem.crt debian@45.135.58.93
+    chmod 0600 login.pem
+    ssh -i login.pem debian@45.135.58.93
 
 When prompted, type `yes` to continue.
 
 **1.1 Install Environment for Model Execution**
 
-1. Upload the Code Folder from the local machine to the Server (from a local terminal):
+1. Upload the Code Folder from the local machine to the Server:
 
 .. code-block:: bash
 
-    # first upload code to /home/debian
-    scp -i "C:\\Users\\path\\to\\Login-Linux.pem.crt" -r "C:\\Users\\path\\to\\eic_care_0210" debian@45.135.58.93:/home/debian/
+    scp -i login.pem -r <model> debian@<ip>:/srv/
 
-2. Move the Folder to ``/srv/`` and Set Permissions:
 
-.. code-block:: bash
-
-    sudo mv /home/debian/eic_care_0210 /srv/
-    sudo chown -R debian:debian /srv/eic_care_0210
-
-3. Create and Activate a Conda Environment:
+2. Create and Activate a Conda Environment:
 
 .. code-block:: bash
 
-    #Set permissions to create env in /srv/miniconda3, /home/debian is small
+    #Set permissions to create env in /srv/miniconda3 (avoid using /home/debian due to limited space)
     sudo chown -R debian:debian /srv/miniconda3
 
     # Create environment, python 3.12 is required by the current version of brokerio (GitLab)
@@ -280,66 +264,35 @@ When prompted, type `yes` to continue.
 
     # Install required packages, clear pip cache first
     pip cache purge
-    pip install --cache-dir /srv/miniconda3/cache -r /srv/eic_care_0210/requirements.txt
+    pip install --cache-dir /srv/miniconda3/cache -r /srv/<model>/requirements.txt
 
-2. Transfer the LeoLM 13B Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. note::
 
-The model must be transferred from ukp to leaf.cloud due to firewall restrictions.
+   You may need to upload and configure your own model under ``/srv/<model>/model/`` depending on your use case.
 
-**Transfer Model from ukp Server**
 
-::
-
-    rsync -avvv --progress -e "ssh -i path/to/Login-Linux.pem.crt" \
-    /storage/ukp/shared/shared_model_weights/models--LeoLM--leo-hessianai-13b \
-    debian@45.135.58.93:/srv/eic_care_0210/model/
-
-**Update Configuration**
-
-Modify the following file:
-
-::
-
-    /srv/eic_care_0210/model/EIC/LeoLM-13B_best/adapter_config.json
-
-Change:
-
-::
-
-    "base_model_name_or_path": "/srv/eic_care_0210/model/models--LeoLM--leo-hessianai-13b",
-
-3. Test Model Execution
-~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    python /srv/eic_care_0210/run_eic.py
-
-If successful, logs should show the NLP model running and returning results.
-
-4. Test NLP Model with Internal Broker
+2. Test NLP Model with Internal Broker
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**4.0 Ensure the broker is running before executing the skill. Install the brokerio package from GitLab**
+**2.0 Ensure the broker is running before executing the skill. Install the brokerio package from GitLab**
 
 ::
 
     sudo docker ps
     pip install git+https://git.ukp.informatik.tu-darmstadt.de/zyska/CARE_broker.git
 
-**4.1 Run skill_eic.py**
+**2.1 Run skill_eic.py**
 
 ::
 
     source /srv/miniconda3/bin/activate /srv/miniconda3/envs/my_env
-    python /srv/eic_care_0210/skill_eic.py
+    python /srv/<model>/skill_eic.py
 
 **Output**
 
 ::
 
-    (my_env) debian@study-server:~$ python /srv/eic_care_0210/skill_eic.py
+    (my_env) debian@study-server:~$ python /srv/<model>/skill_eic.py
     2025-02-12 17:44:10,437 - INFO - 🚀 Skill client started
     2025-02-12 17:44:14,978 - INFO - 🔄 Attempting to connect to broker: http://127.0.0.1:4852
     2025-02-12 17:44:15,018 - INFO - ✅!!!! Connected to broker at http://127.0.0.1:4852
@@ -347,14 +300,14 @@ If successful, logs should show the NLP model running and returning results.
     2025-02-12 17:44:17,018 - INFO - 📤 Sending skill registration...
     2025-02-12 17:44:17,018 - INFO - ✅ Skill registration event emitted!
 
-**4.2 Run test_request_eic.py in a second terminal when the skill is registered**
+**2.2 Run test_request_eic.py in a second terminal when the skill is registered**
 
 ::
 
     source /srv/miniconda3/bin/activate /srv/miniconda3/envs/my_env
-    python /srv/eic_care_0210/test_request_eic.py
+    python /srv/<model>/test_request_eic.py
 
-**4.3 Monitor Broker Logs in a third terminal if needed**
+**2.3 Monitor Broker Logs in a third terminal if needed**
 
 ::
 
@@ -371,44 +324,44 @@ The `skill_eic.py` is running in `'spawn'` mode to avoid multiprocessing conflic
     client.start()
 
 The NLP results are sent back to the broker and received by the request client.
-They are also saved on the study server under the folder `/srv/eic_care_0210/data`,
+They are also saved on the study server under the folder `/srv/<model>/data`,
 with the taskRequest ID in the subfolder names. Each subfolder contains the original
 and revised documents, as well as classification results, allowing for manual analysis if needed.
 
-5. Skill Diff: Get the Deltas Only
+3. Skill Diff: Get the Deltas Only
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**5.1 Run skill_diff.py**
+**3.1 Run skill_diff.py**
 
 ::
 
     source /srv/miniconda3/bin/activate /srv/miniconda3/envs/my_env
-    python /srv/eic_care_0210/skill_diff.py
+    python /srv/<model>/skill_diff.py
 
-**5.2 Run test_request_diff.py in a second terminal when the skill is registered**
+**3.2 Run test_request_diff.py in a second terminal when the skill is registered**
 
 ::
 
     source /srv/miniconda3/bin/activate /srv/miniconda3/envs/my_env
-    python /srv/eic_care_0210/test_request_diff.py
+    python /srv/<model>/test_request_diff.py
 
-6. Make skill_eic2 Automatically Started When Restarting the Server
+4. Make skill_eic2 Automatically Started When Restarting the Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**6.1 Create start_skill_eic.sh**
+**4.1 Create start_skill_eic.sh**
 
 ::
 
     #!/bin/bash
     source /srv/miniconda3/bin/activate /srv/miniconda3/envs/my_env  # Activate Conda environment
-    python /srv/eic_care_0210/skill_eic2.py  # Run the script
+    python /srv/<model>/skill_eic2.py  # Run the script
 
-**6.2 Enable autostart**
+**4.2 Enable autostart**
 
 ::
 
     # make it runable
-    chmod +x /srv/eic_care_0210/start_skill_eic.sh
+    chmod +x /srv/<model>/start_skill_eic.sh
     # create the service file
     sudo nano /etc/systemd/system/skill_eic.service
     # copy paste:
@@ -418,7 +371,7 @@ and revised documents, as well as classification results, allowing for manual an
 
     [Service]
     Type=simple
-    ExecStart=/srv/eic_care_0210/start_skill_eic.sh
+    ExecStart=/srv/<model>/start_skill_eic.sh
     Restart=always
     User=debian
     StandardOutput=journal
@@ -440,17 +393,8 @@ Logs can be found with:
 
     journalctl -u skill_eic.service -f
 
-TODOS
-~~~~~
+.. note::
 
-- Install environment for model execution + documentation (QR)
-- Install code for model execution and test + documentation (QR)
-- Test model execution with internal broker (internal ip 127.0.0.1:4852) (QR)
-- Update skill_eic.py to get additional classes counts (QR)
-- Create skill_diff.py to get the deltas only, it outputs the same list as skill_eic.py but the edit intent label is empty (QR)
-- Adjust html parser to use numbering instead of formatting tags to capture doc structure (QR)
-- Create skill_eic2.py, make it autostarted when restarting the server (QR)
-- Test connection to the internal UKP server (DZ)
-- Start everything on start of the server automatically
-- Delete everything until study takes place (after open tasks to save money)
+   To integrate your own model or define custom skills for the broker system,
+   please refer to the `CARE_broker documentation <https://github.com/UKPLab/CARE_broker>`_.
 
