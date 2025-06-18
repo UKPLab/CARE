@@ -1,12 +1,12 @@
 <template>
   <Loader
-      v-if="documentId === 0"
-      :loading="true"
-      class="pageLoader"
+    v-if="documentId === 0"
+    :loading="true"
+    class="pageLoader"
   />
   <span v-else>
-    <Editor v-if="document.type === 1" ref="editor" :document-id = "documentId"/>
-    <Annotator v-else ref="annotator" :document-id = "documentId"/>
+    <Editor v-if="document.type === 1 || document.type === 2" ref="editor" :document-id="documentId"/>
+    <Annotator v-else ref="annotator" :document-id="documentId"/>
   </span>
 </template>
 
@@ -23,7 +23,6 @@
 
 import Annotator from "./annotator/Annotator.vue";
 import Loader from "@/basic/Loading.vue";
-import {computed} from "vue";
 import Editor from "@/components/editor/Editor.vue"
 
 export default {
@@ -85,7 +84,7 @@ export default {
     async confirmLeave() {
       if (this.$refs.annotator) {
         return await this.$refs.annotator.leave();
-      } else if(this.$refs.editor) {
+      } else if (this.$refs.editor) {
         return await this.$refs.editor.leave();
       }
     }

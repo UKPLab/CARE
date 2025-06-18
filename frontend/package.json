@@ -26,6 +26,7 @@
     "bootstrap-icons": "^1.10.5",
     "bootstrap-vue-3": "^0.1.21",
     "bootstrap5-tags": "^1.6.2",
+    "chart.js": "^4.4.8",
     "deep-equal": "^2.2.1",
     "diff": "^5.1.0",
     "editor-delta-conversion": "file:../utils/modules/editor-delta-conversion",
