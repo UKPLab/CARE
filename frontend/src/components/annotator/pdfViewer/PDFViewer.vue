@@ -29,7 +29,9 @@ import {computed} from "vue";
 
 import Adder from "./Adder.vue";
 import BasicLoading from "@/basic/Loading.vue";
-await import("pdfjs-dist/build/pdf.worker.mjs");
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 
 /**
