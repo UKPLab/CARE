@@ -138,9 +138,9 @@ import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 import {computed} from "vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
-
 
 export default {
   name: "AnnotatorView",
@@ -149,7 +149,8 @@ export default {
     PDFViewer,
     ExpandMenu,
     Sidebar,
-    Loader
+    Loader,
+    TopBarButton
   },
   provide() {
     return {
@@ -164,8 +165,15 @@ export default {
       default: null
     },
     acceptStats: {
+      type: Boolean,
+      required: false,
       default: () => false
     },
+    studyData: {
+      type: Array,
+      required: false,
+      default: () => [],
+    }
   },
   props: {
     approve: {

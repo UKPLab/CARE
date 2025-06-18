@@ -54,7 +54,7 @@ module.exports = class AppSocket extends Socket {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
-                {transaction: transaction}
+                {context: data.data, transaction: transaction}
             );
             return newEntry.id;
         }

@@ -160,6 +160,9 @@ export default {
     }
   },
   emits: ["start", "finish"],
+  inject: {
+    acceptStats: {default: () => false},
+  },
   data() {
     return {
       hash: null,
@@ -361,6 +364,15 @@ export default {
         this.$emit("start", {studySessionId: data.params.id});
         this.$refs.modal.close();
       }
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "clickStudySessionButton",
+            data: {
+                action: data.action,
+                ...(data.params.id ? { studySessionId: data.params.id } : {}),
+              }
+          });
+        }
     }
   }
 }

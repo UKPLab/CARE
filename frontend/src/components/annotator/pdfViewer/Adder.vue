@@ -183,6 +183,7 @@ export default {
       this.selectedRanges = [range];
 
       this.show(event.clientX, event.clientY);
+      console.log("range", range);
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "onTextSelect",
@@ -190,7 +191,8 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            eventClientX: event.clientX, eventClientY: event.clientY
+            eventClientX: event.clientX, eventClientY: event.clientY,
+            text: range.toString(),
           }
         });
       }
