@@ -187,7 +187,7 @@ module.exports = (sequelize, DataTypes) => {
         parentDocumentId: DataTypes.INTEGER,
         hideInFrontend: DataTypes.BOOLEAN,
         projectId: DataTypes.INTEGER,
-        metadata: DataTypes.TEXT, // JSON field for storing ZIP associations and validation results
+        // we need to extend the database with a new column to store the submission meta information, as suggested, we might name the new column as `extId` which is the `id` from raw MoodleAPI response
     }, {
         sequelize: sequelize,
         modelName: 'document',
