@@ -23,14 +23,14 @@
 
 import PDFPage from "./PDFPage.vue";
 import {PDF} from './pdfStore.js';
-import * as pdfjsLib from "pdfjs-dist/build/pdf.js"
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
+import * as pdfjsLib from "pdfjs-dist"
+
 import {computed} from "vue";
 
 import Adder from "./Adder.vue";
 import BasicLoading from "@/basic/Loading.vue";
+await import("pdfjs-dist/build/pdf.worker.mjs");
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 /**
  * PDF Viewer
