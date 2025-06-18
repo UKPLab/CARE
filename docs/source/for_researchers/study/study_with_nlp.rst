@@ -15,7 +15,7 @@ This workflow is available in the CARE interface under the name **"Ruhr-Uni-Boch
 Prepare external GPU Provider
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Use Leaf.Cloud setup guide :ref:`gpu-provider-setup`
+- Use :ref:`gpu-provider-setup` setup guide
 
 Prepare the broker
 ~~~~~~~~~~~~~~~~~~
@@ -25,15 +25,15 @@ Install broker locally
 ::
 
   cd /home/deployer
-  git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/CARE_broker.git rummels_brokerio
-  git checkout project-23-rummels # needs to be added on the server
-  cd rummels_brokerio
+  git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/CARE_broker.git my_broker
+  git checkout <your-branch-name> # needs to be added on the server
+  cd my_broker
   nano .env
   make docker
 
 .env::
 
-  PROJECT_NAME=rummels_brokerio
+  PROJECT_NAME=my_broker
   BROKER_PORT=4858
 
 Prepare the CARE Instance
@@ -46,19 +46,19 @@ Prepare the CARE Instance
 ::
 
   cd /home/deployer
-  git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/care.git rummels
-  cd rummels
-  git checkout project-23-rummels
-  git checkout -b deploy-23-rummels
+  git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/care.git my_care
+  cd my_care
+  git checkout <project-branch>
+  git checkout -b deploy-<your-name>
   nano .env
   git add .env
   git commit
-  git push --set-upstream origin deploy-23-rummels
+  git push --set-upstream origin deploy-<your-name>
   make build
 
 .env::
 
-  PROJECT_NAME=rummels_care
+  PROJECT_NAME=my_care
   PUBLISHED_PORT=8992
   POSTGRES_URL=postgres
   RPC_MOODLE_HOST=rpc_moodle
@@ -85,7 +85,7 @@ Prepare the CARE Instance
 
 data/nginx/app.conf::
 
-  # For rummels instance
+  # For your instance
   server {
       listen 80;
       server_name rub.ukp.informatik.tu-darmstadt.de;
@@ -420,7 +420,7 @@ When prompted, type `yes` to continue.
 ::
 
     source /srv/miniconda3/bin/activate /srv/miniconda3/envs/my_env
-    python /srv/<model>/my_skill.py # replace with your skill script
+    python /srv/<model>/my_skill.py 
 
 **Output**
 
