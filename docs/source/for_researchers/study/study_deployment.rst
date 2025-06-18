@@ -5,8 +5,8 @@ This guide provides step-by-step instructions for setting up a CARE instance to 
 
 .. note::
 
-   For a detailed example including external GPU provider setup and broker integration,
-   see the :doc:`Ruhr University Bochum Study <ruhr_uni_bochum_study>`.
+   For a detailed example including external GPU provider setup, broker integration and nlp integration,
+   see the :doc:`Revision Workflow Study Example <study_with_nlp>`.
 
 Preliminary Organizational Preparation 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
