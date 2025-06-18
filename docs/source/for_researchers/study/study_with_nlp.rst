@@ -1,5 +1,139 @@
+Revision Workflow Study Example
+-------------------------------
+
+This example demonstrates how CARE can support a structured revision workflow to study how users revise and respond to AI-generated feedback. It enables natural editing of a given document, tracks changes, and summarizes them for further analysis.
+
+The workflow follows a four-step process:
+
+1. **Initial Revision** – users revise a pre-written text.  
+2. **LLM Feedback** – model-generated suggestions are shown.  
+3. **Second Revision** – users revise again, now with feedback.  
+4. **Final Summary with LLM Feedback** – feedback and changes are presented in a modal.
+
+This workflow is available in the CARE interface under the name **"Ruhr-Uni-Bochum-Project"**.
+
+Prepare external GPU Provider
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Use Leaf.Cloud setup guide :ref:`gpu-provider-setup`
+
+Prepare the broker
+~~~~~~~~~~~~~~~~~~
+
+Install broker locally
+
+::
+
+  cd /home/deployer
+  git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/CARE_broker.git rummels_brokerio
+  git checkout project-23-rummels # needs to be added on the server
+  cd rummels_brokerio
+  nano .env
+  make docker
+
+.env::
+
+  PROJECT_NAME=rummels_brokerio
+  BROKER_PORT=4858
+
+Prepare the CARE Instance
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Ask Sysadmin Team to add A-Record for new domain (in this case rub.ukp.informatik.tu-darmstadt.de)
+
+2. Clone branch into subfolder and install CARE instance
+
+::
+
+  cd /home/deployer
+  git clone https://git.ukp.informatik.tu-darmstadt.de/zyska/care.git rummels
+  cd rummels
+  git checkout project-23-rummels
+  git checkout -b deploy-23-rummels
+  nano .env
+  git add .env
+  git commit
+  git push --set-upstream origin deploy-23-rummels
+  make build
+
+.env::
+
+  PROJECT_NAME=rummels_care
+  PUBLISHED_PORT=8992
+  POSTGRES_URL=postgres
+  RPC_MOODLE_HOST=rpc_moodle
+  RPC_MOODLE_PORT=8081
+  ADMIN_PWD=PjGcbLEUDEH93PY
+
+3. Update NGINX and Certificates
+
+.. note::
+
+        Make sure that the DNS Entry is available outside of the TuDa (may need some time)
+
+::
+
+  cd /srv/nginx-certbot
+  sudo nano init-letsencrypt.sh # add domain here
+  sudo ./init-letsencrypt.sh # reinit
+
+::
+
+  cd /srv/nginx-certbot
+  sudo nano data/nginx/app.conf 
+  docker compose restart
+
+data/nginx/app.conf::
+
+  # For rummels instance
+  server {
+      listen 80;
+      server_name rub.ukp.informatik.tu-darmstadt.de;
+      server_tokens off;
+
+      location ^~ /.well-known/acme-challenge/ {
+          root /var/www/certbot;
+      }
+
+      location / {
+          return 301 https://$server_name$request_uri;
+      }
+  }
+
+  server {
+      listen 443 ssl;
+      server_name rub.ukp.informatik.tu-darmstadt.de;
+      server_tokens off;
+
+      ssl_certificate /etc/letsencrypt/live/care.ukp.informatik.tu-darmstadt.de/fullchain.pem;
+      ssl_certificate_key /etc/letsencrypt/live/care.ukp.informatik.tu-darmstadt.de/privkey.pem;
+      include /etc/letsencrypt/options-ssl-nginx.conf;
+      ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+      # if some service is not available
+      error_page 501 502 503 /maintenance.html;
+      location = /maintenance.html {
+          root /var/www/html;
+      }
+  }
+
+For deployment and server configuration (e.g., NGINX, certificates), please refer to the general CARE installation guide: :doc:`../getting_started/installation`.
+
+Testing
+~~~~~~~
+
+1. Make sure the leaf.cloud server is running.  
+2. Connect to VPN  
+3. Run CARE locally with the latest branch  
+4. Update the settings (``service → url``) with your **public broker URL**
+5. Restart backend
+
+----------------
+
+.. _gpu-provider-setup:
+
 Leaf.Cloud
-----------
+~~~~~~~~~~
 
 There are many external service providers for conducting studies with GPU resources, but only a few provide server capacities inside the EU allow accounting according to time of use. One of them is:
 
@@ -8,7 +142,7 @@ There are many external service providers for conducting studies with GPU resour
 This tutorial provides only the basics for using a GPU with CARE. For additional functionality, see the documentation of Leaf.Cloud under https://docs.leaf.cloud/en/latest/. For price calculation, see https://www.leaf.cloud/pricing/.
 
 Prepare Leaf.Cloud
-~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^
 
 .. note::
 
@@ -41,7 +175,7 @@ Click on *Settings* on the top right and change the Language to *English (en)*. 
     Of course, you can also create the key pairs externally and upload the public key using *Import Public Key*.
 
 Create Instance
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 **Create Volume**
 
@@ -97,7 +231,7 @@ With *Launch Instance* the instance will be created. This takes around two minut
 Click on the previously created instance, **Attach Volume**, and select the volume with the study data.
 
 Working with the Instance
-~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You need the private key file (``login.pem``) and the IP address of the instance.
 
@@ -168,7 +302,7 @@ This should look like this::
   conda info
 
 Install broker for testing
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note::
 
@@ -205,7 +339,7 @@ From https://docs.docker.com/engine/install/debian/#install-using-the-repository
 The broker should now be running on ``127.0.0.1:4852``.
 
 IMPORTANT! Shelve Instance
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. important::
 
@@ -222,10 +356,10 @@ If you want to use the instance again, click in the same **Actions** panel on  *
 
 
 QR_Setup Guide 
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^
 
 1. Environment Setup
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 **1.0 Before We Start**
 
@@ -272,7 +406,7 @@ When prompted, type `yes` to continue.
 
 
 2. Test NLP Model with Internal Broker
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **2.0 Ensure the broker is running before executing the skill. Install the brokerio package from GitLab**
 
@@ -281,18 +415,18 @@ When prompted, type `yes` to continue.
     sudo docker ps
     pip install git+https://git.ukp.informatik.tu-darmstadt.de/zyska/CARE_broker.git
 
-**2.1 Run skill_eic.py**
+**2.1 Run my_skill.py**
 
 ::
 
     source /srv/miniconda3/bin/activate /srv/miniconda3/envs/my_env
-    python /srv/<model>/skill_eic.py
+    python /srv/<model>/my_skill.py # replace with your skill script
 
 **Output**
 
 ::
 
-    (my_env) debian@study-server:~$ python /srv/<model>/skill_eic.py
+    (my_env) debian@study-server:~$ python /srv/<model>/my_skill.py
     2025-02-12 17:44:10,437 - INFO - 🚀 Skill client started
     2025-02-12 17:44:14,978 - INFO - 🔄 Attempting to connect to broker: http://127.0.0.1:4852
     2025-02-12 17:44:15,018 - INFO - ✅!!!! Connected to broker at http://127.0.0.1:4852
@@ -315,7 +449,7 @@ When prompted, type `yes` to continue.
 
 **Notes**
 
-The `skill_eic.py` is running in `'spawn'` mode to avoid multiprocessing conflicts
+The `my_skill.py` is running in `'spawn'` mode to avoid multiprocessing conflicts
 
 ::
 
@@ -329,7 +463,7 @@ with the taskRequest ID in the subfolder names. Each subfolder contains the orig
 and revised documents, as well as classification results, allowing for manual analysis if needed.
 
 3. Skill Diff: Get the Deltas Only
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **3.1 Run skill_diff.py**
 
@@ -345,33 +479,33 @@ and revised documents, as well as classification results, allowing for manual an
     source /srv/miniconda3/bin/activate /srv/miniconda3/envs/my_env
     python /srv/<model>/test_request_diff.py
 
-4. Make skill_eic2 Automatically Started When Restarting the Server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+4. Make my_skill2 Automatically Started When Restarting the Server
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**4.1 Create start_skill_eic.sh**
+**4.1 Create start_my_skill.sh**
 
 ::
 
     #!/bin/bash
     source /srv/miniconda3/bin/activate /srv/miniconda3/envs/my_env  # Activate Conda environment
-    python /srv/<model>/skill_eic2.py  # Run the script
+    python /srv/<model>/my_skill2.py  # Run the script
 
 **4.2 Enable autostart**
 
 ::
 
     # make it runable
-    chmod +x /srv/<model>/start_skill_eic.sh
+    chmod +x /srv/<model>/start_my_skill.sh
     # create the service file
-    sudo nano /etc/systemd/system/skill_eic.service
+    sudo nano /etc/systemd/system/my_skill.service
     # copy paste:
     [Unit]
-    Description=Start skill_eic2 service
+    Description=Start my_skill2 service
     After=network.target
 
     [Service]
     Type=simple
-    ExecStart=/srv/<model>/start_skill_eic.sh
+    ExecStart=/srv/<model>/start_my_skill.sh
     Restart=always
     User=debian
     StandardOutput=journal
@@ -384,14 +518,14 @@ and revised documents, as well as classification results, allowing for manual an
 
     # enable the service
     sudo systemctl daemon-reload
-    sudo systemctl enable skill_eic.service
+    sudo systemctl enable my_skill.service
 
 
 Logs can be found with:
 
 ::
 
-    journalctl -u skill_eic.service -f
+    journalctl -u my_skill.service -f
 
 .. note::
 
