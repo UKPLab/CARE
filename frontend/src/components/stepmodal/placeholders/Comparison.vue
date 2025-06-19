@@ -8,7 +8,7 @@
 <script>
 /**
  * Component to render a comparison chart based on the provided input data.
- * This component is designed to compare two datasets on a horizontal grouped bar chart.
+ * This component is designed to compare two datasets on a stacked bar chart.
  * 
  * @author: Manu Sundar Raj Nandyal
 */
@@ -80,8 +80,12 @@ export default {
           },
           indexAxis: 'y',
           scales: {
-            x: { stacked: false },
-            y: { stacked: false },
+            x: { 
+              stacked: true 
+            },
+            y: { 
+              stacked: true 
+            },
           },
         },
       };
