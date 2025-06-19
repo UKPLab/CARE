@@ -59,9 +59,9 @@ export default {
           labels,
           datasets: [
             {
-              label: this.config.label || 'Dataset',
+              label: this.config.label || 'Überarbeitung',
               data: dataset,
-              backgroundColor: "rgba(255, 99, 132, 0.5)",
+              backgroundColor: '#EB7E47',
             },
           ],
         },
