@@ -77,6 +77,18 @@ export default {
             },
           },
           indexAxis: 'y',
+          scales: {
+            x: {
+              ticks: {
+                stepSize: 1,
+                callback: function(value) {
+                  if (Number.isInteger(value)) {
+                    return value;
+                  }
+                },
+              }
+            }
+          }
         },
       };
     },
