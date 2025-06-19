@@ -81,10 +81,18 @@ export default {
           indexAxis: 'y',
           scales: {
             x: { 
-              stacked: true 
+              stacked: true,
+              ticks: {
+                stepSize: 1,
+                callback: function(value) {
+                  if (Number.isInteger(value)) {
+                    return value;
+                  }
+                },
+              }
             },
             y: { 
-              stacked: true 
+              stacked: true,
             },
           },
         },
