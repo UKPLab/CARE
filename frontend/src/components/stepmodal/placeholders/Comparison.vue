@@ -56,14 +56,14 @@ export default {
           labels,
           datasets: [
             {
-              label: this.config.labels?.[0] || 'Dataset 1',
+              label: this.config.labels?.[0] || 'Überarbeitung 1',
               data: dataset1,
-              backgroundColor: 'rgba(255, 99, 132, 0.5)',
+              backgroundColor: '#EB7E47',
             },
             {
-              label: this.config.labels?.[1] || 'Dataset 2',
+              label: this.config.labels?.[1] || 'Überarbeitung 2',
               data: dataset2,
-              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+              backgroundColor: '#4BD0FF',
             }
           ],
         },
