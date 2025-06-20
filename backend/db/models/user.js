@@ -56,7 +56,7 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async getRoleIdMap() {
             if (!this.roleIdMap) {
-                const roles = await this.sequelize.models["user_role"].findAll({
+                const roles = await User.sequelize.models["user_role"].findAll({
                     attributes: ["id", "name"],
                     raw: true,
                 });
@@ -197,7 +197,7 @@ module.exports = (sequelize, DataTypes) => {
             // includes role matching as roles (ids)
             const include =
                 [{
-                    model: this.sequelize.models["user_role_matching"],
+                    model: User.sequelize.models["user_role_matching"],
                     as: "roles",
                     attributes: ["userRoleId"],
                     where: {
@@ -247,7 +247,7 @@ module.exports = (sequelize, DataTypes) => {
                     return [];
                 }
 
-                const matchedUsers = await this.sequelize.models["user_role_matching"].findAll({
+                const matchedUsers = await User.sequelize.models["user_role_matching"].findAll({
                     where: {userRoleId: roleId},
                     attributes: ["userId"],
                     raw: true,
@@ -275,7 +275,7 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async getUserRights(userId) {
             try {
-                let roles = await this.sequelize.models["user_role_matching"].findAll({
+                let roles = await User.sequelize.models["user_role_matching"].findAll({
                     where: {userId},
                     raw: true,
                 });
@@ -286,7 +286,7 @@ module.exports = (sequelize, DataTypes) => {
                 let userRight = {};
                 await Promise.all(
                     roles.map(async (role) => {
-                        const matchedRoles = await this.sequelize.models["role_right_matching"].findAll({
+                        const matchedRoles = await User.sequelize.models["role_right_matching"].findAll({
                             where: {userRoleId: role},
                             raw: true,
                         });
@@ -355,7 +355,7 @@ module.exports = (sequelize, DataTypes) => {
         static async updateUserDetails(data, options) {
             const {userId, userData} = data;
 
-            const UserRoleMatching = this.sequelize.models["user_role_matching"];
+            const UserRoleMatching = User.sequelize.models["user_role_matching"];
 
             const roleIdMap = await User.getRoleIdMap();
             const [updatedRowsCount] = await User.update(
