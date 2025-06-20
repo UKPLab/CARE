@@ -194,6 +194,11 @@ export default {
   emits: ["update:modelValue"],
   data() {
     return {
+      placeholderType: {
+        comparison: "comparison",
+        text: "text",
+        chart: "chart",
+      },
       currentStepperStep: 0,
       placeholders: [],
       placeholderFormData: [],
@@ -212,7 +217,7 @@ export default {
         this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0),
         // Step 2: Check if all placeholders have non-empty string input
         this.placeholderFormData.every((data) => {
-          if (data.type === "comparison") {
+          if (data.type === this.placeholderType.comparison) {
             return data.dataInput[0] && data.dataInput[1];
           }
           return !!data.dataInput;
@@ -304,7 +309,7 @@ export default {
             dataInput: {},
           };
         });
-        
+
         // Initialize inputMappings after selectedSkills is populated
         this.initializeInputMappings();
       } else {
@@ -376,7 +381,7 @@ export default {
         // Default form data structure
         let data = {
           type,
-          dataInput: type === "comparison" ? [null, null] : null,
+          dataInput: type === this.placeholderType.comparison ? [null, null] : null,
         };
 
         // If in update mode, try to fill in existing data based on its type
@@ -385,8 +390,10 @@ export default {
           const index = placeholder.number - 1;
 
           if (typeArray[index]) {
-            if (type === "comparison") {
-              data.dataInput = Array.isArray(typeArray[index].input) ? typeArray[index].input.map((input) => this.findPlaceholderDataSource(input)) : [null, null];
+            if (type === this.placeholderType.comparison) {
+              data.dataInput = Array.isArray(typeArray[index].input)
+                ? typeArray[index].input.map((input) => this.findPlaceholderDataSource(input))
+                : [null, null];
             } else {
               data.dataInput = this.findPlaceholderDataSource(typeArray[index].input);
             }
@@ -428,7 +435,7 @@ export default {
         extracted.push({
           text: match[0],
           number: textCounter++,
-          type: "text",
+          type: this.placeholderType.text,
         });
       }
 
@@ -437,7 +444,7 @@ export default {
         extracted.push({
           text: match[0],
           number: chartCounter++,
-          type: "chart",
+          type: this.placeholderType.chart,
         });
       }
 
@@ -446,7 +453,7 @@ export default {
         extracted.push({
           text: match[0],
           number: comparisonCounter++,
-          type: "comparison",
+          type: this.placeholderType.comparison,
         });
       }
 
@@ -519,9 +526,9 @@ export default {
           inputs: this.selectedSkills[index].dataInput,
         })),
         placeholders: {
-          text: this.formatPlaceholder("text"),
-          chart: this.formatPlaceholder("chart"),
-          comparison: this.formatPlaceholder("comparison"),
+          text: this.formatPlaceholder(this.placeholderType.text),
+          chart: this.formatPlaceholder(this.placeholderType.chart),
+          comparison: this.formatPlaceholder(this.placeholderType.comparison),
         },
       };
       this.$emit("update:modelValue", configData);
@@ -541,7 +548,7 @@ export default {
       return this.placeholderFormData
         .filter((data) => data.type === type)
         .map((data) => {
-          if (type === "comparison") {
+          if (type === this.placeholderType.comparison) {
             return {
               input: data.dataInput.map((source) => ({
                 stepId: source ? source.stepId : null,

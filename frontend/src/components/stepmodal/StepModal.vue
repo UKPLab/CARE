@@ -3,7 +3,7 @@
   <span v-else>
     <BasicModal
       ref="modal"
-      studyStep?.configuration?.modalSize || lg
+      studyStep?.configuration?.modalSize || xl
       :name="studyStep?.configuration?.name || 'Modal'"
       :class="modalClasses"
       :style="{ backgroundColor: studyStep?.configuration?.backgroundColor || '' }"
@@ -126,6 +126,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 export default {
   name: "StepModal",
   components: { BasicButton, BasicModal, Text, Chart, Comparison },
+  subscribeTable: [{ table: "document_data"}],
   inject: {
     studySessionId: {
       type: Number,
@@ -203,8 +204,8 @@ export default {
       return Object.keys(this.requests).length > 0;
     },
     nlpRequestTimeout() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.request.timeout'));
-    }, 
+      return parseInt(this.$store.getters["settings/getValue"]('modal.nlp.request.timeout'));
+    },
     documentData() {
       return this.$store.getters["table/document_data/getByKey"]("studySessionId", this.studySessionId);
     },
@@ -212,57 +213,55 @@ export default {
       return this.studyStep?.configuration?.placeholders || null;
     },    
     documentSegments() {
-        if (!this.documentText || !this.placeholders) return [];
+      if (!this.documentText) return [];
+      
+      if (!this.placeholders || Object.keys(this.placeholders).length === 0) {
+        return [{ type: 'plainText', value: this.documentText }];
+      }
 
-        const segments = [];
-        const regex = /~(.*?)~/g;
-        let match;
-        let lastIndex = 0;
+      const segments = [];
+      const regex = /~(.*?)~/g;
+      let match;
+      let lastIndex = 0;
 
-        const placeholderCounters = Object.keys(this.placeholders).reduce((acc, key) => {
-          acc[key] = 0;
-          return acc;
-        }, {});
+      const placeholderCounters = Object.keys(this.placeholders).reduce((acc, key) => {
+        acc[key] = 0;
+        return acc;
+      }, {});
 
-        while ((match = regex.exec(this.documentText)) !== null) {
-          const placeholderKey = match[1];
+      while ((match = regex.exec(this.documentText)) !== null) {
+        const placeholderKey = match[1];
 
-          if (match.index > lastIndex) {
-            segments.push({ type: 'plainText', value: this.documentText.slice(lastIndex, match.index) });
-          }
-
-          if (this.placeholders[placeholderKey]) {
-            const placeholderIndex = placeholderCounters[placeholderKey];
-            const placeholderConfig = this.placeholders[placeholderKey][placeholderIndex];            
-            if (placeholderConfig) {
-              const resolvedSegment = { type: placeholderKey, config: placeholderConfig };
-              segments.push(resolvedSegment);
-              placeholderCounters[placeholderKey] += 1;
-            }
-          }
-
-          lastIndex = regex.lastIndex;
+        if (match.index > lastIndex) {
+          segments.push({ type: 'plainText', value: this.documentText.slice(lastIndex, match.index) });
         }
 
-        if (lastIndex < this.documentText.length) {
-          segments.push({ type: 'plainText', value: this.documentText.slice(lastIndex) });
+        if (this.placeholders[placeholderKey]) {
+          const placeholderIndex = placeholderCounters[placeholderKey];
+          const placeholderConfig = this.placeholders[placeholderKey][placeholderIndex];
+          if (placeholderConfig) {
+            const resolvedSegment = { type: placeholderKey, config: placeholderConfig };
+            segments.push(resolvedSegment);
+            placeholderCounters[placeholderKey] += 1;
+          }
         }
 
-        return segments;
-      },
+        lastIndex = regex.lastIndex;
+      }
+
+      if (lastIndex < this.documentText.length) {
+        segments.push({ type: 'plainText', value: this.documentText.slice(lastIndex) });
+      }
+
+      return segments;
+    },
     specificDocumentData() {
-      return this.$store.getters["table/document_data/getByKey"]("documentId", this.studyStep?.documentId);
+      return this.documentData && this.studyStep?.documentId
+        ? this.documentData.filter(d => d.documentId === this.studyStep.documentId)
+        : [];
     },
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
-    },
-    //TODO: This is subject to change, as the timeout functionality is yet to be discussed
-    nlpTimeoutConfig() {
-      const configTimeout = this.configuration?.timeout;
-      if (configTimeout && !isNaN(Number(configTimeout))) {
-        return Number(configTimeout);
-      }
-      return this.nlpRequestTimeout;
     },
   },
   watch: {
@@ -287,6 +286,10 @@ export default {
             stepDataList.some(entry => entry && entry.key === `${uniqueId}_${key}`)
           );
         });
+        
+        if (this.readOnly && allAvailable) {
+          this.waiting = false;
+        }
 
         if (allAvailable && this.allNlpRequestsCompleted) {
           Object.keys(this.requests).forEach(requestId => {
@@ -297,8 +300,6 @@ export default {
           });
           this.requests = {};
           this.waiting = false;
-        } else {
-          this.waiting = true;
         }
       },
       deep: true,
@@ -335,6 +336,14 @@ export default {
       },
       deep: true
     },
+    placeholders: {
+      handler(newData) {
+        if (this.placeholders == null || Object.keys(this.placeholders).length === 0) {   
+          this.waiting = false;   
+        }
+      },
+      immediate: true
+    },
   },
   created() {
     if (this.configuration) {
@@ -358,7 +367,7 @@ export default {
       }
     );
 
-  },
+  },  
   mounted() {
     if (this.readOnly) {
       this.waiting = false;
@@ -367,10 +376,22 @@ export default {
 
       for (const service of this.configuration.services) {
         if (service.type === "nlpRequest") {
+          if (!service.name || !service.skill || !service.inputs) {
+            continue;
+          }          
           const { skill, inputs: inputs, name } = service;
           this.request(skill, inputs, ("service_" + name));
         }
       }
+    }
+    
+    // Inspect sessions update the specific document data sometimes before the modal opens and the watcher is not triggered
+    if (this.readOnly){
+      this.$emit("update:data", this.specificDocumentData); 
+    }
+
+    if(!this.requests || Object.keys(this.requests).length === 0) {
+      this.waiting = false;
     }
 
     this.$refs.modal.open();
@@ -416,7 +437,7 @@ export default {
             });
             this.timeoutError = true;
           }
-        }, this.nlpTimeoutConfig);
+        }, this.nlpRequestTimeout);
       }
     },
     // TODO: Replace this with an intermediate component between StepModal and NLPService (like, MultiNLPService)
