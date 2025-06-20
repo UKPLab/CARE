@@ -2,8 +2,7 @@
   <FormElement ref="formElement" :options="options">
     <template #element="{blur}">
       <Editor
-        :modelValue="currentData"
-        @update:modelValue="update"
+        v-model="currentData"
         class="form-control p-0 editor-wrapper"
         @blur="blur(currentData)"
         :max-length="options.maxLength"
@@ -41,6 +40,9 @@ export default {
       if (JSON.stringify(newVal) !== JSON.stringify(this.currentData)) {
         this.currentData = newVal;
       }
+    },
+    currentData(newVal) {
+      this.$emit("update:modelValue", newVal);
     }
   },
   methods: {

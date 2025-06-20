@@ -48,7 +48,7 @@
         <span v-else>
           <Editor
             v-if="study.description"
-            :model-value="study.description"
+            v-model="study.description"
             :read-only="true"
             class="ql-snow ql-container border"
           />
