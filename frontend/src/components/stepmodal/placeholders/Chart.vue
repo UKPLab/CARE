@@ -59,9 +59,9 @@ export default {
           labels,
           datasets: [
             {
-              label: this.config.label || 'Dataset',
+              label: this.config.label || 'Überarbeitung',
               data: dataset,
-              backgroundColor: "rgba(255, 99, 132, 0.5)",
+              backgroundColor: '#EB7E47',
             },
           ],
         },
@@ -77,6 +77,18 @@ export default {
             },
           },
           indexAxis: 'y',
+          scales: {
+            x: {
+              ticks: {
+                stepSize: 1,
+                callback: function(value) {
+                  if (Number.isInteger(value)) {
+                    return value;
+                  }
+                },
+              }
+            }
+          }
         },
       };
     },
