@@ -33,7 +33,7 @@
     "lodash.debounce": "^4.0.3",
     "mitt": "^3.0.0",
     "papaparse": "^5.4.1",
-    "pdfjs-dist": "^2.16.105",
+    "pdfjs-dist": "^5.3.31",
     "pg": "^8.11.0",
     "pg-hstore": "^2.3.4",
     "quill": "^2.0.2",
