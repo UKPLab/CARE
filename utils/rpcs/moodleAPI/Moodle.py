@@ -282,65 +282,6 @@ class Moodle:
         
         return submission_infos            
         
-    # def get_submission_infos_from_assignment(self, course_id, assignment_cmid):
-    #     """
-    #     Retrieves submission information from a specific assignment in a Moodle course.
-    #     Args:
-    #         course_id (int): The ID of the course.
-    #         assignment_id (int): The ID of the assignment.
-    #     Returns:
-    #         list: A list of dictionaries, each containing:
-    #             - 'userid' (int): The ID of the user who made the submission.
-    #             - 'submissionURLs' (list): A list of dictionaries, each containing:
-    #                 - 'filename' (str): The name of the submitted file.
-    #                 - 'fileurl' (str): The URL to access the submitted file.
-    #     """
-        
-    #     # Get users from the course
-    #     course_users = moodle_api.call('core_enrol_get_enrolled_users', courseid=course_id)
-
-    #     assignment_id = self.get_id_mapping_for_assignment(course_id, assignment_cmid)
-        
-    #     users = []
-        
-    #     for user in course_users:
-    #         roles = ''
-    #         for role in user['roles']:
-    #             roles += role['name'] + ', '
-    #         users.append(User(user['id'], user['firstname'], user['lastname'], "", user['email'], roles[:-2]))
-
-    #     submissions = moodle_api.call('mod_assign_get_submissions', assignmentids=[assignment_id])     
-        
-    #     # Log the raw submissions structure for debugging
-    #     self.logger.info(f"Raw submissions structure: {submissions}")
-        
-    #     submission_infos = []  
-        
-    #     for sub in submissions['assignments'][0]['submissions']:
-    #         # Log each submission's raw data
-    #         self.logger.info(f"Processing submission: {sub}")
-            
-    #         submission_info = {}
-    #         for user in users:
-    #             if sub['userid'] == user.id:   
-    #                 submission_info['userid'] = sub['userid']
-    #                 break
-    #         for plugin in sub['plugins']:
-    #             if 'fileareas' in plugin:
-    #                 for filearea in plugin['fileareas']:
-    #                     submission_urls = []
-    #                     for files in filearea['files']:
-    #                         file_url = files['fileurl']
-    #                         file_url += f'?token={moodle_api.KEY}'
-    #                         file_name = files['filename']
-    #                         submission_urls.append({"filename": file_name, "fileurl": file_url})
-    #         submission_info['submissionURLs'] = submission_urls
-    #         submission_infos.append(submission_info)
-        
-    #     # Log the final processed data   
-    #     self.logger.info(f"Final submission_infos: {submission_infos}")
-        
-    #     return submission_infos
                             
     def download_submissions_from_url(self, file_urls):
         """

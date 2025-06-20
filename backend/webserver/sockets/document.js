@@ -6,6 +6,7 @@ const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {Op} = require("sequelize");
 const {compileSchema, validateZip, validateZipWithSchema} = require("../../utils/zipValidator.js");
+const { associateFilesForSubmission } = require("../../utils/fileAssociator.js");
 
 const {dbToDelta} = require("editor-delta-conversion");
 
@@ -731,7 +732,7 @@ module.exports = class DocumentSocket extends Socket {
                 );
                 
                 // Try to associate ZIP files with PDF files
-                enhancedSubmission.fileAssociations = this.associateFilesForSubmission(pdfFiles, zipFiles);
+                enhancedSubmission.fileAssociations = associateFilesForSubmission(pdfFiles, zipFiles);
                 
                 // Add file summary
                 enhancedSubmission.fileSummary = {
@@ -980,130 +981,6 @@ module.exports = class DocumentSocket extends Socket {
             }
         });
 
-        this.socket.on("documentGetSubmissionWithZips", async (data, callback) => {
-            try {
-                if (!(await this.isAdmin())) {
-                    throw new Error("You do not have permission to access submission files");
-                }
-                
-                const document = await this.models['document'].findByPk(data.documentId, {
-                    include: [{
-                        model: this.models['document'],
-                        as: 'parentDocument',
-                        required: false
-                    }]
-                });
-                
-                if (!document) {
-                    throw new Error("Document not found");
-                }
-                
-                let metadata = {};
-                try {
-                    metadata = document.metadata ? JSON.parse(document.metadata) : {};
-                } catch (e) {
-                    this.logger.warn("Failed to parse document metadata:", e);
-                }
-                
-                // Find associated ZIP file
-                let zipDocument = null;
-                if (metadata.linkedZipId) {
-                    zipDocument = await this.models['document'].findByPk(metadata.linkedZipId);
-                }
-                
-                callback({
-                    success: true,
-                    data: {
-                        mainDocument: document,
-                        zipDocument: zipDocument,
-                        metadata: metadata,
-                        hasZip: !!zipDocument
-                    }
-                });
-                
-            } catch (e) {
-                this.logger.error("Error getting submission with ZIPs:", e);
-                callback({
-                    success: false,
-                    message: e.message
-                });
-            }
-        });
-
-        this.socket.on("documentUploadZipForSubmission", async (data, callback) => {
-            try {
-                if (!(await this.isAdmin())) {
-                    throw new Error("You do not have permission to upload ZIP files");
-                }
-                
-                const mainDocument = await this.models['document'].findByPk(data.documentId);
-                if (!mainDocument) {
-                    throw new Error("Main document not found");
-                }
-                
-                const transaction = await this.server.db.sequelize.transaction();
-                
-                try {
-                    // Validate the uploaded ZIP using database schema
-                    const zipValidation = await this.validateZipContent(data.file);
-                    
-                    // Create ZIP document
-                    const zipDocument = await this.addDocument({
-                        file: data.file,
-                        name: data.fileName || 'uploaded_source.zip',
-                        userId: mainDocument.userId,
-                        isUploaded: true,
-                        parentDocumentId: mainDocument.id,
-                        hideInFrontend: false
-                    }, {transaction: transaction});
-                    
-                    // Update ZIP document metadata
-                    await this.updateDocumentMetadata(zipDocument.id, {
-                        zipValidation: zipValidation,
-                        fileType: 'zip',
-                        role: 'source_files',
-                        linkedPdfId: mainDocument.id,
-                        uploadedManually: true,
-                        uploadedBy: this.socket.user.id
-                    }, {transaction: transaction});
-                    
-                    // Update main document metadata to reference ZIP
-                    let mainMetadata = {};
-                    try {
-                        mainMetadata = mainDocument.metadata ? JSON.parse(mainDocument.metadata) : {};
-                    } catch (e) {
-                        this.logger.warn("Failed to parse main document metadata");
-                    }
-                    
-                    mainMetadata.hasAssociatedZip = true;
-                    mainMetadata.linkedZipId = zipDocument.id;
-                    
-                    await this.updateDocumentMetadata(mainDocument.id, mainMetadata, {transaction: transaction});
-                    
-                    await transaction.commit();
-                    
-                    callback({
-                        success: true,
-                        data: {
-                            zipDocumentId: zipDocument.id,
-                            validation: zipValidation,
-                            message: "ZIP file uploaded and associated successfully"
-                        }
-                    });
-                    
-                } catch (e) {
-                    await transaction.rollback();
-                    throw e;
-                }
-                
-            } catch (e) {
-                this.logger.error("Error uploading ZIP for submission:", e);
-                callback({
-                    success: false,
-                    message: e.message
-                });
-            }
-        });
 
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
