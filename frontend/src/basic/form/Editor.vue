@@ -46,10 +46,6 @@ export default {
     }
   },
   methods: {
-    update(newValue) {
-      this.currentData = newValue;
-      this.$emit("update:modelValue", newValue);
-    },
     validate() {
       return this.$refs.formElement.validate(this.currentData);
     }
