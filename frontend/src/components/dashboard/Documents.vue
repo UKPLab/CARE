@@ -260,7 +260,7 @@ export default {
           .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false)
           .map((d) => {
             let newD = {...d};
-            newD.typeName = d.type === 0 ? "PDF" : "HTML";
+            newD.typeName = d.type === 0 ? "PDF" : d.type === 1 ? "HTML" : "MODAL";
             newD.publicBadge = {
               class: newD.public ? "bg-success" : "bg-danger",
               text: newD.public ? "Yes" : "No",

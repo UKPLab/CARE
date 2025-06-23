@@ -72,7 +72,6 @@ module.exports = (sequelize, DataTypes) => {
 
         }
 
-
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -85,6 +84,40 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'studyStepId',
                 as: 'studyStep',
             });
+        }
+
+       /**
+        * Copy edits from source step to the next step
+        * 
+        * @param {Object} sourceStep - the object with the source step information
+        * @param {Object} destStep - the object with the destination step information
+        * @param {number} studySessionId - the ID of study session
+        * @param {Object} transaction - the transaction object
+        * @returns {Promise<*>}
+        */
+        static async copyEditsByStep(sourceStep, destStep, studySessionId, transaction) {
+            // Copy all edits from the source document's session
+            const sourceEdits = await this.findAll({
+                where: {
+                    documentId: sourceStep.documentId,
+                    studySessionId: studySessionId,
+                    studyStepId: sourceStep.id,
+                    deleted: false
+                },
+                raw: true,
+            }, {transaction: transaction});
+
+            // Create new edits for the current step
+            if (sourceEdits.length > 0) {
+                const newEdits = sourceEdits.map(edit => ({
+                    ...edit,
+                    id: undefined,
+                    documentId: destStep.documentId,
+                    updatedAt: new Date()
+                }));
+
+                await this.bulkCreate(newEdits, {transaction: transaction});
+            }
         }
     }
 
