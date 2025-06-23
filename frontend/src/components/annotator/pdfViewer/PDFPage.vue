@@ -284,6 +284,9 @@ export default {
         console.log("scale" , scale)
    
         textLayerDiv.style.setProperty("--total-scale-factor", `${scale}`);
+        textLayerDiv.style.setProperty("--scale-round-y", `${1}px`)
+        textLayerDiv.style.setProperty("--scale-round-x", `${1}px`)
+
         const renderTask = new pdfjsLib.TextLayer({
           container: textLayerDiv,
           textContentSource: textContent,
