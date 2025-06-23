@@ -7,15 +7,22 @@
     id="pdfContainer"
     class="has-transparent-text-layer"
   >
+    <div class="zoom-controls">
+      <button @click="zoomOut" title="Zoom Out">-</button>
+      <button @click="resetZoom" title="Reset Zoom">Reset</button>
+      <button @click="zoomIn" title="Zoom In">+</button>
+      <span>{{ Math.round(scale * 100) }}%</span>
+    </div>
     <PDFPage
       v-for="page in pdf.pageCount"
       :key="'PDFPageKey' + page"
       :page-number="page"
       :render="renderCheck[page - 1]"
       class="scrolling-page"
+      :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
-    <Adder v-if="!readOnly"/>
+    <Adder v-if="!readonly"/>
   </div>
 </template>
 
@@ -23,16 +30,17 @@
 
 import PDFPage from "./PDFPage.vue";
 import {PDF} from './pdfStore.js';
-import * as pdfjsLib from "pdfjs-dist"
-
+//import * as pdfjsLib from "pdfjs-dist/build/pdf.mjs"
+// import * as pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs";
 import {computed} from "vue";
-
+import * as pdfjsLib from 'pdfjs-dist'
 import Adder from "./Adder.vue";
 import BasicLoading from "@/basic/Loading.vue";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
+await import("pdfjs-dist/build/pdf.worker.mjs");
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
+
+//pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
 
 /**
  * PDF Viewer
@@ -60,7 +68,7 @@ export default {
       required: false,
       default: null,
     },
-    readOnly: {
+    readonly: {
       type: Boolean,
       required: false,
       default: false,
@@ -80,6 +88,13 @@ export default {
       observer: undefined,
       pdfContainer: null,
       visiblePages: [1],
+      scale: 1.0,
+      originalScale: null,
+      DEFAULT_SCALE: 1.0,
+      MIN_SCALE: 0.25,
+      MAX_SCALE: 10.0,
+      DEFAULT_SCALE_DELTA: 1.1,
+      isZooming: false
     }
   },
   computed: {
@@ -98,6 +113,7 @@ export default {
     },
   },
   mounted() {
+    this.originalScale = this.scale;
     this.$socket.emit("documentGet",
       {
         documentId: this.documentId,
@@ -135,6 +151,32 @@ export default {
     this.pdf = null;
   },
   methods: {
+    zoomIn() {
+      if (this.isZooming) return;
+      this.isZooming = true;
+      let newScale = this.scale * this.DEFAULT_SCALE_DELTA;
+      this.scale = Math.min(this.MAX_SCALE, Math.round(newScale * 10) / 10);
+      setTimeout(() => {
+        this.isZooming = false;
+      }, 1000); // Match the debounce timeout
+    },
+    zoomOut() {
+      if (this.isZooming) return;
+      this.isZooming = true;
+      let newScale = this.scale / this.DEFAULT_SCALE_DELTA;
+      this.scale = Math.max(this.MIN_SCALE, Math.round(newScale * 10) / 10);
+      setTimeout(() => {
+        this.isZooming = false;
+      }, 1000); // Match the debounce timeout
+    },
+    resetZoom() {
+      if (this.isZooming) return;
+      this.isZooming = true;
+      this.scale = this.originalScale || this.DEFAULT_SCALE;
+      setTimeout(() => {
+        this.isZooming = false;
+      }, 1000);
+    },
     updateVisibility(page) {
       if (page.isVisible) {
         if (!this.visiblePages.includes(page.pageNumber)) {
@@ -150,7 +192,7 @@ export default {
           action: "pdfPageVisibilityChange",
           data: {
             documentId: this.documentId,
-            readOnly: this.readOnly,
+            readonly: this.readonly,
             visibility: page,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
@@ -173,5 +215,29 @@ export default {
 #pdfContainer {
   min-width: 800px;
   max-width: 1000px;
+}
+
+.zoom-controls {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.zoom-controls button {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.zoom-controls button:hover {
+  background: #f5f5f5;
 }
 </style>
