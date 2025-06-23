@@ -30,17 +30,16 @@
 
 import PDFPage from "./PDFPage.vue";
 import {PDF} from './pdfStore.js';
-//import * as pdfjsLib from "pdfjs-dist/build/pdf.mjs"
-// import * as pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs";
+import * as pdfjsLib from "pdfjs-dist"
+
 import {computed} from "vue";
-import * as pdfjsLib from 'pdfjs-dist'
+
 import Adder from "./Adder.vue";
 import BasicLoading from "@/basic/Loading.vue";
-await import("pdfjs-dist/build/pdf.worker.mjs");
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-
-//pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
 
 /**
  * PDF Viewer
