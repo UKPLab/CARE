@@ -1,35 +1,53 @@
 <template>
   <div>
     <h3 class="sidebar-title">Version History</h3>
-
-    <div v-for="group in Object.keys(periodEdits)" :key="group">
+    <div
+      v-for="group in Object.keys(periodEdits)"
+      :key="group"
+    >
       <div v-if="periodEdits[group].length > 0">
         <span class="small">{{ group }}</span>
-
         <ul class="list-group">
           <li
             v-for="editGroup in periodEdits[group]"
             :key="editGroup[0].id"
-            class=" list-group-item "
+            class="list-group-item"
           >
-            <div :id="'dropdown_' + editGroup[0].id"
-                 class="dropdown btn d-flex justify-content-between align-items-start"
-                 data-bs-toggle="dropdown"
-                 aria-expanded="false">
+            <div
+              :id="'dropdown_' + editGroup[0].id"
+              class="dropdown btn d-flex justify-content-between align-items-start"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
               <div class="ms-2 me-auto">
-                <div class=" fw-bold
-              ">{{ new Date(editGroup[0].createdAt).toLocaleString() }}
+                <div class="fw-bold">{{ new Date(editGroup[0].createdAt).toLocaleString() }}</div>
+                <div class="text-start">
+                  {{ editGroup[0].creator_name || "Anonymous User" }}
+                  <span
+                    v-if="editGroup.includes(currentVersion)"
+                    class="current-badge"
+                    >Current Version</span
+                  >
                 </div>
-                <div class="text-start">{{ editGroup[0].creator_name || 'Anonymous User' }}
-                  <span v-if="editGroup.includes(currentVersion)" class="current-badge">Current Version</span>
-                </div>
-                <ul class="dropdown-menu" :aria-labelledby="'dropdown_' + editGroup[0].id">
-                  <li v-for="edit in editGroup" :key="edit.id">
-                    <a class="dropdown-item" @click="selectEdit(edit)">
+                <ul
+                  class="dropdown-menu"
+                  :aria-labelledby="'dropdown_' + editGroup[0].id"
+                >
+                  <li
+                    v-for="edit in editGroup"
+                    :key="edit.id"
+                  >
+                    <a
+                      class="dropdown-item"
+                      @click="selectEdit(edit)"
+                    >
                       <div class="edit-header-line">
                         <strong>{{ new Date(edit.createdAt).toLocaleString() }}</strong>
                       </div>
-                      <div v-if="currentVersion.id === edit.id" class="current-version-body">
+                      <div
+                        v-if="currentVersion.id === edit.id"
+                        class="current-version-body"
+                      >
                         <span class="current-badge">Current Version</span>
                       </div>
                     </a>
@@ -40,7 +58,6 @@
             </div>
           </li>
         </ul>
-
       </div>
     </div>
   </div>
@@ -60,7 +77,7 @@ export default {
     studySessionId: {
       type: Number,
       required: false,
-      default: null // Allows for null if not in a study session
+      default: null, // Allows for null if not in a study session
     },
     documentId: {
       type: Number,
@@ -73,24 +90,17 @@ export default {
       default: null,
     },
   },
-  unmounted() {
-    if (this.currentVersion) {
-      this.currentVersion.isCurrentVersion = false;
-    }
-    this.eventBus.emit("editorSelectEdit", -1);
-  },
   computed: {
     allEdits() {
       return this.$store.getters["table/document_edit/getFiltered"](
-        (e) => e.documentId === this.documentId
-          && e.studySessionId === this.studySessionId
-          && e.studyStepId === this.studyStepId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        (e) => e.documentId === this.documentId && e.studySessionId === this.studySessionId && e.studyStepId === this.studyStepId
+      ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     },
     currentVersion() {
       if (this.allEdits.length === 0) {
         return null;
       }
-      const current = this.allEdits.find(e => e.isCurrentVersion);
+      const current = this.allEdits.find((e) => e.isCurrentVersion);
       if (current !== undefined) {
         return current;
       }
@@ -169,12 +179,21 @@ export default {
       return this.$store.getters["auth/getUser"];
     },
     historyGroupTime() {
-      return parseInt(this.$store.getters["settings/getValue"]('editor.edits.historyGroupTime'));
+      return parseInt(this.$store.getters["settings/getValue"]("editor.edits.historyGroupTime"));
     },
+  },
+  unmounted() {
+    if (this.currentVersion) {
+      this.currentVersion.isCurrentVersion = false;
+    }
+    this.eventBus.emit("editorSelectEdit", -1);
   },
   methods: {
     selectEdit(edit) {
-      this.eventBus.emit("editorSelectEdit", edit.id);
+      this.eventBus.emit("editorSelectEdit", {
+        documentId: this.documentId,
+        editId: edit.id,
+      });
       if (this.currentVersion) {
         this.currentVersion.isCurrentVersion = false;
       }
@@ -187,9 +206,9 @@ export default {
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
             editId: edit.id,
-            acceptDataSharing: this.user.acceptDataSharing
-          }
-        })
+            acceptDataSharing: this.user.acceptDataSharing,
+          },
+        });
       }
     },
   },
@@ -214,7 +233,6 @@ export default {
   margin-left: 8px;
 }
 
-
 .edit-header-line,
 .creator-line {
   display: flex;
@@ -224,5 +242,4 @@ export default {
   margin: 0;
   text-align: left;
 }
-
 </style>
