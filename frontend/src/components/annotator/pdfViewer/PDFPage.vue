@@ -374,9 +374,6 @@ export default {
   position: relative;
 }
 
-.textLayer {
-  width:auto
-}
 .pdf-page {
   width: 100%;
   height: auto;
