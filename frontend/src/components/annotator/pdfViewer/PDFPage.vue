@@ -151,7 +151,6 @@ export default {
           // Calculate new width based on current width and zoom change
           const currentWidth = wrapper.getBoundingClientRect().width;
           const newWidth = (currentWidth / oldValue) * newValue;
-          console.log("origscale",newValue/oldValue)
           wrapper.style.width = newWidth + 'px';
           wrapper.style.height = (newWidth * 1.4142) + 'px';
           
@@ -279,9 +278,7 @@ export default {
  
         // Use display scale for text layer positioning
         const displayViewport = page.getViewport({scale: this.scale});
-        textLayerDiv.style.width = `${displayViewport.width}px`;
         const { scale } = displayViewport;
-        console.log("scale" , scale)
    
         textLayerDiv.style.setProperty("--total-scale-factor", `${scale}`);
         textLayerDiv.style.setProperty("--scale-round-y", `${1}px`)
@@ -297,7 +294,6 @@ export default {
       }).then(() => {
           this.pdf.renderingDone.set(page.pageNumber, true);
           this.isRendered = true;
-          // Only add anchors after text layer is fully rendered
           this.add_anchors();
       }).catch(response => {
         this.destroyRenderTask();
