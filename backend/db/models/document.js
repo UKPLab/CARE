@@ -115,6 +115,12 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'projectId',
                 as: 'project',
             });
+
+            // A document belongs to exactly one submission (may be NULL for legacy docs)
+            Document.belongsTo(models["submission"], {
+                foreignKey: "submissionId",
+                as: "submission",
+            });
         }
 
         /**
@@ -187,7 +193,7 @@ module.exports = (sequelize, DataTypes) => {
         parentDocumentId: DataTypes.INTEGER,
         hideInFrontend: DataTypes.BOOLEAN,
         projectId: DataTypes.INTEGER,
-        // we need to extend the database with a new column to store the submission meta information, as suggested, we might name the new column as `extId` which is the `id` from raw MoodleAPI response
+        submissionId: DataTypes.INTEGER,
     }, {
         sequelize: sequelize,
         modelName: 'document',
