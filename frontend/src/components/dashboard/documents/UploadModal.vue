@@ -63,10 +63,12 @@
 import Modal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import { extractTextFromPDF } from "@/assets/utils";
-import * as pdfjsLib from "pdfjs-dist/build/pdf.js";
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
+import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+
+
 
 /**
  * Document upload component
