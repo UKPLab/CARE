@@ -144,6 +144,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 
 export default {
   name: "AnnotatorView",
+  subscribeTable: ["study", "study_step"],
   components: {
     LoadIcon,
     PDFViewer,
@@ -206,6 +207,7 @@ export default {
       required: false,
       default: true,
     },
+
   },
   data() {
     return {
@@ -262,7 +264,30 @@ export default {
     },
     numStudyComments() {
       return this.comments.filter(c => c.studySessionId).length;
+    },
+    downloadBeforeStudyClosingAllowed() {
+      const downloadAllowed = this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing");
+      return (downloadAllowed === true || downloadAllowed === "true");
+    },
+    documentOpenStudiesAvailable() {
+      var open = false;
+      const studyStepsWithDocument = this.$store.getters["table/study_step/getFiltered"](
+        e=> e.documentId == this.documentId
+      );
+      studyStepsWithDocument.forEach(
+        studyStep => {
+        const study = this.$store.getters["table/study/getFiltered"](
+          e=> e.id == studyStep.studyId
+        )[0];
+        if (!study.closed) {
+            open = true;
+            return;
+          }
+        }
+      );
+      return open;
     }
+
   },
   watch: {
     studySessionId(newVal, oldVal) {
@@ -282,7 +307,7 @@ export default {
           studyStepId: this.studyStepId
         });
       }
-    },
+    }
   },
   mounted() {
     this.eventBus.on('pdfScroll', (annotationId) => {
@@ -326,6 +351,7 @@ export default {
     // scrolling
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     document.addEventListener('copy', this.onCopy);
+
   },
   beforeUnmount() {
     // Leave the room for document updates
@@ -463,7 +489,9 @@ export default {
       return await this.$refs.sidebar.leave();
     },
     downloadAnnotations() {
-
+      if (!this.downloadBeforeStudyClosingAllowed && this.documentOpenStudiesAvailable) {
+        return;
+      }
       const attributesToDelete = [
         "draft",
         "anonymous",
