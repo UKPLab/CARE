@@ -3,11 +3,15 @@ Working with the Moodle API
 
 If you want to work with the Moodle API, please take a look at this document to get an overview of the API integration and how to use it.
 
+.. note::
+
+   For guidance on using the Moodle API through the CARE platform (e.g., to import documents, manage assignments, or publish feedback), refer to the :doc:`Moodle API usage guide <../../../for_researchers/moodle_usage>`.
+
 General structure
 -----------------
 
 All Moodle API calls are made via an rpc call and therefore run on a dedicated docker container.
-The main.py file in the moodleAPI folder `./utils/rpcs/moodleAPI` is responsible for the execution of the Moodle API commands.
+The ``main.py`` file in the moodleAPI folder ``./utils/rpcs/moodleAPI`` is responsible for the execution of the Moodle API commands.
 The result is then returned to the socket and can be used in the backend.
 
 .. note::
@@ -69,6 +73,29 @@ parameters: submission_infos: list with urls: string
 
 **publishAssignmentTextFeedback**: This functions publishes the feedback text to the assignment per user.
 parameters: {, feedback_data: list: {extId: int, text: string}, options{apiKey: string, apiUrl: string, courseID: int, assignmentID: int}}
+
+User Import Integration
+~~~~~~~~~~~~~~~~~~~~~~~
+
+CARE supports importing user data from Moodle courses using the `getUsersFromCourse` RPC function. This function retrieves enrolled users from a given course and returns metadata including user IDs, roles, and email addresses.
+
+The actual logic for user matching and account creation is handled by CARE’s backend service layer, not Moodle. This logic is important to be aware of when maintaining the integration.
+
+CARE distinguishes Moodle-imported users based on email matching:
+
+- **New users**: Created when the email from Moodle does not exist in CARE.
+- **Duplicate users**: If the email already exists, the existing CARE account is updated with the Moodle `extId`.
+- **Unverified users**: If the email is different but represents the same user (e.g., different domains), manual verification may be required.
+
+The `extId` (external ID) is stored in CARE to represent the user's Moodle ID. It is required for feedback publishing and user association during review workflows.
+
+.. warning::
+
+   Deleting a CARE user with a stored `extId` may cause sync issues. Due to ID constraints, re-importing the same user may fail unless cleaned manually.
+
+.. note::
+
+   This RPC (`getUsersFromCourse`) provides raw data only. Matching, duplication checks, and user persistence happen entirely on the CARE backend and are not part of the Moodle RPC logic itself.
 
 Configure Moodle
 ----------------
@@ -175,7 +202,7 @@ Creating an assignment that is compatible with functionalities like downloading 
 
 
 Findind the course and assignment IDs
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For almost all functionalities, you need the course ID and the assignment ID. This is how you can find them:
 
@@ -196,7 +223,7 @@ Keep attention to the following steps to implement new functionality in the Mood
 Rebuild the docker container
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the `main.py` file is modified, the docker container needs to be rebuilt.
+If the ``main.py`` file is modified, the docker container needs to be rebuilt.
 This can be done by running the following command:
 
 1. Delete the moodle container in docker
@@ -211,6 +238,23 @@ This can be done by running the following command:
 
     make docker
 
-After the 'make docker' command, you should see 'moodle...container recreated' in the console.
+After the ``make docker`` command, you should see 'moodle...container recreated' in the console.
 
 
+Extending the Moodle API Integration
+------------------------------------
+
+If you want to extend the Moodle API integration (e.g. by adding new endpoints or logic), follow these steps:
+
+1. Edit or add functions in ``main.py`` located at ``utils/rpcs/moodleAPI/``
+2. Follow the existing function structure using RPC-compatible patterns
+3. If new API endpoints are added, ensure:
+   - The corresponding Moodle functions are enabled in the external service
+   - The service account has the required permissions
+4. Add or update the frontend call in the corresponding service layer (if applicable)
+5. Rebuild the Docker container (see previous section)
+6. Update this documentation with any new or changed RPC methods
+
+.. note::
+
+   Do not hardcode course IDs, API keys, or URLs. These must be passed via configuration or backend RPC call parameters.
