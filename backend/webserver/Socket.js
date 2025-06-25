@@ -72,14 +72,19 @@ module.exports = class Socket {
                     t.afterCommit(() => {
                         try {
                             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
-
-                            // TODO merge changes from same table and send it at once!
                             if (t.changes) {
+                                var changesMap = new Map();
                                 t.changes.map(async (entry) => {
                                     if (entry.constructor.autoTable) {
-                                        this.emit(entry.constructor.tableName + "Refresh", _.omit(entry.dataValues, defaultExcludes), true);
+                                        const tableName = entry.constructor.tableName;
+                                        if (changesMap.has(tableName)) {
+                                            changesMap[tableName].push(_.omit(entry.dataValues, defaultExcludes));
+                                        } else {
+                                            changesMap[tableName] = [_.omit(entry.dataValues, defaultExcludes)];
+                                        }
                                     }
                                 });
+                                changesMap.forEach((changes, table) => this.emit(table + "Refresh", changes, true));
                             }
                         } catch (e) {
                             this.logger.error("Error in afterCommit sending data to client: " + e);
