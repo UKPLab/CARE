@@ -490,8 +490,7 @@ async editDocument(data, options) {
             ...op
         };
 
-        // TODO transaction missing
-        const savedEdit = await this.models['document_edit'].add(entryData);
+        const savedEdit = await this.models['document_edit'].add(entryData, {transaction: options.transaction});
 
         appliedEdits.push({
             ...savedEdit,
