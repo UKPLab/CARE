@@ -194,6 +194,7 @@ export default {
             return comment.studySessionId === this.studySessionId && comment.studyStepId === this.studyStepId;
           } else if (this.studySessionIds) {
             return this.studySessionIds.includes(comment.studySessionId);
+            // TODO edit here
           } else {
             if (this.showAll) {
               return true;
