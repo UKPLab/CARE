@@ -397,6 +397,9 @@ module.exports = class DocumentSocket extends Socket {
                     const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', comments.flat(1).map(c => c.id));
                     this.emit("comment_voteRefresh", commentVotes);
 
+                    const tagIds = new Set(annotations.flat(1).map(a => a.tagId));
+                    this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));
+
                 } else {
                     const annotations = await this.models['annotation'].findAll(
                         {
@@ -415,6 +418,10 @@ module.exports = class DocumentSocket extends Socket {
                     // send comment votes (get votes for all comments)
                     const commentVotes = await this.models['comment_vote'].getAllByKeyValues('commentId', comments.map(c => c.id));
                     this.emit("comment_voteRefresh", commentVotes);
+
+                    const tagIds = new Set(annotations.flat(1).map(a => a.tagId));
+                    this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));
+
                 }
             } else {
 
@@ -435,10 +442,11 @@ module.exports = class DocumentSocket extends Socket {
                 this.emit("annotationRefresh", closedAnnotations);
                 this.emit("commentRefresh", closedComments);
                 this.emit("comment_voteRefresh", await this.models['comment_vote'].getAllByKeyValues('commentId', comments.map(c => c.id)), false);
+
+                const tagIds = new Set(closedAnnotations.flat(1).map(a => a.tagId));
+                this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));
             }
 
-            // send additional data like tags
-            await this.getSocket('TagSocket').sendTags();
         }
 
 
