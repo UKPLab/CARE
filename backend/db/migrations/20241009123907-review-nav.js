@@ -2,7 +2,7 @@
 
 const navElements = [
   {
-    name: "Review Documents",
+    name: "Submissions",
     groupId: "Admin",
     icon: "file-earmark-richtext",
     order: 9,

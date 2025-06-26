@@ -1,5 +1,5 @@
 <template>
-  <Card title="Review Documents">
+  <Card title="Submissions">
     <template #headerElements>
       <BasicButton
         class="btn-secondary btn-sm me-1"
@@ -18,6 +18,12 @@
         title="Import via Moodle"
         text="Import via Moodle"
         @click="$refs.importModal.open()"
+      />
+      <BasicButton
+        class="btn-success btn-sm ms-1"
+        text="Grading with LLMentor"
+        title="Grading with LLMentor"
+        @click="gradeWithLLMentor" 
       />
     </template>
     <template #body>
@@ -38,6 +44,11 @@
     ref="importModal"
   />
   <PublishModal ref="publishModal" />
+  <GradingModal
+    ref="gradingModal"
+    :documents="documents"
+    @submit="submitGrading"
+  />
 </template>
 
 <script>
@@ -48,6 +59,7 @@ import UploadModal from "./review/UploadModal.vue";
 import ImportModal from "./review/ImportModal.vue";
 import PublishModal from "./review/PublishModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import GradingModal from "@/basic/modal/GradingModal.vue";
 
 /**
  * Submission list component
@@ -78,6 +90,7 @@ export default {
     Card,
     BasicTable,
     BasicButton,
+    GradingModal,
   },
   data() {
     return {
@@ -185,6 +198,29 @@ export default {
     },
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);
+    },
+    gradeWithLLMentor() {
+      this.$refs.gradingModal.open();
+    },
+    submitGrading(selectedSkill) {
+      this.$socket.emit("llmentorGradeAll", {
+        documentIds: this.documents.map((d) => d.id),
+        skill: selectedSkill,
+      }, (res) => {
+        if (res.success) {
+          this.eventBus.emit("toast", {
+            title: "LLMentor Grading Triggered",
+            message: "Grading has been started for all review documents.",
+            variant: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "LLMentor Grading Failed",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
   },
 };
