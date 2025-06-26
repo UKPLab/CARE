@@ -263,6 +263,25 @@ module.exports = class UserSocket extends Socket {
         await this.models["user"].resetUserPwd(userId, password);
     }
 
+    /***
+     * Emits rights associated with a user
+     * @param {number} data.userId the user ID
+     * @returns {Promise<void>}
+     */
+    async getUserRights(data, options) {
+            try {
+                const userRight = await this.models["user"].getUserRights(data.userId);
+                this.socket.emit("userRight", {
+                    success: true, userRight,
+                });
+            } catch (error) {
+                this.socket.emit("userRight", {
+                    success: false, message: "Failed to get user right",
+                });
+                this.logger.error(error);
+            }
+        }
+
     init() {
 
         // Get users by their role
@@ -281,23 +300,9 @@ module.exports = class UserSocket extends Socket {
             }
         });
 
-        // TODO refactor together: this.createSocket("userGetByRole", this.getRoleOfUser, {}, false);
-
         // Get right associated with the user
-        // TODO refactor together
-        this.socket.on("userGetRight", async (userId) => {
-            try {
-                const userRight = await this.models["user"].getUserRights(userId);
-                this.socket.emit("userRight", {
-                    success: true, userRight,
-                });
-            } catch (error) {
-                this.socket.emit("userRight", {
-                    success: false, message: "Failed to get user right",
-                });
-                this.logger.error(error);
-            }
-        });
+
+        this.createSocket("userGetRight", this.getUserRights, {}, false);
 
         /*
         // Update user's following data: firstName, lastName, email, roles
