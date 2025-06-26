@@ -513,16 +513,14 @@ async editDocument(data, options) {
      *
      * This method adds the document to the list of open documents, being tracked by the socket.
      *
+     * @param {object} data - The data object containing the documentId.
      * @param {number} documentId
+     * @param {object} options - The options object.
+     * @returns {Promise<void>}
      */
-    async openDocument(documentId) {
-        try {
-            if (!this.socket.openComponents.editor.includes(documentId)) {
-                this.socket.openComponents.editor.push(documentId);  // Track the document
-            }
-        } catch (e) {
-            this.logger.error("Error tracking document: ", e);
-            this.sendToast("Error tracking document!", "Error", "danger");
+    async openDocument(data, options) {
+        if (!this.socket.openComponents.editor.includes(data.documentId)) {
+            this.socket.openComponents.editor.push(data.documentId);  // Track the document
         }
     }
 
@@ -674,6 +672,36 @@ async editDocument(data, options) {
     }
 
     /**
+     * Close the document and save it if necessary.
+     *
+     * This method saves the document if there is no study session and removes the document from the list of open documents.
+     *
+     * @param {object} data - The data object containing documentId and studySessionId.
+     * @param {number} data.documentId - The ID of the document to close.
+     * @param {number} data.studySessionId - The ID of the study session,
+     * @param {object} options - The options object.
+     * @returns {Promise<void>}
+     */
+    async closeDocument(data, options) {    
+        if (data.studySessionId === null) {
+            await this.saveDocument(data.documentId);
+        }
+        const index = this.socket.openComponents.editor.indexOf(data.documentId);
+        if (index > -1) {
+            this.socket.openComponents.editor[index] = undefined; // Remove the document ID
+        }      
+    }
+
+    /**
+     * Handles the document open request.
+     * This method attempts to open the document with the given documentId and handles any errors that may occur.
+     * @param {object} data - The data object containing the documentId.
+     * @param {number} data.documentId - The ID of the document to open.
+     * @param {object} options - The options object.
+     * @return {Promise<void>}
+     * */
+
+    /**
      * Helper method to get the previous step ID for a given study step ID
      * @param {number} studyStepId - The ID of the study step
      * @returns {Promise<number|null>} - The ID of the previous study step, or null if not found
@@ -719,6 +747,8 @@ async editDocument(data, options) {
             feedback: data.feedback,
         });
     }
+
+    
 
     /**
      * Subscribe to a document
@@ -772,30 +802,30 @@ async editDocument(data, options) {
         });
 
 
-        this.socket.on("documentClose", async (data) => {
-            try {
-                if (data.studySessionId === null) {
-                    await this.saveDocument(data.documentId);
-                }
+        // this.socket.on("documentClose", async (data) => {
+        //     try {
+        //         if (data.studySessionId === null) {
+        //             await this.saveDocument(data.documentId);
+        //         }
 
-                const index = this.socket.openComponents.editor.indexOf(data.documentId);
-                if (index > -1) {
-                    this.socket.openComponents.editor[index] = undefined; // Remove the document ID
-                }
-            } catch (err) {
-                this.logger.error("Error saving document: ", err);
-                this.sendToast("Error saving document!", "Error", "danger");
-            }
-        });
+        //         const index = this.socket.openComponents.editor.indexOf(data.documentId);
+        //         if (index > -1) {
+        //             this.socket.openComponents.editor[index] = undefined; // Remove the document ID
+        //         }
+        //     } catch (err) {
+        //         this.logger.error("Error saving document: ", err);
+        //         this.sendToast("Error saving document!", "Error", "danger");
+        //     }
+        // });
 
-        this.socket.on("documentOpen", async (data) => {
-            try {
-                await this.openDocument(data.documentId);
-            } catch (e) {
-                this.logger.error("Error handling document open request: ", e);
-                this.sendToast("Error handling document open request!", "Error", "danger");
-            }
-        });
+        // this.socket.on("documentOpen", async (data) => {
+        //     try {
+        //         await this.openDocument(data.documentId);
+        //     } catch (e) {
+        //         this.logger.error("Error handling document open request: ", e);
+        //         this.sendToast("Error handling document open request!", "Error", "danger");
+        //     }
+        // });
 
         this.socket.on("documentGetAll", async (data) => {
             try {
@@ -849,5 +879,7 @@ async editDocument(data, options) {
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);
         this.createSocket("documentDataSave", this.saveData, {}, true);
+        this.createSocket("documentClose", this.closeDocument, {}, true);
+        this.createSocket("documentOpen", this.openDocument, {}, false);
     }
 };
