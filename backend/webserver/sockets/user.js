@@ -291,7 +291,9 @@ module.exports = class UserSocket extends Socket {
 
     /***
      * Emits rights associated with a user
+     * @param {Object} data
      * @param {number} data.userId the user ID
+     * @param {Object} options - Sequelize transaction options.
      * @returns {Promise<void>}
      */
     async getUserRights(data, options) {
