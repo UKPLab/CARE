@@ -86,7 +86,6 @@ module.exports = class DocumentSocket extends Socket {
         }
 
         if (fileType === ".delta") {
-            //TODO this not the right way, when we upload a delta file, this should be included directly into the document_edit db
             // Handle HTML and MODAL document types
             const documentType = data.type === docTypes.DOC_TYPE_MODAL ? docTypes.DOC_TYPE_MODAL : docTypes.DOC_TYPE_HTML;
 
