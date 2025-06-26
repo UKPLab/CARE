@@ -269,24 +269,24 @@ export default {
       const downloadAllowed = this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing");
       return (downloadAllowed === true || downloadAllowed === "true");
     },
-    documentOpenStudiesAvailable() {
-      var open = false;
-      const studyStepsWithDocument = this.$store.getters["table/study_step/getFiltered"](
-        e=> e.documentId == this.documentId
-      );
-      studyStepsWithDocument.forEach(
-        studyStep => {
-        const study = this.$store.getters["table/study/getFiltered"](
-          e=> e.id == studyStep.studyId
-        )[0];
-        if (!study.closed) {
-            open = true;
-            return;
-          }
-        }
-      );
-      return open;
-    }
+    // documentOpenStudiesAvailable() {
+    //   var open = false;
+    //   const studyStepsWithDocument = this.$store.getters["table/study_step/getFiltered"](
+    //     e=> e.documentId == this.documentId
+    //   );
+    //   studyStepsWithDocument.forEach(
+    //     studyStep => {
+    //     const study = this.$store.getters["table/study/getFiltered"](
+    //       e=> e.id == studyStep.studyId
+    //     )[0];
+    //     if (!study.closed) {
+    //         open = true;
+    //         return;
+    //       }
+    //     }
+    //   );
+    //   return open;
+    // }
 
   },
   watch: {
