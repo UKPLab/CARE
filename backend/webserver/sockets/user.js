@@ -285,24 +285,28 @@ module.exports = class UserSocket extends Socket {
         }
     }
 
+    /***
+     * Emits rights associated with a user
+     * @param {number} data.userId the user ID
+     * @returns {Promise<void>}
+     */
+    async getUserRights(data, options) {
+        try {
+            const userRight = await this.models["user"].getUserRights(data.userId);
+            this.socket.emit("userRight", {
+                success: true, userRight,
+            });
+        }   catch (error) {
+            this.socket.emit("userRight", {
+                success: false, message: "Failed to get user right",
+            });
+            this.logger.error(error);
+        }
+    }
+
     init() {
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
-
-        // Get right associated with the user
-        // TODO refactor together
-        this.socket.on("userGetRight", async (userId) => {
-            try {
-                const userRight = await this.models["user"].getUserRights(userId);
-                this.socket.emit("userRight", {
-                    success: true, userRight,
-                });
-            } catch (error) {
-                this.socket.emit("userRight", {
-                    success: false, message: "Failed to get user right",
-                });
-                this.logger.error(error);
-            }
-        });
+        this.createSocket("userGetRight", this.getUserRights, {}, false);
         this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true); //TODO not sure about true for the transaction
         this.createSocket("userResetPwd", this.resetUserPwd, {}, false);
         this.createSocket("userGetDetails", this.models["user"].getUserDetails, {}, false);
