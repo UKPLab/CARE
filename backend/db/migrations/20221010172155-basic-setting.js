@@ -27,7 +27,7 @@ const settings = [
     {key: "app.login.guest", type: "boolean", value: "true", description: "Whether to allow guest logins"},
     {
         key: "app.register.terms",
-        type: "json",
+        type: "edits",
         value: null,
         description: "Terms and conditions text to display during registration"
     },

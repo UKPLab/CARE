@@ -37,7 +37,7 @@ export default {
   },
   watch: {
     modelValue(newVal) {
-      if (JSON.stringify(newVal) !== JSON.stringify(this.currentData)) {
+      if (newVal !== this.currentData) {
         this.currentData = newVal;
       }
     },
