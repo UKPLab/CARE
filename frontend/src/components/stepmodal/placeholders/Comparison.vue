@@ -47,9 +47,9 @@ export default {
       ) {
         return null;
       }
-      const labels = Array.from(new Set([...Object.keys(data1), ...Object.keys(data2)]));
-      const dataset1 = labels.map(label => data1[label] ?? 0);
-      const dataset2 = labels.map(label => data2[label] ?? 0);
+      const labels = Array.from(new Set([...data1["labels"], ...data2["labels"]]));
+      const dataset1 = [...data1["values"]];
+      const dataset2 = [...data2["values"]];
       return {
         type: 'bar',
         data: {
