@@ -38,20 +38,7 @@ import "quill/dist/quill.snow.css";
       const editor = this.editorWrapper?.getEditor();
       if (!editor) return;
 
-      let delta;
-      try {
-          if (typeof newVal === "string" && newVal.trim() !== "") {
-          delta = JSON.parse(newVal);
-        } else if (typeof newVal === "object" && newVal !== null) {
-          delta = newVal;
-        } else {
-          delta = { ops: [] };
-        }
-      } catch (e) {
-        console.warn("Failed to parse modelValue:", e);
-        return;
-      }
-
+      const delta = this.normalizeDelta(newVal);
       const current = editor.getContents();
       if (JSON.stringify(current.ops) !== JSON.stringify(delta.ops)) {
         editor.setContents(delta);
@@ -76,26 +63,14 @@ import "quill/dist/quill.snow.css";
 
     const editor = this.editorWrapper.getEditor();
 
-    try {
-      let delta;
-        if (typeof this.modelValue === "string" && this.modelValue.trim() !== "") {
-          delta = JSON.parse(this.modelValue);
-        } else if (typeof this.modelValue === "object" && this.modelValue !== null) {
-          delta = this.modelValue;
-        } else {
-          delta = { ops: [] }; 
-        }
-
-        editor.setContents(delta);
-    } catch (e) {
-      console.error("Failed to load initial modelValue:", e);
-    }
+    const delta = this.normalizeDelta(this.modelValue);
+    editor.setContents(delta);
 
     editor.enable(!this.readOnly);
 
     editor.on("text-change", () => {
       const contents = editor.getContents();
-      this.$emit("update:modelValue", contents); 
+      this.$emit("update:modelValue", JSON.stringify(contents));
     });
 
     editor.on("selection-change", (range) => {
@@ -104,6 +79,26 @@ import "quill/dist/quill.snow.css";
   },
   beforeUnmount() {
     this.editorWrapper = null;
+  },
+  methods: {
+    normalizeDelta(input) {
+      if (!input) return { ops: [] };
+
+      if (typeof input === "string") {
+        try {
+          return JSON.parse(input);
+        } catch (e) {
+          console.warn("Failed to parse string delta:", e);
+          return { ops: [] };
+        }
+      }
+
+      if (typeof input === "object" && input.ops) {
+        return input;
+      }
+
+      return { ops: [] };
+    }
   },
 };
 </script>

@@ -4,7 +4,6 @@
       table="study"
       title="Study"
       @success="success"
-      @submit="update"
   >
     <template #success>
       The study has been successfully published<br>
@@ -91,29 +90,6 @@ export default {
           variant: "danger"
         });
       }
-    },
-    update(data) {
-      // Transforms description of study into a JSON string
-      if (data.description && typeof data.description !== "string") {
-        data.description = JSON.stringify(data.description);
-      }
-
-      this.$socket.emit("appDataUpdate", {
-        table: "study",
-        data
-      }, (result) => {
-        if (result.success) {
-          this.$refs.coordinator.waiting = false;
-          this.success(result.data.id);
-        } else {
-          this.eventBus.emit("toast", {
-            title: "Study update failed",
-            message: result.message,
-            variant: "danger"
-          });
-          this.$refs.coordinator.close();
-        }
-      });
     }
   }
 }
