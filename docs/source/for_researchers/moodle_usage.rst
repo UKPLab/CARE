@@ -1,144 +1,164 @@
 Moodle API for Researchers
 ==========================
 
-This guide provides a general-purpose, researcher-friendly overview of how to interact with the Moodle API in a privacy-conscious and ethically sound way. It includes information on how to access, use, and integrate Moodle data in studies without exposing private implementation or personal information.
+This guide provides an overview of how to interact with the Moodle API, including how to access, use, and integrate Moodle data in studies.
 
 .. note::
 
    This documentation is meant for researchers and non-developers. If you're a developer working with the backend or extending RPC functionality, refer to the :doc:`Moodle API technical guide <../for_developers/backend/rpcs/moodle>`.
 
 Overview
-~~~~~~~~
+--------
 
-The Moodle API allows authorized users to retrieve information from Moodle courses, including course participants and their assignment submissions. It is typically used in research to analyze student activity or manage study workflows, such as collecting submissions or publishing feedback.
+The Moodle API enables authorized users to connect to a `Moodle Instance <https://moodle.org/>`_ and access course-related data. Researchers typically use this functionality to:
 
-.. caution::
+   - Import student submissions for annotation or evaluation
+   - Distribute study results or feedback
+   - View or manage course participation data
 
-   Never use the Moodle API to collect or process personally identifiable information (PII) unless explicitly authorized by your institution and research ethics board.
+.. warning::
 
-Setup & Access
-~~~~~~~~~~~~~~
+   Do not use the Moodle API to handle personally identifiable information (PII) unless this is explicitly permitted by your institution and approved by your research ethics committee.
+
+Access Requirements
+-------------------
 
 To use the Moodle API, you will need the following:
 
 - **API Key**: Issued by the Moodle system administrator.
-- **API URL**: The base URL of your Moodle instance (e.g., `https://moodle.university.edu`).
-- **Course ID**: Numeric ID of the course you are working with.
-
-These values must be entered in the CARE platform or your analysis tool to initiate data access.
-
-Working with the CARE Platform
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-CARE integrates with Moodle to support data collection and feedback distribution. Depending on your study design, you may perform one or both of the following tasks:
-
-1. **Importing Submissions from Moodle**
-2. **Publishing Feedback or Study Results to Moodle**
-
-Assignment Setup in Moodle
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Assignments should be created with specific settings to enable smooth integration:
-
-- **For collecting submissions:**
-  - Submission type: *File submissions*
-  - Feedback type: *Feedback comments*
-  - Student submit button: *No*
-  - Require submission statement: *Yes*
-
-- **For publishing feedback only (no student upload):**
-  - Submission type: *None*
-  - Feedback type: *Feedback comments* (Inline: *No*)
-  - Grade type: *None*
-  - Completion conditions: *None*
-
-Importing Submissions from Moodle
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Once assignments are configured and students have submitted files:
-
-1. Navigate to the CARE platform
-2. Go to **Review Documents**
-3. Select **Import via Moodle**
-4. Choose the course and assignment ID
-5. Imported files will appear in the CARE dashboard
+- **API URL**: The base URL of your Moodle instance.
+- **Course ID**  and **Assignment ID**: Numeric identifiers available in the Moodle URL.
 
 .. tip::
 
-   Each student's submission may contain multiple files. You can select the target file during study creation.
+   To find the course or assignment ID, open the corresponding page in Moodle. The URL will contain a segment like ``id=123``, which indicates the ID.
 
-Creating Studies in CARE
-~~~~~~~~~~~~~~~~~~~~~~~~
+Setting Up the Moodle Integration in CARE
+-----------------------------------------
 
-You can create a new study using a predefined template or from scratch:
+To configure Moodle API access in the CARE platform:
 
-1. Go to **Studies > Add Single Assignment**
-2. Choose a template or create new
-3. Assign documents and reviewers
-4. Optionally rename the study to differentiate sessions
+1. Go to ``Settings`` in the sidebar
+2. Select the ``RPC`` panel and then click on ``moodleAPI``
+3. Enter the following:
 
-Account Matching & Importing Users
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   - rpc.moodleAPI.apiKey – your API key from the Moodle admin
+   - rpc.moodleAPI.apiUrl – the base URL of your Moodle instance
+   - rpc.moodleAPI.courseID – the course ID where you are assigned as a tutor or teacher
 
-CARE supports importing users directly from Moodle courses:
+.. note::
 
-1. Go to **Users > Import via Moodle**
-2. CARE will match accounts using email addresses
+The Moodle account used must have proper permissions for the course. Ask your Moodle administrator for help if unsure.
 
-There are three scenarios:
+Using Moodle with the CARE Platform
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **New users**: Accounts are created automatically
-- **Duplicate users**: Accounts are merged if emails match
-- **Unverified users**: If email differs, manual correction is required
+The CARE platform integrates directly with Moodle to help manage studies. Researchers typically use the following workflows:
+
+**Importing Submissions from Moodle**
+To collect assignment submissions:
+
+1. In Moodle, create an assignment with:
+
+      - Submission type: ``File submissions``
+      - Feedback type: ``Feedback comments``
+
+2. In CARE:
+
+      - Go to ``Review Documents``
+      - Choose ``Import via Moodle``
+      - Provide the correct course and assignment IDs
+
+.. tip::
+
+   After importing, close the import window using the ``X`` icon. Submissions will then appear in the ``Review Documents`` section. If multiple files are submitted by a student, CARE allows you to select the relevant file during study creation.
+
+**Study Creation with Imported Submissions**
+To create a study:
+
+1. Go to ``Studies > Add Single Assignment``
+2. Choose a template or start from scratch
+3. Select the imported documents
+4. Assign reviewers and finalize setup
+
+.. tip::
+
+Use clear names for studies and templates to distinguish multiple sessions.
+
+**Publishing Feedback**
+After analysis or review, you may want to send feedback to students:
+
+1. Mark your study in CARE as ``Finished``
+2. Go to ``Review Documents > Publish Reviews``
+3. Select the corresponding session and assignment
+4. Use the ``Upload to Moodle`` option
 
 .. warning::
 
-   Never delete users with an `extId` (external Moodle ID) unless absolutely necessary. Doing so may break future synchronizations.
+   Feedback can only be published to users with a valid ``extId`` (external ID from Moodle). Missing IDs must be corrected via user re-import.
 
-Publishing Feedback via Moodle
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To publish feedback or credentials back to students via Moodle:
-
-1. Ensure the study is marked as **Finished**
-2. Go to **Review Documents > Publish Reviews**
-3. Select the completed session and assignment
-4. Click **Upload to Moodle**
-
-Only students with valid `extId`s will receive feedback.
-
-Ethical Guidelines
-~~~~~~~~~~~~~~~~~~
-
-- Always follow GDPR and institutional ethics guidelines
-- Use anonymized or aggregated data whenever possible
-- Avoid storing or transferring student names, email addresses, or user IDs unless explicitly authorized
-
-Troubleshooting
+Importing Users
 ~~~~~~~~~~~~~~~
 
-- If submissions are not visible, check assignment configuration in Moodle
-- If user accounts aren't matching, verify that emails are identical across both platforms
-- For missing `extId` values, re-import users from Moodle with correct course ID
+User data can be synchronized from Moodle using the course ID:
 
-Frequently Asked Questions
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Navigate to ``Users > Import via Moodle``
+2. CARE will attempt to match users by email address
 
-**Q: How do I find the course or assignment ID?**
+CARE handles three scenarios:
 
-A: Open the course or assignment in Moodle. The URL will contain `id=XXXX`. That number is the ID.
+- New users are created if not found
+- Duplicate users are merged based on email match
+- Conflicts (e.g., mismatched emails) require manual correction
 
-**Q: Can I select specific files from a submission with multiple documents?**
+.. warning::
 
-A: Yes, CARE allows selecting the target file during study setup.
+   Never delete a user with an ``extId`` unless you are certain it won't be needed. This could prevent future updates or synchronization.
 
-**Q: Can I test the API without publishing feedback?**
+.. tip::
 
-A: Yes, you can import data and view it in CARE without publishing anything back to Moodle.
+   If a user's email in CARE differs from Moodle, edit it manually to allow a match. Avoid duplicates.
 
-References
-~~~~~~~~~~
+Assignment Configuration in Moodle
+----------------------------------
+
+Depending on the task, configure assignments as follows:
+
+**For collecting submissions:**
+
+- ``Submission type``: ``File submissions``
+- ``Feedback type``: ``Feedback comments``
+- ``Submit button``: ``No``
+- ``Submission statement``: ``Yes``
+
+**For publishing feedback (no file uploads):**
+
+- ``Submission type``: None
+- ``Feedback type``: ``Feedback comments`` (Inline: ``No``)
+- ``Grade type``: None
+- ``Completion conditions``: None
+
+Choose clear and descriptive assignment names for easier tracking in CARE.
+
+Ethical Considerations
+----------------------
+
+When conducting research using the Moodle API:
+
+- Minimize use of personally identifiable data
+- Always adhere to your institution’s ethics guidelines
+- Use anonymized or aggregated results where possible
+
+.. caution::
+
+      Improper handling of data may violate data protection regulations such as the `General Data Protection Regulation (GDPR) <https://gdpr.eu/>`_.
+
+Further Reading
+---------------
+
+For official and technical resources, consult:
 
 - `Moodle Web Services API Documentation <https://docs.moodle.org/dev/Web_services>`_
-- `Moodle Plugin Development <https://moodledev.io/docs/apis/core/dml>`_
+- `Moodle Plugin Development Guide <https://moodledev.io/docs/apis/core/dml>`_
 
+These references can provide additional context for permissions, supported functions, and integration behavior when needed.
