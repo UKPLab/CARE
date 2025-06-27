@@ -55,8 +55,9 @@ module.exports = {
         onUpdate: 'CASCADE',
       },
       extId: {
-        type: Sequelize.STRING,
+        type: Sequelize.INTEGER,
         allowNull: true,
+        unique: true
       },
       deleted: {
         type: Sequelize.BOOLEAN,
@@ -66,6 +67,7 @@ module.exports = {
       deletedAt: {
         type: Sequelize.DATE,
         allowNull: true,
+        defaultValue: null,
       },
       createdAt: {
         type: Sequelize.DATE,
