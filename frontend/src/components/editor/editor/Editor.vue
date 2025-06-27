@@ -302,7 +302,15 @@ export default {
   },
   sockets: {
     connect() {
-      this.$socket.emit("documentOpen", {documentId: this.documentId});
+      this.$socket.emit("documentOpen", {documentId: this.documentId}, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Document Open Error",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
     documentError(error) {
       this.handleDocumentError(error);
@@ -312,7 +320,15 @@ export default {
     this.eventBus.off("editorSelectEdit", this.selectEditHandler);
     this.eventBus.off("editorInsertText", this.insertTextHandler);
 
-    this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId});
+    this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId}, (res) => {
+      if (!res.success) {
+        this.eventBus.emit("toast", {
+          title: "Document Close Error",
+          message: res.message,
+          variant: "danger",
+        });
+      }
+    });
   },
   methods: {
     clearEditor() {

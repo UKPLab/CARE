@@ -91,7 +91,9 @@ export default {
   methods: {
     open(userId) {
       this.$refs.modal.open();
-      this.$socket.emit("userGetRight", userId);
+      this.$socket.emit("userGetRight", {
+        userId: userId
+      });
     },
   },
 };

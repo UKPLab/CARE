@@ -63,9 +63,7 @@ import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
-// TODO: Remove this
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
+
 
 /**
  * Show a table to insert new elements
