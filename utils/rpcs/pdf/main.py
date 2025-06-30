@@ -72,14 +72,24 @@ def create_app():
     @sio.on("annotationsExtract")
     def extract_pdf_annotations(sid, data):
         """
-        Extracts all annotations from a PDF, groups them by subject, and removes them from the document.
+        Extracts all annotations from a PDF, groups them by subject (unless title is empty), and removes them from the document.
+        Returns:
+            {
+                "success": True/False,
+                "message": "...",
+                "data": {
+                    "annotations": [...],
+                    "wholeText": ...,
+                    "file": ...,
+                }
+            }
         """
         try:
             doc = pymupdf.open(stream=data["file"])
-            
             whole_text = ""
             grouped_annotations = {}
             annotations_order = []
+            annotations = []
 
             for page_num in range(len(doc)):
                 page = doc[page_num]
@@ -92,7 +102,45 @@ def create_app():
 
                 for annot in annots:
                     subject = annot.info.get("subject", "default")
+                    title = annot.info.get("title")
                     logger.info(f"subject {subject} annotation info {annot.info}")
+
+                    words_on_page = page.get_text("words")
+                    comment = annot.info.get("content", "")
+                    highlighted_text = extract_annot(annot, words_on_page)
+                    if len(highlighted_text) == 0:
+                        continue
+
+                    rect = list(annot.rect)
+                    annot_text = annot.get_text("text")
+                    start_idx = page_text.find(annot_text)
+                    end_idx = start_idx + len(annot_text) if start_idx != -1 else -1
+
+                    text_start = start_idx if start_idx != -1 else 0
+                    text_end = end_idx if end_idx != -1 else 0
+                    prefix = whole_text[max(0, text_start - 30):text_start]
+                    suffix = whole_text[text_end:text_end + 30]
+
+                    # If annotation is not made by care (no grouping subject),
+                    if not title.strip() == "care_annotation":
+                        annotations.append({
+                            "page": page.number,
+                            "type": annot.type[1] if isinstance(annot.type, tuple) else annot.type,
+                            "rects": [rect],
+                            "comment": comment.strip(),
+                            "texts": [highlighted_text],
+                            "color": annot.colors,
+                            "prefix": prefix,
+                            "suffix": suffix,
+                            "subject": subject,
+                            "text": highlighted_text,
+                        })
+                        # Remove annotation from the page
+                        annot.update(fill_color=(0, 0, 0))
+                        page.delete_annot(annot)
+                        continue
+
+                    # Grouped annotation logic
                     if subject not in grouped_annotations:
                         grouped_annotations[subject] = {
                             "page": page.number,
@@ -106,45 +154,29 @@ def create_app():
                         }
                         annotations_order.append(subject)
 
-                    words_on_page = page.get_text("words")
-                    if annot.info.get("content"):
-                        grouped["comment"] += f"{annot.info['content']} "
-                    highlighted_text = extract_annot(annot, words_on_page)
-                    if len(highlighted_text) == 0:
-                        ## This condition handles when a comment annotation is being processed (has no annot.quads)
-                        continue
-
                     grouped = grouped_annotations[subject]
+
+                    if comment:
+                        grouped["comment"] += f"{comment} "
                     grouped["texts"].append(highlighted_text)
-                    grouped["rects"].append(list(annot.rect))
-
-                   
-
-                    annot_text = annot.get_text("text")
-                    start_idx = page_text.find(annot_text)
-                    end_idx = start_idx + len(annot_text) if start_idx != -1 else -1
+                    grouped["rects"].append(rect)
 
                     if start_idx != -1:
                         if grouped["text_start"] is None or start_idx < grouped["text_start"]:
                             grouped["text_start"] = start_idx
                         if grouped["text_end"] is None or end_idx > grouped["text_end"]:
                             grouped["text_end"] = end_idx
-
-                    # Remove annotation from the page
-                    annot.update(fill_color=(0, 0, 0))
-                    page.delete_annot(annot)
-
-            annotations = []
+            # Add grouped annotations to the result
             for subject in annotations_order:
                 group = grouped_annotations[subject]
-                texts = group.get("texts") or []  # Defensive fallback
-                if len(texts) != 0:
-                    full_text = " ".join(texts).strip()
+                logger.info(f"[extract_pdf_annotations] Processing group for subject: {subject}")
+                logger.info(f"[extract_pdf_annotations] Group details: {group}")
+                texts = group.get("texts") or []
+                full_text = " ".join(texts).strip() if len(texts) != 0 else ""
                 text_start = group.get("text_start") or 0
                 text_end = group.get("text_end") or 0
                 prefix = whole_text[max(0, text_start - 30):text_start]
                 suffix = whole_text[text_end:text_end + 30]
-
 
                 annotations.append({
                     "page": group["page"],
@@ -158,21 +190,22 @@ def create_app():
                     "subject": subject,
                 })
 
+            logger.info(f"[extract_pdf_annotations] Extracted {len(annotations)} annotations")
+            logger.info(f"[extract_pdf_annotations] Whole text length: {len(whole_text)}")
+
             output_buffer = doc.write()
             return {
                 "success": True,
                 "message": "Annotations extracted successfully.",
                 "data": {
                     "annotations": annotations,
-                    "wholeText": whole_text,
-                    "file": output_buffer
                 }
             }
 
         except Exception as e:
             logger.error(f"[extract_pdf_annotations] Error: {e}")
             return {"success": False, "message": "error: " + str(e)}
-
+        
     @sio.on("embedAnnotations")
     def embeddAnnotations(sid, data):
         """
