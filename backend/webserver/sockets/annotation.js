@@ -46,9 +46,65 @@ module.exports = class AnnotationSocket extends Socket {
         }
     }
 
+        /**
+     * Updates the annotations in the database. If the provided annotation is a new annotation,
+     * it will be created in the database; otherwise, the existing entry is overridden.
+     * Returns both the annotation and the created comment.
+     *
+     * @param {Object} data the input data from the frontend
+     * @param {Object} options containing transactions
+     * @param options.transaction the DB transaction
+     * @param {number} data.annotationId the id of the annotation to update
+     * @param {number} data.documentId the id of the document to update
+     * @param {number} data.studySessionId the id of the study session
+     * @param {number} data.studyStepId the id of the study step
+     * @param {number} data.tagId the id of the tag
+     * @param {string} data.selectors the selectors of the annotation
+     * @param {boolean} data.deleted indicates if the data is deleted
+     * @param {boolean} data.anonymous indicates if the data is anonymous
+     * @returns {Promise<{annotation: object, comment: object|null}>}
+     */
+    async updateAnnotationReturn(data, options) {
+        if (data.annotationId && data.annotationId !== 0) { // modify
+            const origAnnotation = await this.models['annotation'].getById(data.annotationId, {transaction: options.transaction});
+
+            if (!(await this.checkUserAccess(origAnnotation.userId))) {
+                throw Error("You have no permission to change this annotation");
+            }
+
+            data.draft = false;
+            const newAnno = await this.models['annotation'].updateById(data.annotationId, data, {transaction: options.transaction});
+            this.emitDoc(newAnno.documentId, "annotationRefresh", newAnno);
+            return { annotation: newAnno, comment: null };
+        } else { // create new
+            const newAnnotation = {
+                documentId: data.documentId,
+                selectors: data.selectors,
+                tagId: data.tagId,
+                studySessionId: data.studySessionId,
+                studyStepId: data.studyStepId,
+                text: (data.selectors && data.selectors.target) ? data.selectors.target[0].selector[1].exact : null,
+                draft: data.draft !== undefined ? data.draft : true,
+                userId: this.userId,
+                anonymous: data.anonymous !== undefined ? data.anonymous : false,
+            };
+
+            const annotation = await this.models['annotation'].add(newAnnotation, {transaction: options.transaction});
+            const comment = await this.getSocket("CommentSocket").addCommentReturn({
+                documentId: annotation.documentId,
+                studySessionId: annotation.studySessionId,
+                studyStepId: annotation.studyStepId,
+                annotationId: annotation.id,
+                anonymous: annotation.anonymous !== undefined ? data.anonymous : false,
+            }, options);
+
+            return { annotation, comment };
+        }
+    }
+
     /**
      * Updates the annotations in the database. If the provided annotation is a new annotation,
-     * it will be created in the database otherwise the existing entry is overriden.
+     * it will be created in the database; otherwise, the existing entry is overridden.
      *
      * @param {Object} data the input data from the frontend
      * @param {Object} options containing transactions
@@ -99,7 +155,6 @@ module.exports = class AnnotationSocket extends Socket {
         }, options);
 
             this.emitDoc(annotation.documentId, "annotationRefresh", annotation); //fixme msg sent twice due to collab, revise
-            return {annotation, comment};
         }
     }
 
