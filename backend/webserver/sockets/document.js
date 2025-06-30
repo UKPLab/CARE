@@ -125,11 +125,24 @@ module.exports = class DocumentSocket extends Socket {
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
-            }, {transaction: options.transaction});   
+            }, {transaction: options.transaction});
 
-            // First save the file without annotations
-            target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
-            fs.writeFileSync(target, data.file);
+            // save the pdf without any annotations
+            let originalDocument;
+            try {
+                const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+                    file: data.file,
+                    document: doc
+                });
+                if (!file) {
+                    throw new Error("Error deleting annotations");
+                }
+                originalDocument = file;
+                target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+                fs.writeFileSync(target, originalDocument);
+            } catch (annotationRpcErr) {
+                throw new Error("Error deleting annotations: " + annotationRpcErr.message);
+            }
 
             if (data["enableAnnotations"]) {
                 try {
@@ -146,6 +159,7 @@ module.exports = class DocumentSocket extends Socket {
                             try {
                                 textPositions = this.getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
+                                // instead of throwing an error, we return the doument without annotations
                                 throw new Error("Error calculating text positions: " + error.message);  
                             }
 
@@ -183,7 +197,7 @@ module.exports = class DocumentSocket extends Socket {
                                     userId: this.userId,
                                     anonymous: false,
                                 };
-                                const {annotation, comment} = await this.getSocket('AnnotationSocket').updateAnnotation(newAnnotation, options);
+                                const {annotation, comment} = await this.getSocket('AnnotationSocket').updateAnnotationReturn(newAnnotation, options);
                                 annotations.push(annotation);
                                 await this.getSocket('CommentSocket').updateComment({
                                     commentId: comment.id,
@@ -199,20 +213,6 @@ module.exports = class DocumentSocket extends Socket {
                 } catch (annotationRpcErr) {
                     throw new Error("Error extracting annotations: " + annotationRpcErr.message);
                 }
-            }
-            try {
-                const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
-                    file: data.file,
-                    document: doc
-                });
-                if (!file) {
-                    throw new Error("Error deleting annotations");
-                }
-                data.file = file;   
-                target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
-                fs.writeFileSync(target, data.file);
-            } catch (annotationRpcErr) {
-                throw new Error("Error deleting annotations: " + annotationRpcErr.message);
             }
         }
         options.transaction.afterCommit(() => {
