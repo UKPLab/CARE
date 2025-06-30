@@ -104,7 +104,7 @@ import {scrollElement} from "@/assets/anchoring/scroll";
  *
  * Here the annotations are listed and can be modified, also includes scrolling feature.
  *
- * @author Nils Dycke, Dennis Zyska
+ * @author Nils Dycke, Dennis Zyska, Marina Sakharova
  */
 export default {
   name: "AnnotationSidebar",
@@ -198,7 +198,6 @@ export default {
             return comment.studySessionId === this.studySessionId && comment.studyStepId === this.studyStepId;
           } else if (this.studySessionIds) {
             return this.studySessionIds.includes(comment.studySessionId);
-            // TODO edit here
           } else {
             if (this.showAll) {
               return true;

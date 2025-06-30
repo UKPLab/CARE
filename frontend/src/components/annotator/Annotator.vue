@@ -126,7 +126,7 @@
  * This parent component provides the annotation view, which
  * currently consists of all elements of the annotator.
  *
- * @author Dennis Zyska
+ * @author Dennis Zyska, Marina Sakharova
  */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
@@ -254,12 +254,7 @@ export default {
           });
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
         // get only annotations for closed studies
-        const result = annos.filter(annotation => {
-          const studySession = this.$store.getters["table/study_session/get"](annotation.studySessionId);
-          const study = this.$store.getters["table/study/get"](studySession.studyId);
-          return !(study.closed === null);
-        });
-        return result;
+        return this.filterItemsWithClosedStudies(annos);
       } else {
         return annos;
       }
@@ -268,12 +263,7 @@ export default {
       const comments = this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
       // get only comments for closed studies. Used only to display to number of comments in the top bar correctly
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        const result = comments.filter(comment => {
-          const studySession = this.$store.getters["table/study_session/get"](comment.studySessionId);
-          const study = this.$store.getters["table/study/get"](studySession.studyId);
-          return !(study.closed === null);
-        });
-        return result;
+        return this.filterItemsWithClosedStudies(comments);
       }
       return comments;
     },
@@ -546,6 +536,15 @@ export default {
         }
       }
     },
+    // for an array of comments or annotations, returns filtered array with only items from closed studies.
+    filterItemsWithClosedStudies(array) {
+      return array.filter(item => {
+          const studySession = this.$store.getters["table/study_session/get"](item.studySessionId);
+          const study = this.$store.getters["table/study/get"](studySession.studyId);
+          return !(study.closed === null);
+        }
+      )
+    }
   }
 }
 </script>
