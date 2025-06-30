@@ -73,7 +73,7 @@ export default {
       this.isLoading = true;
       if (this.downloadWithAnnotations) {
         this.$socket.emit(
-          "annotationEmbedd",
+          "annotationEmbed",
           {
             documentId: this.pendingPDFDownloadParams.id,
             includeAnnotations: this.downloadWithAnnotations,
