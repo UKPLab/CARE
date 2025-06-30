@@ -186,8 +186,12 @@ export default {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
+    downloadBeforeStudyClosingAllowed() {
+      const downloadAllowed = this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing");
+      return (downloadAllowed === true || downloadAllowed === "true");
+    },
     documentComments() {
-      return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
+      const comments = this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
           // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
@@ -218,7 +222,15 @@ export default {
           } else {
             return !a.annotationId ? 1 : -1;
           }
-        })
+        });
+        if (this.studySessionId === null && !this.downloadBeforeStudyClosingAllowed) {
+          return comments.filter(comment => {
+            const studySession = this.$store.getters["table/study_session/get"](comment.studySessionId);
+            const study = this.$store.getters["table/study/get"](studySession.studyId);
+            return !(study.closed === null);
+          })
+        };
+        return comments;
     },
     sidebarContainerStyle() {
       return {
