@@ -77,7 +77,7 @@
 
     <Teleport to="#topBarExtendMenuItems">
       <li><a
-          :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
+          :class="annotations.length + comments.length > 0 && !downloading && (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null)? '' : 'disabled'"
           class="dropdown-item"
           href="#"
           @click="downloadAnnotations"
@@ -144,7 +144,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 
 export default {
   name: "AnnotatorView",
-  subscribeTable: ["study", "study_step"],
+  subscribeTable: ["study", "study_step", "study_session"],
   components: {
     LoadIcon,
     PDFViewer,
@@ -240,8 +240,8 @@ export default {
       return (showAllComments !== undefined && showAllComments);
     },
     annotations() {
-      return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId)
-          .sort((a, b) => {
+      const allAnos = this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId);
+      const annos = allAnos.sort((a, b) => {
             const a_noanchor = a.anchors === null || a.anchors.length === 0;
             const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
@@ -251,10 +251,30 @@ export default {
 
             return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
           });
+      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
+        const result = annos.filter(annotation => {
+          const studySession = this.$store.getters["table/study_session/get"](annotation.studySessionId);
+          const study = this.$store.getters["table/study/get"](studySession.studyId);
+          return !(study.closed === null);
+        });
+        return result;
+      } else {
+        return annos;
+      }
     },
     comments() {
-      return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
+      const comments = this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
+      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
+        const result = comments.filter(comment => {
+          const studySession = this.$store.getters["table/study_session/get"](comment.studySessionId);
+          const study = this.$store.getters["table/study/get"](studySession.studyId);
+          return !(study.closed === null);
+        });
+        return result;
+      }
+      return comments;
     },
+
     nlpActive() {
       const nlpActive = this.$store.getters["settings/getValue"]("annotator.nlp.activated");
       return (nlpActive === true || nlpActive === "true");
@@ -269,24 +289,6 @@ export default {
       const downloadAllowed = this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing");
       return (downloadAllowed === true || downloadAllowed === "true");
     },
-    // documentOpenStudiesAvailable() {
-    //   var open = false;
-    //   const studyStepsWithDocument = this.$store.getters["table/study_step/getFiltered"](
-    //     e=> e.documentId == this.documentId
-    //   );
-    //   studyStepsWithDocument.forEach(
-    //     studyStep => {
-    //     const study = this.$store.getters["table/study/getFiltered"](
-    //       e=> e.id == studyStep.studyId
-    //     )[0];
-    //     if (!study.closed) {
-    //         open = true;
-    //         return;
-    //       }
-    //     }
-    //   );
-    //   return open;
-    // }
 
   },
   watch: {
@@ -489,9 +491,7 @@ export default {
       return await this.$refs.sidebar.leave();
     },
     downloadAnnotations() {
-      if (!this.downloadBeforeStudyClosingAllowed && this.documentOpenStudiesAvailable) {
-        return;
-      }
+
       const attributesToDelete = [
         "draft",
         "anonymous",
