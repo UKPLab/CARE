@@ -75,6 +75,7 @@
       <ExpandMenu v-show="studySessionId && studySessionId !== 0 ? active : true" class="nav-item"/>
     </Teleport>
 
+    <!-- If download before study closing disabled and we are in a study session, no download allowed -->
     <Teleport to="#topBarExtendMenuItems">
       <li><a
           :class="annotations.length + comments.length > 0 && !downloading && (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null)? '' : 'disabled'"
@@ -252,6 +253,7 @@ export default {
             return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
           });
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
+        // get only annotations for closed studies
         const result = annos.filter(annotation => {
           const studySession = this.$store.getters["table/study_session/get"](annotation.studySessionId);
           const study = this.$store.getters["table/study/get"](studySession.studyId);
@@ -264,6 +266,7 @@ export default {
     },
     comments() {
       const comments = this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
+      // get only comments for closed studies. Used only to display to number of comments in the top bar correctly
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
         const result = comments.filter(comment => {
           const studySession = this.$store.getters["table/study_session/get"](comment.studySessionId);

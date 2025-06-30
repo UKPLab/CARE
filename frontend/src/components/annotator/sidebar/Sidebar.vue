@@ -224,6 +224,7 @@ export default {
           }
         });
         if (this.studySessionId === null && !this.downloadBeforeStudyClosingAllowed) {
+        // get only comments from closed studies
           return comments.filter(comment => {
             const studySession = this.$store.getters["table/study_session/get"](comment.studySessionId);
             const study = this.$store.getters["table/study/get"](studySession.studyId);
