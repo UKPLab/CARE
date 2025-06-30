@@ -211,7 +211,7 @@ module.exports = class DocumentSocket extends Socket {
                         }
                     }
                 } catch (annotationRpcErr) {
-                    throw new Error("Error extracting annotations: " + annotationRpcErr.message);
+throw new Error("The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing.");
                 }
             }
         }
