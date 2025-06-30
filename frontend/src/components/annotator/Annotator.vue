@@ -231,7 +231,7 @@ export default {
   computed: {
     anchors() {
       return [].concat(
-          this.annotations.filter(a => a.anchors !== null)
+          this.annotations().filter(a => a.anchors !== null)
               .flatMap(a => a.anchors)
               .filter(a => a !== undefined)
       )
@@ -239,25 +239,6 @@ export default {
     showAll() {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
-    },
-    annotations() {
-      const allAnos = this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId);
-      const annos = allAnos.sort((a, b) => {
-            const a_noanchor = a.anchors === null || a.anchors.length === 0;
-            const b_noanchor = b.anchors === null || b.anchors.length === 0;
-
-            if (a_noanchor || b_noanchor) {
-              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
-            }
-
-            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
-          });
-      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        // get only annotations for closed studies
-        return this.filterItemsWithClosedStudies(annos);
-      } else {
-        return annos;
-      }
     },
     comments() {
       const comments = this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
@@ -278,6 +259,7 @@ export default {
     numStudyComments() {
       return this.comments.filter(c => c.studySessionId).length;
     },
+    // check if the setting is on or off
     downloadBeforeStudyClosingAllowed() {
       const downloadAllowed = this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing");
       return (downloadAllowed === true || downloadAllowed === "true");
@@ -355,6 +337,25 @@ export default {
     document.removeEventListener('copy', this.onCopy);
   },
   methods: {
+    // moved from computed to methods because otherwise worked as desired only after reload
+    annotations() {
+      const annos = this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
+            const a_noanchor = a.anchors === null || a.anchors.length === 0;
+            const b_noanchor = b.anchors === null || b.anchors.length === 0;
+
+            if (a_noanchor || b_noanchor) {
+              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+            }
+
+            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+          });
+      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
+        // get only annotations for closed studies
+        return this.filterItemsWithClosedStudies(annos);
+      } else {
+        return annos;
+      }
+    },
     ...mapMutations({
       setSetting: "settings/set",
     }),
@@ -497,7 +498,7 @@ export default {
         "studyStepId",
         "userId"
       ];
-      const annotations = this.annotations.map(a => {
+      const annotations = this.annotations().map(a => {
         return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
       });
       // change tagId to tagName
