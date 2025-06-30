@@ -161,17 +161,15 @@ module.exports = class AnnotationSocket extends Socket {
         });
         
         return {
-            success: true,
             documentId: data.documentId,
-            file: response, // Send the response directly without saving
+            file: response,
             hash: document.hash,
-            message: "Annotations embedded successfully."
         };
     }
     init() {
         this.createSocket("annotationGet", this.sendAnnotation, {}, false);
         this.createSocket("annotationUpdate", this.updateAnnotation, {}, true);
         this.createSocket("annotationGetByDocument", this.getAnnotationsByDoc, {}, false);
-        this.createSocket("annotationEmbedd", this.embedAnnotationsForDocument, {}, false);
+        this.createSocket("annotationEmbed", this.embedAnnotationsForDocument, {}, false);
     }
 }
