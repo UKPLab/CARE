@@ -159,7 +159,7 @@ module.exports = class DocumentSocket extends Socket {
                             try {
                                 textPositions = this.getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
-                                // instead of throwing an error, we return the doument without annotations
+                                // TODO: instead of throwing an error, we return the doument without annotations
                                 throw new Error("Error calculating text positions: " + error.message);  
                             }
 
