@@ -104,7 +104,7 @@ import {scrollElement} from "@/assets/anchoring/scroll";
  *
  * Here the annotations are listed and can be modified, also includes scrolling feature.
  *
- * @author Nils Dycke, Dennis Zyska, Marina Sakharova
+ * @author Nils Dycke, Dennis Zyska
  */
 export default {
   name: "AnnotationSidebar",
@@ -186,10 +186,6 @@ export default {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
-    downloadBeforeStudyClosingAllowed() {
-      const downloadAllowed = this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing");
-      return (downloadAllowed === true || downloadAllowed === "true");
-    },
     documentComments() {
       const comments = this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
@@ -222,14 +218,6 @@ export default {
             return !a.annotationId ? 1 : -1;
           }
         });
-        if (this.studySessionId === null && !this.downloadBeforeStudyClosingAllowed) {
-        // get only comments from closed studies
-          return comments.filter(comment => {
-            const studySession = this.$store.getters["table/study_session/get"](comment.studySessionId);
-            const study = this.$store.getters["table/study/get"](studySession.studyId);
-            return !(study.closed === null);
-          })
-        };
         return comments;
     },
     sidebarContainerStyle() {
