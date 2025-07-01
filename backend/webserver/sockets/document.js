@@ -72,6 +72,7 @@ module.exports = class DocumentSocket extends Socket {
         let doc = null;
         let target = "";
         let annotations = [];
+        let errors = [];
     
         if (!data['file']) {
             throw new Error("No file uploaded");
@@ -135,13 +136,16 @@ module.exports = class DocumentSocket extends Socket {
                     document: doc
                 });
                 if (!file) {
-                    throw new Error("Error deleting annotations");
+                    throw new Error("Couldn't delete annotations");
                 }
                 originalDocument = file;
                 target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
                 fs.writeFileSync(target, originalDocument);
             } catch (annotationRpcErr) {
-                throw new Error("Error deleting annotations: " + annotationRpcErr.message);
+                errors.push("Error deleting annotations: " + annotationRpcErr.message);
+                // Save the raw file anyway
+                target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+                fs.writeFileSync(target, data.file);
             }
 
             if (data["enableAnnotations"]) {
@@ -160,7 +164,8 @@ module.exports = class DocumentSocket extends Socket {
                                 textPositions = this.getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
                                 // TODO: instead of throwing an error, we return the doument without annotations
-                                throw new Error("Error calculating text positions: " + error.message);  
+                                errors.push("Error extracting text positions for text " + extracted.text + ": " + error.message);
+                                continue; 
                             }
 
                             const selectors = {
@@ -206,19 +211,20 @@ module.exports = class DocumentSocket extends Socket {
                                 
                                 
                             } catch (annotationErr) {
-                                throw new Error("Error adding annotation: " + annotationErr.message);
+                                errors.push("Error adding annotation: " + annotationErr.message);
+                                continue;
                             }
                         }
                     }
                 } catch (annotationRpcErr) {
-throw new Error("The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing.");
+                    errors.push("The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing.");
                 }
             }
         }
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         });
-        return {doc, annotations};
+        return {doc, annotations, errors};
     }
 
     /**

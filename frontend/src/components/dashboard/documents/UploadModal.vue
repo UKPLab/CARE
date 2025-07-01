@@ -137,13 +137,28 @@ export default {
           wholeText: extractedText // Send the extracted text with the upload
         }, (res) => {
           this.uploading = false;
+          this.$refs.uploadModal.waiting = false;
+
           if (res.success) {
-            this.$refs.uploadModal.waiting = false;
-            this.eventBus.emit("toast", {
-              title: "Uploaded file",
-              message: `File successfully uploaded! ${this.importAnnotations ? `\n Added ${res.data.annotations.length} annotations` : ""}`,
-              variant: "success",
-            });
+            let message = `File successfully uploaded!`;
+            if (this.importAnnotations && res.data.annotations) {
+              message += `\nAdded ${res.data.annotations.length} annotations.`;
+            }
+            // Show errors as warnings if present
+            if (res.data.errors && res.data.errors.length > 0) {
+              message += `\nSome issues occurred:\n- ${res.data.errors.join('\n- ')}`;
+              this.eventBus.emit("toast", {
+                title: "Uploaded with warnings",
+                message,
+                variant: "warning",
+              });
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Uploaded file",
+                message,
+                variant: "success",
+              });
+            }
             this.$refs.uploadModal.close();
           } else {
             this.eventBus.emit("toast", {
