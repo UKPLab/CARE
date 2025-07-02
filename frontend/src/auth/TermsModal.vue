@@ -8,7 +8,7 @@
       Terms
     </template>
     <template #body>
-      <div v-html="terms" />
+      <BasicEditor :modelValue="terms" :readOnly="true" />
     </template>
     <template #footer>
       <button
@@ -27,13 +27,14 @@
  *
  * Shows a modal containing the terms set in the database for users to confirm upon registration.
  *
- * @author: Dennis Zyska
+ * @author: Dennis Zyska, Juliane Bechert
  */
 import Modal from "@/basic/Modal.vue";
+import BasicEditor from "@/basic/editor/Editor.vue";
 
 export default {
   name: "TermsModal",
-  components: {Modal},
+  components: {Modal, BasicEditor},
   computed: {
     terms() {
       return window.config['app.register.terms'];
