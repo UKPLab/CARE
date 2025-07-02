@@ -249,11 +249,13 @@ module.exports = class UserSocket extends Socket {
 
     /**
      * Reset user's password
-     * @param {Object} data
-     * @param {number} data.userId - The ID ｀of the user
+     * @param {Object} data - The input data from the frontend
+     * @param {number} data.userId - The ID of the user
      * @param {string} data.password - The new password
-     * @param {Object} options - Sequelize transaction options.
-     * @returns {void}
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
+     * @throws {Error} - If the user is not an admin or the user tries to reset other's password
      */
     async resetUserPwd(data, options) {
         const {userId, password} = data;
@@ -265,10 +267,12 @@ module.exports = class UserSocket extends Socket {
 
     /**
      * Get users by their role
-     * @param {Object} data
+     * @param {Object} data - The input data from the frontend
      * @param {string} data.role - The role of the user
-     * @param {Object} options - Sequelize transaction options.
-     * @returns {void}
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
+     * @throws {Error} - If the user does not have right 
      */
     async getUsersByRole(data, options) {
         try {
