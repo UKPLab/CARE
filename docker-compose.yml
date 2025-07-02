@@ -9,6 +9,7 @@ services:
     image: docs_sphinx
     volumes:
       - ./docs:/docs
+      - ./backend:/backend
     command: make html
   postgres:
     image: postgres:11.5-alpine
