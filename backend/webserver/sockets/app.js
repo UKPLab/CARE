@@ -42,8 +42,12 @@ module.exports = class AppSocket extends Socket {
 
     /**
      * Updates data in the database
-     * @param {object} data - {table: string, data: object}
-     * @param {object} options - {transaction: Sequelize.Transaction}
+     * @param {Object} data - The input data from the frontend
+     * @param {String} data.table - The name of the table to update
+     * @param {Object} data.data - New data to update
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
      */
     async updateData(data, options = {}) {
         const transaction = options.transaction;
@@ -60,7 +64,6 @@ module.exports = class AppSocket extends Socket {
         }
 
         // check or set user information
-        // TODO check if user is allowed to update data - missing await!
         if ("userId" in data.data && !await this.checkUserAccess(data.data.userId)) {
             throw new Error("You are not allowed to update the table " + data.table + " for another user!");
         }
@@ -147,7 +150,10 @@ module.exports = class AppSocket extends Socket {
     /**
      * Sends the data stored under data.table.
      *
-     * @param data incl. table data
+     * @param {Object} data - The input data from the frontend
+     * @param {String} data.table - Table to send
+     * @param {Object} data.filter - Filters
+     * @param {Object} data.include - what data to include
      * @returns {Promise<void>}
      */
     async sendData(data) {
@@ -208,7 +214,7 @@ module.exports = class AppSocket extends Socket {
     /**
      * Send all data needed for the frontend app for initialization
      * @param {Object} data - The input data from the frontend
-     * @param {Object} options - not used
+     * @param {Object} options - Sequelize transaction options
      * @return {Promise<void>}
      */
     async sendInit(data, options) {
@@ -224,8 +230,9 @@ module.exports = class AppSocket extends Socket {
 
     /**
      * Update data for a specific table to the client
-     * @param data
-     * @param options - {transaction: Sequelize.Transaction}
+     * @param {Object} data - The input data from the frontend
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<*>}
      */
     async updateAppData(data, options) {
@@ -234,10 +241,10 @@ module.exports = class AppSocket extends Socket {
 
     /**
      * Send data by hash
-     * @param data
-     * @param data.hash
-     * @param data.table
-     * @param options
+     * @param {Object} data - The input data from the frontend
+     * @param {String} data.hash - The hash value
+     * @param {String} data.table - Table to send the data from
+     * @param {Object} options - Additional configuration parameter
      * @returns {Promise<void>}
      */
     async sendDataByHash(data, options) {
@@ -253,6 +260,10 @@ module.exports = class AppSocket extends Socket {
 
     /**
      * Subscribe to app data
+     * @param {Object} data - The input data from the frontend
+     * @param {String} data.table - The name of the table to subscribe to
+     * @returns {Promise<void>}
+     * @throws {Error} - If data.table is not provided
      */
     async subscribeAppData(data, options) {
         if (!data.table) {
@@ -316,6 +327,9 @@ module.exports = class AppSocket extends Socket {
 
     /**
      * Unsubscribe from app data
+     * @param {Object} data - The input data from the frontend
+     * @param {Object} options - Additional configuration parameter
+     * @return {Promise<void>}
      */
     async unsubscribeAppData(data, options) {
         // remove subscription from the list
@@ -327,10 +341,10 @@ module.exports = class AppSocket extends Socket {
     /**
      * Send overall settings including user setting
      * @param {Object} data - The input data from the frontend
-     * @param {string} data.key - The key in the user setting table
-     * @param {string} data.value - The value in the user setting table
-     * @param {Object} options not used
-     * @return {Promise<*>}
+     * @param {String} data.key - The key in the user setting table
+     * @param {String} data.value - The value in the user setting table
+     * @param {Object} options - Additional configuration parameter
+     * @return {Promise<void>}
      */
     async sendOverallSetting(data, options) {
         await this.models["user_setting"].set(data.key, data.value, this.userId);

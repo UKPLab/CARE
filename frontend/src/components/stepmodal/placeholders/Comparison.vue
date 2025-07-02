@@ -8,7 +8,7 @@
 <script>
 /**
  * Component to render a comparison chart based on the provided input data.
- * This component is designed to compare two datasets on a horizontal grouped bar chart.
+ * This component is designed to compare two datasets on a stacked bar chart.
  * 
  * @author: Manu Sundar Raj Nandyal
 */
@@ -47,23 +47,23 @@ export default {
       ) {
         return null;
       }
-      const labels = Array.from(new Set([...Object.keys(data1), ...Object.keys(data2)]));
-      const dataset1 = labels.map(label => data1[label] ?? 0);
-      const dataset2 = labels.map(label => data2[label] ?? 0);
+      const labels = Array.from(new Set([...data1["labels"], ...data2["labels"]]));
+      const dataset1 = [...data1["values"]];
+      const dataset2 = [...data2["values"]];
       return {
         type: 'bar',
         data: {
           labels,
           datasets: [
             {
-              label: this.config.labels?.[0] || 'Dataset 1',
+              label: this.config.labels?.[0] || 'Überarbeitung 1',
               data: dataset1,
-              backgroundColor: 'rgba(255, 99, 132, 0.5)',
+              backgroundColor: '#EB7E47',
             },
             {
-              label: this.config.labels?.[1] || 'Dataset 2',
+              label: this.config.labels?.[1] || 'Überarbeitung 2',
               data: dataset2,
-              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+              backgroundColor: '#4BD0FF',
             }
           ],
         },
@@ -80,8 +80,20 @@ export default {
           },
           indexAxis: 'y',
           scales: {
-            x: { stacked: false },
-            y: { stacked: false },
+            x: { 
+              stacked: true,
+              ticks: {
+                stepSize: 1,
+                callback: function(value) {
+                  if (Number.isInteger(value)) {
+                    return value;
+                  }
+                },
+              }
+            },
+            y: { 
+              stacked: true,
+            },
           },
         },
       };
