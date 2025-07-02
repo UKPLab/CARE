@@ -1,6 +1,12 @@
 <template>
   <div>
     <h1>Settings</h1>
+    <div class="alert alert-warning d-flex align-items-center mt-3" role="alert">
+      <LoadIcon class="me-2" iconName="exclamation-triangle-fill" />
+      <div>
+        Remember to click <strong>Save Settings</strong> after making changes.
+      </div>
+    </div>
     <div class="button-group">
       <button
         class="btn btn-primary me-2"
@@ -60,19 +66,9 @@ export default {
       }, {});
     }
   },
-  sockets: {
-    settingData(data) {
-      this.settings = data.sort((a, b) => (a.key > b.key ? 1 : -1));
-      this.collapseFirst = this.settings.reduce((acc, setting) => {
-        const key = setting.key.split('.')[0];
-        acc[key] = true;
-        return acc;
-      }, {});
-    }
-  },
   mounted() {
     this.settings = null;
-    this.$socket.emit("settingGetData");
+    this.load();
   },
   methods: {
     nestSettings(obj, keys, setting) {
@@ -86,18 +82,39 @@ export default {
     },
     save() {
       this.$socket.emit("settingSave", this.settings, (res) => {
-        if (!res.success) {
+        if (res.success) {
           this.eventBus.emit("toast", {
-            title: "Settings not saved",
+            title: "Success",
+            message: res.data,
+            variant: "success"
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Error Saving Settings",
             message: res.message,
-            variant: "danger",
+            variant: "danger"
           });
         }
       });
     },
     load() {
-      this.$socket.emit("settingGetData");
+      this.$socket.emit("settingGetData", null, (res) => {
+        if (res.success) {
+          this.settings = res.data.sort((a, b) => (a.key > b.key ? 1 : -1));
+          this.collapseFirst = this.settings.reduce((acc, setting) => {
+            const key = setting.key.split('.')[0];
+            acc[key] = true;
+            return acc;
+          }, {});
+        } else {
+          this.eventBus.emit("toast", {
+            title: "Error Loading Settings",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     }
-  },
+  }
 };
 </script>
