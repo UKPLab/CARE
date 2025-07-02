@@ -52,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
         ]
 
         /**
-         * Add a new document (and create a delta file for HTML documents)
+         * Add a new document (and create a delta file for HTML/MODAL documents)
          * @param data
          * @param options
          * @returns {Promise<Object|undefined>}
@@ -60,8 +60,8 @@ module.exports = (sequelize, DataTypes) => {
         static async add(data, options = {}) {
             const newDocument = await super.add(data, options);
 
-            // Create a new delta file on disk for HTML documents
-            if (newDocument.type === this.docTypes.DOC_TYPE_HTML) {
+            // Create a new delta file on disk for HTML or MODAL documents
+            if (newDocument.type === this.docTypes.DOC_TYPE_HTML || newDocument.type === this.docTypes.DOC_TYPE_MODAL) {
                 fs.writeFileSync(path.join(UPLOAD_PATH, `${newDocument.hash}.delta`), JSON.stringify({}));
             }
             // TODO: what if transaction failes? --> need to delete the file again
@@ -122,60 +122,6 @@ module.exports = (sequelize, DataTypes) => {
                 as: "submission",
             });
         }
-
-        /**
-         * Retrieve documents that are ready for review
-         * @returns {Promise<Array<Object>>} An array of objects. Each contains a document's info such as name, hash, etc.
-         */
-        static async getReviewDocuments() {
-            try {
-                // Get documents that are ready for review
-                const reviewReadyDocuments = await Document.findAll({
-                    where: {
-                        readyForReview: true,
-                        deleted: false,
-                    },
-                    attributes: ["id", "name", "type", "userId", "hash", "createdAt"],
-                    raw: true,
-                });
-
-                // Process each document to get additional information
-                const processedDocuments = await Promise.all(
-                    reviewReadyDocuments.map(async (doc) => {
-                        // Find associated studyIds for this document
-                        const associatedStudies = await this.sequelize.models["study_step"].findAll({
-                            where: {documentId: doc.id},
-                            attributes: ["studyId"],
-                            raw: true,
-                        });
-
-                        const studyIds = associatedStudies.map((study) => study.studyId);
-
-                        // Count the number of study sessions for these studyIds
-                        const sessionCount = await this.sequelize.models["study_session"].count({
-                            where: {studyId: studyIds},
-                        });
-
-                        // Get the document owner's information
-                        const owner = await this.sequelize.models["user"].findOne({
-                            where: {id: doc.userId},
-                            attributes: ["firstName", "lastName"],
-                            raw: true,
-                        });
-
-                        return {
-                            ...doc,
-                            sessionCount,
-                            firstName: owner.firstName,
-                            lastName: owner.lastName,
-                        };
-                    })
-                );
-                return processedDocuments;
-            } catch (error) {
-                this.logger.error("Error in getReviewDocuments:", error);
-            }
-        }
     }
 
     Document.init({
@@ -189,7 +135,7 @@ module.exports = (sequelize, DataTypes) => {
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
-        type: DataTypes.INTEGER, // 0 is for pdf and 1 is for html
+        type: DataTypes.INTEGER, // 0 is for pdf, 1 is for html, and 2 is for modal
         parentDocumentId: DataTypes.INTEGER,
         hideInFrontend: DataTypes.BOOLEAN,
         projectId: DataTypes.INTEGER,
@@ -211,7 +157,7 @@ module.exports = (sequelize, DataTypes) => {
                     }
 
                         // delete associated annotations and comments
-                        if (document.type === Document.docTypes.DOC_TYPE_HTML) {
+                        if (document.type === Document.docTypes.DOC_TYPE_HTML || document.type === Document.docTypes.DOC_TYPE_MODAL) {
                             // get document edits
                             const documentEdits = await sequelize.models.document_edit.getAllByKey(
                                 "documentId",

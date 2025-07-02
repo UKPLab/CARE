@@ -5,8 +5,9 @@ const Socket = require("../Socket.js");
  *
  * @author Dennis Zyska
  * @type {LoggerSocket}
+ * @class LoggerSocket
  */
-module.exports = class LoggerSocket extends Socket {
+class LoggerSocket extends Socket {
 
     /**
      * Log a message
@@ -49,3 +50,5 @@ module.exports = class LoggerSocket extends Socket {
         this.createSocket("logGetAll", this.getAllLogs, {}, false);
     }
 }
+
+module.exports = LoggerSocket;

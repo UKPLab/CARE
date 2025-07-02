@@ -138,18 +138,20 @@ import LoadIcon from "@/basic/Icon.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 import {computed} from "vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
 
-
 export default {
   name: "AnnotatorView",
+  subscribeTable: ['tag', 'tag_set'],
   components: {
     LoadIcon,
     PDFViewer,
     ExpandMenu,
     Sidebar,
-    Loader
+    Loader,
+    TopBarButton
   },
   provide() {
     return {
@@ -164,8 +166,15 @@ export default {
       default: null
     },
     acceptStats: {
+      type: Boolean,
+      required: false,
       default: () => false
     },
+    studyData: {
+      type: Array,
+      required: false,
+      default: () => [],
+    }
   },
   props: {
     approve: {
@@ -293,7 +302,7 @@ export default {
     });
 
     // get tagsets
-    this.$socket.emit("tagSetGetAll", {}, (result) => {
+    /*this.$socket.emit("tagSetGetAll", {}, (result) => {
       if (!result.success) {
         this.eventBus.emit('toast', {
           title: "Tag Set Error",
@@ -301,8 +310,8 @@ export default {
           variant: "danger"
         });
       }
-    });
-    this.$socket.emit("tagGetAll", {}, (result) => {
+    });*/
+    /*this.$socket.emit("tagGetAll", {}, (result) => {
       if (!result.success) {
         this.eventBus.emit('toast', {
           title: "Tag Error",
@@ -310,7 +319,7 @@ export default {
           variant: "danger"
         });
       }
-    });
+    });*/
 
     // init component
     this.load();
