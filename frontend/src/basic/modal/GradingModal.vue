@@ -144,10 +144,24 @@ export default {
     },
     // TODO: Refactor submit emit in Submissions component
     preprocess() {
-      this.$emit('submit', {
+      this.$socket.emit("llmentorGradeAll", {
         skill: this.selectedSkill,
         config: this.selectedConfig,
-        inputFiles: this.selectedInputRows.map(row => row.id),
+        inputFiles: this.selectedInputRows
+      }, (res) => {
+        if (res.success) {
+          this.eventBus.emit("toast", {
+            title: "LLMentor Grading Triggered",
+            message: "Grading has been started for all review documents.",
+            variant: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "LLMentor Grading Failed",
+            message: res.message,
+            variant: "danger",
+          });
+        }
       });
       this.close();
     },

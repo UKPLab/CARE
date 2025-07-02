@@ -46,7 +46,6 @@
   <PublishModal ref="publishModal" />
   <GradingModal
     ref="gradingModal"
-    @submit="submitGrading"
   />
 </template>
 
@@ -200,26 +199,6 @@ export default {
     },
     preprocessGrades() {
       this.$refs.gradingModal.open();
-    },
-    submitGrading(selectedSkill) {
-      this.$socket.emit("llmentorGradeAll", {
-        documentIds: this.documents.map((d) => d.id),
-        skill: selectedSkill,
-      }, (res) => {
-        if (res.success) {
-          this.eventBus.emit("toast", {
-            title: "LLMentor Grading Triggered",
-            message: "Grading has been started for all review documents.",
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: "LLMentor Grading Failed",
-            message: res.message,
-            variant: "danger",
-          });
-        }
-      });
     },
   },
 };
