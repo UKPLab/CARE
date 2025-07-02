@@ -32,7 +32,7 @@
           :columns="columns"
           :data="inputFiles"
           :options="{ ...options, selectableRows: true }"
-          :modelValue="selectedInputRows"
+          :modelValue="selectedInputRows || []"
           :buttons="buttons"
           @update:modelValue="onInputFilesChange"
         />
@@ -115,7 +115,7 @@ export default {
       // TODO: Implement file download logic for .zip/.tex after the application of moodle import submissions
     },
     onInputFilesChange(rows) {
-      this.selectedInputRows = rows;
+      this.selectedInputRows = Array.isArray(rows) ? rows : [];
     },
     // TODO: Replace documents table with "submissions"
     submissions(){
