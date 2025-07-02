@@ -313,7 +313,7 @@ module.exports = class UserSocket extends Socket {
     init() {
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
         this.createSocket("userGetRight", this.getUserRights, {}, false);
-        this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true); //TODO not sure about true for the transaction
+        this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true);
         this.createSocket("userResetPwd", this.resetUserPwd, {}, false);
         this.createSocket("userGetDetails", this.models["user"].getUserDetails, {}, false);
         this.createSocket("userConsentUpdate", this.updateUserConsent, {}, true);

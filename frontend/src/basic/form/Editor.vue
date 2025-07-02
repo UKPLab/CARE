@@ -2,10 +2,10 @@
   <FormElement ref="formElement" :options="options">
     <template #element="{blur}">
       <Editor
-          v-model="currentData"
-          class="form-control p-0"
-          @blur="blur(currentData)"
-          :max-length="options.maxLength"
+        v-model="currentData"
+        class="form-control p-0 editor-wrapper"
+        @blur="blur(currentData)"
+        :max-length="options.maxLength"
       />
     </template>
   </FormElement>
@@ -24,7 +24,7 @@ export default {
       required: true,
     },
     modelValue: {
-      type: String,
+      type: [String, Object],
       required: false,
       default: "",
     },
@@ -32,19 +32,18 @@ export default {
   emits: ["update:modelValue"],
   data() {
     return {
-      currentData: "",
-    }
+      currentData: this.modelValue,
+    };
   },
   watch: {
-    currentData() {
-      this.$emit("update:modelValue", this.currentData);
+    modelValue(newVal) {
+      if (newVal !== this.currentData) {
+        this.currentData = newVal;
+      }
     },
-    modelValue() {
-      this.currentData = this.modelValue;
-    },
-  },
-  mounted() {
-    this.currentData = this.modelValue;
+    currentData(newVal) {
+      this.$emit("update:modelValue", newVal);
+    }
   },
   methods: {
     validate() {
@@ -55,5 +54,11 @@ export default {
 </script>
 
 <style scoped>
-
+.editor-wrapper {
+  min-height: 150px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+}
 </style>
