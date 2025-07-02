@@ -196,13 +196,21 @@ module.exports = class DocumentSocket extends Socket {
                                     userId: this.userId,
                                     anonymous: false,
                                 };
-                                const {annotation, comment} = await this.getSocket('AnnotationSocket').updateAnnotationReturn(newAnnotation, options);
+                                const annotation = await this.models['annotation'].add(newAnnotation, {transaction: options.transaction});
                                 annotations.push(annotation);
-                                await this.getSocket('CommentSocket').updateComment({
-                                    commentId: comment.id,
-                                    text: extracted.comment,
-                                }, options);
-                                
+                                let newComment = {
+                                    documentId: annotation.documentId,
+                                    studySessionId: annotation.studySessionId,
+                                    studyStepId: annotation.studyStepId,
+                                    annotationId: annotation.id,
+                                    parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+                                    anonymous: false,
+                                    tags: "[]",
+                                    draft: false,
+                                    text: extracted.comment || null,
+                                    userId: this.userId
+                                };
+                                await this.models['comment'].add(newComment, {transaction: options.transaction});
                                 
                             } catch (annotationErr) {
                                 errors.push("Error adding annotation: " + annotationErr.message);
@@ -253,7 +261,19 @@ module.exports = class DocumentSocket extends Socket {
             type: data.type,
             userId: this.userId
         }, {transaction: options.transaction});
-
+                       annotations.push(annotation);
+                                let newComment = {
+    documentId: annotation.documentId,
+    studySessionId: annotation.studySessionId,
+    studyStepId: annotation.studyStepId,
+    annotationId: annotation.id,
+    parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+    anonymous: data.anonymous !== undefined ? data.anonymous : false,
+    tags: "[]",
+    draft: data.draft !== undefined ? data.draft : true,
+    text: extracted.text !== undefined ? extracted.text : null,
+    userId: data.userId ?? this.userId
+};
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         });

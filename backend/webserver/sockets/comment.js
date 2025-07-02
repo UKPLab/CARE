@@ -33,48 +33,6 @@ module.exports = class CommentSocket extends Socket {
         this.emitDoc(newComment.documentId, "commentRefresh", newComment);
     }
     /**
-     * add a comment to a document
-     * @param {object} data comment object
-     * @param {object} options contains the transactions
-     * @return {Promise<object>} the created comment
-     * @throws {Error} if the user is not allowed to add a comment
-     * 
-     */
-
-    async addCommentReturn(data, options) {
-        if (data.userId !== undefined) {
-            if (data.userId === 'Bot') {
-                const parentComment = await this.models['comment'].getById(data.parentCommentId);
-                if (!this.checkUserAccess(parentComment.userId)) {
-                    throw Error("You are not allowed to add a comment.");
-                } else {
-                    data.userId = await this.models['user'].getUserIdByName("Bot");
-                    data.draft = false;
-                }
-            } else if (!(await this.checkUserAccess(data.userId))) {
-                throw Error("You are not allowed to add a comment.");
-            }
-        } else {
-            data.userId = this.userId;
-        }
-
-         let newComment = {
-            tags: "[]",
-            draft: data.draft !== undefined ? data.draft : true,
-            text: data.text !== undefined ? data.text : null,
-            userId: data.userId,
-            documentId: data.documentId,
-            studySessionId: data.studySessionId,
-            studyStepId: data.studyStepId,
-            annotationId: data.annotationId !== undefined ? data.annotationId : null,
-            parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
-            anonymous: data.anonymous !== undefined ? data.anonymous : false
-        };
-        const comment = await this.models['comment'].add(newComment, {transaction: options.transaction});
-        return comment
-    }
-
-    /**
      * Add a comment
      * @param {object} data comment object
      * @param {object} options contains the transactions
