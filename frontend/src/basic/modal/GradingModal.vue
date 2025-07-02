@@ -7,7 +7,7 @@
     @submit="preprocess"
   >
     <template #title>
-      <h5 class="modal-title text-primary">Grading with LLMentor</h5>
+      <h5 class="modal-title text-primary">Preprocess Grading</h5>
     </template>
     <template #step-1>
       <div class="mb-3">
@@ -17,10 +17,17 @@
           :options="skillMap"
         />
       </div>
+      <div class="mb-3">
+        <label class="form-label">Select Config:</label>
+        <FormSelect
+          v-model="selectedConfig"
+          :options="jsonConfigOptions"
+        />
+      </div>
     </template>
     <template #step-2>
       <div>
-        <p>You are about to start grading <b>{{ documents.length }}</b> documents using the skill: <b>{{ selectedSkill }}</b>.</p>
+        <p>You are about to start grading <b>{{ submissions.length }}</b> documents using the skill: <b>{{ selectedSkill }}</b>.</p>
         <p>Are you sure you want to proceed?</p>
       </div>
     </template>
@@ -38,6 +45,7 @@ export default {
   data() {
     return {
       selectedSkill: '',
+      selectedConfig: '',
     };
   },
   computed: {
@@ -55,7 +63,7 @@ export default {
     },
     stepValid() {
       return [
-        !!this.selectedSkill, // Step 1: Skill must be selected
+        !!this.selectedSkill && !!this.selectedConfig, // Step 1: Both must be selected
         true, // Step 2: Always valid (confirmation)
       ];
     },
@@ -67,6 +75,14 @@ export default {
     jsonConfig(){
       return this.$store.getters["table/document/getByKey"]('type', 0);
     },
+    jsonConfigOptions() {
+      return {
+        options: (this.jsonConfig || []).map(cfg => ({
+          value: cfg.id,
+          name: cfg.name || cfg.filename || `Config ${cfg.id}`,
+        })),
+      };
+    },
   },
   methods: {
     open() {
@@ -76,8 +92,12 @@ export default {
     close() {
       this.$refs.gradingStepper.close();
     },
+    // TODO: Refactor submit emit in Submissions component
     preprocess() {
-      this.$emit('submit', this.selectedSkill);
+      this.$emit('submit', {
+        skill: this.selectedSkill,
+        config: this.selectedConfig
+      });
       this.close();
     },
   },

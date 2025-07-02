@@ -21,9 +21,9 @@
       />
       <BasicButton
         class="btn-success btn-sm ms-1"
-        text="Grading with LLMentor"
-        title="Grading with LLMentor"
-        @click="gradeWithLLMentor" 
+        text="Preprocess Grading"
+        title="Preprocess Grading"
+        @click="preprocessGrades" 
       />
     </template>
     <template #body>
@@ -198,7 +198,7 @@ export default {
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);
     },
-    gradeWithLLMentor() {
+    preprocessGrades() {
       this.$refs.gradingModal.open();
     },
     submitGrading(selectedSkill) {
