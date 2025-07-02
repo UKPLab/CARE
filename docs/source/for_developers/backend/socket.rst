@@ -266,6 +266,8 @@ The ``createSocket`` method allows you to define a socket event with built-in su
 
 See a full example of the usage of createSocket in :ref:`document-create-example`.
 
+.. _socket-db-transaction:
+
 Transaction Usage
 ~~~~~~~~~~~~~~~~~
 
