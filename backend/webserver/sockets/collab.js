@@ -5,8 +5,9 @@ const Socket = require("../Socket.js");
  *
  * @author Dennis Zyska
  * @type {CollabSocket}
+ * @class CollabSocket
  */
-module.exports = class CollabSocket extends Socket {
+class CollabSocket extends Socket {
 
     /**
      * Updates the collaboration status in the database. If there is non existent on the
@@ -47,3 +48,5 @@ module.exports = class CollabSocket extends Socket {
         this.createSocket("collabUpdate", this.updateCollab, {}, true);
     }
 }
+
+module.exports = CollabSocket;

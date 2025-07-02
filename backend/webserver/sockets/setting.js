@@ -5,8 +5,9 @@ const Socket = require("../Socket.js");
  *
  * @author Dennis Zyska, Nils Dycke
  * @type {SettingSocket}
+ * @class SettingSocket
  */
-module.exports = class SettingSocket extends Socket {
+class SettingSocket extends Socket {
 
     /**
      * Send current settings to the client
@@ -59,3 +60,5 @@ module.exports = class SettingSocket extends Socket {
         this.createSocket("settingSave", this.saveSettings, {}, true);
     }
 }
+
+module.exports = SettingSocket;
