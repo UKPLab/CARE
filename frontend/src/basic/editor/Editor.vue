@@ -1,151 +1,108 @@
 <template>
-  <div class="card border-1 text-start">
-    <span class="text-start p-1 card-header">
-      <button
-          aria-expanded="false"
-          class="btn  btn-sm dropdown-toggle"
-          data-bs-toggle="dropdown"
-          type="button"
-      >
-        Paragraph
-      </button>
-      <ul class="dropdown-menu">
-        <li><button type="button"
-                    class="dropdown-item"
-                    @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-        >Heading 1</button></li>
-        <li><button type="button"
-                    class="dropdown-item"
-                    @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-        >Heading 2</button></li>
-        <li><button type="button"
-                    class="dropdown-item"
-                    @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-        >Heading 3</button></li>
-      </ul>
-
-      <LoadIcon
-          class="mx-1"
-          icon-name="type-bold"
-          @click="editor.chain().focus().toggleBold().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="type-italic"
-          @click="editor.chain().focus().toggleItalic().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="type-strikethrough"
-          @click="editor.chain().focus().toggleStrike().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="code"
-          @click="editor.chain().focus().toggleCode().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="code-square"
-          @click="editor.chain().focus().toggleCodeBlock().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="list-ul"
-          @click="editor.chain().focus().toggleBulletList().run()"
-      />
-      <LoadIcon
-          class="mx-1"
-          icon-name="list-ol"
-          @click="editor.chain().focus().toggleOrderedList().run()"
-      />
-      <LoadIcon
-          class="ml-1"
-          icon-name="blockquote-left"
-          @click="editor.chain().focus().toggleBlockquote().run()"
-      />
-    </span>
-    <div class="card-body">
-      <editor-content :editor="editor"/>
-      <div v-if="editor && maxLength" class="">
-        {{ editor.storage.characterCount.characters() }}/{{ maxLength }} characters
-      </div>
-    </div>
+  <div>
+    <div ref="quillContainer"></div>
   </div>
 </template>
 
 <script>
-import {Editor, EditorContent} from '@tiptap/vue-3'
-import StarterKit from '@tiptap/starter-kit'
-import LoadIcon from "@/basic/Icon.vue";
-import CharacterCount from "@tiptap/extension-character-count"
+import { Editor } from "@/components/editor/editorStore"; 
+import "quill/dist/quill.snow.css";
 
 /**
- * Editor.vue - default component for a markdown text editor
+ * Editor.vue - default component for rich text editing using Quill
  *
  * Use this component to show a text editor with basic markdown features.
  *
- * @author: Dennis Zyska
+ * @author: Dennis Zyska, Juliane Bechert
  */
-export default {
+ export default {
   name: "BasicEditor",
-  components: {
-    LoadIcon,
-    EditorContent,
-  },
   props: {
     modelValue: {
-      type: String,
-      required: true
+      type: [Object, String],
+      required: true,
     },
-    maxLength: {
-      type: Number,
-      required: false,
-    }
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ["update:modelValue", "blur"],
-  data: function () {
+  data() {
     return {
-      editor: null,
-    }
+      editorWrapper: null,
+    };
   },
   watch: {
-    modelValue: function (newContent) {
-      if (this.editor.getHTML() !== newContent)
-        this.editor.commands.setContent(newContent);
-    }
-  },
-  beforeUnmount() {
-    this.editor.destroy()
+    modelValue(newVal) {
+      const editor = this.editorWrapper?.getEditor();
+      if (!editor) return;
+
+      const delta = this.normalizeDelta(newVal);
+      const current = editor.getContents();
+      if (JSON.stringify(current.ops) !== JSON.stringify(delta.ops)) {
+        editor.setContents(delta);
+      }
+    },
   },
   mounted() {
+    const toolbarConfig = this.readOnly
+      ? false
+      : [
+          [{ header: [1, 2, 3, false] }],
+          ["bold", "italic", "underline", "strike"],
+          [{ list: "ordered" }, { list: "bullet" }],
+          ["blockquote", "code-block"],
+        ];
 
-    this.editor = new Editor({
-      content: this.modelValue,
-      extensions: [
-        StarterKit,
-        CharacterCount.configure({
-          limit: this.maxLength,
-        }),
-      ],
-      parseOptions: {
-        preserveWhitespace: "full"
+    this.editorWrapper = new Editor(this.$refs.quillContainer, {
+      theme: "snow",
+      modules: { toolbar: toolbarConfig },
+      readOnly: this.readOnly,
+    });
+
+    const editor = this.editorWrapper.getEditor();
+
+    const delta = this.normalizeDelta(this.modelValue);
+    editor.setContents(delta);
+
+    editor.enable(!this.readOnly);
+
+    editor.on("text-change", () => {
+      const contents = editor.getContents();
+      this.$emit("update:modelValue", JSON.stringify(contents));
+    });
+
+    editor.on("selection-change", (range) => {
+      if (!range) this.$emit("blur");
+    });
+  },
+  beforeUnmount() {
+    this.editorWrapper = null;
+  },
+  methods: {
+    normalizeDelta(input) {
+      if (!input) return { ops: [] };
+
+      if (typeof input === "string") {
+        try {
+          return JSON.parse(input);
+        } catch (e) {
+          console.warn("Failed to parse string delta:", e);
+          return { ops: [] };
+        }
       }
 
-    });
-    this.editor.on('update', ({editor}) => {
-      this.$emit("update:modelValue", editor.getHTML());
-    })
-    this.editor.on("blur", () => {
-      this.$emit("blur");
-    })
+      if (typeof input === "object" && input.ops) {
+        return input;
+      }
+
+      return { ops: [] };
+    }
   },
-}
+};
 </script>
 
 <style scoped>
-.ProseMirror * {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
+/* Add your styles here if needed */
 </style>
