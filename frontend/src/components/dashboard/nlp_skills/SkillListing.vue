@@ -249,10 +249,6 @@ export default {
         });
       }
     },
-    changeSkillSetting(newVal){
-      console.log("deactivating a skill");
-      //todo send emit
-    },
     reset() {
       this.commandEditorActive = false;
     }

@@ -51,8 +51,8 @@ export default {
       if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length === 0) {
         return null;
       }
-      const labels = Object.keys(data);
-      const dataset = Object.values(data);
+      const labels = data["labels"];
+      const dataset = data["values"];
       return {
         type: 'bar',
         data: {
