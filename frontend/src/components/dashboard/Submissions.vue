@@ -46,7 +46,6 @@
   <PublishModal ref="publishModal" />
   <GradingModal
     ref="gradingModal"
-    :documents="documents"
     @submit="submitGrading"
   />
 </template>

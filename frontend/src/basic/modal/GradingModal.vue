@@ -4,7 +4,7 @@
     :steps="[{ title: 'Select Skill' }, { title: 'Confirm' }]"
     :validation="stepValid"
     submit-text="Start Grading"
-    @submit="handleSubmit"
+    @submit="preprocess"
   >
     <template #title>
       <h5 class="modal-title text-primary">Grading with LLMentor</h5>
@@ -34,13 +34,6 @@ import FormSelect from "@/basic/form/Select.vue";
 export default {
   name: "GradingModal",
   components: { StepperModal, FormSelect },
-  props: {
-    documents: {
-      type: Array,
-      required: true,
-      default: () => [],
-    },
-  },
   emits: ["submit"],
   data() {
     return {
@@ -66,6 +59,14 @@ export default {
         true, // Step 2: Always valid (confirmation)
       ];
     },
+    // TODO: Replace documents table with "submissions"
+    submissions(){
+      return this.$store.getters["table/document/getAll"];
+    },
+    // TODO: Replace type to 3(JSON) when implemented
+    jsonConfig(){
+      return this.$store.getters["table/document/getByKey"]('type', 0);
+    },
   },
   methods: {
     open() {
@@ -75,7 +76,7 @@ export default {
     close() {
       this.$refs.gradingStepper.close();
     },
-    handleSubmit() {
+    preprocess() {
       this.$emit('submit', this.selectedSkill);
       this.close();
     },
