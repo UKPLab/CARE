@@ -70,7 +70,7 @@ import GradingModal from "@/basic/modal/GradingModal.vue";
  * @author Linyin Huang, Dennis Zyska
  */
 export default {
-  name: "ReviewDocuments",
+  name: "Submissions",
   subscribeTable: [{
     table: "document",
     filter: [{
