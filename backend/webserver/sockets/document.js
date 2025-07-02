@@ -5,6 +5,7 @@ const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {Op} = require("sequelize");
+const {getTextPositions} = require("../../utils/text.js");
 
 
 const {dbToDelta} = require("editor-delta-conversion");
@@ -127,24 +128,19 @@ module.exports = class DocumentSocket extends Socket {
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
             }, {transaction: options.transaction});
-
-            // save the pdf without any annotations
-            let originalDocument;
+            target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
             try {
                 const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
                     file: data.file,
                     document: doc
                 });
                 if (!file) {
-                    throw new Error("Couldn't delete annotations");
+                    throw new Error("Couldn't delete original annotations");
                 }
-                originalDocument = file;
-                target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
-                fs.writeFileSync(target, originalDocument);
+                
+                fs.writeFileSync(target, file);
             } catch (annotationRpcErr) {
                 errors.push("Error deleting annotations: " + annotationRpcErr.message);
-                // Save the raw file anyway
-                target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
                 fs.writeFileSync(target, data.file);
             }
 
@@ -161,9 +157,8 @@ module.exports = class DocumentSocket extends Socket {
                         for (const extracted of annotationData.annotations) {
                             let textPositions;
                             try {
-                                textPositions = this.getTextPositions(extracted.text, data.wholeText);
+                                textPositions = getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
-                                // TODO: instead of throwing an error, we return the doument without annotations
                                 errors.push("Error extracting text positions for text " + extracted.text + ": " + error.message);
                                 continue; 
                             }
@@ -841,30 +836,6 @@ async editDocument(data, options) {
 
         return documentData;
     }
-
-    /**
-     * Get the start and end positions of exact text within whole text, along with prefix and suffix
-     * @param {string} exactText - The text to find positions for
-     * @param {string} wholeText - The complete text to search within
-     * @returns {{start: number, end: number, prefix: string, suffix: string}} Object containing start, end, prefix and suffix
-     * @throws {Error} If exact text is not found in whole text
-     */
-    getTextPositions(exactText, wholeText) {
-        const start = wholeText.indexOf(exactText);
-        if (start === -1) {
-            throw new Error('Exact text not found in whole text');
-        }
-
-        const end = start + exactText.length;
-        
-        // Use the same context length calculation as in anchoring types
-        const contextLen = 32;
-        const prefix = wholeText.slice(Math.max(0, start - contextLen), start);
-        const suffix = wholeText.slice(end, Math.min(wholeText.length, end + contextLen));
-
-        return { start, end, prefix, suffix };
-    }
-
     init() {
 
         this.socket.on("documentGetReviews", async (callback) => {
