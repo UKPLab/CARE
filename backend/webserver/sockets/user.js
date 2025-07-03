@@ -8,8 +8,9 @@ const _ = require("lodash");
  *
  * @author Dennis Zyska, Nils Dycke, Linyin Huang
  * @type {UserSocket}
+ * @class UserSocket
  */
-module.exports = class UserSocket extends Socket {
+class UserSocket extends Socket {
     /**
      * Adds the username as creator_name of a database entry with column creator
      *
@@ -324,3 +325,5 @@ module.exports = class UserSocket extends Socket {
         this.createSocket("userPublishMoodle", this.userPublishMoodle, {}, false);
     }
 };
+
+module.exports = UserSocket;
