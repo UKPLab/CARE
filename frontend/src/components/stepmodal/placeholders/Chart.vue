@@ -51,17 +51,17 @@ export default {
       if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length === 0) {
         return null;
       }
-      const labels = Object.keys(data);
-      const dataset = Object.values(data);
+      const labels = data["labels"];
+      const dataset = data["values"];
       return {
         type: 'bar',
         data: {
           labels,
           datasets: [
             {
-              label: this.config.label || 'Dataset',
+              label: this.config.label || 'Überarbeitung',
               data: dataset,
-              backgroundColor: "rgba(255, 99, 132, 0.5)",
+              backgroundColor: '#EB7E47',
             },
           ],
         },
@@ -77,6 +77,18 @@ export default {
             },
           },
           indexAxis: 'y',
+          scales: {
+            x: {
+              ticks: {
+                stepSize: 1,
+                callback: function(value) {
+                  if (Number.isInteger(value)) {
+                    return value;
+                  }
+                },
+              }
+            }
+          }
         },
       };
     },

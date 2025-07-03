@@ -100,8 +100,6 @@
       @close="handleModalClose"
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
-    <!-- TODO: Do we still need to keep the following TODO? -->
-    <!-- TODO add stepType 3 Modal component and add Finish Button if we are in the last step -->
   </div>
 </template>
 
