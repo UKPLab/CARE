@@ -9,7 +9,7 @@
           id="backButton"
           class="btn"
           title="Go back..."
-          @click="$router.go(-1)"
+          @click="toHome()"
         >
           <LoadIcon
             :size="16"
