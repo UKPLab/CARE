@@ -2,7 +2,7 @@
 
 module.exports = {
   /**
-   * Run the migration – create the "submission" table.
+   * Run the migration – create the "submission" table
    * @param {import('sequelize').QueryInterface} queryInterface
    * @param {import('sequelize')} Sequelize
    */
@@ -54,10 +54,18 @@ module.exports = {
         onDelete: 'SET NULL',
         onUpdate: 'CASCADE',
       },
-      extId: {
+      extSubmissionId: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      group: {
         type: Sequelize.INTEGER,
         allowNull: true,
-        unique: true
+      },
+      additionalSettings: {
+        type: Sequelize.JSONB,
+        allowNull: true,
       },
       deleted: {
         type: Sequelize.BOOLEAN,
@@ -83,7 +91,7 @@ module.exports = {
   },
 
   /**
-   * Revert the migration – drop the "submission" table.
+   * Revert: simply drop the table (dev only).
    * @param {import('sequelize').QueryInterface} queryInterface
    * @param {import('sequelize')} Sequelize
    */
