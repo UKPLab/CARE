@@ -65,6 +65,7 @@
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
             @click="toggleSidebar"
+            :class="{ 'sidebar-highlight': sidebarIconHighlight }"
         >
           <LoadIcon
               :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
@@ -212,6 +213,7 @@ export default {
     return {
       downloading: false,
       isSidebarVisible: true,
+      sidebarIconHighlight: false,
       logScroll: debounce(function () {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
@@ -225,6 +227,10 @@ export default {
         }
       }, 500)
     }
+  },
+  mounted(){
+    this.handleResize();
+    window.addEventListener('resize', this.handleResize);
   },
   computed: {
     anchors() {
@@ -301,6 +307,9 @@ export default {
       }
     });
 
+    this.handleResize();
+    window.addEventListener('resize', this.handleResize);
+
     // get tagsets
     /*this.$socket.emit("tagSetGetAll", {}, (result) => {
       if (!result.success) {
@@ -333,8 +342,21 @@ export default {
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
     document.removeEventListener('copy', this.onCopy);
+    window.removeEventListener('resize', this.handleResize);
   },
   methods: {
+    handleResize() {
+      if (window.innerWidth <= 900) {
+        this.isSidebarVisible = false;
+        this.sidebarIconHighlight = true;
+        setTimeout(() => {
+          this.sidebarIconHighlight = false;
+        }, 1000);
+      }
+      else {
+        this.isSidebarVisible = true;
+      }
+    },
     ...mapMutations({
       setSetting: "settings/set",
     }),
@@ -535,10 +557,11 @@ IconBoostrap[disabled] {
   display: none;
 }
 
-@media screen and (max-width: 900px) {
-  #sidebarContainer {
-    display: none;
-  }
+.sidebar-highlight {
+  border: 2px solid #ff9800 !important;
+  box-shadow: 0 0 8px #ff9800;
+  border-radius: 4px;
+  transition: border 0.2s, box-shadow 0.2s;
 }
 
 </style>

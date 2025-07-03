@@ -565,11 +565,6 @@ export default {
   display: none;
 }
 
-@media screen and (max-width: 900px) {
-  #sidebarContainer {
-    display: none;
-  }
-}
 
 #hoverHotZone {
   position: fixed;
