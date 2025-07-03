@@ -20,6 +20,7 @@
   </Card>
   <ProjectModal ref="projectModal"/>
   <ExportModal ref="exportModal"/>
+  <ConfirmModal ref="deleteConf"/>
 </template>
 
 <script>
@@ -28,6 +29,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import ProjectModal from "./coordinator/Project.vue";
 import ExportModal from "./projects/ExportModal.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
  * Project list component
@@ -45,6 +47,7 @@ export default {
     BasicTable,
     BasicButton,
     ProjectModal,
+    ConfirmModal,
   },
   data() {
     return {
@@ -161,8 +164,7 @@ export default {
         });
     },
     selectedProject() {
-      return 1; // TODO: get from store
-      return this.$store.getters['settings/getValueAsInt']("tags.tagSet.default");
+      return this.$store.getters['settings/getValueAsInt']("projects.default");
     },
   },
   methods: {
@@ -188,17 +190,55 @@ export default {
           break;
       }
     },
-    deleteProject(params) {
-      //TODO: Implement
-      console.log("Not implemented yet", params);
+   async deleteProject(params) {
+      // Get all studies and documents related to this project
+      const studies = this.$store.getters["table/study/getFiltered"](
+        (e) => e.projectId === params.id
+      );
+      const documents = this.$store.getters["table/document/getFiltered"](
+        (d) => d.projectId === params.id
+      );
+
+      // Build warning message
+      let warning = "";
+      if (studies && studies.length > 0) {
+        warning += `There ${studies.length !== 1 ? "are" : "is"} currently ${studies.length} ${studies.length !== 1 ? "studies" : "study"} linked to this project. Deleting the project will also delete the ${studies.length !== 1 ? "studies" : "study"}.\n`;
+      }
+      if (documents && documents.length > 0) {
+        warning += `There ${documents.length !== 1 ? "are" : "is"} currently ${documents.length} ${documents.length !== 1 ? "documents" : "document"} linked to this project. Deleting the project will also delete the ${documents.length !== 1 ? "documents" : "document"}.\n`;
+      }
+
+      this.$refs.deleteConf.open(
+        "Delete Project",
+        "Are you sure you want to delete this project?",
+        warning,
+        (val) => {
+          if (val) {
+            this.$socket.emit("appDataUpdate", {
+              table: "project",
+              data: {
+                id: params.id,
+                deleted: true
+              }
+            }, (result) => {
+              if (!result.success) {
+                this.eventBus.emit('toast', {
+                  title: "Project delete failed",
+                  message: result.message,
+                  variant: "danger"
+                });
+              }
+            });
+          }
+        }
+      );
     },
     publishProject(params) {
       //TODO: Implement
       console.log("Not implemented yet", params);
     },
-    selectProject(id) {
-      //TODO: Implement
-      console.log("Not implemented yet", id);
+    selectProject(projectId) {
+        this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
     },
   },
 };

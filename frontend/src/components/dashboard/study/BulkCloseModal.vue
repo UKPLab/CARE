@@ -47,7 +47,7 @@ export default {
     },
     closeAllStudies() {
       const data = {
-        projectId: 1,
+        projectId: this.$store.getters["settings/getValueAsInt"]("projects.default"),
         ignoreClosedState: false,
         progressId: this.$refs.bulkCloseModal.getProgressId(),
       };

@@ -26,12 +26,15 @@
             name="logo"
           />
         </a>
+        <div v-if="currentProject" class="project-box">
+          Project: {{ currentProjectName }}
+        </div>  
         <div id="topbarCustomPlaceholder"/>   
-        <div id="topbarCenterPlaceholder"/>     
+        <div id="topbarCenterPlaceholder"/> 
         <ul
           id="topBarNavItems"
           class="navbar-nav ms-auto mt-2 mt-lg-0"
-        />
+        />   
         <ul class="navbar-nav">
           <li class="nav-item dropdown">
             <div
@@ -110,6 +113,19 @@ export default {
   name: "TopBar",
   components: {LoadIcon, IconAsset, PasswordModal, ConsentUpdateModal},
   computed: {
+    currentProject() {
+      const projectId = this.$store.getters["settings/getValue"]("projects.default");
+      // Use the 'get' getter, which expects a numeric ID
+      if (!projectId) {
+        return "No Project";
+      }
+
+      return this.$store.getters["table/project/get"](parseInt(projectId));
+    
+    },
+    currentProjectName() {
+      return this.currentProject ? this.currentProject.name : "No Project";
+    },
     username() {
       return this.$store.getters['auth/getUsername'];
     },
@@ -198,5 +214,21 @@ body.sidebar-exists #backButton {
   align-items: center;
   flex: 1;
 }
+
+.project-box {
+  display: flex;
+  align-items: center;
+  padding: 2px 10px;
+  background: #f5f5f5;
+  border: 1px solid darkblue;
+  color: darkblue;
+  border-radius:   4px;
+  vertical-align: middle;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 </style>
