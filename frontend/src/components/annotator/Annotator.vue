@@ -541,8 +541,6 @@ export default {
     filterItemsWithClosedStudies(array) {
       return array.filter(item => {
           const studySession = this.$store.getters["table/study_session/get"](item.studySessionId);
-          console.log("Study session id: ", this.studySessionId == null);
-          console.log("study session null", studySession == null);
           if (studySession == null && this.studySessionId == null) {
             return true
           };
