@@ -303,7 +303,7 @@ export default {
     });
 
     // get tagsets
-    this.$socket.emit("tagSetGetAll", {}, (result) => {
+    /*this.$socket.emit("tagSetGetAll", {}, (result) => {
       if (!result.success) {
         this.eventBus.emit('toast', {
           title: "Tag Set Error",
@@ -311,8 +311,8 @@ export default {
           variant: "danger"
         });
       }
-    });
-    this.$socket.emit("tagGetAll", {}, (result) => {
+    });*/
+    /*this.$socket.emit("tagGetAll", {}, (result) => {
       if (!result.success) {
         this.eventBus.emit('toast', {
           title: "Tag Error",
@@ -320,7 +320,7 @@ export default {
           variant: "danger"
         });
       }
-    });
+    });*/
 
     // init component
     this.load();
