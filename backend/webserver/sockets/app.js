@@ -10,8 +10,9 @@ const {mergeInjects} = require("../../utils/data");
  *
  * @author Dennis Zyska, Linyin Huang
  * @type {SettingSocket}
+ * @class AppSocket
  */
-module.exports = class AppSocket extends Socket {
+class AppSocket extends Socket {
     /**
      * Send all settings to the client
      * @param {boolean} sendToAll broadcast to all clients
@@ -363,3 +364,5 @@ module.exports = class AppSocket extends Socket {
         this.createSocket("appSettingSet", this.sendOverallSetting, {}, false);
     }
 };
+
+module.exports = AppSocket;
