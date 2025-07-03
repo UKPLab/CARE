@@ -62,7 +62,7 @@
       >
         <LoadIcon
           :size="21"
-          class="me-1 middle"
+          class="me-1 mb-1 middle"
           icon-name="stopwatch"
         />
         <span
@@ -230,10 +230,11 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     timeLeftHuman() {
+      console.log("Time left:", this.timeLeft);
       if (this.timeLeft < 60) {
         return Math.round(this.timeLeft) + "s";
       }
-      return Math.round(this.timeLeft / 60) + "min";
+      return "<" + Math.ceil(this.timeLeft / 60) + "min";
     },
     currentStudyStep() {
       return this.currentStudyStepId ? this.$store.getters["table/study_step/get"](this.currentStudyStepId) : null;
