@@ -1,7 +1,4 @@
 'use strict';
-const fs = require('fs');
-
-const terms = fs.readFileSync('../../terms.html', 'utf8');
 
 const settings = [
     {
@@ -30,8 +27,8 @@ const settings = [
     {key: "app.login.guest", type: "boolean", value: "true", description: "Whether to allow guest logins"},
     {
         key: "app.register.terms",
-        type: "html",
-        value: terms,
+        type: "edits",
+        value: null,
         description: "Terms and conditions text to display during registration"
     },
     {
