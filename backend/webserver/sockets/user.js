@@ -263,61 +263,52 @@ module.exports = class UserSocket extends Socket {
         await this.models["user"].resetUserPwd(userId, password);
     }
 
+    /**
+     * Get users by their role
+     * @param {Object} data
+     * @param {string} data.role - The role of the user
+     * @param {Object} options - Sequelize transaction options.
+     * @returns {void}
+     */
+    async getUsersByRole(data, options) {
+        try {
+            const users = await this.getUsers(data.role);
+            this.socket.emit("userByRole", {
+                success: true, users,
+            });
+        } catch (error) {
+            const errorMsg = "User rights and request parameter mismatch";
+            this.socket.emit("userByRole", {
+                success: false, message: errorMsg,
+            });
+            this.logger.error(errorMsg);
+        }
+    }
+
+    /***
+     * Emits rights associated with a user
+     * @param {Object} data
+     * @param {number} data.userId the user ID
+     * @param {Object} options - Sequelize transaction options.
+     * @returns {Promise<void>}
+     */
+    async getUserRights(data, options) {
+        try {
+            const userRight = await this.models["user"].getUserRights(data.userId);
+            this.socket.emit("userRight", {
+                success: true, userRight,
+            });
+        }   catch (error) {
+            this.socket.emit("userRight", {
+                success: false, message: "Failed to get user right",
+            });
+            this.logger.error(error);
+        }
+    }
+
     init() {
-
-        // Get users by their role
-        this.socket.on("userGetByRole", async (role) => {
-            try {
-                const users = await this.getUsers(role);
-                this.socket.emit("userByRole", {
-                    success: true, users,
-                });
-            } catch (error) {
-                const errorMsg = "User rights and request parameter mismatch";
-                this.socket.emit("userByRole", {
-                    success: false, message: errorMsg,
-                });
-                this.logger.error(errorMsg);
-            }
-        });
-
-        // TODO refactor together: this.createSocket("userGetByRole", this.getRoleOfUser, {}, false);
-
-        // Get right associated with the user
-        // TODO refactor together
-        this.socket.on("userGetRight", async (userId) => {
-            try {
-                const userRight = await this.models["user"].getUserRights(userId);
-                this.socket.emit("userRight", {
-                    success: true, userRight,
-                });
-            } catch (error) {
-                this.socket.emit("userRight", {
-                    success: false, message: "Failed to get user right",
-                });
-                this.logger.error(error);
-            }
-        });
-
-        /*
-        // Update user's following data: firstName, lastName, email, roles
-        this.socket.on("userUpdateDetails", async (data, callback) => {
-            const {userId, userData} = data;
-            try {
-                await this.models["user"].updateUserDetails(userId, userData);
-                callback({
-                    success: true, message: "Successfully updated user!",
-                });
-            } catch (error) {
-                callback({
-                    success: false, message: "Failed to update user details",
-                });
-                this.logger.error(error);
-            }
-        });
-
-         */
-
+        this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
+        this.createSocket("userGetRight", this.getUserRights, {}, false);
         this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true); //TODO not sure about true for the transaction
         this.createSocket("userResetPwd", this.resetUserPwd, {}, false);
         this.createSocket("userGetDetails", this.models["user"].getUserDetails, {}, false);
