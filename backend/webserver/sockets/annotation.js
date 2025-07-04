@@ -6,8 +6,9 @@ const {pickObjectAttributeSubset} = require("../../utils/generic");
  *
  * @author Dennis Zyska, Nils Dycke
  * @type {CollabSocket}
+ * @class AnnotationSocket
  */
-module.exports = class AnnotationSocket extends Socket {
+class AnnotationSocket extends Socket {
 
     /**
      * Send an annotation to the client by id
@@ -116,3 +117,5 @@ module.exports = class AnnotationSocket extends Socket {
     }
 
 }
+
+module.exports = AnnotationSocket;

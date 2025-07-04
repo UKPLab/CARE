@@ -16,7 +16,7 @@ The project is developed at the `UKP Lab <https://www.informatik.tu-darmstadt.de
    getting_started/installation
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: For Developers
 
    for_developers/before_you_start
@@ -25,15 +25,17 @@ The project is developed at the `UKP Lab <https://www.informatik.tu-darmstadt.de
    for_developers/frontend/frontend
    for_developers/backend/backend
    for_developers/examples/examples
-   for_developers/debugging
+   for_developers/debugging/index
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: For Researchers
 
    for_researchers/basics
    for_researchers/exporting
+   for_researchers/study/study
+   
 
 
 
