@@ -19,8 +19,9 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal
  * @type {DocumentSocket}
+ * @class DocumentSocket
  */
-module.exports = class DocumentSocket extends Socket {
+class DocumentSocket extends Socket {
 
     /**
      *
@@ -895,3 +896,5 @@ module.exports = class DocumentSocket extends Socket {
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
     }
 };
+
+module.exports = DocumentSocket;
