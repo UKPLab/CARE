@@ -467,7 +467,6 @@ export default {
         return typeOrder[a.type] - typeOrder[b.type];
       });
     },
-    // TODO: Check if the colors are accessible.
     generatePlaceholderColors() {
       const colors = ["#ff5733", "#33c3ff", "#ff33f6", "#33ff57", "#ffc133", "#a833ff", "#ff338f"];
       this.placeholderColors = this.placeholders.map((_, index) => colors[index % colors.length]);

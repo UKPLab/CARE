@@ -26,9 +26,11 @@ extensions = [
     'sphinx.ext.viewcode',  # Add a link to the Python source code of documented object.
     'sphinx.ext.todo',  # Support for to do items.
     'sphinx.ext.extlinks', # Support for external links.
-    'sphinx.ext.autosectionlabel', # Support for autolabeling sections.
+    'sphinx.ext.autosectionlabel', # Support for autolabeling sections.,
+    'sphinx_js', # Parse and document js scripts using JSDoc. 
 ]
 autosummary_generate = True  # Turn on sphinx.rpcs.autosummary
+js_source_path = ['../../backend/webserver/sockets']
 
 autodoc_default_options = {
     'members': True,
