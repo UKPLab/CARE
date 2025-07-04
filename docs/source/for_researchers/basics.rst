@@ -11,6 +11,8 @@ To host CARE with all features including coupling of NLP models, you need to sta
 NLP Broker and any models you want to provide. You may run all of these components on different machines, but we
 recommend to run broker and CARE server on the same machine to reduce latency.
 
+For more advanced deployment scenarios such as conducting multiple user studies, configuring external brokers, or running on dedicated infrastructure, please refer to the :doc:`Study Tutorials and Examples <study/study>`.
+
 Please check out the details of hosting the CARE server described in the
 :doc:`getting started chapter <../getting_started/installation>`.
 

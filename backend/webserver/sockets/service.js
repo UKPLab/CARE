@@ -5,8 +5,9 @@ const Socket = require("../Socket.js");
  *
  * @author Dennis Zyska
  * @type {ServiceSocket}
+ * @class ServiceSocket
  */
-module.exports = class ServiceSocket extends Socket {
+class ServiceSocket extends Socket {
 
     /**
      * Connects a service to the client
@@ -80,3 +81,5 @@ module.exports = class ServiceSocket extends Socket {
 
     }
 }
+
+module.exports = ServiceSocket;

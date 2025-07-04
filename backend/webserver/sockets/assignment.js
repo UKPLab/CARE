@@ -7,8 +7,9 @@ const _ = require("lodash");
  *
  * @author Dennis Zyska, Alexander Bürkle
  * @type {AssignmentSocket}
+ * @class AssignmentSocket
  */
-module.exports = class AssignmentSocket extends Socket {
+class AssignmentSocket extends Socket {
 
     /**
      * Assigns a peer review task to a list of reviewers based on a given template.
@@ -362,3 +363,5 @@ module.exports = class AssignmentSocket extends Socket {
         this.createSocket("assignmentGetInfo", this.getAssignmentInfoFromCourse, {}, false);
     }
 };
+
+module.exports = AssignmentSocket;
