@@ -39,8 +39,8 @@ doc: doc_sphinx
 doc_sphinx:
 	@echo "Building sphinx documentation"
 	@docker compose -f docker-compose.yml --env-file ".env" build docs_sphinx
-	@docker run --rm -v ${CURDIR}/docs:/docs docs_sphinx make html
-
+	@docker run --rm -v ${CURDIR}/docs:/docs -v ${CURDIR}/backend:/backend docs_sphinx make html
+	
 .PHONY: doc_clean
 doc_clean:
 	@echo "Clean sphinx documentation"
