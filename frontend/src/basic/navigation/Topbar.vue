@@ -26,7 +26,7 @@
             name="logo"
           />
         </a>
-        <div v-if="currentProject" class="project-box">
+        <div class="project-box">
           Project: {{ currentProjectName }}
         </div>  
         <div id="topbarCustomPlaceholder"/>   
@@ -112,19 +112,15 @@ import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
 export default {
   name: "TopBar",
   components: {LoadIcon, IconAsset, PasswordModal, ConsentUpdateModal},
+  subscribeTable: [{
+    table: 'project',
+  }],
   computed: {
     currentProject() {
-      const projectId = this.$store.getters["settings/getValue"]("projects.default");
-      // Use the 'get' getter, which expects a numeric ID
-      if (!projectId) {
-        return "No Project";
-      }
-
-      return this.$store.getters["table/project/get"](parseInt(projectId));
-    
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     currentProjectName() {
-      return this.currentProject ? this.currentProject.name : "No Project";
+      return this.$store.getters["table/project/get"](this.currentProject)?.name;
     },
     username() {
       return this.$store.getters['auth/getUsername'];
