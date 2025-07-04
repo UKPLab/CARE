@@ -11,6 +11,8 @@ To host CARE with all features including coupling of NLP models, you need to sta
 NLP Broker and any models you want to provide. You may run all of these components on different machines, but we
 recommend to run broker and CARE server on the same machine to reduce latency.
 
+For more advanced deployment scenarios such as conducting multiple user studies, configuring external brokers, or running on dedicated infrastructure, please refer to the :doc:`Study Tutorials and Examples <study/study>`.
+
 Please check out the details of hosting the CARE server described in the
 :doc:`getting started chapter <../getting_started/installation>`.
 
@@ -69,7 +71,20 @@ CARE for Structured Annotation Studies
 If you are interested in running structured annotation studies, you can use the rich study management feature integrated
 in CARE. The general workflow for setting up such a study looks as follows:
 
-    1. Define the terms for your user study in the ``terms.html`` at the top directory.
+    1. Define the terms for your user study via the integrated settings menu in the CARE dashboard (admin access required).
+
+    To define your registration terms:
+        - Log in to CARE with an admin account.
+        - Go to the **Settings** section in the dashboard.
+        - Navigate to **app → register → app.register.terms** (the last setting in that group).
+        - Click on the multiline text area labeled "Terms and conditions text to display during registration".
+        - Use the text editor that appears to enter your customized terms and conditions.
+
+    .. warning::
+        It is essential to define these terms **before making your instance publicly available or inviting users** to participate in a study.
+        The default template is generic and not suitable for legal or ethical consent in real studies.
+        After making changes to the terms, you **must click "Save Settings"** at the top of the page to ensure the changes are applied.
+
     2. Ask your users to register (either anonymously or with full information); if you want to collect behavioral data
        they need to confirm the collection of this data upon registration.
     3. For each document in the study, upload it to the server via the Documents view of the dashboard.

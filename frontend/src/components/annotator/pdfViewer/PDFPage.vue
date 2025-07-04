@@ -54,7 +54,7 @@
  *  @author Dennis Zyska, Nils Dycke
  */
 
-import * as pdfjsLib from "pdfjs-dist/build/pdf.js"
+import * as pdfjsLib from 'pdfjs-dist'
 import {ObserveVisibility} from 'vue3-observe-visibility'
 import debounce from 'lodash.debounce';
 import Highlights from "./Highlights.vue";
@@ -234,27 +234,32 @@ export default {
       toRaw(this.renderTask).promise.then(() => {
         return page.getTextContent();
       }).then((textContent) => {
-
+        
+        console.log("textContent", textContent)
         const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber).getBoundingClientRect();
-        const text_layer = document.getElementById('text-layer-' + page.pageNumber);
+        const textLayerDiv = document.getElementById('text-layer-' + page.pageNumber);
 
-        text_layer.style.height = canvas_offset.height + 'px';
-        text_layer.style.width = canvas_offset.width + 'px';
+        textLayerDiv.style.height = canvas_offset.height + 'px';
+        textLayerDiv.style.width = canvas_offset.width + 'px';
 
-        pdfjsLib.renderTextLayer({
-          textContent: textContent,
-          textLayerMode: 2,
-          container: document.getElementById('text-layer-' + page.pageNumber),
-          viewport: viewport.clone({scale: this.scale}),
-          textDivs: []
-        })
-
+        // Use display scale for text layer positioning
+        const displayViewport = page.getViewport({scale: this.scale});
+        const { scale } = displayViewport;
+        textLayerDiv.style.setProperty("--scale-factor", `${scale}`);
+        textLayerDiv.style.setProperty("--total-scale-factor", `${scale}`);
+        
+        const renderTask = new pdfjsLib.TextLayer({
+          container: textLayerDiv,
+          textContentSource: textContent,
+          viewport: displayViewport.clone({ dontFlip: true })
+        });
+        
+        return renderTask.render();
+      }).then(() => {
         this.pdf.renderingDone.set(page.pageNumber, true);
-        this.add_anchors();
-
         this.isRendered = true;
-
-
+        // Only add anchors after text layer is fully rendered
+        this.add_anchors();
       }).catch(response => {
         this.destroyRenderTask();
         console.log(`Failed to render page ${this.pageNumber}: ` + response);
