@@ -95,8 +95,11 @@ export default {
   computed: {
     documents() {
       return this.$store.getters["table/document/getFiltered"](
-          (doc) => doc.projectId === this.$store.getters["settings/getValueAsInt"]("projects.default")
+          (doc) => doc.projectId === this.currentProjectId
       );
+    },
+    currentProjectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
