@@ -198,7 +198,6 @@ export default {
       return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
     },
     documentComments() {
-      console.log("Getting all the comments");
       const comments = this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
           console.log(comment);
