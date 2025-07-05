@@ -78,13 +78,16 @@ module.exports = class Socket {
                                     if (entry.constructor.autoTable) {
                                         const tableName = entry.constructor.tableName;
                                         if (changesMap.has(tableName)) {
-                                            changesMap[tableName].push(_.omit(entry.dataValues, defaultExcludes));
+                                            changesMap.get(tableName).push(_.omit(entry.dataValues, defaultExcludes));
                                         } else {
-                                            changesMap[tableName] = [_.omit(entry.dataValues, defaultExcludes)];
+                                            changesMap.set(tableName, [_.omit(entry.dataValues, defaultExcludes)]);
                                         }
                                     }
                                 });
-                                changesMap.forEach((changes, table) => this.emit(table + "Refresh", changes, true));
+                                for (const [table, changes] of changesMap) {
+                                    console.log("Pushing changes");
+                                     this.emit(table + "Refresh", changes, true)
+                                }
                             }
                         } catch (e) {
                             this.logger.error("Error in afterCommit sending data to client: " + e);
@@ -109,7 +112,6 @@ module.exports = class Socket {
                 }
             }
         });
-
     }
 
     /**
@@ -611,5 +613,6 @@ module.exports = class Socket {
             this.logger.error(err);
         }
     }
+
 }
 ;
