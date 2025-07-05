@@ -8,8 +8,9 @@ const _ = require("lodash");
  *
  * @author Dennis Zyska, Nils Dycke, Linyin Huang
  * @type {UserSocket}
+ * @class UserSocket
  */
-module.exports = class UserSocket extends Socket {
+class UserSocket extends Socket {
     /**
      * Adds the username as creator_name of a database entry with column creator
      *
@@ -249,11 +250,13 @@ module.exports = class UserSocket extends Socket {
 
     /**
      * Reset user's password
-     * @param {Object} data
-     * @param {number} data.userId - The ID ｀of the user
+     * @param {Object} data - The input data from the frontend
+     * @param {number} data.userId - The ID of the user
      * @param {string} data.password - The new password
-     * @param {Object} options - Sequelize transaction options.
-     * @returns {void}
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
+     * @throws {Error} - If the user is not an admin or the user tries to reset other's password
      */
     async resetUserPwd(data, options) {
         const {userId, password} = data;
@@ -265,10 +268,12 @@ module.exports = class UserSocket extends Socket {
 
     /**
      * Get users by their role
-     * @param {Object} data
+     * @param {Object} data - The input data from the frontend
      * @param {string} data.role - The role of the user
-     * @param {Object} options - Sequelize transaction options.
-     * @returns {void}
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
+     * @throws {Error} - If the user does not have right 
      */
     async getUsersByRole(data, options) {
         try {
@@ -309,7 +314,7 @@ module.exports = class UserSocket extends Socket {
     init() {
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
         this.createSocket("userGetRight", this.getUserRights, {}, false);
-        this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true); //TODO not sure about true for the transaction
+        this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true);
         this.createSocket("userResetPwd", this.resetUserPwd, {}, false);
         this.createSocket("userGetDetails", this.models["user"].getUserDetails, {}, false);
         this.createSocket("userConsentUpdate", this.updateUserConsent, {}, true);
@@ -320,3 +325,5 @@ module.exports = class UserSocket extends Socket {
         this.createSocket("userPublishMoodle", this.userPublishMoodle, {}, false);
     }
 };
+
+module.exports = UserSocket;

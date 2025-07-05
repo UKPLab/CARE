@@ -18,6 +18,19 @@ You also need Docker and docker-compose for building the various containers -- b
 Please install all packages according to the official documentation:
 
 * `Node.js <https://nodejs.org/en/download/>`_ (includes npm)
+
+.. warning::
+
+     CARE requires **Node.js version >= v23** for the development environment to work correctly.
+     Older versions (e.g., v12.x on WSL) will cause runtime errors or build failures.
+
+     You can check your currently installed versions by running:
+
+     .. code-block:: bash
+
+        node -v
+        npm -v
+        
 * `Docker <https://docs.docker.com/engine/installation/>`_
 * `Docker Compose <https://docs.docker.com/compose/install/>`_
 * `GNU Make <https://www.gnu.org/software/make/>`_

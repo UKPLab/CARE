@@ -6,8 +6,9 @@ const {pickObjectAttributeSubset} = require("../../utils/generic");
  *
  * @author Dennis Zyska, Nils Dycke
  * @type {CollabSocket}
+ * @class AnnotationSocket
  */
-module.exports = class AnnotationSocket extends Socket {
+class AnnotationSocket extends Socket {
 
     /**
      * Send an annotation to the client by id
@@ -57,7 +58,6 @@ module.exports = class AnnotationSocket extends Socket {
      * @param {string} data.selectors the selectors of the annotation
      * @param {boolean} data.deleted indicates if the data is deleted
      * @param {boolean} data.anonymous indicates if the data is anonymous
-     * @borrows ?!?!
      * @returns {Promise<void>}
      */
     async updateAnnotation(data, options) {
@@ -72,7 +72,6 @@ module.exports = class AnnotationSocket extends Socket {
             const newAnno = await this.models['annotation'].updateById(data.annotationId, data, {transaction: options.transaction});
             this.emitDoc(newAnno.documentId, "annotationRefresh", newAnno); //fixme msg sent twice due to collab, revise
         } else { //create new
-            //todo document the data attributes in the doc string; possibly use borrows
             const newAnnotation = {
                 documentId: data.documentId,
                 selectors: data.selectors,
@@ -118,3 +117,5 @@ module.exports = class AnnotationSocket extends Socket {
     }
 
 }
+
+module.exports = AnnotationSocket;
