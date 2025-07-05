@@ -55,6 +55,31 @@ The application should be available at http://localhost:9090
 
     The credentials for the admin user can be also found in the .env file!
 
+Updating the Instance and Backing Up the Database
+-------------------------------------------------
+
+To apply updates from your development branch to your deployment branch:
+
+.. code-block:: bash
+
+   cd /home/deployer/your_project_directory # go to deployer dir as su
+   git checkout project-XX-name # go to our project dir
+   git pull # pull the update from remote repo
+   git checkout deploy-XX-name # switch to project deploy branch
+   git merge project-XX-name # merge code
+   git push --set-upstream origin deploy-XX-name # push project deploy code to remote repo
+
+Then, rebuild the instance:
+
+.. code-block:: bash
+
+   docker ps | grep "your_keyword"  # Optional: locate container
+   make CONTAINER=your_container_name backup_db # back up the db container for this instance
+   cat .env # check out the config file, make sure everything still looks right
+   make build # update the instance
+
+Now test the instance in the front end, the bug should be solved already.
+
 Rebuilding only the Moodle RPC container
 ----------------------------------------
 
@@ -66,6 +91,26 @@ If you touch any code under ``utils/rpcs/moodleAPI/`` run:
 
 This rebuilds the *rpc_moodle* image and restarts that service without
 affecting Postgres or the test-RPC container.
+
+.. _a_record_preparation:
+
+Preparing the Server and Access
+-------------------------------
+
+Before starting deployment, prepare the following (Should be done several days in advance):
+
+1. **Request Admin Access**:  
+   Contact your system administrator and request admin or root access to the target server. Include a supervisor or project lead for approval if necessary.
+
+2. **Register a Domain**:  
+   Ask the system administrator to add a new A-record for your study domain. Provide the following details:
+
+   - **Domain**: your-desired-subdomain.institution-domain.tld
+   - **IP Address**: Public IP of the target machine
+   - **Type**: A-record
+
+.. note:: 
+        Make sure that the DNS Entry is available outside of the TU Darmstadt (may need some time).
 
 
 Nginx / Certbot
@@ -93,17 +138,14 @@ To install nginx and Certbot, run the following commands (adapted from this `Imp
     # Run docker compose to generate all docker instances
     sudo docker compose up -d
 
-Now the ssl certificate should be available and will be renewed periodically.
-
+Once the A-record (:ref:`a_record_preparation`) has been registered and propagated, and the script executed, the SSL certificate should now be available and will be renewed periodically.
 .. tip::
 
-    In the file docker-compose.yml you can add additional volumes to the service nginx (e.g., ./data/nginx/html:/var/www/html) to make further html files available.
+    In the file ``docker-compose.yml`` you can add additional volumes to the service nginx (e.g., ./data/nginx/html:/var/www/html) to make further html files available.
 
-A sample configuration for nginx ``./data/nginx/app.conf`` can look like this:
+.. code-block:: nginx
 
-.. code-block:: bash
-
-    ### This part is for certificate updates and SSL Page Redirection
+    ### This part is for certificate updates and SSL redirection
     server {
         listen 80;
         server_name <your domain>;
@@ -118,7 +160,7 @@ A sample configuration for nginx ``./data/nginx/app.conf`` can look like this:
         }
     }
 
-    # For main environment
+    # Main server block for application access via HTTPS
     server {
         listen 443 ssl;
         server_name <your domain>;
@@ -130,10 +172,9 @@ A sample configuration for nginx ``./data/nginx/app.conf`` can look like this:
         ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
         location / {
-            #proxy_redirect off
-            proxy_set_header    Host                $host;
-            proxy_set_header    X-Real-IP           $remote_addr;
-            proxy_set_header    X-Forwarded-For     $proxy_add_x_forwarded_for;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header Access-Control-Allow-Origin *;
             proxy_pass http://<docker ip>:<app port>/;
 
@@ -145,8 +186,15 @@ A sample configuration for nginx ``./data/nginx/app.conf`` can look like this:
 
 .. warning::
 
-    The IP-Address can change, if the docker network is newly created! Please adapt the ip address accordingly!
-    A better way is to reload just the config with ``sudo docker compose restart``.
+   The IP address can change if the Docker network is recreated! Please adapt the IP address in the config accordingly.
+
+   A better way is to reload just the configuration using:
+
+   .. code-block:: bash
+
+       docker compose restart
+
+Now the service should be available at your configured domain. If it doesn't appear to work in your browser, try accessing it in an incognito/private tab first.
 
 .. _common_errors:
 

@@ -7,8 +7,9 @@ const Socket = require("../Socket.js");
  *
  * @author Dennis Zyska
  * @type {DocumentSocket}
+ * @class StudySessionSocket
  */
-module.exports = class StudySessionSocket extends Socket {
+class StudySessionSocket extends Socket {
 
     /**
      * Send all study sessions to the client
@@ -80,3 +81,5 @@ module.exports = class StudySessionSocket extends Socket {
         this.createSocket("studySessionStart", this.startStudySession, {}, true);
     }
 }
+
+module.exports = StudySessionSocket;
