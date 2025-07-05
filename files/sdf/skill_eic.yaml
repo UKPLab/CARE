@@ -23,5 +23,5 @@ output:
       [ 0, 'id-X_v2_5@1', 'id-X_v1_5@1', 'Laut dem Renewable Energy Market Update der Internationalen Energieagentur (IEA) stieg der Anteil erneuerbarer Energien am weltweiten Energiemix kontinuierlich an, wobei erneuerbare Energien im Jahr 2025 bereits rund 59,9% des globalen Stromverbrauchs ausmachten (IEA, 2021).', 'Laut dem Renewable Energy Market Update der Internationalen Energieagentur (IEA) stieg der Anteil erneuerbarer Energien am weltweiten Energiemix kontinuierlich an, wobei erneuerbare Energien im Jahr 2020 bereits rund 29,9% des globalen Stromverbrauchs ausmachen (IEA, 2021).', 'Modify', 'Fact/Evidence' ],
       [ 0, 'id-X_v2_2@0', '', 'This sentence is added to provide more information. ', '', 'Add', 'Claim' ]
     ],
-    classes: { 'Modify': 0, 'Add': 1, 'Delete': 2, 'Other': 3, 'Fact/Evidence': 4, 'Claim': 5, 'Citation': 6, 'Suggestion': 7, 'Typo': 8, 'Reorder': 9, 'Move': 10, 'Combine': 11, 'Split': 12, 'None': 13 }
+    classes: { 'labels': ['Sprachliche und formelle Änderungen', 'Semantische Änderungen', 'Andere Änderungen'], 'values': [1, 3, 9] }
   }

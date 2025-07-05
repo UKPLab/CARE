@@ -111,6 +111,13 @@ export default {
             this.emptyField = false;
             return true;
           }
+          if (typeof data === "object" && data.ops && Array.isArray(data.ops)) {
+            const hasText = data.ops.some(op => typeof op.insert === "string" && op.insert.trim() !== "");
+            if (hasText) {
+              this.emptyField = false;
+              return true;
+            }
+          }
           this.emptyField = true;
           this.shakeIt();
           return false;

@@ -47,11 +47,25 @@ describe('Test Login', () => {
      * Test the /GET config route
      */
     test('Get Config', async () => {
-        return request(this.server.http)
-            .get('/config.js')
-            .expect(200);
-        // TODO additional check if config holds some values
-    });
+    const res = await request(this.server.http)
+        .get('/config.js')
+        .expect(200);
+
+    // Extract the JSON string from the response
+    const match = res.text.match(/window\.config = JSON\.parse\((.*)\)/);
+    expect(match).toBeTruthy();
+
+    const configJsonString = JSON.parse(match[1]);
+    const config = JSON.parse(configJsonString);
+
+    // Additional check if config holds some values
+    expect(config).toBeDefined();
+    expect(Object.keys(config).length).toBeGreaterThan(0);
+    // Check for a specific expected key
+    expect(config).toHaveProperty('app.login.guest');
+
+    return res;
+});
 
     /**
      * Test the /POST register route
