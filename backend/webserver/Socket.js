@@ -7,7 +7,7 @@ const _ = require("lodash");
  *
  * This class is used to create a new socket connection to the server.
  *
- * @author Dennis Zyska
+ * @author Dennis Zyska, Marina Sakharova
  * @type {Socket}
  */
 module.exports = class Socket {
@@ -85,8 +85,7 @@ module.exports = class Socket {
                                     }
                                 });
                                 for (const [table, changes] of changesMap) {
-                                    console.log("Pushing changes");
-                                     this.emit(table + "Refresh", changes, true)
+                                    this.broadcastTable(table, changes);
                                 }
                             }
                         } catch (e) {
@@ -614,5 +613,12 @@ module.exports = class Socket {
         }
     }
 
+    async broadcastTable(tableName, data) {
+        const clients = this.io.appDataSubscriptions.tables[tableName];
+        if (!clients) return;
+        for (const socketId of clients) {
+            this.io.to(socketId).emit(tableName + "Refresh", data);
+        }
+    }
 }
 ;
