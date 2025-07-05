@@ -231,7 +231,7 @@ export default {
   computed: {
     anchors() {
       return [].concat(
-          this.annotations().filter(a => a.anchors !== null)
+          this.annotations.filter(a => a.anchors !== null)
               .flatMap(a => a.anchors)
               .filter(a => a !== undefined)
       )
@@ -263,8 +263,8 @@ export default {
         }
       ).map(session => session.id);
     },
-    rawAnnotations() {
-      return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
+    annotations() {
+      const annotations = this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
             const a_noanchor = a.anchors === null || a.anchors.length === 0;
             const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
@@ -274,31 +274,24 @@ export default {
 
             return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
           });
-    },
-    annotations() {
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        var filtered = this.rawAnnotations.filter(annotation =>
+        return annotations.filter(annotation =>
           this.closedSessionIds.includes(annotation.studySessionId)
         );
-        console.log(filtered);
-        return filtered;
       } else {
-        return this.rawAnnotations;
+        return annotations;
       }
     },
-    rawComments() {
-      return this.$store
-        .getters["table/comment/getFiltered"](c => 
+    comments() {
+      const comments = this.$store.getters["table/comment/getFiltered"](c => 
           c.documentId === this.documentId && c.parentCommentId === null
         );
-    },
-    comments() {
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        return this.rawComments.filter(comment =>
+        return comments.filter(comment =>
           this.closedSessionIds.includes(comment.studySessionId)
         );
       } else {
-        return this.rawComments;
+        return comments;
       }
     },
   },
@@ -515,7 +508,7 @@ export default {
         "studyStepId",
         "userId"
       ];
-      const annotations = this.annotations().map(a => {
+      const annotations = this.annotations.map(a => {
         return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
       });
       // change tagId to tagName

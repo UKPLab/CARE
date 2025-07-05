@@ -86,8 +86,7 @@ export default {
           } else {
             if (this.showAll) {
               if (!this.downloadBeforeStudyClosingAllowed) {
-                var check = this.closedSessionIds.includes(anno.studySessionId);
-                return check;
+                return this.closedSessionIds.includes(anno.studySessionId);
               } else {
               return true;
               }
