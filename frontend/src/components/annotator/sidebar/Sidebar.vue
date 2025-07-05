@@ -163,6 +163,14 @@ export default {
     showAnnotations() {
       return !this.showEdits; // Show annotations only if `showEdits` is false
     },
+    closedSessionIds() {
+      return this.$store.getters["table/study_session/getAll"].filter(
+        session => {
+          const study = this.$store.getters["table/study/get"](session.studyId);
+          return study && study.closed !== null;
+        }
+      ).map(session => session.id);
+    },
     study() {
       if (this.studySession) {
         return this.$store.getters["table/study/get"](this.studySession.studyId);
@@ -186,9 +194,14 @@ export default {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
+    downloadBeforeStudyClosingAllowed() {
+      return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
+    },
     documentComments() {
+      console.log("Getting all the comments");
       const comments = this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
+          console.log(comment);
           // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
             return comment.studySessionId === this.studySessionId && comment.studyStepId === this.studyStepId;
@@ -196,7 +209,11 @@ export default {
             return this.studySessionIds.includes(comment.studySessionId);
           } else {
             if (this.showAll) {
+              if (!this.downloadBeforeStudyClosingAllowed) {
+                return this.closedSessionIds.includes(comment.studySessionId);
+              } else {
               return true;
+              }
             } else {
               return comment.studySessionId === null;
             }

@@ -240,14 +240,6 @@ export default {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
-    comments() {
-      const comments = this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
-      // get only comments for closed studies. Used only to display to number of comments in the top bar correctly
-      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        return this.filterItemsWithClosedStudies(comments);
-      }
-      return comments;
-    },
 
     nlpActive() {
       const nlpActive = this.$store.getters["settings/getValue"]("annotator.nlp.activated");
@@ -261,10 +253,54 @@ export default {
     },
     // check if the setting is on or off
     downloadBeforeStudyClosingAllowed() {
-      const downloadAllowed = this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing");
-      return (downloadAllowed === true || downloadAllowed === "true");
+      return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
     },
+    closedSessionIds() {
+      return this.$store.getters["table/study_session/getAll"].filter(
+        session => {
+          const study = this.$store.getters["table/study/get"](session.studyId);
+          return study && study.closed !== null;
+        }
+      ).map(session => session.id);
+    },
+    rawAnnotations() {
+      return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
+            const a_noanchor = a.anchors === null || a.anchors.length === 0;
+            const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
+            if (a_noanchor || b_noanchor) {
+              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+            }
+
+            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+          });
+    },
+    annotations() {
+      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
+        var filtered = this.rawAnnotations.filter(annotation =>
+          this.closedSessionIds.includes(annotation.studySessionId)
+        );
+        console.log(filtered);
+        return filtered;
+      } else {
+        return this.rawAnnotations;
+      }
+    },
+    rawComments() {
+      return this.$store
+        .getters["table/comment/getFiltered"](c => 
+          c.documentId === this.documentId && c.parentCommentId === null
+        );
+    },
+    comments() {
+      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
+        return this.rawComments.filter(comment =>
+          this.closedSessionIds.includes(comment.studySessionId)
+        );
+      } else {
+        return this.rawComments;
+      }
+    },
   },
   watch: {
     studySessionId(newVal, oldVal) {
@@ -337,25 +373,6 @@ export default {
     document.removeEventListener('copy', this.onCopy);
   },
   methods: {
-    // moved from computed to methods because otherwise worked as desired only after reload
-    annotations() {
-      const annos = this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
-            const a_noanchor = a.anchors === null || a.anchors.length === 0;
-            const b_noanchor = b.anchors === null || b.anchors.length === 0;
-
-            if (a_noanchor || b_noanchor) {
-              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
-            }
-
-            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
-          });
-      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        // get only annotations for closed studies
-        return this.filterItemsWithClosedStudies(annos);
-      } else {
-        return annos;
-      }
-    },
     ...mapMutations({
       setSetting: "settings/set",
     }),
