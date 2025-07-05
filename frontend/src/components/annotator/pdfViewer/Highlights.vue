@@ -14,7 +14,7 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
  *
  * Adapted from Hypothes.is
  *
- * @author Dennis Zyska, Nils Dycke
+ * @author Dennis Zyska, Nils Dycke, Marina Sakharova
  */
 export default {
   name: "PDFHighlights",

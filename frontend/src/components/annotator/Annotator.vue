@@ -78,7 +78,7 @@
     <!-- If download before study closing disabled and we are in a study session, no download allowed -->
     <Teleport to="#topBarExtendMenuItems">
       <li><a
-          :class="annotations.length + comments.length > 0 && !downloading && (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null)? '' : 'disabled'"
+          :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
           class="dropdown-item"
           href="#"
           @click="downloadAnnotations"
@@ -547,18 +547,6 @@ export default {
         }
       }
     },
-    // for an array of comments or annotations, returns filtered array with only items from closed studies.
-    filterItemsWithClosedStudies(array) {
-      return array.filter(item => {
-          const studySession = this.$store.getters["table/study_session/get"](item.studySessionId);
-          if (studySession == null && this.studySessionId == null) {
-            return true
-          };
-          const study = this.$store.getters["table/study/get"](studySession.studyId);
-          return !(study.closed === null);
-        }
-      )
-    }
   }
 }
 </script>
