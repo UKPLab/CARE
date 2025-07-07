@@ -230,7 +230,6 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     timeLeftHuman() {
-      console.log("Time left:", this.timeLeft);
       if (this.timeLeft < 60) {
         return Math.round(this.timeLeft) + "s";
       }

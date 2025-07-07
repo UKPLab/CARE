@@ -225,7 +225,19 @@ export default {
             }
           })
         }
-      }, 500)
+      }, 500),
+      logHideSidebar: debounce(function () {
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "hideSidebar",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+          }
+        });
+      }
+    }, 500)
     }
   },
   mounted(){
@@ -352,6 +364,7 @@ export default {
         setTimeout(() => {
           this.sidebarIconHighlight = false;
         }, 1000);
+        this.logHideSidebar();
       }
       else {
         this.isSidebarVisible = true;
