@@ -134,7 +134,7 @@ export default {
           },
           title: "Export data",
           icon: "download",
-          action: "export",
+          action: "exportProject",
         }
       ];
       return buttons;

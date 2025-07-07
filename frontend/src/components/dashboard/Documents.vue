@@ -192,7 +192,7 @@ export default {
             },
           ],
           title: "Open study coordinator...",
-          action: "studyCoordinator",
+          action: "openStudyCoordinator",
         });
       }
       if (this.showDeltaDownloadButton) {
