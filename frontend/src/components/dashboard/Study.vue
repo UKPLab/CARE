@@ -167,7 +167,7 @@ export default {
             }
           },
           title: "Copy link to study",
-          action: "linkStudy",
+          action: "copyStudyLink",
         },
         {
           icon: "card-list",
@@ -178,7 +178,7 @@ export default {
             }
           },
           title: "Inspect sessions",
-          action: "inspectSessions",
+          action: "inspectStudySessions",
         },
         {
           icon: "x-octagon",
@@ -206,7 +206,7 @@ export default {
             {key: "showTemplateButton", value: true},
           ],
           title: "Save as Template",
-          action: "saveAsTemplate",
+          action: "saveStudyAsTemplate",
         }
 
       ];
@@ -356,6 +356,7 @@ export default {
         this.$socket.emit("stats", {action: "editStudy", data: {studyId: data.params.id}});
         this.studyCoordinator(data.params);
       } else if (data.action === "deleteStudy") {
+        this.$socket.emit("stats", {action: "deleteStudy", data: {studyId: data.params.id}});
         this.deleteStudy(data.params);
       } else if (data.action === "openStudy") {
         this.$router.push("/study/" + data.params.hash);

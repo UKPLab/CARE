@@ -125,7 +125,7 @@ export default {
           },
           filter: [{ key: "showStartButton", value: true }],
           title: "Start session",
-          action: "startSession",
+          action: "startStudySession",
         },
         {
           icon: "box-arrow-in-right",
