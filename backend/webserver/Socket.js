@@ -73,17 +73,17 @@ module.exports = class Socket {
                         try {
                             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
                             if (t.changes) {
-                                var changesMap = new Map();
-                                t.changes.map(async (entry) => {
+                                const changesMap = t.changes.reduce((acc, entry) => {
                                     if (entry.constructor.autoTable) {
                                         const tableName = entry.constructor.tableName;
-                                        if (changesMap.has(tableName)) {
-                                            changesMap.get(tableName).push(_.omit(entry.dataValues, defaultExcludes));
-                                        } else {
-                                            changesMap.set(tableName, [_.omit(entry.dataValues, defaultExcludes)]);
+                                        const entryData = _.omit(entry.dataValues, defaultExcludes);
+                                        if (!acc.has(tableName)) {
+                                            acc.set(tableName, []);
                                         }
+                                        acc.get(tableName).push(entryData);
                                     }
-                                });
+                                    return acc;
+                                }, new Map());
                                 for (const [table, changes] of changesMap) {
                                     this.broadcastTable(table, changes);
                                 }
