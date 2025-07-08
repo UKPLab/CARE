@@ -7,8 +7,9 @@ const Socket = require("../Socket.js");
  *
  * @author Dennis Zyska
  * @type {DocumentSocket}
+ * @class StudySocket
  */
-module.exports = class StudySocket extends Socket {
+class StudySocket extends Socket {
 
     /**
      * Save the current study as a template (create a new study with template: true)
@@ -78,3 +79,5 @@ module.exports = class StudySocket extends Socket {
 
     }
 }
+
+module.exports = StudySocket;

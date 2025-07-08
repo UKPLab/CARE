@@ -10,8 +10,9 @@ const {mergeInjects} = require("../../utils/data");
  *
  * @author Dennis Zyska, Linyin Huang
  * @type {SettingSocket}
+ * @class AppSocket
  */
-module.exports = class AppSocket extends Socket {
+class AppSocket extends Socket {
     /**
      * Send all settings to the client
      * @param {boolean} sendToAll broadcast to all clients
@@ -64,7 +65,6 @@ module.exports = class AppSocket extends Socket {
         }
 
         // check or set user information
-        // TODO check if user is allowed to update data - missing await!
         if ("userId" in data.data && !await this.checkUserAccess(data.data.userId)) {
             throw new Error("You are not allowed to update the table " + data.table + " for another user!");
         }
@@ -364,3 +364,5 @@ module.exports = class AppSocket extends Socket {
         this.createSocket("appSettingSet", this.sendOverallSetting, {}, false);
     }
 };
+
+module.exports = AppSocket;
