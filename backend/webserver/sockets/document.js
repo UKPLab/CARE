@@ -503,8 +503,9 @@ class DocumentSocket extends Socket {
             this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
             return;
         }
-
-        this.emit("document_editRefresh", appliedEdits);
+        console.log(`ID  to emit: ${documentId}, SocketID: ${this.socket.id}`);
+        // this.emit("document_editRefresh", appliedEdits);
+        this.emitDoc(documentId, "document_editRefresh", appliedEdits);
     }
 
     /**
@@ -750,6 +751,7 @@ class DocumentSocket extends Socket {
      */
     async subscribeDocument(data, options) {
         this.socket.join("doc:" + data.documentId);
+        console.log(`Socket ${this.socket.id} joined room ${data.documentId}`);
     }
 
     /**

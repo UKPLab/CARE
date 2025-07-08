@@ -299,6 +299,12 @@ export default {
     );
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
+
+    this.$socket.emit("documentSubscribe",
+      { documentId: this.documentId },
+        (res) => {
+          console.log("subscribeDocument ack", res);
+    });
   },
   sockets: {
     connect() {
@@ -314,7 +320,11 @@ export default {
     },
     documentError(error) {
       this.handleDocumentError(error);
-    }
+    },
+    document_editRefresh(edits) {
+            console.log("Edits!!");
+            this.handleTextChange()
+      }
   },
   unmounted() {
     this.eventBus.off("editorSelectEdit", this.selectEditHandler);
