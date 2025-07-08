@@ -184,6 +184,7 @@
             <TButton
               v-else-if="c.type === 'button'"
               :action="r[c.key].action"
+              :stats="r[c.key].stats"
               :icon="r[c.key].icon"
               :options="r[c.key].options"
               :params="r"
@@ -583,12 +584,28 @@ export default {
     },
     actionEmitter(data) {
       this.$emit("action", data);
-      if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "actionClick",
-          data: data,
-        });
+      let statsParams = {};
+      const button = this.buttons.find((b) => b.action === data.action);
+      if (button && button.stats) {
+        // Only include the stat fields in the stats data
+       Object.entries(button.stats).forEach(([statsKey, paramKey]) => {
+        if (data.params[paramKey] === undefined) {
+          console.warn(`Parameter ${paramKey} not found in data.params`);
+          return;
+        } 
+       statsParams[statsKey] = data.params[paramKey];
+      });
       }
+      console.log('new Params',statsParams);
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "actionClick",
+            data: {
+              action: data.action,
+              params: statsParams,
+            },
+          });
+        }
     },
     selectRow(row) {
       if (this.selectableRows) {
@@ -659,6 +676,8 @@ export default {
       if (filteredButtons.length > 0) {
         this.hasButtons = true;
       }
+
+      console.log("getFilteredButtons", filteredButtons, row);
 
       return filteredButtons;
     },

@@ -27,8 +27,22 @@
     </template>
 
     <template #body>
+      <div v-if="editingTag && annotationId" class="d-flex align-items-center">
+        <select v-model="selectedTagId" @change="saveTagChange" class="form-select form-select-md" :style="{ display: 'inline-block', borderLeft: '4px solid #' + color, height: '20px', fontSize: 'small', fontStyle: 'italic' }">
+          <option  v-for="tag in tagSetTags" :key="tag.id" :value="tag.id">
+            {{ tag.name }}
+          </option>
+        </select>
+        <SidebarButton
+                :loading="false"
+                :props="$props"
+                icon="x-square-fill"
+                title="Cancel"
+                @click="editingTag = false"
+        />
+      </div>
       <div
-          v-if="annotationId"
+          v-else-if="annotationId && !editingTag"
           :style="'border-color:#' + color"
           :title="tagName"
           class="blockquote card-text annoBlockquote"
@@ -118,6 +132,14 @@
                 @click="edit"
             />
             <SidebarButton
+              v-if="comment.userId === userId && !readonly && annotationId"
+              :loading="false"
+              :props="$props"
+              icon="tag"
+              title="Edit Tag"
+              @click="toggleEditTag"
+          />
+            <SidebarButton
                 v-if="comment.userId === userId && !readonly"
                 :loading="false"
                 :props="$props"
@@ -166,6 +188,7 @@ import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
  */
 export default {
   name: "AnnoCard",
+  subscribeTable: ['tag', 'tag_set'],
   components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton},
   inject: {
     documentId: {
@@ -200,11 +223,17 @@ export default {
       shake: false,
       showReplies: false,
       edit_mode: false,
+      editingTag: false, 
+      selectedTagId: null,
     }
   },
   computed: {
     userId() {
       return this.$store.getters["auth/getUserId"];
+    },
+    tagSetTags() {
+      const defaultTag = parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
+      return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag) || [];
     },
     settingResponse() {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
@@ -405,6 +434,37 @@ export default {
       }
       this.$refs.collab.removeCollab();
       this.edit_mode = null;
+    },
+    toggleEditTag() {
+      this.editingTag = !this.editingTag;
+      if (this.editingTag) {
+        this.selectedTagId = this.annotation.tagId;
+      } else {
+        this.selectedTagId = null;
+      }
+      this.$nextTick(() => {
+        // Focus the select for better UX
+        const select = this.$el.querySelector('select[autofocus]');
+        if (select) select.focus();
+      });
+    },
+    saveTagChange() {
+      if (this.selectedTagId !== this.annotation.tagId) {
+        console.log("Tag changed to: " + this.selectedTagId);
+        this.$socket.emit('annotationUpdate', {
+          annotationId: this.annotation.id,
+          tagId: this.selectedTagId,
+        }, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: "Tag Update Failed",
+              message: res.message,
+              variant: "danger",
+            });
+          }
+        });
+      }
+      this.editingTag = false;
     },
     remove() {
       if (this.annotationId) {

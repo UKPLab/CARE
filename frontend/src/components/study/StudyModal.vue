@@ -256,6 +256,9 @@ export default {
           ],
           title: "Start session",
           action: "startStudySession",
+          stats: {
+            studySessionId: "id",
+          }
         },
         {
           icon: "x-octagon",
@@ -271,6 +274,9 @@ export default {
           ],
           title: "Finish session",
           action: "finishSession",
+          stats: {
+            studySessionId: "id",
+          }
         }
       ]
     },

@@ -111,6 +111,9 @@ export default {
           },
           title: "Access document...",
           action: "accessDoc",
+          stats:{
+            documentId: "id",
+          }
         },
         {
           icon: "trash",
@@ -132,6 +135,9 @@ export default {
           ],
           title: "Delete document...",
           action: "deleteDoc",
+          stats:{
+            documentId: "id",
+          }
         },
         {
           icon: "cloud-arrow-up",
@@ -153,6 +159,9 @@ export default {
           ],
           title: "Publish document...",
           action: "publicDoc",
+          stats:{
+            documentId: "id",
+          }
         },
         {
           icon: "pencil",
@@ -174,6 +183,9 @@ export default {
           ],
           title: "Rename document...",
           action: "renameDoc",
+          stats:{
+            documentId: "id",
+          }
         },
       ];
       if (this.studiesEnabled) {
@@ -193,6 +205,9 @@ export default {
           ],
           title: "Open study coordinator...",
           action: "openStudyCoordinator",
+          stats: {
+            documentId: "id",
+          }
         });
       }
       if (this.showDeltaDownloadButton) {
@@ -211,6 +226,9 @@ export default {
             }],
           title: "Export delta to a local file",
           action: "exportDeltaDoc",
+          stats: {
+            documentId: "id",
+          } 
         });
       }
       if (this.showHTMLDownloadButton) {
@@ -229,6 +247,9 @@ export default {
             }],
           title: "Export HTML to a local file",
           action: "exportHTMLDoc",
+          stats: {
+            documentId: "id",
+          }
         });
       }
       return buttons;

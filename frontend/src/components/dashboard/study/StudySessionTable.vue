@@ -113,6 +113,9 @@ export default {
           filter: this.currentUserOnly ? [{ key: "showResumeButton", value: true }] : [],
           title: this.currentUserOnly ? "Resume session" : "Open session",
           action: "openSession",
+          stats:{
+            studySessionId: "id",
+          }
         },
         {
           icon: "box-arrow-in-right",
@@ -126,6 +129,9 @@ export default {
           filter: [{ key: "showStartButton", value: true }],
           title: "Start session",
           action: "startStudySession",
+          stats:{
+            studySessionId: "id",
+          }
         },
         {
           icon: "box-arrow-in-right",
@@ -138,7 +144,10 @@ export default {
           },
           filter: [{ key: "showInspectButton", value: true }],
           title: "Inspect session",
-          action: "reviewSession", 
+          action: "reviewSession",
+          stats:{
+            studySessionId: "id",
+          } 
         }
       ];
       if (!this.currentUserOnly) {
@@ -153,6 +162,9 @@ export default {
           },
           title: "Copy session link",
           action: "copyStudySessionLink",
+          stats:{
+            studySessionId: "id",
+          }
         });
       }
       buttons.push({
@@ -172,6 +184,9 @@ export default {
         ],
         title: "Delete session",
         action: "deleteStudySession",
+        stats:{
+            studySessionId: "id",
+          }
       });
 
       return buttons;
