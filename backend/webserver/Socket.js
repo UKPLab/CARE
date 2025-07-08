@@ -308,6 +308,8 @@ module.exports = class Socket {
         if (updateCreatorName) {
             data = await this.updateCreatorName(data);
         }
+        console.log(`Emitting doc: ${documentId} to ${event}`);
+        this.socket.emit(event, data);
         this.io.to("doc:" + documentId).emit(event, data);
     }
 
@@ -618,6 +620,7 @@ module.exports = class Socket {
         if (!clients) return;
         for (const socketId of clients) {
             this.io.to(socketId).emit(tableName + "Refresh", data);
+            console.log(`Sending ${tableName} to ${socketId}`);
         }
     }
 }
