@@ -5,6 +5,7 @@ const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {Op} = require("sequelize");
+const uuid = require("uuid");
 
 
 const {dbToDelta} = require("editor-delta-conversion");
@@ -773,6 +774,80 @@ class DocumentSocket extends Socket {
         return documentData;
     }
 
+    /**
+     * Preprocess multiple document submissions for NLP grading asynchronously
+     * @param {Object} data - { skillName : string, jsonConfig : object, inputFileIds : array }
+     * @param {Object} options
+     * @returns {Promise<{status: string, count: number}>}
+     */
+    async submissionsPreprocess(data, options) {
+
+        if (await this.isAdmin()) {            
+
+            const { skillName, jsonConfig, inputFileIds } = data;
+            const responseEventIds = [];
+            if (!this.server.preprocess.processing) this.server.preprocess.processing = {};
+
+            inputFileIds.forEach(async (docId) => {
+                const doc = await this.models['document'].getById(docId);
+                if (!doc) throw new Error(`Document ${docId} not found`);
+
+                const latexFilePath = path.join(UPLOAD_PATH, `${doc.hash}.tex`);
+                if (!fs.existsSync(latexFilePath)) {
+                    throw new Error(`No LaTeX (.tex) found for document ${docId}`);
+                }            
+                const latexContent = await fs.promises.readFile(latexFilePath, 'utf8');
+
+                const nlpInput = {
+                    input_expose: latexContent,
+                    topic: "", // TODO: Where to get the topic from?
+                    bibliography: "", // TODO: Where to get the bibliography from?
+                    grading_criteria: jsonConfig // TODO: Where to get the grading criteria from?
+                };
+
+                const requestId = uuid();
+                responseEventIds.push(requestId);
+                this.server.preprocess.processing[requestId] = { docId, skillName };
+
+                this.socket.once(requestId, async () => {
+                    try {
+                        let nlpResults;
+                        // TODO: Delete this if-condition after testing the backend functionality
+                        if (this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
+                            nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
+                        }
+                        const nlpResult = nlpResults ? nlpResults[requestId] : null;
+                        if (nlpResult) {
+                            await this.saveData({
+                                userId: this.userId,
+                                documentId: docId,
+                                studySessionId: null,
+                                studyStepId: null,
+                                key: `nlp_result_${skillName}`,
+                                value: nlpResult
+                            }, options);
+                        }
+                    } catch (err) {
+                        this.logger.error(`Failed to save NLP result for document ${docId}: ${err.message}`);
+                    } finally {
+                        delete this.server.preprocess.processing[requestId];
+                    }
+                });
+
+                this.socket.emit("serviceRequest", {
+                    service: "NLPService",
+                    data: {
+                        id: requestId,
+                        name: skillName,
+                        data: nlpInput
+                    }
+                });
+            });
+            return { status: "processing", count: inputFileIds.length, responseEventIds };
+        }
+
+    }
+
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
@@ -791,6 +866,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentClose", this.closeDocument, {}, true);
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
+        this.createSocket("preprocessSubmissions", this.submissionsPreprocess, {}, false);
     }
 };
 
