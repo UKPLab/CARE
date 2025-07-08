@@ -21,9 +21,9 @@
       />
       <BasicButton
         class="btn-success btn-sm ms-1"
-        text="Grading with LLMentor"
-        title="Grading with LLMentor"
-        @click="gradeWithLLMentor" 
+        text="Preprocess Grading"
+        title="Preprocess Grading"
+        @click="preprocessGrades" 
       />
     </template>
     <template #body>
@@ -46,8 +46,6 @@
   <PublishModal ref="publishModal" />
   <GradingModal
     ref="gradingModal"
-    :documents="documents"
-    @submit="submitGrading"
   />
 </template>
 
@@ -70,7 +68,7 @@ import GradingModal from "@/basic/modal/GradingModal.vue";
  * @author Linyin Huang, Dennis Zyska
  */
 export default {
-  name: "ReviewDocuments",
+  name: "Submissions",
   subscribeTable: [{
     table: "document",
     filter: [{
@@ -199,28 +197,8 @@ export default {
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);
     },
-    gradeWithLLMentor() {
+    preprocessGrades() {
       this.$refs.gradingModal.open();
-    },
-    submitGrading(selectedSkill) {
-      this.$socket.emit("llmentorGradeAll", {
-        documentIds: this.documents.map((d) => d.id),
-        skill: selectedSkill,
-      }, (res) => {
-        if (res.success) {
-          this.eventBus.emit("toast", {
-            title: "LLMentor Grading Triggered",
-            message: "Grading has been started for all review documents.",
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: "LLMentor Grading Failed",
-            message: res.message,
-            variant: "danger",
-          });
-        }
-      });
     },
   },
 };
