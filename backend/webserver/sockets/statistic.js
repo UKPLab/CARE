@@ -11,8 +11,9 @@ const Socket = require("../Socket.js");
  *
  * @author: Dennis Zyska, Nils Dycke
  * @type {StatisticSocket}
+ * @class StatisticSocket
  */
-module.exports = class StatisticSocket extends Socket {
+class StatisticSocket extends Socket {
 
     /**
      * Send statistics to the user
@@ -110,3 +111,5 @@ module.exports = class StatisticSocket extends Socket {
         this.createSocket("statsGetByUser", this.getStatsByUser, {}, false);
     }
 }
+
+module.exports = StatisticSocket;

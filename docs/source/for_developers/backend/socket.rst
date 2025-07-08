@@ -266,6 +266,8 @@ The ``createSocket`` method allows you to define a socket event with built-in su
 
 See a full example of the usage of createSocket in :ref:`document-create-example`.
 
+.. _socket-db-transaction:
+
 Transaction Usage
 ~~~~~~~~~~~~~~~~~
 
@@ -518,3 +520,71 @@ Here is a full example showing how the backend and frontend work together when u
    - The transaction is rolled back
    - The frontend receives ``{ success: false, message: "..." }`` with the error message
    - An error toast is displayed using that message
+
+Socket functions
+-------------------------
+
+Annotation Socket Functions (`annotation.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: AnnotationSocket
+   :members:
+
+App Socket Functions (`app.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: AppSocket
+   :members:
+
+Assignment Socket Functions (`assignment.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: AssignmentSocket
+   :members:
+
+Collab Socket Functions (`collab.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: CollabSocket
+   :members:
+
+Comment Socket Functions (`comment.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: CommentSocket
+   :members:
+
+Document Socket Functions (`document.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: DocumentSocket
+   :members:
+
+Logger Socket Functions (`log.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: LoggerSocket
+   :members:
+
+Service Socket Functions (`service.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: ServiceSocket
+   :members:
+
+Setting Socket Functions (`setting.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: SettingSocket
+   :members:
+
+Statistic Socket Functions (`statistic.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: StatisticSocket
+   :members:
+
+Study Session Socket Functions (`study_session.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: StudySessionSocket
+   :members:
+
+Study Socket Functions (`study.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: StudySocket
+   :members:
+
+User Socket Functions (`user.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: UserSocket
+   :members:

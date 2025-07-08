@@ -6,8 +6,9 @@ const {pickObjectAttributeSubset} = require("../../utils/generic");
  *
  * @author Dennis Zyska, Nils Dycke
  * @type {CommentSocket}
+ * @class CommentSocket
  */
-module.exports = class CommentSocket extends Socket {
+class CommentSocket extends Socket {
 
     /**
      * Update comments
@@ -121,3 +122,5 @@ module.exports = class CommentSocket extends Socket {
     }
 
 }
+
+module.exports = CommentSocket;
