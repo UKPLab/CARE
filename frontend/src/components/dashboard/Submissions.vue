@@ -19,12 +19,6 @@
         text="Import via Moodle"
         @click="$refs.importModal.open()"
       />
-      <BasicButton
-        class="btn-success btn-sm ms-1"
-        text="Preprocess Grading"
-        title="Preprocess Grading"
-        @click="preprocessGrades" 
-      />
     </template>
     <template #body>
       <BasicTable
@@ -44,9 +38,6 @@
     ref="importModal"
   />
   <PublishModal ref="publishModal" />
-  <GradingModal
-    ref="gradingModal"
-  />
 </template>
 
 <script>
@@ -57,7 +48,6 @@ import UploadModal from "./review/UploadModal.vue";
 import ImportModal from "./review/ImportModal.vue";
 import PublishModal from "./review/PublishModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import GradingModal from "@/basic/modal/GradingModal.vue";
 
 /**
  * Submission list component
@@ -88,7 +78,6 @@ export default {
     Card,
     BasicTable,
     BasicButton,
-    GradingModal,
   },
   data() {
     return {
@@ -196,9 +185,6 @@ export default {
     },
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);
-    },
-    preprocessGrades() {
-      this.$refs.gradingModal.open();
     },
   },
 };
