@@ -49,15 +49,19 @@
       :validation="[true, true]"
       :current-step="currentStep"
       :show-footer="false"
+      :next-text="currentStep === 1 ? 'Cancel Preprocess' : 'Next'"
+      submit-text="Confirm"
+      :show-close="true"
     >
       <template #title>
-        <h5 class="modal-title text-primary">Preprocessing Progress</h5>
+        <h5 class="modal-title text-primary">Preprocess Grading</h5>
       </template>
+
       <template #step-1>
         <div class="mb-3">
           <div class="d-flex align-items-center mb-2">
             <span class="me-2">Processed:</span>
-            <strong>{{ processedCount }} / {{ processing.totalRequestDocs || 0 }}</strong>
+            <strong>{{ processedCount }} / {{ processing?.totalRequestDocs || 0 }}</strong>
           </div>
           <div class="progress mb-3" style="height: 20px;">
             <div
@@ -71,25 +75,16 @@
               {{ progressPercent }}%
             </div>
           </div>
-          <button
-            v-if="isProcessingActive"
-            class="btn btn-danger"
-            @click="goToStep(2)"
-          >
-            Cancel Preprocessing
-          </button>
         </div>
       </template>
+
       <template #step-2>
         <div class="mb-3">
           <h5>Cancel Processing</h5>
           <p>Are you sure you want to cancel the remaining requests?</p>
-          <div class="d-flex gap-2">
-            <button class="btn btn-danger" @click="cancelProcessing">Confirm</button>
-            <button class="btn btn-secondary" @click="goToStep(1)">Back</button>
-          </div>
         </div>
       </template>
+
     </StepperModal>
   </div>
 </template>
@@ -121,7 +116,7 @@ export default {
         { key: 'name', label: 'Name' },
       ],
       // TODO: This processing is updated with preprocess variable from Server.js
-      processing: {},
+      processing: {}, // Use this for tests: processing: {1:{},5:{}}, totalRequestDocs: 10 }
       currentStep: 1,
     };
   },
@@ -211,13 +206,13 @@ export default {
     },
     processedCount() {
       if (!this.isProcessingActive) return 0;
-      const total = this.processing.totalRequestDocs || 0;
+      const total = this.processing?.totalRequestDocs || 0;
       const remaining = Object.keys(this.processing.processing).length;
       return total - remaining;
     },
     progressPercent() {
       if (!this.isProcessingActive) return 0;
-      const total = this.processing.totalRequestDocs || 0;
+      const total = this.processing?.totalRequestDocs || 0;
       if (!total) return 0;
       const processed = this.processedCount;
       return Math.round((processed / total) * 100);
