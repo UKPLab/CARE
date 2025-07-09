@@ -100,6 +100,8 @@ The `extId` (external ID) is stored in CARE to represent the user's Moodle ID. I
 Configure Moodle
 ----------------
 
+.. _moodle_admin_setup:
+
 Administrator configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -110,7 +112,7 @@ If your Moodle Service is not yet configured to use the API, please follow the s
   Instructions on how to do this can be found in the 
   `Moodle documentation: <https://docs.moodle.org/404/en/Using_web_services>`_
 
-  \nKeep in mind that every api function needs to be activated separately. The function you need to enable in moodle are:
+  Keep in mind that every api function needs to be activated separately. The function you need to enable in moodle are:
 
   1. **core_enrol_get_enrolled_users**
   2. **mod_assign_save_grade**
@@ -157,6 +159,7 @@ If you want to add new functionality to the Moodle API, these links might be hel
     The API key is used to authenticate the user and to ensure that the user has the necessary permissions to access the API.
     The API url is usually the standard moodle url.
 
+.. _assignment_config_moodle:
 
 Assignment creation
 ~~~~~~~~~~~~~~~~~~~~
@@ -190,11 +193,11 @@ Creating an assignment that is compatible with functionalities like downloading 
     - Submission types: Deactivate all options.
     - Feedback types: Activate 'Feedback comments' and set 'Inline comments' to 'Yes'.
 
-    **Submissions allowed**
-    If you want students to be able to make submission and download them afterwards, make sure that the 'Submission types' are set to 'File submissions' and the 'Feedback types' are set to 'Feedback comments'. If you want students to be able to submit multiple files, just increase 'Maximum number of uploaded files' under 'Submission types'. 
-    If you download the submissions of a student, all files will be retrieved.
+**Submissions allowed**
+If you want students to be able to make submission and download them afterwards, make sure that the 'Submission types' are set to 'File submissions' and the 'Feedback types' are set to 'Feedback comments'. If you want students to be able to submit multiple files, just increase 'Maximum number of uploaded files' under 'Submission types'. 
+If you download the submissions of a student, all files will be retrieved.
 
-    Other settings can be adjusted as needed.
+Other settings can be adjusted as needed.
 
 .. tip::
 
