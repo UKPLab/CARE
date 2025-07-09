@@ -72,14 +72,21 @@ module.exports = class Socket {
                     t.afterCommit(() => {
                         try {
                             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
-
-                            // TODO merge changes from same table and send it at once!
                             if (t.changes) {
-                                t.changes.map(async (entry) => {
+                                const changesMap = t.changes.reduce((acc, entry) => {
                                     if (entry.constructor.autoTable) {
-                                        this.emit(entry.constructor.tableName + "Refresh", _.omit(entry.dataValues, defaultExcludes), true);
+                                        const tableName = entry.constructor.tableName;
+                                        const entryData = _.omit(entry.dataValues, defaultExcludes);
+                                        if (!acc.has(tableName)) {
+                                            acc.set(tableName, []);
+                                        }
+                                        acc.get(tableName).push(entryData);
                                     }
-                                });
+                                    return acc;
+                                }, new Map());
+                                for (const [table, changes] of changesMap) {
+                                     this.emit(table + "Refresh", changes, true)
+                                }
                             }
                         } catch (e) {
                             this.logger.error("Error in afterCommit sending data to client: " + e);
@@ -104,7 +111,6 @@ module.exports = class Socket {
                 }
             }
         });
-
     }
 
     /**
@@ -606,5 +612,6 @@ module.exports = class Socket {
             this.logger.error(err);
         }
     }
+
 }
 ;
