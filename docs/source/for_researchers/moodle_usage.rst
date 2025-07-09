@@ -1,5 +1,5 @@
-Moodle API for Researchers
-==========================
+Moodle API
+==========
 
 This guide provides an overview of how to interact with the Moodle API, including how to access, use, and integrate Moodle data in studies.
 
@@ -56,6 +56,7 @@ Using Moodle with the CARE Platform
 The CARE platform integrates directly with Moodle to help manage studies. Researchers typically use the following workflows:
 
 **Importing Submissions from Moodle**
+
 To collect assignment submissions:
 
 1. In Moodle, create an assignment with:
@@ -74,6 +75,7 @@ To collect assignment submissions:
    After importing, close the import window using the ``X`` icon. Submissions will then appear in the ``Review Documents`` section. If multiple files are submitted by a student, CARE allows you to select the relevant file during study creation.
 
 **Study Creation with Imported Submissions**
+
 To create a study:
 
 1. Go to ``Studies > Add Single Assignment``
@@ -86,6 +88,7 @@ To create a study:
 Use clear names for studies and templates to distinguish multiple sessions.
 
 **Publishing Feedback**
+
 After analysis or review, you may want to send feedback to students:
 
 1. Mark your study in CARE as ``Finished``
