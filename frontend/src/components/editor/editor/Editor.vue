@@ -300,11 +300,7 @@ export default {
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
 
-    this.$socket.emit("documentSubscribe",
-      { documentId: this.documentId },
-        (res) => {
-          console.log("subscribeDocument ack", res);
-    });
+    this.$socket.emit("documentSubscribe", { documentId: this.documentId });
   },
   sockets: {
     connect() {
@@ -322,8 +318,7 @@ export default {
       this.handleDocumentError(error);
     },
     document_editRefresh(edits) {
-            console.log("Edits!!");
-            this.handleTextChange()
+            this.processEdits(edits);
       }
   },
   unmounted() {
@@ -459,6 +454,15 @@ export default {
         this.deltaBuffer = [];
       }
     },
+    processEdits(edits) {
+      edits.forEach((edit) => {
+              if (!(edit.sender == this.$socket.id)) {
+              const delta = dbToDelta([edit]);
+              this.editor.getEditor().updateContents(delta, "api");
+              }
+            })
+    },
+
     async leave() {
       if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
         return new Promise((resolve, reject) => {
