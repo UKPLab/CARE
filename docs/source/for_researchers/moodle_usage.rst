@@ -14,24 +14,41 @@ The Moodle API enables authorized users to connect to a `Moodle Instance <https:
 
    - Import student submissions for annotation or evaluation
    - Distribute study results or feedback
-   - View or manage course participation data
+   - Import user data 
 
-.. warning::
+.. note::
 
-   Do not use the Moodle API to handle personally identifiable information (PII) unless this is explicitly permitted by your institution and approved by your research ethics committee.
+   We recommend obtaining approval from your research ethics committee before importing user data, as these may include personally identifiable information (PII).
 
-Access Requirements
--------------------
+.. _moodle_api_setup:
 
-To use the Moodle API, you will need the following:
+Setting Up the Moodle API
+--------------------------
 
-- **API Key**: Issued by the Moodle system administrator.
-- **API URL**: The base URL of your Moodle instance.
-- **Course ID**  and **Assignment ID**: Numeric identifiers available in the Moodle URL.
+To use the Moodle API, you will need access credentials and permissions configured in your Moodle instance.
 
-.. tip::
+You will need:
 
-   To find the course or assignment ID, open the corresponding page in Moodle. The URL will contain a segment like ``id=123``, which indicates the ID.
+- **API Key**:  
+  Issued by your Moodle system administrator. It must grant access to course and user data relevant to your study.
+
+- **API URL**:  
+  The base URL of your Moodle instance (e.g., `https://your-moodle-instance.edu`).
+
+- **Course ID**:  
+  The numeric identifier for the Moodle course you're working with. This is visible in the course URL as a segment like ``id=123``.
+
+- **Assignment ID**:  
+  If you're importing submissions, you'll also need the specific assignment ID, which appears similarly in the assignment URL.
+
+- **Sufficient Permissions**:  
+  The Moodle account used must be enrolled in the course as a teacher or non-editing teacher to access submissions and user data.
+
+.. note::
+
+   You can find course and assignment IDs by opening the respective pages in Moodle and checking the URL (e.g., ``.../course/view.php?id=123``).  
+   If you're unsure about your API key or access level, contact your Moodle administrator.  
+   For system administrators: see :ref:`moodle_admin_setup` for detailed instructions on configuring Moodle to enable API access.  
 
 Setting Up the Moodle Integration in CARE
 -----------------------------------------
@@ -48,65 +65,19 @@ To configure Moodle API access in the CARE platform:
 
 .. note::
 
-The Moodle account used must have proper permissions for the course. Ask your Moodle administrator for help if unsure.
+   The Moodle account used must have proper permissions for the course. If you're unsure, ask your Moodle administrator for help.  
 
 Using Moodle with the CARE Platform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The CARE platform integrates directly with Moodle to help manage studies. Researchers typically use the following workflows:
+**Importing Users**
 
-**Importing Submissions from Moodle**
+Before using this feature, make sure Moodle API access is configured as described in :ref:`moodle_api_setup`.
 
-To collect assignment submissions:
+User data can be imported from Moodle using the course ID:
 
-1. In Moodle, create an assignment with:
-
-      - Submission type: ``File submissions``
-      - Feedback type: ``Feedback comments``
-
-2. In CARE:
-
-      - Go to ``Review Documents``
-      - Choose ``Import via Moodle``
-      - Provide the correct course and assignment IDs
-
-.. tip::
-
-   After importing, close the import window using the ``X`` icon. Submissions will then appear in the ``Review Documents`` section. If multiple files are submitted by a student, CARE allows you to select the relevant file during study creation.
-
-**Study Creation with Imported Submissions**
-
-To create a study:
-
-1. Go to ``Studies > Add Single Assignment``
-2. Choose a template or start from scratch
-3. Select the imported documents
-4. Assign reviewers and finalize setup
-
-.. tip::
-
-Use clear names for studies and templates to distinguish multiple sessions.
-
-**Publishing Feedback**
-
-After analysis or review, you may want to send feedback to students:
-
-1. Mark your study in CARE as ``Finished``
-2. Go to ``Review Documents > Publish Reviews``
-3. Select the corresponding session and assignment
-4. Use the ``Upload to Moodle`` option
-
-.. warning::
-
-   Feedback can only be published to users with a valid ``extId`` (external ID from Moodle). Missing IDs must be corrected via user re-import.
-
-Importing Users
-~~~~~~~~~~~~~~~
-
-User data can be synchronized from Moodle using the course ID:
-
-1. Navigate to ``Users > Import via Moodle``
-2. CARE will attempt to match users by email address
+1. In the Dashboard navigate to ``Users > Import via Moodle``
+2. CARE will match users by email address
 
 CARE handles three scenarios:
 
@@ -122,8 +93,64 @@ CARE handles three scenarios:
 
    If a user's email in CARE differs from Moodle, edit it manually to allow a match. Avoid duplicates.
 
+The CARE platform integrates directly with Moodle to help manage studies. Researchers typically use the following workflows:
+
+**Importing Submissions from Moodle**
+
+To collect assignment submissions:
+
+1. In Moodle, create an assignment. See :ref:`assignment_config_moodle` for detailed configuration instructions.
+
+2. In CARE:
+
+      - In the Dashboard go to ``Submissions``
+      - Choose ``Import via Moodle``
+      - Provide the correct course and assignment IDs
+
+.. tip::
+
+   .. tip::
+
+   After importing, close the import window using the ``X`` icon. Submissions will then appear in the ``Submissions`` section of the Dashboard.
+
+**Study Creation with Imported Submissions**
+
+To create a study:
+
+1. In the Dashboard go to ``Studies > Add Single Assignment``
+2. Choose a template or start from scratch.
+
+   If you don’t have a template yet, you can create one by first building a custom study:
+
+   - In the Dashboard, go to ``Studies``
+   - Click on ``Add`` to create a new study
+   - Define the workflow and settings as needed
+   - After saving, your study will appear in the list
+   - Click on ``Save as template`` to reuse this setup in future studies
+
+3. Select the specific imported document you want to include in the assignment
+4. Assign reviewers and finalize setup
+
+**Publishing Feedback**
+
+After analysis or review, you may want to send feedback to students:
+
+1. Close your study in CARE.
+
+   To do this, go to the ``Studies`` section in the Dashboard, locate your study in the list, and click the ``Close Study`` button.
+
+2. In the Dashboard, go to ``Submissions`` and click on ``Publish Reviews``
+3. Select the corresponding session and assignment
+4. Use the ``Upload to Moodle`` option
+
+.. warning::
+
+   Feedback can only be published to users with a valid ``extId`` (external ID from Moodle). Missing IDs must be corrected via user re-import.
+
 Assignment Configuration in Moodle
 ----------------------------------
+
+Before configuring assignments, ensure your Moodle instance is set up correctly. See :ref:`moodle_api_setup`.
 
 Depending on the task, configure assignments as follows:
 
@@ -142,19 +169,6 @@ Depending on the task, configure assignments as follows:
 - ``Completion conditions``: None
 
 Choose clear and descriptive assignment names for easier tracking in CARE.
-
-Ethical Considerations
-----------------------
-
-When conducting research using the Moodle API:
-
-- Minimize use of personally identifiable data
-- Always adhere to your institution’s ethics guidelines
-- Use anonymized or aggregated results where possible
-
-.. caution::
-
-      Improper handling of data may violate data protection regulations such as the `General Data Protection Regulation (GDPR) <https://gdpr.eu/>`_.
 
 Further Reading
 ---------------
