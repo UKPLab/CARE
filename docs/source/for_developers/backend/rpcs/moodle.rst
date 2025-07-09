@@ -1,5 +1,5 @@
-Working with the Moodle API
-===========================
+Moodle API
+==========
 
 If you want to work with the Moodle API, please take a look at this document to get an overview of the API integration and how to use it.
 
