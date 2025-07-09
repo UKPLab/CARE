@@ -52,6 +52,7 @@
       :next-text="currentStep === 1 ? 'Cancel Preprocess' : 'Next'"
       submit-text="Confirm"
       :show-close="true"
+      @submit="cancelProcessing"
     >
       <template #title>
         <h5 class="modal-title text-primary">Preprocess Grading</h5>
@@ -116,7 +117,7 @@ export default {
         { key: 'name', label: 'Name' },
       ],
       // TODO: This processing is updated with preprocess variable from Server.js
-      processing: {}, // Use this for tests: processing: {1:{},5:{}}, totalRequestDocs: 10 }
+      processing: {}, // Use this for tests: {processing: {1:{},5:{}}, totalRequestDocs: 10 }
       currentStep: 1,
     };
   },
@@ -231,7 +232,7 @@ export default {
     },
     cancelProcessing() {
       // TODO: Apply cancellation logic here
-      this.currentStep = 1;
+      console.log("Processing cancelled");
     },
     preprocess() {
       this.$socket.emit("submissionsPreprocess", {
