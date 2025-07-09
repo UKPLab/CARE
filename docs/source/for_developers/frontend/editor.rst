@@ -50,12 +50,12 @@ The editor should be properly initialized and configured. This involves setting 
       }
     };
 
-Refer to `frontend/src/components/editor/Editor.vue` for the full implementation.
+Refer to ``frontend/src/components/editor/Editor.vue`` for the full implementation.
 
 **Debouncing of text changes**
 
 Debouncing is used to limit the number of database updates during text changes, improving performance and reducing the number of requests sent to the backend.
-The editor captures text changes using Quill's `text-change` event.
+The editor captures text changes using Quill's ``text-change`` event.
 
 .. tip::
 
@@ -75,19 +75,19 @@ This is especially important when working with the database, as we use an intern
 
 **Document Table**
 
-- `createdAt`: Timestamp of when the document was created.
-- `type`: Specifies the document type (e.g., PDF, HTML).
+- ``createdAt``: Timestamp of when the document was created.
+- ``type``: Specifies the document type (e.g., PDF, HTML).
 
 **Document Edit Table**
 
-- `userId`: Identifies the user who made the edit.
-- `documentId`: References the document being edited.
-- `draft`: Indicates if the edit is a draft.
-- `offset`: Position of the edit in the document.
-- `operationType`: Type of edit (0: Insert, 1: Delete, 2: Attribute-Change).
-- `span`: Length of the text affected by the edit.
-- `text`: Text involved in the edit.
-- `attributes`: Additional attributes related to the edit.
+- ``userId``: Identifies the user who made the edit.
+- ``documentId``: References the document being edited.
+- ``draft``: Indicates if the edit is a draft.
+- ``offset``: Position of the edit in the document.
+- ``operationType``: Type of edit (0: Insert, 1: Delete, 2: Attribute-Change).
+- ``span``: Length of the text affected by the edit.
+- ``text``: Text involved in the edit.
+- ``attributes``: Additional attributes related to the edit.
 
 .. note::
 
@@ -121,14 +121,14 @@ For more details, see the Quill Delta documentation: https://quilljs.com/docs/de
    - The editor component captures text changes and converts them into delta objects.
    - These delta objects represent the current state of the document and are used to update the frontend without needing to resend the entire document content.
 
-   **Code Reference**: `frontend/src/components/editor/Editor.vue`
+   **Code Reference**: ``frontend/src/components/editor/Editor.vue``
 
 2. **In the Document Socket**:
    - When a document is edited, the editor sends the changes as deltas to the backend via WebSocket.
    - The backend processes these deltas, merges them with the existing document content, and saves the updated state as a delta file on disk. 
    This ensures that the most recent state of the document is efficiently stored and can be quickly retrieved.
 
-   **Code Reference**: `backend/webserver/sockets/document.js`
+   **Code Reference**: ``backend/webserver/sockets/document.js``
 
 Testing the Editor
 ------------------
@@ -146,7 +146,7 @@ The unit tests cover the following categories:
 
 **Running the Tests**
 
-The tests are located in `utils/modules/editor-delta-conversion/tests/editor-delta-conversion.test.js`. 
+The tests are located in ``utils/modules/editor-delta-conversion/tests/editor-delta-conversion.test.js``. 
 To execute the tests, use the following command:
 
 .. code-block:: bash
