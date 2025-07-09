@@ -144,7 +144,7 @@ export default {
     },
     // TODO: Refactor submit emit in Submissions component
     preprocess() {
-      this.$socket.emit("preprocessSubmissions", {
+      this.$socket.emit("submissionsPreprocess", {
         skill: this.selectedSkill,
         config: this.selectedConfig,
         inputFiles: this.selectedInputRows

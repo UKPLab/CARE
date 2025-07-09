@@ -780,7 +780,7 @@ class DocumentSocket extends Socket {
      * @param {Object} options
      * @returns {Promise<{status: string, count: number}>}
      */
-    async submissionsPreprocess(data, options) {
+    async preprocessSubmissions(data, options) {
 
         if (await this.isAdmin()) {            
 
@@ -823,7 +823,7 @@ class DocumentSocket extends Socket {
                                 documentId: docId,
                                 studySessionId: null,
                                 studyStepId: null,
-                                key: `nlp_result_${skillName}`,
+                                key: `preprocess_${skillName}`,
                                 value: nlpResult
                             }, options);
                         }
@@ -866,7 +866,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentClose", this.closeDocument, {}, true);
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
-        this.createSocket("preprocessSubmissions", this.submissionsPreprocess, {}, false);
+        this.createSocket("submissionsPreprocess", this.preprocessSubmissions, {}, false);
     }
 };
 
