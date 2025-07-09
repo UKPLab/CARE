@@ -145,7 +145,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 
 export default {
   name: "AnnotatorView",
-  subscribeTable: ['tag', 'tag_set'],
+  subscribeTable: ['tag', 'tag_set', 'user_environment'],
   components: {
     LoadIcon,
     PDFViewer,
@@ -240,11 +240,20 @@ export default {
     }, 500)
     }
   },
-  mounted(){
-    this.handleResize();
-    window.addEventListener('resize', this.handleResize);
-  },
   computed: {
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    previousScroll() {
+      const data = this.$store.getters['table/user_environment/getFiltered'](e => e.userId === this.userId && e.documentId === this.documentId && e.studySessionId === this.studySessionId && e.studyStepId === this.studyStepId && e.key === "scroll")[0];
+      console.log("previous scroll position:", data);
+      return data
+    },
+    savedScroll() {
+      const data = this.$store.getters['table/user_environment/getFiltered'](e => e.userId === this.userId && e.documentId === this.documentId && e.studySessionId === this.studySessionId && e.studyStepId === this.studyStepId && e.key === "scroll")[0];
+      console.log("Saved scroll position:", data);
+      return data ? parseInt(data.value, 10) : 0;
+    },
     anchors() {
       return [].concat(
           this.annotations.filter(a => a.anchors !== null)
@@ -348,6 +357,16 @@ export default {
     // scrolling
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     document.addEventListener('copy', this.onCopy);
+    // Scroll the viewer container to the saved scroll position
+   this.$nextTick(() => {
+    // Scroll the viewer container to the saved scroll position
+    console.log("Restoring scroll position:", this.savedScroll);
+     // Ensure the viewer is available before setting scrollTop
+    if (this.$refs.viewer && this.savedScroll) {
+      scrollElement(this.$refs.viewer, this.savedScroll);
+    }
+  });
+
   },
   beforeUnmount() {
     // Leave the room for document updates
@@ -355,6 +374,29 @@ export default {
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
     document.removeEventListener('copy', this.onCopy);
     window.removeEventListener('resize', this.handleResize);
+    console.log("Saving scroll position:", this.$refs.viewer.scrollTop);
+    
+     if (!this.previousScroll) {
+      this.$socket.emit("appDataUpdate", {
+        table: "user_environment",
+        data: {
+          userId: this.userId,
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+          key: "scroll",
+          value: this.$refs.viewer.scrollTop
+        }
+      });
+    }else{
+      this.$socket.emit("appDataUpdate", {
+        table: "user_environment",
+        data: {
+          id: this.previousScroll.id,
+          value: this.$refs.viewer.scrollTop
+        }
+      });
+    }
   },
   methods: {
     handleResize() {

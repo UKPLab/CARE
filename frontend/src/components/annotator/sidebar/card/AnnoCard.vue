@@ -136,7 +136,7 @@
               :loading="false"
               :props="$props"
               icon="tag"
-              title="Edit Tag"
+              title="Edit main tag"
               @click="toggleEditTag"
           />
             <SidebarButton
