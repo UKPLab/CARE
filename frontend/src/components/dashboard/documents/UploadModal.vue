@@ -5,7 +5,7 @@
     name="documentUpload"
   >
     <template #title>
-      Upload new document
+      {{ modalTitle }}
     </template>
     <template #body>
       <div class="modal-body justify-content-center flex-grow-1 d-flex">
@@ -69,6 +69,7 @@ export default {
       uploading: false,
       show: false,
       data: {},
+      uploadType: "document", // "document" or "configuration"
       fileFields: [
         {
           key: "file",
@@ -80,33 +81,79 @@ export default {
       ],
     }
   },
+  computed: {
+    modalTitle() {
+      return this.uploadType === "configuration" 
+        ? "Upload new configuration file" 
+        : "Upload new document";
+    }
+  },
   methods: {
-    open() {
+    open(type = "document") {
+      this.uploadType = type;
       this.data.file = null;
+      
+      // Update file fields based on type
+      if (type === "configuration") {
+        this.fileFields[0].accept = ".json";
+      } else {
+        this.fileFields[0].accept = ".pdf,.delta";
+      }
+      
       this.$refs.uploadModal.open();
     },
     upload() {
       const fileName = this.data.file.name;
       const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
-      if (fileType !== ".pdf" && fileType !== ".delta") {
-        this.eventBus.emit("toast", {
-          title: "Invalid file type",
-          message: "Only PDF and Delta files are allowed.",
-          variant: "danger",
-        });
-        return;
+      
+      if (this.uploadType === "configuration") {
+        if (fileType !== ".json") {
+          this.eventBus.emit("toast", {
+            title: "Invalid file type",
+            message: "Only JSON files are allowed.",
+            variant: "danger",
+          });
+          return;
+        }
+      } else {
+        if (fileType !== ".pdf" && fileType !== ".delta") {
+          this.eventBus.emit("toast", {
+            title: "Invalid file type",
+            message: "Only PDF and Delta files are allowed.",
+            variant: "danger",
+          });
+          return;
+        }
       }
 
       this.$refs.uploadModal.waiting = true;
-      this.$socket.emit("documentAdd", {
+
+      // Always use 'documentAdd' event
+      const eventName = "documentAdd";
+      let type = 1; // default for PDF
+      if (this.uploadType === "configuration") {
+        type = 3;
+      } else if (fileType === ".delta") {
+        type = 2;
+      }
+
+      const successMessage = this.uploadType === "configuration" 
+        ? "Configuration file successfully uploaded!" 
+        : "File successfully uploaded!";
+      const successTitle = this.uploadType === "configuration" 
+        ? "Uploaded configuration" 
+        : "Uploaded file";
+
+      this.$socket.emit(eventName, {
         file: this.data.file,
         name: fileName,
+        type: type,
       }, (res) => {
         if (res.success) {
           this.$refs.uploadModal.waiting = false;
           this.eventBus.emit("toast", {
-            title: "Uploaded file",
-            message: "File successfully uploaded!",
+            title: successTitle,
+            message: successMessage,
             variant: "success",
           });
           this.$refs.uploadModal.close();

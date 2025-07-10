@@ -78,7 +78,7 @@ class DocumentSocket extends Socket {
         }
 
         const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
-        if (fileType !== ".pdf" && fileType !== ".delta") {
+        if (fileType !== ".pdf" && fileType !== ".delta" && fileType !== ".json") {
             throw new Error("Invalid file type");
         }
 
@@ -117,6 +117,20 @@ class DocumentSocket extends Socket {
             };
 
             await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
+        } else if (fileType === ".json") {
+            // Handle JSON configuration files
+            doc = await this.models["document"].add(
+                {
+                    type: docTypes.DOC_TYPE_CONFIG,
+                    name: data.name.replace(/.json$/, ""),
+                    userId: data.userId ?? this.userId,
+                    uploadedByUserId: this.userId,
+                    readyForReview: data.isUploaded ?? false,
+                },
+                { transaction: options.transaction }
+            );
+
+            target = path.join(UPLOAD_PATH, `${doc.hash}.json`);
         } else {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
@@ -657,9 +671,16 @@ class DocumentSocket extends Socket {
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
                                 ),
                     };
-
-                }
             }
+        }
+        } else if (document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG) {
+            // Handle JSON configuration files
+            const filePath = `${UPLOAD_PATH}/${document.hash}.json`;
+            if (!fs.existsSync(filePath)) {
+                throw new Error("JSON configuration file not found");
+            }
+            const file = fs.readFileSync(filePath);
+            return { document: document, file: file };
         } else {
             const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
             if (!fs.existsSync(filePath)) {
