@@ -544,109 +544,170 @@ class DocumentSocket extends Socket {
         );
     }
 
+
+    /**
+     * Download Moodle submissions
+     * @author Yiwei Wang
+     * @param data
+     * @param options
+     * @returns {Promise<ArrayLike<T>>}
+     */
     async downloadMoodleSubmissions(data, options) {
         const results = [];
 
-        for (const file of data.files) {
+        // helper: choose latest file by timestamp
+        const latestFile = (arr) => arr.sort((a,b) => (b.timemodified||0) - (a.timemodified||0))[0];
+
+        for (const entry of data.files) {
             const transaction = await this.server.db.sequelize.transaction();
 
             try {
-                // Download the main file (PDF)
-                const files = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl(
-                    {
-                        fileUrls: [file.fileUrl],
-                        options: data.options,
-                    }
-                );
+                /* --------------------------------------------------
+                 * 0.  Normalise the incoming entry so we always have
+                 *     separate PDF-meta and ZIP-meta objects.
+                 * ------------------------------------------------*/
+                let pdfMeta = null;
+                let zipMeta = null;
+                let userId  = entry.userId || entry.userid || this.userId;
+                let extSubmissionId = entry.submissionId || entry.extSubmissionId || null;
 
-                const document = await this.addDocument({
-                    file: files[0],
-                    name: file.fileName,
-                    userId: file.userId,
-                    isUploaded: true
-                }, {transaction: transaction});
+                if (Array.isArray(entry.files)) {
+                    // New format – full Moodle submission object
+                    const pdfFiles = entry.files.filter(f =>
+                        f.mimetype === "application/pdf" || f.filename.toLowerCase().endsWith(".pdf"));
+                    const zipFiles = entry.files.filter(f =>
+                        f.mimetype === "application/zip" || f.filename.toLowerCase().endsWith(".zip"));
 
-                // Check if there are associated ZIP files for this submission
-                let zipDocument = null;
-                if (file.zipFile && file.zipFile.fileUrl) {
-                    try {
-                        // Download the associated ZIP file
-                        const zipFiles = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl(
-                            {
-                                fileUrls: [file.zipFile.fileUrl],
-                                options: data.options,
-                            }
-                        );
-
-                        // Validate ZIP content using database schema
-                        let zipValidation = null;
-                        if (zipFiles[0]) {
-                            zipValidation = await this.validateZipContent(zipFiles[0]);
-                        }
-
-                        // Save ZIP as a separate document linked to the main PDF
-                        zipDocument = await this.addDocument({
-                            file: zipFiles[0],
-                            name: file.zipFile.fileName,
-                            userId: file.userId,
-                            isUploaded: true,
-                            parentDocumentId: document.id,  // Link to main PDF
-                            hideInFrontend: false  // Make visible for admin management
-                        }, {transaction: transaction});
-
-                        // Store ZIP validation results in document metadata
-                        if (zipValidation) {
-                            await this.updateDocumentMetadata(zipDocument.id, {
-                                zipValidation: zipValidation,
-                                fileType: 'zip',
-                                role: 'source_files',
-                                linkedPdfId: document.id
-                            }, {transaction: transaction});
-                        }
-
-                        this.logger.info(`Associated ZIP file ${file.zipFile.fileName} with PDF ${file.fileName}`);
-
-                    } catch (zipError) {
-                        this.logger.warn(`Failed to download or process ZIP file for ${file.fileName}: ${zipError.message}`);
-                        // Continue with PDF-only import, don't fail the entire process
+                    pdfMeta = latestFile(pdfFiles);
+                    zipMeta = latestFile(zipFiles);
+                } else {
+                    // Legacy format – table row with fileUrl (+ optional zipFile)
+                    pdfMeta = {
+                        filename: entry.fileName,
+                        fileurl:  entry.fileUrl,
+                        mimetype: "application/pdf",
+                    };
+                    if (entry.zipFile) {
+                        zipMeta = {
+                            filename: entry.zipFile.fileName,
+                            fileurl:  entry.zipFile.fileUrl,
+                            mimetype: "application/zip",
+                        };
                     }
                 }
 
-                // Store metadata about the file association
-                await this.updateDocumentMetadata(document.id, {
-                    fileType: 'pdf',
-                    role: 'main_document',
-                    hasAssociatedZip: zipDocument ? true : false,
-                    linkedZipId: zipDocument ? zipDocument.id : null,
-                    submissionId: file.submissionId || null,
-                    moodleUserId: file.extId || null
-                }, {transaction: transaction});
+                if (!pdfMeta) {
+                    throw new Error("No PDF file found in submission – cannot import.");
+                }
 
-                results.push({
-                    pdfDocumentId: document.id,
-                    zipDocumentId: zipDocument ? zipDocument.id : null,
-                    hasZip: zipDocument ? true : false,
-                    fileName: file.fileName,
-                    zipFileName: file.zipFile ? file.zipFile.fileName : null
+                if (!zipMeta) {
+                    this.logger.warn(`Submission ${extSubmissionId || "?"} has no ZIP – skipping import.`);
+                    throw new Error("No ZIP companion found for PDF – import aborted.");
+                }
+
+                /* --------------------------------------------------
+                 * 1.  Fetch both files in ONE RPC round-trip.
+                 * ------------------------------------------------*/
+                const urlList   = [pdfMeta.fileurl, zipMeta.fileurl];
+                const fileOrder = ["pdf", "zip"];
+
+                const buffers = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl({
+                    fileUrls: urlList,
+                    options:  data.options,
                 });
+
+                const bufferMap = {
+                    pdf: buffers[0],
+                    zip: buffers[1],
+                };
+
+                /* --------------------------------------------------
+                 * 2.  Find or create submission row.
+                 * ------------------------------------------------*/
+                let submission = await this.models["submission"].findOne({
+                    where: { extSubmissionId },
+                    transaction,
+                });
+                if (!submission) {
+                    submission = await this.models["submission"].add({
+                        userId,
+                        createdByUserId: this.userId,
+                        extSubmissionId,
+                        parentSubmissionId: null, // TODO – versioning later
+                        projectId: null,
+                    }, { transaction });
+                }
+
+                /* --------------------------------------------------
+                 * 3.  Store PDF document.
+                 * ------------------------------------------------*/
+                const pdfDocument = await this.addDocument({
+                    file: bufferMap.pdf,
+                    name: pdfMeta.filename,
+                    userId,
+                    isUploaded: true,
+                    submissionId: submission.id,
+                }, { transaction });
+
+                /* --------------------------------------------------
+                 * 4.  Store ZIP document and validation.
+                 * ------------------------------------------------*/
+                const zipValidation = await this.validateZipContent(bufferMap.zip);
+
+                const zipDocument = await this.addDocument({
+                    file: bufferMap.zip,
+                    name: zipMeta.filename,
+                    userId,
+                    isUploaded: true,
+                    parentDocumentId: pdfDocument.id,
+                    hideInFrontend: false,
+                    submissionId: submission.id,
+                }, { transaction });
+
+                await this.updateDocumentMetadata(zipDocument.id, {
+                    zipValidation,
+                    fileType: "zip",
+                    role: "source_files",
+                    linkedPdfId: pdfDocument.id,
+                }, { transaction });
+
+                /* --------------------------------------------------
+                 * 5.  Metadata for PDF + commit.
+                 * ------------------------------------------------*/
+                await this.updateDocumentMetadata(pdfDocument.id, {
+                    fileType: "pdf",
+                    role: "main_document",
+                    hasAssociatedZip: true,
+                    linkedZipId: zipDocument.id,
+                    submissionId: submission.id,
+                    moodleUserId: entry.extId || entry.userid || null,
+                }, { transaction });
 
                 await transaction.commit();
 
-            } catch (e) {
-                this.logger.error("Error downloading submission:", e.message);
+                results.push({
+                    submissionId: submission.id,
+                    pdfDocumentId: pdfDocument.id,
+                    zipDocumentId: zipDocument.id,
+                    hasZip: true,
+                    fileName: pdfMeta.filename,
+                    zipFileName: zipMeta.filename,
+                    validation: zipValidation,
+                });
+
+            } catch (err) {
                 await transaction.rollback();
-                // Add failed result for tracking
+                this.logger.error("Import error:", err.message);
                 results.push({
                     error: true,
-                    fileName: file.fileName,
-                    message: e.message
+                    message: err.message,
                 });
             }
 
-            // update frontend progress
+            // progress event
             this.socket.emit("progressUpdate", {
-                id: data["progressId"], 
-                current: data.files.indexOf(file) + 1, 
+                id: data.progressId,
+                current: data.files.indexOf(entry) + 1,
                 total: data.files.length,
             });
         }
@@ -705,6 +766,7 @@ class DocumentSocket extends Socket {
 
 
     /**
+     * @author Yiwei Wang
      * Enhance submission data with file associations and categorization
      * @param {Array} submissions - Raw submission data from Moodle
      * @returns {Array} Enhanced submissions with file categorization
