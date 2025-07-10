@@ -10,6 +10,7 @@ module.exports = {
     await queryInterface.addColumn('document', 'submissionId', {
       type: Sequelize.INTEGER,
       allowNull: true,
+      defaultValue: null,
       references: {
         model: 'submission',
         key: 'id',

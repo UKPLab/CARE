@@ -37,6 +37,7 @@ module.exports = {
       projectId: {
         type: Sequelize.INTEGER,
         allowNull: true,
+        defaultValue: null,
         references: {
           model: 'project',
           key: 'id',
@@ -47,6 +48,7 @@ module.exports = {
       parentSubmissionId: {
         type: Sequelize.INTEGER,
         allowNull: true,
+        defaultValue: null,
         references: {
           model: 'submission',
           key: 'id',
@@ -55,13 +57,15 @@ module.exports = {
         onUpdate: 'CASCADE',
       },
       extSubmissionId: {
-        type: Sequelize.STRING,
+        type: Sequelize.INTEGER,
         allowNull: true,
+        defaultValue: null,
         unique: true,
       },
       group: {
         type: Sequelize.INTEGER,
         allowNull: true,
+        defaultValue: null,
       },
       additionalSettings: {
         type: Sequelize.JSONB,
