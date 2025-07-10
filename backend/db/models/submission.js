@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
             createdByUserId: DataTypes.INTEGER,
             projectId: DataTypes.INTEGER,
             parentSubmissionId: DataTypes.INTEGER,
-            extSubmissionId: DataTypes.INTEGER,
+            extId: DataTypes.INTEGER,
             group: DataTypes.INTEGER,
             additionalSettings: DataTypes.JSONB,
             deleted: DataTypes.BOOLEAN,

@@ -569,7 +569,7 @@ class DocumentSocket extends Socket {
                 let pdfMeta = null;
                 let zipMeta = null;
                 let userId  = entry.userId || entry.userid || this.userId;
-                let extSubmissionId = entry.submissionId || entry.extSubmissionId || null;
+                let extId = entry.submissionId || entry.extId || null;
 
                 if (Array.isArray(entry.files)) {
                     // New format – full Moodle submission object
@@ -601,7 +601,7 @@ class DocumentSocket extends Socket {
                 }
 
                 if (!zipMeta) {
-                    this.logger.warn(`Submission ${extSubmissionId || "?"} has no ZIP – skipping import.`);
+                    this.logger.warn(`Submission ${extId || "?"} has no ZIP – skipping import.`);
                     throw new Error("No ZIP companion found for PDF – import aborted.");
                 }
 
@@ -625,14 +625,14 @@ class DocumentSocket extends Socket {
                  * 2.  Find or create submission row.
                  * ------------------------------------------------*/
                 let submission = await this.models["submission"].findOne({
-                    where: { extSubmissionId },
+                    where: { extId },
                     transaction,
                 });
                 if (!submission) {
                     submission = await this.models["submission"].add({
                         userId,
                         createdByUserId: this.userId,
-                        extSubmissionId,
+                        extId,
                         parentSubmissionId: null, // TODO – versioning later
                         projectId: null,
                     }, { transaction });

@@ -56,7 +56,7 @@ module.exports = {
         onDelete: 'SET NULL',
         onUpdate: 'CASCADE',
       },
-      extSubmissionId: {
+      extId: {
         type: Sequelize.INTEGER,
         allowNull: true,
         defaultValue: null,
