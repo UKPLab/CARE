@@ -3,7 +3,7 @@
 const settings = [
     {
         key: "annotator.download.enabledBeforeStudyClosing",
-        value: false,
+        value: true,
         type: "boolean",
         description: "Whether annotations can be downloaded before a study is closed"
     }
