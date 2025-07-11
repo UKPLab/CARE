@@ -3,20 +3,16 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     class Submission extends MetaModel {
-        static autoTable = true; // enables CRUD helpers
+        static autoTable = true;
 
-        static fields = [
-            /* BUILD THE UI FORM IF NEEDED */
-        ];
+        static fields = [];
 
         static associate(models) {
-            // 1 submission → many documents
             Submission.hasMany(models["document"], {
                 foreignKey: "submissionId",
                 as: "documents",
             });
 
-            // parent-child chain
             Submission.belongsTo(models["submission"], {
                 foreignKey: "parentSubmissionId",
                 as: "parentSubmission",
