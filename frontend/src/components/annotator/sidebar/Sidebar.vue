@@ -198,9 +198,8 @@ export default {
       return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
     },
     documentComments() {
-      const comments = this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
+      return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
-          console.log(comment);
           // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
             return comment.studySessionId === this.studySessionId && comment.studyStepId === this.studyStepId;
@@ -234,7 +233,6 @@ export default {
             return !a.annotationId ? 1 : -1;
           }
         });
-        return comments;
     },
     sidebarContainerStyle() {
       return {

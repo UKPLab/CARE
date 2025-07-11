@@ -78,7 +78,7 @@
     <!-- If download before study closing disabled and we are in a study session, no download allowed -->
     <Teleport to="#topBarExtendMenuItems">
       <li><a
-          :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
+          :class="annotations.length + comments.length > 0 && !downloading && (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null)? '' : 'disabled'"
           class="dropdown-item"
           href="#"
           @click="downloadAnnotations"
