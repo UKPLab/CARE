@@ -3,7 +3,7 @@ import requests
 from User import User
 import logging
 
-__author__ = "Alexander Bürkle, Dennis Zyska"
+__author__ = "Alexander Bürkle, Dennis Zyska, Yiwei Wang, Linyin Huang"
 
 class Moodle:
     def __init__(self, api_key, url, endpoint="/webservice/rest/server.php"):

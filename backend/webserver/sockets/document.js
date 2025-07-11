@@ -544,13 +544,14 @@ class DocumentSocket extends Socket {
         );
     }
 
-
     /**
-     * Download Moodle submissions
-     * @author Yiwei Wang
-     * @param data
-     * @param options
-     * @returns {Promise<ArrayLike<T>>}
+     * Download submissions from Moodle for a specific assignment and save them to the server
+     * @author Yiwei Wang, Linyin Huang
+     * @param {Object} data - The input data from the frontend
+     * @param {Object} options - Additional configuration parameters
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<Array<T>>} - The results of the processed submissions
+     * @throws {Error} - If the download fails, if the assignment ID is invalid, or if saving to server fails
      */
     async downloadMoodleSubmissions(data, options) {
         const results = [];
