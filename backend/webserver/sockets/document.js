@@ -548,6 +548,7 @@ class DocumentSocket extends Socket {
      * Download submissions from Moodle for a specific assignment and save them to the server
      * @author Yiwei Wang, Linyin Huang
      * @param {Object} data - The input data from the frontend
+     * @param {Object} data.submissions - The submissions from Moodle
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The results of the processed submissions
@@ -555,148 +556,64 @@ class DocumentSocket extends Socket {
      */
     async downloadMoodleSubmissions(data, options) {
         const results = [];
-
-        // helper: choose latest file by timestamp
-        const latestFile = (arr) => arr.sort((a,b) => (b.timemodified||0) - (a.timemodified||0))[0];
-
-        for (const entry of data.files) {
-            const transaction = await this.server.db.sequelize.transaction();
-
+        const submissions = data.submissions || [];
+        for (const submission of submissions) {
+            const transaction = options.transaction;
             try {
-                /* --------------------------------------------------
-                 * 0.  Normalise the incoming entry so we always have
-                 *     separate PDF-meta and ZIP-meta objects.
-                 * ------------------------------------------------*/
-                let pdfMeta = null;
-                let zipMeta = null;
-                let userId  = entry.userId || entry.userid || this.userId;
-                let extId = entry.submissionId || entry.extId || null;
+                // 1. Create an entry in the submission table
+                const submissionEntry = await this.models["submission"].add({
+                    userId: submission.userId, 
+                    createdByUserId: this.userId,
+                    extId: submission.submissionId, 
+                }, { transaction });
 
-                if (Array.isArray(entry.files)) {
-                    // New format – full Moodle submission object
-                    const pdfFiles = entry.files.filter(f =>
-                        f.mimetype === "application/pdf" || f.filename.toLowerCase().endsWith(".pdf"));
-                    const zipFiles = entry.files.filter(f =>
-                        f.mimetype === "application/zip" || f.filename.toLowerCase().endsWith(".zip"));
-
-                    pdfMeta = latestFile(pdfFiles);
-                    zipMeta = latestFile(zipFiles);
-                } else {
-                    // Legacy format – table row with fileUrl (+ optional zipFile)
-                    pdfMeta = {
-                        filename: entry.fileName,
-                        fileurl:  entry.fileUrl,
-                        mimetype: "application/pdf",
-                    };
-                    if (entry.zipFile) {
-                        zipMeta = {
-                            filename: entry.zipFile.fileName,
-                            fileurl:  entry.zipFile.fileUrl,
-                            mimetype: "application/zip",
-                        };
-                    }
-                }
-
-                if (!pdfMeta) {
-                    throw new Error("No PDF file found in submission – cannot import.");
-                }
-
-                if (!zipMeta) {
-                    this.logger.warn(`Submission ${extId || "?"} has no ZIP – skipping import.`);
-                    throw new Error("No ZIP companion found for PDF – import aborted.");
-                }
-
-                /* --------------------------------------------------
-                 * 1.  Fetch both files in ONE RPC round-trip.
-                 * ------------------------------------------------*/
-                const urlList   = [pdfMeta.fileurl, zipMeta.fileurl];
-                const fileOrder = ["pdf", "zip"];
-
-                const buffers = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl({
-                    fileUrls: urlList,
-                    options:  data.options,
-                });
-
-                const bufferMap = {
-                    pdf: buffers[0],
-                    zip: buffers[1],
-                };
-
-                /* --------------------------------------------------
-                 * 2.  Find or create submission row.
-                 * ------------------------------------------------*/
-                let submission = await this.models["submission"].findOne({
-                    where: { extId },
-                    transaction,
-                });
-                if (!submission) {
-                    submission = await this.models["submission"].add({
-                        userId,
-                        createdByUserId: this.userId,
-                        extId,
-                        parentSubmissionId: null, // TODO – versioning later
-                        projectId: null,
+                // 2. Download and save each file as a document
+                const documentIds = [];
+                for (const file of (submission.files || [])) {
+                    // Download file from Moodle
+                    const files = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl({
+                        fileUrls: [file.fileUrl],
+                        options: data.options,
+                    });
+                    // Save as document in DB
+                    const document = await this.addDocument({
+                        file: files[0],
+                        name: file.fileName,
+                        userId: submission.userId,
+                        isUploaded: true,
+                        submissionId: submissionEntry.id,
                     }, { transaction });
+                    documentIds.push(document.id);
                 }
 
-                /* --------------------------------------------------
-                 * 3.  Store PDF document.
-                 * ------------------------------------------------*/
-                const pdfDocument = await this.addDocument({
-                    file: bufferMap.pdf,
-                    name: pdfMeta.filename,
-                    userId,
-                    isUploaded: true,
-                    submissionId: submission.id,
-                }, { transaction });
+                // 3. Run validation
+                const validationResult = await this.validateSubmissionFiles(documentIds);
+                if (!validationResult.success) {
+                    throw new Error(validationResult.message || "Validation failed");
+                }
 
-                /* --------------------------------------------------
-                 * 4.  Store ZIP document and validation.
-                 * ------------------------------------------------*/
-                const zipValidation = await this.validateZipContent(bufferMap.zip);
-
-                const zipDocument = await this.addDocument({
-                    file: bufferMap.zip,
-                    name: zipMeta.filename,
-                    userId,
-                    isUploaded: true,
-                    parentDocumentId: pdfDocument.id,
-                    hideInFrontend: false,
-                    submissionId: submission.id,
-                }, { transaction });
-
+                results.push({ submissionId: submissionEntry.id, documentIds, success: true });
                 await transaction.commit();
-
-                results.push({
-                    submissionId: submission.id,
-                    pdfDocumentId: pdfDocument.id,
-                    zipDocumentId: zipDocument.id,
-                    hasZip: true,
-                    fileName: pdfMeta.filename,
-                    zipFileName: zipMeta.filename,
-                    validation: zipValidation,
-                });
-
             } catch (err) {
+                this.logger.error(err.message);
                 await transaction.rollback();
-                this.logger.error("Import error:", err.message);
-                results.push({
-                    error: true,
-                    message: err.message,
-                });
             }
 
-            // progress event
+            // update frontend progress
             this.socket.emit("progressUpdate", {
                 id: data.progressId,
-                current: data.files.indexOf(entry) + 1,
-                total: data.files.length,
+                current: submissions.indexOf(submission) + 1,
+                total: submissions.length,
             });
         }
 
         return results;
     }
 
+    // TODO: Implement validation logic here
+    async validateSubmissionFiles(documentIds) {
+        return { success: true };
+    }
 
     /**
      * Validate ZIP content using current database schema or provided schema
