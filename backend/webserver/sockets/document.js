@@ -665,25 +665,6 @@ class DocumentSocket extends Socket {
                     submissionId: submission.id,
                 }, { transaction });
 
-                await this.updateDocumentMetadata(zipDocument.id, {
-                    zipValidation,
-                    fileType: "zip",
-                    role: "source_files",
-                    linkedPdfId: pdfDocument.id,
-                }, { transaction });
-
-                /* --------------------------------------------------
-                 * 5.  Metadata for PDF + commit.
-                 * ------------------------------------------------*/
-                await this.updateDocumentMetadata(pdfDocument.id, {
-                    fileType: "pdf",
-                    role: "main_document",
-                    hasAssociatedZip: true,
-                    linkedZipId: zipDocument.id,
-                    submissionId: submission.id,
-                    moodleUserId: entry.extId || entry.userid || null,
-                }, { transaction });
-
                 await transaction.commit();
 
                 results.push({
@@ -753,20 +734,7 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Update document metadata
-     * @param {number} documentId - Document ID
-     * @param {Object} metadata - Metadata object to store
-     * @param {Object} options - Transaction options
-     * @returns {Promise<void>}
-     */
-    async updateDocumentMetadata(documentId, metadata, options = {}) {
-        await this.models['document'].updateById(documentId, {
-            metadata: JSON.stringify(metadata)
-        }, options);
-    }
-
-
-    /**
+     * TODO: Check if we need this function.
      * @author Yiwei Wang
      * Enhance submission data with file associations and categorization
      * @param {Array} submissions - Raw submission data from Moodle
@@ -837,16 +805,6 @@ class DocumentSocket extends Socket {
             return enhancedSubmission;
         });
     }
-
-    /**
-     * Get the base name of a file (without extension)
-     * @param {string} filename 
-     * @returns {string}
-     */
-    getFileBaseName(filename) {
-        return filename.replace(/\.[^/.]+$/, "").toLowerCase();
-    }
-
 
     /**
      * Send a document to the client

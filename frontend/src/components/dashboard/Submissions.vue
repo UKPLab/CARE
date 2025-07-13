@@ -23,20 +23,16 @@
     <template #body>
       <BasicTable
         :columns="tableColumns"
-        :data="documentsTable"
+        :data="submissionTable"
         :options="tableOptions"
         :buttons="tableButtons"
         @action="action"
       />
     </template>
   </Card>
-  <UploadModal
-    ref="uploadModal"
-  />
-  <ConfirmModal ref="deleteConf"/>
-  <ImportModal
-    ref="importModal"
-  />
+  <UploadModal ref="uploadModal" />
+  <ConfirmModal ref="deleteConf" />
+  <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
 </template>
 
@@ -58,18 +54,27 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  * @author Linyin Huang, Dennis Zyska, Yiwei Wang
  */
 export default {
-  name: "Submissions",
-  subscribeTable: [{
-    table: "submission",
-    filter: [{
-      key: "readyForReview",
-      value: true
-    }],
-    include: [{
-      table: "user",
-      by: "userId",
-    }]
-  }],
+  name: "DashboardSubmission",
+  subscribeTable: [
+    {
+      table: "submission",
+    },
+    {
+      table: "document",
+      filter: [
+        {
+          key: "readyForReview",
+          value: true,
+        },
+      ],
+      include: [
+        {
+          table: "user",
+          by: "userId",
+        },
+      ],
+    },
+  ],
   components: {
     UploadModal,
     ImportModal,
@@ -127,7 +132,7 @@ export default {
       // at the moment no readyForReview flag – return all
       return this.$store.getters["table/submission/getAll"];
     },
-    documentsTable() {
+    submissionTable() {
       /* Build one row per submission: pick the main PDF document (if any) to
        * drive "title", "type" and link/hash.  If none found we still list the
        * submission but leave document-specific columns blank.
