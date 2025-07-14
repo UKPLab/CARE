@@ -26,9 +26,25 @@
             name="logo"
           />
         </a>
-        <div class="project-box">
-          Project: {{ currentProjectName }}
-        </div>  
+        <div style="position:relative;">
+          <div @click.stop="toggleProjectDropdown" class="project-box">
+            Project: {{ currentProjectName }}
+          </div>
+          <div
+            v-if="showProjectDropdown"
+            class="dropdown-menu show"
+            style="position:absolute; min-width:180px; z-index:1000;"
+          >
+            <a
+              v-for="project in allProjects"
+              :key="project.id"
+              class="dropdown-item"
+              @click.prevent="selectProject(project.id)"
+            >
+              {{ project.name }}
+            </a>
+          </div>
+        </div> 
         <div id="topbarCustomPlaceholder"/>   
         <div id="topbarCenterPlaceholder"/> 
         <ul
@@ -112,10 +128,18 @@ import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
 export default {
   name: "TopBar",
   components: {LoadIcon, IconAsset, PasswordModal, ConsentUpdateModal},
+  data() {
+    return {
+      showProjectDropdown: false,
+    }
+  },
   subscribeTable: [{
     table: 'project',
   }],
   computed: {
+    allProjects() {
+    return this.$store.getters["table/project/getAll"] || [];
+    },
     currentProject() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
@@ -136,6 +160,18 @@ export default {
     },
   },
   methods: {
+    selectProject(projectId) {
+      this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
+      this.showProjectDropdown = false;
+    },
+    handleClickOutside(event) {
+        if (!this.$el.contains(event.target)) {
+          this.showProjectDropdown = false;
+        }
+    },
+    toggleProjectDropdown() {
+      this.showProjectDropdown = !this.showProjectDropdown;
+    },
     removeSidebarFlag() {
       document.body.classList.remove('sidebar-exists');
     },
@@ -164,6 +200,12 @@ export default {
         dropdownElement.classList.add("show");
       }
     },
+  },
+  mounted() {
+    document.addEventListener('click', this.handleClickOutside);
+  },
+  beforeUnmount() {
+    document.removeEventListener('click', this.handleClickOutside);
   },
 }
 
@@ -224,7 +266,12 @@ body.sidebar-exists #backButton {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
 }
 
+.project-box:hover {
+  background-color: darkblue;
+  color: white;
+}
 
 </style>
