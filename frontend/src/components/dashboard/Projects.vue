@@ -232,6 +232,7 @@ export default {
           }
         }
       );
+      this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
     },
     publishProject(params) {
       //TODO: Implement
