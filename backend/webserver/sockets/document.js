@@ -785,7 +785,7 @@ class DocumentSocket extends Socket {
         if (await this.isAdmin()) {           
             const requestIds = [];
             const preprocessItems = [];
-            this.server.backgroundTask.activeListeners = {};
+            this.server.backgroundTasks.activeListeners = {};
 
             for (const subId of data.inputFiles) {
                 const docs = await this.models['document'].findAll({
@@ -821,10 +821,10 @@ class DocumentSocket extends Socket {
                 const requestId = uuid();
                 requestIds.push(requestId);
                 preprocessItems.push({ requestId, submissionId: subId, docIds, skillName, nlpInput });
-                this.server.backgroundTask.preprocess[requestId] = { submissionId: subId, docIds, skillName };
+                this.server.backgroundTasks.preprocess[requestId] = { submissionId: subId, docIds, skillName };
             }
 
-            this.server.backgroundTask.currentSubmissionsCount = preprocessItems.length;
+            this.server.backgroundTasks.currentSubmissionsCount = preprocessItems.length;
 
             for (const item of preprocessItems) {
                 await new Promise((resolve) => {                        
@@ -850,11 +850,11 @@ class DocumentSocket extends Socket {
                                 )
                             );
                         }
-                        delete this.server.backgroundTask.preprocess[item.requestId];
+                        delete this.server.backgroundTasks.preprocess[item.requestId];
                         resolve();
                     };
 
-                    this.server.backgroundTask.activeListeners[item.requestId] = listener;
+                    this.server.backgroundTasks.activeListeners[item.requestId] = listener;
                     this.socket.once(item.requestId, listener);
 
                     this.socket.emit("serviceRequest", {
@@ -868,23 +868,23 @@ class DocumentSocket extends Socket {
                 });
             }
 
-            this.server.backgroundTask.activeListeners = {};
-            this.server.backgroundTask.preprocess = {};
-            this.server.backgroundTask.currentSubmissionsCount = 0;
+            this.server.backgroundTasks.activeListeners = {};
+            this.server.backgroundTasks.preprocess = {};
+            this.server.backgroundTasks.currentSubmissionsCount = 0;
         }
     }
 
     async cancelSubmissions(data, options) {
         if (await this.isAdmin()) {
-            if (this.server.backgroundTask.activeListeners) {
-                Object.entries(this.server.backgroundTask.activeListeners).forEach(([requestId, listener]) => {
+            if (this.server.backgroundTasks.activeListeners) {
+                Object.entries(this.server.backgroundTasks.activeListeners).forEach(([requestId, listener]) => {
                     this.socket.removeListener(requestId, listener);
                 });
-                this.server.backgroundTask.activeListeners = {};
+                this.server.backgroundTasks.activeListeners = {};
             }
 
-            this.server.backgroundTask.preprocess = {};
-            this.server.backgroundTask.currentSubmissionsCount = 0;
+            this.server.backgroundTasks.preprocess = {};
+            this.server.backgroundTasks.currentSubmissionsCount = 0;
         }
     }
 

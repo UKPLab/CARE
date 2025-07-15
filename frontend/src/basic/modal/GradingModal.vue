@@ -116,8 +116,8 @@ export default {
       columns: [
         { key: 'name', label: 'Name' },
       ],
-      // TODO: This processing is updated with backgroundTask variable from Server.js
-      backgroundTask: {}, // Use this for tests: {"preprocess": {1:{},5:{}}, "currentSubmissionsCount": 10 }
+      // TODO: This processing is updated with backgroundTasks variable from Server.js
+      backgroundTasks: {}, // Use this for tests: {"preprocess": {1:{},5:{}}, "currentSubmissionsCount": 10 }
       currentStep: 1,
     };
   },
