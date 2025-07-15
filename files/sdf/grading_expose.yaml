@@ -1,0 +1,100 @@
+name: grading_expose
+description: This skill is used to grade the exposé of a student
+version: 0.0.1
+author: Haishuo Fang
+input:
+  data:
+    type: object
+    required: true
+    properties:
+      submission:
+        type: object
+        description: The zip file of the submssion, which includes .tex file for the exposé, .pdf file for the exposé, and .bib file for the bibliography
+      grading_config:
+        type: object
+        description: The json configure for grading, which includes the detailed criterion and a list of criteria that needs to be graded
+        properties:
+          grading_criteria:
+            type: array
+            description: The detailed criterion to grade the exposé
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name of the criterion
+              scoring:
+                type: array
+                description: The scoring of the criterion
+                items:
+                  type: object
+                  properties:
+                    points:
+                      type: integer
+                      description: The points of the criterion
+                    description:
+                      type: string
+                      description: The description of the criterion
+
+          criteria_to_grade:
+            type: array
+            description: The list of criteria that needs to be graded
+            items:
+              type: string
+              description: The name of the criterion
+
+  example:
+    {
+      "submission": submission.zip,
+      "grading_config": {
+        "grading_criteria": [
+          {
+            "name": Language quality,
+            "scoring": [
+              {
+                "points": 0,
+                "description": many linguistic errors (over 10 errors) (e.g. wrong tense, wrong personal pronouns)
+              },
+              {
+                "points": 1,
+                "description": few linguistic errors (0-10 errors), clear and comprehensible sentences
+              },
+              {
+                "points": 2,
+                "description": no linguistic errors (0 errors), clear and comprehensible sentences with consistent terminology
+              }
+            ]
+          }
+        ],
+        "criteria_to_grade": [
+          "Language quality"
+        ]
+      }
+    }
+output:
+  data:
+    type: array
+    required: true
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the criterion
+        score:
+          type: integer
+          description: The score of the criterion
+        justification:
+          type: string
+          description: The justification of the criterion
+        possible_concerns:
+          type: string
+          description: The possible concerns of the given judgement
+
+  example:
+    [{
+      "name": Language quality,
+      "score": 1,
+      "justification": Example justification,
+      "possible_concerns": Example possible concerns
+    }]
