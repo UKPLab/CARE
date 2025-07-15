@@ -105,7 +105,7 @@ export default {
     submissions(){
       return this.$store.getters["table/document/getAll"];
     },
-    // TODO: Replace type to 3(JSON) when implemented
+    // TODO: Replace type to 3(JSON) when implemented and filter ahead by "type"="criteria"
     jsonConfig(){
       return this.$store.getters["table/document/getByKey"]('type', 0);
     },
