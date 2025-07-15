@@ -38,7 +38,7 @@ module.exports = class Server {
         this.socket = null;
         this.cache = {};
         this.cache['userName'] = {};
-        this.preprocess = {};
+        this.backgroundTask = {};
 
         this.rpcs = {};
         this.sockets = {};

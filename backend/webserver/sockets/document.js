@@ -785,7 +785,7 @@ class DocumentSocket extends Socket {
         if (await this.isAdmin()) {           
             const requestIds = [];
             const preprocessItems = [];
-            this.server.preprocess.activeListeners = {};
+            this.server.backgroundTask.activeListeners = {};
 
             for (const subId of data.inputFiles) {
                 const docs = await this.models['document'].findAll({
@@ -814,17 +814,17 @@ class DocumentSocket extends Socket {
                 );
 
                 const nlpInput = {
-                    input_expose: inputFiles,
+                    submission: inputFiles,
                     grading_criteria: jsonConfig
                 };
 
                 const requestId = uuid();
                 requestIds.push(requestId);
                 preprocessItems.push({ requestId, submissionId: subId, docIds, skillName, nlpInput });
-                this.server.preprocess.processing[requestId] = { submissionId: subId, docIds, skillName };
+                this.server.backgroundTask.preprocess[requestId] = { submissionId: subId, docIds, skillName };
             }
 
-            this.server.preprocess.totalRequestDocs = preprocessItems.length;
+            this.server.backgroundTask.currentSubmissionsCount = preprocessItems.length;
 
             for (const item of preprocessItems) {
                 await new Promise((resolve) => {                        
@@ -850,11 +850,11 @@ class DocumentSocket extends Socket {
                                 )
                             );
                         }
-                        delete this.server.preprocess.processing[item.requestId];
+                        delete this.server.backgroundTask.preprocess[item.requestId];
                         resolve();
                     };
 
-                    this.server.preprocess.activeListeners[item.requestId] = listener;
+                    this.server.backgroundTask.activeListeners[item.requestId] = listener;
                     this.socket.once(item.requestId, listener);
 
                     this.socket.emit("serviceRequest", {
@@ -868,23 +868,23 @@ class DocumentSocket extends Socket {
                 });
             }
 
-            this.server.preprocess.activeListeners = {};
-            this.server.preprocess.processing = {};
-            this.server.preprocess.totalRequestDocs = 0;
+            this.server.backgroundTask.activeListeners = {};
+            this.server.backgroundTask.preprocess = {};
+            this.server.backgroundTask.currentSubmissionsCount = 0;
         }
     }
 
     async cancelSubmissions(data, options) {
         if (await this.isAdmin()) {
-            if (this.server.preprocess.activeListeners) {
-                Object.entries(this.server.preprocess.activeListeners).forEach(([requestId, listener]) => {
+            if (this.server.backgroundTask.activeListeners) {
+                Object.entries(this.server.backgroundTask.activeListeners).forEach(([requestId, listener]) => {
                     this.socket.removeListener(requestId, listener);
                 });
-                this.server.preprocess.activeListeners = {};
+                this.server.backgroundTask.activeListeners = {};
             }
 
-            this.server.preprocess.processing = {};
-            this.server.preprocess.totalRequestDocs = 0;
+            this.server.backgroundTask.preprocess = {};
+            this.server.backgroundTask.currentSubmissionsCount = 0;
         }
     }
 

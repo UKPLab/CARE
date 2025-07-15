@@ -62,7 +62,7 @@
         <div class="mb-3">
           <div class="d-flex align-items-center mb-2">
             <span class="me-2">Processed:</span>
-            <strong>{{ processedCount }} / {{ processing?.totalRequestDocs || 0 }}</strong>
+            <strong>{{ processedCount }} / {{ processing?.currentSubmissionsCount || 0 }}</strong>
           </div>
           <div class="progress mb-3" style="height: 20px;">
             <div
@@ -71,7 +71,7 @@
               :style="{ width: progressPercent + '%' }"
               :aria-valuenow="processedCount"
               :aria-valuemin="0"
-              :aria-valuemax="processing.totalRequestDocs || 0"
+              :aria-valuemax="processing.currentSubmissionsCount || 0"
             >
               {{ progressPercent }}%
             </div>
@@ -116,8 +116,8 @@ export default {
       columns: [
         { key: 'name', label: 'Name' },
       ],
-      // TODO: This processing is updated with preprocess variable from Server.js
-      processing: {}, // Use this for tests: {processing: {1:{},5:{}}, totalRequestDocs: 10 }
+      // TODO: This processing is updated with backgroundTask variable from Server.js
+      backgroundTask: {}, // Use this for tests: {"preprocess": {1:{},5:{}}, "currentSubmissionsCount": 10 }
       currentStep: 1,
     };
   },
@@ -150,7 +150,6 @@ export default {
       return [
         !!this.selectedSkill && !!this.selectedConfig, // Step 1: Both must be selected
         // TODO: Add check if the file is already processed and saved in document_data
-        // TODO: Check if the the current admin has already sent one request and waiting for the response
         this.selectedInputRows.length > 0, // Step 2: At least one file selected
       ];
     },
@@ -191,13 +190,13 @@ export default {
     },
     processedCount() {
       if (!this.isProcessingActive) return 0;
-      const total = this.processing?.totalRequestDocs || 0;
+      const total = this.processing?.currentSubmissionsCount || 0;
       const remaining = Object.keys(this.processing.processing).length;
       return total - remaining;
     },
     progressPercent() {
       if (!this.isProcessingActive) return 0;
-      const total = this.processing?.totalRequestDocs || 0;
+      const total = this.processing?.currentSubmissionsCount || 0;
       if (!total) return 0;
       const processed = this.processedCount;
       return Math.round((processed / total) * 100);
