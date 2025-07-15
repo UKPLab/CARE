@@ -96,26 +96,10 @@ export default {
         name: doc.name,
       }));
     },
-    buttons() {
-      return [
-        {
-          key: 'downloadFile',
-          label: 'Download File',
-          type: 'button',
-          options: { iconOnly: true},
-          title: 'Download File',
-          icon: 'download',
-          action: this.downloadFile,
-        },
-      ];
-    },
     downloadFile(row) {
       const doc = (this.submissions || []).find(d => d.id === row.id);
       if (!doc) return;
       // TODO: Implement file download logic for .zip/.tex after the application of moodle import submissions
-    },
-    onInputFilesChange(rows) {
-      this.selectedInputRows = Array.isArray(rows) ? rows : [];
     },
     // TODO: Replace documents table with "submissions"
     submissions(){
@@ -141,6 +125,22 @@ export default {
     },
     close() {
       this.$refs.gradingStepper.close();
+    },    
+    buttons() {
+      return [
+        {
+          key: 'downloadFile',
+          label: 'Download File',
+          type: 'button',
+          options: { iconOnly: true},
+          title: 'Download File',
+          icon: 'download',
+          action: this.downloadFile,
+        },
+      ];
+    },    
+    onInputFilesChange(rows) {
+      this.selectedInputRows = Array.isArray(rows) ? rows : [];
     },
     // TODO: Refactor submit emit in Submissions component
     preprocess() {
