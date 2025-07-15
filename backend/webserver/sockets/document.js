@@ -776,7 +776,7 @@ class DocumentSocket extends Socket {
 
     /**
      * Preprocess multiple document submissions for NLP grading asynchronously
-     * @param {Object} data - { skillName : string, jsonConfig : object, inputFileIds : array }
+     * @param {Object} data - { skillName : string, jsonConfig : object, inputFiles : array }
      * @param {Object} options
      * @returns {Promise<{status: string, count: number}>}
      */
@@ -784,66 +784,88 @@ class DocumentSocket extends Socket {
 
         if (await this.isAdmin()) {            
 
-            const { skillName, jsonConfig, inputFileIds } = data;
-            const responseEventIds = [];
-            if (!this.server.preprocess.processing) this.server.preprocess.processing = {};
+            const requestIds = [];
+            const preprocessItems = [];
 
-            inputFileIds.forEach(async (docId) => {
-                const doc = await this.models['document'].getById(docId);
-                if (!doc) throw new Error(`Document ${docId} not found`);
+            for (const subId of data.inputFiles) {
+                const docs = await this.models['document'].findAll({
+                    where: { submissionId: subId },
+                    raw: true
+                });
 
-                const latexFilePath = path.join(UPLOAD_PATH, `${doc.hash}.tex`);
-                if (!fs.existsSync(latexFilePath)) {
-                    throw new Error(`No LaTeX (.tex) found for document ${docId}`);
-                }            
-                const latexContent = await fs.promises.readFile(latexFilePath, 'utf8');
+                const docIds = [];
+                const inputFiles = await Promise.all(
+                    docs.map(async (doc) => {
+                        docIds.push(doc.id);
+                        const docType = docTypes[doc.type];
+                        const docTypeKey = Object.keys(docTypes).find(type => docTypes[type] === docType);
+                        let fileExtension = '';
+                        if (docTypeKey) {
+                            fileExtension = '.' + docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
+                        }
+                        const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
+                        if (fs.existsSync(docFilePath)) {
+                            return await fs.promises.readFile(docFilePath);
+                        } else {
+                            this.logger.warn(`File not found for document ${doc.id} of submission ${subId}`);
+                            return null;
+                        }
+                    })
+                );
 
                 const nlpInput = {
-                    input_expose: latexContent,
-                    topic: "", // TODO: Where to get the topic from?
-                    bibliography: "", // TODO: Where to get the bibliography from?
-                    grading_criteria: jsonConfig // TODO: Where to get the grading criteria from?
+                    input_expose: inputFiles,
+                    grading_criteria: jsonConfig
                 };
 
                 const requestId = uuid();
-                responseEventIds.push(requestId);
-                this.server.preprocess.processing[requestId] = { docId, skillName };
+                requestIds.push(requestId);
+                preprocessItems.push({ requestId, submissionId: subId, docIds, skillName, nlpInput });
+                this.server.preprocess.processing[requestId] = { submissionId: subId, docIds, skillName };
+            }
 
-                this.socket.once(requestId, async () => {
-                    try {
-                        let nlpResults;
-                        // TODO: Delete this if-condition after testing the backend functionality
-                        if (this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
-                            nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
+            for (const item of preprocessItems) {
+                await new Promise((resolve) => {
+                    this.socket.once(item.requestId, async () => {
+                        try {
+                            let nlpResults;
+                            // TODO: Delete if-condition after testing
+                            if (this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
+                                nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
+                            }
+                            const nlpResult = nlpResults ? nlpResults[item.requestId] : null;
+                            item.docIds.forEach(async (docId) => {
+                                if (nlpResult) {
+                                    await this.saveData({
+                                        userId: this.userId,
+                                        documentId: docId,
+                                        studySessionId: null,
+                                        studyStepId: null,
+                                        key: `service_nlpGrading_${item.skillName}`,
+                                        value: nlpResult
+                                    }, options);
+                                }
+                            });
+                        } catch (err) {
+                            this.logger.error(`Failed to save NLP result for document ${item.docId}: ${err.message}`);
+                        } finally {
+                            delete this.server.preprocess.processing[item.requestId];
+                            resolve();
                         }
-                        const nlpResult = nlpResults ? nlpResults[requestId] : null;
-                        if (nlpResult) {
-                            await this.saveData({
-                                userId: this.userId,
-                                documentId: docId,
-                                studySessionId: null,
-                                studyStepId: null,
-                                key: `preprocess_${skillName}`,
-                                value: nlpResult
-                            }, options);
-                        }
-                    } catch (err) {
-                        this.logger.error(`Failed to save NLP result for document ${docId}: ${err.message}`);
-                    } finally {
-                        delete this.server.preprocess.processing[requestId];
-                    }
-                });
+                    });
 
-                this.socket.emit("serviceRequest", {
-                    service: "NLPService",
-                    data: {
-                        id: requestId,
-                        name: skillName,
-                        data: nlpInput
-                    }
+                    this.socket.emit("serviceRequest", {
+                        service: "NLPService",
+                        data: {
+                            id: item.requestId,
+                            name: item.skillName,
+                            data: item.nlpInput
+                        }
+                    });
                 });
-            });
-            return { status: "processing", count: inputFileIds.length, responseEventIds };
+            }
+
+            return { status: "processing", count: inputFiles.length, responseEventIds: requestIds };
         }
 
     }
