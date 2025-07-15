@@ -782,10 +782,10 @@ class DocumentSocket extends Socket {
      */
     async preprocessSubmissions(data, options) {
 
-        if (await this.isAdmin()) {            
-
+        if (await this.isAdmin()) {           
             const requestIds = [];
             const preprocessItems = [];
+            this.server.preprocess.activeListeners = {};
 
             for (const subId of data.inputFiles) {
                 const docs = await this.models['document'].findAll({
@@ -824,35 +824,38 @@ class DocumentSocket extends Socket {
                 this.server.preprocess.processing[requestId] = { submissionId: subId, docIds, skillName };
             }
 
+            this.server.preprocess.totalRequestDocs = preprocessItems.length;
+
             for (const item of preprocessItems) {
-                await new Promise((resolve) => {
-                    this.socket.once(item.requestId, async () => {
-                        try {
-                            let nlpResults;
-                            // TODO: Delete if-condition after testing
-                            if (this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
-                                nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
-                            }
-                            const nlpResult = nlpResults ? nlpResults[item.requestId] : null;
-                            item.docIds.forEach(async (docId) => {
-                                if (nlpResult) {
-                                    await this.saveData({
+                await new Promise((resolve) => {                        
+                    
+                    const listener = async () => {
+                        let nlpResults;
+                        // TODO: Remove this if-condition after testing
+                        if ( this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
+                            nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
+                        }
+                        const nlpResult = nlpResults ? nlpResults[item.requestId] : null;
+                        if (nlpResult) {
+                            await Promise.all(
+                                item.docIds.map(docId =>
+                                    this.saveData({
                                         userId: this.userId,
                                         documentId: docId,
                                         studySessionId: null,
                                         studyStepId: null,
                                         key: `service_nlpGrading_${item.skillName}`,
                                         value: nlpResult
-                                    }, options);
-                                }
-                            });
-                        } catch (err) {
-                            this.logger.error(`Failed to save NLP result for document ${item.docId}: ${err.message}`);
-                        } finally {
-                            delete this.server.preprocess.processing[item.requestId];
-                            resolve();
+                                    }, options)
+                                )
+                            );
                         }
-                    });
+                        delete this.server.preprocess.processing[item.requestId];
+                        resolve();
+                    };
+
+                    this.server.preprocess.activeListeners[item.requestId] = listener;
+                    this.socket.once(item.requestId, listener);
 
                     this.socket.emit("serviceRequest", {
                         service: "NLPService",
@@ -865,9 +868,24 @@ class DocumentSocket extends Socket {
                 });
             }
 
-            return { status: "processing", count: inputFiles.length, responseEventIds: requestIds };
+            this.server.preprocess.activeListeners = {};
+            this.server.preprocess.processing = {};
+            this.server.preprocess.totalRequestDocs = 0;
         }
+    }
 
+    async cancelSubmissions(data, options) {
+        if (await this.isAdmin()) {
+            if (this.server.preprocess.activeListeners) {
+                Object.entries(this.server.preprocess.activeListeners).forEach(([requestId, listener]) => {
+                    this.socket.removeListener(requestId, listener);
+                });
+                this.server.preprocess.activeListeners = {};
+            }
+
+            this.server.preprocess.processing = {};
+            this.server.preprocess.totalRequestDocs = 0;
+        }
     }
 
     init() {
@@ -888,7 +906,8 @@ class DocumentSocket extends Socket {
         this.createSocket("documentClose", this.closeDocument, {}, true);
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
-        this.createSocket("submissionsPreprocess", this.preprocessSubmissions, {}, false);
+        this.createSocket("submissionsPreprocess", this.preprocessSubmissions, {}, true);
+        this.createSocket("submissionsCancel", this.cancelSubmissions, {}, true);
     }
 };
 

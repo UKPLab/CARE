@@ -231,8 +231,22 @@ export default {
       this.currentStep = step;
     },
     cancelProcessing() {
-      // TODO: Apply cancellation logic here
-      console.log("Processing cancelled");
+      this.$socket.emit("submissionsCancel", {
+      }, (res) => {
+        if (res.success) {
+          this.eventBus.emit("toast", {
+            title: "LLMentor Grading Cancelled",
+            message: "Grading process has been cancelled.",
+            variant: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: "LLMentor Grading Cancellation Failed",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
     },
     preprocess() {
       this.$socket.emit("submissionsPreprocess", {
