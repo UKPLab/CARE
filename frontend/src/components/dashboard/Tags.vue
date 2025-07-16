@@ -136,7 +136,9 @@ export default {
       return buttons;
     },
     tagSets() {
-      return this.$store.getters["table/tag_set/getAll"].map(d => {
+      return this.$store.getters["table/tag_set/getAll"]
+        .filter(d => d.projectId === this.selectedProjectId) // Filter by selected project
+        .map(d => {
           let newD = {...d};
           newD.published = {
             text: newD.public || newD.userId === null ? "Yes" : "No",
@@ -159,6 +161,9 @@ export default {
           return newD;
         }
       );
+    },
+    selectedProjectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     tags() {
       return this.$store.getters["table/tag/getAll"];

@@ -64,6 +64,7 @@ class DocumentSocket extends Socket {
      * @param {string} data.name - The name of the document.
      * @param {Buffer} data.file - The binary content of the document.
      * @param {number} [data.userId] - The ID of the user who owns the document (optional).
+     * @param {number} [data.projectId] - The ID of the project the document belongs to (optional).
      * @param {boolean} [data.isUploaded] - Indicates if the document is uploaded by an admin (optional).
      * @param {Object} options - The options object containing the transaction.
      * @returns {Promise<void>}
@@ -95,6 +96,7 @@ class DocumentSocket extends Socket {
                 name: data.name.replace(/.delta$/, ""),
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: this.userId,
+                projectId: data.projectId,
             }, {transaction: options.transaction});
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
@@ -124,6 +126,7 @@ class DocumentSocket extends Socket {
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
+                projectId: data.projectId,
             }, {transaction: options.transaction});
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
@@ -160,7 +163,10 @@ class DocumentSocket extends Socket {
 
     /**
      * Create document (html)
-     * @param data {type: number, name: string}
+     * @param data // The data object containing the document details.
+     * @param data.projectId {number}
+     * @param data.name {string}
+     * @param data.type {string} - The type of the document (e.g., "html", "modal").
      * @param options
      * @returns {Promise<void>}
      */
@@ -168,7 +174,8 @@ class DocumentSocket extends Socket {
         const doc = await this.models["document"].add({
             name: data.name,
             type: data.type,
-            userId: this.userId
+            userId: this.userId,    
+            projectId: data.projectId
         }, {transaction: options.transaction});
 
         options.transaction.afterCommit(() => {
@@ -561,7 +568,8 @@ class DocumentSocket extends Socket {
                     file: files[0],
                     name: file.fileName,
                     userId: file.userId,
-                    isUploaded: true
+                    isUploaded: true,
+                    projectId: data.projectId,
                 }, {transaction: transaction});
 
                 results.push(document['id']);
