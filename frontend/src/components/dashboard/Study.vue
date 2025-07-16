@@ -110,11 +110,11 @@ export default {
   computed: {
     studies() {
       return this.$store.getters["table/study/getFiltered"](
-        (study) => study.projectId === this.currentProjectId
+        (study) => study.projectId === this.selectedProjectId
       );
     },
-    currentProjectId() {
-    return this.$store.getters["settings/getValueAsInt"]("projects.default");
+    selectedProjectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -351,9 +351,6 @@ export default {
     canCloseStudies() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.closeAllStudies");
     },
-    studiesProject() {
-      return this.$store.getters["table/study/getFiltered"]((s) => s.projectId === 1);
-    }
   },
   methods: {
     action(data) {
