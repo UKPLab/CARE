@@ -31,6 +31,8 @@ To begin editing a document:
 
 Edits are saved automatically in the background. There's no need to manually click a save button.
 
+.. _editor-settings-ref:
+
 Editor Settings
 ~~~~~~~~~~~~~~~
 
