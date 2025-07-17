@@ -1,5 +1,5 @@
 <template>
-  <Card title="Review Documents">
+  <Card title="Submissions">
     <template #headerElements>
       <BasicButton
         class="btn-secondary btn-sm me-1"
@@ -58,7 +58,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  * @author Linyin Huang, Dennis Zyska
  */
 export default {
-  name: "ReviewDocuments",
+  name: "Submissions",
   subscribeTable: [{
     table: "document",
     filter: [{
