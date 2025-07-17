@@ -107,12 +107,6 @@ To collect assignment submissions:
       - Choose ``Import via Moodle``
       - Provide the correct course and assignment IDs
 
-.. tip::
-
-   .. tip::
-
-   After importing, close the import window using the ``X`` icon. Submissions will then appear in the ``Submissions`` section of the Dashboard.
-
 **Study Creation with Imported Submissions**
 
 To create a study:

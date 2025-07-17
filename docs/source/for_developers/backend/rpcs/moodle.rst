@@ -226,7 +226,7 @@ Keep attention to the following steps to implement new functionality in the Mood
 Rebuild the docker container
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the ``main.py`` file is modified, the docker container needs to be rebuilt.
+If you modify ``main.py`` or any other Python file in the Moodle RPC module, the docker container needs to be rebuilt.
 This can be done by running the following command:
 
 1. Delete the moodle container in docker
@@ -249,7 +249,7 @@ Extending the Moodle API Integration
 
 If you want to extend the Moodle API integration (e.g. by adding new endpoints or logic), follow these steps:
 
-1. Edit or add functions in ``main.py`` located at ``utils/rpcs/moodleAPI/``
+1. Edit or add functions in the RPC module, typically in ``main.py`` or ``Moodle.py``, both located in ``utils/rpcs/moodleAPI/``.
 2. Follow the existing function structure using RPC-compatible patterns
 3. If new API endpoints are added, ensure:
    - The corresponding Moodle functions are enabled in the external service
