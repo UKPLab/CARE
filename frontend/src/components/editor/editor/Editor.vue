@@ -334,6 +334,7 @@ export default {
         });
       }
     });
+    this.$socket.emit("documentUnsubscribe", { documentId: this.documentId });
   },
   methods: {
     clearEditor() {

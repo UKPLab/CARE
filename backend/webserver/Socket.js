@@ -308,7 +308,6 @@ module.exports = class Socket {
         if (updateCreatorName) {
             data = await this.updateCreatorName(data);
         }
-        this.socket.emit(event, data);
         this.io.to("doc:" + documentId).emit(event, data);
     }
 
@@ -615,11 +614,13 @@ module.exports = class Socket {
     }
 
     async broadcastTable(tableName, data) {
-        const clients = this.io.appDataSubscriptions.tables[tableName];
-        if (!clients) return;
-        for (const socketId of clients) {
-            this.io.to(socketId).emit(tableName + "Refresh", data);
-        }
+        const sockets = await this.io.fetchSockets();
+        if (!sockets) return;
+        sockets.forEach(socket => {
+            if (tableName in socket.appDataSubscriptions.tables) {
+                this.io.to(socket.id).emit(tableName + "Refresh", data);
+            }
+        });
     }
 }
 ;
