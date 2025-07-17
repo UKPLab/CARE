@@ -139,6 +139,16 @@ export default {
         return (a.order || 0) - (b.order || 0);
       });
     },
+    appliedEdits() {
+      return this.$store.getters["table/document_edit/getFiltered"](
+        (e) => e.applied === true
+      ).sort((a, b) => {
+        const timeCompare = new Date(a.createdAt) - new Date(b.createdAt);
+        if (timeCompare !== 0) return timeCompare;
+        return (a.order || 0) - (b.order || 0);
+      });
+    },
+    
     debounceTimeForEdits() {
       return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
     },
@@ -218,6 +228,13 @@ export default {
       },
       deep: true
     },
+    appliedEdits(newEdits, oldEdits) {
+        const appliedEdits = newEdits.filter(newEdit =>
+          !oldEdits.some(oldEdit => oldEdit.id === newEdit.id)
+        )
+        this.processEdits(appliedEdits);
+    },
+    
     readOnly: {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
@@ -316,10 +333,7 @@ export default {
     },
     documentError(error) {
       this.handleDocumentError(error);
-    },
-    document_editRefresh(edits) {
-            this.processEdits(edits);
-      }
+    }
   },
   unmounted() {
     this.eventBus.off("editorSelectEdit", this.selectEditHandler);
