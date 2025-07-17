@@ -15,12 +15,6 @@ const navElements = [
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    /**
-     * Add altering commands here.
-     *
-     * Example:
-     * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
-     */
     await queryInterface.bulkInsert(
       "nav_element",
       await Promise.all(
@@ -45,12 +39,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    /**
-     * Add reverting commands here.
-     *
-     * Example:
-     * await queryInterface.dropTable('users');
-     */
     await queryInterface.bulkDelete("nav_element", {
       name: navElements.map((t) => t.name),
     });

@@ -673,21 +673,17 @@ class DocumentSocket extends Socket {
                     };
             }
         }
-        } else if (document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG) {
-            // Handle JSON configuration files
-            const filePath = `${UPLOAD_PATH}/${document.hash}.json`;
+        } else {
+            // Handle file-based documents (PDF, JSON, etc.)
+            const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
+            const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
+            
             if (!fs.existsSync(filePath)) {
-                throw new Error("JSON configuration file not found");
+                throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
+            
             const file = fs.readFileSync(filePath);
             return { document: document, file: file };
-        } else {
-            const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
-            if (!fs.existsSync(filePath)) {
-                throw new Error("PDF file not found");
-            }
-            const file = fs.readFileSync(filePath);
-            return {document: document, file: file};
         }
     }
 

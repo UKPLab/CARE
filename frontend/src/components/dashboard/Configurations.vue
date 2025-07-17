@@ -23,14 +23,14 @@
   <UploadModal ref="uploadModal" />
   <ConfirmModal ref="deleteModal" />
   
-  <!-- View Configuration Modal -->
-  <Modal ref="viewModal" name="view-configuration" lg>
+  <!-- JSON Configuration Viewer Modal -->
+  <Modal ref="viewModal" name="json-viewer" lg>
     <template #title>
-      View Configuration: {{ selectedConfig?.name }}
+      Configuration: {{ selectedConfig?.name }}
     </template>
     <template #body>
-      <div v-if="selectedConfig">
-        <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">{{ configContent }}</pre>
+      <div v-if="selectedConfig" class="json-viewer-container">
+        <pre class="json-content">{{ configContent }}</pre>
       </div>
     </template>
   </Modal>
@@ -76,8 +76,6 @@ export default {
       },
       columns: [
         { name: "Name", key: "name", sortable: true },
-        // { name: "Type", key: "type", sortable: true },
-        // { name: "Description", key: "description" },
         { name: "Created", key: "createdAt", sortable: true },
       ],
       buttons: [
@@ -130,6 +128,7 @@ export default {
 
     viewConfiguration(config) {
       this.selectedConfig = config;
+      
       this.$socket.emit("documentGet", {
         documentId: config.id
       }, (response) => {
@@ -144,7 +143,7 @@ export default {
                 fileContent = response.data.file.toString();
               }
               
-              // Parse the JSON content
+              // Parse and format the JSON content
               const jsonContent = JSON.parse(fileContent);
               this.configContent = JSON.stringify(jsonContent, null, 2);
               this.$refs.viewModal.openModal();
@@ -199,3 +198,24 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.json-viewer-container {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.json-content {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: #212529;
+}
+</style>
