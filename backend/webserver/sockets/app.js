@@ -280,11 +280,6 @@ class AppSocket extends Socket {
         }
         this.socket.appDataSubscriptions["tables"][tableName].add(newSubscriptionId);
 
-        if (!this.io.appDataSubscriptions["tables"][tableName]) {
-            this.io.appDataSubscriptions["tables"][tableName] = new Set();
-        }
-        this.io.appDataSubscriptions["tables"][tableName].add(this.socket.id);
-
         // merge all filters
         const oldMerge = {...this.socket.appDataSubscriptions["merged"][tableName]};
         const currentFilter = mergeFilter([(data.filter) ? data.filter : []], this.models[tableName].getAttributes());

@@ -245,7 +245,7 @@ module.exports = class Server {
             socket.appDataSubscriptions = {
                 tables: {},
                 ids: {},
-                merged: {},
+                merged: {}
             };
             this.logger.debug("Socket connect: " + socket.id);
 
