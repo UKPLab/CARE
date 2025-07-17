@@ -13,6 +13,7 @@
     >
       <canvas
         v-show="!isRendered"
+        :style="canvasStyle"
         :id="'placeholder-canvas-' + pageNumber"
       />
       <div
@@ -58,6 +59,8 @@ import * as pdfjsLib from 'pdfjs-dist'
 import {ObserveVisibility} from 'vue3-observe-visibility'
 import debounce from 'lodash.debounce';
 import Highlights from "./Highlights.vue";
+// import { PDFFindController, EventBus } from "pdfjs-dist/web/pdf_viewer.mjs";
+
 
 import {Anchoring} from "@/assets/pdfViewer/anchor.js";
 import Loader from "@/basic/Loading.vue";
@@ -97,6 +100,10 @@ export default {
       type: Number,
       default: 0,
     },
+    zoomValue: {
+      type: Number,
+      default: 1.0,
+    },
     render: {
       type: Boolean,
       required: true
@@ -112,6 +119,7 @@ export default {
       currentWidth: 0,
       anchor: null,
       devicePixelRatio: window.devicePixelRatio || 1,
+      isZooming: false
     };
   },
   computed: {
@@ -126,7 +134,7 @@ export default {
           .filter(a => a !== undefined)
       )
     },
-    canvasStyle() {
+     canvasStyle() {
       return {
         transform: `scale(${1 / this.devicePixelRatio})`,
         transformOrigin: '0 0',
@@ -134,12 +142,42 @@ export default {
     }
   },
   watch: {
+    zoomValue: {
+      handler(newValue, oldValue) {
+        if (this.isRendered) {
+          this.isZooming = true;
+          const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
+          
+          // Calculate new width based on current width and zoom change
+          const currentWidth = wrapper.getBoundingClientRect().width;
+          const newWidth = (currentWidth / oldValue) * newValue;
+          wrapper.style.width = newWidth + 'px';
+          wrapper.style.height = (newWidth * 1.4142) + 'px';
+          
+          this.currentWidth = newWidth;
+          
+          // Force re-anchoring by nullifying existing anchors
+          this.remove_anchors();
+          
+          this.destroyPage();
+          this.init();
+        }
+      }
+    },
     render() {
       this.init();
     },
     annotations() {
-      if (this.isRendered)
+      if (this.isRendered) {
+        console.log("anchor added");
+        // Create new anchor instance for current page
+        this.anchor = new Anchoring(this.pdf, this.pageNumber);
+        // Force re-anchoring of all annotations
+        this.annotations.forEach(anno => {
+          anno.anchors = null;
+        });
         this.add_anchors();
+      }
     },
   },
   mounted() {
@@ -179,12 +217,11 @@ export default {
     init() {
       if (this.render && !this.isRendered) {
         this.pdf.getPage(this.pageNumber).then((page) => {
-
           const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber);
           const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
 
-          this.scale = wrapper.getBoundingClientRect().width /
-            page.getViewport({scale: 1.0}).width;
+          // Calculate scale based on wrapper width
+          this.scale = wrapper.getBoundingClientRect().width / page.getViewport({scale: 1.0}).width;
 
           const viewport = page.getViewport({scale: this.scale});
           canvas.height = viewport.height;
@@ -194,23 +231,24 @@ export default {
             this.destroyRenderTask();
           }
           this.renderPage(page);
-
         });
       }
-
     },
     resizeHandler(event) {
+      if (this.isZooming) return;
+      
       const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber);
       const width = wrapper.getBoundingClientRect().width;
+      
       if (width !== this.currentWidth) {
-        if (this.isRendered) this.destroyPage();
         this.currentWidth = width;
-        this.init()
+        this.destroyPage();
+        this.init();
         if (this.acceptStats) {
           this.$socket.emit("stats", {
             action: "pdfPageResizeChange",
             data: {documentId: this.documentId, pageNumber: this.pageNumber, width: width}
-          })
+          });
         }
       }
     },
@@ -219,7 +257,7 @@ export default {
 
       const canvas = document.getElementById('pdf-canvas-' + page.pageNumber);
       const context = canvas.getContext('2d');
-      const viewport = page.getViewport({scale: this.scale * this.devicePixelRatio}); 
+      const viewport = page.getViewport({scale: this.scale * this.devicePixelRatio});
 
       canvas.height = viewport.height;
       canvas.width = viewport.width;
@@ -234,20 +272,18 @@ export default {
       toRaw(this.renderTask).promise.then(() => {
         return page.getTextContent();
       }).then((textContent) => {
-        
-        console.log("textContent", textContent)
         const canvas_offset = document.getElementById('pdf-canvas-' + page.pageNumber).getBoundingClientRect();
+
         const textLayerDiv = document.getElementById('text-layer-' + page.pageNumber);
-
-        textLayerDiv.style.height = canvas_offset.height + 'px';
-        textLayerDiv.style.width = canvas_offset.width + 'px';
-
+ 
         // Use display scale for text layer positioning
         const displayViewport = page.getViewport({scale: this.scale});
         const { scale } = displayViewport;
-        textLayerDiv.style.setProperty("--scale-factor", `${scale}`);
+   
         textLayerDiv.style.setProperty("--total-scale-factor", `${scale}`);
-        
+        textLayerDiv.style.setProperty("--scale-round-y", `${1}px`)
+        textLayerDiv.style.setProperty("--scale-round-x", `${1}px`)
+
         const renderTask = new pdfjsLib.TextLayer({
           container: textLayerDiv,
           textContentSource: textContent,
@@ -256,10 +292,9 @@ export default {
         
         return renderTask.render();
       }).then(() => {
-        this.pdf.renderingDone.set(page.pageNumber, true);
-        this.isRendered = true;
-        // Only add anchors after text layer is fully rendered
-        this.add_anchors();
+          this.pdf.renderingDone.set(page.pageNumber, true);
+          this.isRendered = true;
+          this.add_anchors();
       }).catch(response => {
         this.destroyRenderTask();
         console.log(`Failed to render page ${this.pageNumber}: ` + response);
@@ -278,7 +313,10 @@ export default {
     },
     add_anchors() {
       this.annotations.filter(anno => anno.anchors == null).forEach(async anno => {
-        anno.anchors = await Promise.all(anno.selectors.target.map((data) => this.anchor.locateAnchor(data)));
+        // Pass the current scale to ensure correct positioning
+        anno.anchors = await Promise.all(anno.selectors.target.map((data) => {
+          return this.anchor.locateAnchor(data, this.scale);
+        }));
       });
     },
     remove_anchors() {
@@ -294,17 +332,19 @@ export default {
       this.$refs["highlights"].update_highlights(anchors);
     },
     destroyPage() {
-      // PDFPageProxy#_destroy
-      // https://mozilla.github.io/pdf.js/api/draft/PDFPageProxy.html
       this.$emit('destroyPage', {pageNumber: this.pageNumber});
-      this.$refs["highlights"].removeAllHighlights(document.getElementById('text-layer-' + this.pageNumber));
-
-      // delete previous contents from text layer
-      const text_layer = document.getElementById('text-layer-' + this.pageNumber);
-      while (text_layer.firstChild) {
-        text_layer.removeChild(text_layer.firstChild);
+      
+      if (this.$refs.highlights) {
+        this.$refs.highlights.removeAllHighlights(document.getElementById('text-layer-' + this.pageNumber));
       }
-
+      
+      const textLayer = document.getElementById('text-layer-' + this.pageNumber);
+      if (textLayer) {
+        while (textLayer.firstChild) {
+          textLayer.removeChild(textLayer.firstChild);
+        }
+      }
+      
       this.destroyRenderTask();
     },
   }
