@@ -137,7 +137,7 @@ class AnnotationSocket extends Socket {
                 const annotationComments = comments.filter(c => c.annotationId === annotation.id);
                 return {
                     ...annotation,
-                    tag: tag ? tag.colorCode : null,
+                    tag: tag ? tag.name : null,
                     comments: annotationComments
                 };
             })
