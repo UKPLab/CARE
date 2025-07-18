@@ -23,8 +23,9 @@
           <BasicForm
             v-model="data"
             :fields="fileFields"
+            @file-change="handleFileChange"
           />
-          <div class="form-check mt-3">
+          <div v-if="isPdf" class="form-check mt-3">
             <input
               class="form-check-input"
               type="checkbox"
@@ -86,6 +87,7 @@ export default {
     return {
       uploading: false,
       show: false,
+      isPdf: false,
       data: {},
       importAnnotations: false,
       fileFields: [
@@ -100,6 +102,17 @@ export default {
     }
   },
   methods: {
+    handleFileChange(file) {
+      if (file && file.name) {
+        const fileName = file.name;
+        const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
+        this.isPdf = fileType === ".pdf";
+      } else {  
+        this.isPdf = false;
+      }
+      this.importAnnotations = false;
+
+    },
     open() {
       this.data.file = null;
       this.importAnnotations = false;
@@ -116,7 +129,6 @@ export default {
         });
         return;
       }
-
       this.$refs.uploadModal.waiting = true;
       this.uploading = true;
 
@@ -132,7 +144,7 @@ export default {
 
         this.$socket.emit("documentAdd", {
           file: this.data.file,
-          enableAnnotations: this.importAnnotations,
+          importAnnotations: this.importAnnotations,
           name: fileName,
           wholeText: extractedText // Send the extracted text with the upload
         }, (res) => {
