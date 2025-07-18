@@ -17,19 +17,24 @@
           />
         </div>
         <div class="col text-end">
-          <span v-if="annotation">
-            {{ new Date(annotation.updatedAt).toLocaleDateString() }}
-          </span>
-          <span v-else>
-            {{ new Date(comment.updatedAt).toLocaleDateString() }}
-          </span>
+          <div style="display: flex; flex-direction: column; align-items: flex-end;">
+            <div v-if="!editedByMyself" style="display: flex; align-items: center; margin-bottom: 4px;">
+              <label for="collapseAnnoCard" style="margin-right: 4px; font-size: small;">Checked</label>
+              <input
+                type="checkbox"
+                id="collapseAnnoCard"
+                v-model="collapsed"
+                class="w-2"
+              />
+            </div>
+            <span v-if="annotation">
+              {{ new Date(annotation.updatedAt).toLocaleDateString() }}
+            </span>
+            <span v-else>
+              {{ new Date(comment.updatedAt).toLocaleDateString() }}
+            </span>
+          </div>
         </div>
-          <input
-            type="checkbox"
-            id="collapseAnnoCard"
-            v-model="collapsed"
-            class="w-2 col text-end"
-          />
       </div>
     </template>
       <template #body>
