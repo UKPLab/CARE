@@ -106,9 +106,15 @@ def create_app():
                     logger.info(f"subject {subject} annotation info {annot.info}")
 
                     words_on_page = page.get_text("words")
-                    comment = annot.info.get("content", "")
-                    highlighted_text = extract_annot(annot, words_on_page)
+                    comment = extract_comment(annot.info.get("content", ""))
+                    highlighted_text = extract_annot(annot, words_on_page)     
+                    # Skip comment annotations and add comment to grouped annotations
                     if len(highlighted_text) == 0:
+                        logger.info(f"[extract_pdf_annotations] Skipping empty annotation on page {page.number}")
+                        # If this is a care annotation, try to add comment to existing group
+                        if title and title.strip() == "care_annotation" and comment:
+                            if subject in grouped_annotations:
+                                grouped_annotations[subject]["comment"] += f"{comment} "
                         continue
 
                     rect = list(annot.rect)
@@ -156,8 +162,6 @@ def create_app():
 
                     grouped = grouped_annotations[subject]
 
-                    if comment:
-                        grouped["comment"] += f"{comment} "
                     grouped["texts"].append(highlighted_text)
                     grouped["rects"].append(rect)
 
@@ -235,7 +239,7 @@ def create_app():
                 targets = selectors.get("target", [])
                 text_start = None
                 logger.info(f"Processing annotation: {annot}")
-                color_code = annot.get("tag", "danger")  # Default to "danger" if not provided
+                textType = annot.get("tag")
                 color = (1, 1, 0) #always yellow for highlight
                 text_end = None
                 prefix = None
@@ -274,7 +278,7 @@ def create_app():
                         logger.info(f"Extracted text: {extracted_text}")
                         logger.warning(f"Extracted text '{extracted_text}' does not match expected text '{exact}'")
                         full_rect = add_annotations(doc_page, selected_rect, extracted_text, exact, color, subject + str(i), "care_annotation" )
-                        add_comment(doc_page, (selected_rect.x0, selected_rect.y0), annot.get("comments", []), color, subject + str(i), "care_annotation")
+                        add_comment(doc_page, (selected_rect.x0, selected_rect.y0), annot.get("comments", []), color, textType, subject + str(i), "care_annotation")
                         logger.info(f"Full full rect: {full_rect}")
                     else:
                         logger.warning("No suitable rect found for annotation.")
@@ -454,7 +458,7 @@ def create_app():
         logger.info(f"Returning union rect: {union_rect}")
         return union_rect
     
-    def add_comment(doc_page, position, comments, color, subject, name):
+    def add_comment(doc_page, position, comments, color, textType, subject, name):
         """
         Adds text annotations (comments) to the PDF page at the given position.
         Args:
@@ -468,7 +472,7 @@ def create_app():
                 logger.info(f"Adding text annotation: {comment['text']}")
                 if comment["text"] is not None:
                     annot_text_obj = doc_page.add_text_annot(
-                        position, comment["text"],
+                        position, textType + ": " + comment["text"],
                         icon="Comment"  # Use a comment icon for text annotations
                     )
                     annot_text_obj.set_info({"title": name, "subject": subject})
@@ -496,6 +500,30 @@ def create_app():
         else:
             contain = False
         return contain
+    def extract_comment(comment):
+        """
+        Extracts the comment text from the annotation info and removes specific prefixes.
+        Args:
+            comment: The comment string from the annotation info.
+        Returns:
+            The cleaned comment string with prefixes removed.
+        """
+        if not comment:
+            return ""
+        
+        # Clean up the comment by removing extra spaces and newlines
+        cleaned_comment = ' '.join(comment.split())
+        
+        # Remove specific prefixes
+        prefixes_to_remove = ["Highlight:", "Strength:", "Weakness:", "Other:"]
+        
+        for prefix in prefixes_to_remove:
+            if cleaned_comment.startswith(prefix):
+                # Remove the prefix and any following whitespace
+                cleaned_comment = cleaned_comment[len(prefix):].strip()
+                break
+        
+        return cleaned_comment
 
     def extract_annot(annot, words_on_page):
         """

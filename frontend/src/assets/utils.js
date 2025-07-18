@@ -177,9 +177,9 @@ export function getTimeDiffString(start, end) {
  */
 export function downloadDocument(content, fileName, fileType = "") {
     let typeSet;
-
+    console.log("File type:", fileType);
     switch (fileType) {
-        case "pdf":
+        case "PDF":
             typeSet = "application/pdf";
             // Ensure fileName ends with .pdf
             fileName = fileName.replace(/\.pdf$/i, "") + ".pdf"; // Remove any trailing .pdf and add .pdf
