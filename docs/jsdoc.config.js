@@ -1,5 +1,4 @@
 module.exports = {
-  "thisIsADeliberateError": true, 
   "tags": {
     "allowUnknownTags": true,
     "dictionaries": ["jsdoc", "closure"],
