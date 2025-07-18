@@ -167,7 +167,7 @@ class AppSocket extends Socket {
      * @param {String} data.table Table to send
      * @param {Object} data.filter Filters
      * @param {Object} data.include What data to include
-     * @returns {Promise<void>}
+     * @returns {Promise<void>} Resolves when data is successfully retrieved and emitted to the client.
      */
     async sendData(data) {
         await this.sendTableData(data.table, (data.filter) ? data.filter : [], (data.include) ? data.include : []);
