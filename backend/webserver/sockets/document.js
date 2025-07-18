@@ -64,7 +64,7 @@ class DocumentSocket extends Socket {
      * @param {Object} data - The data object containing the document details.
      * @param {string} data.name - The name of the document.
      * @param {Buffer} data.file - The binary content of the document.
-     * @param {boolean} data.enableAnnotations - Indicates if annotations are enabled for the document.
+     * @param {boolean} data.importAnnotations - indicates whether to import annotations from the PDF (optional).
      * @param {number} [data.userId] - The ID of the user who owns the document (optional).
      * @param {boolean} [data.isUploaded] - Indicates if the document is uploaded by an admin (optional).
      * @param {Object} options - The options object containing the transaction.
@@ -144,7 +144,7 @@ class DocumentSocket extends Socket {
                 fs.writeFileSync(target, data.file);
             }
 
-            if (data["enableAnnotations"]) {
+            if (data["importAnnotations"]) {
                 try {
                     const annotationData = await this.server.rpcs["PDFRPC"].getAnnotations({
                         file: data['file'],

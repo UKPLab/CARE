@@ -76,6 +76,7 @@
             :ref="'ref_' + field.key"
             v-model="currentData[field.key]"
             :options="field"
+            @file-change="(file) => $emit('file-change', file)"
           />
           <FormDefault
             v-else
@@ -141,7 +142,7 @@ export default {
       required: true,
     },
   },
-  emits: ["update:modelValue", "update:configStatus"],
+  emits: ["update:modelValue", "update:configStatus", "file-change"],
   data() {
     return {
       currentData: null,
