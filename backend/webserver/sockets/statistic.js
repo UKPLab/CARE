@@ -17,8 +17,10 @@ class StatisticSocket extends Socket {
 
     /**
      * Send statistics to the user
-     * @param {number} userId
-     * @returns {Promise<void>}
+     * This action is restricted to administrators and will only send data if the target user
+     * has consented to statistics collection (`acceptStats` is true).
+     * @param {number} userId The ID of the user whose statistics are to be fetched.
+     * @returns {Promise<void>} A promise that resolves (with no value) after the operation is complete. 
      */
     async sendStatsByUser(userId) {
         if (await this.isAdmin()) {
@@ -38,14 +40,15 @@ class StatisticSocket extends Socket {
     }
 
     /**
-     * Get statistics
-     * @param {Object} data - The data object containing the userId
-     * @param {Number} data.userId - The userId to get statistics for (optional)
-     * @param {Object} options - not used
-     *
-     * @returns {Promise<Object>} - The statistics data
-     *
-     * @throws {Error} - If the user does not have permission to access the data
+     * Fetches system statistics, either for all users or a specific user.
+     * This operation is restricted to users with administrator privileges.
+     * 
+     * @socketEvent statsGet
+     * @param {Object} data The data object containing the userId
+     * @param {Number} data.userId The userId to get statistics for (optional)
+     * @param {Object} options Additional configuration parameters (currently unused).
+     * @returns {Promise<Object>} A promise that resolves with an array of statistic record objects from the database.
+     * @throws {Error} Throws an error if the requesting user is not an administrator.
      */
     async getStats(data, options) {
         if (!await this.isAdmin()) {
@@ -60,12 +63,15 @@ class StatisticSocket extends Socket {
     }
 
     /**
-     * Add statistics
-     * @param {Object} data - The data object containing the userId
-     * @param {Number} data.action - The type of action (e.g. 'mouseMove')
-     * @param {Object} options - not used
-     *
-     * @returns {Promise<void>} - The statistics data
+     * Adds a new statistic entry to the database for the current user.
+     * This action is only performed if the user has consented to statistics collection (`acceptStats` is true).
+     * Errors during the database operation are caught and logged internally.
+     * 
+     * @socketEvent stats
+     * @param {Object} data The data object containing the userId
+     * @param {Number} data.action The type of action (e.g. 'mouseMove')
+     * @param {Object} options Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} A promise that resolves (with no value) once the statistic has been processed.
      */
     async addStats(data, options) {
         try {
@@ -84,13 +90,15 @@ class StatisticSocket extends Socket {
     }
 
     /**
-     * Get a user's statistics
+     * Serves as a safe wrapper for the 'sendStatsByUser' method.
+     * It handles potential errors during the statistics retrieval process by catching them
+     * and producing a failure event to the client instead of throwing an error.
      *
-     * @param {Object} data - The data object containing the userId
-     * @param {Number} data.userId - The user's ID
-     * @param {Object} options - not used
-     *
-     * @returns {Promise<void>} - The statistics data
+     * @socketEvent statsGetByUser
+     * @param {Object} data The data object containing the userId
+     * @param {Number} data.userId The user's ID
+     * @param {Object} options Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} A promise that resolves (with no value) once the operation is complete, regardless of success or failure.
      */
     async getStatsByUser(data, options) {
         try {

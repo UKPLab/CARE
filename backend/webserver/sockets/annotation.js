@@ -11,11 +11,15 @@ const {pickObjectAttributeSubset} = require("../../utils/generic");
 class AnnotationSocket extends Socket {
 
     /**
-     * Send an annotation to the client by id
+     * Send an annotation to the client by id.
+     * A permission check is performed to ensure the user has access to the document containing the annotation.
+     * 
+     * @socketEvent annotationGet
      * @param {Object} data the input data from the frontend
-     * @param {Object} options not used
+     * @param {Object} options Additional configuration parameters (currently unused).
      * @param {number} data.annotationId the id of the annotation
-     * @return {Promise<*>}
+     * @return {Promise<*>} A promise that resolves (with no value) once the annotation and its comments have been processed and sent.
+     * @throws {Error} Throws an error if the user does not have permission to access the document associated with the annotation.
      */
     async sendAnnotation(data, options) {
         const anno = await this.models['annotation'].getById(data.annotationId);
@@ -29,9 +33,11 @@ class AnnotationSocket extends Socket {
     }
 
     /**
-     * Load all comments for a document by annotation
-     * @param {number} annotationId
-     * @return {Promise<void>}
+     * Load all comments for a document by annotation.
+     * Errors during the database operation are caught and handled internally by logging the error and sending a toast notification to the client.
+     * 
+     * @param {number} annotationId The ID of the annotation whose comments are to be loaded.
+     * @return {Promise<void>} A promise that resolves (with no value) once the comments have been sent or an error has been handled.
      */
     async loadCommentsByAnnotation(annotationId) {
         try {
@@ -43,10 +49,10 @@ class AnnotationSocket extends Socket {
         }
     }
 
-    /**
-     * Updates the annotations in the database. If the provided annotation is a new annotation,
-     * it will be created in the database otherwise the existing entry is overriden.
-     *
+    /** 
+     * Updates the annotations in the database. If the provided annotation is a new annotation, it will be created in the database otherwise the existing entry is overriden.
+     * 
+     * @socketEvent annotationUpdate
      * @param {Object} data the input data from the frontend
      * @param {Object} options containing transactions
      * @param options.transaction the DB transaction
@@ -58,7 +64,8 @@ class AnnotationSocket extends Socket {
      * @param {string} data.selectors the selectors of the annotation
      * @param {boolean} data.deleted indicates if the data is deleted
      * @param {boolean} data.anonymous indicates if the data is anonymous
-     * @returns {Promise<void>}
+     * @returns {Promise<void>} A promise that resolves (with no value) once the annotation has been saved and related events have been emitted.
+     * @throws {Error} Throws an error if a user attempts to modify an annotation they do not have access to.
      */
     async updateAnnotation(data, options) {
         if (data.annotationId && data.annotationId !== 0) { //modify
@@ -98,12 +105,13 @@ class AnnotationSocket extends Socket {
     }
 
     /**
-     * Returns the annotations for a given document by its id.
-     *
-     * @param data the input
+     * Returns the annotations for a given document by its id and sends the complete list to the client via an 'annotationRefresh' event.
+     * 
+     * @socketEvent annotationGetByDocument
+     * @param data The request data containing the document identifier.
      * @param {number} data.documentId the id of the document to retrieve the annotations for
-     * @param options not used
-     * @returns {Promise<void>}
+     * @param options Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} A promise that resolves (with no value) once the annotations have been successfully fetched and sent to the client.
      */
     async getAnnotationsByDoc(data, options) {
         this.emit("annotationRefresh",

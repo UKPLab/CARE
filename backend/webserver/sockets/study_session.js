@@ -13,9 +13,11 @@ class StudySessionSocket extends Socket {
 
     /**
      * Send all study sessions to the client
-     *
-     * @param studyId
-     * @return {Promise<void>}
+     * If the user has access, it emits a 'study_sessionRefresh' event with the session data.
+     * If access is denied, it sends a toast notification to the client with an error message.
+     * 
+     * @param studyId The ID of the study whose sessions are to be fetched and sent.
+     * @return {Promise<void>} A promise that resolves (with no value) once the sessions have been sent or the access-denied notification has been sent.
      */
     async sendSessionsByStudyId(studyId) {
         const study = await this.models['study'].getById(studyId);
@@ -27,12 +29,15 @@ class StudySessionSocket extends Socket {
     }
 
     /**
-     * Start a study session
-     * @param {object} data
-     * @param {number} data.studyId - A study id
-     * @param {number} data.studySessionId - A study session id
-     * @param {object} options - Transaction options
-     * @returns {Promise<void>}
+     * Start a study session by either updating the start time of an existing session or creating a new one.
+     * 
+     * @socketEvent studySessionStart
+     * @param {object} data The data required to start the session.
+     * @param {number} data.studyId The ID of the study to create a new session for. Required if `studySessionId` is not provided.
+     * @param {number} data.studySessionId The ID of an existing study session to update. If omitted, a new session is created.
+     * @param {object} options  Configuration for the database operation.
+     * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
+     * @returns {Promise<void>} A promise that resolves with the newly created or updated study session object from the database.
      */
     async startStudySession(data, options) {
         if (data.studySessionId && data.studySessionId !== 0) {
@@ -51,24 +56,28 @@ class StudySessionSocket extends Socket {
     }
 
     /**
-     * Unsubscribe from a study session
+     * Unsubscribes the client's socket from a study-specific communication channel.
+     * This stops the client from receiving real-time events for that study.
      *
-     * @param {object} data
-     * @param {number} data.studyId - A study id
-     * @param {object} options - Transaction options
-     * @returns {Promise<void>}
+     * @socketEvent studySessionUnsubscribe
+     * @param {object} data The data object containing the study identifier.
+     * @param {number} data.studyId The study id
+     * @param {object} options Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} This function does not return a value.
      */
     unsubscribeFromStudySession(data, options) {
         this.socket.leave("study:" + data.studyId);
     }
 
     /**
-     * Subscribe to a study session
+     * Subscribes the client to a study-specific communication channel and sends the initial list of sessions.
+     * This allows the client to receive real-time events for the study and get the current state.
      *
-     * @param {object} data
-     * @param {number} data.studyId - A study id
-     * @param {object} options - Transaction options
-     * @returns {Promise<void>}
+     * @socketEvent studySessionSubscribe
+     * @param {object} data The data object containing the study identifier.
+     * @param {number} data.studyId The ID of the study to subscribe to.
+     * @param {object} options Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} A promise that resolves (with no value) once the client has subscribed and the initial session data has been sent.
      */
     async subscribeToStudySession(data, options) {
         this.socket.join("study:" + data.studyId);

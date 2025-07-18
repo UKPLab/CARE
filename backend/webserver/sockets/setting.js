@@ -10,11 +10,14 @@ const Socket = require("../Socket.js");
 class SettingSocket extends Socket {
 
     /**
-     * Send current settings to the client
+     * Fetches all system settings from the database.
+     * This operation is restricted to users with administrator privileges.
      *
-     * @param {any} data - Unused
-     * @param {object} options - Context passed through the socket pipeline
+     * @socketEvent settingGetData
+     * @param {any} data Currently unused.
+     * @param {object} options Additional configuration parameters (currently unused).
      * @returns {Promise<Array<{ key: string, value: any }>>} All settings in flat key-value format
+     * @throws {Error} Throws an error if the requesting user is not an administrator.
      */
     async sendSettings(data, options) {
          if (!(await this.isAdmin())) {
@@ -27,9 +30,12 @@ class SettingSocket extends Socket {
    /**
    * Save settings to the database
    *
-   * @param {Array<{key: string, value: any}>} data - List of settings to be saved
-   * @param {object} options - Context passed through the socket pipeline
-   * @returns {Promise<string>} Success message
+   * @socketEvent settingSave
+   * @param {Array<{key: string, value: any}>} data List of settings to be saved
+   * @param {object} options Context passed through the socket pipeline
+   * @param {Object} options.transaction A Sequelize DB transaction object to ensure all settings are saved atomically.
+   * @returns {Promise<string>} A promise that resolves with a success message once the save operations are queued within the transaction.
+   * @throws {Error} Throws an error if the requesting user is not an administrator.
    */
     async saveSettings(data, options) {
         if (!(await this.isAdmin())) {
