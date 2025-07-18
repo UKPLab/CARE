@@ -15,79 +15,34 @@
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
 
-        <!-- Edits Section: Only visible when there are edits and no annotations -->
-        <div class="edits-section" v-if="showEdits">
-          <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
-            <h4 class="group-header">{{ dateCategory }}</h4>
+        <!-- Edits Section -->
+        <EditsSection
+          :edits="edits"
+          :show-edits="showEdits"
+          @edit-click="handleEditClick"
+        />
 
-            <div v-for="(group, exactDate) in dateGroups" :key="exactDate">
-              <h5 class="date-header">{{ exactDate }}</h5>
-
-              <ul class="list-group">
-                <li v-for="edit in group" :key="edit.id" class="list-group-item">
-                  <SideCard>
-                    <template #header>
-                      {{ edit.timeLabel }} - Created by User {{ edit.userId }}
-                    </template>
-                    <template #body>
-                      <p>{{ edit.text }}</p>
-                    </template>
-                    <template #footer>
-                      <button class="btn btn-primary btn-sm" @click="handleEditClick(edit)">
-                        Show
-                      </button>
-                    </template>
-                  </SideCard>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- Annotations Section: Always visible unless edits exist -->
-        <ul id="anno-list" class="list-group" v-if="showAnnotations">
-          <li v-if="documentComments.length === 0">
-            <p class="text-center">No elements</p>
-          </li>
-          <li
-            v-for="comment in documentComments"
-            :id="'comment-' + comment.id"
-            :key="'documentComment-' + comment.id"
-            class="list-group-i"
-            @mouseleave="unhover(comment.annotationId)"
-            @mouseover="hover(comment.annotationId)"
-          >
-            <AnnoCard
-              :id="comment.id"
-              :ref="'annocard' + comment.id"
-              :comment-id="comment.id"
-              @focus="sidebarScrollTo"
-            />
-          </li>
-
-          <li v-if="!readOnly" id="addPageNote">
-            <button
-              class="btn btn-light"
-              type="button"
-              @click="createDocumentComment"
-            >
-              <svg
-                class="bi bi-plus-lg"
-                fill="currentColor"
-                height="16"
-                viewBox="0 0 16 16"
-                width="16"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
-                  fill-rule="evenodd"
-                />
-              </svg>
-              Document Note
-            </button>
-          </li>
-        </ul>
+        <!-- Annotations Section -->
+        <AnnotationsList
+          ref="annotationsList"
+          :show-annotations="showAnnotations"
+          :read-only="readOnly"
+          :document-comments="documentComments"
+          @create-document-comment="createDocumentComment"
+          @scroll-to-comment="sidebarScrollTo"
+        />
+      </div>
+      
+      <!-- Toggle Button -->
+      <div class="sidebar-toggle-container">
+        <button
+          class="btn btn-outline-primary sidebar-toggle-btn"
+          title="Switch to Assessment"
+          @click="$emit('toggle-mode')"
+        >
+          <LoadIcon icon-name="clipboard-check" :size="16" />
+          <span class="toggle-text">Assessment</span>
+        </button>
       </div>
     </div>
     <ConfirmModal ref="leavePageConf"/>
@@ -95,9 +50,10 @@
 </template>
 
 <script>
-import SideCard from "./card/Card.vue";
-import AnnoCard from "./card/AnnoCard.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import EditsSection from "./EditsSection.vue";
+import AnnotationsList from "./AnnotationsList.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import {scrollElement} from "@/assets/anchoring/scroll";
 
 /** Sidebar component of the Annotator
@@ -108,43 +64,27 @@ import {scrollElement} from "@/assets/anchoring/scroll";
  */
 export default {
   name: "AnnotationSidebar",
-  components: {SideCard, AnnoCard, ConfirmModal},
-  inject: {
-    documentId: {
-      type: Number,
-      required: true,
-    },
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    readOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    acceptStats: {
-      default: () => false
-    },
-  },
+  components: {ConfirmModal, EditsSection, AnnotationsList, LoadIcon},
+  inject: ['documentId', 'studySessionId', 'studyStepId', 'acceptStats'],
   props: {
     show: {
       type: Boolean,
-      required: false,
-      default: true,
+      default: false
+    },
+    sidebarWidth: {
+      type: Number,
+      default: 300
+    },
+    readOnly: {
+      type: Boolean,
+      default: false
     },
     edits: {
-      type: Array,
-      required: true,
-      default: () => []
-    },
+      type: Object,
+      default: () => null
+    }
   },
+  emits: ['toggle-mode', 'add-edit'],
   data() {
     return {
       width: 400,
@@ -295,42 +235,14 @@ export default {
     handleEditClick(edit) {
       this.$emit("add-edit", edit.text);
     },
-    hover(annotationId) {
-      if (annotationId) {
-        const annotation = this.$store.getters['table/annotation/get'](annotationId);
-        if (annotation && "anchors" in annotation && annotation.anchors != null) {
-          annotation.anchors
-            .filter(anchor => "highlights" in anchor)
-            .forEach(anchor => anchor.highlights.map((highlight) => {
-              if ("svgHighlight" in highlight) {
-                highlight.svgHighlight.classList.add("is-focused");
-              }
-              highlight.classList.add("highlight-focus");
-            }))
-        }
-      }
-    },
-    unhover(annotationId) {
-      if (annotationId) {
-        const annotation = this.$store.getters['table/annotation/get'](annotationId);
-        if (annotation && "anchors" in annotation && annotation.anchors != null) {
-          annotation.anchors
-            .filter(anchor => "highlights" in anchor)
-            .forEach(anchor => anchor.highlights.map((highlight) => {
-              if ("svgHighlight" in highlight) {
-                highlight.svgHighlight.classList.remove("is-focused");
-              }
-              highlight.classList.remove("highlight-focus");
-            }))
-        }
-      }
-    },
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;
       await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
 
-      if (this.$refs["annocard" + commentId]) {
-        this.$refs["annocard" + commentId][0].putFocus();
+      // Find the AnnoCard component and focus it
+      const annoCardRef = this.$refs.annotationsList?.$refs["annocard" + commentId];
+      if (annoCardRef && annoCardRef[0]) {
+        annoCardRef[0].putFocus();
       }
     },
     createDocumentComment() {
@@ -353,7 +265,7 @@ export default {
     },
     async leave() {
       if (this.documentComments.filter(c => c.draft).length > 0) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           this.$refs.leavePageConf.open(
             "Unsaved Annotations",
             "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",
@@ -491,8 +403,28 @@ export default {
   padding-top: 5px;
   background-color: #e6e6e6;
   width: 100%;
-  height: 100%;
-  overflow-y: scroll;
+  height: calc(100% - 50px); /* Account for toggle button */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#sidepane::-webkit-scrollbar {
+  width: 6px;
+}
+
+#sidepane::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+#sidepane::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+#sidepane::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 #anno-list .list-group-i {
@@ -505,6 +437,10 @@ export default {
 
 #anno-list {
   list-style-type: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  margin: 0;
 }
 
 #addPageNote {
@@ -581,27 +517,41 @@ export default {
   display: none;
 }
 
-.edits-section {
+.sidebar-toggle-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   padding: 10px;
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 10px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  text-align: center;
 }
 
-.section-header {
-  font-weight: bold;
-  font-size: 1rem;
-  margin-bottom: 8px;
+.sidebar-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: white;
+  border: 2px solid #007bff;
+  color: #007bff;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-#edit-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.sidebar-toggle-btn:hover {
+  background: #007bff;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
 }
 
-.list-group-item {
-  border: none;
-  background-color: transparent;
-  margin-top: 8px;
+.toggle-text {
+  font-weight: 500;
 }
+
 </style>

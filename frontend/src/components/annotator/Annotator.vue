@@ -21,9 +21,16 @@
 
         </div>
         <Sidebar
-            v-if="!sidebarDisabled"
+            v-if="!sidebarDisabled && !showAssessment"
             ref="sidebar" class="sidebar-container" :show="isSidebarVisible"
+            @toggle-mode="toggleMode"
         />
+        <Assessment
+            v-if="!sidebarDisabled && showAssessment"
+            ref="assessment" class="sidebar-container" :show="isSidebarVisible"
+            @toggle-mode="toggleMode"
+        />
+
       </div>
     </div>
 
@@ -141,6 +148,7 @@ import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
+import Assessment from "./Assessment.vue";
 
 export default {
   name: "AnnotatorView",
@@ -151,7 +159,8 @@ export default {
     ExpandMenu,
     Sidebar,
     Loader,
-    TopBarButton
+    TopBarButton,
+    Assessment
   },
   provide() {
     return {
@@ -223,7 +232,8 @@ export default {
             }
           })
         }
-      }, 500)
+      }, 500),
+      showAssessment: false
     }
   },
   computed: {
@@ -461,7 +471,11 @@ export default {
       }
     },
     async leave() {
-      return await this.$refs.sidebar.leave();
+      if (this.showAssessment && this.$refs.assessment) {
+        return await this.$refs.assessment.leave();
+      } else if (this.$refs.sidebar) {
+        return await this.$refs.sidebar.leave();
+      }
     },
     downloadAnnotations() {
 
@@ -516,6 +530,9 @@ export default {
         }
       }
     },
+    toggleMode() {
+      this.showAssessment = !this.showAssessment;
+    }
   }
 }
 </script>
