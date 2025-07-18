@@ -18,6 +18,7 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
  */
 export default {
   name: "PDFHighlights",
+  subscribeTable: ['annotation_state', 'comment'],
   inject: {
     documentId: {
       type: Number,
@@ -63,8 +64,14 @@ export default {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    annotationStates() {
+      return this.$store.getters['table/annotation_state/getAll'];
+    },
     annotations() {
-      return this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
+      const baseAnnotations = this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
         && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageId
         && e.anchors !== null)
         .filter(anno => {
@@ -79,7 +86,21 @@ export default {
               return anno.studySessionId === null
             }
           }
-        })
+        });
+      console.log("Filtered annotations for page", this.pageId, ":", baseAnnotations);
+      // Filter by annotation_state: only show annotations with state 0 (not collapsed)
+      return baseAnnotations.filter(anno => {
+        
+        // Find the annotation state for this annotation's comment
+        const annotationState = this.$store.getters['table/annotation_state/getFiltered'](
+          state => state.commentId === this.getCommentByAnnotationId(anno.id)?.id && state.userId === this.userId && state.documentId === this.documentId
+          && state.studySessionId === this.studySessionId && state.studyStepId === this.studyStepId
+        )[0];
+        console.log("Annotation state for commentId", anno.id, ":", annotationState);
+        // If no state exists, show the annotation (default behavior)
+        // If state exists, only show if state is 0 (not collapsed)
+        return !annotationState || annotationState.state === 0;
+      });
     },
     tags() {
       return this.$store.getters['table/tag/getAll'];
@@ -112,6 +133,18 @@ export default {
     this.annotations.map(this.highlight);
   },
   methods: {
+    /**
+     * Fetch the annotationId from the comment table using annotation ID
+     * @param {number} annotationId - The annotation ID to look up
+     * @return {Object|null} - The comment object or null if not found
+     */
+    getCommentByAnnotationId(annotationId) {
+      const comment = this.$store.getters['table/comment/getFiltered'](
+        comment => comment.annotationId === annotationId
+      )[0];
+      
+      return comment || null;
+    },
     getColor(tagId) {
       if (tagId) {
         const tag = this.$store.getters['table/tag/get'](tagId);
