@@ -247,6 +247,7 @@ module.exports = class Server {
                 ids: {},
                 merged: {}
             };
+            socket.userId = "";
             this.logger.debug("Socket connect: " + socket.id);
 
             Object.entries(this.sockets).map(async ([socketName, socketClass]) => {

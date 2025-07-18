@@ -298,6 +298,7 @@ class AppSocket extends Socket {
             filter: mergedFilters,
             inject: mergedInjects
         };
+        this.socket.userId = this.userId;
 
         // check if client already has the data
         if (oldMerge

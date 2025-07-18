@@ -171,6 +171,20 @@ module.exports = class Socket {
     }
 
     /**
+     * Gets user roles by user Id.
+     * 
+     * @param {number} userId user ID to search roles for
+     * @returns {Promise<number[]>} An array of user role IDs.
+     */
+    async getUserRolesById(userId) {
+        const userRoles = await this.models["user_role_matching"].findAll({
+            where: {userId: userId},
+            raw: true,
+        });
+        return userRoles.map((role) => role.userRoleId);
+    }
+
+    /**
      * Gets and caches user roles.
      *
      * Note: This method has side effects as it fills the `this.userRoles` cache
@@ -183,11 +197,7 @@ module.exports = class Socket {
     async getUserRoles() {
         try {
             if (!this.userRoles.length || !this.lastRolesUpdate || this.user.rolesUpdatedAt > this.lastRolesUpdate) {
-                const userRoles = await this.models["user_role_matching"].findAll({
-                    where: {userId: this.userId},
-                    raw: true,
-                });
-                this.userRoles = userRoles.map((role) => role.userRoleId);
+                this.userRoles = await this.getUserRolesById(this.userId);
                 this.lastRolesUpdate = new Date();
             }
             return this.userRoles;
@@ -195,6 +205,21 @@ module.exports = class Socket {
             this.logger.error(error);
             return [];
         }
+    }
+
+    /**
+     * Checks whether if at least one of roles in roleIds is admin.
+     * @param {object} roleIds Array of role Ids to check admin rights
+     * @returns {Promise<boolean>} True if at least one role is admin
+     */
+    async isAdminByUserRoles(roleIds) {
+        // Get the admin role Id
+        const adminRole = await this.models["user_role"].findOne({
+            where: {name: "admin"},
+            attributes: ["id"],
+            raw: true
+        })
+        return roleIds.includes(adminRole.id);
     }
 
     /**
@@ -211,19 +236,31 @@ module.exports = class Socket {
         try {
             if (this.isUserAdmin === null) {
                 const roleIds = await this.getUserRoles();
-                // Get the admin role Id
-                const adminRole = await this.models["user_role"].findOne({
-                    where: {name: "admin"},
-                    attributes: ["id"],
-                    raw: true
-                })
-                this.isUserAdmin = roleIds.includes(adminRole.id);
+                this.isUserAdmin = await this.isAdminByUserRoles(roleIds);
             }
             return this.isUserAdmin;
         } catch (error) {
             this.logger.error(error);
             return false;
         }
+    }
+
+    /**
+     * Checks if all roleIds have matching with the right
+     * @param {object} roleIds The roleIds to look up in the table
+     * @param {string} right The name of the right to check
+     * @returns {Promise<boolean>} If roleIds have access to this right
+     */
+    async hasAccessByUserRoles(roleIds, right) {
+        return await Promise.all(
+            roleIds.map(async (roleId) => {
+                const matchedRoles = await this.models["role_right_matching"].findAll({
+                    where: {userRoleId: roleId},
+                    raw: true,
+                });
+                return matchedRoles.some((matchedRole) => matchedRole.userRightName === right);
+            })
+        ).then((results) => results.some((r) => Boolean(r)));
     }
 
     /**
@@ -235,16 +272,7 @@ module.exports = class Socket {
         // admin has full rights, so return true directly
         if (await this.isAdmin()) return true;
         const roleIds = await this.getUserRoles();
-        const hasRight = await Promise.all(
-            roleIds.map(async (roleId) => {
-                const matchedRoles = await this.models["role_right_matching"].findAll({
-                    where: {userRoleId: roleId},
-                    raw: true,
-                });
-                return matchedRoles.some((matchedRole) => matchedRole.userRightName === right);
-            })
-        ).then((results) => results.some((r) => Boolean(r)));
-        return hasRight;
+        return await this.hasAccessByUserRoles(roleIds, right);
     }
 
     /**
@@ -613,14 +641,69 @@ module.exports = class Socket {
         }
     }
 
+    /**
+     * Broadcasts data to all clients that have permissions to see it
+     * @param {string} tableName The name of table
+     * @param {object} data The data to broadcast 
+     * @returns {Promise<void>}
+     */
     async broadcastTable(tableName, data) {
         const sockets = await this.io.fetchSockets();
         if (!sockets) return;
-        sockets.forEach(socket => {
-            if (tableName in socket.appDataSubscriptions.tables) {
-                this.io.to(socket.id).emit(tableName + "Refresh", data);
+        for (const socket of sockets) {
+            if (!(tableName in socket.appDataSubscriptions.tables)) {
+                continue;
             }
-        });
+
+            // if the changes come from same user, just send
+            if (socket.userId === this.userId) {
+                this.io.to(socket.id).emit(tableName + "Refresh", data);
+                continue
+            }
+
+            const roleIds = await this.getUserRolesById(socket.userId);
+            // if socket is admin or table is public, also just send
+             if (await this.isAdminByUserRoles(roleIds) || this.models[tableName].publicTable) {
+                this.io.to(socket.id).emit(tableName + "Refresh", data);
+                continue
+            } 
+
+            // otherwise check the access map
+            const accessMap = this.server.db.models[tableName]['accessMap'];
+            // if there are no access rules, just send data
+            if (accessMap.length === 0) {
+                this.io.to(socket.id).emit(tableName + "Refresh", data);
+                continue
+            }
+
+            // otherwise have to check access
+            const filteredAccessMap = await Promise.all(
+            accessMap.map(async a => {
+                let hasAccess = false;
+                if (a.right) {
+                    hasAccess = await this.hasAccessByUserRoles(roleIds, a.right);
+                } else  {
+                    // if there are no right limitations, just return true
+                    hasAccess = true;
+                    }
+                return {
+                    right: a.right,
+                    columns: a.columns,
+                    hasAccess: hasAccess,
+                }
+            })
+            );
+            const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
+            // if user has access to all data, just send
+            if (relevantAccessMap.length === filteredAccessMap.length) {
+                this.io.to(socket.id).emit(tableName + "Refresh", data);
+                continue
+            }
+            // otherwise filter and send 
+            const flattenedAccessMap = new Set(accessMap.flatMap(m => m.columns));
+            const filteredData = data.filter((column) => flattenedAccessMap.has(column));
+            this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
+        };
     }
 }
 ;
