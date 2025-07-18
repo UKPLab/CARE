@@ -1,4 +1,6 @@
 {
-  "dependencies": {
+  "devDependencies": {
+    "docdash": "^2.0.2",
+    "jsdoc": "^4.0.4"
   }
 }

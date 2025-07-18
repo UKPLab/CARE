@@ -13,10 +13,14 @@ class CollabSocket extends Socket {
      * Updates the collaboration status in the database. If there is non existent on the
      * given entity, it will create one, otherwise it will be updated.
      *
+     * @socketEvent collabUpdate
      * @param {Object} data the input collab object
      * @param {number} data.collabId the id of the collaboration if existent
-     * @param {Object} options containing the transaction
-     * @returns {Promise<void>}
+     * @param {number} data.documentId The ID of the document being collaborated on. Required when creating a new record.
+     * @param {Object} options Additional configuration, primarily for database transactions.
+     * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
+     * @returns {Promise<void>} A promise that resolves once the database operation is complete and events have been emitted.
+     * @throws {Error} Throws an error if the database `updateById` or `add` operations fail.
      */
     async updateCollab(data, options) {
         if (data.collabId && data.collabId !== 0) {

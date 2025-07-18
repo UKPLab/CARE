@@ -14,9 +14,10 @@ const {mergeInjects} = require("../../utils/data");
  */
 class AppSocket extends Socket {
     /**
-     * Send all settings to the client
-     * @param {boolean} sendToAll broadcast to all clients
-     * @return {Promise<void>}
+     * Fetches and merges global application settings with user-specific settings, then sends the complete list to the client via a socket event.
+     * 
+     * @param {boolean} sendToAll [sendToAll=false] - If true, the settings are broadcast to all connected clients. If false, they are sent only to the client that initiated the request.
+     * @return {Promise<void>} A promise that resolves (with no value) once the settings have been sent or an error has been caught and logged.
      */
     async sendSettings(sendToAll = false) {
         try {
@@ -42,13 +43,20 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Updates data in the database
-     * @param {Object} data - The input data from the frontend
-     * @param {String} data.table - The name of the table to update
-     * @param {Object} data.data - New data to update
-     * @param {Object} options - Additional configuration parameter
-     * @param {Object} options.transaction - Sequelize DB transaction options
-     * @returns {Promise<void>}
+     * A generic and powerful method to create or update records in a specified database table.
+     * It determines whether to create a new record or update an existing one based on the presence of an `id` in the `data.data` payload.
+     * The function includes schema-based validation for required fields, handles default values, and supports recursive updates for nested table data.
+     * 
+     * @param {Object} data The input data from the frontend
+     * @param {String} data.table The name of the table to update
+     * @param {Object} data.data New data to update
+     * @param {Object} options Additional configuration parameter
+     * @param {Object} options.transaction Sequelize DB transaction options
+     * @returns {Promise<void>} A promise that resolves with the ID of the newly created or updated primary record.
+     * @throws {Error} Throws an error under several conditions:
+     *  If a non-admin user attempts to update a record for another user,
+     *  If a required field (as defined in the model's schema) is missing from the `data.data` payload,
+     *  If the database operation fails to return a new or updated entry after an add/update call.
      */
     async updateData(data, options = {}) {
         const transaction = options.transaction;
@@ -135,9 +143,11 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Send tables data to the client for automatic table generation
+     * Gathers the schema for all models configured for automatic table generation.
+     * This structural data is then sent to the client via an 'appTables' socket event,
+     * allowing the frontend to dynamically generate tables or forms.
      *
-     * @return {Promise<void>}
+     * @return {Promise<void>} A promise that resolves (with no value) once the table schemas have been sent.
      */
     async sendTables() {
         const tables = Object.keys(this.models)
@@ -149,12 +159,14 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Sends the data stored under data.table.
-     *
-     * @param {Object} data - The input data from the frontend
-     * @param {String} data.table - Table to send
-     * @param {Object} data.filter - Filters
-     * @param {Object} data.include - what data to include
+     * Handles the 'appData' socket event. It acts as a wrapper to fetch and send
+     * filtered data from a specific table to the client.
+     * 
+     * @socketEvent appData
+     * @param {Object} data The input data from the frontend
+     * @param {String} data.table Table to send
+     * @param {Object} data.filter Filters
+     * @param {Object} data.include What data to include
      * @returns {Promise<void>}
      */
     async sendData(data) {
@@ -164,7 +176,7 @@ class AppSocket extends Socket {
     /**
      * Sends the user information for this user loaded from the db.
      *
-     * @returns {Promise<void>}
+     * @returns {Promise<void>} Resolves after the user information has been successfully sent to the client via a socket event
      */
     async sendUser() {
         try {
@@ -198,7 +210,7 @@ class AppSocket extends Socket {
     /**
      * Sends all the roles CARE has from the DB.
      *
-     * @returns {Promise<void>}
+     * @returns {Promise<void>} Resolves after the list of system roles has been successfully sent to the client via a socket event
      */
     async sendSystemRoles() {
         try {
@@ -214,9 +226,12 @@ class AppSocket extends Socket {
 
     /**
      * Send all data needed for the frontend app for initialization
-     * @param {Object} data - The input data from the frontend
-     * @param {Object} options - Sequelize transaction options
-     * @return {Promise<void>}
+     * 
+     * @socketEvent appInit
+     * @param {Object} data The input data from the frontend
+     * @param {Object} options Sequelize transaction options
+     * @param {Object} options.transaction Sequelize DB transaction options
+     * @return {Promise<void>} Resolves once all the initial data has been sent successfully
      */
     async sendInit(data, options) {
         try {
@@ -231,22 +246,29 @@ class AppSocket extends Socket {
 
     /**
      * Update data for a specific table to the client
-     * @param {Object} data - The input data from the frontend
-     * @param {Object} options - Additional configuration parameter
-     * @param {Object} options.transaction - Sequelize DB transaction options
-     * @returns {Promise<*>}
+     * 
+     * @socketEvent appDataUpdate
+     * @param {Object} data The input data from the frontend
+     * @param {Object} options Additional configuration parameter
+     * @param {Object} options.transaction Sequelize DB transaction options
+     * @returns {Promise<*>} A promise that resolves with the result from the underlying updateData method
      */
     async updateAppData(data, options) {
         return await this.updateData(data, options);
     }
 
     /**
-     * Send data by hash
-     * @param {Object} data - The input data from the frontend
-     * @param {String} data.hash - The hash value
-     * @param {String} data.table - Table to send the data from
-     * @param {Object} options - Additional configuration parameter
-     * @returns {Promise<void>}
+     * Fetches and sends a single record from a specified table identified by a hash.
+     * This function also serves as a permission check, ensuring data is only sent if found
+     * 
+     * @socketEvent appDataByHash
+     * @param {Object} data The input data from the frontend
+     * @param {String} data.hash The hash value
+     * @param {String} data.table Table to send the data from
+     * @param {Object} options Additional configuration parameter
+     * @param {Object} [options.transaction] A Sequelize DB transaction object for future use.
+     * @returns {Promise<void>} A promise that resolves if the data is found and sent successfully
+     * @throws {Error} Throws error if results is empty (no record found or operation fails)
      */
     async sendDataByHash(data, options) {
         const result = await this.sendTable(data.table, mergeFilter([[{
@@ -260,11 +282,20 @@ class AppSocket extends Socket {
 
 
     /**
-     * Subscribe to app data
-     * @param {Object} data - The input data from the frontend
-     * @param {String} data.table - The name of the table to subscribe to
-     * @returns {Promise<void>}
-     * @throws {Error} - If data.table is not provided
+     * Subscribe to app data. Creates and manages a subscription for real-time updates on a specific database table. 
+     * 
+     * Merges filters from all active subscriptions for a table and sends the
+     * client the initial data set required for the new subscription
+     * 
+     * @socketEvent subscribeAppData
+     * @param {Object} data The configuration for the data subscription
+     * @param {string} data.table The name of the database table to subscribe to
+     * @param {Object[]} [data.filter] An optional filter array (e.g., Sequelize 'where' conditions) to specify a subset of data
+     * @param {Object[]} [data.inject] Optional instructions for including related data (e.g., Sequelize 'include' models)
+     * @param {Object} [options] Additional configuration parameters
+     * @param {Object} [options.transaction] May contain a Sequelize DB transaction for future use
+     * @returns {Promise<string>} A promise that resolves with the unique ID for the newly created subscription
+     * @throws {Error} Throws an error if data.table is not provided
      */
     async subscribeAppData(data, options) {
         if (!data.table) {
@@ -327,10 +358,12 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Unsubscribe from app data
-     * @param {Object} data - The input data from the frontend
-     * @param {Object} options - Additional configuration parameter
-     * @return {Promise<void>}
+     * Unsubscribe from app data, removes a data subscription for the client
+     * 
+     * @socketEvent unsubscribeAppData
+     * @param {Object} data The input data from the frontend
+     * @param {Object} options Additional configuration parameter
+     * @return {Promise<void>} A promise that resolves once the subscription has been removed from the tracking lists
      */
     async unsubscribeAppData(data, options) {
         // remove subscription from the list
@@ -340,12 +373,14 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Send overall settings including user setting
-     * @param {Object} data - The input data from the frontend
-     * @param {String} data.key - The key in the user setting table
-     * @param {String} data.value - The value in the user setting table
-     * @param {Object} options - Additional configuration parameter
-     * @return {Promise<void>}
+     * Updates a single user-specific setting and then broadcasts the complete, refreshed settings to the client
+     * 
+     * @socketEvent appSettingSet
+     * @param {Object} data The input data from the frontend
+     * @param {String} data.key The key in the user setting table
+     * @param {String} data.value The value in the user setting table
+     * @param {Object} options Additional configuration parameter
+     * @return {Promise<void>} A promise that resolves after the setting is saved and the new configuration is sent
      */
     async sendOverallSetting(data, options) {
         await this.models["user_setting"].set(data.key, data.value, this.userId);
