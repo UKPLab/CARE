@@ -18,13 +18,13 @@
         </div>
         <div class="col text-end">
           <div style="display: flex; flex-direction: column; align-items: flex-end;">
-            <div v-if="!editedByMyself" style="display: flex; align-items: center; margin-bottom: 4px;">
-              <label for="collapseAnnoCard" style="margin-right: 4px; font-size: small;">Checked</label>
-              <input
-                type="checkbox"
-                id="collapseAnnoCard"
-                v-model="collapsed"
-                class="w-2"
+            <div v-if="!editedByMyself" style="position: absolute; top: 5px; right: 8px; z-index: 10;">
+              <LoadIcon
+                icon-name="check-square"
+                :size="16"
+                :style="{ color: collapsed ? '#28a745' : '#6c757d', cursor: 'pointer' }"
+                class="check-icon"
+                @click="collapsed = !collapsed"
               />
             </div>
             <span v-if="annotation">
@@ -189,6 +189,7 @@ import Collaboration from "@/basic/Collaboration.vue"
 import SidebarButton from "./Button.vue"
 import NLPService from "@/basic/NLPService.vue";
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 /** Annotation elements
  *
@@ -200,7 +201,7 @@ import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 export default {
   name: "AnnoCard",
   subscribeTable: ['tag', 'tag_set', 'annotation_state'],
-  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton},
+  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton, LoadIcon},
   inject: {
     documentId: {
       type: Number,
@@ -658,5 +659,9 @@ export default {
 
 .annoBlockquote:hover {
   color: #000000;
+}
+
+.check-icon:hover {
+  color: #28a745 !important;
 }
 </style>
