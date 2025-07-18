@@ -417,7 +417,77 @@ export default {
       return this.total;
     },
     pages() {
-      return Math.ceil(this.total / this.limit);
+      if (this.serverSidePagination) {
+        return Math.ceil(this.total / this.limit);
+      }
+      // For client-side pagination, use filtered data length
+      return Math.ceil(this.filteredDataLength / this.limit);
+    },
+    filteredDataLength() {
+      if (this.serverSidePagination) {
+        return this.total;
+      }
+      
+      let data = this.data.map((d) => d);
+
+      if (this.search && this.search !== "") {
+        data = data.filter((d) => {
+          for (const [key, value] of Object.entries(d)) {
+            if (typeof value === "string" && value.toLowerCase().includes(this.search.toLowerCase())) {
+              return true;
+            }
+          }
+          return false;
+        });
+      }
+
+      if (this.filter) {
+        data = data.filter((d) => {
+          for (const [key, filterValue] of Object.entries(this.filter)) {
+            if (typeof filterValue === "object" && "operator" in filterValue) {
+              const value = parseFloat(d[key]);
+              const compareValue = parseFloat(filterValue.value);
+
+              switch (filterValue.operator) {
+                case "gt":
+                  if (!(value > compareValue)) return false;
+                  break;
+                case "lt":
+                  if (!(value < compareValue)) return false;
+                  break;
+                case "gte":
+                  if (!(value >= compareValue)) return false;
+                  break;
+                case "lte":
+                  if (!(value <= compareValue)) return false;
+                  break;
+                case "eq":
+                  if (value !== compareValue) return false;
+                  break;
+              }
+            } else {
+              // only selected filter
+              const filter = Object.entries(filterValue)
+                .filter(([k, v]) => v)
+                .map(([k, v]) => k);
+              if (filter.length > 0) {
+                const dataValues = Array.isArray(d[key]) ? d[key] : String(d[key]).split(/,\s*/);
+                const hasMatch = dataValues.some((val) =>
+                  filter.some((f) => String(val).toLowerCase().trim() === String(f).toLowerCase().trim())
+                );
+
+                if (!hasMatch) {
+                  return false;
+                }
+              }
+            }
+          }
+
+          return true;
+        });
+      }
+
+      return data.length;
     },
     sortIcon() {
       return this.sortDirection === "ASC" ? "sort-down" : "sort-up";
