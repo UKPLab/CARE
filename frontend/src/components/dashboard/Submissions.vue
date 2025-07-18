@@ -29,20 +29,16 @@
     <template #body>
       <BasicTable
         :columns="tableColumns"
-        :data="documentsTable"
+        :data="submissionTable"
         :options="tableOptions"
         :buttons="tableButtons"
         @action="action"
       />
     </template>
   </Card>
-  <UploadModal
-    ref="uploadModal"
-  />
-  <ConfirmModal ref="deleteConf"/>
-  <ImportModal
-    ref="importModal"
-  />
+  <UploadModal ref="uploadModal" />
+  <ConfirmModal ref="deleteConf" />
+  <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
   <GradingModal
     ref="gradingModal"
@@ -61,24 +57,33 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 /**
  * Submission list component
  *
- * This component loads the documents for review from the server
- * and provide two ways to import documents: one is via manually importing;
+ * This component loads the submission documents for review from the server
+ * and provide two ways to import submission documents: one is via manually importing;
  * the other is via importing from Moodle API.
- * @author Linyin Huang, Dennis Zyska
+ * @author Linyin Huang, Dennis Zyska, Yiwei Wang
  */
 export default {
-  name: "Submissions",
-  subscribeTable: [{
-    table: "document",
-    filter: [{
-      key: "readyForReview",
-      value: true
-    }],
-    include: [{
-      table: "user",
-      by: "userId",
-    }]
-  }],
+  name: "DashboardSubmission",
+  subscribeTable: [
+    {
+      table: "submission",
+    },
+    {
+      table: "document",
+      filter: [
+        {
+          key: "readyForReview",
+          value: true,
+        },
+      ],
+      include: [
+        {
+          table: "user",
+          by: "userId",
+        },
+      ],
+    },
+  ],
   components: {
     UploadModal,
     ImportModal,
@@ -132,17 +137,32 @@ export default {
     };
   },
   computed: {
-    documents() {
-      return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
+    submissions() {
+      // at the moment no readyForReview flag – return all
+      return this.$store.getters["table/submission/getAll"];
     },
-    documentsTable() {
-      return this.documents.map((d) => {
-        let newD = {...d};
-        newD.type = d.type === 0 ? "PDF" : "HTML";
-        const user = this.$store.getters["table/user/get"](d.userId)
-        newD.firstName = (user) ? user.firstName : "Unknown";
-        newD.lastName = (user) ? user.lastName : "Unknown";
-        return newD;
+    submissionTable() {
+      /* Build one row per submission: pick the main PDF document (if any) to
+       * drive "title", "type" and link/hash.  If none found we still list the
+       * submission but leave document-specific columns blank.
+       */
+      return this.submissions.map((s) => {
+        const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === s.id);
+
+        // heuristic: choose first PDF as main document
+        const mainDoc = docs.find((d) => d.type === 0) || docs[0] || {};
+
+        const user = this.$store.getters["table/user/get"](s.userId);
+
+        return {
+          id: s.id,
+          name: mainDoc.name || "—",              // Title column
+          firstName: user ? user.firstName : "Unknown",
+          lastName: user ? user.lastName : "Unknown",
+          createdAt: new Date(s.createdAt).toLocaleDateString(),
+          type: mainDoc.type === 0 ? "PDF" : (mainDoc.type === 1 ? "HTML" : "—"),
+          hash: mainDoc.hash || null,              // for accessDoc()
+        };
       });
     },
   },
