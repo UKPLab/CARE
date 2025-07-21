@@ -16,6 +16,6 @@ module.exports = {
         )
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.removeColumn('annotation', "studyId");
+        await queryInterface.removeColumn('annotation', "studySessionId");
     }
 };
