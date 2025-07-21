@@ -112,7 +112,7 @@ def create_app():
                     if len(highlighted_text) == 0:
                         logger.info(f"[extract_pdf_annotations] Skipping empty annotation on page {page.number}")
                         # If this is a care annotation, try to add comment to existing group
-                        if title and title.strip() == "care_annotation" and comment:
+                        if title and title.strip().startswith("$$") and comment:
                             if subject in grouped_annotations:
                                 grouped_annotations[subject]["comment"] += f"{comment} "
                         continue
@@ -128,7 +128,7 @@ def create_app():
                     suffix = whole_text[text_end:text_end + 30]
 
                     # If annotation is not made by care (no grouping subject),
-                    if not title.strip() == "care_annotation":
+                    if not (title and title.strip().startswith("$$")):
                         annotations.append({
                             "page": page.number,
                             "type": annot.type[1] if isinstance(annot.type, tuple) else annot.type,
@@ -236,6 +236,7 @@ def create_app():
                 # Extract page number from annotation selectors
                 page_number = None
                 selectors = annot.get("selectors", {})
+                username = "$$" + annot.get("username", "unknown") # Prefix username with $$ to indicate care annotation
                 targets = selectors.get("target", [])
                 text_start = None
                 logger.info(f"Processing annotation: {annot}")
@@ -277,8 +278,8 @@ def create_app():
                         extracted_text = doc_page.get_textbox(selected_rect)
                         logger.info(f"Extracted text: {extracted_text}")
                         logger.warning(f"Extracted text '{extracted_text}' does not match expected text '{exact}'")
-                        full_rect = add_annotations(doc_page, selected_rect, extracted_text, exact, color, subject + str(i), "care_annotation" )
-                        add_comment(doc_page, (selected_rect.x0, selected_rect.y0), annot.get("comments", []), color, textType, subject + str(i), "care_annotation")
+                        full_rect = add_annotations(doc_page, selected_rect, extracted_text, exact, color, subject + str(i), username)
+                        add_comment(doc_page, (selected_rect.x0, selected_rect.y0), annot.get("comments", []), color, textType, subject + str(i), username)
                         logger.info(f"Full full rect: {full_rect}")
                     else:
                         logger.warning("No suitable rect found for annotation.")
