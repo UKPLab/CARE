@@ -2,11 +2,11 @@
   "description": "the configuration for grading criteria which be used for LLMentor",
   "version": "0.0.1",
   "type": "assessment",
-  "criteria": [
+  "rubrics": [
     {
       "name": "Language/Quality",
       "description": "Assessment of language quality and structural coherence of the text",
-      "rubrics": [
+      "criteria": [
         {
           "name": "Language quality",
           "description": "Evaluation of linguistic accuracy and sentence clarity",
@@ -52,7 +52,7 @@
     {
       "name": "Metadata",
       "description": "Evaluation of title appropriateness and creativity",
-      "rubrics": [
+      "criteria": [
         {
           "name": "Preliminary title",
           "description": "Assessment of how well the title matches and represents the topic",
@@ -94,7 +94,7 @@
     {
       "name": "Form/Structure",
       "description": "Evaluation of document formatting and structural requirements",
-      "rubrics": [
+      "criteria": [
         {
           "name": "Template used",
           "description": "LaTeX template used",
@@ -132,7 +132,7 @@
     {
       "name": "Motivation",
       "description": "Assessment of problem identification, context establishment, and research question formulation",
-      "rubrics": [
+      "criteria": [
         {
           "name": "Hook existing",
           "description": "Evaluation of the presence and suitability of an engaging opening",
@@ -258,7 +258,7 @@
     {
       "name": "Approach",
       "description": "Assessment of state of the art analysis, theoretical framework, and methodology",
-      "rubrics": [
+      "criteria": [
         {
           "name": "SOTA",
           "description": "Evaluation of state of the art presence and proper citation",
@@ -516,7 +516,7 @@
     {
       "name": "Schedule",
       "description": "Assessment of project timeline structure, completeness, and realism",
-      "rubrics": [
+      "criteria": [
         {
           "name": "Schedule Availability",
           "description": "Evaluation of tabular schedule presence and chronological organization",
@@ -590,7 +590,7 @@
     {
       "name": "Bibliography",
       "description": "Assessment of bibliography consistency and literature relevance",
-      "rubrics": [
+      "criteria": [
         {
           "name": "Bibliography Consistency",
           "description": "Evaluation of citation style consistency and completeness of bibliographic information",
