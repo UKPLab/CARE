@@ -26,25 +26,6 @@
             name="logo"
           />
         </a>
-        <div style="position:relative;">
-          <div @click.stop="toggleProjectDropdown" class="project-box">
-            Project: {{ currentProjectName }}
-          </div>
-          <div
-            v-if="showProjectDropdown"
-            class="dropdown-menu show"
-            style="position:absolute; min-width:180px; z-index:1000;"
-          >
-            <a
-              v-for="project in allProjects"
-              :key="project.id"
-              class="dropdown-item"
-              @click.prevent="selectProject(project.id)"
-            >
-              {{ project.name }}
-            </a>
-          </div>
-        </div> 
         <div id="topbarCustomPlaceholder"/>   
         <div id="topbarCenterPlaceholder"/> 
         <ul
@@ -52,6 +33,27 @@
           class="navbar-nav ms-auto mt-2 mt-lg-0"
         />   
         <ul class="navbar-nav">
+          <li class="nav-item me-3">
+            <div style="position:relative; display:flex; align-items:center; height:100%;">
+              <div @click.stop="toggleProjectDropdown" class="project-box">
+                Project: {{ currentProjectName }}
+              </div>
+              <div
+                v-if="showProjectDropdown"
+                class="dropdown-menu show"
+                style="position:absolute; min-width:180px; z-index:1000; right:0; top:100%; margin-top:8px;"
+              >
+                <a
+                  v-for="project in allProjects"
+                  :key="project.id"
+                  class="dropdown-item"
+                  @click.prevent="selectProject(project.id)"
+                >
+                  {{ project.name }}
+                </a>
+              </div>
+            </div>
+          </li>
           <li class="nav-item dropdown">
             <div
               class="dropdown"
