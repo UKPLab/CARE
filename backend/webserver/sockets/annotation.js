@@ -133,11 +133,18 @@ class AnnotationSocket extends Socket {
                 if (!tag) {
                     console.warn(`Tag with ID ${annotation.tagId} not found for annotation ${annotation.id}`);
                 }
+
+                const user = await this.models['user'].getById(annotation.userId);
+                if (!user) {
+                    console.warn(`User with ID ${annotation.userId} not found for annotation ${annotation.id}`);
+                }
+
                 // Find all comments for this annotation
                 const annotationComments = comments.filter(c => c.annotationId === annotation.id);
                 return {
                     ...annotation,
                     tag: tag ? tag.name : null,
+                    username: annotation.anonymous ? "Anonymous" : user.userName,
                     comments: annotationComments
                 };
             })
