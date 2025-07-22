@@ -13,7 +13,10 @@ class AssignmentSocket extends Socket {
 
     /**
      * Assigns a peer review task to a list of reviewers based on a given template.
-     *
+     * 
+     * Constructs a study from the provided template and assignment data, assigns it to the specified user,
+     * and links it to the given documents. Reviewers are then associated with the study.
+     * 
      * @socketEvent assignmentCreate
      * @param {Object} data The data for assigning peer reviews.
      * @param {Object} data.assignment The assignment object containing details of the assignment.
@@ -50,7 +53,10 @@ class AssignmentSocket extends Socket {
 
     /**
      * Adds new sessions to a study.
-     *
+     * 
+     * If the number of reviewers being added exceeds the current session limit of the study,
+     * the session limit is updated accordingly. Each reviewer is added as a new `study_session`.
+     * 
      * @socketEvent assignmentAdd
      * @param {Object} data The data for adding reviewers.
      * @param {number} data.studyId The ID of the study to which reviewers are to be added.
@@ -84,6 +90,16 @@ class AssignmentSocket extends Socket {
 
     /**
      * Creates multiple assignments based on the provided data.
+     * 
+     * Two assignment modes are supported:
+     * - `"role"`: reviewers are grouped by their roles, and documents are assigned to users in each role.
+     * - `"reviewer"`: reviewers are explicitly selected, and assignments are distributed to them directly.
+     * 
+     * 
+     * In both cases, the function ensures:
+     * - A reviewer never reviews their own document.
+     * - Fair distribution of review tasks.
+     * - A fallback swapping mechanism is used if optimal assignment fails.
      * 
      * @socketEvent assignmentCreateBulk
      * @param data The data for creating assignments.

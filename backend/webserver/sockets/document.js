@@ -57,8 +57,10 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
-     * an entry in the database.
+     * Uploads the given data object as a document. 
+     * 
+     * Stores the given pdf file in the files path and creates an entry in the database.
+     * 
      * @author Zheyu Zhang, Linyin Huang
      * @param {Object} data The data object containing the document details.
      * @param {string} data.name The name of the document.
@@ -208,7 +210,9 @@ class DocumentSocket extends Socket {
 
     /**
 
-     * Send document by hash. Fetches a document by its hash, checks for user access, and then either sends the document
+     * Send document by hash. 
+     *
+     * Fetches a document by its hash, checks for user access, and then either sends the document
      * or a "toast" error message to the client.
      *
      * @socketEvent documentGetByHash

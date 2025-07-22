@@ -10,8 +10,8 @@ const Socket = require("../Socket.js");
 class CollabSocket extends Socket {
 
     /**
-     * Updates the collaboration status in the database. If there is non existent on the
-     * given entity, it will create one, otherwise it will be updated.
+     * Updates the collaboration status in the database. 
+     * If there is non existent on the given entity, it will create one, otherwise it will be updated.
      *
      * @socketEvent collabUpdate
      * @param {Object} data the input collab object

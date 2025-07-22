@@ -12,6 +12,7 @@ class CommentSocket extends Socket {
 
     /**
      * Update comments in the database after verifying the user has permission to edit it.
+     * 
      * @param {Object} data containing the inputs
      * @param {number} data.commentId the id of the comment
      * @param {object} data.comment the comment object
@@ -86,7 +87,9 @@ class CommentSocket extends Socket {
     }
 
     /**
-     * Send a comment to the client. Fetches a single comment by its ID and sends it to the client after verifying access rights.
+     * Send a comment to the client. 
+     * 
+     * Fetches a single comment by its ID and sends it to the client after verifying access rights.
      * 
      * @socketEvent commentGet
      * @param {object} data The input data from the frontend
@@ -104,7 +107,9 @@ class CommentSocket extends Socket {
     }
 
     /**
-     * Add or update a comment if it has already existed
+     * Add or update a comment if it has already existed.
+     * 
+     * Calls either `addComment` or `updateComment` based on the presence of `commentId`.
      * 
      * @socketEvent commentUpdate
      * @param {object} data The input data from the frontend
@@ -122,7 +127,9 @@ class CommentSocket extends Socket {
     }
 
     /**
-     * Get all the comments of a certain document
+     * Retrieve all comments associated with a specific document.
+     * 
+     * Fetches comments by document ID and sends them to the client.
      * 
      * @socketEvent commentGetByDocument
      * @param {object} data The input data from the frontend
