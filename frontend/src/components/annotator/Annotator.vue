@@ -584,6 +584,7 @@ export default {
           this.$socket.emit("stats", {
             action: "textCopied",
             data: {
+              from: "annotator",
               documentId: this.documentId,
               studySessionId: this.studySessionId,
               studyStepId: this.studyStepId,
