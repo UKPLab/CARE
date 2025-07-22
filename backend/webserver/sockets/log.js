@@ -31,7 +31,9 @@ class LoggerSocket extends Socket {
     }
 
     /**
-     * Get log messages. This operation is restricted to users with administrator privileges.
+     * Get log messages. 
+     * 
+     * This operation is restricted to users with administrator privileges.
      *
      * @socketEvent logGetAll
      * @param data The log entry selection criteria

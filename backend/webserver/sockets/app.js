@@ -44,6 +44,7 @@ class AppSocket extends Socket {
 
     /**
      * A generic and powerful method to create or update records in a specified database table.
+     * 
      * It determines whether to create a new record or update an existing one based on the presence of an `id` in the `data.data` payload.
      * The function includes schema-based validation for required fields, handles default values, and supports recursive updates for nested table data.
      * 
@@ -144,6 +145,7 @@ class AppSocket extends Socket {
 
     /**
      * Gathers the schema for all models configured for automatic table generation.
+     * 
      * This structural data is then sent to the client via an 'appTables' socket event,
      * allowing the frontend to dynamically generate tables or forms.
      *
@@ -175,7 +177,10 @@ class AppSocket extends Socket {
 
     /**
      * Sends the user information for this user loaded from the db.
-     *
+     * 
+     * This includes core user data, associated role IDs, rights derived from those roles,
+     * and whether the user has administrative privileges. The data is emitted via the `appUser` socket event.
+     * 
      * @returns {Promise<void>} Resolves after the user information has been successfully sent to the client via a socket event
      */
     async sendUser() {
@@ -209,7 +214,10 @@ class AppSocket extends Socket {
 
     /**
      * Sends all the roles CARE has from the DB.
-     *
+     * 
+     * Retrieves role data from the database, including only role IDs and names,
+     * and emits it via the `appSystemRoles` socket event.
+     * 
      * @returns {Promise<void>} Resolves after the list of system roles has been successfully sent to the client via a socket event
      */
     async sendSystemRoles() {
@@ -225,7 +233,10 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Send all data needed for the frontend app for initialization
+     * Send all data needed for the frontend app for initialization.
+     * 
+     * Creates a series of socket events to provide user details, system tables,
+     * configuration settings, and system roles to the client.
      * 
      * @socketEvent appInit
      * @param {Object} data The input data from the frontend
@@ -245,7 +256,10 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Update data for a specific table to the client
+     * Update data for a specific table to the client.
+     * 
+     * Acts as a wrapper around the underlying `updateData` method, using a Sequelize
+     * transaction if provided, and returns the outcome to the caller.
      * 
      * @socketEvent appDataUpdate
      * @param {Object} data The input data from the frontend
@@ -259,6 +273,7 @@ class AppSocket extends Socket {
 
     /**
      * Fetches and sends a single record from a specified table identified by a hash.
+     * 
      * This function also serves as a permission check, ensuring data is only sent if found
      * 
      * @socketEvent appDataByHash
@@ -358,10 +373,13 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Unsubscribe from app data, removes a data subscription for the client
+     * Unsubscribe from app data, removes a data subscription for the client.
+     * 
+     * Removes the corresponding data subscription entry from the socket's internal tracking lists
+     * based on the provided identifier.
      * 
      * @socketEvent unsubscribeAppData
-     * @param {Object} data The input data from the frontend
+     * @param {Object} data The input data from the frontend. The identifier for the subscription to remove
      * @param {Object} options Additional configuration parameter
      * @return {Promise<void>} A promise that resolves once the subscription has been removed from the tracking lists
      */
@@ -373,7 +391,10 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Updates a single user-specific setting and then broadcasts the complete, refreshed settings to the client
+     * Updates a single user-specific setting and then broadcasts the complete, refreshed settings to the client.
+     * 
+     * Saves the key–value pair for the current user in the database, then triggers an update
+     * by emitting the complete set of user settings to the client.
      * 
      * @socketEvent appSettingSet
      * @param {Object} data The input data from the frontend
