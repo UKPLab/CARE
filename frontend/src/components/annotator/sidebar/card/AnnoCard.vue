@@ -293,7 +293,8 @@ export default {
     },
     tagSetTags() {
       const defaultTag = parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
-      return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag) || [];
+      const currentlySelectedTagId = this.annotation ? this.annotation.tagId : null; //this is important because the current tag on the Id could be added by another user
+      return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag || t.id === currentlySelectedTagId) || [];
     },
     settingResponse() {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
