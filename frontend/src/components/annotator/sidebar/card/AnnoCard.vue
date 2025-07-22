@@ -5,8 +5,26 @@
       :collapsed=collapsed
   >
     <template #header>
-      <div class="row">
-        <div class="col">
+      <div 
+        class="row" 
+        :class="{ 'header-hoverable': collapsed && !editedByMyself }"
+        :style="{ cursor: collapsed ? 'pointer' : 'default' }" 
+        @click="handleHeaderClick"
+      >
+        <div class="col" style="display: flex; align-items: center;">
+          <div 
+            v-if="!editedByMyself"
+            :title="collapsed ? 'Marked as checked - Click to uncheck' : 'Click to mark as checked'"
+            style="display: inline-flex; margin-right: 8px;"
+            @click.stop="handleCheckIconClick"
+          >
+            <LoadIcon
+              icon-name="check-square"
+              :size="16"
+              :style="{ color: collapsed ? '#28a745' : '#6c757d', cursor: 'pointer' }"
+              class="check-icon"
+            />
+          </div>
           {{ comment.creator_name }}
           <Collaboration
               ref="collab"
@@ -18,15 +36,6 @@
         </div>
         <div class="col text-end">
           <div style="display: flex; flex-direction: column; align-items: flex-end;">
-            <div v-if="!editedByMyself" style="position: absolute; top: 5px; right: 8px; z-index: 10;">
-              <LoadIcon
-                icon-name="check-square"
-                :size="16"
-                :style="{ color: collapsed ? '#28a745' : '#6c757d', cursor: 'pointer' }"
-                class="check-icon"
-                @click="collapsed = !collapsed"
-              />
-            </div>
             <span v-if="annotation">
               {{ new Date(annotation.updatedAt).toLocaleDateString() }}
             </span>
@@ -427,6 +436,20 @@ export default {
     scrollTo(annotationId) {
       this.eventBus.emit('pdfScroll', annotationId);
     },
+    handleHeaderClick() {
+      if (this.collapsed && !this.editedByMyself) {
+        this.collapsed = false;
+        if (this.annotationId && this.collapsed === false) {
+          this.scrollTo(this.annotationId);
+        }
+      }
+    },
+    handleCheckIconClick() {
+      this.collapsed = !this.collapsed;
+      if (this.annotationId && this.collapsed === false) {
+        this.scrollTo(this.annotationId);
+      }
+    },
     save() {
       if (this.annotationId && this.annotation) {
         this.$socket.emit('annotationUpdate', {
@@ -663,5 +686,20 @@ export default {
 
 .check-icon:hover {
   color: #28a745 !important;
+}
+
+.header-hoverable {
+  transition: background-color 0.2s ease;
+}
+
+.header-hoverable:hover {
+  background-color: #e9ecef !important;
+  border-radius: 4px;
+}
+
+.card-header {
+  font-size: smaller;
+  color: #929292;
+  transition: background-color 0.2s ease;
 }
 </style>
