@@ -168,6 +168,23 @@ export default {
           }
         },
         {
+          icon:"arrow-repeat",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            }
+          },
+          title: "Restart study",
+          filter: [
+            {key: "showRestartButton", value: true},
+          ],
+          action: "restartStudy",
+          stats: {
+            studyId: "id"
+          },
+        },
+        {
           icon: "link-45deg",
           options: {
             iconOnly: true,
@@ -347,6 +364,7 @@ export default {
 
           study.showEditButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
           study.showDeleteButton = this.isAdmin || study.userId === this.userId;
+          study.showRestartButton = (this.isAdmin || study.userId === this.userId) && !!study.closed;
           study.showCloseButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
           study.showTemplateButton = this.isAdmin || study.userId === this.userId;
           return study;
@@ -385,6 +403,30 @@ export default {
       } else if (data.action === "linkStudy") {
 
         this.copyLink(data.params.id);
+      }
+      else if (data.action === "restartStudy") {
+        this.$socket.emit("appDataUpdate", {
+          table: "study",
+          data: {
+            id: data.params.id,
+            closed: null
+            
+          }
+        }, (result) => {
+          if (result.success) {
+            this.eventBus.emit('toast', {
+              title: "Study restarted",
+              message: "The study has been restarted",
+              variant: "success"
+            });
+          } else {
+            this.eventBus.emit('toast', {
+              title: "Study restart failed",
+              message: result.message,
+              variant: "danger"
+            });
+          }
+        });
       } else if (data.action === "inspectSessions") {
 
         this.$refs.studySessionModal.open(data.params.id);
