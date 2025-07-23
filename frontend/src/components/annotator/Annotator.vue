@@ -75,9 +75,10 @@
       <ExpandMenu v-show="studySessionId && studySessionId !== 0 ? active : true" class="nav-item"/>
     </Teleport>
 
+    <!-- If download before study closing disabled and we are in a study session, no download allowed -->
     <Teleport to="#topBarExtendMenuItems">
       <li><a
-          :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
+          :class="annotations.length + comments.length > 0 && !downloading && (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null)? '' : 'disabled'"
           class="dropdown-item"
           href="#"
           @click="downloadAnnotations"
@@ -125,7 +126,7 @@
  * This parent component provides the annotation view, which
  * currently consists of all elements of the annotator.
  *
- * @author Dennis Zyska
+ * @author Dennis Zyska, Marina Sakharova
  */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
@@ -144,7 +145,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 
 export default {
   name: "AnnotatorView",
-  subscribeTable: ['tag', 'tag_set'],
+  subscribeTable: ['tag', 'tag_set', 'study', 'study_session'],
   components: {
     LoadIcon,
     PDFViewer,
@@ -207,6 +208,7 @@ export default {
       required: false,
       default: true,
     },
+
   },
   data() {
     return {
@@ -238,22 +240,7 @@ export default {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
-    annotations() {
-      return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId)
-          .sort((a, b) => {
-            const a_noanchor = a.anchors === null || a.anchors.length === 0;
-            const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
-            if (a_noanchor || b_noanchor) {
-              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
-            }
-
-            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
-          });
-    },
-    comments() {
-      return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null);
-    },
     nlpActive() {
       const nlpActive = this.$store.getters["settings/getValue"]("annotator.nlp.activated");
       return (nlpActive === true || nlpActive === "true");
@@ -263,7 +250,50 @@ export default {
     },
     numStudyComments() {
       return this.comments.filter(c => c.studySessionId).length;
-    }
+    },
+    // check if the setting is on or off
+    downloadBeforeStudyClosingAllowed() {
+      return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
+    },
+    openSessionIds() {
+      return this.$store.getters["table/study_session/getAll"].filter(
+        session => {
+          const study = this.$store.getters["table/study/get"](session.studyId);
+          return study && study.closed === null;
+        }
+      ).map(session => session.id);
+    },
+    annotations() {
+      const annotations = this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
+            const a_noanchor = a.anchors === null || a.anchors.length === 0;
+            const b_noanchor = b.anchors === null || b.anchors.length === 0;
+
+            if (a_noanchor || b_noanchor) {
+              return a_noanchor === b_noanchor ? 0 : (a_noanchor ? -1 : 1);
+            }
+
+            return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
+          });
+      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
+        return annotations.filter(annotation =>
+          !this.openSessionIds.includes(annotation.studySessionId)
+        );
+      } else {
+        return annotations;
+      }
+    },
+    comments() {
+      const comments = this.$store.getters["table/comment/getFiltered"](c => 
+          c.documentId === this.documentId && c.parentCommentId === null
+        );
+      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
+        return comments.filter(comment =>
+          !this.openSessionIds.includes(comment.studySessionId)
+        );
+      } else {
+        return comments;
+      }
+    },
   },
   watch: {
     studySessionId(newVal, oldVal) {
@@ -283,7 +313,7 @@ export default {
           studyStepId: this.studyStepId
         });
       }
-    },
+    }
   },
   mounted() {
     this.eventBus.on('pdfScroll', (annotationId) => {
@@ -327,6 +357,7 @@ export default {
     // scrolling
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     document.addEventListener('copy', this.onCopy);
+
   },
   beforeUnmount() {
     // Leave the room for document updates
