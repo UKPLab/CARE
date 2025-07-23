@@ -48,10 +48,12 @@ class AppSocket extends Socket {
      * It determines whether to create a new record or update an existing one based on the presence of an `id` in the `data.data` payload.
      * The function includes schema-based validation for required fields, handles default values, and supports recursive updates for nested table data.
      * 
+     * Note: This works only for autoTable tables (see documentation for more information)
+     * 
      * @param {Object} data The input data from the frontend
      * @param {String} data.table The name of the table to update
      * @param {Object} data.data New data to update
-     * @param {Object} options Additional configuration parameter
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
      * @param {Object} options.transaction Sequelize DB transaction options
      * @returns {Promise<void>} A promise that resolves with the ID of the newly created or updated primary record.
      * @throws {Error} Throws an error under several conditions:
@@ -144,7 +146,7 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Gathers the schema for all models configured for automatic table generation.
+     * Gathers the schema for all models configured for automatic table generation if 'autoTable = true'.
      * 
      * This structural data is then sent to the client via an 'appTables' socket event,
      * allowing the frontend to dynamically generate tables or forms.
@@ -169,9 +171,10 @@ class AppSocket extends Socket {
      * @param {String} data.table Table to send
      * @param {Object} data.filter Filters
      * @param {Object} data.include What data to include
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
      * @returns {Promise<void>} Resolves when data is successfully retrieved and emitted to the client.
      */
-    async sendData(data) {
+    async sendData(data, options) {
         await this.sendTableData(data.table, (data.filter) ? data.filter : [], (data.include) ? data.include : []);
     }
 

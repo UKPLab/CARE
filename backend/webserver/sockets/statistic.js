@@ -17,12 +17,14 @@ class StatisticSocket extends Socket {
 
     /**
      * Send statistics to the user
-     * This action is restricted to administrators and will only send data if the target user
+     * This function is restricted to administrators and will only send data if the target user
      * has consented to statistics collection (`acceptStats` is true).
+     * 
      * @param {number} userId The ID of the user whose statistics are to be fetched.
+     * @param {Object} options Additional configuration parameters (currently unused).
      * @returns {Promise<void>} A promise that resolves (with no value) after the operation is complete. 
      */
-    async sendStatsByUser(userId) {
+    async sendStatsByUser(userId, options) {
         if (await this.isAdmin()) {
             if ((await this.models["user"].getById(userId)).acceptStats) {
                 const stats = await this.models['statistic'].getAllByKey('userId', userId);
@@ -41,7 +43,7 @@ class StatisticSocket extends Socket {
 
     /**
      * Fetches system statistics, either for all users or a specific user.
-     * This operation is restricted to users with administrator privileges.
+     * This function is restricted to users with administrator privileges.
      * 
      * @socketEvent statsGet
      * @param {Object} data The data object containing the userId
@@ -64,7 +66,7 @@ class StatisticSocket extends Socket {
 
     /**
      * Adds a new statistic entry to the database for the current user.
-     * This action is only performed if the user has consented to statistics collection (`acceptStats` is true).
+     * This function is only performed if the user has consented to statistics collection (`acceptStats` is true).
      * Errors during the database operation are caught and logged internally.
      * 
      * @socketEvent stats
@@ -89,34 +91,10 @@ class StatisticSocket extends Socket {
         }
     }
 
-    /**
-     * Serves as a safe wrapper for the 'sendStatsByUser' method.
-     * It handles potential errors during the statistics retrieval process by catching them
-     * and producing a failure event to the client instead of throwing an error.
-     *
-     * @socketEvent statsGetByUser
-     * @param {Object} data The data object containing the userId
-     * @param {Number} data.userId The user's ID
-     * @param {Object} options Additional configuration parameters (currently unused).
-     * @returns {Promise<void>} A promise that resolves (with no value) once the operation is complete, regardless of success or failure.
-     */
-    async getStatsByUser(data, options) {
-        try {
-            await this.sendStatsByUser(data.userId);
-        } catch (e) {
-            this.socket.emit("statsData", {
-                success: false,
-                userId: data.userId,
-                message: "Failed to retrieve stats for users"
-            });
-            this.logger.error("Can't load statistics due to error " + e.toString());
-        }
-    }
-
     init() {
         this.createSocket("statsGet", this.getStats, {}, false);
         this.createSocket("stats", this.addStats, {}, false);
-        this.createSocket("statsGetByUser", this.getStatsByUser, {}, false);
+        this.createSocket("statsGetByUser", this.sendStatsByUser, {}, false);
     }
 }
 

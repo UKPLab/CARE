@@ -27,7 +27,6 @@ class ServiceSocket extends Socket {
 
     /**
      * Disconnects a service from the client
-     * This acts as a bridge, invoking the `disconnectClient` method on the requested service if it exists.
      * 
      * @socketEvent serviceDisconnect
      * @param {Object} data The input data
