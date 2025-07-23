@@ -163,11 +163,11 @@ export default {
     showAnnotations() {
       return !this.showEdits; // Show annotations only if `showEdits` is false
     },
-    closedSessionIds() {
+    openSessionIds() {
       return this.$store.getters["table/study_session/getAll"].filter(
         session => {
           const study = this.$store.getters["table/study/get"](session.studyId);
-          return study && study.closed !== null;
+          return study && study.closed == null;
         }
       ).map(session => session.id);
     },
@@ -208,7 +208,7 @@ export default {
           } else {
             if (this.showAll) {
               if (!this.downloadBeforeStudyClosingAllowed) {
-                return this.closedSessionIds.includes(comment.studySessionId);
+                return !this.openSessionIds.includes(comment.studySessionId);
               } else {
               return true;
               }

@@ -59,11 +59,11 @@ export default {
         return null;
       }
     },
-    closedSessionIds() {
+    openSessionIds() {
       return this.$store.getters["table/study_session/getAll"].filter(
         session => {
           const study = this.$store.getters["table/study/get"](session.studyId);
-          return study && study.closed !== null;
+          return study && study.closed === null;
         }
       ).map(session => session.id);
     },
@@ -85,10 +85,10 @@ export default {
             return this.studySessionIds.includes(anno.studySessionId);
           } else {
             if (this.showAll) {
-              if (!this.downloadBeforeStudyClosingAllowed) {
-                return this.closedSessionIds.includes(anno.studySessionId);
+              if (this.downloadBeforeStudyClosingAllowed) {
+                return true;
               } else {
-              return true;
+                return !this.openSessionIds.includes(anno.studySessionId);
               }
             } else {
               return anno.studySessionId === null

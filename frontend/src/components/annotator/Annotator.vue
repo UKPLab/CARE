@@ -255,11 +255,11 @@ export default {
     downloadBeforeStudyClosingAllowed() {
       return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
     },
-    closedSessionIds() {
+    openSessionIds() {
       return this.$store.getters["table/study_session/getAll"].filter(
         session => {
           const study = this.$store.getters["table/study/get"](session.studyId);
-          return study && study.closed !== null;
+          return study && study.closed === null;
         }
       ).map(session => session.id);
     },
@@ -276,7 +276,7 @@ export default {
           });
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
         return annotations.filter(annotation =>
-          this.closedSessionIds.includes(annotation.studySessionId)
+          !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
         return annotations;
@@ -288,7 +288,7 @@ export default {
         );
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
         return comments.filter(comment =>
-          this.closedSessionIds.includes(comment.studySessionId)
+          !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
         return comments;
