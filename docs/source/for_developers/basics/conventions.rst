@@ -38,6 +38,25 @@ Additionally, all socket events defined in the Backend must be surrounded by a t
 Inside the try block, maximum four lines of code should be executed. If more lines are necessary,
 an additional method should be created and documented.
 
+**Socket Function Documentation Style**
+
+All socket methods in the backend must follow the JSDoc format shown below:
+
+.. code-block:: javascript
+
+    /**
+     * The description of the method...
+     * @param {Object} data - The input data from the frontend
+     * @param {number} data.XXX - some description
+     * @param {anotherType} data.OOO - some description
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>} // specify the return result is void if the method does not return anything
+     * @throws {Error} - Describe when the error occurs and send the message back
+     */
+
+Use this template when adding or updating any socket functionality. This ensures that the interface is clear and standardized for all developers.
+
 Code Review Guidelines
 ----------------------
 
