@@ -364,6 +364,100 @@ module.exports = class Socket {
         }
     }
 
+    /**
+     * Modifies allFilter and allAttributes according to user rights in the table.
+     * @param {number} userId User ID to check the rights for
+     * @param {Object} allFilter Starting filters
+     * @param {Object} allAttributes Starting attributes
+     * @param {string} tableName The table to check the rights for
+     * @returns {Object} modified filters and attributes + whether access is allowed
+     */
+    async getFiltersAndAttributes(userId, allFilter, allAttributes, tableName) {
+        const accessMap = this.server.db.models[tableName]['accessMap'];
+        const filteredAccessMap = await Promise.all(
+        accessMap.map(async a => {
+            let hasAccess = false;
+            let limitation = undefined;
+            if (a.right) {
+                hasAccess = await this.hasAccess(a.right);
+            } else if (a.table) {
+                const count = await this.models[a.table].findAll({
+                    attributes: [a.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+                    where: {
+                        ["userId"]: userId
+                    },
+                    group: a.by,
+                    raw: true
+                }); // # [ { studyId: 29, count: '1' }, { studyId: 51, count: '1' } ]
+                hasAccess = count.some(c => c.count > 0);
+                limitation = count.map(c => c[a.by]);
+            }
+            return {
+                access: a,
+                hasAccess: hasAccess,
+                limitation: limitation
+            }
+            })
+        );
+        const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
+        const accessRights = relevantAccessMap.map(item => item.access);
+        if (await this.isAdmin(userId) || this.models[tableName].publicTable) { // is allowed to see everything
+        // no adaption of the filter or attributes needed
+        } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes() && accessRights.length === 0) {
+            // is allowed to see only his data and possible if there is a public attribute
+            const userFilter = {};
+            if ("public" in this.models[tableName].getAttributes()) {
+                userFilter[Op.or] = [{userId: userId}, {public: true}];
+            } else {
+                userFilter['userId'] = userId;
+            }
+            allFilter = {[Op.and]: [allFilter, userFilter]}
+        } else {
+            if (accessRights.length > 0) {
+            // check if all accessRights has limitations?
+            if (relevantAccessMap.every(item => item.limitation)) {
+                if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
+                    allFilter = {
+                        [Op.and]: [
+                            allFilter,
+                            {
+                                [Op.or]: relevantAccessMap.flatMap(a => {
+                                    const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
+                                    return a.limitation
+                                        ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
+                                        : null;
+                                }).filter(Boolean).concat([{userId: userId}]) // Ensure we always include the 'userId' condition
+                            }
+                        ]
+                    };
+                    allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+                } else {
+                    allFilter = {
+                        [Op.and]: [
+                            allFilter,
+                            {
+                                [Op.or]: relevantAccessMap.flatMap(a => {
+                                    const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
+                                    return a.limitation
+                                        ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
+                                        : null;
+                                }).filter(Boolean)
+                            }
+                        ]
+                    }
+                    allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+                } 
+            } else { // do without limitations
+                allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+            }
+        } else {
+            this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
+            return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
+        }
+        }
+        return {filter: allFilter, attributes: allAttributes, accessAllowed: true};
+    }
+
     async sendTable(tableName, filter = [], injects = []) {
 
         // check if it is an autoTable or not
@@ -377,94 +471,16 @@ module.exports = class Socket {
             allFilter[Op.or] = filter;
         }
         const defaultExcludes = ["deleted", "deletedAt", "updatedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
-        const allAttributes = {
+        let allAttributes = {
             exclude: defaultExcludes,
         };
 
-        const accessMap = this.server.db.models[tableName]['accessMap'];
-        const filteredAccessMap = await Promise.all(
-            accessMap.map(async a => {
-                let hasAccess = false;
-                let limitation = undefined;
-                if (a.right) {
-                    hasAccess = await this.hasAccess(a.right);
-                } else if (a.table) {
-                    const count = await this.models[a.table].findAll({
-                        attributes: [a.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
-                        where: {
-                            ["userId"]: this.userId
-                        },
-                        group: a.by,
-                        raw: true
-                    }); // # [ { studyId: 29, count: '1' }, { studyId: 51, count: '1' } ]
-                    hasAccess = count.some(c => c.count > 0);
-                    limitation = count.map(c => c[a.by]);
-                }
-                return {
-                    access: a,
-                    hasAccess: hasAccess,
-                    limitation: limitation
-                }
-            })
-        );
-        const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
-        const accessRights = relevantAccessMap.map(item => item.access);
-
-        if (await this.isAdmin() || this.models[tableName].publicTable) { // is allowed to see everything
-            // no adaption of the filter or attributes needed
-        } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes() && accessRights.length === 0) {
-            // is allowed to see only his data and possible if there is a public attribute
-            const userFilter = {};
-            if ("public" in this.models[tableName].getAttributes()) {
-                userFilter[Op.or] = [{userId: this.userId}, {public: true}];
-            } else {
-                userFilter['userId'] = this.userId;
-            }
-            allFilter = {[Op.and]: [allFilter, userFilter]}
-        } else {
-            if (accessRights.length > 0) {
-                // check if all accessRights has limitations?
-                if (relevantAccessMap.every(item => item.limitation)) {
-                    if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
-                        allFilter = {
-                            [Op.and]: [
-                                allFilter,
-                                {
-                                    [Op.or]: relevantAccessMap.flatMap(a => {
-                                        const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
-                                        return a.limitation
-                                            ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
-                                            : null;
-                                    }).filter(Boolean).concat([{userId: this.userId}]) // Ensure we always include the 'userId' condition
-                                }
-                            ]
-                        };
-                        allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
-                    } else {
-                        allFilter = {
-                            [Op.and]: [
-                                allFilter,
-                                {
-                                    [Op.or]: relevantAccessMap.flatMap(a => {
-                                        const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
-                                        return a.limitation
-                                            ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
-                                            : null;
-                                    }).filter(Boolean)
-                                }
-                            ]
-                        }
-                        allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
-                    }
-                } else { // do without limitations
-                    allAttributes['include'] = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
-                }
-            } else {
-                this.logger.warn("User with id " + this.userId + " requested table " + tableName + " without access rights");
-                return;
-            }
+        const filtersAndAttributes = await this.getFiltersAndAttributes(this.userId, allFilter, allAttributes, tableName)
+        if (!filtersAndAttributes.accessAllowed) {
+            return;
         }
-
+        allFilter = filtersAndAttributes.filter;
+        allAttributes = filtersAndAttributes.attributes;
         let data = await this.models[tableName].getAll({
             where: allFilter,
             attributes: allAttributes,
@@ -667,41 +683,17 @@ module.exports = class Socket {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             } 
-
-            // otherwise check the access map
-            const accessMap = this.server.db.models[tableName]['accessMap'];
-            // if there are no access rules, just send data
-            if (accessMap.length === 0) {
-                this.io.to(socket.id).emit(tableName + "Refresh", data);
-                continue
+            let allFilter = {};
+            let allAttributes = {};
+            const filtersAndAttributes = await this.getFiltersAndAttributes(this.userId, allFilter, allAttributes, tableName)
+            if (!filtersAndAttributes.accessAllowed) {
+                return;
             }
-
-            // otherwise have to check access
-            const filteredAccessMap = await Promise.all(
-            accessMap.map(async a => {
-                let hasAccess = false;
-                if (a.right) {
-                    hasAccess = await this.hasAccessByUserRoles(roleIds, a.right);
-                } else  {
-                    // if there are no right limitations, just return true
-                    hasAccess = true;
-                    }
-                return {
-                    right: a.right,
-                    columns: a.columns,
-                    hasAccess: hasAccess,
-                }
-            })
+            allFilter = filtersAndAttributes.filter;
+            allAttributes = filtersAndAttributes.attributes;
+            const filteredData = data.filter(
+                item => Object.keys(allFilter).every(key => item[key] === allFilter[key])
             );
-            const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
-            // if user has access to all data, just send
-            if (relevantAccessMap.length === filteredAccessMap.length) {
-                this.io.to(socket.id).emit(tableName + "Refresh", data);
-                continue
-            }
-            // otherwise filter and send 
-            const flattenedAccessMap = new Set(accessMap.flatMap(m => m.columns));
-            const filteredData = data.filter((column) => flattenedAccessMap.has(column));
             this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
         };
     }
