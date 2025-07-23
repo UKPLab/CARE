@@ -6,6 +6,7 @@
     v-if="pdf"
     id="pdfContainer"
     class="has-transparent-text-layer"
+    @copy="onCopy"
   >
   <div class="pdf-toolbar">
       <button class="toolbar-btn" @click="zoomOut" title="Zoom Out">
@@ -89,6 +90,7 @@ export default {
       pdf: computed(() => this.pdf),
     }
   },
+  emits: ['copy'],
   data() {
     return {
       pdf: null,
@@ -206,6 +208,9 @@ export default {
           }
         })
       }
+    },
+    onCopy(event) {
+      this.$emit('copy', event);
     },
   },
 

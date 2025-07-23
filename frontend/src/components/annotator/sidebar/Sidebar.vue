@@ -4,6 +4,7 @@
     class="col border mh-100 col-sm-auto g-0"
     :class="sidebarContainerClassList"
     :style="sidebarContainerStyle"
+    @copy="onCopy"
   >
     <div id="hoverHotZone"></div>
     <div
@@ -109,6 +110,7 @@ import {scrollElement} from "@/assets/anchoring/scroll";
 export default {
   name: "AnnotationSidebar",
   components: {SideCard, AnnoCard, ConfirmModal},
+  emits: ['copy', 'add-edit'],
   inject: {
     documentId: {
       type: Number,
@@ -463,6 +465,9 @@ export default {
 
       this.sidebarContainerDom.addEventListener("click", handleSidebarClick);
       document.body.addEventListener("click", handleBodyClick);
+    },
+    onCopy(event) {
+      this.$emit('copy', event);
     }
   }
 }
