@@ -5,7 +5,6 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "docs": "jsdoc -c jsdoc.config.js",
     "start": "node index.js",
     "db_create": "cd db && npx sequelize-cli db:create",
     "db_migrate": "cd db && npx sequelize-cli db:migrate",

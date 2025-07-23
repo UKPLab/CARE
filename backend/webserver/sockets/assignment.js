@@ -23,7 +23,7 @@ class AssignmentSocket extends Socket {
      * @param {Array} data.reviewers An array of reviewer IDs who will be assigned to the peer review.
      * @param {Object} data.template The template object containing the configuration for the peer review.
      * @param {Array} data.documents The documents to be reviewed.
-     * @param {Object} options The option for transaction data.
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
      * @returns {Promise<void>} A promise that resolves when the peer review has been assigned.
      */
     async createAssignment(data, options) {
@@ -61,7 +61,7 @@ class AssignmentSocket extends Socket {
      * @param {Object} data The data for adding reviewers.
      * @param {number} data.studyId The ID of the study to which reviewers are to be added.
      * @param {Array<number>} data.reviewer An array of user IDs representing the reviewers to be added.
-     * @param {Object} options The options for transaction data
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
      * @returns {Promise<void>} A promise that resolves when the reviewers have been added to the study.
      */
     async addReviewer(data, options) {
@@ -110,7 +110,7 @@ class AssignmentSocket extends Socket {
      * @param {Array<Array>} data.documents List of document assignments
      * @param {Object} data.roleSelection If the mode is role, the role selection object
      * @param {Object} data.reviewerSelection If the mode is reviewer, the reviewer selection object
-     * @param options Additional configuration parameters, passed down to the individual assignment creation step.
+     * @param options holds the managed transaction of the database (see createSocket function), passed down to the individual assignment creation step.
      * @returns {Promise<void>} A promise that resolves with an object detailing the final assignment distribution.
      * @throws {Error} Throws an error under several conditions:
      *  If an invalid `data.mode` is provided,

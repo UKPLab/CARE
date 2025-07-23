@@ -69,7 +69,7 @@ class UserSocket extends Socket {
     }
 
     /**
-     * Get users by their roleu.status === "duplicate"
+     * Get users by their role.status === "duplicate"
      * 
      * @param {string} role The role of the users to fetch. Possible values: "student", "mentor", "all"
      * @returns {Promise<Object[] | void>} A promise that resolves with an array of user objects if successful, or with no value if the user lacks permission or an error occurs.
@@ -90,7 +90,8 @@ class UserSocket extends Socket {
     /**
      * Retrieves a list of users from a Moodle course via an RPC call.
      * The returned user data is then augmented with an external ID and checked for local existence in the database.
-     *
+     * The external moodle API is callled here through Moodle RPC
+     * 
      * @socketEvent userMoodleUserGetAll
      * @param {Object} options The data object containing the course ID, Moodle URL and the API token.
      * @param {number} options.courseID The ID of the course to fetch users from.
@@ -131,7 +132,7 @@ class UserSocket extends Socket {
     }
 
     /**
-     * Uploads login data to a Moodle assignment as feedback comments.
+     * Uploads login data to a Moodle assignment as feedback comments through Moodle RPC.
      * 
      * @socketEvent userPublishMoodle
      * @param {Object} data The data required for uploading login data.
@@ -156,7 +157,7 @@ class UserSocket extends Socket {
     }
 
     /**
-     *  Creates or updates a list of users in bulk.
+     * Creates or updates a list of users in bulk.
      * Each user is processed in an isolated database transaction. Errors for individual users are caught,
      * logged, and added to an error array without halting the entire process. Progress is reported to the client.
      * 
@@ -318,7 +319,6 @@ class UserSocket extends Socket {
 
     /***
      * Emits rights associated with a user
-     * Handles potential database errors by catching them and emitting a failure event.
      * 
      * @socketEvent userGetRight
      * @param {Object} data The data object containing the user identifier.
