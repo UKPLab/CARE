@@ -22,7 +22,8 @@
               <LoadIcon
                 icon-name="check-square"
                 :size="16"
-                :style="{ color: collapsed ? '#28a745' : '#6c757d', cursor: 'pointer' }"
+                :color="collapsed ? '#28a745' : '#6c757d'"
+                cursor="pointer"
                 class="check-icon"
                 @click="collapsed = !collapsed"
               />
