@@ -94,9 +94,12 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import BasicTable from "@/basic/Table.vue";
+import BasicTable from "@/basic/Table.vue";
 
 export default {
   name: "GradingModal",
+  components: { StepperModal, FormSelect, BasicTable },
+  subscribeTable: ["document"],
   components: { StepperModal, FormSelect, BasicTable },
   subscribeTable: ["document"],
   emits: ["submit"],
