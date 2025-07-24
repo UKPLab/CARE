@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('annotation_state', {
+    await queryInterface.createTable('comment_state', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -75,6 +75,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('annotation_state');
+    await queryInterface.dropTable('comment_state');
   }
 };
