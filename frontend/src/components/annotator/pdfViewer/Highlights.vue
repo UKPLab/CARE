@@ -18,7 +18,7 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
  */
 export default {
   name: "PDFHighlights",
-  subscribeTable: ['annotation_state', 'comment'],
+  subscribeTable: ['comment_state', 'comment'],
   inject: {
     documentId: {
       type: Number,
@@ -67,8 +67,8 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
-    annotationStates() {
-      return this.$store.getters['table/annotation_state/getAll'];
+    commentStates() {
+      return this.$store.getters['table/comment_state /getAll'];
     },
     annotations() {
       const baseAnnotations = this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
@@ -87,19 +87,17 @@ export default {
             }
           }
         });
-      console.log("Filtered annotations for page", this.pageId, ":", baseAnnotations);
-      // Filter by annotation_state: only show annotations with state 0 (not collapsed)
+      // Filter by comment_state: only show annotations with state 0 (not collapsed)
       return baseAnnotations.filter(anno => {
-        
-        // Find the annotation state for this annotation's comment
-        const annotationState = this.$store.getters['table/annotation_state/getFiltered'](
+
+        // Find the comment state for this annotation's comment
+        const commentState = this.$store.getters['table/comment_state/getFiltered'](
           state => state.commentId === this.getCommentByAnnotationId(anno.id)?.id && state.userId === this.userId && state.documentId === this.documentId
           && state.studySessionId === this.studySessionId && state.studyStepId === this.studyStepId
         )[0];
-        console.log("Annotation state for commentId", anno.id, ":", annotationState);
         // If no state exists, show the annotation (default behavior)
         // If state exists, only show if state is 0 (not collapsed)
-        return !annotationState || annotationState.state === 0;
+        return !commentState || commentState.state === 0;
       });
     },
     tags() {
