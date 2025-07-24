@@ -36,18 +36,16 @@
   </Modal>
 
   <!-- JSON Configuration Editor Modal -->
-  <Modal ref="editModal" name="json-editor" lg>
+  <Modal ref="editModal" name="json-editor" xl>
     <template #title>
       Edit Configuration: {{ selectedConfig?.name }}
     </template>
     <template #body>
       <div v-if="selectedConfig" class="json-editor-container">
-        <textarea 
-          v-model="editableConfigContent" 
-          class="form-control json-textarea"
-          rows="20"
-          placeholder="Edit JSON content here..."
-        ></textarea>
+        <div 
+          ref="quillContainer" 
+          class="quill-editor-container"
+        ></div>
       </div>
     </template>
     <template #footer>
@@ -62,8 +60,8 @@
       <button
         class="btn btn-primary"
         type="button"
-        @click="saveConfiguration"
         :disabled="saving"
+        @click="saveConfiguration"
       >
         <span v-if="saving" class="spinner-border spinner-border-sm me-2"></span>
         Save
@@ -79,6 +77,7 @@ import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./documents/UploadModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Modal from "@/basic/Modal.vue";
+import { Editor } from "@/components/editor/editorStore.js";
 
 /**
  * Configuration Files Dashboard Component
@@ -102,6 +101,7 @@ export default {
       selectedConfig: null,
       configContent: "",
       editableConfigContent: null,
+      quillEditor: null,
       saving: false,
       options: {
         striped: true,
@@ -114,8 +114,8 @@ export default {
       },
       columns: [
         { name: "Name", key: "name", sortable: true },
-        { name: "Created", key: "createdAt", sortable: true },
-        { name: "Updated", key: "updatedAt", sortable: true },
+        { name: "Created", key: "createdAt", sortable: true, type: "datetime" },
+        { name: "Updated", key: "updatedAt", sortable: true, type: "datetime" },
       ],
       buttons: [
         {
@@ -162,6 +162,17 @@ export default {
           updatedAt: doc.updatedAt,
         }));
     },
+  },
+  watch: {
+    // Clean up Quill editor when modal is closed
+    '$refs.editModal': {
+      handler(newVal) {
+        if (!newVal || !newVal.isOpen) {
+          this.cleanupQuillEditor();
+        }
+      },
+      deep: true
+    }
   },
   methods: {
     action(data) {
@@ -238,9 +249,17 @@ export default {
                 fileContent = response.data.file.toString();
               }
               
-              // Set the raw JSON string content for editing
-              this.editableConfigContent = fileContent;
+              // Parse and format the JSON content
+              const jsonContent = JSON.parse(fileContent);
+              const formattedJson = JSON.stringify(jsonContent, null, 2);
+              this.editableConfigContent = formattedJson;
+              
               this.$refs.editModal.openModal();
+              
+              // Initialize Quill editor after modal is opened
+              this.$nextTick(() => {
+                this.initializeQuillEditor();
+              });
             } else {
               throw new Error("No file data received from server");
             }
@@ -263,8 +282,35 @@ export default {
       });
     },
 
+    initializeQuillEditor() {
+      if (this.$refs.quillContainer && !this.quillEditor) {
+        this.quillEditor = new Editor(this.$refs.quillContainer, {
+          theme: "snow",
+          modules: {
+            toolbar: false // No toolbar for JSON editing
+          },
+          placeholder: "Edit JSON content here..."
+        });
+        
+        // Set the formatted JSON content
+        this.quillEditor.getEditor().setText(this.editableConfigContent);
+      }
+    },
+
     saveConfiguration() {
-      if (!this.editableConfigContent) {
+      if (!this.quillEditor) {
+        this.eventBus.emit('toast', {
+          title: "Configuration Error",
+          message: "Editor not initialized",
+          variant: "danger"
+        });
+        return;
+      }
+
+      // Get content from Quill editor
+      const editorContent = this.quillEditor.getEditor().getText().trim();
+
+      if (!editorContent) {
         this.eventBus.emit('toast', {
           title: "Configuration Error",
           message: "No configuration content to save",
@@ -275,7 +321,7 @@ export default {
 
       // Validate JSON before saving
       try {
-        JSON.parse(this.editableConfigContent);
+        JSON.parse(editorContent);
       } catch (error) {
         this.eventBus.emit('toast', {
           title: "Invalid JSON",
@@ -287,7 +333,7 @@ export default {
 
       this.saving = true;
 
-      const jsonContent = JSON.parse(this.editableConfigContent);
+      const jsonContent = JSON.parse(editorContent);
 
       this.$socket.emit("documentUpdateContent", {
         documentId: this.selectedConfig.id,
@@ -341,6 +387,12 @@ export default {
         }
       );
     },
+
+    cleanupQuillEditor() {
+      if (this.quillEditor) {
+        this.quillEditor = null;
+      }
+    },
   },
 };
 </script>
@@ -370,15 +422,28 @@ export default {
   overflow: auto;
 }
 
-.json-textarea {
-  font-family: 'Courier New', monospace;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 0.375rem;
-  padding: 1rem;
-  color: #212529;
-  resize: vertical;
+.quill-editor-container {
+  min-height: 400px;
+}
+
+.quill-editor-container .ql-editor {
+  font-family: 'Courier New', monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  background-color: #f8f9fa !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 0.375rem !important;
+  padding: 1rem !important;
+  color: #212529 !important;
+  min-height: 400px !important;
+}
+
+.quill-editor-container .ql-container {
+  border: none !important;
+  font-family: 'Courier New', monospace !important;
+}
+
+.quill-editor-container .ql-toolbar {
+  display: none !important;
 }
 </style>
