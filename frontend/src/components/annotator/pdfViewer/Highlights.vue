@@ -14,7 +14,7 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
  *
  * Adapted from Hypothes.is
  *
- * @author Dennis Zyska, Nils Dycke
+ * @author Dennis Zyska, Nils Dycke, Marina Sakharova
  */
 export default {
   name: "PDFHighlights",
@@ -60,6 +60,14 @@ export default {
         return null;
       }
     },
+    openSessionIds() {
+      return this.$store.getters["table/study_session/getAll"].filter(
+        session => {
+          const study = this.$store.getters["table/study/get"](session.studyId);
+          return study && study.closed === null;
+        }
+      ).map(session => session.id);
+    },
     showAll() {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
@@ -69,6 +77,9 @@ export default {
     },
     commentStates() {
       return this.$store.getters['table/comment_state /getAll'];
+    },
+    downloadBeforeStudyClosingAllowed() {
+      return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
     },
     annotations() {
       const baseAnnotations = this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
@@ -81,7 +92,11 @@ export default {
             return this.studySessionIds.includes(anno.studySessionId);
           } else {
             if (this.showAll) {
-              return true;
+              if (this.downloadBeforeStudyClosingAllowed) {
+                return true;
+              } else {
+                return !this.openSessionIds.includes(anno.studySessionId);
+              }
             } else {
               return anno.studySessionId === null
             }
