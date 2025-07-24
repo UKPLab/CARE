@@ -928,10 +928,16 @@ class DocumentSocket extends Socket {
             this.server.backgroundTasks.activeListeners = {};
 
             for (const subId of data.inputFiles) {
-                const docs = await this.models['document'].findAll({
-                    where: { submissionId: subId },
-                    raw: true
-                });
+                let docs;
+                try {
+                    docs = await this.models['document'].findAll({
+                        where: { submissionId: subId },
+                        raw: true
+                    });
+                } catch (err) {
+                    this.logger.error(`Error fetching documents for submission ${subId}: ${err.message}`, err);
+                    continue;
+                }
 
                 const docIds = [];
                 const inputFiles = await Promise.all(
@@ -945,9 +951,14 @@ class DocumentSocket extends Socket {
                         }
                         const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
                         if (fs.existsSync(docFilePath)) {
-                            return await fs.promises.readFile(docFilePath);
+                            try {
+                                return await fs.promises.readFile(docFilePath);
+                            } catch (readErr) {
+                                this.logger.error(`Error reading file for document ${doc.id} of submission ${subId}: ${readErr.message}`, readErr);
+                                return null;
+                            }
                         } else {
-                            this.logger.warn(`File not found for document ${doc.id} of submission ${subId}`);
+                            this.logger.error(`File not found for document ${doc.id} of submission ${subId} : ${docFilePath}`);
                             return null;
                         }
                     })
@@ -968,27 +979,36 @@ class DocumentSocket extends Socket {
 
             for (const item of preprocessItems) {
                 await new Promise((resolve) => {                        
-                    
                     const listener = async () => {
                         let nlpResults;
-                        // TODO: Remove this if-condition after testing
-                        if ( this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
-                            nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
-                        }
-                        const nlpResult = nlpResults ? nlpResults[item.requestId] : null;
-                        if (nlpResult) {
-                            await Promise.all(
-                                item.docIds.map(docId =>
-                                    this.saveData({
-                                        userId: this.userId,
-                                        documentId: docId,
-                                        studySessionId: null,
-                                        studyStepId: null,
-                                        key: `service_nlpGrading_${item.skillName}`,
-                                        value: nlpResult
-                                    }, options)
-                                )
-                            );
+                        try {
+                            // TODO: Remove this if-condition after testing
+                            if (this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
+                                nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
+                            }
+                            const nlpResult = nlpResults ? nlpResults[item.requestId] : null;
+                            if (nlpResult) {
+                                try {
+                                    await Promise.all(
+                                        item.docIds.map(docId =>
+                                            this.saveData({
+                                                userId: this.userId,
+                                                documentId: docId,
+                                                studySessionId: null,
+                                                studyStepId: null,
+                                                key: `service_nlpGrading_${item.skillName}`,
+                                                value: nlpResult
+                                            }, options)
+                                        )
+                                    );
+                                } catch (saveErr) {
+                                    this.logger.error(`Error saving NLP results for request ${item.requestId}: ${saveErr.message}`, saveErr);
+                                }
+                            } else {
+                                this.logger.warn(`No NLP result received for request ${item.requestId}`);
+                            }
+                        } catch (err) {
+                            this.logger.error(`Error processing NLP request ${item.requestId}: ${err.message}`, err);
                         }
 
                         if (this.server.backgroundTasks.currentReqStart) {
@@ -1001,18 +1021,22 @@ class DocumentSocket extends Socket {
                     if (!this.server.backgroundTasks.currentReqStart) {
                         this.server.backgroundTasks.currentReqStart = Date.now();
                     }
-                    
-                    this.server.backgroundTasks.activeListeners[item.requestId] = listener;
-                    this.socket.once(item.requestId, listener);
 
-                    this.socket.emit("serviceRequest", {
-                        service: "NLPService",
-                        data: {
-                            id: item.requestId,
-                            name: item.skillName,
-                            data: item.nlpInput
-                        }
-                    });
+                    this.server.backgroundTasks.activeListeners[item.requestId] = listener;
+                    try {
+                        this.socket.once(item.requestId, listener);
+                        this.socket.emit("serviceRequest", {
+                            service: "NLPService",
+                            data: {
+                                id: item.requestId,
+                                name: item.skillName,
+                                data: item.nlpInput
+                            }
+                        });
+                    } catch (emitErr) {
+                        this.logger.error(`Error emitting NLP service request ${item.requestId}: ${emitErr.message}`, emitErr);
+                        resolve();
+                    }
                 });
             }
 
