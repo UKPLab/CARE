@@ -655,18 +655,12 @@ export default {
     actionEmitter(data) {
       this.$emit("action", data);
       let statsParams = {};
-      const button = this.buttons.find((b) => b.action === data.action);
-      if (button && button.stats) {
+      if (data.stats) {
         // Only include the stat fields in the stats data
-       Object.entries(button.stats).forEach(([statsKey, paramKey]) => {
-        if (data.params[paramKey] === undefined) {
-          console.warn(`Parameter ${paramKey} not found in data.params`);
-          return;
-        } 
-       statsParams[statsKey] = data.params[paramKey];
+       Object.entries(data.stats).forEach(([statsKey, paramKey]) => {
+        statsParams[statsKey] = data.params[paramKey];
       });
       }
-      console.log('new Params',statsParams);
         if (this.acceptStats) {
           this.$socket.emit("stats", {
             action: "actionClick",
@@ -686,8 +680,6 @@ export default {
           } else {
             // Check if the row is already selected
 
-            console.log(row);
-            console.log(!this.currentData.includes(row));
             if (!this.currentData.includes(row)) {
               this.currentData.push(row);
             }
@@ -747,7 +739,6 @@ export default {
         this.hasButtons = true;
       }
 
-      console.log("getFilteredButtons", filteredButtons, row);
 
       return filteredButtons;
     },
