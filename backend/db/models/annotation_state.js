@@ -3,16 +3,16 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     /**
-     * AnnotationState model
-     * Stores state information for annotations, linked to user_environment style.
+     * CommentState model
+     * Stores state information for comments, linked to user_environment style.
      */
-    class AnnotationState extends MetaModel {
+    class CommentState extends MetaModel {
         static autoTable = true;
         static associate(models) {
         }
     }
 
-    AnnotationState.init({
+    CommentState.init({
         documentId: DataTypes.INTEGER,
         userId: DataTypes.INTEGER,
         studySessionId: DataTypes.INTEGER,
@@ -25,8 +25,8 @@ module.exports = (sequelize, DataTypes) => {
         createdAt: DataTypes.DATE
     }, {
         sequelize: sequelize,
-        modelName: 'annotation_state',
-        tableName: 'annotation_state'
+        modelName: 'comment_state',
+        tableName: 'comment_state'
     });
-    return AnnotationState;
+    return CommentState;
 };
