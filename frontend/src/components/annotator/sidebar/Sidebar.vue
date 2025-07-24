@@ -15,14 +15,12 @@
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
 
-        <!-- Edits Section -->
         <EditsSection
           :edits="edits"
           :show-edits="showEdits"
           @edit-click="handleEditClick"
         />
 
-        <!-- Annotations Section -->
         <AnnotationsList
           ref="annotationsList"
           :show-annotations="showAnnotations"
@@ -32,39 +30,18 @@
           @scroll-to-comment="sidebarScrollTo"
         />
       </div>
-      
-      <!-- Toggle Button -->
-      <div class="sidebar-toggle-container">
-        <button
-          class="btn btn-outline-primary sidebar-toggle-btn"
-          title="Switch to Assessment"
-          @click="$emit('toggle-mode')"
-        >
-          <LoadIcon icon-name="clipboard-check" :size="16" />
-          <span class="toggle-text">Assessment</span>
-        </button>
-      </div>
     </div>
-    <ConfirmModal ref="leavePageConf"/>
   </div>
 </template>
 
 <script>
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import EditsSection from "./EditsSection.vue";
 import AnnotationsList from "./AnnotationsList.vue";
-import LoadIcon from "@/basic/Icon.vue";
 import {scrollElement} from "@/assets/anchoring/scroll";
 
-/** Sidebar component of the Annotator
- *
- * Here the annotations are listed and can be modified, also includes scrolling feature.
- *
- * @author Nils Dycke, Dennis Zyska
- */
 export default {
   name: "AnnotationSidebar",
-  components: {ConfirmModal, EditsSection, AnnotationsList, LoadIcon},
+  components: {EditsSection, AnnotationsList},
   inject: ['documentId', 'studySessionId', 'studyStepId', 'acceptStats'],
   props: {
     show: {
@@ -84,7 +61,7 @@ export default {
       default: () => null
     }
   },
-  emits: ['toggle-mode', 'add-edit'],
+  emits: ['add-edit'],
   data() {
     return {
       width: 400,
@@ -101,7 +78,7 @@ export default {
       return this.edits && Object.keys(this.edits).length > 0 && this.documentComments.length === 0;
     },
     showAnnotations() {
-      return !this.showEdits; // Show annotations only if `showEdits` is false
+      return !this.showEdits;
     },
     study() {
       if (this.studySession) {
@@ -129,7 +106,6 @@ export default {
     documentComments() {
       return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
-          // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
             return comment.studySessionId === this.studySessionId && comment.studyStepId === this.studyStepId;
           } else if (this.studySessionIds) {
@@ -184,9 +160,7 @@ export default {
   },
   watch: {
     hasDrafts(newVal) {
-      // If opened from navigation
       if (this.show) return;
-      // If sidebar is fixed
       if (newVal) {
         this.isFixed = true;
         this.width = this.minWidth;
@@ -203,48 +177,57 @@ export default {
     }
   },
   mounted() {
-    this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
-    this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
-    this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
-    this.originalWidth = this.width;
-    this.eventBus.on('sidebarScroll', (annotationId) => {
-      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
-        .find(comm => comm.parentCommentId === null);
-      // in case the comment might not be loaded yet
-      if (!comment) {
-        return;
-      }
-
-      this.sidebarScrollTo(comment.id);
-      if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "sidebarScroll",
-          data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            annotationId: annotationId
-          }
-        });
-      }
-    })
-    this.initDragController()
-    this.initHoverController()
+    this.initializeSidebar();
+    this.setupEventListeners();
+    this.initDragController();
+    this.initHoverController();
   },
   methods: {
+    initializeSidebar() {
+      this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
+      this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
+      this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
+      this.originalWidth = this.width;
+    },
+    
+    setupEventListeners() {
+      this.eventBus.on('sidebarScroll', (annotationId) => {
+        const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
+          .find(comm => comm.parentCommentId === null);
+        
+        if (!comment) {
+          return;
+        }
+
+        this.sidebarScrollTo(comment.id);
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "sidebarScroll",
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
+              annotationId: annotationId
+            }
+          });
+        }
+      });
+    },
+    
     handleEditClick(edit) {
       this.$emit("add-edit", edit.text);
     },
+    
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;
       await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
 
-      // Find the AnnoCard component and focus it
       const annoCardRef = this.$refs.annotationsList?.$refs["annocard" + commentId];
       if (annoCardRef && annoCardRef[0]) {
         annoCardRef[0].putFocus();
       }
     },
+    
     createDocumentComment() {
       this.$socket.emit('commentUpdate', {
         documentId: this.documentId,
@@ -263,28 +246,11 @@ export default {
         }
       });
     },
+    
     async leave() {
-      if (this.documentComments.filter(c => c.draft).length > 0) {
-        return new Promise((resolve) => {
-          this.$refs.leavePageConf.open(
-            "Unsaved Annotations",
-            "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",
-            null,
-            function (val) {
-              return resolve(val);
-            });
-        });
-      } else {
-        return true;
-      }
+      return true;
     },
-    /**
-     * Initializes the drag controller for the sidebar
-     *
-     * When the mouse is pressed on the hot zone, the sidebar can be resized
-     *
-     * @author Zheyu Zhang
-     */
+    
     initDragController() {
       const dom = document.querySelector('#hotZone');
       const that = this;
@@ -292,10 +258,8 @@ export default {
       let startX, startWidth;
       const handleStart = (e) => {
         that.isDragging = true;
-
         e.preventDefault();
         document.body.style.userSelect = 'none';
-
         startWidth = this.width;
         startX = e.clientX;
         document.addEventListener('mousemove', handleMove);
@@ -313,24 +277,16 @@ export default {
 
       const handleEnd = () => {
         that.isDragging = false;
-
         document.removeEventListener('mousemove', handleMove);
         document.removeEventListener('mouseup', handleEnd);
         document.body.style.userSelect = '';
-
         this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
         this.originalWidth = this.width;
       }
 
       dom.addEventListener('mousedown', handleStart);
     },
-    /**
-     * Initializes the hover controller for the sidebar
-     *
-     * When the mouse enters the hover zone, the sidebar will be fixed
-     *
-     * @author Zheyu Zhang
-     */
+    
     initHoverController() {
       const hoverHotZoneDom = document.querySelector('#hoverHotZone');
       this.sidebarContainerDom = document.querySelector('#sidebarContainer');
@@ -357,11 +313,7 @@ export default {
         clearTimeout(hoverTimer);
       });
     },
-    /**
-     * Registers the sidebar blur event
-     *
-     * @author Zheyu Zhang
-     */
+    
     registerSidebarBlurEvent() {
       const handleSidebarClick = (e) => {
         e.stopPropagation();
@@ -403,7 +355,7 @@ export default {
   padding-top: 5px;
   background-color: #e6e6e6;
   width: 100%;
-  height: calc(100% - 50px); /* Account for toggle button */
+  height: 100%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -516,42 +468,4 @@ export default {
   z-index: 999;
   display: none;
 }
-
-.sidebar-toggle-container {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-top: 1px solid #dee2e6;
-  text-align: center;
-}
-
-.sidebar-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  background: white;
-  border: 2px solid #007bff;
-  color: #007bff;
-  transition: all 0.3s ease;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.sidebar-toggle-btn:hover {
-  background: #007bff;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-}
-
-.toggle-text {
-  font-weight: 500;
-}
-
 </style>

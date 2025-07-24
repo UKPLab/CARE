@@ -18,19 +18,22 @@
               class="rounded border border-1 shadow-sm"
               style="margin:auto"
           />
-
         </div>
+        
         <Sidebar
-            v-if="!sidebarDisabled && !showAssessment"
-            ref="sidebar" class="sidebar-container" :show="isSidebarVisible"
-            @toggle-mode="toggleMode"
+            v-show="!sidebarDisabled && !showAssessment"
+            ref="sidebar" 
+            class="sidebar-container" 
+            :show="isSidebarVisible"
         />
         <Assessment
-            v-if="!sidebarDisabled && showAssessment"
-            ref="assessment" class="sidebar-container" :show="isSidebarVisible"
-            @toggle-mode="toggleMode"
+            v-show="!sidebarDisabled && showAssessment"
+            ref="assessment" 
+            class="sidebar-container" 
+            :show="isSidebarVisible"
+            :saved-state="assessmentState"
+            @state-changed="onAssessmentStateChanged"
         />
-
       </div>
     </div>
 
@@ -54,7 +57,6 @@
         </TopBarButton>
       </li>
       <li class="nav-item">
-
         <TopBarButton
             v-if="studySessionId && studySessionId !== 0 ? active && nlpEnabled : nlpEnabled"
             :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
@@ -65,6 +67,18 @@
               :color="(!nlpActive) ?'#777777':'#097969'"
               :size="18"
               icon-name="robot"
+          />
+        </TopBarButton>
+        <TopBarButton
+            v-show="studySessionId && studySessionId !== 0 ? active : true"
+            :title="showAssessment ? 'Switch to Annotator Mode' : 'Switch to Assessment Mode'"
+            class="btn rounded-circle"
+            @click="toggleMode"
+        >
+          <LoadIcon
+              :color="showAssessment ? '#097969' : '#777777'"
+              :size="18"
+              icon-name="clipboard-check"
           />
         </TopBarButton>
         <TopBarButton
@@ -83,13 +97,16 @@
     </Teleport>
 
     <Teleport to="#topBarExtendMenuItems">
-      <li><a
-          :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
-          class="dropdown-item"
-          href="#"
-          @click="downloadAnnotations"
-      >Download
-        Annotations</a></li>
+      <li>
+        <a
+            :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
+            class="dropdown-item"
+            href="#"
+            @click="downloadAnnotations"
+        >
+          Download Annotations
+        </a>
+      </li>
     </Teleport>
 
     <Teleport to="#topbarCustomPlaceholder">
@@ -98,7 +115,8 @@
             v-if="review"
             class="btn btn-outline-success me-2"
             @click="$refs.reviewSubmit.open()"
-        >Submit Review
+        >
+          Submit Review
         </TopBarButton>
         <TopBarButton
             v-if="approve"
@@ -127,40 +145,33 @@
 </template>
 
 <script>
-/** Annotator Component
- *
- * This parent component provides the annotation view, which
- * currently consists of all elements of the annotator.
- *
- * @author Dennis Zyska
- */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
+import Assessment from "./Assessment.vue";
 import Loader from "@/basic/Loading.vue";
-import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
-import {isInPlaceholder} from "@/assets/anchoring/placeholder";
-import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
-import debounce from 'lodash.debounce';
 import LoadIcon from "@/basic/Icon.vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 import {computed} from "vue";
-import TopBarButton from "@/basic/navigation/TopBarButton.vue";
+import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
+import {isInPlaceholder} from "@/assets/anchoring/placeholder";
+import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
-import Assessment from "./Assessment.vue";
+import debounce from 'lodash.debounce';
 
 export default {
   name: "AnnotatorView",
   subscribeTable: ['tag', 'tag_set'],
   components: {
-    LoadIcon,
     PDFViewer,
-    ExpandMenu,
     Sidebar,
+    Assessment,
     Loader,
+    LoadIcon,
     TopBarButton,
-    Assessment
+    ExpandMenu
   },
   provide() {
     return {
@@ -221,6 +232,8 @@ export default {
     return {
       downloading: false,
       isSidebarVisible: true,
+      showAssessment: false,
+      assessmentState: {},
       logScroll: debounce(function () {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
@@ -232,8 +245,7 @@ export default {
             }
           })
         }
-      }, 500),
-      showAssessment: false
+      }, 500)
     }
   },
   computed: {
@@ -278,68 +290,38 @@ export default {
   watch: {
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId
-        });
+        this.loadDocumentData();
       }
     },
     studyStepId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId
-        });
+        this.loadDocumentData();
       }
     },
+    annotations: {
+      handler(newAnnotations, oldAnnotations) {
+        if (this.showAssessment && newAnnotations.length > (oldAnnotations?.length || 0)) {
+          this.showAssessment = false;
+        }
+      },
+      deep: true
+    },
+    comments: {
+      handler(newComments, oldComments) {
+        if (this.showAssessment && newComments.length > (oldComments?.length || 0)) {
+          this.showAssessment = false;
+        }
+      },
+      deep: true
+    }
   },
   mounted() {
-    this.eventBus.on('pdfScroll', (annotationId) => {
-      this.scrollTo(annotationId);
-      if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "pdfScroll",
-          data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            annotationId: annotationId
-          }
-        });
-      }
-    });
-
-    // get tagsets
-    /*this.$socket.emit("tagSetGetAll", {}, (result) => {
-      if (!result.success) {
-        this.eventBus.emit('toast', {
-          title: "Tag Set Error",
-          message: result.message,
-          variant: "danger"
-        });
-      }
-    });*/
-    /*this.$socket.emit("tagGetAll", {}, (result) => {
-      if (!result.success) {
-        this.eventBus.emit('toast', {
-          title: "Tag Error",
-          message: result.message,
-          variant: "danger"
-        });
-      }
-    });*/
-
-    // init component
+    this.setupEventListeners();
     this.load();
-
-    // scrolling
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     document.addEventListener('copy', this.onCopy);
   },
   beforeUnmount() {
-    // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
     document.removeEventListener('copy', this.onCopy);
@@ -348,9 +330,64 @@ export default {
     ...mapMutations({
       setSetting: "settings/set",
     }),
+    
+    setupEventListeners() {
+      this.eventBus.on('pdfScroll', (annotationId) => {
+        this.scrollTo(annotationId);
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "pdfScroll",
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
+              annotationId: annotationId
+            }
+          });
+        }
+      });
+    },
+    
+    loadDocumentData() {
+      this.$socket.emit("documentGetData", {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId
+      });
+    },
+    
+    load() {
+      this.loadDocumentData();
+      this.subscribeToDocument();
+      this.loadNlpSupport();
+    },
+    
+    subscribeToDocument() {
+      this.$socket.emit("documentSubscribe", {documentId: this.documentId}, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Document subscribe error",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
+    },
+    
+    loadNlpSupport() {
+      if (this.nlpEnabled) {
+        this.$socket.emit("serviceCommand", {
+          service: "NLPService",
+          command: "skillGetConfig",
+          data: {name: "sentiment_classification"}
+        });
+      }
+    },
+    
     decisionSubmit(decision) {
       this.$refs.decisionSubmit.open(decision)
     },
+    
     toggleNlp() {
       const newNlpActive = !this.nlpActive
       this.setSetting({
@@ -362,12 +399,39 @@ export default {
         value: newNlpActive
       })
     },
+    
     toggleSidebar() {
       this.isSidebarVisible = !this.isSidebarVisible;
     },
+    
+    toggleMode() {
+      if (this.showAssessment && this.$refs.assessment) {
+        this.assessmentState = this.$refs.assessment.saveState();
+      }
+      
+      this.showAssessment = !this.showAssessment;
+      
+      if (!this.showAssessment) {
+        this.isSidebarVisible = true;
+      }
+      
+      if (this.showAssessment && Object.keys(this.assessmentState).length === 0) {
+        this.$nextTick(() => {
+          if (this.$refs.assessment && !this.$refs.assessment.assessmentOutput) {
+            this.$refs.assessment.refreshAssessment();
+          }
+        });
+      }
+    },
+    
+    onAssessmentStateChanged(newState) {
+      this.assessmentState = newState;
+    },
+    
     scrollActivity() {
       this.logScroll();
     },
+    
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['table/annotation/get'](annotationId)
 
@@ -385,20 +449,12 @@ export default {
         }
 
         const scrollContainer = document.getElementById('viewerContainer');
-        // Correct offset since we have a fixed top
-        offset -= 52.5; // see css class padding-top
+        offset -= 52.5;
 
-
-        // nb. We only compute the scroll offset once at the start of scrolling.
-        // This is important as the highlight may be removed from the document during
-        // the scroll due to a page transitioning from rendered <-> un-rendered.
         await scrollElement(scrollContainer, offset);
 
         if (inPlaceholder) {
-          const anchor = await this._waitForAnnotationToBeAnchored(
-              annotation,
-              3000
-          );
+          const anchor = await this._waitForAnnotationToBeAnchored(annotation, 3000);
           if (!anchor) {
             return;
           }
@@ -408,68 +464,39 @@ export default {
           }
           await scrollElement(scrollContainer, offset);
         }
-
       }
     },
+    
     anchorIsInPlaceholder(anchor) {
       const highlight = anchor.highlights?.[0];
       return highlight && isInPlaceholder(highlight);
     },
+    
     _anchorOffset(anchor) {
       if (!anchor.highlights) {
-        // This anchor was not resolved to a location in the document.
         return null;
       }
       const highlight = anchor.highlights[0];
       return offsetRelativeTo(highlight, document.querySelector('#viewerContainer'));
     },
+    
     async _waitForAnnotationToBeAnchored(annotation, maxWait) {
       const start = Date.now();
       let anchor;
       do {
-        // nb. Re-anchoring might result in a different anchor object for the
-        // same annotation.
         anchor = this.anchors.find(a => a.annotation === annotation);
         if (!anchor || this.anchorIsInPlaceholder(anchor)) {
           anchor = null;
-
-          // If no anchor was found, wait a bit longer and check again to see if
-          // re-anchoring completed.
           await this.delay(20);
         }
       } while (!anchor && Date.now() - start < maxWait);
       return anchor ?? null;
     },
+    
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
-    load() {
-      this.$socket.emit("documentGetData", {
-        documentId: this.documentId,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId
-      });
-
-      // Join Room for document updates
-      this.$socket.emit("documentSubscribe", {documentId: this.documentId}, (res) => {
-        if (!res.success) {
-          this.eventBus.emit("toast", {
-            title: "Document subscribe error",
-            message: res.message,
-            variant: "danger",
-          });
-        }
-      });
-
-      // check for available nlp support (for now hard-coded sentiment analysis)
-      if (this.nlpEnabled) {
-        this.$socket.emit("serviceCommand", {
-          service: "NLPService",
-          command: "skillGetConfig",
-          data: {name: "sentiment_classification"}
-        });
-      }
-    },
+    
     async leave() {
       if (this.showAssessment && this.$refs.assessment) {
         return await this.$refs.assessment.leave();
@@ -477,24 +504,17 @@ export default {
         return await this.$refs.sidebar.leave();
       }
     },
+    
     downloadAnnotations() {
-
       const attributesToDelete = [
-        "draft",
-        "anonymous",
-        "createdAt",
-        "updatedAt",
-        "deleted",
-        "deletedAt",
-        "documentId",
-        "studySessionId",
-        "studyStepId",
-        "userId"
+        "draft", "anonymous", "createdAt", "updatedAt", "deleted", 
+        "deletedAt", "documentId", "studySessionId", "studyStepId", "userId"
       ];
+      
       const annotations = this.annotations.map(a => {
         return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
       });
-      // change tagId to tagName
+      
       annotations.forEach(a => {
         if (a.tagId) {
           const tag = this.$store.getters["table/tag/get"](a.tagId);
@@ -508,11 +528,10 @@ export default {
       });
 
       const content = mergeAnnotationsAndComments(annotations, comments);
-
       const filename = `annotations_${this.documentId}_${Date.now()}.json`;
       downloadObjectsAs(content, filename, "json");
-
     },
+    
     onCopy() {
       const selection = document.getSelection();
       if (selection && selection.toString().trim() !== '') {
@@ -529,16 +548,12 @@ export default {
           });
         }
       }
-    },
-    toggleMode() {
-      this.showAssessment = !this.showAssessment;
     }
   }
 }
 </script>
 
 <style scoped>
-
 #sidebarContainer {
   position: relative;
   padding: 0;
@@ -557,5 +572,4 @@ IconBoostrap[disabled] {
     display: none;
   }
 }
-
 </style>
