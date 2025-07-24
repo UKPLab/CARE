@@ -11,7 +11,7 @@
       tabindex="-1"
     >
       <div
-        :class="xl && 'modal-xl' || lg && 'modal-lg'"
+        :class="sizeClass"
         class="modal-dialog"
         role="document"
       >
@@ -70,8 +70,7 @@
 /**
  * Basic Modal to include in other components
  *
- * @props xl: Boolean Use xl size
- * @props lg: Boolean Use lg size
+ * @props size: String Modal size (sm, md, lg, xl)
  * @props autoOpen: Boolean Open modal on mount
  * @props disableKeyboard: Boolean Disable keyboard events
  * @props removeClose: Boolean Remove close button
@@ -97,15 +96,11 @@ export default {
     }
   },
   props: {
-    xl: {
-      type: Boolean,
+    size: {
+      type: String,
       required: false,
-      default: false,
-    },
-    lg: {
-      type: Boolean,
-      required: false,
-      default: false,
+      default: 'md',
+      validator: (value) => ['sm', 'md', 'lg', 'xl'].includes(value)
     },
     autoOpen: {
       type: Boolean,
@@ -143,6 +138,12 @@ export default {
     }
   },
   computed: {
+    sizeClass() {
+      if (this.size === 'md') {
+        return ''; // Default size, no additional class needed
+      }
+      return `modal-${this.size}`;
+    },
     progressPercent() {
       if (this.progressData) {
         return Math.round(this.progressData.current / this.progressData.total * 100);

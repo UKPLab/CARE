@@ -747,7 +747,6 @@ export default {
         this.hasButtons = true;
       }
 
-      console.log("getFilteredButtons", filteredButtons, row);
 
       return filteredButtons;
     },

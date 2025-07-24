@@ -308,7 +308,7 @@ export default {
       return this.getSourcesUpToCurrentStep(this.studyStepId);
     },
     generalSettings() {
-      return this.stepConfig?.settings || [];
+      return this.getSettingsForStep(this.studyStepId);
     },
   },
   watch: {
@@ -407,10 +407,11 @@ export default {
       const formData = {};
       
       if (this.generalSettings.length) {
+        console.log("workflow step config:", this.workflowSteps);
         this.generalSettings.forEach((setting) => {
           // Check if we have existing data (update mode)
-          if (this.isUpdateMode && this.stepConfig.generalSettings && this.stepConfig.generalSettings[setting.name] !== undefined) {
-            formData[setting.name] = this.stepConfig.generalSettings[setting.name];
+          if (this.isUpdateMode && this.stepConfig.settings && this.stepConfig.settings[setting.name] !== undefined) {
+            formData[setting.name] = this.stepConfig.settings[setting.name];
           } else {
             // Use default value or appropriate initial value based on type
             if (setting.type === 'checkbox') {
@@ -513,6 +514,10 @@ export default {
       if (!skill) return {};
       // Return the input keys (v1, v2, etc.)
       return Object.keys(skill.config.input.data || {});
+    },
+    getSettingsForStep(stepId) {
+      const stepConfig = this.workflowSteps.find((step) => step.id === stepId);
+      return stepConfig ? stepConfig.configuration.settings || [] : [];
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.

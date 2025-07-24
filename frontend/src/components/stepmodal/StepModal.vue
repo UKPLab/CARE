@@ -3,8 +3,7 @@
   <span v-else>
     <BasicModal
       ref="modal"
-      :lg="studyStep?.configuration?.settings?.modalSize === 'lg'"
-      :xl="studyStep?.configuration?.settings?.modalSize === 'xl'"
+      :size="studyStep?.configuration?.settings?.modalSize"
       :name="studyStep?.configuration?.name || 'Modal'"
       :class="modalClasses"
       :style="{ backgroundColor: studyStep?.configuration?.backgroundColor || '' }"

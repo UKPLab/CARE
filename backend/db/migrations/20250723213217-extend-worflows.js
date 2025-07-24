@@ -29,8 +29,10 @@ module.exports = {
                 label: "Modal Size",
                 type: "select",
                 required: true,
-                default: "lg",
+                default: "md",
                 options: [
+                  { value: "sm", name: "Small" },
+                  { value: "md", name: "Medium" },
                   { value: "lg", name: "Large" },
                   { value: "xl", name: "Extra Large" },
                 ],
