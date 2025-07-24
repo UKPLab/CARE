@@ -76,6 +76,11 @@
               {{ progressPercent }}%
             </div>
           </div>
+
+          <div class="mt-2 text-muted">
+            Current request running since <strong>{{ elapsedTime }}</strong>
+          </div>
+
         </div>
       </template>
 
@@ -94,12 +99,9 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import BasicTable from "@/basic/Table.vue";
-import BasicTable from "@/basic/Table.vue";
 
 export default {
   name: "GradingModal",
-  components: { StepperModal, FormSelect, BasicTable },
-  subscribeTable: ["document"],
   components: { StepperModal, FormSelect, BasicTable },
   subscribeTable: ["document"],
   emits: ["submit"],
@@ -122,7 +124,17 @@ export default {
       // TODO: This processing is updated with backgroundTasks variable from Server.js
       backgroundTasks: {}, // Use this for tests: {"preprocess": {1:{},5:{}}, "currentSubmissionsCount": 10 }
       currentStep: 1,
+      elapsedTimer: null,
     };
+  },
+  watch: {
+    isProcessingActive(newVal) {
+      if (newVal) {
+        this.startElapsedTimer();
+      } else {
+        this.stopElapsedTimer();
+      }
+    }
   },
   computed: {
     processingSteps() {
@@ -204,6 +216,33 @@ export default {
       const processed = this.processedCount;
       return Math.round((processed / total) * 100);
     },
+    elapsedTime() {
+      const start = this.processing?.currentReqStart;
+      if (start) {
+        const diff = Math.floor((Date.now() - start) / 1000);
+        if (diff < 60) {
+          return `${diff}s`;
+        } else if (diff < 3600) {
+          const mins = Math.floor(diff / 60);
+          const secs = diff % 60;
+          return `${mins}m ${secs}s`;
+        } else {
+          const hours = Math.floor(diff / 3600);
+          const mins = Math.floor((diff % 3600) / 60);
+          const secs = diff % 60;
+          return `${hours}h ${mins}m ${secs}s`;
+        }
+      }
+      return "0s";
+    },
+  },
+  mounted() {
+    if (this.isProcessingActive) {
+      this.startElapsedTimer();
+    }
+  },
+  beforeUnmount() {
+    this.stopElapsedTimer();
   },
   methods: {
     open() {
@@ -272,6 +311,18 @@ export default {
       });
       this.close();
     },
+  },
+  startElapsedTimer() {
+    if (this.elapsedTimer) return;
+    this.elapsedTimer = setInterval(() => {
+      this.$forceUpdate();
+    }, 1000);
+  },
+  stopElapsedTimer() {
+    if (this.elapsedTimer) {
+      clearInterval(this.elapsedTimer);
+      this.elapsedTimer = null;
+    }
   },
 };
 </script> 

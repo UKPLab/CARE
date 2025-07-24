@@ -990,10 +990,18 @@ class DocumentSocket extends Socket {
                                 )
                             );
                         }
+
+                        if (this.server.backgroundTasks.currentReqStart) {
+                            delete this.server.backgroundTasks.currentReqStart;
+                        }
                         delete this.server.backgroundTasks.preprocess[item.requestId];
                         resolve();
                     };
 
+                    if (!this.server.backgroundTasks.currentReqStart) {
+                        this.server.backgroundTasks.currentReqStart = Date.now();
+                    }
+                    
                     this.server.backgroundTasks.activeListeners[item.requestId] = listener;
                     this.socket.once(item.requestId, listener);
 
