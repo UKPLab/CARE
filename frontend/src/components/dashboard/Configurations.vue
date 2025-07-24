@@ -34,6 +34,42 @@
       </div>
     </template>
   </Modal>
+
+  <!-- JSON Configuration Editor Modal -->
+  <Modal ref="editModal" name="json-editor" lg>
+    <template #title>
+      Edit Configuration: {{ selectedConfig?.name }}
+    </template>
+    <template #body>
+      <div v-if="selectedConfig" class="json-editor-container">
+        <textarea 
+          v-model="editableConfigContent" 
+          class="form-control json-textarea"
+          rows="20"
+          placeholder="Edit JSON content here..."
+        ></textarea>
+      </div>
+    </template>
+    <template #footer>
+      <button
+        class="btn btn-secondary"
+        data-bs-dismiss="modal"
+        type="button"
+        @click="$refs.editModal.close()"
+      >
+        Cancel
+      </button>
+      <button
+        class="btn btn-primary"
+        type="button"
+        @click="saveConfiguration"
+        :disabled="saving"
+      >
+        <span v-if="saving" class="spinner-border spinner-border-sm me-2"></span>
+        Save
+      </button>
+    </template>
+  </Modal>
 </template>
 
 <script>
@@ -65,6 +101,8 @@ export default {
     return {
       selectedConfig: null,
       configContent: "",
+      editableConfigContent: null,
+      saving: false,
       options: {
         striped: true,
         hover: true,
@@ -77,6 +115,7 @@ export default {
       columns: [
         { name: "Name", key: "name", sortable: true },
         { name: "Created", key: "createdAt", sortable: true },
+        { name: "Updated", key: "updatedAt", sortable: true },
       ],
       buttons: [
         {
@@ -87,6 +126,15 @@ export default {
           },
           title: "View configuration",
           action: "view",
+        },
+        {
+          icon: "pencil-square",
+          options: {
+            iconOnly: true,
+            specifiers: { "btn-outline-primary": true },
+          },
+          title: "Edit configuration",
+          action: "edit",
         },
         {
           icon: "trash",
@@ -111,6 +159,7 @@ export default {
           type: "Configuration",
           description: doc.description || "",
           createdAt: doc.createdAt,
+          updatedAt: doc.updatedAt,
         }));
     },
   },
@@ -119,6 +168,9 @@ export default {
       switch (data.action) {
         case "view":
           this.viewConfiguration(data.params);
+          break;
+        case "edit":
+          this.editConfiguration(data.params);
           break;
         case "delete":
           this.deleteConfiguration(data.params);
@@ -162,6 +214,100 @@ export default {
           const errorMessage = response && response.message ? response.message : "Failed to load configuration";
           this.eventBus.emit('toast', {
             title: "Configuration Error",
+            message: errorMessage,
+            variant: "danger"
+          });
+        }
+      });
+    },
+
+    editConfiguration(config) {
+      this.selectedConfig = config;
+      
+      this.$socket.emit("documentGet", {
+        documentId: config.id
+      }, (response) => {
+        if (response && response.success) {
+          try {
+            if (response.data && response.data.file) {
+              let fileContent;
+              if (response.data.file instanceof ArrayBuffer) {
+                const uint8Array = new Uint8Array(response.data.file);
+                fileContent = new TextDecoder().decode(uint8Array);
+              } else {
+                fileContent = response.data.file.toString();
+              }
+              
+              // Set the raw JSON string content for editing
+              this.editableConfigContent = fileContent;
+              this.$refs.editModal.openModal();
+            } else {
+              throw new Error("No file data received from server");
+            }
+          } catch (error) {
+            console.error("Error loading configuration:", error);
+            this.eventBus.emit('toast', {
+              title: "Configuration Error",
+              message: "Failed to load configuration content: " + error.message,
+              variant: "danger"
+            });
+          }
+        } else {
+          const errorMessage = response && response.message ? response.message : "Failed to load configuration";
+          this.eventBus.emit('toast', {
+            title: "Configuration Error",
+            message: errorMessage,
+            variant: "danger"
+          });
+        }
+      });
+    },
+
+    saveConfiguration() {
+      if (!this.editableConfigContent) {
+        this.eventBus.emit('toast', {
+          title: "Configuration Error",
+          message: "No configuration content to save",
+          variant: "danger"
+        });
+        return;
+      }
+
+      // Validate JSON before saving
+      try {
+        JSON.parse(this.editableConfigContent);
+      } catch (error) {
+        this.eventBus.emit('toast', {
+          title: "Invalid JSON",
+          message: "Please check your JSON syntax: " + error.message,
+          variant: "danger"
+        });
+        return;
+      }
+
+      this.saving = true;
+
+      const jsonContent = JSON.parse(this.editableConfigContent);
+
+      this.$socket.emit("documentUpdateContent", {
+        documentId: this.selectedConfig.id,
+        content: jsonContent
+      }, (response) => {
+        this.saving = false;
+        
+        if (response && response.success) {
+          this.eventBus.emit('toast', {
+            title: "Configuration Updated",
+            message: "Configuration file has been successfully updated",
+            variant: "success"
+          });
+          setTimeout(() => {
+            this.$refs.editModal.close();
+          }, 100);
+        } else {
+          const errorMessage = response && response.message ? response.message : "Failed to update configuration";
+          this.eventBus.emit('toast', {
+            title: "Configuration Update Error",
             message: errorMessage,
             variant: "danger"
           });
@@ -217,5 +363,22 @@ export default {
   white-space: pre-wrap;
   word-wrap: break-word;
   color: #212529;
+}
+
+.json-editor-container {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.json-textarea {
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  color: #212529;
+  resize: vertical;
 }
 </style>
