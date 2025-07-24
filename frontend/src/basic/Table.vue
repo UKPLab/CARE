@@ -659,14 +659,9 @@ export default {
       if (button && button.stats) {
         // Only include the stat fields in the stats data
        Object.entries(button.stats).forEach(([statsKey, paramKey]) => {
-        if (data.params[paramKey] === undefined) {
-          console.warn(`Parameter ${paramKey} not found in data.params`);
-          return;
-        } 
        statsParams[statsKey] = data.params[paramKey];
       });
       }
-      console.log('new Params',statsParams);
         if (this.acceptStats) {
           this.$socket.emit("stats", {
             action: "actionClick",

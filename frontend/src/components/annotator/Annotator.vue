@@ -554,9 +554,11 @@ export default {
         "studyStepId",
         "userId"
       ];
-      const annotations = this.annotations.map(a => {
-        return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
-      });
+      const annotations = this.annotations
+        .filter(a => a.studySessionId === this.studySessionId)
+        .map(a => {
+          return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
+        });
       // change tagId to tagName
       annotations.forEach(a => {
         if (a.tagId) {

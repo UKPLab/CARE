@@ -363,7 +363,6 @@ export default {
     },
     initializeModal() {
       this.stepConfig = this.modelValue || {};
-      console.log("Step Config:", this.stepConfig);
       // Initialize services
       if (this.stepConfig?.services?.length) {
         this.selectedSkills = this.stepConfig.services.map((service) => {
@@ -407,7 +406,6 @@ export default {
       const formData = {};
       
       if (this.generalSettings.length) {
-        console.log("workflow step config:", this.workflowSteps);
         this.generalSettings.forEach((setting) => {
           // Check if we have existing data (update mode)
           if (this.isUpdateMode && this.stepConfig.settings && this.stepConfig.settings[setting.name] !== undefined) {

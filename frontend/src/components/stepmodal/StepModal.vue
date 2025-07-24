@@ -170,9 +170,7 @@ export default {
   },
   computed: {
     studyStep() {
-      const step = this.$store.getters["table/study_step/get"](this.studyStepId);
-      console.log('Fetching study step:', step);
-      return step;
+      return this.$store.getters["table/study_step/get"](this.studyStepId);;
     },
     studySteps() {
       return this.studyStep.studyId !== 0
