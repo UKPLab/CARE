@@ -115,6 +115,12 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'projectId',
                 as: 'project',
             });
+
+            // A document belongs to exactly one submission (may be NULL for legacy docs)
+            Document.belongsTo(models["submission"], {
+                foreignKey: "submissionId",
+                as: "submission",
+            });
         }
     }
 
@@ -133,6 +139,7 @@ module.exports = (sequelize, DataTypes) => {
         parentDocumentId: DataTypes.INTEGER,
         hideInFrontend: DataTypes.BOOLEAN,
         projectId: DataTypes.INTEGER,
+        submissionId: DataTypes.INTEGER,
     }, {
         sequelize: sequelize,
         modelName: 'document',
