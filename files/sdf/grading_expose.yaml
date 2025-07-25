@@ -35,14 +35,6 @@ input:
                     description:
                       type: string
                       description: The description of the criterion
-
-          criteria_to_grade:
-            type: array
-            description: The list of criteria that needs to be graded
-            items:
-              type: string
-              description: The name of the criterion
-
   example:
     {
       "submission": submission.zip,
