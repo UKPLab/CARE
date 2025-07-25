@@ -10,57 +10,116 @@ input:
       submission:
         type: object
         description: The zip file of the submssion, which includes .tex file for the exposé, .pdf file for the exposé, and .bib file for the bibliography
-      grading_config:
+      assessment_config:
         type: object
-        description: The json configure for grading, which includes the detailed criterion and a list of criteria that needs to be graded
+        description: The json configure for grading criteria which be used for LLMentor
         properties:
-          grading_criteria:
+          description:
+            type: string
+            description: Description of the configuration
+          version:
+            type: string
+            description: Version of the configuration
+          type:
+            type: string
+            description: Type of the configuration
+          rubrics:
             type: array
-            description: The detailed criterion to grade the exposé
+            description: The rubrics for grading the exposé
             items:
               type: object
               properties:
                 name:
                   type: string
-                  description: The name of the criterion
-              scoring:
-                type: array
-                description: The scoring of the criterion
-                items:
-                  type: object
-                  properties:
-                    points:
-                      type: integer
-                      description: The points of the criterion
-                    description:
-                      type: string
-                      description: The description of the criterion
+                  description: The name of the rubric
+                description:
+                  type: string
+                  description: The description of the rubric
+                criteria:
+                  type: array
+                  description: The criteria within the rubric
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        description: The name of the criterion
+                      description:
+                        type: string
+                        description: The description of the criterion
+                      function:
+                        type: string
+                        description: The function type for grading
+                      maxPoints:
+                        type: integer
+                        description: The maximum points for the criterion
+                      scoring:
+                        type: array
+                        description: The scoring options for the criterion
+                        items:
+                          type: object
+                          properties:
+                            points:
+                              type: integer
+                              description: The points for this scoring option
+                            description:
+                              type: string
+                              description: The description of this scoring option
   example:
     {
       "submission": submission.zip,
-      "grading_config": {
-        "grading_criteria": [
+      "assessment_config": {
+        "description": "the configuration for grading criteria which be used for LLMentor",
+        "version": "0.0.1",
+        "type": "assessment",
+        "rubrics": [
           {
-            "name": Language quality,
-            "scoring": [
+            "name": "Language/Quality",
+            "description": "Assessment of language quality and structural coherence of the text",
+            "criteria": [
               {
-                "points": 0,
-                "description": many linguistic errors (over 10 errors) (e.g. wrong tense, wrong personal pronouns)
+                "name": "Language quality",
+                "description": "Evaluation of linguistic accuracy and sentence clarity",
+                "function": "auto_grading",
+                "maxPoints": 2,
+                "scoring": [
+                  {
+                    "points": 0,
+                    "description": "many linguistic errors (over 10 errors) (e.g. wrong tense, wrong personal pronouns)"
+                  },
+                  {
+                    "points": 1,
+                    "description": "few linguistic errors (0-10 errors), clear and comprehensible sentences"
+                  },
+                  {
+                    "points": 2,
+                    "description": "no linguistic errors (0 errors), clear and comprehensible sentences with consistent terminology"
+                  }
+                ]
               },
               {
-                "points": 1,
-                "description": few linguistic errors (0-10 errors), clear and comprehensible sentences
-              },
-              {
-                "points": 2,
-                "description": no linguistic errors (0 errors), clear and comprehensible sentences with consistent terminology
+                "name": "Common Thread",
+                "description": "Assessment of structural continuity and coherence throughout the text",
+                "function": "auto_grading",
+                "maxPoints": 2,
+                "scoring": [
+                  {
+                    "points": 0,
+                    "description": "No recognizable common thread, the structure is unclear and jumpy"
+                  },
+                  {
+                    "points": 1,
+                    "description": "Partly recognizable, but the structure is not continuous"
+                  },
+                  {
+                    "points": 2,
+                    "description": "Text has a continuous structure that is easy to follow, common thread is clear and recognizable from beginning to end"
+                  }
+                ]
               }
             ]
           }
-        ],
-        "criteria_to_grade": [
-          "Language quality"
-        ]
+          ]     
       }
     }
 output:
