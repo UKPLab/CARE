@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="topbar"
     id="wrapper"
     class="nav-container"
   >
@@ -35,8 +36,12 @@
         <ul class="navbar-nav">
           <li class="nav-item me-3">
             <div style="position:relative; display:flex; align-items:center; height:100%;">
-              <div @click.stop="toggleProjectDropdown" class="project-box">
-                Project: {{ currentProjectName }}
+              <div 
+                @click.stop="toggleProjectDropdown" 
+                class="project-box"
+                :title="`Project: ${currentProjectName}`"
+              >
+                <span class="project-text">Project: {{ currentProjectName }}</span>
               </div>
               <div
                 v-if="showProjectDropdown"
@@ -204,10 +209,10 @@ export default {
     },
   },
   mounted() {
-    document.addEventListener('click', this.handleClickOutside);
+    this.$refs.topbar.addEventListener('click', this.handleClickOutside);
   },
   beforeUnmount() {
-    document.removeEventListener('click', this.handleClickOutside);
+    this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
   },
 }
 
@@ -262,13 +267,18 @@ body.sidebar-exists #backButton {
   background: #f5f5f5;
   border: 1px solid darkblue;
   color: darkblue;
-  border-radius:   4px;
+  border-radius: 4px;
   vertical-align: middle;
   max-width: 180px;
+  cursor: pointer;
+}
+
+.project-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: pointer;
+  flex: 1;
+  min-width: 0;
 }
 
 .project-box:hover {
