@@ -292,7 +292,7 @@ export default {
     preprocess() {
       this.$socket.emit("submissionsPreprocess", {
         skill: this.selectedSkill,
-        config: this.selectedConfig,
+        config: this.selectedConfig, // TODO: This will be passed exactly after parsing the JSON, no need to send any extra info; just display the name of the json file and pass the value to the backend
         inputFiles: this.selectedInputRows
       }, (res) => {
         if (res.success) {
