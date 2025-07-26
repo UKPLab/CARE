@@ -925,7 +925,7 @@ class DocumentSocket extends Socket {
         if (await this.isAdmin()) {           
             const requestIds = [];
             const preprocessItems = [];
-            this.server.backgroundTasks.activeListeners = {};
+            this.server.preprocess.activeListeners = {};
 
             for (const subId of data.inputFiles) {
                 let docs;
@@ -966,16 +966,17 @@ class DocumentSocket extends Socket {
 
                 const nlpInput = {
                     submission: inputFiles,
-                    grading_criteria: data.config, // TODO: The json will be passed exactly from the frontend, needs implementation
+                    assessment_config: data.config, // TODO: The json will be passed exactly from the frontend, needs implementation
                 };
 
                 const requestId = uuid();
                 requestIds.push(requestId);
                 preprocessItems.push({ requestId, submissionId: subId, docIds, skillName, nlpInput });
-                this.server.backgroundTasks.preprocess[requestId] = { submissionId: subId, docIds, skillName };
+                if (!this.server.preprocess.requests) this.server.preprocess.requests = {};
+                this.server.preprocess.requests[requestId] = { submissionId: subId, docIds, skillName };
             }
 
-            this.server.backgroundTasks.currentSubmissionsCount = preprocessItems.length;
+            this.server.preprocess.currentSubmissionsCount = preprocessItems.length;
 
             for (const item of preprocessItems) {
                 await new Promise((resolve) => {                        
@@ -1011,18 +1012,18 @@ class DocumentSocket extends Socket {
                             this.logger.error(`Error processing NLP request ${item.requestId}: ${err.message}`, err);
                         }
 
-                        if (this.server.backgroundTasks.currentReqStart) {
-                            delete this.server.backgroundTasks.currentReqStart;
+                        if (this.server.preprocess.currentReqStart) {
+                            delete this.server.preprocess.currentReqStart;
                         }
-                        delete this.server.backgroundTasks.preprocess[item.requestId];
+                        if (this.server.preprocess.requests) delete this.server.preprocess.requests[item.requestId];
                         resolve();
                     };
 
-                    if (!this.server.backgroundTasks.currentReqStart) {
-                        this.server.backgroundTasks.currentReqStart = Date.now();
+                    if (!this.server.preprocess.currentReqStart) {
+                        this.server.preprocess.currentReqStart = Date.now();
                     }
 
-                    this.server.backgroundTasks.activeListeners[item.requestId] = listener;
+                    this.server.preprocess.activeListeners[item.requestId] = listener;
                     try {
                         this.socket.once(item.requestId, listener);
                         this.socket.emit("serviceRequest", {
@@ -1040,23 +1041,21 @@ class DocumentSocket extends Socket {
                 });
             }
 
-            this.server.backgroundTasks.activeListeners = {};
-            this.server.backgroundTasks.preprocess = {};
-            this.server.backgroundTasks.currentSubmissionsCount = 0;
+            this.server.preprocess = {};
         }
     }
 
     async cancelSubmissions(data, options) {
         if (await this.isAdmin()) {
-            if (this.server.backgroundTasks.activeListeners) {
-                Object.entries(this.server.backgroundTasks.activeListeners).forEach(([requestId, listener]) => {
+            if (this.server.preprocess.activeListeners) {
+                Object.entries(this.server.preprocess.activeListeners).forEach(([requestId, listener]) => {
                     this.socket.removeListener(requestId, listener);
                 });
-                this.server.backgroundTasks.activeListeners = {};
+                this.server.preprocess.activeListeners = {};
             }
 
-            this.server.backgroundTasks.preprocess = {};
-            this.server.backgroundTasks.currentSubmissionsCount = 0;
+            this.server.preprocess.requests = {};
+            this.server.preprocess.currentSubmissionsCount = 0;
         }
     }
 
