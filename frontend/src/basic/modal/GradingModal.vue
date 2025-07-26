@@ -292,7 +292,59 @@ export default {
     preprocess() {
       this.$socket.emit("submissionsPreprocess", {
         skill: this.selectedSkill,
-        config: this.selectedConfig, // TODO: This will be passed exactly after parsing the JSON, no need to send any extra info; just display the name of the json file and pass the value to the backend
+        config: {
+        "description": "the configuration for grading criteria which be used for LLMentor",
+        "version": "0.0.1",
+        "type": "assessment",
+        "rubrics": [
+          {
+            "name": "Language/Quality",
+            "description": "Assessment of language quality and structural coherence of the text",
+            "criteria": [
+              {
+                "name": "Language quality",
+                "description": "Evaluation of linguistic accuracy and sentence clarity",
+                "function": "auto_grading",
+                "maxPoints": 2,
+                "scoring": [
+                  {
+                    "points": 0,
+                    "description": "many linguistic errors (over 10 errors) (e.g. wrong tense, wrong personal pronouns)"
+                  },
+                  {
+                    "points": 1,
+                    "description": "few linguistic errors (0-10 errors), clear and comprehensible sentences"
+                  },
+                  {
+                    "points": 2,
+                    "description": "no linguistic errors (0 errors), clear and comprehensible sentences with consistent terminology"
+                  }
+                ]
+              },
+              {
+                "name": "Common Thread",
+                "description": "Assessment of structural continuity and coherence throughout the text",
+                "function": "auto_grading",
+                "maxPoints": 2,
+                "scoring": [
+                  {
+                    "points": 0,
+                    "description": "No recognizable common thread, the structure is unclear and jumpy"
+                  },
+                  {
+                    "points": 1,
+                    "description": "Partly recognizable, but the structure is not continuous"
+                  },
+                  {
+                    "points": 2,
+                    "description": "Text has a continuous structure that is easy to follow, common thread is clear and recognizable from beginning to end"
+                  }
+                ]
+              }
+            ]
+          }
+          ]     
+      },
         inputFiles: this.selectedInputRows
       }, (res) => {
         if (res.success) {

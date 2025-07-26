@@ -966,7 +966,7 @@ class DocumentSocket extends Socket {
 
                 const nlpInput = {
                     submission: inputFiles,
-                    grading_criteria: data.config, // TODO: The json will be passed exactly from the frontend, needs implementation
+                    assessment_config: data.config, // TODO: The json will be passed exactly from the frontend, needs implementation
                 };
 
                 const requestId = uuid();
