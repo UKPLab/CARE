@@ -6,7 +6,7 @@
       :steps="[{ title: 'Select Skill' }, { title: 'Select input file' }]"
       :validation="stepValid"
       submit-text="Start Grading"
-      @submit="preprocess"
+      @submit="preprocessing"
     >
       <template #title>
         <h5 class="modal-title text-primary">Preprocess Grading</h5>
@@ -62,7 +62,7 @@
         <div class="mb-3">
           <div class="d-flex align-items-center mb-2">
             <span class="me-2">Processed:</span>
-            <strong>{{ processedCount }} / {{ processing?.currentSubmissionsCount || 0 }}</strong>
+            <strong>{{ processedCount }} / {{ preprocess?.currentSubmissionsCount || 0 }}</strong>
           </div>
           <div class="progress mb-3" style="height: 20px;">
             <div
@@ -71,7 +71,7 @@
               :style="{ width: progressPercent + '%' }"
               :aria-valuenow="processedCount"
               :aria-valuemin="0"
-              :aria-valuemax="processing.currentSubmissionsCount || 0"
+              :aria-valuemax="preprocess.currentSubmissionsCount || 0"
             >
               {{ progressPercent }}%
             </div>
@@ -121,8 +121,8 @@ export default {
       columns: [
         { key: 'name', label: 'Name' },
       ],
-      // TODO: This processing is updated with backgroundTasks variable from Server.js
-      backgroundTasks: {}, // Use this for tests: {"preprocess": {1:{},5:{}}, "currentSubmissionsCount": 10 }
+      // TODO: This processing is updated with preprocess variable from Server.js
+      preprocess: {}, // Use this for tests: {"requests": {1:{},5:{}}, "currentSubmissionsCount": 10 }
       currentStep: 1,
       elapsedTimer: null,
     };
@@ -197,27 +197,27 @@ export default {
     },
     isProcessingActive() {
       return (
-        this.processing &&
-        this.processing.processing &&
-        typeof this.processing.processing === 'object' &&
-        Object.keys(this.processing.processing).length > 0
+        this.preprocess &&
+        this.preprocess.requests &&
+        typeof this.preprocess.requests === 'object' &&
+        Object.keys(this.preprocess.requests).length > 0
       );
     },
     processedCount() {
       if (!this.isProcessingActive) return 0;
-      const total = this.processing?.currentSubmissionsCount || 0;
-      const remaining = Object.keys(this.processing.processing).length;
+      const total = this.preprocess?.currentSubmissionsCount || 0;
+      const remaining = Object.keys(this.preprocess.requests).length;
       return total - remaining;
     },
     progressPercent() {
       if (!this.isProcessingActive) return 0;
-      const total = this.processing?.currentSubmissionsCount || 0;
+      const total = this.preprocess?.currentSubmissionsCount || 0;
       if (!total) return 0;
       const processed = this.processedCount;
       return Math.round((processed / total) * 100);
     },
     elapsedTime() {
-      const start = this.processing?.currentReqStart;
+      const start = this.preprocess?.currentReqStart;
       if (start) {
         const diff = Math.floor((Date.now() - start) / 1000);
         if (diff < 60) {
@@ -289,7 +289,7 @@ export default {
         }
       });
     },
-    preprocess() {
+    preprocessing() {
       this.$socket.emit("submissionsPreprocess", {
         skill: this.selectedSkill,
         config: {
