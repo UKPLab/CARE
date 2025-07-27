@@ -126,7 +126,7 @@
                 class="col text-end"
             >
               <SidebarButton
-                  v-if="settingResponse && !readonly"
+                  v-if="settingResponse && !readOnly"
                   :loading="false"
                   :props="$props"
                   icon="reply-fill"
@@ -134,7 +134,7 @@
                   @click="$refs.main_comment.reply();showReplies = true"
               />
               <NLPService
-                  v-if="summarizationAvailable && comment.userId === userId && !readonly"
+                  v-if="summarizationAvailable && comment.userId === userId && !readOnly"
                   :data="summarizationRequestData"
                   :skill="summarizationSkillName"
                   icon-name="file-text"
@@ -144,7 +144,7 @@
               />
               <VoteButtons :comment="comment"/>
               <SidebarButton
-                  v-if="comment.userId === userId && !readonly"
+                  v-if="comment.userId === userId && !readOnly"
                   :loading="false"
                   :props="$props"
                   icon="pencil-square"
@@ -152,7 +152,7 @@
                   @click="edit"
               />
               <SidebarButton
-                v-if="comment.userId === userId && !readonly && annotationId"
+                v-if="comment.userId === userId && !readOnly && annotationId"
                 :loading="false"
                 :props="$props"
                 icon="tag"
@@ -160,7 +160,7 @@
                 @click="toggleEditTag"
             />
               <SidebarButton
-                  v-if="comment.userId === userId && !readonly"
+                  v-if="comment.userId === userId && !readOnly"
                   :loading="false"
                   :props="$props"
                   icon="trash3"

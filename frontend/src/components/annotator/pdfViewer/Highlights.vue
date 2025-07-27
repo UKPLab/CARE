@@ -87,7 +87,6 @@ export default {
             }
           }
         });
-      console.log("Filtered annotations for page", this.pageId, ":", baseAnnotations);
       // Filter by annotation_state: only show annotations with state 0 (not collapsed)
       return baseAnnotations.filter(anno => {
         

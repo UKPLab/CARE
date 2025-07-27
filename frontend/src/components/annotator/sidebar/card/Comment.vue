@@ -84,7 +84,7 @@
           class="row"
         >
           <div
-            v-if="!readonly"
+            v-if="!readOnly"
             class="col text-end"
           >
             <SidebarButton
@@ -111,7 +111,7 @@
             class="col text-end"
           >
             <SidebarButton
-              v-if="settingResponse && !readonly"
+              v-if="settingResponse && !readOnly"
               :loading="false"
               :props="$props"
               icon="reply-fill"
@@ -120,7 +120,7 @@
             />
             <VoteButtons :comment="comment"/>
             <SidebarButton
-              v-if="comment.userId === userId && !readonly"
+              v-if="comment.userId === userId && !readOnly"
               :loading="false"
               :props="$props"
               icon="pencil-square"
@@ -128,7 +128,7 @@
               @click="editComment"
             />
             <SidebarButton
-              v-if="(comment.userId === userId || myBotRequest) && !readonly"
+              v-if="(comment.userId === userId || myBotRequest) && !readOnly"
               :loading="false"
               :props="$props"
               icon="trash3"

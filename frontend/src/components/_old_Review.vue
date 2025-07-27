@@ -9,7 +9,7 @@
      />
     <Editor
      v-if="documentType === 1"
-     :readonly="readonly"
+     :readOnly="readOnly"
      />
     <ReviewModal ref="reviewModal" />
     <ReportModal ref="reportModal" />
@@ -39,7 +39,7 @@ import Editor from "./editor/editor/Editor.vue";
 /**
  *  Document view in reviewing mode
  *
- * Loads a document and study session in reviewing mode, i.e. readonly and with the option to assess an existing
+ * Loads a document and study session in reviewing mode, i.e. readOnly and with the option to assess an existing
  * study session.
  *
  * @author Dennis Zyska

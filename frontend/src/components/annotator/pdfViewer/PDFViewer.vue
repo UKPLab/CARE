@@ -30,7 +30,7 @@
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
-    <Adder v-if="!readonly"/>
+    <Adder v-if="!readOnly"/>
   </div>
 </template>
 
