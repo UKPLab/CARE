@@ -359,12 +359,12 @@ export default {
               message: res.message,
               variant: "danger",
             });
+            return //to ensure we dont save the comment if the annotation update fails
           }
         });
-
-        this.$refs.main_comment.save();
-        this.$refs.collab.removeCollab();
       }
+      this.$refs.main_comment.save();
+      this.$refs.collab.removeCollab();
     },
     cancel() {
       if (this.annotationId) {
