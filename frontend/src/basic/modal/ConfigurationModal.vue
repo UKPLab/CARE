@@ -34,7 +34,7 @@
               <!-- Skill Selection -->
               <div class="mb-3">
                 <label class="form-label">Select NLP Skill:</label>
-                <FormSelect
+                <BasicForm
                   v-model="selectedSkills[index].skillName"
                   :options="skillMap"
                 />
@@ -51,7 +51,7 @@
                   class="mb-2"
                 >
                   <label class="form-label">{{ input }}:</label>
-                  <FormSelect
+                  <BasicForm
                     v-model="inputMappings[index][input]"
                     :options="{ options: availableDataSources }"
                     :value-as-object="true"
@@ -108,7 +108,7 @@
               <template v-if="placeholder.type === 'comparison'">
                 <div class="mb-3">
                   <label class="form-label">Data Source:</label>
-                  <FormSelect
+                  <BasicForm
                     v-model="placeholderFormData[index].dataInput[0]"
                     :value-as-object="true"
                     :options="{ options: availableDataSources }"
@@ -116,7 +116,7 @@
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Data Source:</label>
-                  <FormSelect
+                  <BasicForm
                     v-model="placeholderFormData[index].dataInput[1]"
                     :value-as-object="true"
                     :options="{ options: availableDataSources }"
@@ -126,7 +126,7 @@
               <template v-else>
                 <div class="mb-3">
                   <label class="form-label">Data Source:</label>
-                  <FormSelect
+                  <BasicForm
                     v-model="placeholderFormData[index].dataInput"
                     :value-as-object="true"
                     :options="{ options: availableDataSources }"
@@ -155,7 +155,7 @@
             >
               <label class="form-label fw-bold">{{ setting.label }}</label>
               <div v-if="setting.type === 'select'" class="mb-2">
-                <FormSelect
+                <BasicForm
                   v-model="generalFormData[setting.name]"
                   :options="{ options: setting.options }"
                 />
@@ -208,7 +208,6 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import FormSelect from "@/basic/form/Select.vue";
 import Quill from "quill";
 
 /**
@@ -223,7 +222,10 @@ import Quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: { StepperModal, FormSelect },
+  components: {
+    BasicForm: () => import("@/basic/Form.vue"),
+    StepperModal
+  },
   props: {
     modelValue: {
       type: Object,
