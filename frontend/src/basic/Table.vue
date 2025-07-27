@@ -245,7 +245,7 @@
     v-if="options && options.pagination && total > 0"
     ref="pagination"
     :current-page="currentPage"
-    :items-per-page="limit"
+    :items-per-page="2"
     :items-per-page-list="itemsPerPageList"
     :pages="pages"
     :show-pages="paginationShowPages"
@@ -370,7 +370,10 @@ export default {
   },
   computed: {
     isAllRowsSelected() {
-      return this.currentData.length === this.tableData.filter((r) => !r.isDisabled).length;
+      // Use the existing method to get filtered data across all pages
+      const allFilteredData = this.getFilteredAndSortedData();
+      const enabledFilteredRows = allFilteredData.filter((r) => !r.isDisabled);
+      return this.currentData.length === enabledFilteredRows.length && enabledFilteredRows.length > 0;
     },
     serverSidePagination() {
       return (
@@ -646,7 +649,10 @@ export default {
       if (this.isAllRowsSelected) {
         this.currentData = [];
       } else {
-        this.currentData = [...this.tableData.filter((t) => !t.isDisabled)];
+        // Use the existing method to get filtered data across all pages
+        const allFilteredData = this.getFilteredAndSortedData();
+        // Select all filtered rows that are not disabled
+        this.currentData = [...allFilteredData.filter((t) => !t.isDisabled)];
       }
     },
     paginationPageChange(page) {
