@@ -2,7 +2,7 @@
   <SideCard
       :loading="loading()"
       :shake="shake"
-      :collapsed=collapsed
+      :collapsed="collapsed"
   >
     <template #header>
       <div 
@@ -36,6 +36,16 @@
         </div>
         <div class="col text-end">
           <div style="display: flex; flex-direction: column; align-items: flex-end;">
+            <div v-if="!editedByMyself" style="position: absolute; top: 5px; right: 8px; z-index: 10;">
+              <LoadIcon
+                icon-name="check-square"
+                :size="16"
+                :color="collapsed ? '#28a745' : '#6c757d'"
+                cursor="pointer"
+                class="check-icon"
+                @click="collapsed = !collapsed"
+              />
+            </div>
             <span v-if="annotation">
               {{ new Date(annotation.updatedAt).toLocaleDateString() }}
             </span>
@@ -209,7 +219,7 @@ import LoadIcon from "@/basic/Icon.vue";
  */
 export default {
   name: "AnnoCard",
-  subscribeTable: ['tag', 'tag_set', 'annotation_state'],
+  subscribeTable: ['tag', 'tag_set', 'comment_state'],
   components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton, LoadIcon},
   inject: {
     documentId: {
@@ -250,7 +260,7 @@ export default {
     }
   },
   watch: {
-    annotationState: {
+    commentState: {
     immediate: true,
     handler(newVal) {
       if (newVal) {
@@ -259,9 +269,9 @@ export default {
     }
   },
     collapsed(newValue) {
-      if(!this.annotationState){
+      if(!this.commentState){
         this.$socket.emit("appDataUpdate", {
-          table: "annotation_state",
+          table: "comment_state",
           data: {
             userId: this.userId,
             documentId: this.documentId,
@@ -273,9 +283,9 @@ export default {
         });
       } else {
         this.$socket.emit("appDataUpdate", {
-          table: "annotation_state",
+          table: "comment_state",
           data: {
-            id: this.annotationState.id,
+            id: this.commentState.id,
             state: newValue? 1 : 0,
           }
         });
@@ -283,8 +293,8 @@ export default {
     }
   },
   computed: {
-    annotationState() {
-      return this.$store.getters['table/annotation_state/getFiltered'](
+    commentState() {
+      return this.$store.getters['table/comment_state/getFiltered'](
         a => a.commentId === this.commentId && a.userId === this.userId
       )[0] || null;
     },

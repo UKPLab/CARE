@@ -105,7 +105,7 @@ import {scrollElement} from "@/assets/anchoring/scroll";
  *
  * Here the annotations are listed and can be modified, also includes scrolling feature.
  *
- * @author Nils Dycke, Dennis Zyska
+ * @author Nils Dycke, Dennis Zyska, Marina Sakharova
  */
 export default {
   name: "AnnotationSidebar",
@@ -165,6 +165,14 @@ export default {
     showAnnotations() {
       return !this.showEdits; // Show annotations only if `showEdits` is false
     },
+    openSessionIds() {
+      return this.$store.getters["table/study_session/getAll"].filter(
+        session => {
+          const study = this.$store.getters["table/study/get"](session.studyId);
+          return study && study.closed == null;
+        }
+      ).map(session => session.id);
+    },
     study() {
       if (this.studySession) {
         return this.$store.getters["table/study/get"](this.studySession.studyId);
@@ -188,6 +196,9 @@ export default {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
+    downloadBeforeStudyClosingAllowed() {
+      return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
+    },
     documentComments() {
       return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
@@ -198,7 +209,11 @@ export default {
             return this.studySessionIds.includes(comment.studySessionId);
           } else {
             if (this.showAll) {
+              if (!this.downloadBeforeStudyClosingAllowed) {
+                return !this.openSessionIds.includes(comment.studySessionId);
+              } else {
               return true;
+              }
             } else {
               return comment.studySessionId === null;
             }
@@ -219,7 +234,7 @@ export default {
           } else {
             return !a.annotationId ? 1 : -1;
           }
-        })
+        });
     },
     sidebarContainerStyle() {
       return {

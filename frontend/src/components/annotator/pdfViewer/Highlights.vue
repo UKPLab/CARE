@@ -14,11 +14,11 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
  *
  * Adapted from Hypothes.is
  *
- * @author Dennis Zyska, Nils Dycke
+ * @author Dennis Zyska, Nils Dycke, Marina Sakharova
  */
 export default {
   name: "PDFHighlights",
-  subscribeTable: ['annotation_state', 'comment'],
+  subscribeTable: ['comment_state', 'comment'],
   inject: {
     documentId: {
       type: Number,
@@ -60,6 +60,14 @@ export default {
         return null;
       }
     },
+    openSessionIds() {
+      return this.$store.getters["table/study_session/getAll"].filter(
+        session => {
+          const study = this.$store.getters["table/study/get"](session.studyId);
+          return study && study.closed === null;
+        }
+      ).map(session => session.id);
+    },
     showAll() {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
@@ -67,8 +75,11 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
-    annotationStates() {
-      return this.$store.getters['table/annotation_state/getAll'];
+    commentStates() {
+      return this.$store.getters['table/comment_state /getAll'];
+    },
+    downloadBeforeStudyClosingAllowed() {
+      return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
     },
     annotations() {
       const baseAnnotations = this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
@@ -81,24 +92,27 @@ export default {
             return this.studySessionIds.includes(anno.studySessionId);
           } else {
             if (this.showAll) {
-              return true;
+              if (this.downloadBeforeStudyClosingAllowed) {
+                return true;
+              } else {
+                return !this.openSessionIds.includes(anno.studySessionId);
+              }
             } else {
               return anno.studySessionId === null
             }
           }
         });
-      // Filter by annotation_state: only show annotations with state 0 (not collapsed)
+      // Filter by comment_state: only show annotations with state 0 (not collapsed)
       return baseAnnotations.filter(anno => {
-        
-        // Find the annotation state for this annotation's comment
-        const annotationState = this.$store.getters['table/annotation_state/getFiltered'](
+
+        // Find the comment state for this annotation's comment
+        const commentState = this.$store.getters['table/comment_state/getFiltered'](
           state => state.commentId === this.getCommentByAnnotationId(anno.id)?.id && state.userId === this.userId && state.documentId === this.documentId
           && state.studySessionId === this.studySessionId && state.studyStepId === this.studyStepId
         )[0];
-        console.log("Annotation state for commentId", anno.id, ":", annotationState);
         // If no state exists, show the annotation (default behavior)
         // If state exists, only show if state is 0 (not collapsed)
-        return !annotationState || annotationState.state === 0;
+        return !commentState || commentState.state === 0;
       });
     },
     tags() {
