@@ -51,7 +51,7 @@ export default {
     return {
       documentId: computed(() => this.documentId),
       studySessionId: computed(() => this.studySessionId),
-      readonly: this.readonly,
+      readOnly: this.readOnly,
     }
   },
   props: {
@@ -64,7 +64,7 @@ export default {
   data() {
     return {
       documentId: 0,
-      readonly: true,
+      readOnly: true,
       studySessionId: 0,
       documentType: null,
     }

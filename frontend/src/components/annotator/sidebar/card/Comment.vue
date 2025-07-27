@@ -187,7 +187,7 @@ export default {
       required: false,
       default: null,
     },
-    readonly: {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false,

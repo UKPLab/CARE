@@ -76,7 +76,7 @@ export default {
       required: false,
       default: null,
     },
-    readonly: {
+    readOnly: {
       type: Boolean,
       required: false,
       default: false,
@@ -201,7 +201,7 @@ export default {
           action: "pdfPageVisibilityChange",
           data: {
             documentId: this.documentId,
-            readonly: this.readonly,
+            readOnly: this.readOnly,
             visibility: page,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
