@@ -80,6 +80,11 @@ export default {
       ],
     }
   },
+  computed: {
+    selectedProjectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
+    },
+  },
   methods: {
     open() {
       this.data.file = null;
@@ -101,6 +106,7 @@ export default {
       this.$socket.emit("documentAdd", {
         file: this.data.file,
         name: fileName,
+        projectId: this.selectedProjectId
       }, (res) => {
         if (res.success) {
           this.$refs.uploadModal.waiting = false;

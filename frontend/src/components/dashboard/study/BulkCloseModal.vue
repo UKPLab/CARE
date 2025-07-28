@@ -41,13 +41,18 @@ export default {
     BasicModal,
     BasicButton,
   },
+  computed:{
+    projectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
+    }
+  },
   methods: {
     open() {
       this.$refs.bulkCloseModal.open();
     },
     closeAllStudies() {
       const data = {
-        projectId: 1,
+        projectId: this.projectId,
         ignoreClosedState: false,
         progressId: this.$refs.bulkCloseModal.getProgressId(),
       };
