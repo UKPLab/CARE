@@ -53,6 +53,7 @@ import UploadModal from "./review/UploadModal.vue";
 import ImportModal from "./review/ImportModal.vue";
 import PublishModal from "./review/PublishModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import GradingModal from "@/basic/modal/GradingModal.vue";
 
 /**
  * Submission list component
@@ -92,6 +93,7 @@ export default {
     Card,
     BasicTable,
     BasicButton,
+    GradingModal,
   },
   data() {
     return {

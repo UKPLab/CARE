@@ -7,6 +7,8 @@ const path = require("path");
 const {Op} = require("sequelize");
 const {compileSchema, validateZip, validateZipWithSchema} = require("../../utils/zipValidator.js");
 const { associateFilesForSubmission } = require("../../utils/fileAssociator.js");
+const uuid = require("uuid");
+
 
 const {dbToDelta} = require("editor-delta-conversion");
 
@@ -912,6 +914,151 @@ class DocumentSocket extends Socket {
         return documentData;
     }
 
+    /**
+     * Preprocess multiple document submissions for NLP grading asynchronously
+     * @param {Object} data - { skillName : string, jsonConfig : object, inputFiles : array }
+     * @param {Object} options
+     * @returns {Promise<{status: string, count: number}>}
+     */
+    async preprocessSubmissions(data, options) {
+
+        if (await this.isAdmin()) {           
+            const requestIds = [];
+            const preprocessItems = [];
+            this.server.preprocess.activeListeners = {};
+
+            for (const subId of data.inputFiles) {
+                let docs;
+                try {
+                    docs = await this.models['document'].findAll({
+                        where: { submissionId: subId },
+                        raw: true
+                    });
+                } catch (err) {
+                    this.logger.error(`Error fetching documents for submission ${subId}: ${err.message}`, err);
+                    continue;
+                }
+
+                const docIds = [];
+                const inputFiles = await Promise.all(
+                    docs.map(async (doc) => {
+                        docIds.push(doc.id);
+                        const docType = docTypes[doc.type];
+                        const docTypeKey = Object.keys(docTypes).find(type => docTypes[type] === docType);
+                        let fileExtension = '';
+                        if (docTypeKey) {
+                            fileExtension = '.' + docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
+                        }
+                        const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
+                        if (fs.existsSync(docFilePath)) {
+                            try {
+                                return await fs.promises.readFile(docFilePath);
+                            } catch (readErr) {
+                                this.logger.error(`Error reading file for document ${doc.id} of submission ${subId}: ${readErr.message}`, readErr);
+                                return null;
+                            }
+                        } else {
+                            this.logger.error(`File not found for document ${doc.id} of submission ${subId} : ${docFilePath}`);
+                            return null;
+                        }
+                    })
+                );
+
+                const nlpInput = {
+                    submission: inputFiles,
+                    assessment_config: data.config, // TODO: The json will be passed exactly from the frontend, needs implementation
+                };
+
+                const requestId = uuid();
+                requestIds.push(requestId);
+                preprocessItems.push({ requestId, submissionId: subId, docIds, skillName, nlpInput });
+                if (!this.server.preprocess.requests) this.server.preprocess.requests = {};
+                this.server.preprocess.requests[requestId] = { submissionId: subId, docIds, skillName };
+            }
+
+            this.server.preprocess.currentSubmissionsCount = preprocessItems.length;
+
+            for (const item of preprocessItems) {
+                await new Promise((resolve) => {                        
+                    const listener = async () => {
+                        let nlpResults;
+                        try {
+                            // TODO: Remove this if-condition after testing
+                            if (this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
+                                nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
+                            }
+                            const nlpResult = nlpResults ? nlpResults[item.requestId] : null;
+                            if (nlpResult) {
+                                try {
+                                    await Promise.all(
+                                        item.docIds.map(docId =>
+                                            this.saveData({
+                                                userId: this.userId,
+                                                documentId: docId,
+                                                studySessionId: null,
+                                                studyStepId: null,
+                                                key: `service_nlpGrading_${item.skillName}`,
+                                                value: nlpResult
+                                            }, options)
+                                        )
+                                    );
+                                } catch (saveErr) {
+                                    this.logger.error(`Error saving NLP results for request ${item.requestId}: ${saveErr.message}`, saveErr);
+                                }
+                            } else {
+                                this.logger.warn(`No NLP result received for request ${item.requestId}`);
+                            }
+                        } catch (err) {
+                            this.logger.error(`Error processing NLP request ${item.requestId}: ${err.message}`, err);
+                        }
+
+                        if (this.server.preprocess.currentReqStart) {
+                            delete this.server.preprocess.currentReqStart;
+                        }
+                        if (this.server.preprocess.requests) delete this.server.preprocess.requests[item.requestId];
+                        resolve();
+                    };
+
+                    if (!this.server.preprocess.currentReqStart) {
+                        this.server.preprocess.currentReqStart = Date.now();
+                    }
+
+                    this.server.preprocess.activeListeners[item.requestId] = listener;
+                    try {
+                        this.socket.once(item.requestId, listener);
+                        this.socket.emit("serviceRequest", {
+                            service: "NLPService",
+                            data: {
+                                id: item.requestId,
+                                name: item.skillName,
+                                data: item.nlpInput
+                            }
+                        });
+                    } catch (emitErr) {
+                        this.logger.error(`Error emitting NLP service request ${item.requestId}: ${emitErr.message}`, emitErr);
+                        resolve();
+                    }
+                });
+            }
+
+            this.server.preprocess = {};
+        }
+    }
+
+    async cancelSubmissions(data, options) {
+        if (await this.isAdmin()) {
+            if (this.server.preprocess.activeListeners) {
+                Object.entries(this.server.preprocess.activeListeners).forEach(([requestId, listener]) => {
+                    this.socket.removeListener(requestId, listener);
+                });
+                this.server.preprocess.activeListeners = {};
+            }
+
+            this.server.preprocess.requests = {};
+            this.server.preprocess.currentSubmissionsCount = 0;
+        }
+    }
+
     init() {
 
         this.socket.on("documentGetReviews", async (callback) => {
@@ -1036,6 +1183,8 @@ class DocumentSocket extends Socket {
         this.createSocket("documentClose", this.closeDocument, {}, true);
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
+        this.createSocket("submissionsPreprocess", this.preprocessSubmissions, {}, true);
+        this.createSocket("submissionsCancel", this.cancelSubmissions, {}, true);
     }
 };
 
