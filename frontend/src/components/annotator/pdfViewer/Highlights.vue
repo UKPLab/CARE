@@ -76,7 +76,7 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     commentStates() {
-      return this.$store.getters['table/comment_state /getAll'];
+      return this.$store.getters['table/comment_state/getAll'];
     },
     downloadBeforeStudyClosingAllowed() {
       return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"

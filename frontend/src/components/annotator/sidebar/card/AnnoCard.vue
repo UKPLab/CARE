@@ -208,6 +208,11 @@ export default {
       type: Number,
       required: true,
     },
+    acceptStats: {
+      type: Boolean,
+      required: false,
+      default: () => false
+    },
     studySessionId: {
       type: Number,
       required: false,
@@ -271,6 +276,15 @@ export default {
             state: newValue? 1 : 0,
           }
         });
+      }    
+      if(acceptStats) {
+        this.$socket.emit("stats", {
+          action: "commentToggleCollapse",
+          data: {
+            commentId: this.commentId,
+            state: newValue,
+          }
+        });
       }
     }
   },
@@ -284,7 +298,7 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     tagSetTags() {
-      const defaultTag = parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
+      const defaultTag = this.$store.getters["settings/getValueAsInt"]("tags.tagSet.default");
       return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag) || [];
     },
     settingResponse() {
@@ -502,7 +516,6 @@ export default {
     },
     saveTagChange() {
       if (this.selectedTagId !== this.annotation.tagId) {
-        console.log("Tag changed to: " + this.selectedTagId);
         this.$socket.emit('annotationUpdate', {
           annotationId: this.annotation.id,
           tagId: this.selectedTagId,
