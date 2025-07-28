@@ -1,6 +1,5 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
-const user_setting = require("./user_setting.js");
 
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {

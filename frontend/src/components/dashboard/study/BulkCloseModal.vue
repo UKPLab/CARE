@@ -42,7 +42,7 @@ export default {
     BasicButton,
   },
   computed:{
-    getdefaultProjectId() {
+    projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     }
   },
@@ -52,7 +52,7 @@ export default {
     },
     closeAllStudies() {
       const data = {
-        projectId: this.getdefaultProjectId,
+        projectId: this.projectId,
         ignoreClosedState: false,
         progressId: this.$refs.bulkCloseModal.getProgressId(),
       };

@@ -155,15 +155,15 @@ export default {
             class: newD.closed ? "bg-danger" : "bg-success",
           };
           newD.select = {
-            icon: (newD.id === this.selectedProject) ? "star-fill" : "star",
+            icon: (newD.id === this.projectId) ? "star-fill" : "star",
             title: "Select project as default",
             action: "select",
-            selected: newD.id === this.selectedProject,
+            selected: newD.id === this.projectId,
           };
           return newD;
         });
     },
-    selectedProject() {
+    projectId() {
       return this.$store.getters['settings/getValueAsInt']("projects.default");
     },
   },

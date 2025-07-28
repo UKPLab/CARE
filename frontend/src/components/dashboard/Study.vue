@@ -110,10 +110,10 @@ export default {
   computed: {
     studies() {
       return this.$store.getters["table/study/getFiltered"](
-        (study) => study.projectId === this.selectedProjectId
+        (study) => study.projectId === this.projectId
       );
     },
-    selectedProjectId() {
+    projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     userId() {

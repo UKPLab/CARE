@@ -95,10 +95,10 @@ export default {
   computed: {
     documents() {
       return this.$store.getters["table/document/getFiltered"](
-          (doc) => doc.projectId === this.currentProjectId
+          (doc) => doc.projectId === this.projectId 
       );
     },
-    currentProjectId() {
+    projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     userId() {

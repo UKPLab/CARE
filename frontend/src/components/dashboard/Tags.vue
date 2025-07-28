@@ -137,7 +137,7 @@ export default {
     },
     tagSets() {
       return this.$store.getters["table/tag_set/getAll"]
-        .filter(d => d.projectId === this.selectedProjectId) // Filter by selected project
+        .filter(d => d.projectId === this.projectId) // Filter by selected project
         .map(d => {
           let newD = {...d};
           newD.published = {
@@ -162,7 +162,7 @@ export default {
         }
       );
     },
-    selectedProjectId() {
+    projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     tags() {
