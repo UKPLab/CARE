@@ -239,7 +239,21 @@ export default {
           }
         });
       }
-    }, 500)
+    }, 500),
+      logResize: debounce(function (windowWidth, sidebarVisible) {
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "sidebarResize",
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
+              windowWidth: windowWidth,
+              sidebarVisible: sidebarVisible
+            }
+          });
+        }
+      }, 500)
     }
   },
   computed: {
@@ -248,12 +262,10 @@ export default {
     },
     previousScroll() {
       const data = this.$store.getters['table/user_environment/getFiltered'](e => e.userId === this.userId && e.documentId === this.documentId && e.studySessionId === this.studySessionId && e.studyStepId === this.studyStepId && e.key === "scroll")[0];
-      console.log("previous scroll position:", data);
       return data
     },
     savedScroll() {
       const data = this.$store.getters['table/user_environment/getFiltered'](e => e.userId === this.userId && e.documentId === this.documentId && e.studySessionId === this.studySessionId && e.studyStepId === this.studyStepId && e.key === "scroll")[0];
-      console.log("Saved scroll position:", data);
       return data ? parseInt(data.value, 10) : 0;
     },
     anchors() {
@@ -390,7 +402,6 @@ export default {
     // Scroll the viewer container to the saved scroll position
    this.$nextTick(() => {
     // Scroll the viewer container to the saved scroll position
-    console.log("Restoring scroll position:", this.savedScroll);
      // Ensure the viewer is available before setting scrollTop
     if (this.$refs.viewer && this.savedScroll) {
       scrollElement(this.$refs.viewer, this.savedScroll);
@@ -404,7 +415,6 @@ export default {
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
     document.removeEventListener('copy', this.onCopy);
     window.removeEventListener('resize', this.handleResize);
-    console.log("Saving scroll position:", this.$refs.viewer.scrollTop);
     
      if (!this.previousScroll) {
       this.$socket.emit("appDataUpdate", {
@@ -441,6 +451,9 @@ export default {
       else {
         this.isSidebarVisible = true;
       }
+      
+      // Log resize event with debouncing
+      this.logResize(window.innerWidth, this.isSidebarVisible);
     },
     ...mapMutations({
       setSetting: "settings/set",
