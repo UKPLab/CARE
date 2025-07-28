@@ -494,7 +494,8 @@ class DocumentSocket extends Socket {
 
             appliedEdits.push({
                 ...savedEdit,
-                applied: true
+                applied: true,
+                sender: this.socket.id
             });
         }, Promise.resolve());
 
@@ -503,8 +504,7 @@ class DocumentSocket extends Socket {
             this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
             return;
         }
-
-        this.emit("document_editRefresh", appliedEdits);
+        this.emitDoc(documentId, "document_editRefresh", appliedEdits);
     }
 
     /**
@@ -753,6 +753,18 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Unsubscribe from a document
+     *
+     * @param {Object} data
+     * @param {number} data.documentId - The ID of the document to unsubscribe from.
+     * @param {Object} options - The options object containing the transaction.
+     * @returns {Promise<void>}
+     */
+    async unsubscribeDocument(data, options) {
+        this.socket.leave("doc:" + data.documentId);
+    }
+
+    /**
      * Save additional document data for a particular document/study_session/study_step like the nlpResults, links etc., to the document_data table.
      *
      * @param {*} data {userId: number, documentId: number, studySessionId: number, studyStepId: number, key: string, value: any}
@@ -778,6 +790,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentPublish", this.publishDocument, {}, false);
         this.createSocket("documentEdit", this.editDocument, {}, true);
         this.createSocket("documentSubscribe", this.subscribeDocument, {}, false);
+        this.createSocket("documentUnsubscribe", this.unsubscribeDocument, {}, false);
         this.createSocket("documentGetDeltas", this.sendDocumentDeltas, {}, false);
         this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);
