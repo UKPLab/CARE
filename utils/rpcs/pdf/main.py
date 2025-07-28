@@ -93,26 +93,22 @@ def create_app():
 
             for page_num in range(len(doc)):
                 page = doc[page_num]
-                logger.info(f"[extract_pdf_annotations] Processing page {page_num + 1}")
                 page_text = page.get_text()
                 whole_text += page_text
 
                 annots = list(page.annots() or [])
-                logger.info(f"[extract_pdf_annotations] Found {len(annots)} annotations on page {page_num + 1}")
 
                 for annot in annots:
                     subject = annot.info.get("subject", "default")
                     title = annot.info.get("title")
-                    logger.info(f"subject {subject} annotation info {annot.info}")
 
                     words_on_page = page.get_text("words")
                     comment = extract_comment(annot.info.get("content", ""))
                     highlighted_text = extract_annot(annot, words_on_page)     
                     # Skip comment annotations and add comment to grouped annotations
                     if len(highlighted_text) == 0:
-                        logger.info(f"[extract_pdf_annotations] Skipping empty annotation on page {page.number}")
                         # If this is a care annotation, try to add comment to existing group
-                        if title and title.strip().startswith("$$") and comment:
+                        if subject and subject.strip().startswith("$$") and comment:
                             if subject in grouped_annotations:
                                 grouped_annotations[subject]["comment"] += f"{comment} "
                         continue
@@ -128,7 +124,7 @@ def create_app():
                     suffix = whole_text[text_end:text_end + 30]
 
                     # If annotation is not made by care (no grouping subject),
-                    if not (title and title.strip().startswith("$$")):
+                    if not (subject and subject.strip().startswith("$$")):
                         annotations.append({
                             "page": page.number,
                             "type": annot.type[1] if isinstance(annot.type, tuple) else annot.type,
@@ -173,8 +169,6 @@ def create_app():
             # Add grouped annotations to the result
             for subject in annotations_order:
                 group = grouped_annotations[subject]
-                logger.info(f"[extract_pdf_annotations] Processing group for subject: {subject}")
-                logger.info(f"[extract_pdf_annotations] Group details: {group}")
                 texts = group.get("texts") or []
                 full_text = " ".join(texts).strip() if len(texts) != 0 else ""
                 text_start = group.get("text_start") or 0
@@ -194,10 +188,7 @@ def create_app():
                     "subject": subject,
                 })
 
-            logger.info(f"[extract_pdf_annotations] Extracted {len(annotations)} annotations")
-            logger.info(f"[extract_pdf_annotations] Whole text length: {len(whole_text)}")
-
-            output_buffer = doc.write()
+            doc.write()
             return {
                 "success": True,
                 "message": "Annotations extracted successfully.",
@@ -220,7 +211,6 @@ def create_app():
         Returns:
             The modified PDF file with embedded annotations, or the original if none provided.
         """
-        logger.info(f"Received call: {data} from {sid}")
         try:
             # Open the PDF directly from memory
             doc = pymupdf.open(stream=data["file"])
@@ -228,7 +218,6 @@ def create_app():
             annotations = data.get("annotations", [])
             if not annotations:
                 response = {"success": True, "message": "No annotations provided.", "data": data["file"]}
-                logger.info("No annotations provided, returning original PDF.")
                 return response
             subject = "care"
             i = 0
@@ -236,20 +225,18 @@ def create_app():
                 # Extract page number from annotation selectors
                 page_number = None
                 selectors = annot.get("selectors", {})
-                username = "$$" + annot.get("username", "unknown") # Prefix username with $$ to indicate care annotation
+                username = annot.get("username", "unknown") # Prefix username with $$ to indicate care annotation
                 targets = selectors.get("target", [])
                 text_start = None
-                logger.info(f"Processing annotation: {annot}")
-                textType = annot.get("tag")
-                color = (1, 1, 0) #always yellow for highlight
                 text_end = None
+                textType = annot.get("tag")
+                color = (1, 1, 0)  # always yellow for highlight
                 prefix = None
                 exact = None
                 suffix = None
                 if targets and isinstance(targets, list):
                     for target in targets:
                         for selector in target.get("selector", []):
-                            logger.info("Selector found %s", selector)
                             match selector.get("type"):
                                 case "PagePositionSelector":
                                     page_number = selector.get("number")
@@ -257,18 +244,11 @@ def create_app():
                                     text_start = selector.get("start")
                                     text_end = selector.get("end")
                                 case "TextQuoteSelector":
-                                    logger.info("TextQuoteSelector found %s", selector)
                                     prefix = selector.get("prefix")
                                     exact = selector.get("exact")
                                     suffix = selector.get("suffix")
                         if page_number is not None:
                             break
-                logger.info(f"Page number: {page_number}")
-                logger.info(f"Text start: {text_start}")
-                logger.info(f"Text end: {text_end}")
-                logger.info(f"Text: {exact}")
-                logger.info(f"Prefix: {prefix}")
-                logger.info(f"Suffix: {suffix}")
                 full_rect = None
                 if page_number is not None:
                     doc_page = doc[page_number-1]
@@ -276,11 +256,9 @@ def create_app():
                     
                     if selected_rect is not None and not selected_rect.is_empty:
                         extracted_text = doc_page.get_textbox(selected_rect)
-                        logger.info(f"Extracted text: {extracted_text}")
                         logger.warning(f"Extracted text '{extracted_text}' does not match expected text '{exact}'")
-                        full_rect = add_annotations(doc_page, selected_rect, extracted_text, exact, color, subject + str(i), username)
-                        add_comment(doc_page, (selected_rect.x0, selected_rect.y0), annot.get("comments", []), color, textType, subject + str(i), username)
-                        logger.info(f"Full full rect: {full_rect}")
+                        add_comment(doc_page, (selected_rect.x0, selected_rect.y0), annot.get("comments", []), color, textType, "$$" + subject + str(i), username)
+                        add_annotations(doc_page, selected_rect, extracted_text, exact, color, "$$" + subject + str(i), username)
                     else:
                         logger.warning("No suitable rect found for annotation.")
                 i+=1        
@@ -391,24 +369,18 @@ def create_app():
         Returns:
             A new rectangle covering the highlighted area.
         """
-        logger.info(f"Starting highlight_long_text with extracted_text: {extracted_text!r}, original_text: {original_text!r}")
-        logger.info(f"Selected rect: {selected_rect}")
 
             # First, check if the selected_rect's text matches the original_text
         selected_text = doc_page.get_textbox(selected_rect).strip()
-        logger.info(f"Text in selected_rect: {selected_text!r}")
 
         if selected_text == original_text.strip():
-            logger.info("Selected rect text matches original text. Highlighting selected_rect only.")
             annot = doc_page.add_highlight_annot(selected_rect)
             annot.set_colors(stroke=color)
             annot.set_info({"title": name, "subject": subject})
             annot.update()
-            logger.info(f"Highlighted selected_rect: {selected_rect}")
             return selected_rect
 
         words = doc_page.get_text("words")  # Each word: (x0, y0, x1, y1, "word", block_no, line_no, word_no)
-        logger.info(f"Found {len(words)} words on page")
 
         found = False
         result_text = extracted_text
@@ -416,16 +388,13 @@ def create_app():
         original_text_length = len(original_text.strip().split(" ")) if original_text else 0
         
         splits = original_text.strip().split(" ")
-        logger.info(f"Original text split into {len(splits)} parts: {splits}")
         highlighted_count = 0
 
         for i, word in enumerate(words):
             x0, y0, x1, y1, text, *_ = word
             word_rect = pymupdf.Rect(x0, y0, x1, y1)
-            logger.debug(f"Word {i}: rect={word_rect}, text={text!r}")
             if found:
                 if highlighted_count >= original_text_length - 1:
-                    logger.info(f"Highlighted {highlighted_count} words, stopping as per original_text length.")
                     break
                 result_text += (" " if not result_text.endswith(" ") else "") + text
                 rects.append(word_rect)
@@ -435,17 +404,13 @@ def create_app():
                 annot.set_info({"title": name, "subject": subject})
                 annot.update()
                 highlighted_count += 1
-                logger.info(f"Highlighted word {i}: {text!r} at {word_rect} (count: {highlighted_count})")
-                logger.info(f"Current concatenated text: {result_text!r}")
             elif word_rect.intersects(selected_rect):
-                logger.info(f"Found starting word {i} intersecting selected_rect")
                 found = True
                 # Optionally highlight the starting word as well
                 annot = doc_page.add_highlight_annot(word_rect)
                 annot.set_colors(stroke=color)
                 annot.set_info({"title": name, "subject": subject})
                 annot.update()
-                logger.info(f"Highlighted starting word {i}: {text!r} at {word_rect}")
 
         # If no words highlighted, just return the selected_rect
         if len(rects) == 1:
@@ -456,7 +421,6 @@ def create_app():
         union_rect = rects[0]
         for r in rects[1:]:
             union_rect |= r
-        logger.info(f"Returning union rect: {union_rect}")
         return union_rect
     
     def add_comment(doc_page, position, comments, color, textType, subject, name):
@@ -470,7 +434,6 @@ def create_app():
         """
         for comment in comments:
             if "text" in comment:
-                logger.info(f"Adding text annotation: {comment['text']}")
                 if comment["text"] is not None:
                     annot_text_obj = doc_page.add_text_annot(
                         position, textType + ": " + comment["text"],
@@ -479,9 +442,8 @@ def create_app():
                     annot_text_obj.set_info({"title": name, "subject": subject})
                     annot_text_obj.set_colors(stroke=color)  # Set the color of the text annotation
                     annot_text_obj.update()  # Apply the color change
-                    logger.info(f"Text annotation object: {annot_text_obj}")
 
-    _threshold_intersection = 0.1  # if the intersection is large enough.
+    _threshold_intersection = 0.01  # if the intersection is large enough.
 
     def check_contain(r_word, points):
         """
@@ -537,7 +499,7 @@ def create_app():
         """
         quad_points = annot.vertices
         if not quad_points:
-            logger.info(f"no quad points")
+            logger.warning(f"no quad points")
             return []
         quad_count = int(len(quad_points) / 4)
         sentences = ['' for i in range(quad_count)]

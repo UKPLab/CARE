@@ -88,7 +88,7 @@ class AnnotationSocket extends Socket {
             };
 
         const annotation = await this.models['annotation'].add(newAnnotation, {transaction: options.transaction});
-        const comment = await this.getSocket("CommentSocket").addComment({
+        await this.getSocket("CommentSocket").addComment({
             documentId: annotation.documentId,
             studySessionId: annotation.studySessionId,
             studyStepId: annotation.studyStepId,
