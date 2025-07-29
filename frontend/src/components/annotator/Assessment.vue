@@ -17,7 +17,9 @@
 
         <div class="assessment-section">
           <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
             <h4 class="mb-0">Assessment Results</h4>
+            </div>
           </div>
 
           <div class="assessment-content-container">
@@ -36,36 +38,41 @@
                   :key="groupIndex"
                   class="criteria-group-card card mb-2"
                 >
+                  <!-- Group Header -->
                   <div
                     class="card-header d-flex justify-content-between align-items-center"
                     style="cursor: pointer"
                     @click="toggleGroup(groupIndex)"
                   >
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center flex-grow-1">
                       <LoadIcon
-                        :icon-name="
-                          expandedGroups[groupIndex]
-                            ? 'chevron-down'
-                            : 'chevron-right'
-                        "
+                        :icon-name="expandedGroups[groupIndex] ? 'chevron-down' : 'chevron-right'"
                         :size="16"
                         class="me-2"
                       />
                       <span class="fw-bold">{{ group.name }}</span>
                     </div>
                     <div class="d-flex align-items-center">
+                      <span 
+                        v-if="group.description" 
+                        class="info-icon me-2"
+                        style="cursor: help;"
+                        @click.stop
+                        @mouseenter="openInfoPanel(group, null)"
+                        @mouseleave="closeInfoPanel"
+                      >
+                        <LoadIcon icon-name="info-circle" :size="14" />
+                      </span>
                       <span
                         class="badge"
-                        :class="
-                          isGroupSaved(groupIndex)
-                            ? 'bg-success'
-                            : 'bg-secondary'
-                        "
-                        >{{ getGroupScore(group) }} P</span
+                        :class="isGroupSaved(groupIndex) ? 'bg-success' : 'bg-secondary'"
                       >
+                        {{ getGroupScore(group) }} P
+                      </span>
                     </div>
                   </div>
 
+                  <!-- Group Content -->
                   <div v-if="expandedGroups[groupIndex]" class="card-body">
                     <div class="criteria-list">
                       <div
@@ -73,69 +80,53 @@
                         :key="criterionIndex"
                         class="criterion-item"
                       >
-                        <div
+                        <!-- Criterion Header -->
+                        <div 
                           class="d-flex justify-content-between align-items-center py-2"
+                          style="cursor: pointer"
+                          @click="toggleCriterion(groupIndex, criterionIndex)"
                         >
                           <div class="d-flex align-items-center">
-                            <span
-                              class="criterion-icon me-2"
-                              style="cursor: pointer"
-                              @click="
-                                toggleCriterion(groupIndex, criterionIndex)
-                              "
-                            >
+                            <span class="criterion-icon me-2">
                               <LoadIcon
-                                :icon-name="
-                                  expandedCriteria[
-                                    `${groupIndex}-${criterionIndex}`
-                                  ]
-                                    ? 'chevron-up'
-                                    : 'chevron-down'
-                                "
+                                :icon-name="expandedCriteria[`${groupIndex}-${criterionIndex}`] ? 'chevron-up' : 'chevron-down'"
                                 :size="16"
                               />
                             </span>
-                            <span
-                              class="criterion-name"
-                              style="cursor: pointer"
-                              @click="
-                                toggleCriterion(groupIndex, criterionIndex)
-                              "
-                              >{{ criterion.name }}</span
-                            >
+                            <span class="criterion-name">
+                              {{ criterion.name }}
+                            </span>
                           </div>
                           <div class="d-flex align-items-center">
-                            <span class="info-icon me-2">
-                              <LoadIcon icon-name="info-circle" :size="16" />
+                            <span 
+                              v-if="criterion.description || criterion.scoring" 
+                              class="info-icon me-2"
+                              style="cursor: help;"
+                              @click.stop
+                              @mouseenter="openInfoPanel(null, criterion)"
+                              @mouseleave="closeInfoPanel"
+                            >
+                              <LoadIcon icon-name="info-circle" :size="14" />
                             </span>
                             <span
                               class="badge"
-                              :class="
-                                criterion.isSaved
-                                  ? 'bg-success'
-                                  : 'bg-secondary'
-                              "
+                              :class="criterion.isSaved ? 'bg-success' : 'bg-secondary'"
                               :title="`isSaved: ${criterion.isSaved}`"
-                              >{{ criterion.points || 0 }} P</span
                             >
+                              {{ criterion.currentPoints || 0 }} P
+                            </span>
                           </div>
                         </div>
 
+                        <!-- Criterion Assessment -->
                         <div
-                          v-if="
-                            expandedCriteria[`${groupIndex}-${criterionIndex}`]
-                          "
+                          v-if="expandedCriteria[`${groupIndex}-${criterionIndex}`]"
                           class="criterion-assessment mt-2 px-3 pb-2"
                         >
                           <div class="assessment-text">
                             <strong>Justification:</strong>
-                            <div
-                              v-if="!criterion.isEditing"
-                              class="assessment-content"
-                            >
-                              <p class="mb-0 mt-1">
-                                {{ criterion.assessment }}
-                              </p>
+                            <div v-if="!criterion.isEditing" class="assessment-content">
+                              <p class="mb-0 mt-1">{{ criterion.assessment }}</p>
                             </div>
                             <div v-else class="assessment-edit-form">
                               <div class="mb-3">
@@ -143,26 +134,23 @@
                                   v-model="criterion.editedAssessment"
                                   class="form-control assessment-textarea"
                                   placeholder="Edit the justification..."
-                                  :rows="
-                                    getTextareaRows(criterion.editedAssessment)
-                                  "
+                                  :rows="getTextareaRows(criterion.editedAssessment)"
                                   @input="adjustTextareaRows"
                                 ></textarea>
                               </div>
                             </div>
                           </div>
 
+                          <!-- Assessment Actions -->
                           <div class="assessment-actions mt-3">
-                            <div
-                              v-if="!criterion.isEditing"
-                              class="d-flex justify-content-between align-items-center"
-                            >
+                            <div v-if="!criterion.isEditing" class="d-flex justify-content-between align-items-center">
                               <div>
                                 <button
                                   class="btn btn-outline-primary btn-sm"
+                                  title="Edit"
                                   @click="startEdit(groupIndex, criterionIndex)"
                                 >
-                                  Edit
+                                  <LoadIcon icon-name="pen" :size="14" />
                                 </button>
                               </div>
 
@@ -170,15 +158,11 @@
                                 <select
                                   v-model="criterion.currentPoints"
                                   class="form-select form-select-sm score-dropdown"
-                                  @change="
-                                    onScoreChange(groupIndex, criterionIndex)
-                                  "
                                   title="Change score"
+                                  @change="onScoreChange(groupIndex, criterionIndex)"
                                 >
                                   <option
-                                    v-for="point in getAvailablePoints(
-                                      criterion
-                                    )"
+                                    v-for="point in getAvailablePoints(criterion)"
                                     :key="point"
                                     :value="point"
                                   >
@@ -187,38 +171,28 @@
                                 </select>
 
                                 <button
-                                  class="btn btn-success btn-sm"
-                                  @click="
-                                    saveAssessment(groupIndex, criterionIndex)
-                                  "
-                                  title="Save assessment"
+                                  :class="['btn btn-sm', criterion.isSaved ? 'btn-success' : 'btn-primary']"
+                                  :title="criterion.isSaved ? 'Assessment saved' : 'Save assessment'"
+                                  @click="saveAssessment(groupIndex, criterionIndex)"
                                 >
-                                  Save
+                                  <LoadIcon icon-name="floppy" :size="14" />
                                 </button>
                               </div>
                             </div>
                             <div v-else class="d-flex gap-2">
                               <button
-                                class="btn btn-success btn-sm"
+                                class="btn btn-primary btn-sm"
+                                title="Save"
                                 @click="saveEdit(groupIndex, criterionIndex)"
                               >
-                                <LoadIcon
-                                  icon-name="check"
-                                  :size="14"
-                                  class="me-1"
-                                />
-                                Save
+                                <LoadIcon icon-name="floppy" :size="14" />
                               </button>
                               <button
                                 class="btn btn-secondary btn-sm"
+                                title="Cancel"
                                 @click="cancelEdit(groupIndex, criterionIndex)"
                               >
-                                <LoadIcon
-                                  icon-name="x"
-                                  :size="14"
-                                  class="me-1"
-                                />
-                                Cancel
+                                <LoadIcon icon-name="x-lg" :size="14" />
                               </button>
                             </div>
                           </div>
@@ -237,6 +211,40 @@
         </div>
       </div>
     </div>
+    
+    <!-- Floating Info Panel -->
+    <div 
+      v-if="showInfoPanel && selectedCriterion"
+      class="floating-info-panel"
+      :style="infoPanelStyle"
+    >
+      <div class="info-panel-header">
+        <h6 class="mb-2">{{ selectedCriterion.name }}</h6>
+      </div>
+      
+      <div class="info-panel-content">
+        <div v-if="selectedCriterion.description" class="mb-3">
+          <strong>Description:</strong>
+          <p class="mb-0 mt-1">{{ selectedCriterion.description }}</p>
+        </div>
+        
+        <div v-if="selectedCriterion.scoring && selectedCriterion.scoring.length > 0">
+          <strong>Scoring Criteria:</strong>
+          <div class="scoring-list mt-2">
+            <div 
+              v-for="(option, index) in selectedCriterion.scoring" 
+              :key="index"
+              class="scoring-item p-2 border rounded mb-2 border-secondary"
+            >
+              <div class="d-flex justify-content-between align-items-start">
+                <span class="badge bg-secondary me-2">{{ option.points }} P</span>
+                <span class="flex-grow-1">{{ option.description }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -246,37 +254,24 @@ import LoadIcon from "@/basic/Icon.vue";
 export default {
   name: "AssessmentOutput",
   components: { LoadIcon },
+  subscribeTable: ["document"],
+  
   inject: {
-    documentId: {
-      type: Number,
-      required: true,
-    },
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
+    documentId: { type: Number, required: true },
+    studySessionId: { type: Number, required: false, default: null },
+    studyStepId: { type: Number, required: false, default: null },
   },
+  
   props: {
-    show: {
-      type: Boolean,
-      required: false,
-      default: true,
-    },
-    savedState: {
-      type: Object,
-      required: false,
-      default: () => ({}),
-    },
+    show: { type: Boolean, required: false, default: true },
+    savedState: { type: Object, required: false, default: () => ({}) },
   },
-  emits: ['state-changed'],
+  
+  emits: ['state-changed', 'assessment-saved'],
+  
   data() {
     return {
+      // Sidebar properties
       width: 400,
       minWidth: 400,
       maxWidth: 50,
@@ -285,19 +280,25 @@ export default {
       sidebarContainerDom: undefined,
       originalWidth: undefined,
       isHovering: false,
+      
+      // Assessment data
       error: null,
       assessmentOutput: null,
-      showRawJson: false,
       expandedGroups: {},
       expandedCriteria: {},
+      
+      // Info panel
+      showInfoPanel: false,
+      selectedCriterion: null,
+      infoPanelStyle: {},
     };
   },
+  
   computed: {
     sidebarContainerStyle() {
-      return {
-        width: this.show || this.isFixed ? `${this.width}px` : 0,
-      };
+      return { width: this.show || this.isFixed ? `${this.width}px` : 0 };
     },
+    
     sidebarContainerClassList() {
       return [
         this.show ? "is-active" : "is-hidden",
@@ -305,10 +306,12 @@ export default {
         this.isFixed ? "is-fixed" : "",
       ];
     },
+    
     sidebarClassList() {
       return [this.show || this.isFixed ? "is-active" : "collapsing"];
     },
   },
+  
   mounted() {
     this.initSidebar();
     if (!this.assessmentOutput && Object.keys(this.savedState).length === 0) {
@@ -317,12 +320,14 @@ export default {
       this.restoreState();
     }
   },
+  
   watch: {
     show(newVal) {
       if (newVal && Object.keys(this.savedState).length > 0) {
         this.restoreState();
       }
     },
+    
     savedState: {
       handler(newState) {
         if (this.show && Object.keys(newState).length > 0) {
@@ -330,15 +335,28 @@ export default {
         }
       },
       deep: true
+    },
+    
+    '$store.getters["table/document/refreshCount"]': {
+      handler() {
+        // Always try to load assessment when document table refreshes
+        if (!this.assessmentOutput) {
+          this.loadAssessment();
+        }
+      },
+      immediate: true
     }
   },
+  
   beforeUnmount() {
     if (this.isDragging) {
       this.isDragging = false;
       document.body.style.userSelect = "";
     }
   },
+  
   methods: {
+    // ===== SIDEBAR MANAGEMENT =====
     initSidebar() {
       this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth") || 400;
       this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth") || 50;
@@ -350,11 +368,12 @@ export default {
     
     initDragController() {
       const dom = document.querySelector("#assessmentHotZone");
-      const that = this;
+      if (!dom) return;
 
       let startX, startWidth;
+      
       const handleStart = (e) => {
-        that.isDragging = true;
+        this.isDragging = true;
         e.preventDefault();
         document.body.style.userSelect = "none";
         startWidth = this.width;
@@ -373,7 +392,7 @@ export default {
       };
 
       const handleEnd = () => {
-        that.isDragging = false;
+        this.isDragging = false;
         document.removeEventListener("mousemove", handleMove);
         document.removeEventListener("mouseup", handleEnd);
         document.body.style.userSelect = "";
@@ -384,17 +403,16 @@ export default {
         this.originalWidth = this.width;
       };
 
-      if (dom) {
         dom.addEventListener("mousedown", handleStart);
-      }
     },
     
     initHoverController() {
       const hoverHotZoneDom = document.querySelector("#assessmentHoverHotZone");
       this.sidebarContainerDom = document.querySelector("#assessmentContainer");
+      if (!hoverHotZoneDom || !this.sidebarContainerDom) return;
+
       let hoverTimer;
 
-      if (hoverHotZoneDom && this.sidebarContainerDom) {
         hoverHotZoneDom.addEventListener("mouseenter", () => {
           hoverTimer = setTimeout(() => {
             this.isFixed = true;
@@ -415,177 +433,56 @@ export default {
         hoverHotZoneDom.addEventListener("mouseleave", () => {
           clearTimeout(hoverTimer);
         });
-      }
     },
     
+    // ===== ASSESSMENT DATA LOADING =====
     async loadAssessment() {
       this.error = null;
 
       try {
-        this.assessmentOutput = {
-          criteriaGroups: [
-            {
-              name: "Criteria Group 1",
-              points: 12,
-              maxPoints: 5,
-              criteria: [
-                {
-                  id: "01",
-                  name: "Criteria #01",
-                  points: 3,
-                  maxPoints: 5,
-                  assessment: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 3,
-                },
-                {
-                  id: "02",
-                  name: "Criteria #02",
-                  points: 4,
-                  maxPoints: 5,
-                  assessment: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 4,
-                },
-                {
-                  id: "03",
-                  name: "Criteria #03",
-                  points: 5,
-                  maxPoints: 5,
-                  assessment: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 5,
-                },
-              ],
-            },
-            {
-              name: "Criteria Group 2",
-              points: 10,
-              maxPoints: 5,
-              criteria: [
-                {
-                  id: "01",
-                  name: "Criteria #01",
-                  points: 2,
-                  maxPoints: 5,
-                  assessment: "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt neque porro quisquam est.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 2,
-                },
-                {
-                  id: "02",
-                  name: "Criteria #02",
-                  points: 3,
-                  maxPoints: 5,
-                  assessment: "Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur quis autem vel eum iure reprehenderit qui in ea.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 3,
-                },
-                {
-                  id: "03",
-                  name: "Criteria #03",
-                  points: 5,
-                  maxPoints: 5,
-                  assessment: "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 5,
-                },
-              ],
-            },
-            {
-              name: "Criteria Group 3",
-              points: 13,
-              maxPoints: 5,
-              criteria: [
-                {
-                  id: "01",
-                  name: "Criteria #01",
-                  points: 4,
-                  maxPoints: 5,
-                  assessment: "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 4,
-                },
-                {
-                  id: "02",
-                  name: "Criteria #02",
-                  points: 4,
-                  maxPoints: 5,
-                  assessment: "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae itaque earum rerum hic tenetur.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 4,
-                },
-                {
-                  id: "03",
-                  name: "Criteria #03",
-                  points: 5,
-                  maxPoints: 5,
-                  assessment: "Nam libero tempore cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 5,
-                },
-              ],
-            },
-            {
-              name: "Criteria Group 4",
-              points: 8,
-              maxPoints: 5,
-              criteria: [
-                {
-                  id: "01",
-                  name: "Criteria #01",
-                  points: 1,
-                  maxPoints: 5,
-                  assessment: "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 1,
-                },
-                {
-                  id: "02",
-                  name: "Criteria #02",
-                  points: 2,
-                  maxPoints: 5,
-                  assessment: "Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 2,
-                },
-                {
-                  id: "03",
-                  name: "Criteria #03",
-                  points: 5,
-                  maxPoints: 5,
-                  assessment: "Ut enim ad minima veniam quis nostrum exercitationem ullam corporis suscipit laboriosam nisi ut aliquid ex ea commodi consequatur quis autem vel eum iure reprehenderit.",
-                  isEditing: false,
-                  editedFeedback: "",
-                  userRating: 0,
-                  currentPoints: 5,
-                },
-              ],
-            },
-          ],
-        };
+        const assessmentConfigDoc = this.$store.getters["table/document/getByKey"]('name', 'assessment_config')
+          .find(doc => doc.type === 3);
+
+        if (assessmentConfigDoc) {
+          // Fetch the configuration file content
+          this.$socket.emit("documentGet", {
+            documentId: assessmentConfigDoc.id
+          }, (response) => {
+            if (response && response.success) {
+              try {
+                if (response.data && response.data.file) {
+                  let fileContent;
+                  if (response.data.file instanceof ArrayBuffer) {
+                    const uint8Array = new Uint8Array(response.data.file);
+                    fileContent = new TextDecoder().decode(uint8Array);
+                  } else {
+                    fileContent = response.data.file.toString();
+                  }
+                  
+                  // Parse the JSON configuration
+                  const configData = JSON.parse(fileContent);
+                  // Transform rubrics structure to criteriaGroups structure
+                  this.assessmentOutput = this.transformRubricsToCriteriaGroups(configData);
+                } else {
+                  throw new Error("No file data received from server");
+                }
+              } catch (error) {
+                console.error("Error parsing assessment configuration:", error);
+                this.error = "Failed to parse assessment configuration: " + error.message;
+              }
+            } else {
+              const errorMessage = response && response.message ? response.message : "Failed to load assessment configuration";
+              this.error = errorMessage;
+            }
+          });
+        } else {
+          // No assessment_config document found - try again after a short delay
+          setTimeout(() => {
+            if (!this.assessmentOutput) {
+              this.loadAssessment();
+            }
+          }, 1000);
+        }
       } catch (err) {
         this.error = "Failed to load assessment: " + err.message;
       } finally {
@@ -593,47 +490,78 @@ export default {
       }
     },
     
-    async refreshAssessment() {
-      this.assessmentOutput = null;
-      this.error = null;
-      this.expandedGroups = {};
-      this.expandedCriteria = {};
-      await this.loadAssessment();
-    },
-    
-    initializeCurrentPoints() {
-      if (this.assessmentOutput && this.assessmentOutput.criteriaGroups) {
-        this.assessmentOutput.criteriaGroups.forEach((group) => {
-          if (group.criteria) {
-            group.criteria.forEach((criterion) => {
-              if (criterion.currentPoints === undefined) {
-                criterion.currentPoints = criterion.points || 0;
-              }
-              if (criterion.isSaved === undefined) {
-                criterion.isSaved = false;
-              }
-            });
-          }
+    transformRubricsToCriteriaGroups(configData) {
+      if (!configData.rubrics) {
+        this.error = "Invalid assessment configuration: No rubrics found";
+        return null;
+      }
+
+      const criteriaGroups = configData.rubrics.map((rubric, groupIndex) => {
+        const criteria = rubric.criteria.map((criterion, criterionIndex) => {
+          const highestScoring = criterion.scoring.reduce((max, current) => 
+            current.points > max.points ? current : max, criterion.scoring[0]);
+          
+          return {
+            id: `${groupIndex + 1}-${criterionIndex + 1}`,
+            name: criterion.name,
+            description: criterion.description,
+            points: 0,
+            maxPoints: criterion.maxPoints,
+            assessment: highestScoring.description,
+            isEditing: false,
+            editedFeedback: "",
+            userRating: 0,
+            currentPoints: 0,
+            isSaved: false,
+            scoring: criterion.scoring,
+            function: criterion.function
+          };
         });
+
+        const totalPoints = criteria.reduce((sum, criterion) => sum + criterion.points, 0);
+        const maxGroupPoints = criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0);
+
+        return {
+          name: rubric.name,
+          description: rubric.description,
+          points: totalPoints,
+          maxPoints: maxGroupPoints,
+          criteria: criteria
+        };
+      });
+
+      return {
+        criteriaGroups: criteriaGroups,
+        description: configData.description,
+        version: configData.version,
+        type: configData.type
+      };
+    },
+
+    // ===== INFO PANEL =====
+    openInfoPanel(group, criterion) {
+      this.selectedCriterion = criterion || group;
+      this.showInfoPanel = true;
+      
+      const sidebarRect = this.$refs.sidepane?.getBoundingClientRect();
+      if (sidebarRect) {
+        this.infoPanelStyle = {
+          position: 'fixed',
+          left: (sidebarRect.left - 350) + 'px',
+          top: sidebarRect.top + 'px',
+          width: '350px',
+          maxHeight: '100vh',
+          zIndex: 9999
+        };
       }
     },
     
-    getGroupScore(group) {
-      return group.points;
+    closeInfoPanel() {
+      this.showInfoPanel = false;
+      this.selectedCriterion = null;
     },
-    
-    isGroupSaved(groupIndex) {
-      const group = this.assessmentOutput.criteriaGroups[groupIndex];
-      if (group && group.criteria) {
-        return group.criteria.every((criterion) => criterion.isSaved === true);
-      }
-      return false;
-    },
-    
-    async leave() {
-      return Promise.resolve();
-    },
-    
+
+    // ===== UI INTERACTIONS =====
     toggleGroup(groupIndex) {
       Object.keys(this.expandedGroups).forEach((key) => {
         if (parseInt(key) !== groupIndex) {
@@ -656,14 +584,14 @@ export default {
         }
       });
 
-      this.expandedCriteria[`${groupIndex}-${criterionIndex}`] =
-        !this.expandedCriteria[`${groupIndex}-${criterionIndex}`];
+      this.expandedCriteria[`${groupIndex}-${criterionIndex}`] = !this.expandedCriteria[`${groupIndex}-${criterionIndex}`];
       
       this.$nextTick(() => {
         this.saveState();
       });
     },
     
+    // ===== ASSESSMENT EDITING =====
     startEdit(groupIndex, criterionIndex) {
       const criterion = this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex];
       criterion.isEditing = true;
@@ -694,6 +622,7 @@ export default {
       });
     },
     
+    // ===== SCORING =====
     getAvailablePoints(criterion) {
       const maxPoints = criterion.maxPoints || 5;
       const points = [];
@@ -705,6 +634,14 @@ export default {
     
     onScoreChange(groupIndex, criterionIndex) {
       const criterion = this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex];
+      
+      if (criterion.scoring) {
+        const selectedOption = criterion.scoring.find(option => option.points === criterion.currentPoints);
+        if (selectedOption) {
+          criterion.assessment = selectedOption.description;
+        }
+      }
+      
       const updatedCriterion = { ...criterion, isSaved: false };
       this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex] = updatedCriterion;
       this.updateGroupPoints(groupIndex);
@@ -712,21 +649,6 @@ export default {
       this.$nextTick(() => {
         this.saveState();
       });
-    },
-    
-    getTextareaRows(text) {
-      if (!text) return 3;
-      const lines = text.split("\n").length;
-      const estimatedRows = Math.ceil(text.length / 80);
-      const calculatedRows = Math.max(lines, estimatedRows);
-      return Math.max(3, Math.min(calculatedRows, 15));
-    },
-    
-    adjustTextareaRows(event) {
-      const textarea = event.target;
-      const text = textarea.value;
-      const newRows = this.getTextareaRows(text);
-      textarea.rows = newRows;
     },
     
     saveAssessment(groupIndex, criterionIndex) {
@@ -765,6 +687,52 @@ export default {
       }
     },
     
+    // ===== UTILITY METHODS =====
+    getGroupScore(group) {
+      return group.points;
+    },
+    
+    isGroupSaved(groupIndex) {
+      const group = this.assessmentOutput.criteriaGroups[groupIndex];
+      if (group && group.criteria) {
+        return group.criteria.every((criterion) => criterion.isSaved === true);
+      }
+      return false;
+    },
+    
+    getTextareaRows(text) {
+      if (!text) return 3;
+      const lines = text.split("\n").length;
+      const estimatedRows = Math.ceil(text.length / 80);
+      const calculatedRows = Math.max(lines, estimatedRows);
+      return Math.max(3, Math.min(calculatedRows, 15));
+    },
+    
+    adjustTextareaRows(event) {
+      const textarea = event.target;
+      const text = textarea.value;
+      const newRows = this.getTextareaRows(text);
+      textarea.rows = newRows;
+    },
+    
+    initializeCurrentPoints() {
+      if (this.assessmentOutput && this.assessmentOutput.criteriaGroups) {
+        this.assessmentOutput.criteriaGroups.forEach((group) => {
+          if (group.criteria) {
+            group.criteria.forEach((criterion) => {
+              if (criterion.currentPoints === undefined) {
+                criterion.currentPoints = criterion.points || 0;
+              }
+              if (criterion.isSaved === undefined) {
+                criterion.isSaved = false;
+              }
+            });
+          }
+        });
+      }
+    },
+
+    // ===== STATE MANAGEMENT =====
     saveState() {
       const state = {
         expandedGroups: { ...this.expandedGroups },
@@ -792,11 +760,16 @@ export default {
         }
       }
     },
+    
+    async leave() {
+      return Promise.resolve();
+    },
   },
 };
 </script>
 
 <style scoped>
+/* ===== LAYOUT ===== */
 .assessment-section {
   padding: 1rem;
   height: calc(100vh - 70px);
@@ -811,24 +784,30 @@ export default {
   padding-right: 5px;
 }
 
-.assessment-content-container::-webkit-scrollbar {
+/* ===== SCROLLBARS ===== */
+.assessment-content-container::-webkit-scrollbar,
+#sidepane::-webkit-scrollbar {
   width: 6px;
 }
 
-.assessment-content-container::-webkit-scrollbar-track {
+.assessment-content-container::-webkit-scrollbar-track,
+#sidepane::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
 
-.assessment-content-container::-webkit-scrollbar-thumb {
+.assessment-content-container::-webkit-scrollbar-thumb,
+#sidepane::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 3px;
 }
 
-.assessment-content-container::-webkit-scrollbar-thumb:hover {
+.assessment-content-container::-webkit-scrollbar-thumb:hover,
+#sidepane::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
 
+/* ===== CRITERIA GROUPS ===== */
 .criteria-group-card {
   border: 1px solid #dee2e6;
   border-radius: 8px;
@@ -852,6 +831,7 @@ export default {
   padding: 0;
 }
 
+/* ===== CRITERIA ITEMS ===== */
 .criterion-item {
   background-color: transparent;
   border: none;
@@ -880,10 +860,7 @@ export default {
   color: #333;
 }
 
-.info-icon {
-  color: #6c757d;
-}
-
+/* ===== BADGES ===== */
 .badge {
   background-color: #6c757d !important;
   color: white;
@@ -902,6 +879,7 @@ export default {
   color: white !important;
 }
 
+/* ===== ASSESSMENT CONTENT ===== */
 .criterion-assessment {
   border-top: 1px solid #e9ecef;
   margin-top: 0;
@@ -949,6 +927,7 @@ export default {
   font-style: italic;
 }
 
+/* ===== BUTTONS ===== */
 .assessment-actions .btn {
   font-size: 0.875rem;
   padding: 6px 12px;
@@ -959,22 +938,6 @@ export default {
 .assessment-actions .btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.score-dropdown {
-  min-width: 80px;
-  font-size: 0.875rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  padding: 4px 8px;
-  background-color: white;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.score-dropdown:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-  outline: 0;
 }
 
 .assessment-actions .d-flex {
@@ -1013,6 +976,72 @@ export default {
   border-color: #545b62;
 }
 
+/* ===== FORM ELEMENTS ===== */
+.score-dropdown {
+  min-width: 80px;
+  font-size: 0.875rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 4px 8px;
+  background-color: white;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.score-dropdown:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  outline: 0;
+}
+
+/* ===== INFO ICONS ===== */
+.info-icon {
+  color: #6c757d;
+  transition: color 0.2s ease;
+}
+
+.info-icon:hover {
+  color: #007bff;
+}
+
+/* ===== FLOATING INFO PANEL ===== */
+.floating-info-panel {
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.info-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.info-panel-header h6 {
+  margin: 0;
+  color: #495057;
+  font-weight: 600;
+}
+
+.info-panel-content {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.scoring-list {
+  overflow-y: auto;
+}
+
+.scoring-item {
+  transition: all 0.2s ease;
+}
+
+/* ===== SIDEBAR CONTAINER ===== */
 #assessmentContainer {
   position: relative;
   padding: 0;
@@ -1054,6 +1083,7 @@ export default {
   }
 }
 
+/* ===== HOT ZONES ===== */
 .hot-zone {
   width: 3px;
   position: absolute;
@@ -1073,6 +1103,7 @@ export default {
   display: none;
 }
 
+/* ===== SIDEBAR ===== */
 #sidebar {
   height: 100%;
   width: 100%;
@@ -1099,23 +1130,5 @@ export default {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-}
-
-#sidepane::-webkit-scrollbar {
-  width: 6px;
-}
-
-#sidepane::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-#sidepane::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-#sidepane::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
 }
 </style>
