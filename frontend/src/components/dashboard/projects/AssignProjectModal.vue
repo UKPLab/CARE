@@ -2,7 +2,7 @@
     <StepperModal 
         ref="assignProjectStepper"
         :steps="assignSteps"
-        :validation="assignStepValid"
+        :validation="stepValid"
         submit-text="Assign"
         @step-change="handleAssignStepChange"
         @submit="handleAssignSubmit"
@@ -137,9 +137,11 @@ export default {
     },
     handleAssignStepChange(step) {
       // Handle step change if needed
+      //todo: Implement any logic needed when the step changes
       console.log("Step changed to:", step);
     },
     async handleAssignSubmit() {
+    //todo
       console.log("Submitting assignment...");
     },
     close() {
