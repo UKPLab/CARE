@@ -5,7 +5,8 @@ const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {Op} = require("sequelize");
-
+const {compileSchema, validateZip, validateZipWithSchema} = require("../../utils/zipValidator.js");
+const { associateFilesForSubmission } = require("../../utils/fileAssociator.js");
 
 const {dbToDelta} = require("editor-delta-conversion");
 
@@ -16,7 +17,7 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * Loading the document through websocket
  *
- * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal
+ * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal, Yiwei Wang
  * @type {DocumentSocket}
  * @class DocumentSocket
  */
@@ -78,7 +79,7 @@ class DocumentSocket extends Socket {
         }
 
         const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
-        if (fileType !== ".pdf" && fileType !== ".delta") {
+        if (fileType !== ".pdf" && fileType !== ".delta" && fileType !== ".json") {
             throw new Error("Invalid file type");
         }
 
@@ -117,6 +118,20 @@ class DocumentSocket extends Socket {
             };
 
             await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
+        } else if (fileType === ".json") {
+            // Handle JSON configuration files
+            doc = await this.models["document"].add(
+                {
+                    type: docTypes.DOC_TYPE_CONFIG,
+                    name: data.name.replace(/.json$/, ""),
+                    userId: data.userId ?? this.userId,
+                    uploadedByUserId: this.userId,
+                    readyForReview: data.isUploaded ?? false,
+                },
+                { transaction: options.transaction }
+            );
+
+            target = path.join(UPLOAD_PATH, `${doc.hash}.json`);
         } else {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
@@ -542,45 +557,183 @@ class DocumentSocket extends Socket {
         );
     }
 
+    /**
+     * Download submissions from Moodle for a specific assignment and save them to the server
+     * @author Yiwei Wang, Linyin Huang
+     * @param {Object} data - The input data from the frontend
+     * @param {Object} data.submissions - The submissions from Moodle
+     * @param {Object} options - Additional configuration parameters
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<Array<T>>} - The results of the processed submissions
+     * @throws {Error} - If the download fails, if the assignment ID is invalid, or if saving to server fails
+     */
     async downloadMoodleSubmissions(data, options) {
         const results = [];
-
-        for (const file of data.files) {
-            const transaction = await this.server.db.sequelize.transaction();
-
+        const submissions = data.submissions || [];
+        for (const submission of submissions) {
+            const transaction = options.transaction;
             try {
+                // 1. Create an entry in the submission table
+                const submissionEntry = await this.models["submission"].add({
+                    userId: submission.userId, 
+                    createdByUserId: this.userId,
+                    extId: submission.submissionId, 
+                }, { transaction });
 
-                const files = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl(
-                    {
+                // 2. Download and save each file as a document
+                const documentIds = [];
+                for (const file of (submission.files || [])) {
+                    // Download file from Moodle
+                    const files = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl({
                         fileUrls: [file.fileUrl],
                         options: data.options,
-                    }
-                );
+                    });
+                    // Save as document in DB
+                    const document = await this.addDocument({
+                        file: files[0],
+                        name: file.fileName,
+                        userId: submission.userId,
+                        isUploaded: true,
+                        submissionId: submissionEntry.id,
+                    }, { transaction });
+                    documentIds.push(document.id);
+                }
 
-                const document = await this.addDocument({
-                    file: files[0],
-                    name: file.fileName,
-                    userId: file.userId,
-                    isUploaded: true
-                }, {transaction: transaction});
+                // 3. Run validation
+                const validationResult = await this.validateSubmissionFiles(documentIds);
+                if (!validationResult.success) {
+                    throw new Error(validationResult.message || "Validation failed");
+                }
 
-                results.push(document['id']);
-
+                results.push({ submissionId: submissionEntry.id, documentIds, success: true });
                 await transaction.commit();
-
-            } catch (e) {
-                this.logger.error(e.message);
+            } catch (err) {
+                this.logger.error(err.message);
                 await transaction.rollback();
-
             }
 
             // update frontend progress
             this.socket.emit("progressUpdate", {
-                id: data["progressId"], current: data.files.indexOf(file) + 1, total: data.files.length,
+                id: data.progressId,
+                current: submissions.indexOf(submission) + 1,
+                total: submissions.length,
             });
         }
 
         return results;
+    }
+
+    // TODO: Implement validation logic here
+    async validateSubmissionFiles(documentIds) {
+        return { success: true };
+    }
+
+    /**
+     * Validate ZIP content using current database schema or provided schema
+     * @param {Buffer} zipBuffer - The ZIP file buffer
+     * @param {Object} [adhocSchema] - Optional adhoc schema to use instead of database schema
+     * @returns {Promise<Object>} - Validation result object
+     */
+    async validateZipContent(zipBuffer, adhocSchema = null) {
+        try {
+            if (adhocSchema) {
+                // Use provided schema (legacy mode for backwards compatibility)
+                // Convert from legacy format to new format
+                const schema = {
+                    required: adhocSchema.required_files || [],
+                    forbidden: adhocSchema.forbidden_files || [],
+                    allowedExtensions: adhocSchema.allowed_extensions || [],
+                    maxFileCount: adhocSchema.max_file_count || null,
+                    maxTotalSize: adhocSchema.max_total_size || null
+                };
+                return await validateZip(zipBuffer, schema);
+            } else {
+                // Use database-driven schema (new mode)
+                // Fetch schema from settings using the existing settings system
+                const schemaText = await this.models.setting.get("upload.zip.validationSchema");
+                return await validateZipWithSchema(zipBuffer, schemaText);
+            }
+        } catch (error) {
+            this.logger.error("ZIP validation error:", error);
+            return {
+                isValid: false,
+                violations: [`Validation failed: ${error.message}`],
+                summary: {}
+            };
+        }
+    }
+
+    /**
+     * TODO: Check if we need this function.
+     * @author Yiwei Wang
+     * Enhance submission data with file associations and categorization
+     * @param {Array} submissions - Raw submission data from Moodle
+     * @returns {Array} Enhanced submissions with file categorization
+     */
+    enhanceSubmissionsWithFileData(submissions) {
+        return submissions.map(submission => {
+            let enhancedSubmission = { ...submission };
+            
+            // If we have the new enhanced data structure from Python
+            if (submission.files && Array.isArray(submission.files)) {
+                const files = submission.files;
+                
+                // Separate PDFs and ZIPs
+                const pdfFiles = files.filter(file => 
+                    file.mimetype === 'application/pdf' || 
+                    file.filename.toLowerCase().endsWith('.pdf')
+                );
+                
+                const zipFiles = files.filter(file => 
+                    file.mimetype === 'application/zip' || 
+                    file.filename.toLowerCase().endsWith('.zip')
+                );
+                
+                const otherFiles = files.filter(file => 
+                    !pdfFiles.includes(file) && !zipFiles.includes(file)
+                );
+                
+                // Try to associate ZIP files with PDF files
+                enhancedSubmission.fileAssociations = associateFilesForSubmission(pdfFiles, zipFiles);
+                
+                // Add file summary
+                enhancedSubmission.fileSummary = {
+                    totalFiles: files.length,
+                    pdfCount: pdfFiles.length,
+                    zipCount: zipFiles.length,
+                    otherCount: otherFiles.length,
+                    hasPdf: pdfFiles.length > 0,
+                    hasZip: zipFiles.length > 0,
+                    isComplete: pdfFiles.length > 0 && zipFiles.length > 0
+                };
+                
+                // Keep the original files array for compatibility
+                enhancedSubmission.categorizedFiles = {
+                    pdfs: pdfFiles,
+                    zips: zipFiles,
+                    others: otherFiles
+                };
+                
+            } else if (submission.submissionURLs) {
+                // Legacy data structure - enhance what we can
+                const urls = submission.submissionURLs;
+                const pdfUrls = urls.filter(url => 
+                    url.filename.toLowerCase().endsWith('.pdf')
+                );
+                
+                enhancedSubmission.fileSummary = {
+                    totalFiles: urls.length,
+                    pdfCount: pdfUrls.length,
+                    zipCount: 0,
+                    otherCount: urls.length - pdfUrls.length,
+                    hasPdf: pdfUrls.length > 0,
+                    hasZip: false,
+                    isComplete: false
+                };
+            }
+            
+            return enhancedSubmission;
+        });
     }
 
     /**
@@ -657,16 +810,19 @@ class DocumentSocket extends Socket {
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
                                 ),
                     };
-
-                }
             }
+        }
         } else {
-            const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
+            // Handle file-based documents (PDF, JSON, etc.)
+            const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
+            const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
+            
             if (!fs.existsSync(filePath)) {
-                throw new Error("PDF file not found");
+                throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
+            
             const file = fs.readFileSync(filePath);
-            return {document: document, file: file};
+            return { document: document, file: file };
         }
     }
 
@@ -773,7 +929,159 @@ class DocumentSocket extends Socket {
         return documentData;
     }
 
+    /**
+     * Update the content of a JSON configuration file
+     *
+     * @param {Object} data - The data object containing the document ID and new content
+     * @param {number} data.documentId - The ID of the document to update
+     * @param {Object} data.content - The new JSON content to save
+     * @param {Object} options - The options object containing the transaction
+     * @returns {Promise<void>}
+     */
+    async updateDocumentContent(data, options) {
+        const { documentId, content } = data;
+        
+        // Get the document to verify it exists and check access
+        const doc = await this.models['document'].getById(documentId);
+        if (!doc) {
+            throw new Error("Document not found");
+        }
+
+        // Check if user has access to update this document
+        if (!(await this.checkDocumentAccess(doc.id))) {
+            throw new Error("You do not have access to update this document");
+        }
+
+        // Verify it's a configuration file
+        if (doc.type !== this.models['document'].docTypes.DOC_TYPE_CONFIG) {
+            throw new Error("Only configuration files can be updated with this method");
+        }
+
+        // Validate JSON content
+        let jsonContent;
+        try {
+            jsonContent = JSON.stringify(content, null, 2);
+        } catch (error) {
+            throw new Error("Invalid JSON content");
+        }
+
+        const filePath = `${UPLOAD_PATH}/${doc.hash}.json`;
+        await fs.promises.writeFile(filePath, jsonContent, 'utf8');
+
+        const updatedDocument = await this.models['document'].updateById(doc.id, {
+            updatedAt: new Date()
+        }, { transaction: options.transaction });
+
+        return updatedDocument;
+    }
+
     init() {
+
+        this.socket.on("documentGetReviews", async (callback) => {
+            try {
+                const reviewDocuments = await this.models["document"].getReviewDocuments();
+                callback({
+                    success: true,
+                    documents: reviewDocuments
+                });
+            } catch (e) {
+                this.logger.error(e);
+                callback({
+                    success: false,
+                    message: "Error retrieving review documents"
+                });
+            }
+        });
+
+
+        this.socket.on("documentClose", async (data) => {
+            try {
+                if (data.studySessionId === null) {
+                    await this.saveDocument(data.documentId);
+                }
+
+                const index = this.socket.openComponents.editor.indexOf(data.documentId);
+                if (index > -1) {
+                    this.socket.openComponents.editor[index] = undefined; // Remove the document ID
+                }
+            } catch (err) {
+                this.logger.error("Error saving document: ", err);
+                this.sendToast("Error saving document!", "Error", "danger");
+            }
+        });
+
+        this.socket.on("documentOpen", async (data) => {
+            try {
+                await this.openDocument(data.documentId);
+            } catch (e) {
+                this.logger.error("Error handling document open request: ", e);
+                this.sendToast("Error handling document open request!", "Error", "danger");
+            }
+        });
+
+        this.socket.on("documentGetAll", async (data) => {
+            try {
+                await this.refreshAllDocuments((data && data.userId) ? data.userId : null);
+            } catch (error) {
+                console.error(error);
+                this.sendToast(error, "Error getting all document data", "Error", "danger");
+            }
+        });
+
+       /*
+        this.socket.on("documentEdit", async (data) => {
+            try {
+                await this.editDocument(data);
+            } catch (error) {
+                const errorDetails = {
+                    timestamp: new Date().toISOString(),
+                    errorMessage: error.message,
+                    errorType: error.constructor.name,
+                    stackTrace: error.stack,
+                    userId: data.userId,
+                    documentId: data.documentId,
+                    operationDetails: JSON.stringify(data.ops),
+                    component: "Document Editor",
+                    errorCode: error.code || "N/A"
+                };
+
+                this.logger.error("Critical error during document edit:", errorDetails);
+
+                this.sendToast("An error occurred while editing the document.", "Error", "danger");
+                this.socket.emit("documentEditResponse", {
+                    success: false,
+                    message: "Internal server error while editing the document.",
+                    errorCode: 500
+                });
+            }
+        });
+        */
+
+        this.socket.on("documentGetMoodleSubmissions", async (data, callback) => {
+            try {
+                if (!(await this.isAdmin())) { 
+                    throw new Error("You do not have permission to access Moodle submissions");
+                }
+                
+                const submissions = await this.documentGetMoodleSubmissions(data);
+                
+                // Enhance submissions with file associations
+                const enhancedSubmissions = this.enhanceSubmissionsWithFileData(submissions);
+                
+                callback({
+                    success: true,
+                    data: enhancedSubmissions
+                });
+            } catch (e) {
+                this.logger.error("Error getting Moodle submissions:", e);
+                callback({
+                    success: false,
+                    message: e.message
+                });
+            }
+        });
+
+
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
         this.createSocket("documentEdit", this.editDocument, {}, true);
@@ -784,6 +1092,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.addDocument, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
+        this.createSocket("documentUpdateContent", this.updateDocumentContent, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);

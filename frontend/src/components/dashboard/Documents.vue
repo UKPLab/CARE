@@ -235,7 +235,7 @@ export default {
     },
     docs() {
       return this.documents
-          .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false)
+          .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false && doc.type !== 3)
           .map((d) => {
             let newD = {...d};
             newD.typeName = d.type === 0 ? "PDF" : d.type === 1 ? "HTML" : "MODAL";

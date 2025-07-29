@@ -62,6 +62,7 @@ export default {
     }
   },
   emits: ['add-edit'],
+  emits: ['add-edit'],
   data() {
     return {
       width: 400,
@@ -103,6 +104,9 @@ export default {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
+    downloadBeforeStudyClosingAllowed() {
+      return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
+    },
     documentComments() {
       return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
@@ -112,7 +116,11 @@ export default {
             return this.studySessionIds.includes(comment.studySessionId);
           } else {
             if (this.showAll) {
+              if (!this.downloadBeforeStudyClosingAllowed) {
+                return !this.openSessionIds.includes(comment.studySessionId);
+              } else {
               return true;
+              }
             } else {
               return comment.studySessionId === null;
             }
@@ -133,7 +141,7 @@ export default {
           } else {
             return !a.annotationId ? 1 : -1;
           }
-        })
+        });
     },
     sidebarContainerStyle() {
       return {
@@ -155,6 +163,7 @@ export default {
         || this.$store.getters["table/annotation/getFiltered"](e => e.draft).length > 0;
     },
     anonymized() {
+      if (!this.study) return false;
       return this.study.anonymize;
     }
   },

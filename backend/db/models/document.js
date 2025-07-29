@@ -9,6 +9,7 @@ const docTypes = Object.freeze({
     DOC_TYPE_PDF: 0,
     DOC_TYPE_HTML: 1,
     DOC_TYPE_MODAL: 2,
+    DOC_TYPE_CONFIG: 3,
 });
 
 module.exports = (sequelize, DataTypes) => {
@@ -115,6 +116,12 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'projectId',
                 as: 'project',
             });
+
+            // A document belongs to exactly one submission (may be NULL for legacy docs)
+            Document.belongsTo(models["submission"], {
+                foreignKey: "submissionId",
+                as: "submission",
+            });
         }
     }
 
@@ -129,10 +136,11 @@ module.exports = (sequelize, DataTypes) => {
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
-        type: DataTypes.INTEGER, // 0 is for pdf, 1 is for html, and 2 is for modal
+        type: DataTypes.INTEGER, // 0 is for pdf, 1 is for html, 2 is for modal, 3 is for configuration 
         parentDocumentId: DataTypes.INTEGER,
         hideInFrontend: DataTypes.BOOLEAN,
         projectId: DataTypes.INTEGER,
+        submissionId: DataTypes.INTEGER,
     }, {
         sequelize: sequelize,
         modelName: 'document',

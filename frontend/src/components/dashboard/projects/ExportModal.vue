@@ -122,6 +122,8 @@ export default {
     table: "tag_set",
   }, {
     table: "tag"
+  }, {
+    table: "document"
   }
   ],
   provide() {
@@ -261,6 +263,7 @@ export default {
       zip.file('studies.json', JSON.stringify(this.studies, null, 2));
       zip.file("reviewers.json", JSON.stringify(this.reviewerList, null, 2));
       zip.file("sessions.json", JSON.stringify(this.studySessions, null, 2));
+      zip.file("documents.json", JSON.stringify(this.documents, null, 2));
 
       //download all documents
       await Promise.all(
