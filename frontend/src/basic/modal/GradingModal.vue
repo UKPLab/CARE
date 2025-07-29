@@ -169,19 +169,19 @@ export default {
       ];
     },
     inputFiles() {
-      return (this.submissions || []).map(doc => ({
-        id: doc.id,
-        name: doc.name,
+      return (this.submissions || []).map(submission => ({
+        id: submission.id,
+        name: submission.name || `Submission ${submission.id}`,
       }));
     },
     downloadFile(row) {
-      const doc = (this.submissions || []).find(d => d.id === row.id);
-      if (!doc) return;
+      const submission = (this.submissions || []).find(s => s.id === row.id);
+      if (!submission) return;
       // TODO: Implement file download logic for .zip/.tex after the application of moodle import submissions
     },
-    // TODO: Replace documents table with "submissions"
+    // Get submissions from the submissions table
     submissions(){
-      return this.$store.getters["table/document/getAll"];
+      return this.$store.getters["table/submission/getAll"];
     },
     // TODO: Replace type to 3(JSON) when implemented and filter ahead by "type"="criteria"
     jsonConfig(){
@@ -235,6 +235,19 @@ export default {
       }
       return "0s";
     },
+    buttons() {
+      return [
+        {
+          key: 'downloadFile',
+          label: 'Download File',
+          type: 'button',
+          options: { iconOnly: true},
+          title: 'Download File',
+          icon: 'download',
+          action: this.downloadFile,
+        },
+      ];
+    },
   },
   mounted() {
     if (this.isProcessingActive) {
@@ -251,20 +264,7 @@ export default {
     },
     close() {
       this.$refs.gradingStepper.close();
-    },    
-    buttons() {
-      return [
-        {
-          key: 'downloadFile',
-          label: 'Download File',
-          type: 'button',
-          options: { iconOnly: true},
-          title: 'Download File',
-          icon: 'download',
-          action: this.downloadFile,
         },
-      ];
-    },    
     onInputFilesChange(rows) {
       this.selectedInputRows = Array.isArray(rows) ? rows : [];
     },
@@ -345,7 +345,7 @@ export default {
           }
           ]     
       },
-        inputFiles: this.selectedInputRows
+        inputFiles: this.selectedInputRows.map(row => row.id)
       }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
