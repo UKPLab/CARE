@@ -19,19 +19,20 @@
           v-model="dataSelection"
           :fields="dataSelectionFields"
         />
-        <small class="text-muted">{{ dataSelection.projects ? '1 project selected' : '0 projects selected' }}</small>
+        <small class="text-muted">{{ dataSelection.project ? '1 project selected' : '0 projects selected' }}</small>
       </div>
     </template>
     
     <template #step-2>
       <div class="mb-3">
         <h6>Select users to assign projects to:</h6>
-        <BasicForm
-          ref="userSelectionForm"
+        <BasicTable
           v-model="userSelection"
-          :fields="userSelectionFields"
+          :columns="columns"
+          :data="users"
+          :options="tableOptions"
         />
-        <small class="text-muted">{{ userSelection.users ? '1 user selected' : '0 users selected' }}</small>
+        <small class="text-muted">{{ Object.keys(userSelection || {}).length }} user(s) selected</small>
       </div>
     </template>
     
@@ -41,23 +42,25 @@
         <div class="alert alert-info">
           <strong>Summary:</strong><br>
           You are about to assign <strong>1</strong> project 
-          to <strong>1</strong> user.
+          to <strong>{{ Object.keys(userSelection || {}).length }}</strong> user(s).
         </div>
         
         <div class="row">
           <div class="col-md-6">
             <h6 class="text-primary">Selected Project:</h6>
-            <div v-if="dataSelection.projects" class="mb-1">
+            <div v-if="dataSelection.project" class="mb-1">
               <i class="bi bi-folder me-1"></i>
-              {{ getProjectName(dataSelection.projects) }}
+              {{ getProjectName(dataSelection.project) }}
             </div>
           </div>
           <div class="col-md-6">
-            <h6 class="text-success">Selected User:</h6>
-            <div v-if="userSelection.users" class="mb-1">
-              <i class="bi bi-person me-1"></i>
-              {{ getUserName(userSelection.users) }}
-            </div>
+            <h6 class="text-success">Selected Users:</h6>
+            <ul class="list-unstyled">
+              <li v-for="user in Object.values(userSelection || {})" :key="user.id" class="mb-1">
+                <i class="bi bi-person me-1"></i>
+                {{ user.firstName }} {{ user.lastName }}
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -68,12 +71,14 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
+import BasicTable from "@/basic/Table.vue";
 
 export default {
   name: "AssignProjectModal",
   components: {
     StepperModal,
-    BasicForm
+    BasicForm,
+    BasicTable
   },
   data() {
     return {
@@ -84,6 +89,20 @@ export default {
       ],
       dataSelection: {},
       userSelection: {},
+      tableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        selectableRows: true,
+        pagination: 10,
+      },
+      columns: [
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        { name: "Email", key: "email" },
+      ],
     };
   },
   computed: {
@@ -95,16 +114,16 @@ export default {
     },
     stepValid() {
       return [
-        !!this.dataSelection.projects,
-        !!this.userSelection.users,
+        !!this.dataSelection.project,
+        Object.keys(this.userSelection || {}).length > 0,
         true 
       ];
     },
     dataSelectionFields() {
       return [
         {
-          key: "projects",
-          label: "Select Projects",
+          key: "project",
+          label: "Select Project",
           type: "select",
           options: this.projects.map(project => ({
             name: project.name,
@@ -139,10 +158,53 @@ export default {
       // Handle step change if needed
       //todo: Implement any logic needed when the step changes
       console.log("Step changed to:", step);
+      console.log("Current data selection:", this.dataSelection);
+      console.log("Current user selection:", this.userSelection);
     },
     async handleAssignSubmit() {
-    //todo
-      console.log("Submitting assignment...");
+      const projectId = this.dataSelection.project;
+      const userIds = Object.keys(this.userSelection || {});
+      
+      if (!projectId || userIds.length === 0) {
+        this.eventBus.emit("toast", {
+          title: "Assignment failed",
+          message: "Please select a project and at least one user.",
+          variant: "danger",
+        });
+        return;
+      }
+
+      // Assign the project to each selected user
+      for (const userId of userIds) {
+        this.$socket.emit(
+          "appDataUpdate",
+          {
+            table: "user_settings",
+            data: {
+              userId: parseInt(userId),
+              key: "projects.default",
+              value: projectId,
+            },
+          },
+          (result) => {
+            if (!result.success) {
+              this.eventBus.emit("toast", {
+                title: "Assignment failed",
+                message: `Failed to assign project to user ${userId}: ${result.message}`,
+                variant: "danger",
+              });
+            }
+          }
+        );
+      }
+      
+      this.eventBus.emit("toast", {
+        title: "Project assigned",
+        message: `The project has been successfully assigned to ${userIds.length} user(s).`,
+        variant: "success",
+      });
+      
+      this.close();
     },
     close() {
       this.dataSelection = {};
@@ -152,10 +214,6 @@ export default {
     getProjectName(projectId) {
       const project = this.projects.find(p => p.id === projectId);
       return project.name;
-    },
-    getUserName(userId) {
-      const user = this.users.find(u => u.id === userId);
-      return `${user.firstName} ${user.lastName}` ;
     },
   }
 }
