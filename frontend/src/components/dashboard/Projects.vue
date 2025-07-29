@@ -1,12 +1,20 @@
 <template>
   <Card title="Projects">
     <template #headerElements>
+      <div class="btn-group gap-2">
       <BasicButton
         class="btn-primary btn-sm"
         title="Create project"
         text="Create"
         @click="$refs.projectModal.open(0)"
       />
+      <BasicButton
+        class="btn-secondary btn-sm"
+        title="Assign projects"
+        text="Assign projects"
+        @click="$refs.assignProjectModal.open()"
+      />
+      </div>
     </template>
     <template #body>
       <BasicTable
@@ -21,6 +29,8 @@
   <ProjectModal ref="projectModal"/>
   <ExportModal ref="exportModal"/>
   <ConfirmModal ref="deleteConf"/>
+  <AssignProjectModal ref="assignProjectModal"/>
+
 </template>
 
 <script>
@@ -30,6 +40,7 @@ import BasicButton from "@/basic/Button.vue";
 import ProjectModal from "./coordinator/Project.vue";
 import ExportModal from "./projects/ExportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import AssignProjectModal from "./projects/AssignProjectModal.vue";
 
 /**
  * Project list component
@@ -48,6 +59,7 @@ export default {
     BasicButton,
     ProjectModal,
     ConfirmModal,
+    AssignProjectModal,
   },
   data() {
     return {
