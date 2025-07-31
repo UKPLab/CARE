@@ -215,6 +215,81 @@ Import this component if you need a modal prompted to the user. You can customiz
       - Boolean
       - False
 
+Multiple Modals
+---------------
+
+In certain workflows, you may need to display a modal *from within another modal*. For example, to add reviewers while assigning a document, or to edit nested content inside a form.
+
+To prevent modals from stacking visibly or creating interaction conflicts, we support **modal swapping**, where the first modal is temporarily hidden and restored after the second modal closes.
+
+.. tip::
+
+    When a child modal is opened, the parent modal should be hidden using ``mainModal?.hide()``, and restored with ``mainModal?.show()`` when the child closes. This keeps the experience intuitive and avoids modal stacking issues.
+
+**Example**
+
+This example demonstrates how to temporarily hide one modal and show another, using `ref` and `inject`.
+
+.. code-block:: html
+
+    <!-- Parent Modal (e.g., Configuration) -->
+    <BasicModal ref="parentModal" name="main-modal" @hide="onHide">
+      <template #body>
+        <button @click="openChild">Add Reviewer</button>
+      </template>
+    </BasicModal>
+
+    <!-- Child Modal (e.g., Add Reviewer) -->
+    <AddAssignmentModal ref="childModal" :main-modal="getParentModalRef()" />
+
+.. code-block:: javascript
+
+    methods: {
+        openChild() {
+            this.$refs.childModal.open(this.studyId);
+        },
+        getParentModalRef() {
+            return this.$refs.parentModal;
+        },
+    }
+
+.. code-block:: html
+
+    <!-- AddAssignmentModal.vue -->
+    <BasicModal
+      ref="assignmentModal"
+      name="add-assignment-modal"
+      @hide="resetModal"
+    >
+      <template #title>
+        <span>Add Reviewer</span>
+      </template>
+    </BasicModal>
+
+.. code-block:: javascript
+
+    inject: {
+        mainModal: { default: null }
+    },
+
+    methods: {
+        open(id) {
+            this.$refs.assignmentModal.open();
+            this.mainModal?.hide();  // hide parent
+            this.studyId = id;
+        },
+        resetModal() {
+            this.selectedReviewer = [];
+            this.mainModal?.show();  // re-show parent
+        },
+    }
+
+**Where It’s Used**
+
+You can see this modal-handling approach in:
+
+- ``dashboard/modal/AddAssignmentModal.vue``
+
 StepperModal
 ------------
 
@@ -289,9 +364,7 @@ Ideal for configuration workflows, uploads, or integrations like Moodle (see :re
         },
     };
 
-**Component Properties**
-
-`StepperModal` requires two essential props: ``steps`` and ``validation``. These drive the navigation and determine if each step is allowed to proceed.
+**Component Properties:** `StepperModal` requires two essential props: ``steps`` and ``validation``. These drive the navigation and determine if each step is allowed to proceed.
 
 .. list-table:: StepperModal properties
     :header-rows: 1
@@ -321,9 +394,7 @@ Ideal for configuration workflows, uploads, or integrations like Moodle (see :re
 
     The number and order of elements in ``validation`` must match the number of items in ``steps``.
 
-**Slots**
-
-Each step must have a corresponding named slot using the syntax ``#step-n`` where ``n`` is the 1-based index. You can also customize the modal's title and footer.
+**Slots:** Each step must have a corresponding named slot using the syntax ``#step-n`` where ``n`` is the 1-based index. You can also customize the modal's title and footer.
 
 .. list-table:: StepperModal slots
     :header-rows: 1
@@ -339,9 +410,7 @@ Each step must have a corresponding named slot using the syntax ``#step-n`` wher
     * - ``#footer``
       - Optional custom footer. Use this to override default button layout
 
-**Events**
-
-StepperModal emits lifecycle and state events:
+**Events:** StepperModal emits lifecycle and state events:
 
 .. list-table:: StepperModal events
     :header-rows: 1
@@ -355,9 +424,7 @@ StepperModal emits lifecycle and state events:
     * - ``@hide``
       - Emitted when modal is hidden
 
-**Public Methods (via `ref`)**
-
-You can interact with the modal directly via its ref (e.g., ``this.$refs.uploadStepper``).
+**Public Methods (via `ref`):** You can interact with the modal directly via its ref (e.g., ``this.$refs.uploadStepper``).
 
 .. list-table:: StepperModal methods
     :header-rows: 1
