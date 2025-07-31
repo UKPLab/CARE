@@ -81,7 +81,7 @@ class DocumentSocket extends Socket {
         }
 
         const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
-        if (fileType !== ".pdf" && fileType !== ".delta") {
+        if (fileType !== ".pdf" && fileType !== ".delta" && fileType !== ".json") {
             throw new Error("Invalid file type");
         }
 
@@ -120,6 +120,20 @@ class DocumentSocket extends Socket {
             };
 
             await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
+        } else if (fileType === ".json") {
+            // Handle JSON configuration files
+            doc = await this.models["document"].add(
+                {
+                    type: docTypes.DOC_TYPE_CONFIG,
+                    name: data.name.replace(/.json$/, ""),
+                    userId: data.userId ?? this.userId,
+                    uploadedByUserId: this.userId,
+                    readyForReview: data.isUploaded ?? false,
+                },
+                { transaction: options.transaction }
+            );
+
+            target = path.join(UPLOAD_PATH, `${doc.hash}.json`);
         } else {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
@@ -798,16 +812,19 @@ class DocumentSocket extends Socket {
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
                                 ),
                     };
-
-                }
             }
+        }
         } else {
-            const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
+            // Handle file-based documents (PDF, JSON, etc.)
+            const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
+            const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
+            
             if (!fs.existsSync(filePath)) {
-                throw new Error("PDF file not found");
+                throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
+            
             const file = fs.readFileSync(filePath);
-            return {document: document, file: file};
+            return { document: document, file: file };
         }
     }
 
@@ -924,6 +941,52 @@ class DocumentSocket extends Socket {
         }, {transaction: options.transaction});
 
         return documentData;
+    }
+
+    /**
+     * Update the content of a JSON configuration file
+     *
+     * @param {Object} data - The data object containing the document ID and new content
+     * @param {number} data.documentId - The ID of the document to update
+     * @param {Object} data.content - The new JSON content to save
+     * @param {Object} options - The options object containing the transaction
+     * @returns {Promise<void>}
+     */
+    async updateDocumentContent(data, options) {
+        const { documentId, content } = data;
+        
+        // Get the document to verify it exists and check access
+        const doc = await this.models['document'].getById(documentId);
+        if (!doc) {
+            throw new Error("Document not found");
+        }
+
+        // Check if user has access to update this document
+        if (!(await this.checkDocumentAccess(doc.id))) {
+            throw new Error("You do not have access to update this document");
+        }
+
+        // Verify it's a configuration file
+        if (doc.type !== this.models['document'].docTypes.DOC_TYPE_CONFIG) {
+            throw new Error("Only configuration files can be updated with this method");
+        }
+
+        // Validate JSON content
+        let jsonContent;
+        try {
+            jsonContent = JSON.stringify(content, null, 2);
+        } catch (error) {
+            throw new Error("Invalid JSON content");
+        }
+
+        const filePath = `${UPLOAD_PATH}/${doc.hash}.json`;
+        await fs.promises.writeFile(filePath, jsonContent, 'utf8');
+
+        const updatedDocument = await this.models['document'].updateById(doc.id, {
+            updatedAt: new Date()
+        }, { transaction: options.transaction });
+
+        return updatedDocument;
     }
 
     /**
@@ -1189,6 +1252,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.addDocument, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
+        this.createSocket("documentUpdateContent", this.updateDocumentContent, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);

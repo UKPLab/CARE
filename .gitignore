@@ -2,6 +2,7 @@
 # files dir
 files/*.pdf
 files/*.delta
+files/*.json
 !files/8852a746-360e-4c31-add2-4d1c75bfb96d.pdf
 
 # database dumps
