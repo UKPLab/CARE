@@ -82,44 +82,82 @@ If you're developing the platform or need to introduce a new setting key, see :r
 Delta Files and DB Edits
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-CARE’s document system combines two types of storage formats:
+CARE’s document system supports **two distinct editing modes**, tailored for different purposes:
 
-- **Delta files** (stored as ``.delta`` files on disk) hold the last saved state of the document.
-- **Database entries** (stored in ``document_edit``) contain atomic edits such as insertions, deletions, or attribute changes, including metadata like ``draft``, ``userId``, and ``offset``.
+- **Regular documents** are used for general writing and collaborative editing — where content is shared across users and evolves over time.
+- **Study documents** are used in **controlled research or experimental workflows**, where each participant works in an isolated editing environment bound to a session and step (e.g., for reproducibility, traceability, or stepwise evaluation).
 
-This diagram illustrates the high-level flow of how content is loaded into the Quill editor depending on the document type. It separates backend components on the left (.delta file and database) from the frontend (Quill Editor) on the right. The decision node “Document Type?” shows where the logic branches between **regular documents** and **study documents**, which behave differently.
+Because these modes serve different needs, CARE uses two different strategies for loading, saving, and storing edits.
+
+CARE combines two types of storage formats:
+
+- **Delta files** (stored as ``.delta`` files on disk) hold the **last fully saved state** of a document.
+- **Database entries** (stored in ``document_edit``) contain **atomic operations** such as insertions, deletions, or attribute changes — with metadata like ``userId``, ``draft``, ``order``, and optionally ``studySessionId`` or ``studyStepId``.
+
+This diagram illustrates the high-level flow of how content is loaded into the Quill editor depending on the document type.
 
 .. image:: ./editor_flow_overview.png
     :width: 100%
     :align: center
     :alt: Overview of how the editor loads and saves regular and study documents
 
-
 .. raw:: html
 
     <br><br>
 
-**For regular documents**, two data sources are used:
-  
-  - The ``.delta`` file contains the latest fully saved state of the document.
-  - The ``document_edit`` table contains all draft edits (with ``draft: true``) made since the last save.
+Regular Documents
+-----------------
 
-  When the document is opened, both are merged server-side before being sent to the editor. This means the frontend always displays the full current document, even if there are unsaved changes.
+For **regular documents**, two data sources are merged before loading:
 
-**For study documents**, only the ``document_edit`` table is used. All edits are grouped by ``studySessionId`` and ``studyStepId``. No ``.delta`` file exists or is created. This allows the system to isolate content per session step, which is essential for study workflows.
+- The ``.delta`` file contains the **latest persisted state** of the document.
+- The ``document_edit`` table contains **unsaved draft changes** (entries with ``draft: true``).
 
-During editing, the Quill editor emits changes as Deltas, which are sent to the backend via WebSocket and stored as new DB entries. These are always marked ``draft: true`` initially.
+When a document is opened:
 
-The autosave behavior is abstracted from the diagram for clarity, but works as follows:
+- The backend loads both the ``.delta`` file and draft edits from ``document_edit``.
+- These are merged using ``dbToDelta()``, producing a single Delta object sent to the frontend.
+- The Quill editor renders this full document including unsaved changes.
 
-- Only **regular documents** use autosave (triggered via the :ref:`Debounce Behaviour <debounce-ref>`.).
-- When triggered, the backend:
+As the user types:
 
-  - Merges all current draft entries with the existing ``.delta`` file
-  - Writes a new ``.delta`` file to disk
-  - Marks the merged DB entries as ``draft: false``
+- The editor emits Deltas, which are converted to DB-friendly format using ``deltaToDb()``.
+- These are stored in the database with ``draft: true``.
 
-This autosave process ensures that the ``.delta`` file reflects the latest persisted state of the document, while temporary edits remain in the database until committed.
+Autosave (see :ref:`Debounce Behaviour <debounce-ref>`) periodically:
+
+- Merges all current drafts with the latest ``.delta`` file.
+- Writes a **new version** of the ``.delta`` file to disk.
+- Marks the merged DB entries as ``draft: false``.
+
+Study Documents
+---------------
+
+For **study documents**, the storage model is **fully DB-based** — **no ``.delta`` file is used or created**.
+
+All edits are:
+
+- Stored in the ``document_edit`` table.
+- Grouped by ``studySessionId`` and ``studyStepId``, allowing each session to have its own isolated document state.
+
+When a study document is opened:
+
+- The backend filters ``document_edit`` entries for the current session and step.
+- These are sorted chronologically (by ``createdAt`` and ``order``) and merged using ``dbToDelta()``.
+- The resulting Delta is sent to the frontend and rendered in the Quill editor.
+
+When editing:
+
+- New changes are converted via ``deltaToDb()`` and stored with ``draft: true``, along with the session and step metadata.
+- Each frontend instance listens for live updates via WebSocket.
+- On receiving a new edit:
+  - The client checks if the edit was already applied (using a local ``applied`` list of IDs).
+  - If not, it updates the editor and **marks the edit as applied** to prevent duplication.
+
+This logic guarantees that:
+
+- Edits are applied **exactly once** per session.
+- Real-time collaboration or syncing does not result in duplicated operations.
 
 Editor-Deltas and Code Integration
 ----------------------------------
