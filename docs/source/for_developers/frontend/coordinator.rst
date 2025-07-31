@@ -203,7 +203,16 @@ The properties of the ``fields`` object could be extended by the field specific 
       - false
       - ""
       - String
-
+    * - readOnly
+      - Marks the field as read-only (used instead of or with `disabled`)
+      - false
+      - false
+      - Boolean
+    * - suffix
+      - Optional clickable icon/button inside input (e.g., for actions)
+      - false
+      - null
+      - Object
 
 .. list-table:: Available extended properties in form fields
     :header-rows: 1
@@ -214,7 +223,11 @@ The properties of the ``fields`` object could be extended by the field specific 
       - help
       - placeholder
       - class
+      - readOnly
+      - suffix
     * - :ref:`text<Text>`
+      - Y
+      - Y
       - Y
       - Y
       - Y
@@ -226,16 +239,22 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - N
       - Y
+      - Y
+      - N
     * - :ref:`slider<Slider>`
       - Y
       - N
       - Y
       - N
       - Y
+      - N 
+      - N
     * - :ref:`datetime<Datetime>`
       - Y
       - N
       - Y
+      - N
+      - N
       - N
       - N
     * - :ref:`select<Select>`
@@ -244,17 +263,23 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - N
       - N
+      - Y 
+      - N
     * - :ref:`checkbox<Checkbox>`
       - Y
       - N
       - Y
       - N
       - Y
+      - Y 
+      - N
     * - :ref:`editor<Editor>`
       - Y
       - N
       - Y
       - N
+      - N
+      - N 
       - N
     * - :ref:`textarea<Textarea>`
       - Y
@@ -262,10 +287,14 @@ The properties of the ``fields`` object could be extended by the field specific 
       - Y
       - Y
       - Y
+      - Y
+      - N
     * - :ref:`table<Table>`
       - Y
       - N
       - Y
+      - N
+      - N
       - N
       - N
     * - :ref:`password<Password>`
@@ -274,7 +303,27 @@ The properties of the ``fields`` object could be extended by the field specific 
       - N
       - Y
       - Y
+      - Y
+      - N
+    * - :ref:`file<File>`
+      - Y
+      - Y
+      - Y
+      - N
+      - Y
+      - Y
+      - N
+    * - :ref:`choice<Choice>`
+      - Y
+      - N
+      - Y
+      - N
+      - N
+      - N 
+      - N
     * - :ref:`*<Default>`
+      - Y
+      - Y
       - Y
       - Y
       - Y
@@ -299,6 +348,16 @@ Additional options:
 * min
 * max
 * step
+* unit — Optional unit label shown next to the current value.
+* textMapping — Array that maps numeric values to display labels.
+
+  .. code-block:: javascript
+
+      textMapping: [
+          { from: 0, to: "Low" },
+          { from: 1, to: "Medium" },
+          { from: 2, to: "High" }
+      ]
 
 Datetime
 ^^^^^^^^
@@ -362,13 +421,14 @@ Using autotable:
     * - (parentData)
       - the key in the table entries that should be filtered
       - the value of the parentData with the key that should be filtered for (used for choices)
+    * valueAsObject — If `true`, the full object of the selected option will be emitted as `modelValue` instead of just the value field.
 
 
 
 Checkbox
 ^^^^^^^^
 
-No specific options.
+Each checkbox expects `options.options` to be an array of `{ label, value }` objects.
 
 Editor
 ^^^^^^
@@ -410,6 +470,93 @@ Password
 
 No specific options.
 
+File
+^^^^
+
+Accepts uploaded file input. The field stores the uploaded `File` object.
+
+Additional options:
+
+* accept — allowed MIME types (e.g. `image/*`, `application/pdf`)
+* class — custom input class
+
+Choice
+^^^^^^
+
+The ``Choice`` component displays a dynamic list of items (choices) where each row can be configured individually. This component is useful when you want to collect structured data per entry—especially in workflows or assignments where each step or entity may have different options or linked configurations.
+
+It renders a table layout and allows you to bind form fields per row. You must define a source table and optional filters to determine which choices to show.
+
+.. code-block:: html
+
+    <FormChoice
+        v-model="workflowSteps"
+        :options="{
+            options: {
+                table: 'workflow_step_assignment',
+                choices: {
+                    table: 'workflow_step',
+                    filter: [
+                        { type: 'formData', key: 'workflowId', value: 'workflowId' }
+                    ]
+                }
+            }
+        }"
+        @update:config-status="handleStatus"
+    />
+
+.. code-block:: javascript
+
+    import FormChoice from '@/basic/form/Choice.vue';
+
+    export default {
+        name: 'ChoiceExample',
+        components: { FormChoice },
+        data() {
+            return {
+                workflowSteps: [],
+            };
+        },
+        methods: {
+            handleStatus(status) {
+                console.log(\"Config status:\", status);
+            },
+        },
+    };
+
+.. list-table:: Choice properties
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Type
+      - Required
+    * - modelValue
+      - Two-way bound data array for all choices
+      - Array
+      - False
+    * - options
+      - Configuration object (must define target table and filtering logic)
+      - Object
+      - True
+
+.. list-table:: options.options.choices
+    :header-rows: 1
+
+    * - Key
+      - Description
+    * - table
+      - The table from which the choices are retrieved (e.g. ``workflow_step``)
+    * - filter
+      - A list of conditions to filter the items (can be based on form data)
+    * - disabled
+      - Optional rules to hide excluded entries
+
+.. tip::
+
+    The component emits ``@update:config-status`` whenever one or more of the rows has incomplete configuration.
+    It also provides a ``validate()`` method which can be called from the parent via a ref to ensure all required inputs are set.
+
 Default
 ^^^^^^^
 
@@ -432,3 +579,18 @@ For example it is used for ``text``.
       - The placeholder of the input field
       - false
 
+Additional options:
+
+* suffix — Optional action button inside the input. Provide an object like:
+  
+  .. code-block:: javascript
+
+      {
+          suffix: {
+              text: "Go",
+              tooltip: "Click to trigger",
+              onClick: () => { ... }
+          }
+      }
+
+* readOnly — If `true`, the field cannot be modified but remains visible.

@@ -722,9 +722,3 @@ Example for downloading a single data point:
       - None
       - Function
       - False
-
-Choices
--------
-
-TODO
-
