@@ -208,7 +208,7 @@ module.exports = class MetaModel extends Model {
      */
     static async add(data, options = {}) {
         try {
-            const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'deleted', 'deletedAt', 'creator_name'].includes(key));
+            const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updatedAt', 'deleted', 'deletedAt', 'creator_name'].includes(key));
 
             if ("hash" in this.getAttributes()) {
                 data.hash = uuidv4();
@@ -242,7 +242,7 @@ module.exports = class MetaModel extends Model {
      */
     static async updateById(id, data, additionalOptions = {}) {
         try {
-            const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updateAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
+            const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updatedAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
 
             if (data.deleted) {
                 data.deletedAt = Date.now();
