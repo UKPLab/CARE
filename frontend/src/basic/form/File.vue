@@ -35,7 +35,7 @@ export default {
       default: false,
     }
   },
-  emits: ["update:modelValue", 'blur'],
+  emits: ["update:modelValue", 'blur', 'file-change'],
   data() {
     return {
       currentData: null,
@@ -62,6 +62,8 @@ export default {
     handleFileChange(event) {
       const file = event.target.files[0];
       this.currentData = file;
+      // Emit file change event with the file object
+      this.$emit('file-change', file);
     }
   }
 }

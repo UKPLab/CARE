@@ -60,6 +60,11 @@ export default {
       documentType: 1, // Default for General HTML document type
     };
   },
+  computed: {
+    selectedProjectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
+    },
+  },
   methods: {
     open() {
       this.name = "";
@@ -81,6 +86,7 @@ export default {
       this.$socket.emit("documentCreate", {
         type: this.documentType, 
         name: this.name,
+        projectId: this.selectedProjectId,
       }, (res) => {
         if (res.success) {
           this.$refs.createModal.close();
