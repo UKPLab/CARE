@@ -1,5 +1,9 @@
 const Socket = require("../Socket.js");
 const {pickObjectAttributeSubset} = require("../../utils/generic");
+const fs = require("fs");
+const path = require("path");
+
+const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 /**
  * Handle all annotation through websocket
@@ -42,10 +46,9 @@ class AnnotationSocket extends Socket {
             this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
         }
     }
-
     /**
      * Updates the annotations in the database. If the provided annotation is a new annotation,
-     * it will be created in the database otherwise the existing entry is overriden.
+     * it will be created in the database; otherwise, the existing entry is overridden.
      *
      * @param {Object} data the input data from the frontend
      * @param {Object} options containing transactions
@@ -79,19 +82,19 @@ class AnnotationSocket extends Socket {
                 studySessionId: data.studySessionId,
                 studyStepId: data.studyStepId,
                 text: (data.selectors && data.selectors.target) ? data.selectors.target[0].selector[1].exact : null,
-                draft: true,
+                draft: data.draft !== undefined ? data.draft : true,
                 userId: this.userId,
                 anonymous: data.anonymous !== undefined ? data.anonymous : false,
             };
 
-            const annotation = await this.models['annotation'].add(newAnnotation, {transaction: options.transaction});
-            await this.getSocket("CommentSocket").addComment({
-                documentId: annotation.documentId,
-                studySessionId: annotation.studySessionId,
-                studyStepId: annotation.studyStepId,
-                annotationId: annotation.id,
-                anonymous: annotation.anonymous !== undefined ? data.anonymous : false,
-            }, {transaction: options.transaction});
+        const annotation = await this.models['annotation'].add(newAnnotation, {transaction: options.transaction});
+        await this.getSocket("CommentSocket").addComment({
+            documentId: annotation.documentId,
+            studySessionId: annotation.studySessionId,
+            studyStepId: annotation.studyStepId,
+            annotationId: annotation.id,
+            anonymous: annotation.anonymous !== undefined ? data.anonymous : false,
+        }, options);
 
             this.emitDoc(annotation.documentId, "annotationRefresh", annotation); //fixme msg sent twice due to collab, revise
         }
@@ -108,14 +111,71 @@ class AnnotationSocket extends Socket {
     async getAnnotationsByDoc(data, options) {
         this.emit("annotationRefresh",
             await this.models['annotation'].getAllByKey("documentId", data.documentId));
+        return {annotation, comment};
     }
 
+    /**
+     * Embed all annotations into the PDF for a document.
+     * @param {Object} data - The data containing the document ID and other parameters.
+     * @param {Object} options - Additional options for the emmfbedding process.
+     * @param {number} data.documentId - The ID of the document to embed annotations into. 
+     * @returns {Promise<Object>} The response from the PDFRPC embedAnnotations call.
+     */
+    async embedAnnotationsForDocument(data, options) {
+        const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);   
+        // Get all comments for the document
+        const comments = await this.models['comment'].getAllByKey("documentId", data.documentId);
+
+        // For each annotation, get the corresponding tag and comments
+        const annotationsWithTagsAndComments = await Promise.all(
+            annotations.map(async (annotation) => {
+                const tag = annotation.tagId ? await this.models['tag'].getById(annotation.tagId) : null;
+                if (!tag) {
+                    console.warn(`Tag with ID ${annotation.tagId} not found for annotation ${annotation.id}`);
+                }
+
+                const user = await this.models['user'].getById(annotation.userId);
+                if (!user) {
+                    console.warn(`User with ID ${annotation.userId} not found for annotation ${annotation.id}`);
+                }
+
+                // Find all comments for this annotation
+                const annotationComments = comments.filter(c => c.annotationId === annotation.id);
+                return {
+                    ...annotation,
+                    tag: tag ? tag.name : null,
+                    username: annotation.anonymous ? "Anonymous" : user.userName,
+                    comments: annotationComments
+                };
+            })
+        );
+        const document = await this.models['document'].getById(data.documentId);
+        const filePath = path.join(UPLOAD_PATH, `${document.hash}.pdf`);
+
+        if (!fs.existsSync(filePath)) {
+            throw new Error("PDF file not found");
+        }
+        const file = fs.readFileSync(filePath);
+
+        // Call PDFRPC to embed the annotations
+        const response = await this.server.rpcs["PDFRPC"].embeddAnnotations({
+            file,
+            annotations: annotationsWithTagsAndComments,
+            document: document,
+        });
+        
+        return {
+            documentId: data.documentId,
+            file: response,
+            hash: document.hash,
+        };
+    }
     init() {
         this.createSocket("annotationGet", this.sendAnnotation, {}, false);
         this.createSocket("annotationUpdate", this.updateAnnotation, {}, true);
         this.createSocket("annotationGetByDocument", this.getAnnotationsByDoc, {}, false);
+        this.createSocket("annotationEmbed", this.embedAnnotationsForDocument, {}, false);
     }
-
 }
 
 module.exports = AnnotationSocket;

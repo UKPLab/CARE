@@ -91,6 +91,13 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'tag_set',
         tableName: 'tag_set',
         hooks: {
+            beforeCreate: async (tagSet, options) => {
+                const userId = tagSet.dataValues.userId;
+                const defaultProjectId = await sequelize.models.user_setting.get('projects.default', userId);
+                if (defaultProjectId) {
+                    tagSet.dataValues.projectId = parseInt(defaultProjectId);
+                }
+            },
             afterUpdate: async (tagSet, options) => {
                 if (tagSet.deleted && !tagSet._previousDataValues.deleted) {
                     await TagSet.deleteTags(tagSet, options);
