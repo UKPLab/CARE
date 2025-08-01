@@ -101,13 +101,18 @@ export default {
       ],
     }
   },
+  computed: {
+    projectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
+    },
+  },
   methods: {
     handleFileChange(file) {
       if (file && file.name) {
         const fileName = file.name;
         const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
         this.isPdf = fileType === ".pdf";
-      } else {  
+      } else {
         this.isPdf = false;
       }
       this.importAnnotations = false;
@@ -146,6 +151,7 @@ export default {
           file: this.data.file,
           importAnnotations: this.importAnnotations,
           name: fileName,
+          projectId: this.projectId,
           wholeText: extractedText // Send the extracted text with the upload
         }, (res) => {
           this.uploading = false;
