@@ -97,7 +97,7 @@ export default {
   },
   computed: {
     studies() {
-      return this.$store.getters["table/study/getFiltered"](s => this.sessionStudyIds.includes(s.id))
+      return this.$store.getters["table/study/getFiltered"](s => this.sessionStudyIds.includes(s.id) && s.projectId === this.$store.getters["settings/getValueAsInt"]("projects.default"))
         .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)))
         .map(s => {
           let study = {...s};

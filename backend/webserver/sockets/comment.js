@@ -33,7 +33,6 @@ class CommentSocket extends Socket {
         const newComment = await this.models['comment'].updateById(data.commentId, Object.assign(data, {draft: false}), {transaction: options.transaction});
         this.emitDoc(newComment.documentId, "commentRefresh", newComment);
     }
-
     /**
      * Add a comment
      * @param {object} data comment object
@@ -69,8 +68,9 @@ class CommentSocket extends Socket {
             parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
             anonymous: data.anonymous !== undefined ? data.anonymous : false
         };
+        const comment = await this.models['comment'].add(newComment, {transaction: options.transaction});
 
-        this.emit("commentRefresh", await this.models['comment'].add(newComment, {transaction: options.transaction}));
+        this.emit("commentRefresh", comment);
     }
 
     /**
