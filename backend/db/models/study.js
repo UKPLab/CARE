@@ -390,6 +390,14 @@ module.exports = (sequelize, DataTypes) => {
         }
     }, {
         sequelize: sequelize, modelName: 'study', tableName: 'study', hooks: {
+            beforeCreate: async (study, options) => {
+            // Set default projectId from user settings if not provided
+                const userId = study.dataValues.userId;
+                const defaultProjectId = await sequelize.models.user_setting.get('projects.default', userId);        
+                if (defaultProjectId) {
+                    study.dataValues.projectId = parseInt(defaultProjectId);
+                }
+            },
             afterCreate: async (study, options) => {
                 // Skip step creation for template studies
                 if (study.template) {

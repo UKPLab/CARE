@@ -347,6 +347,7 @@ class AppSocket extends Socket {
             filter: mergedFilters,
             inject: mergedInjects
         };
+        this.socket.userId = this.userId;
 
         // check if client already has the data
         if (oldMerge
@@ -391,6 +392,7 @@ class AppSocket extends Socket {
         const tableName = this.socket.appDataSubscriptions[data].table;
         delete this.socket.appDataSubscriptions["ids"][data];
         this.socket.appDataSubscriptions["tables"][tableName].delete(data);
+        this.io.appDataSubscriptions["tables"][tableName].delete(data);
     }
 
     /**
