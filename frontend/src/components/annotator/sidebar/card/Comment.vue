@@ -282,7 +282,6 @@ export default {
       }
     },
     anonymize() {
-      console.log(this.study);
       if (this.study) {
         return this.study.anonymize;
       } else {
