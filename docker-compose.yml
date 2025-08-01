@@ -44,3 +44,9 @@ services:
       dockerfile: Dockerfile
     command: gunicorn --workers 1 --threads 100 --bind 0.0.0.0:8081 'main:create_app()' --access-logfile '-' --error-logfile '-'
     restart: unless-stopped
+  rpc_pdf:
+    build:
+      context: ./utils/rpcs/pdf
+      dockerfile: Dockerfile
+    command: gunicorn --workers 1 --threads 100 --bind 0.0.0.0:8082 'main:create_app()' --access-logfile '-' --error-logfile '-'
+    restart: unless-stopped
