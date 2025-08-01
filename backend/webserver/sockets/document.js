@@ -5,6 +5,7 @@ const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {Op} = require("sequelize");
+const {getTextPositions} = require("../../utils/text.js");
 
 
 const {dbToDelta} = require("editor-delta-conversion");
@@ -63,16 +64,18 @@ class DocumentSocket extends Socket {
      * @param {Object} data - The data object containing the document details.
      * @param {string} data.name - The name of the document.
      * @param {Buffer} data.file - The binary content of the document.
+     * @param {boolean} data.importAnnotations - indicates whether to import annotations from the PDF (optional).
      * @param {number} [data.userId] - The ID of the user who owns the document (optional).
      * @param {boolean} [data.isUploaded] - Indicates if the document is uploaded by an admin (optional).
      * @param {Object} options - The options object containing the transaction.
      * @returns {Promise<void>}
      */
     async addDocument(data, options) {
-
         let doc = null;
         let target = "";
-
+        let annotations = [];
+        let errors = [];
+    
         if (!data['file']) {
             throw new Error("No file uploaded");
         }
@@ -117,7 +120,7 @@ class DocumentSocket extends Socket {
             };
 
             await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
-        } else {
+        } else if (fileType === ".pdf") {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
                 name: data.name.replace(/.pdf$/, ""),
@@ -125,17 +128,106 @@ class DocumentSocket extends Socket {
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
             }, {transaction: options.transaction});
-
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
-        }
+            try {
+                const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+                    file: data.file,
+                    document: doc
+                });
+                if (!file) {
+                    throw new Error("Couldn't delete original annotations");
+                }
+                
+                fs.writeFileSync(target, file);
+            } catch (annotationRpcErr) {
+                errors.push("Error deleting annotations: " + annotationRpcErr.message);
+                fs.writeFileSync(target, data.file);
+            }
 
-        fs.writeFileSync(target, data.file);
+            if (data["importAnnotations"]) {
+                try {
+                    const annotationData = await this.server.rpcs["PDFRPC"].getAnnotations({
+                        file: data['file'],
+                        document: doc,
+                        fileType: fileType,
+                        wholeText: data.wholeText
+                    });
+
+                    if (annotationData.annotations.length !== 0) {
+                        for (const extracted of annotationData.annotations) {
+                            let textPositions;
+                            try {
+                                textPositions = getTextPositions(extracted.text, data.wholeText);
+                            } catch (error) {
+                                errors.push("Error extracting text positions for text " + extracted.text + ": " + error.message);
+                                continue; 
+                            }
+
+                            const selectors = {
+                                target: [{
+                                    selector: [
+                                        {
+                                            type: "TextPositionSelector",
+                                            start: textPositions.start,
+                                            end: textPositions.end
+                                        },
+                                        {
+                                            type: "TextQuoteSelector",
+                                            exact: extracted.text || "",
+                                            prefix: textPositions.prefix || "",
+                                            suffix: textPositions.suffix || ""
+                                        },
+                                        {
+                                            type: "PagePositionSelector",
+                                            number: extracted.page + 1
+                                        }
+                                    ]
+                                }]
+                            };
+                            
+                            try {
+                                const newAnnotation = {
+                                    documentId: doc.id,
+                                    selectors: selectors,
+                                    tagId: 1 , //always use the same tag for all annotations
+                                    studySessionId: doc.studySessionId,
+                                    studyStepId: doc.studyStepId,
+                                    text: extracted.text || null,
+                                    draft: false,
+                                    userId: this.userId,
+                                    anonymous: false,
+                                };
+                                const annotation = await this.models['annotation'].add(newAnnotation, {transaction: options.transaction});
+                                annotations.push(annotation);
+                                let newComment = {
+                                    documentId: annotation.documentId,
+                                    studySessionId: annotation.studySessionId,
+                                    studyStepId: annotation.studyStepId,
+                                    annotationId: annotation.id,
+                                    parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+                                    anonymous: false,
+                                    tags: "[]",
+                                    draft: false,
+                                    text: extracted.comment || null,
+                                    userId: this.userId
+                                };
+                                await this.models['comment'].add(newComment, {transaction: options.transaction});
+                                
+                            } catch (annotationErr) {
+                                errors.push("Error adding annotation: " + annotationErr.message);
+                                continue;
+                            }
+                        }
+                    }
+                } catch (annotationRpcErr) {
+                    errors.push("The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing.");
+                }
+            }
+        }
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
-        })
-
-        return doc;
-
+        });
+        return {doc, annotations, errors};
     }
 
     /**
@@ -170,7 +262,19 @@ class DocumentSocket extends Socket {
             type: data.type,
             userId: this.userId
         }, {transaction: options.transaction});
-
+                       annotations.push(annotation);
+                                let newComment = {
+    documentId: annotation.documentId,
+    studySessionId: annotation.studySessionId,
+    studyStepId: annotation.studyStepId,
+    annotationId: annotation.id,
+    parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+    anonymous: data.anonymous !== undefined ? data.anonymous : false,
+    tags: "[]",
+    draft: data.draft !== undefined ? data.draft : true,
+    text: extracted.text !== undefined ? extracted.text : null,
+    userId: data.userId ?? this.userId
+};
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         });
@@ -784,7 +888,6 @@ class DocumentSocket extends Socket {
 
         return documentData;
     }
-
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
