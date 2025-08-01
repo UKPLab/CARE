@@ -312,15 +312,6 @@ export default {
     },
   },
   
-  mounted() {
-    this.initSidebar();
-    if (!this.assessmentOutput && Object.keys(this.savedState).length === 0) {
-      this.loadAssessment();
-    } else if (Object.keys(this.savedState).length > 0) {
-      this.restoreState();
-    }
-  },
-  
   watch: {
     show(newVal) {
       if (newVal && Object.keys(this.savedState).length > 0) {
@@ -336,7 +327,16 @@ export default {
       },
       deep: true
     },
-    
+
+    mounted() {
+    this.initSidebar();
+    if (!this.assessmentOutput && Object.keys(this.savedState).length === 0) {
+      this.loadAssessment();
+    } else if (Object.keys(this.savedState).length > 0) {
+      this.restoreState();
+    }
+  },
+  
     '$store.getters["table/document/refreshCount"]': {
       handler() {
         // Always try to load assessment when document table refreshes
