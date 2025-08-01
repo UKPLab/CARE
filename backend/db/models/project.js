@@ -62,7 +62,27 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'project',
         tableName: 'project',
         hooks: {
+            afterUpdate: async (project, options) => {
+                // If the project is deleted, we need to delete all the documents associated with it
+                if (project.deleted) {
+                    // delete associated documents
+                    const documents = await sequelize.models.document.getAllByKey("projectId", project.id);
+                    for (const document of documents) {
+                        await sequelize.models.document.deleteById(document.id, {transaction: options.transaction});
+                    }
+                    // Delete all the studies associated with the documents
+                    const studies = await sequelize.models.study.getAllByKey("projectId", project.id);
+                    for (const study of studies) {
+                        await sequelize.models.study.deleteById(study.id, {transaction: options.transaction});
+                    }
+                    // Delete all the tag sets associated with the project
+                    const tagSets = await sequelize.models.tag_set.getAllByKey("projectId", project.id);
+                    for (const tagSet of tagSets) {
+                        await sequelize.models.tag_set.deleteById(tagSet.id, {transaction: options.transaction});
+                    }
 
+                }
+            }
         }
     });
     return Project;

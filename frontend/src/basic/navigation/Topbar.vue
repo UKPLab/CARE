@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="topbar"
     id="wrapper"
     class="nav-container"
   >
@@ -27,12 +28,37 @@
           />
         </a>
         <div id="topbarCustomPlaceholder"/>   
-        <div id="topbarCenterPlaceholder"/>     
+        <div id="topbarCenterPlaceholder"/> 
         <ul
           id="topBarNavItems"
           class="navbar-nav ms-auto mt-2 mt-lg-0"
-        />
+        />   
         <ul class="navbar-nav">
+          <li class="nav-item me-3">
+            <div style="position:relative; display:flex; align-items:center; height:100%;">
+              <div 
+                @click.stop="toggleProjectDropdown" 
+                class="project-box"
+                :title="`Project: ${currentProjectName}`"
+              >
+                <span class="project-text">Project: {{ currentProjectName }}</span>
+              </div>
+              <div
+                v-if="showProjectDropdown"
+                class="dropdown-menu show"
+                style="position:absolute; min-width:180px; z-index:1000; right:0; top:100%; margin-top:8px;"
+              >
+                <a
+                  v-for="project in allProjects"
+                  :key="project.id"
+                  class="dropdown-item"
+                  @click.prevent="selectProject(project.id)"
+                >
+                  {{ project.name }}
+                </a>
+              </div>
+            </div>
+          </li>
           <li class="nav-item dropdown">
             <div
               class="dropdown"
@@ -109,7 +135,24 @@ import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
 export default {
   name: "TopBar",
   components: {LoadIcon, IconAsset, PasswordModal, ConsentUpdateModal},
+  data() {
+    return {
+      showProjectDropdown: false,
+    }
+  },
+  subscribeTable: [{
+    table: 'project',
+  }],
   computed: {
+    allProjects() {
+    return this.$store.getters["table/project/getAll"] || [];
+    },
+    currentProject() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
+    },
+    currentProjectName() {
+      return this.$store.getters["table/project/get"](this.currentProject)?.name;
+    },
     username() {
       return this.$store.getters['auth/getUsername'];
     },
@@ -124,6 +167,18 @@ export default {
     },
   },
   methods: {
+    selectProject(projectId) {
+      this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
+      this.showProjectDropdown = false;
+    },
+    handleClickOutside(event) {
+        if (!this.$el.contains(event.target)) {
+          this.showProjectDropdown = false;
+        }
+    },
+    toggleProjectDropdown() {
+      this.showProjectDropdown = !this.showProjectDropdown;
+    },
     removeSidebarFlag() {
       document.body.classList.remove('sidebar-exists');
     },
@@ -152,6 +207,12 @@ export default {
         dropdownElement.classList.add("show");
       }
     },
+  },
+  mounted() {
+    this.$refs.topbar.addEventListener('click', this.handleClickOutside);
+  },
+  beforeUnmount() {
+    this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
   },
 }
 
@@ -197,6 +258,32 @@ body.sidebar-exists #backButton {
   justify-content: center;
   align-items: center;
   flex: 1;
+}
+
+.project-box {
+  display: flex;
+  align-items: center;
+  padding: 2px 10px;
+  background: #f5f5f5;
+  border: 1px solid darkblue;
+  color: darkblue;
+  border-radius: 4px;
+  vertical-align: middle;
+  max-width: 180px;
+  cursor: pointer;
+}
+
+.project-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.project-box:hover {
+  background-color: darkblue;
+  color: white;
 }
 
 </style>
