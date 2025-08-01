@@ -561,7 +561,10 @@ class DocumentSocket extends Socket {
      * Download submissions from Moodle for a specific assignment and save them to the server
      * @author Yiwei Wang, Linyin Huang
      * @param {Object} data - The input data from the frontend
-     * @param {Object} data.submissions - The submissions from Moodle
+     * @param {Array} data.submissions - The submissions from Moodle
+     * @param {Object} data.options - Moodle API options
+     * @param {string} data.progressId - Progress tracking ID
+     * @param {number} data.validationSchemaDocumentId - The document ID to retrieve validation schema
      * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The results of the processed submissions
@@ -570,45 +573,69 @@ class DocumentSocket extends Socket {
     async downloadMoodleSubmissions(data, options) {
         const results = [];
         const submissions = data.submissions || [];
+
         for (const submission of submissions) {
             const transaction = options.transaction;
+            let tempFiles = [];
+
             try {
-                // 1. Create an entry in the submission table
-                const submissionEntry = await this.models["submission"].add({
-                    userId: submission.userId, 
-                    createdByUserId: this.userId,
-                    extId: submission.submissionId, 
-                }, { transaction });
+                // 1. Download files to temporary location
+                tempFiles = await this.downloadFilesToTemp(submission.files, data.options);
 
-                // 2. Download and save each file as a document
-                const documentIds = [];
-                for (const file of (submission.files || [])) {
-                    // Download file from Moodle
-                    const files = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl({
-                        fileUrls: [file.fileUrl],
-                        options: data.options,
-                    });
-                    // Save as document in DB
-                    const document = await this.addDocument({
-                        file: files[0],
-                        name: file.fileName,
-                        userId: submission.userId,
-                        isUploaded: true,
-                        submissionId: submissionEntry.id,
-                    }, { transaction });
-                    documentIds.push(document.id);
-                }
+                // 2. Validate files
+                const validationResult = await this.validateSubmissionFiles(tempFiles, data.validationSchemaDocumentId);
 
-                // 3. Run validation
-                const validationResult = await this.validateSubmissionFiles(documentIds);
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
                 }
 
-                results.push({ submissionId: submissionEntry.id, documentIds, success: true });
+                // 3. Only if validation passes, create submission and save documents
+                const submissionEntry = await this.models["submission"].add(
+                    {
+                        userId: submission.userId,
+                        createdByUserId: this.userId,
+                        extId: submission.submissionId,
+                    },
+                    { transaction }
+                );
+
+                const documentIds = [];
+                for (const file of tempFiles) {
+                    const document = await this.addDocument(
+                        {
+                            file: file,
+                            name: file.originalName,
+                            userId: submission.userId,
+                            isUploaded: true,
+                            submissionId: submissionEntry.id,
+                        },
+                        { transaction }
+                    );
+                    documentIds.push(document.id);
+                }
+
+                // 4. Clean up temp files after successful save
+                await this.cleanupTempFiles(tempFiles);
+
+                results.push({
+                    submissionId: submissionEntry.id,
+                    documentIds,
+                    success: true,
+                    message: "Submission processed successfully",
+                });
                 await transaction.commit();
             } catch (err) {
                 this.logger.error(err.message);
+
+                // Clean up temp files on error
+                await this.cleanupTempFiles(tempFiles);
+
+                results.push({
+                    submissionId: submission.submissionId,
+                    success: false,
+                    message: err.message,
+                });
+
                 await transaction.rollback();
             }
 
