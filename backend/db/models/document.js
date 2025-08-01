@@ -10,6 +10,7 @@ const docTypes = Object.freeze({
     DOC_TYPE_HTML: 1,
     DOC_TYPE_MODAL: 2,
     DOC_TYPE_CONFIG: 3,
+    DOC_TYPE_ZIP: 4,
 });
 
 module.exports = (sequelize, DataTypes) => {
@@ -136,7 +137,7 @@ module.exports = (sequelize, DataTypes) => {
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
-        type: DataTypes.INTEGER, // 0 is for pdf, 1 is for html, 2 is for modal, 3 is for configuration 
+        type: DataTypes.INTEGER, // 0 is for pdf, 1 is for html, 2 is for modal, 3 is for configuration, 4 is for zip
         parentDocumentId: DataTypes.INTEGER,
         hideInFrontend: DataTypes.BOOLEAN,
         projectId: DataTypes.INTEGER,
