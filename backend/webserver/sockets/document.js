@@ -603,8 +603,8 @@ class DocumentSocket extends Socket {
                 for (const file of tempFiles) {
                     const document = await this.addDocument(
                         {
-                            file: file,
-                            name: file.originalName,
+                            file: file.content,
+                            name: file.fileName,
                             userId: submission.userId,
                             isUploaded: true,
                             submissionId: submissionEntry.id,
@@ -613,9 +613,6 @@ class DocumentSocket extends Socket {
                     );
                     documentIds.push(document.id);
                 }
-
-                // 4. Clean up temp files after successful save
-                await this.cleanupTempFiles(tempFiles);
 
                 results.push({
                     submissionId: submissionEntry.id,
@@ -626,9 +623,6 @@ class DocumentSocket extends Socket {
                 await transaction.commit();
             } catch (err) {
                 this.logger.error(err.message);
-
-                // Clean up temp files on error
-                await this.cleanupTempFiles(tempFiles);
 
                 results.push({
                     submissionId: submission.submissionId,
@@ -650,8 +644,38 @@ class DocumentSocket extends Socket {
         return results;
     }
 
-    // TODO: Implement validation logic here
-    async validateSubmissionFiles(documentIds) {
+    /**
+     * Download files from Moodle to temporary location
+     * @param {Array} files - Array of file objects with fileUrl and fileName
+     * @param {Object} options - Moodle API options
+     * @returns {Promise<Array>} - Array of temp file objects
+     */
+    async downloadFilesToTemp(files, options) {
+        const tempFiles = [];
+
+        for (const file of files) {
+            try {
+                const downloadedFiles = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl({
+                    fileUrls: [file.fileUrl],
+                    options: options,
+                });
+
+                // Create temp file object
+                const tempFile = {
+                    content: downloadedFiles[0], // Array of bytes
+                    fileName: file.fileName,
+                    fileType: file.fileType,
+                };
+
+                tempFiles.push(tempFile);
+            } catch (error) {
+                throw new Error(`Failed to download file ${file.fileName}: ${error.message}`);
+            }
+        }
+
+        return tempFiles;
+    }
+
         return { success: true };
     }
 
