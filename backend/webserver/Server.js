@@ -214,9 +214,10 @@ module.exports = class Server {
         };
 
         this.io = new WebSocketServer(this.httpServer, socketIoOptions);
-
+        this.io.appDataSubscriptions = {
+                tables: {}
+        };
         // initalize app data subscriptions
-        this.io.appDataSubscriptions = {};
 
         const wrap = middleware => (socket, next) => middleware(socket.request, {}, next);
         this.io.use(wrap(this.session));
@@ -246,6 +247,7 @@ module.exports = class Server {
                 ids: {},
                 merged: {}
             };
+            socket.userId = "";
             this.logger.debug("Socket connect: " + socket.id);
 
             Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
@@ -264,7 +266,6 @@ module.exports = class Server {
                             await this.availSockets[socket.id]['DocumentSocket'].saveDocument(documentId);
                         }
                     }
-
                     // delete table subscriptions on disconnect (in case unmounted is not called)
                     Object.entries(socket.appDataSubscriptions).forEach(([key, value]) => {
                         this.io.appDataSubscriptions[value.table].delete(key);

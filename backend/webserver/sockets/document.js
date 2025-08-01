@@ -5,6 +5,7 @@ const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {Op} = require("sequelize");
+const {getTextPositions} = require("../../utils/text.js");
 const {compileSchema, validateZip, validateZipWithSchema} = require("../../utils/zipValidator.js");
 const { associateFilesForSubmission } = require("../../utils/fileAssociator.js");
 const yauzl = require("yauzl");
@@ -65,15 +66,18 @@ class DocumentSocket extends Socket {
      * @param {Object} data - The data object containing the document details.
      * @param {string} data.name - The name of the document.
      * @param {Buffer} data.file - The binary content of the document.
+     * @param {boolean} data.importAnnotations - indicates whether to import annotations from the PDF (optional).
      * @param {number} [data.userId] - The ID of the user who owns the document (optional).
+     * @param {number} [data.projectId] - The ID of the project the document belongs to (optional).
      * @param {boolean} [data.isUploaded] - Indicates if the document is uploaded by an admin (optional).
      * @param {Object} options - The options object containing the transaction.
      * @returns {Promise<void>}
      */
     async addDocument(data, options) {
-
         let doc = null;
         let target = "";
+        let annotations = [];
+        let errors = [];
 
         if (!data['file']) {
             throw new Error("No file uploaded");
@@ -97,6 +101,7 @@ class DocumentSocket extends Socket {
                 name: data.name.replace(/.delta$/, ""),
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: this.userId,
+                projectId: data.projectId,
             }, {transaction: options.transaction});
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
@@ -133,25 +138,115 @@ class DocumentSocket extends Socket {
             );
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.json`);
-        } else {
+        } else if (fileType === ".pdf") {
             doc = await this.models["document"].add({
                 type: docTypes.DOC_TYPE_PDF,
                 name: data.name.replace(/.pdf$/, ""),
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
+                projectId: data.projectId,
             }, {transaction: options.transaction});
-
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
-        }
+            try {
+                const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+                    file: data.file,
+                    document: doc
+                });
+                if (!file) {
+                    throw new Error("Couldn't delete original annotations");
+                }
 
-        fs.writeFileSync(target, data.file);
+                fs.writeFileSync(target, file);
+            } catch (annotationRpcErr) {
+                errors.push("Error deleting annotations: " + annotationRpcErr.message);
+                fs.writeFileSync(target, data.file);
+            }
+
+            if (data["importAnnotations"]) {
+                try {
+                    const annotationData = await this.server.rpcs["PDFRPC"].getAnnotations({
+                        file: data['file'],
+                        document: doc,
+                        fileType: fileType,
+                        wholeText: data.wholeText
+                    });
+
+                    if (annotationData.annotations.length !== 0) {
+                        for (const extracted of annotationData.annotations) {
+                            let textPositions;
+                            try {
+                                textPositions = getTextPositions(extracted.text, data.wholeText);
+                            } catch (error) {
+                                errors.push("Error extracting text positions for text " + extracted.text + ": " + error.message);
+                                continue;
+                            }
+
+                            const selectors = {
+                                target: [{
+                                    selector: [
+                                        {
+                                            type: "TextPositionSelector",
+                                            start: textPositions.start,
+                                            end: textPositions.end
+                                        },
+                                        {
+                                            type: "TextQuoteSelector",
+                                            exact: extracted.text || "",
+                                            prefix: textPositions.prefix || "",
+                                            suffix: textPositions.suffix || ""
+                                        },
+                                        {
+                                            type: "PagePositionSelector",
+                                            number: extracted.page + 1
+                                        }
+                                    ]
+                                }]
+                            };
+
+                            try {
+                                const newAnnotation = {
+                                    documentId: doc.id,
+                                    selectors: selectors,
+                                    tagId: 1 , //always use the same tag for all annotations
+                                    studySessionId: doc.studySessionId,
+                                    studyStepId: doc.studyStepId,
+                                    text: extracted.text || null,
+                                    draft: false,
+                                    userId: this.userId,
+                                    anonymous: false,
+                                };
+                                const annotation = await this.models['annotation'].add(newAnnotation, {transaction: options.transaction});
+                                annotations.push(annotation);
+                                let newComment = {
+                                    documentId: annotation.documentId,
+                                    studySessionId: annotation.studySessionId,
+                                    studyStepId: annotation.studyStepId,
+                                    annotationId: annotation.id,
+                                    parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+                                    anonymous: false,
+                                    tags: "[]",
+                                    draft: false,
+                                    text: extracted.comment || null,
+                                    userId: this.userId
+                                };
+                                await this.models['comment'].add(newComment, {transaction: options.transaction});
+
+                            } catch (annotationErr) {
+                                errors.push("Error adding annotation: " + annotationErr.message);
+                                continue;
+                            }
+                        }
+                    }
+                } catch (annotationRpcErr) {
+                    errors.push("The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing.");
+                }
+            }
+        }
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
-        })
-
-        return doc;
-
+        });
+        return {doc, annotations, errors};
     }
 
     /**
@@ -176,7 +271,10 @@ class DocumentSocket extends Socket {
 
     /**
      * Create document (html)
-     * @param data {type: number, name: string}
+     * @param data // The data object containing the document details.
+     * @param data.projectId {number}
+     * @param data.name {string}
+     * @param data.type {string} - The type of the document (e.g., "html", "modal").
      * @param options
      * @returns {Promise<void>}
      */
@@ -184,9 +282,22 @@ class DocumentSocket extends Socket {
         const doc = await this.models["document"].add({
             name: data.name,
             type: data.type,
-            userId: this.userId
+            userId: this.userId,
+            projectId: data.projectId
         }, {transaction: options.transaction});
-
+                       annotations.push(annotation);
+                                let newComment = {
+    documentId: annotation.documentId,
+    studySessionId: annotation.studySessionId,
+    studyStepId: annotation.studyStepId,
+    annotationId: annotation.id,
+    parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+    anonymous: data.anonymous !== undefined ? data.anonymous : false,
+    tags: "[]",
+    draft: data.draft !== undefined ? data.draft : true,
+    text: extracted.text !== undefined ? extracted.text : null,
+    userId: data.userId ?? this.userId
+};
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         });
@@ -510,7 +621,8 @@ class DocumentSocket extends Socket {
 
             appliedEdits.push({
                 ...savedEdit,
-                applied: true
+                applied: true,
+                sender: this.socket.id
             });
         }, Promise.resolve());
 
@@ -519,8 +631,7 @@ class DocumentSocket extends Socket {
             this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
             return;
         }
-
-        this.emit("document_editRefresh", appliedEdits);
+        this.emitDoc(documentId, "document_editRefresh", appliedEdits);
     }
 
     /**
@@ -560,7 +671,7 @@ class DocumentSocket extends Socket {
 
     /**
      * Download submissions from Moodle for a specific assignment and save them to the server
-     * @author Yiwei Wang, Linyin Huang
+     * @author Linyin Huang, Yiwei Wang
      * @param {Object} data - The input data from the frontend
      * @param {Array} data.submissions - The submissions from Moodle
      * @param {Object} data.options - Moodle API options
@@ -913,29 +1024,29 @@ class DocumentSocket extends Socket {
     enhanceSubmissionsWithFileData(submissions) {
         return submissions.map(submission => {
             let enhancedSubmission = { ...submission };
-            
+
             // If we have the new enhanced data structure from Python
             if (submission.files && Array.isArray(submission.files)) {
                 const files = submission.files;
-                
+
                 // Separate PDFs and ZIPs
-                const pdfFiles = files.filter(file => 
-                    file.mimetype === 'application/pdf' || 
+                const pdfFiles = files.filter(file =>
+                    file.mimetype === 'application/pdf' ||
                     file.filename.toLowerCase().endsWith('.pdf')
                 );
-                
-                const zipFiles = files.filter(file => 
-                    file.mimetype === 'application/zip' || 
+
+                const zipFiles = files.filter(file =>
+                    file.mimetype === 'application/zip' ||
                     file.filename.toLowerCase().endsWith('.zip')
                 );
-                
-                const otherFiles = files.filter(file => 
+
+                const otherFiles = files.filter(file =>
                     !pdfFiles.includes(file) && !zipFiles.includes(file)
                 );
-                
+
                 // Try to associate ZIP files with PDF files
                 enhancedSubmission.fileAssociations = associateFilesForSubmission(pdfFiles, zipFiles);
-                
+
                 // Add file summary
                 enhancedSubmission.fileSummary = {
                     totalFiles: files.length,
@@ -946,21 +1057,21 @@ class DocumentSocket extends Socket {
                     hasZip: zipFiles.length > 0,
                     isComplete: pdfFiles.length > 0 && zipFiles.length > 0
                 };
-                
+
                 // Keep the original files array for compatibility
                 enhancedSubmission.categorizedFiles = {
                     pdfs: pdfFiles,
                     zips: zipFiles,
                     others: otherFiles
                 };
-                
+
             } else if (submission.submissionURLs) {
                 // Legacy data structure - enhance what we can
                 const urls = submission.submissionURLs;
-                const pdfUrls = urls.filter(url => 
+                const pdfUrls = urls.filter(url =>
                     url.filename.toLowerCase().endsWith('.pdf')
                 );
-                
+
                 enhancedSubmission.fileSummary = {
                     totalFiles: urls.length,
                     pdfCount: pdfUrls.length,
@@ -971,7 +1082,7 @@ class DocumentSocket extends Socket {
                     isComplete: false
                 };
             }
-            
+
             return enhancedSubmission;
         });
     }
@@ -1056,11 +1167,11 @@ class DocumentSocket extends Socket {
             // Handle file-based documents (PDF, JSON, etc.)
             const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
             const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
-            
+
             if (!fs.existsSync(filePath)) {
                 throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
-            
+
             const file = fs.readFileSync(filePath);
             return { document: document, file: file };
         }
@@ -1149,6 +1260,18 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Unsubscribe from a document
+     *
+     * @param {Object} data
+     * @param {number} data.documentId - The ID of the document to unsubscribe from.
+     * @param {Object} options - The options object containing the transaction.
+     * @returns {Promise<void>}
+     */
+    async unsubscribeDocument(data, options) {
+        this.socket.leave("doc:" + data.documentId);
+    }
+
+    /**
      * Save additional document data for a particular document/study_session/study_step like the nlpResults, links etc., to the document_data table.
      *
      * @param {*} data {userId: number, documentId: number, studySessionId: number, studyStepId: number, key: string, value: any}
@@ -1180,7 +1303,7 @@ class DocumentSocket extends Socket {
      */
     async updateDocumentContent(data, options) {
         const { documentId, content } = data;
-        
+
         // Get the document to verify it exists and check access
         const doc = await this.models['document'].getById(documentId);
         if (!doc) {
@@ -1216,116 +1339,11 @@ class DocumentSocket extends Socket {
     }
 
     init() {
-
-        this.socket.on("documentGetReviews", async (callback) => {
-            try {
-                const reviewDocuments = await this.models["document"].getReviewDocuments();
-                callback({
-                    success: true,
-                    documents: reviewDocuments
-                });
-            } catch (e) {
-                this.logger.error(e);
-                callback({
-                    success: false,
-                    message: "Error retrieving review documents"
-                });
-            }
-        });
-
-
-        this.socket.on("documentClose", async (data) => {
-            try {
-                if (data.studySessionId === null) {
-                    await this.saveDocument(data.documentId);
-                }
-
-                const index = this.socket.openComponents.editor.indexOf(data.documentId);
-                if (index > -1) {
-                    this.socket.openComponents.editor[index] = undefined; // Remove the document ID
-                }
-            } catch (err) {
-                this.logger.error("Error saving document: ", err);
-                this.sendToast("Error saving document!", "Error", "danger");
-            }
-        });
-
-        this.socket.on("documentOpen", async (data) => {
-            try {
-                await this.openDocument(data.documentId);
-            } catch (e) {
-                this.logger.error("Error handling document open request: ", e);
-                this.sendToast("Error handling document open request!", "Error", "danger");
-            }
-        });
-
-        this.socket.on("documentGetAll", async (data) => {
-            try {
-                await this.refreshAllDocuments((data && data.userId) ? data.userId : null);
-            } catch (error) {
-                console.error(error);
-                this.sendToast(error, "Error getting all document data", "Error", "danger");
-            }
-        });
-
-       /*
-        this.socket.on("documentEdit", async (data) => {
-            try {
-                await this.editDocument(data);
-            } catch (error) {
-                const errorDetails = {
-                    timestamp: new Date().toISOString(),
-                    errorMessage: error.message,
-                    errorType: error.constructor.name,
-                    stackTrace: error.stack,
-                    userId: data.userId,
-                    documentId: data.documentId,
-                    operationDetails: JSON.stringify(data.ops),
-                    component: "Document Editor",
-                    errorCode: error.code || "N/A"
-                };
-
-                this.logger.error("Critical error during document edit:", errorDetails);
-
-                this.sendToast("An error occurred while editing the document.", "Error", "danger");
-                this.socket.emit("documentEditResponse", {
-                    success: false,
-                    message: "Internal server error while editing the document.",
-                    errorCode: 500
-                });
-            }
-        });
-        */
-
-        this.socket.on("documentGetMoodleSubmissions", async (data, callback) => {
-            try {
-                if (!(await this.isAdmin())) { 
-                    throw new Error("You do not have permission to access Moodle submissions");
-                }
-                
-                const submissions = await this.documentGetMoodleSubmissions(data);
-                
-                // Enhance submissions with file associations
-                const enhancedSubmissions = this.enhanceSubmissionsWithFileData(submissions);
-                
-                callback({
-                    success: true,
-                    data: enhancedSubmissions
-                });
-            } catch (e) {
-                this.logger.error("Error getting Moodle submissions:", e);
-                callback({
-                    success: false,
-                    message: e.message
-                });
-            }
-        });
-
-
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
         this.createSocket("documentEdit", this.editDocument, {}, true);
         this.createSocket("documentSubscribe", this.subscribeDocument, {}, false);
+        this.createSocket("documentUnsubscribe", this.unsubscribeDocument, {}, false);
         this.createSocket("documentGetDeltas", this.sendDocumentDeltas, {}, false);
         this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);
