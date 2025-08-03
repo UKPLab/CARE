@@ -7,34 +7,31 @@
     <template #header>
       <div class="row">
         <div class="col">
-          {{ comment.creator_name }}
+          <LoadIcon
+            icon-name="check-square"
+            :size="16"
+            :color="collapsed ? '#28a745' : '#6c757d'"
+            cursor="pointer"
+            class="check-icon"
+            style="position: absolute; top: 18px; left: 12px;"
+            @click="collapsed = !collapsed"
+          />
+          <span style="margin-left: 8;">{{ comment.creator_name }}</span>
           <Collaboration
-              ref="collab"
-              :target-id="commentId"
-              :document-id="documentId"
-              target-type="comment"
-              @collab-status="toEditMode"
+            ref="collab"
+            :target-id="commentId"
+            :document-id="documentId"
+            target-type="comment"
+            @collab-status="toEditMode"
           />
         </div>
         <div class="col text-end">
-          <div style="display: flex; flex-direction: column; align-items: flex-end;">
-            <div v-if="!editedByMyself" style="position: absolute; top: 5px; right: 8px; z-index: 10;">
-              <LoadIcon
-                icon-name="check-square"
-                :size="16"
-                :color="collapsed ? '#28a745' : '#6c757d'"
-                cursor="pointer"
-                class="check-icon"
-                @click="collapsed = !collapsed"
-              />
-            </div>
-            <span v-if="annotation">
-              {{ new Date(annotation.updatedAt).toLocaleDateString() }}
-            </span>
-            <span v-else>
-              {{ new Date(comment.updatedAt).toLocaleDateString() }}
-            </span>
-          </div>
+          <span v-if="annotation">
+            {{ new Date(annotation.updatedAt).toLocaleDateString() }}
+          </span>
+          <span v-else>
+            {{ new Date(comment.updatedAt).toLocaleDateString() }}
+          </span>
         </div>
       </div>
     </template>
@@ -277,7 +274,7 @@ export default {
           }
         });
       }    
-      if(acceptStats) {
+      if(this.acceptStats) {
         this.$socket.emit("stats", {
           action: "commentToggleCollapse",
           data: {
