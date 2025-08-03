@@ -1,4 +1,4 @@
-  <template>
+<template>
     <StepperModal 
         ref="assignProjectStepper"
         :steps="assignSteps"
@@ -43,6 +43,10 @@
           <strong>Summary:</strong><br>
           You are about to assign <strong>1</strong> project 
           to <strong>{{ Object.keys(userSelection || {}).length }}</strong> user(s).
+        </div>
+        
+        <div class="alert alert-warning">
+          <strong>Note:</strong> By assigning users to this project, the project will automatically be made public.
         </div>
         
         <div class="row">
@@ -163,7 +167,6 @@ export default {
     },
     async handleAssignSubmit() {
       const projectId = this.dataSelection.project;
-      const userIds = Object.keys(this.userSelection || {});
       
       if (!projectId || userIds.length === 0) {
         this.eventBus.emit("toast", {
@@ -173,31 +176,37 @@ export default {
         });
         return;
       }
-
+      //todo: make project public
+      this.$socket.emit("appDataUpdate", {table: "projects", id: projectId, public: true }, (result) => {
+        if (!result.success) {
+          this.eventBus.emit("toast", {
+            title: "Project assignment failed",
+            message: result.message,
+            variant: "danger",
+          });
+          return;
+        }
+      });
       // Assign the project to each selected user
-      for (const userId of userIds) {
+      for (const user of this.userSelection) {
         this.$socket.emit(
-          "appDataUpdate",
+          "appSettingSet",
           {
-            table: "user_settings",
-            data: {
-              userId: parseInt(userId),
-              key: "projects.default",
-              value: projectId,
-            },
+            key: "projects.default",
+            value: projectId,
+            userId: user.id,
           },
           (result) => {
             if (!result.success) {
               this.eventBus.emit("toast", {
                 title: "Assignment failed",
-                message: `Failed to assign project to user ${userId}: ${result.message}`,
+                message: `Failed to assign project to user ${userId}: ${result?.message || 'Unknown error'}`,
                 variant: "danger",
               });
             }
           }
         );
       }
-      
       this.eventBus.emit("toast", {
         title: "Project assigned",
         message: `The project has been successfully assigned to ${userIds.length} user(s).`,
