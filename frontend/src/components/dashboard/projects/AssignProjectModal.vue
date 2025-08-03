@@ -1,16 +1,16 @@
 <template>
-    <StepperModal 
-        ref="assignProjectStepper"
-        :steps="assignSteps"
-        :validation="stepValid"
-        submit-text="Assign"
-        @step-change="handleAssignStepChange"
-        @submit="handleAssignSubmit"
-    >
+  <StepperModal
+    ref="assignProjectStepper"
+    :steps="assignSteps"
+    :validation="stepValid"
+    submit-text="Assign"
+    @step-change="handleAssignStepChange"
+    @submit="handleAssignSubmit"
+  >
     <template #title>
       <span>Assign Projects to Users</span>
     </template>
-    
+
     <template #step-1>
       <div class="mb-3">
         <h6>Select projects to assign:</h6>
@@ -19,10 +19,12 @@
           v-model="dataSelection"
           :fields="dataSelectionFields"
         />
-        <small class="text-muted">{{ dataSelection.project ? '1 project selected' : '0 projects selected' }}</small>
+        <small class="text-muted">{{
+          dataSelection.project ? "1 project selected" : "0 projects selected"
+        }}</small>
       </div>
     </template>
-    
+
     <template #step-2>
       <div class="mb-3">
         <h6>Select users to assign projects to:</h6>
@@ -32,23 +34,27 @@
           :data="users"
           :options="tableOptions"
         />
-        <small class="text-muted">{{ Object.keys(userSelection || {}).length }} user(s) selected</small>
+        <small class="text-muted"
+          >{{ Object.keys(userSelection || {}).length }} user(s) selected</small
+        >
       </div>
     </template>
-    
+
     <template #step-3>
       <div class="mb-3">
         <h6>Confirm assignment:</h6>
         <div class="alert alert-info">
-          <strong>Summary:</strong><br>
-          You are about to assign <strong>1</strong> project 
-          to <strong>{{ Object.keys(userSelection || {}).length }}</strong> user(s).
+          <strong>Summary:</strong><br />
+          You are about to assign <strong>1</strong> project to
+          <strong>{{ Object.keys(userSelection || {}).length }}</strong>
+          user(s).
         </div>
-        
+
         <div class="alert alert-warning">
-          <strong>Note:</strong> By assigning users to this project, the project will automatically be made public.
+          <strong>Note:</strong> By assigning users to this project, the project
+          will automatically be made public.
         </div>
-        
+
         <div class="row">
           <div class="col-md-6">
             <h6 class="text-primary">Selected Project:</h6>
@@ -60,7 +66,11 @@
           <div class="col-md-6">
             <h6 class="text-success">Selected Users:</h6>
             <ul class="list-unstyled">
-              <li v-for="user in Object.values(userSelection || {})" :key="user.id" class="mb-1">
+              <li
+                v-for="user in Object.values(userSelection || {})"
+                :key="user.id"
+                class="mb-1"
+              >
                 <i class="bi bi-person me-1"></i>
                 {{ user.firstName }} {{ user.lastName }}
               </li>
@@ -82,14 +92,14 @@ export default {
   components: {
     StepperModal,
     BasicForm,
-    BasicTable
+    BasicTable,
   },
   data() {
     return {
       assignSteps: [
         { title: "Select Projects" },
         { title: "Select Users" },
-        { title: "Confirm" }
+        { title: "Confirm" },
       ],
       dataSelection: {},
       userSelection: {},
@@ -117,11 +127,7 @@ export default {
       return this.$store.getters["table/user/getAll"];
     },
     stepValid() {
-      return [
-        !!this.dataSelection.project,
-        Object.keys(this.userSelection || {}).length > 0,
-        true 
-      ];
+      return [true, this.userSelection.length > 0, true];
     },
     dataSelectionFields() {
       return [
@@ -129,12 +135,12 @@ export default {
           key: "project",
           label: "Select Project",
           type: "select",
-          options: this.projects.map(project => ({
+          options: this.projects.map((project) => ({
             name: project.name,
             value: project.id,
           })),
-          required: true
-        }
+          required: true,
+        },
       ];
     },
     userSelectionFields() {
@@ -143,14 +149,14 @@ export default {
           key: "users",
           label: "Select Users",
           type: "select",
-          options: this.users.map(user => ({
+          options: this.users.map((user) => ({
             name: `${user.firstName} ${user.lastName}`,
-            value: user.id, 
+            value: user.id,
           })),
-          required: true
-        }
+          required: true,
+        },
       ];
-    }
+    },
   },
   methods: {
     open() {
@@ -167,8 +173,8 @@ export default {
     },
     async handleAssignSubmit() {
       const projectId = this.dataSelection.project;
-      
-      if (!projectId || userIds.length === 0) {
+
+      if (!projectId || this.userSelection.length === 0) {
         this.eventBus.emit("toast", {
           title: "Assignment failed",
           message: "Please select a project and at least one user.",
@@ -177,16 +183,26 @@ export default {
         return;
       }
       //todo: make project public
-      this.$socket.emit("appDataUpdate", {table: "projects", id: projectId, public: true }, (result) => {
-        if (!result.success) {
-          this.eventBus.emit("toast", {
-            title: "Project assignment failed",
-            message: result.message,
-            variant: "danger",
-          });
-          return;
+      this.$socket.emit(
+        "appDataUpdate",
+        {
+          table: "project",
+          data: {
+            id: projectId,
+            public: true,
+          },
+        },
+        (result) => {
+          if (!result.success) {
+            this.eventBus.emit("toast", {
+              title: "Project assignment failed",
+              message: result.message,
+              variant: "danger",
+            });
+            return;
+          }
         }
-      });
+      );
       // Assign the project to each selected user
       for (const user of this.userSelection) {
         this.$socket.emit(
@@ -200,7 +216,9 @@ export default {
             if (!result.success) {
               this.eventBus.emit("toast", {
                 title: "Assignment failed",
-                message: `Failed to assign project to user ${userId}: ${result?.message || 'Unknown error'}`,
+                message: `Failed to assign project to user ${userId}: ${
+                  result?.message || "Unknown error"
+                }`,
                 variant: "danger",
               });
             }
@@ -209,10 +227,10 @@ export default {
       }
       this.eventBus.emit("toast", {
         title: "Project assigned",
-        message: `The project has been successfully assigned to ${userIds.length} user(s).`,
+        message: `The project has been successfully assigned to ${this.userSelection.length} user(s).`,
         variant: "success",
       });
-      
+
       this.close();
     },
     close() {
@@ -221,11 +239,11 @@ export default {
       this.$refs.assignProjectStepper.close();
     },
     getProjectName(projectId) {
-      const project = this.projects.find(p => p.id === projectId);
+      const project = this.projects.find((p) => p.id === projectId);
       return project.name;
     },
-  }
-}
+  },
+};
 </script>
 
 <style scoped>
