@@ -345,13 +345,21 @@ class AppSocket extends Socket {
      * Send overall settings including user setting
      * @param {Object} data - The input data from the frontend
      * @param {String} data.key - The key in the user setting table
+     * @param {String} data.userId - The user ID to set the setting for, if not provided, it will use the current user
      * @param {String} data.value - The value in the user setting table
      * @param {Object} options - Additional configuration parameter
      * @return {Promise<void>}
      */
     async sendOverallSetting(data, options) {
-        await this.models["user_setting"].set(data.key, data.value, this.userId);
-        await this.sendSettings();
+        if(this.isAdmin() && data.userId){
+            console.log("Setting user setting for user: " + data.userId);
+            console.log("Setting key: " + data.key + " to value: " + data.value);
+            await this.models["user_setting"].set(data.key, data.value, data.userId);
+        }
+        else{
+            await this.models["user_setting"].set(data.key, data.value, this.userId);
+            await this.sendSettings();
+        }
     }
 
     init() {
