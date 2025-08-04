@@ -17,7 +17,7 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * Loading the document through websocket
  *
- * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal
+ * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal, Linyin Huang, Zheyu Zhang
  * @type {DocumentSocket}
  * @class DocumentSocket
  */
@@ -62,7 +62,6 @@ class DocumentSocket extends Socket {
      * 
      * Stores the given pdf file in the files path and creates an entry in the database.
      * 
-     * @author Zheyu Zhang, Linyin Huang
      * @param {Object} data - The data object containing the document details.
      * @param {string} data.name - The name of the document.
      * @param {Buffer} data.file - The binary content of the document.
