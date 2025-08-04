@@ -20,19 +20,19 @@ class StatisticSocket extends Socket {
      * This function is restricted to administrators and will only send data if the target user
      * has consented to statistics collection (`acceptStats` is true).
      * 
-     * @param {number} userId The ID of the user whose statistics are to be fetched.
+     * @param {number} data.userId The ID of the user whose statistics are to be fetched.
      * @param {Object} options Additional configuration parameters (currently unused).
      * @returns {Promise<void>} A promise that resolves (with no value) after the operation is complete. 
      */
-    async sendStatsByUser(userId, options) {
+    async sendStatsByUser(data, options) {       
         if (await this.isAdmin()) {
-            if ((await this.models["user"].getById(userId)).acceptStats) {
-                const stats = await this.models['statistic'].getAllByKey('userId', userId);
-                this.socket.emit("statsDataByUser", {success: true, userId: userId, statistics: stats});
+            if ((await this.models["user"].getById(data.userId)).acceptStats) {
+                const stats = await this.models['statistic'].getAllByKey('userId', data.userId);
+                this.socket.emit("statsDataByUser", {success: true, userId: data.userId, statistics: stats});
             } else {
                 this.socket.emit("statsDataByUser", {
                     success: false,
-                    userId: userId,
+                    userId: data.userId,
                     message: "User rights and argument mismatch"
                 });
                 this.logger.error("User right and request parameter mismatch. User did not agree to stats collection.");
