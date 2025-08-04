@@ -9,3 +9,6 @@ services:
   rpc_moodle:
     ports:
       - ${RPC_MOODLE_PORT}:8081
+  rpc_pdf:
+    ports:
+      - ${RPC_PDF_PORT}:8082
