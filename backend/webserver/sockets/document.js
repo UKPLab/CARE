@@ -27,7 +27,7 @@ class DocumentSocket extends Socket {
      * Check if user has rights to read the document data
      *
      * The user has access to the document if:
-     * 
+     *
      * - The document is public
      * - The document is owned by the user
      * - The user is an admin
@@ -58,8 +58,8 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Uploads the given data object as a document. 
-     * 
+     * Uploads the given data object as a document.
+     *
      * Stores the given pdf file in the files path and creates an entry in the database.
      * 
      * @param {Object} data - The data object containing the document details.
@@ -77,7 +77,7 @@ class DocumentSocket extends Socket {
         let target = "";
         let annotations = [];
         let errors = [];
-    
+
         if (!data['file']) {
             throw new Error("No file uploaded");
         }
@@ -141,7 +141,7 @@ class DocumentSocket extends Socket {
                 if (!file) {
                     throw new Error("Couldn't delete original annotations");
                 }
-                
+
                 fs.writeFileSync(target, file);
             } catch (annotationRpcErr) {
                 errors.push("Error deleting annotations: " + annotationRpcErr.message);
@@ -164,7 +164,7 @@ class DocumentSocket extends Socket {
                                 textPositions = getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
                                 errors.push("Error extracting text positions for text " + extracted.text + ": " + error.message);
-                                continue; 
+                                continue;
                             }
 
                             const selectors = {
@@ -188,7 +188,7 @@ class DocumentSocket extends Socket {
                                     ]
                                 }]
                             };
-                            
+
                             try {
                                 const newAnnotation = {
                                     documentId: doc.id,
@@ -216,7 +216,7 @@ class DocumentSocket extends Socket {
                                     userId: this.userId
                                 };
                                 await this.models['comment'].add(newComment, {transaction: options.transaction});
-                                
+
                             } catch (annotationErr) {
                                 errors.push("Error adding annotation: " + annotationErr.message);
                                 continue;
@@ -256,6 +256,7 @@ class DocumentSocket extends Socket {
     }
 
     /**
+<<<<<<< HEAD
      * Create document (html)
      * @param data // The data object containing the document details.
      * @param data.projectId {number}
@@ -265,6 +266,10 @@ class DocumentSocket extends Socket {
      * @returns {Promise<void>}
      * Creates a new HTML-based document record in the database.
      * 
+=======
+     * Creates a new HTML-based document record in the database.
+     *
+>>>>>>> c298e2613f751c41b3525c7913d085c73424afc4
      * @param {Object} data The data for the new document.
      * @param {string} data.name The name of the new document.
      * @param {number} data.type The type identifier for the document (e.g., HTML).
@@ -275,7 +280,7 @@ class DocumentSocket extends Socket {
         const doc = await this.models["document"].add({
             name: data.name,
             type: data.type,
-            userId: this.userId,    
+            userId: this.userId,
             projectId: data.projectId
         }, {transaction: options.transaction});
                        annotations.push(annotation);
@@ -300,7 +305,7 @@ class DocumentSocket extends Socket {
     /**
      * Refresh all documents. Fetches a list of documents and emits them to the client via a 'documentRefresh' event.
      * The scope of the documents sent depends on the user's administrative rights and the provided parameters.
-     * 
+     *
      * - Non-admins will only receive their own documents.
      * - Admins can receive all documents, or filter for a specific user's documents.
      *
@@ -324,7 +329,7 @@ class DocumentSocket extends Socket {
 
     /**
 
-     * Send document by hash. 
+     * Send document by hash.
      *
      * Fetches a document by its hash, checks for user access, and then either sends the document
      * or a "toast" error message to the client.
@@ -481,7 +486,7 @@ class DocumentSocket extends Socket {
      *
      * For HTML documents, it defers to `this.getDocument`. For other types, it sends
      * annotations, comments, votes, and tags based on the following logic:
-     * 
+     *
      * - If a `studySessionId` is provided and the study is collaborative, it sends data from ALL participants.
      * - If a `studySessionId` is provided and the study is NOT collaborative, it sends data for the CURRENT session only.
      * - If no `studySessionId` is provided, it sends data from closed studies or data not linked to any session.
@@ -614,7 +619,7 @@ class DocumentSocket extends Socket {
         }
     }
 
-    /** 
+    /**
      * Edits the document based on the provided data.
      *
      * This method is called when the client requests to edit a document. It first checks if the user has access to the document,
@@ -683,7 +688,7 @@ class DocumentSocket extends Socket {
     /**
      * Get Moodle submissions from an assignment.
      * This function acts as a wrapper, forwarding the request to the MoodleRPC service.
-     * 
+     *
      * @param {Object} data The data required for fetching the submission information.
      * @param {Object} data.options The configuration object for the Moodle API connection.
      * @param {number} data.options.courseID The ID of the Moodle course.
@@ -882,7 +887,7 @@ class DocumentSocket extends Socket {
 
     /**
      * Helper method to get the previous step ID for a given study step ID
-     * 
+     *
      * @param {number} studyStepId The ID of the study step
      * @returns {Promise<number|null>} The ID of the previous study step, or null if not found
      */
@@ -909,7 +914,7 @@ class DocumentSocket extends Socket {
 
     /**
      * Uploads review links to a Moodle assignment as feedback comments.
-     * 
+     *
      * @param {Object} data The data required for uploading login data.
      * @param {Object} data.options The options object containing the API key and URL of the Moodle instance.
      * @param {number} data.options.courseID The ID of the course to fetch users from.
@@ -981,6 +986,7 @@ class DocumentSocket extends Socket {
 
         return documentData;
     }
+
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
