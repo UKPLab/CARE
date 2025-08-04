@@ -20,6 +20,7 @@ backend/coverage
 dist/
 frontend/node_modules
 node_modules
+package-lock.json
 
 #modules
 utils/modules/editor-delta-conversion/node_modules
