@@ -17,7 +17,7 @@ class AnnotationSocket extends Socket {
     /**
      * Send an annotation to the client by id.
      * A permission check is performed to ensure the user has access to the document containing the annotation.
-     * 
+     *
      * @socketEvent annotationGet
      * @param {Object} data the input data from the frontend
      * @param {Object} options Additional configuration parameters (currently unused).
@@ -39,7 +39,7 @@ class AnnotationSocket extends Socket {
     /**
      * Load all comments for a document by annotation.
      * Errors during the database operation are caught and handled internally by logging the error and sending a toast notification to the client.
-     * 
+     *
      * @param {number} annotationId The ID of the annotation whose comments are to be loaded.
      * @return {Promise<void>} A promise that resolves (with no value) once the comments have been sent or an error has been handled.
      */
@@ -110,7 +110,7 @@ class AnnotationSocket extends Socket {
 
     /**
      * Returns the annotations for a given document by its id and sends the complete list to the client via an 'annotationRefresh' event.
-     * 
+     *
      * @socketEvent annotationGetByDocument
      * @param data The request data containing the document identifier.
      * @param {number} data.documentId the id of the document to retrieve the annotations for
@@ -125,13 +125,15 @@ class AnnotationSocket extends Socket {
 
     /**
      * Embed all annotations into the PDF for a document.
+     *
+     * @socketEvent annotationEmbed
      * @param {Object} data - The data containing the document ID and other parameters.
      * @param {Object} options - Additional options for the emmfbedding process.
-     * @param {number} data.documentId - The ID of the document to embed annotations into. 
+     * @param {number} data.documentId - The ID of the document to embed annotations into.
      * @returns {Promise<Object>} The response from the PDFRPC embedAnnotations call.
      */
     async embedAnnotationsForDocument(data, options) {
-        const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);   
+        const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);
         // Get all comments for the document
         const comments = await this.models['comment'].getAllByKey("documentId", data.documentId);
 
@@ -172,7 +174,7 @@ class AnnotationSocket extends Socket {
             annotations: annotationsWithTagsAndComments,
             document: document,
         });
-        
+
         return {
             documentId: data.documentId,
             file: response,
@@ -185,6 +187,7 @@ class AnnotationSocket extends Socket {
         this.createSocket("annotationGetByDocument", this.getAnnotationsByDoc, {}, false);
         this.createSocket("annotationEmbed", this.embedAnnotationsForDocument, {}, false);
     }
+
 }
 
 module.exports = AnnotationSocket;
