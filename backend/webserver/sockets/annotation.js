@@ -15,11 +15,15 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
 class AnnotationSocket extends Socket {
 
     /**
-     * Send an annotation to the client by id
+     * Send an annotation to the client by id.
+     * A permission check is performed to ensure the user has access to the document containing the annotation.
+     *
+     * @socketEvent annotationGet
      * @param {Object} data the input data from the frontend
-     * @param {Object} options not used
+     * @param {Object} options Additional configuration parameters (currently unused).
      * @param {number} data.annotationId the id of the annotation
-     * @return {Promise<*>}
+     * @return {Promise<*>} A promise that resolves (with no value) once the annotation and its comments have been processed and sent.
+     * @throws {Error} Throws an error if the user does not have permission to access the document associated with the annotation.
      */
     async sendAnnotation(data, options) {
         const anno = await this.models['annotation'].getById(data.annotationId);
@@ -33,9 +37,11 @@ class AnnotationSocket extends Socket {
     }
 
     /**
-     * Load all comments for a document by annotation
-     * @param {number} annotationId
-     * @return {Promise<void>}
+     * Load all comments for a document by annotation.
+     * Errors during the database operation are caught and handled internally by logging the error and sending a toast notification to the client.
+     *
+     * @param {number} annotationId The ID of the annotation whose comments are to be loaded.
+     * @return {Promise<void>} A promise that resolves (with no value) once the comments have been sent or an error has been handled.
      */
     async loadCommentsByAnnotation(annotationId) {
         try {
@@ -46,10 +52,11 @@ class AnnotationSocket extends Socket {
             this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
         }
     }
-    /**
-     * Updates the annotations in the database. If the provided annotation is a new annotation,
-     * it will be created in the database; otherwise, the existing entry is overridden.
-     *
+
+    /** 
+     * Updates the annotations in the database. If the provided annotation is a new annotation, it will be created in the database otherwise the existing entry is overriden.
+     * 
+     * @socketEvent annotationUpdate
      * @param {Object} data the input data from the frontend
      * @param {Object} options containing transactions
      * @param options.transaction the DB transaction
@@ -61,7 +68,8 @@ class AnnotationSocket extends Socket {
      * @param {string} data.selectors the selectors of the annotation
      * @param {boolean} data.deleted indicates if the data is deleted
      * @param {boolean} data.anonymous indicates if the data is anonymous
-     * @returns {Promise<void>}
+     * @returns {Promise<void>} A promise that resolves (with no value) once the annotation has been saved and related events have been emitted.
+     * @throws {Error} Throws an error if a user attempts to modify an annotation they do not have access to.
      */
     async updateAnnotation(data, options) {
         if (data.annotationId && data.annotationId !== 0) { //modify
@@ -101,12 +109,13 @@ class AnnotationSocket extends Socket {
     }
 
     /**
-     * Returns the annotations for a given document by its id.
+     * Returns the annotations for a given document by its id and sends the complete list to the client via an 'annotationRefresh' event.
      *
-     * @param data the input
+     * @socketEvent annotationGetByDocument
+     * @param data The request data containing the document identifier.
      * @param {number} data.documentId the id of the document to retrieve the annotations for
-     * @param options not used
-     * @returns {Promise<void>}
+     * @param options Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} A promise that resolves (with no value) once the annotations have been successfully fetched and sent to the client.
      */
     async getAnnotationsByDoc(data, options) {
         this.emit("annotationRefresh",
@@ -116,13 +125,15 @@ class AnnotationSocket extends Socket {
 
     /**
      * Embed all annotations into the PDF for a document.
+     *
+     * @socketEvent annotationEmbed
      * @param {Object} data - The data containing the document ID and other parameters.
      * @param {Object} options - Additional options for the emmfbedding process.
-     * @param {number} data.documentId - The ID of the document to embed annotations into. 
+     * @param {number} data.documentId - The ID of the document to embed annotations into.
      * @returns {Promise<Object>} The response from the PDFRPC embedAnnotations call.
      */
     async embedAnnotationsForDocument(data, options) {
-        const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);   
+        const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);
         // Get all comments for the document
         const comments = await this.models['comment'].getAllByKey("documentId", data.documentId);
 
@@ -163,7 +174,7 @@ class AnnotationSocket extends Socket {
             annotations: annotationsWithTagsAndComments,
             document: document,
         });
-        
+
         return {
             documentId: data.documentId,
             file: response,
@@ -176,6 +187,7 @@ class AnnotationSocket extends Socket {
         this.createSocket("annotationGetByDocument", this.getAnnotationsByDoc, {}, false);
         this.createSocket("annotationEmbed", this.embedAnnotationsForDocument, {}, false);
     }
+
 }
 
 module.exports = AnnotationSocket;

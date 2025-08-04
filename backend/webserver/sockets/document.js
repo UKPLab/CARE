@@ -17,24 +17,24 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  *
  * Loading the document through websocket
  *
- * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal
+ * @author Dennis Zyska, Juliane Bechert, Manu Sundar Raj Nandyal, Linyin Huang, Zheyu Zhang
  * @type {DocumentSocket}
  * @class DocumentSocket
  */
 class DocumentSocket extends Socket {
 
     /**
-     *
      * Check if user has rights to read the document data
      *
      * The user has access to the document if:
+     *
      * - The document is public
      * - The document is owned by the user
      * - The user is an admin
      * - The document is used in a study where the user is a participant
      *
-     * @param documentId
-     * @returns {Promise<boolean>}
+     * @param documentId The ID of the document for which access is being checked.
+     * @returns {Promise<boolean>} A promise that resolves with `true` if the user has access, and `false` otherwise.
      */
     async checkDocumentAccess(documentId) {
         const doc = await this.models['document'].getById(documentId);
@@ -58,9 +58,10 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Uploads the given data object as a document. Stores the given pdf file in the files path and creates
-     * an entry in the database.
-     * @author Zheyu Zhang, Linyin Huang
+     * Uploads the given data object as a document.
+     *
+     * Stores the given pdf file in the files path and creates an entry in the database.
+     * 
      * @param {Object} data - The data object containing the document details.
      * @param {string} data.name - The name of the document.
      * @param {Buffer} data.file - The binary content of the document.
@@ -76,7 +77,7 @@ class DocumentSocket extends Socket {
         let target = "";
         let annotations = [];
         let errors = [];
-    
+
         if (!data['file']) {
             throw new Error("No file uploaded");
         }
@@ -140,7 +141,7 @@ class DocumentSocket extends Socket {
                 if (!file) {
                     throw new Error("Couldn't delete original annotations");
                 }
-                
+
                 fs.writeFileSync(target, file);
             } catch (annotationRpcErr) {
                 errors.push("Error deleting annotations: " + annotationRpcErr.message);
@@ -163,7 +164,7 @@ class DocumentSocket extends Socket {
                                 textPositions = getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
                                 errors.push("Error extracting text positions for text " + extracted.text + ": " + error.message);
-                                continue; 
+                                continue;
                             }
 
                             const selectors = {
@@ -187,7 +188,7 @@ class DocumentSocket extends Socket {
                                     ]
                                 }]
                             };
-                            
+
                             try {
                                 const newAnnotation = {
                                     documentId: doc.id,
@@ -215,7 +216,7 @@ class DocumentSocket extends Socket {
                                     userId: this.userId
                                 };
                                 await this.models['comment'].add(newComment, {transaction: options.transaction});
-                                
+
                             } catch (annotationErr) {
                                 errors.push("Error adding annotation: " + annotationErr.message);
                                 continue;
@@ -234,11 +235,12 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Update a document
+     * Updates a document's properties after verifying the current user has ownership rights.
      *
-     * @param data - The data object containing the new document object.
-     * @param options - The options object containing the transaction.
-     * @return {Promise<void>}
+     * @param data The data object containing the new document object.
+     * @param {number} data.id The ID of the document to be updated.
+     * @param options The options object containing the transaction.
+     * @return {Promise<void>} A promise that resolves (with no value) once the update operation is complete and the 'afterCommit' hook is registered.
      */
     async updateDocument(data, options) {
         const doc = await this.models['document'].getById(data['id']);
@@ -254,6 +256,7 @@ class DocumentSocket extends Socket {
     }
 
     /**
+<<<<<<< HEAD
      * Create document (html)
      * @param data // The data object containing the document details.
      * @param data.projectId {number}
@@ -261,12 +264,23 @@ class DocumentSocket extends Socket {
      * @param data.type {string} - The type of the document (e.g., "html", "modal").
      * @param options
      * @returns {Promise<void>}
+     * Creates a new HTML-based document record in the database.
+     * 
+=======
+     * Creates a new HTML-based document record in the database.
+     *
+>>>>>>> c298e2613f751c41b3525c7913d085c73424afc4
+     * @param {Object} data The data for the new document.
+     * @param {string} data.name The name of the new document.
+     * @param {number} data.type The type identifier for the document (e.g., HTML).
+     * @param {Object} options The options object containing the transaction.
+     * @returns {Promise<Object>} A promise that resolves with the newly created document's database record.
      */
     async createDocument(data, options) {
         const doc = await this.models["document"].add({
             name: data.name,
             type: data.type,
-            userId: this.userId,    
+            userId: this.userId,
             projectId: data.projectId
         }, {transaction: options.transaction});
                        annotations.push(annotation);
@@ -289,11 +303,16 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Refresh all documents
+     * Refresh all documents. Fetches a list of documents and emits them to the client via a 'documentRefresh' event.
+     * The scope of the documents sent depends on the user's administrative rights and the provided parameters.
      *
-     * @param {Object} data - The data object containing the request parameters.
-     * @param {Object} options - The options object containing the transaction.
-     * @return {Promise<void>}
+     * - Non-admins will only receive their own documents.
+     * - Admins can receive all documents, or filter for a specific user's documents.
+     *
+     * @param {Object} data The data object containing the request parameters.
+     * @param {number} [data.userId] For administrators only. If provided, fetches documents belonging to this specific user ID. If omitted, all documents are fetched.
+     * @param {Object} [options] Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} A promise that resolves (with no value) once the document list has been successfully fetched and emitted.
      */
     async refreshAllDocuments(data ,options) {
         data.userId = data.userId || null;
@@ -309,13 +328,18 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Send document by hash
+
+     * Send document by hash.
      *
-     * @param {object} data
-     * @param {string} data.documentHash - The hash of the document to send.
-     * @param {object} options - The options object containing the transaction.
-     * @returns {Promise<void>}
-     * */
+     * Fetches a document by its hash, checks for user access, and then either sends the document
+     * or a "toast" error message to the client.
+     *
+     * @socketEvent documentGetByHash
+     * @param {object} data The data object containing the document hash.
+     * @param {string} data.documentHash The hash of the document to send.
+     * @param {object} options The options object containing the transaction.
+     * @returns {Promise<void>} A promise that resolves (with no value) once the operation (either sending the document or a toast) is complete.
+     */
     async sendByHash(data, options) {
         const documentHash = data.documentHash;
         const document = await this.models['document'].getByHash(documentHash);
@@ -330,10 +354,13 @@ class DocumentSocket extends Socket {
     /**
      * Send merged deltas (from disk and database) to client (for HTML documents)
      *
-     * @param {object} data
-     * @param {number} data.documentId - The ID of the document to send deltas for.
-     * @param {object} options - The options for the transaction.
-     * @returns {Promise<void>}
+     * @param {object} data The request data containing the document identifier.
+     * @param {number} data.documentId  The ID of the document to send deltas for.
+     * @param {object} options The options for the transaction.
+     * @returns {Promise<void>} A promise that resolves with the final, composed Delta object representing the document's current state.
+     * @throws {Error} Throws an error if:
+     *  The user does not have access to the document,
+     *  The document is not of a supported type (HTML or MODAL).
      */
     async sendDocumentDeltas(data, options) {
         const documentId = data.documentId;
@@ -371,11 +398,11 @@ class DocumentSocket extends Socket {
 
     /**
      * Load document delta from disk (for HTML documents)
-     *
      * This method reads the delta file from the disk and returns it as a Delta object.
      *
-     * @param {string} filePath
-     * @returns {Promise<Delta>}
+     * @param {string} filePath The absolute path to the delta file to be loaded.
+     * @returns {Promise<Delta>}  A promise that resolves with a new Delta object representing the file's content.
+     *  @throws {Error} Throws an error if the file cannot be read (e.g., file not found, permissions error) or if the file content is not valid JSON.
      */
     async loadDocument(filePath) {
         try {
@@ -401,11 +428,14 @@ class DocumentSocket extends Socket {
 
     /**
      * Save document delta to disk and mark edits as applied (for HTML documents)
-     *
      * This method saves the combined delta of the document on the disk and updates the edits in the database to mark them as applied.
      *
-     * @param {number} documentId
-     * @returns {Promise<void>}
+     * @param {number} documentId The ID of the document to save.
+     * @returns {Promise<void>} A promise that resolves (with no value) upon successful completion. Note: The function returns early without error if the document ID is not found.
+     * @throws {Error} Throws an error if:
+     *  The document is not of a supported type (HTML or MODAL),
+     *  Reading from or writing to the filesystem fails for reasons other than the initial file not existing,
+     *  Any of the underlying database operations (`getById`, `findAll`, `update`) fail.
      */
     async saveDocument(documentId) {
             const doc = await this.models['document'].getById(documentId);
@@ -451,11 +481,22 @@ class DocumentSocket extends Socket {
 
 
     /**
-     * Send document data to client
-     * And send additional data like annotations, comments, tags
+     *  Fetches and sends a comprehensive set of data related to a document, with behavior
+     * that varies significantly based on the document type and user context.
      *
-     * @param {object} data {documentId: number, studySessionId: number}
-     * @return {Promise<void>}
+     * For HTML documents, it defers to `this.getDocument`. For other types, it sends
+     * annotations, comments, votes, and tags based on the following logic:
+     *
+     * - If a `studySessionId` is provided and the study is collaborative, it sends data from ALL participants.
+     * - If a `studySessionId` is provided and the study is NOT collaborative, it sends data for the CURRENT session only.
+     * - If no `studySessionId` is provided, it sends data from closed studies or data not linked to any session.
+     *
+     * @param {Object} data The request data specifying the context.
+     * @param {number} data.documentId The ID of the document to fetch data for.
+     * @param {number} data.studySessionId The ID of the current study session, if applicable.
+     * @param {number} data.studyStepId The ID of the current study step, required when a `studySessionId` is provided.
+     * @param {Object} options Additional configuration parameters (passed down to sub-methods).
+     * @returns {Promise<void>} A promise that resolves (with no value) once all relevant data has been fetched and emitted to the client.
      */
     async getData(data, options) {
         if (!data.documentId || !await this.checkDocumentAccess(data.documentId)) {
@@ -556,13 +597,17 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Publish the document
+     * Makes a document publicly accessible by setting its 'public' flag to true.
+     * This operation is only permitted if the current user has access rights to the document's owner.
+     * Upon success, it emits a 'documentRefresh' event with the updated document.
      *
-     * @param {object} data
-     * @param {number} data.documentId - The ID of the document to publish.
-     * @param {object} options - The options object containing the transaction.
-     * @return {Promise<void>}
-     * */
+     * @socketEvent documentPublish
+     * @param {object} data The data object containing the document identifier.
+     * @param {number} data.documentId The ID of the document to publish.
+     * @param {object} options The options object containing the transaction.
+     * @return {Promise<void>} A promise that resolves (with no value) once the document is successfully published and the event is emitted.
+     * @throws {Error} Throws an error if the user does not have permission to publish the document, or if any underlying database operation fails.
+     */
     async publishDocument(data, options) {
         const documentId = data.documentId;
         const doc = await this.models['document'].getById(documentId)
@@ -580,9 +625,15 @@ class DocumentSocket extends Socket {
      * This method is called when the client requests to edit a document. It first checks if the user has access to the document,
      * and if so, it applies the edits to the document and sends the updated document to the client.
      *
-     * @param {object} data {documentId: number, "ops" array consisting of [offset: number, operationType: number, span: number, text: string, attributes: Object]}
-     * @param {object} options - the options for the transaction
-     * @return {Promise<void>}
+     * @socketEvent documentEdit
+     * @param {Object} data The data payload containing the edits and their context.
+     * @param {number} data.documentId The ID of the document being edited.
+     * @param {Array<Object>} data.ops An array of edit operations, where each object represents a single change (e.g., insert, delete).
+     * @param {number} [data.studySessionId] If provided, associates the edits with a study session and suppresses the client-side event emission.
+     * @param {number} [data.studyStepId] If provided, associates the edits with a specific study step.
+     * @param {Object} options The options object containing the transaction.
+     * @param {Object} options.transaction A Sequelize DB transaction object to ensure all edits are added atomically.
+     * @returns {Promise<void>} A promise that resolves (with no value) once all edits have been processed and saved.
      */
     async editDocument(data, options) {
         const {documentId, studySessionId, studyStepId, ops} = data;
@@ -623,10 +674,10 @@ class DocumentSocket extends Socket {
      *
      * This method adds the document to the list of open documents, being tracked by the socket.
      *
-     * @param {object} data - The data object containing the documentId.
-     * @param {number} documentId
-     * @param {object} options - The options object.
-     * @returns {Promise<void>}
+     * @param {object} data The data object containing the documentId.
+     * @param {number} documentId The ID of the document to open and track.
+     * @param {object} options Additional configuration parameters
+     * @returns {Promise<void>} A promise that resolves (with no value) once the document is being tracked.
      */
     async openDocument(data, options) {
         if (!this.socket.openComponents.editor.includes(data.documentId)) {
@@ -635,10 +686,17 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Get Moodle submissions from an assignment
-     * @param data
-     * @param options
-     * @returns {Promise<ArrayLike<T>>}
+     * Get Moodle submissions from an assignment.
+     * This function acts as a wrapper, forwarding the request to the MoodleRPC service.
+     *
+     * @param {Object} data The data required for fetching the submission information.
+     * @param {Object} data.options The configuration object for the Moodle API connection.
+     * @param {number} data.options.courseID The ID of the Moodle course.
+     * @param {number} data.options.assignmentID The ID of the Moodle assignment.
+     * @param {string} data.options.apiKey The Moodle API token required for authentication.
+     * @param {string} data.options.apiUrl The base URL of the Moodle instance.
+     * @param {Object} [options] Additional configuration parameters (currently unused).
+     * @returns {Promise<Object[]>} A promise that resolves with an array of submission objects returned from the Moodle service.
      */
     async documentGetMoodleSubmissions(data, options) {
         return await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment(
@@ -653,6 +711,21 @@ class DocumentSocket extends Socket {
         );
     }
 
+    /**
+     * Downloads multiple submission files from Moodle URLs, creating a local document record for each one.
+     * Each file is processed in its own database transaction to ensure atomicity. Progress is reported
+     * to the client via a socket event after each file is processed.
+     *
+     * @param {Object} data The data required for the download operation.
+     * @param {Array<Object>} data.files An array of file objects to be downloaded.
+     * @param {string} data.files.fileUrl The direct download URL for the Moodle file.
+     * @param {string} data.files.fileName The desired name for the saved document.
+     * @param {number} data.files.userId The ID of the user associated with the submission.
+     * @param {Object} data.options The configuration options (e.g., API key, URL) passed to the Moodle RPC service.
+     * @param {string} data.progressId The unique ID used for reporting progress back to the frontend.
+     * @param {Object} options Additional configuration parameters (currently unused).
+     * @returns {Promise<number[]>} A promise that resolves with an array of the newly created document IDs.
+     */
     async downloadMoodleSubmissions(data, options) {
         const results = [];
 
@@ -701,9 +774,18 @@ class DocumentSocket extends Socket {
      * This method checks if the user has access to the document and then retrieves and sends the document data.
      * For HTML documents, it fetches and combines draft edits with the existing content before sending.
      *
-     * @param data {documentId: number, studySessionId: number, studyStepId: number}
-     * @param options {transaction: Transaction}
-     * @returns {Promise<{document: Document, deltas: Delta}|{document: Document, file: Buffer}>}
+     * @param {Object} data The data required to fetch the document and its specific version.
+     * @param {number} data.documentId The ID of the document to retrieve.
+     * @param {number} data.studySessionId The ID of the study session, used to scope document edits.
+     * @param {number} data.studyStepId The ID of the study step, used to scope document edits.
+     * @param {boolean} data.history If true, emits the edit history instead of returning composed content.
+     * @param {Object} options Additional configuration parameters.
+     * @param {Object} options.transaction A Sequelize DB transaction object (passed to underlying functions).
+     * @returns {Promise<{document: Document, deltas: Delta}|{document: Document, file: Buffer}>} A promise that resolves with an object containing the document metadata and its content, which is either a Quill Delta object for HTML types or a file Buffer for other types.
+     * @throws {Error} Throws an error under the following conditions:
+     *  If the user does not have access to the requested document,
+     *  If the document's delta file (.delta) for an HTML document is missing from the filesystem,
+     *  If the document's PDF file (.pdf) for a PDF document is missing from the filesystem.
      */
     async getDocument(data, options) {
         const document = await this.models['document'].getById(data['documentId']);
@@ -787,11 +869,11 @@ class DocumentSocket extends Socket {
      *
      * This method saves the document if there is no study session and removes the document from the list of open documents.
      *
-     * @param {object} data - The data object containing documentId and studySessionId.
-     * @param {number} data.documentId - The ID of the document to close.
-     * @param {number} data.studySessionId - The ID of the study session,
-     * @param {object} options - The options object.
-     * @returns {Promise<void>}
+     * @param {object} data The data object containing documentId and studySessionId.
+     * @param {number} data.documentId The ID of the document to close.
+     * @param {number} data.studySessionId The ID of the study session.
+     * @param {object} options Additional configuration parameters.
+     * @returns {Promise<void>} A promise that resolves (with no value) once the document has been processed.
      */
     async closeDocument(data, options) {    
         if (data.studySessionId === null) {
@@ -805,8 +887,9 @@ class DocumentSocket extends Socket {
 
     /**
      * Helper method to get the previous step ID for a given study step ID
-     * @param {number} studyStepId - The ID of the study step
-     * @returns {Promise<number|null>} - The ID of the previous study step, or null if not found
+     *
+     * @param {number} studyStepId The ID of the study step
+     * @returns {Promise<number|null>} The ID of the previous study step, or null if not found
      */
     async getPreviousStepId(studyStepId) {
         const step = await this.models['study_step'].getById(studyStepId);
@@ -831,14 +914,15 @@ class DocumentSocket extends Socket {
 
     /**
      * Uploads review links to a Moodle assignment as feedback comments.
-     * @param {Object} data - The data required for uploading login data.
-     * @param {Object} data.options - The options object containing the API key and URL of the Moodle instance.
-     * @param {number} data.options.courseID - The ID of the course to fetch users from.
-     * @param {number} data.options.assignmentID - The ID of the Moodle assignment.
-     * @param {string} data.options.apiKey - The API token for the Moodle instance
-     * @param {string} data.options.apiUrl - The URL of the Moodle instance.
-     * @param {Array<Object>} data.feedback - An array of objects containing the feedback to send
-     * @returns {Promise<Object>} - A promise that resolves when the passwords have been uploaded.
+     *
+     * @param {Object} data The data required for uploading login data.
+     * @param {Object} data.options The options object containing the API key and URL of the Moodle instance.
+     * @param {number} data.options.courseID The ID of the course to fetch users from.
+     * @param {number} data.options.assignmentID The ID of the Moodle assignment.
+     * @param {string} data.options.apiKey The API token for the Moodle instance
+     * @param {string} data.options.apiUrl The URL of the Moodle instance.
+     * @param {Array<Object>} data.feedback An array of objects containing the feedback to send
+     * @returns {Promise<Object>} A promise that resolves when the passwords have been uploaded.
      */
     async publishReviewLinks(data) {
         if (!(await this.isAdmin())) {
@@ -853,15 +937,15 @@ class DocumentSocket extends Socket {
     
 
     /**
-     * Subscribe to a document
+     * Subscribe the client's socket to a document-specific communication channel.
      *
-     * @param {Object} data
-     * @param {number} data.documentId - The ID of the document to subscribe to.
-     * @param {Object} options - The options object containing the transaction.
-     * @returns {Promise<void>}
+     * @param {Object} data The data object containing the document identifier.
+     * @param {number} data.documentId The ID of the document to subscribe to.
+     * @param {Object} options The options object containing the transaction.
+     * @returns {Promise<void>} A promise that resolves (with no value) once the subscription command has been executed.
      */
-    async subscribeDocument(data, options) {
-        this.socket.join("doc:" + data.documentId);
+    async unsubscribeDocument(data, options) {
+        this.socket.leave("doc:" + data.documentId);
     }
 
     /**
@@ -879,9 +963,15 @@ class DocumentSocket extends Socket {
     /**
      * Save additional document data for a particular document/study_session/study_step like the nlpResults, links etc., to the document_data table.
      *
-     * @param {*} data {userId: number, documentId: number, studySessionId: number, studyStepId: number, key: string, value: any}
-     * @param {*} options {transaction: Transaction}
-     * @returns {Promise<void>} - A promise that resolves when the data has been saved.
+     * @param {Object} data The data payload to be saved.
+     * @param {number} data.documentId The ID of the associated document.
+     * @param {number} data.studySessionId The ID of the associated study session.
+     * @param {number} data.studyStepId The ID of the associated study step.
+     * @param {string} data.key The key for the data being stored (e.g., 'nlpResults').
+     * @param {any} data.value The value to be stored, which can be any serializable type.
+     * @param {Object} options Additional configuration for the operation.
+     * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
+     * @returns {Promise<Object>} A promise that resolves with the newly created `document_data` record object from the database.
      */
     async saveData(data, options) {
 
@@ -896,6 +986,7 @@ class DocumentSocket extends Socket {
 
         return documentData;
     }
+
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
