@@ -944,8 +944,8 @@ class DocumentSocket extends Socket {
      * @param {Object} options The options object containing the transaction.
      * @returns {Promise<void>} A promise that resolves (with no value) once the subscription command has been executed.
      */
-    async unsubscribeDocument(data, options) {
-        this.socket.leave("doc:" + data.documentId);
+    async subscribeDocument(data, options) {
+        this.socket.join("doc:" + data.documentId);
     }
 
     /**
