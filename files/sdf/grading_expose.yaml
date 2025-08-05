@@ -9,7 +9,14 @@ input:
     properties:
       submission:
         type: object
-        description: The zip file of the submssion, which includes .tex file for the exposé, .pdf file for the exposé, and .bib file for the bibliography
+        description: The zip file and pdf file of the submssion, which includes .tex file for the exposé, and .pdf file for the exposé
+        properties:
+          zip:
+            type: string
+            description: The zip file of the submission
+          pdf:
+            type: string
+            description: The pdf file of the submission
       assessment_config:
         type: object
         description: The json configure for grading criteria which be used for LLMentor
@@ -67,7 +74,10 @@ input:
                               description: The description of this scoring option
   example:
     {
-      "submission": submission.zip,
+      "submission": {
+        "zip": zip_file,
+        "pdf": pdf_file
+      },
       "assessment_config": {
         "description": "the configuration for grading criteria which be used for LLMentor",
         "version": "0.0.1",
@@ -97,29 +107,9 @@ input:
                   }
                 ]
               },
-              {
-                "name": "Common Thread",
-                "description": "Assessment of structural continuity and coherence throughout the text",
-                "function": "auto_grading",
-                "maxPoints": 2,
-                "scoring": [
-                  {
-                    "points": 0,
-                    "description": "No recognizable common thread, the structure is unclear and jumpy"
-                  },
-                  {
-                    "points": 1,
-                    "description": "Partly recognizable, but the structure is not continuous"
-                  },
-                  {
-                    "points": 2,
-                    "description": "Text has a continuous structure that is easy to follow, common thread is clear and recognizable from beginning to end"
-                  }
-                ]
-              }
             ]
           }
-          ]     
+        ]     
       }
     }
 output:

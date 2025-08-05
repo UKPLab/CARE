@@ -13,15 +13,18 @@ class AssignmentSocket extends Socket {
 
     /**
      * Assigns a peer review task to a list of reviewers based on a given template.
-     *
-     * @param {Object} data - The data for assigning peer reviews.
-     * @param {Object} data.assignment - The assignment object containing details of the assignment.
-     * @param {Array} data.reviewers - An array of reviewer IDs who will be assigned to the peer review.
-     * @param {Object} data.template - The template object containing the configuration for the peer review.
-     * @param {Array} data.documents - The documents to be reviewed.
-     * @param {Object} options - The option for transaction data.
+     * 
+     * Constructs a study from the provided template and assignment data, assigns it to the specified user,
+     * and links it to the given documents. Reviewers are then associated with the study.
+     * 
+     * @socketEvent assignmentCreate
+     * @param {Object} data The data for assigning peer reviews.
+     * @param {Object} data.assignment The assignment object containing details of the assignment.
+     * @param {Array} data.reviewers An array of reviewer IDs who will be assigned to the peer review.
+     * @param {Object} data.template The template object containing the configuration for the peer review.
+     * @param {Array} data.documents The documents to be reviewed.
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
      * @returns {Promise<void>} A promise that resolves when the peer review has been assigned.
-     * @throws Error Will throw an error if the assignment cannot be created.
      */
     async createAssignment(data, options) {
 
@@ -50,12 +53,16 @@ class AssignmentSocket extends Socket {
 
     /**
      * Adds new sessions to a study.
-     *
-     * @param {Object} data - The data for adding reviewers.
-     * @param {number} data.studyId - The ID of the study to which reviewers are to be added.
-     * @param {Array<number>} data.reviewer - An array of user IDs representing the reviewers to be added.
-     * @param {Object} options - The options for transaction data
-     * @returns {Promise<void>} - A promise that resolves when the reviewers have been added to the study.
+     * 
+     * If the number of reviewers being added exceeds the current session limit of the study,
+     * the session limit is updated accordingly. Each reviewer is added as a new `study_session`.
+     * 
+     * @socketEvent assignmentAdd
+     * @param {Object} data The data for adding reviewers.
+     * @param {number} data.studyId The ID of the study to which reviewers are to be added.
+     * @param {Array<number>} data.reviewer An array of user IDs representing the reviewers to be added.
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
+     * @returns {Promise<void>} A promise that resolves when the reviewers have been added to the study.
      */
     async addReviewer(data, options) {
 
@@ -83,16 +90,35 @@ class AssignmentSocket extends Socket {
 
     /**
      * Creates multiple assignments based on the provided data.
-     * @param data - The data for creating assignments.
-     * @param {Object} data.template - The template to be used for the assignments.
-     * @param {Array<Object>} data.selectedReviewer - An array of reviewer objects to be assigned to the assignments.
-     * @param {Array<Object>} data.selectedAssignments - An array of assignment objects to be reviewed.
-     * @param {String} data.mode - The mode of the assignment creation (i.e, role or reviewer)
-     * @param {Array<Array>} data.documents - List of document assignments
-     * @param {Object} data.roleSelection - If the mode is role, the role selection object
-     * @param {Object} data.reviewerSelection - If the mode is reviewer, the reviewer selection object
-     * @param options
-     * @returns {Promise<void>}
+     * 
+     * Two assignment modes are supported:
+     * - `"role"`: reviewers are grouped by their roles, and documents are assigned to users in each role.
+     * - `"reviewer"`: reviewers are explicitly selected, and assignments are distributed to them directly.
+     * 
+     * 
+     * In both cases, the function ensures:
+     * - A reviewer never reviews their own document.
+     * - Fair distribution of review tasks.
+     * - A fallback swapping mechanism is used if optimal assignment fails.
+     * 
+     * @socketEvent assignmentCreateBulk
+     * @param data The data for creating assignments.
+     * @param {Object} data.template The template to be used for the assignments.
+     * @param {Array<Object>} data.selectedReviewer An array of reviewer objects to be assigned to the assignments.
+     * @param {Array<Object>} data.selectedAssignments An array of assignment objects to be reviewed.
+     * @param {String} data.mode The mode of the assignment creation (i.e, role or reviewer)
+     * @param {Array<Array>} data.documents List of document assignments
+     * @param {Object} data.roleSelection If the mode is role, the role selection object
+     * @param {Object} data.reviewerSelection If the mode is reviewer, the reviewer selection object
+     * @param options holds the managed transaction of the database (see createSocket function), passed down to the individual assignment creation step.
+     * @returns {Promise<void>} A promise that resolves with an object detailing the final assignment distribution.
+     * @throws {Error} Throws an error under several conditions:
+     *  If an invalid `data.mode` is provided,
+     *  In 'role' mode: if no users are found for a selected role,
+     *  In 'role' mode: if there are not enough unique documents to satisfy the assignment requirements for a role or a specific user,
+     *  In 'role' mode: if the algorithm is unable to find a valid assignment for a user, even after attempting to swap,
+     *  In 'reviewer' mode: if the algorithm cannot assign all reviewers after attempting to swap,
+     *  If the underlying `this.createAssignment` method fails.
      */
     async createAssignmentBulk(data, options) {
 
@@ -336,12 +362,14 @@ class AssignmentSocket extends Socket {
 
     /**
      * Retrieve all the assignments a course has.
-     * @param {Object} data - The data required for getting the relevant assignment info.
-     * @param {Object} data.options - The options object containing the API key and URL of the Moodle instance.
-     * @param {number} data.options.courseID - The ID of the course to fetch users from.
-     * @param {string} data.options.apiKey - The API token for the Moodle instance
-     * @param {string} data.options.apiUrl - The URL of the Moodle instance.
-     * @returns {Promise<ArrayLike<T>>}
+     * 
+     * @socketEvent assignmentGetInfo
+     * @param {Object} data The data required for getting the relevant assignment info.
+     * @param {Object} data.options The options object containing the API key and URL of the Moodle instance.
+     * @param {number} data.options.courseID The ID of the course to fetch users from.
+     * @param {string} data.options.apiKey The API token for the Moodle instance
+     * @param {string} data.options.apiUrl The URL of the Moodle instance.
+     * @returns {Promise<ArrayLike<T>>} A promise that resolves with an array of assignment objects from Moodle.
      */
     async getAssignmentInfoFromCourse(data) {
         return await this.server.rpcs["MoodleRPC"].getAssignmentInfoFromCourse(

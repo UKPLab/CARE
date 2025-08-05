@@ -162,7 +162,7 @@ export default {
           firstName: user ? user.firstName : "Unknown",
           lastName: user ? user.lastName : "Unknown",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
-          type: mainDoc.type === 0 ? "PDF" : (mainDoc.type === 1 ? "HTML" : "—"),
+          type: mainDoc.type === 0 ? "PDF" : mainDoc.type === 1 ? "HTML" : mainDoc.type === 4 ? "ZIP" : "—",
           hash: mainDoc.hash || null,              // for accessDoc()
         };
       });
