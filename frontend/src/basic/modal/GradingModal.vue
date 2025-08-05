@@ -119,7 +119,9 @@ export default {
         pagination: 10,
       },
       columns: [
-        { key: 'name', label: 'Name' },
+        { key: 'id', name: 'ID' },
+        { key: 'name', name: 'Submission Name' },
+        { key: 'group', name: 'GroupID' },
       ],
       // TODO: This processing is updated with preprocess variable from Server.js
       preprocess: {}, // Use this for tests: {"requests": {1:{},5:{}}, "currentSubmissionsCount": 10 }
@@ -172,6 +174,7 @@ export default {
       return (this.submissions || []).map(submission => ({
         id: submission.id,
         name: submission.name || `Submission ${submission.id}`,
+        group: submission.group,
       }));
     },
     downloadFile(row) {
@@ -185,7 +188,7 @@ export default {
     },
     // TODO: Replace type to 3(JSON) when implemented and filter ahead by "type"="criteria"
     jsonConfig(){
-      return this.$store.getters["table/document/getByKey"]('type', 0);
+      return this.$store.getters["table/document/getByKey"]('type', 3);
     },
     jsonConfigOptions() {
       return {
@@ -292,59 +295,7 @@ export default {
     preprocessing() {
       this.$socket.emit("submissionsPreprocess", {
         skill: this.selectedSkill,
-        config: {
-        "description": "the configuration for grading criteria which be used for LLMentor",
-        "version": "0.0.1",
-        "type": "assessment",
-        "rubrics": [
-          {
-            "name": "Language/Quality",
-            "description": "Assessment of language quality and structural coherence of the text",
-            "criteria": [
-              {
-                "name": "Language quality",
-                "description": "Evaluation of linguistic accuracy and sentence clarity",
-                "function": "auto_grading",
-                "maxPoints": 2,
-                "scoring": [
-                  {
-                    "points": 0,
-                    "description": "many linguistic errors (over 10 errors) (e.g. wrong tense, wrong personal pronouns)"
-                  },
-                  {
-                    "points": 1,
-                    "description": "few linguistic errors (0-10 errors), clear and comprehensible sentences"
-                  },
-                  {
-                    "points": 2,
-                    "description": "no linguistic errors (0 errors), clear and comprehensible sentences with consistent terminology"
-                  }
-                ]
-              },
-              {
-                "name": "Common Thread",
-                "description": "Assessment of structural continuity and coherence throughout the text",
-                "function": "auto_grading",
-                "maxPoints": 2,
-                "scoring": [
-                  {
-                    "points": 0,
-                    "description": "No recognizable common thread, the structure is unclear and jumpy"
-                  },
-                  {
-                    "points": 1,
-                    "description": "Partly recognizable, but the structure is not continuous"
-                  },
-                  {
-                    "points": 2,
-                    "description": "Text has a continuous structure that is easy to follow, common thread is clear and recognizable from beginning to end"
-                  }
-                ]
-              }
-            ]
-          }
-          ]     
-      },
+        config: this.selectedConfig,
         inputFiles: this.selectedInputRows.map(row => row.id)
       }, (res) => {
         if (res.success) {

@@ -1129,16 +1129,27 @@ class DocumentSocket extends Socket {
      */
     async preprocessSubmissions(data, options) {
         
-        // Validate input data
-        if (!data || !data.skill || !data.inputFiles) {
+        if (!data || !data.skill || !data.inputFiles || !data.config) {
             return {
                 success: false,
-                message: "Invalid request data: missing skill or inputFiles"
+                message: "Invalid request data: missing skill, config or inputFiles"
             };
         }
         
         try {
             if (await this.isAdmin()) {       
+                const configDoc = await this.models['document'].getById(data.config);
+                if (!configDoc || configDoc.type !== docTypes.DOC_TYPE_CONFIG) {
+                    return { success: false, message: "Invalid or missing config file." };
+                }
+
+                const configFilePath = path.join(UPLOAD_PATH, `${configDoc.hash}.json`);
+                if (!fs.existsSync(configFilePath)) {
+                    return { success: false, message: "Config file not found on server." };
+                }
+                const configFileContent = await fs.promises.readFile(configFilePath, 'utf8');
+                const assessmentConfig = JSON.parse(configFileContent);
+
                 const requestIds = [];
                 const preprocessItems = [];
                 this.server.preprocess = this.server.preprocess || {};
@@ -1169,7 +1180,8 @@ class DocumentSocket extends Socket {
                             const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
                             if (fs.existsSync(docFilePath)) {
                                 try {
-                                    return await fs.promises.readFile(docFilePath);
+                                    // return await fs.promises.readFile(docFilePath);
+                                    return (await fs.promises.readFile(docFilePath)).toString('base64');
                                 } catch (readErr) {
                                     this.logger.error(`Error reading file for document ${doc.id} of submission ${subId}: ${readErr.message}`, readErr);
                                     return null;
@@ -1184,14 +1196,14 @@ class DocumentSocket extends Socket {
                     // Filter out null values (failed file reads)
                     const validFiles = inputFiles.filter(file => file !== null);
                     
-                    if (validFiles.length === 0) {
-                        this.logger.error(`No valid files found for submission ${subId}`);
+                    if (validFiles.length !== 1) {
+                        this.logger.error(`Expected one valid file for submission ${subId}, but found ${validFiles.length}. Skipping this submission.`);
                         continue; // Skip this submission
                     }
                     
                     const nlpInput = {
-                        submission: validFiles,
-                        assessment_config: data.config,  // TODO: The json will be passed exactly from the frontend, needs implementation
+                        submission: {"zip": validFiles[0]}, // TODO: the associated pdf file also needs to be added
+                        assessment_config: assessmentConfig,
                     };
 
                     const requestId = uuidv4();
@@ -1256,7 +1268,8 @@ class DocumentSocket extends Socket {
                             }
                             console.log("nlpInput sent.............");
                         } catch (emitErr) {
-                            this.logger.error(`Error emitting NLP service request ${item.requestId}: ${emitErr.message}`, emitErr);
+                            console.log("Error emitting NLP service request", emitErr);
+                            // this.logger.error(`Error emitting NLP service request ${item.requestId}: ${emitErr.message}`, emitErr);
                             resolve();
                         }
                     });
