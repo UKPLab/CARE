@@ -8,7 +8,7 @@ const {Op} = require("sequelize");
 const {getTextPositions} = require("../../utils/text.js");
 const {compileSchema, validateZip, validateZipWithSchema} = require("../../utils/zipValidator.js");
 const { associateFilesForSubmission } = require("../../utils/fileAssociator.js");
-const uuid = require("uuid");
+const {v4: uuidv4} = require("uuid");
 
 
 const {dbToDelta} = require("editor-delta-conversion");
@@ -161,7 +161,7 @@ class DocumentSocket extends Socket {
                 fs.writeFileSync(target, file);
             } catch (annotationRpcErr) {
                 errors.push("Error deleting annotations: " + annotationRpcErr.message);
-                fs.writeFileSync(target, data.file);
+        fs.writeFileSync(target, data.file);
             }
 
             if (data["importAnnotations"]) {
@@ -688,9 +688,9 @@ class DocumentSocket extends Socket {
             try {
                 // 1. Create an entry in the submission table
                 const submissionEntry = await this.models["submission"].add({
-                    userId: submission.userId,
+                    userId: submission.userId, 
                     createdByUserId: this.userId,
-                    extId: submission.submissionId,
+                    extId: submission.submissionId, 
                 }, { transaction });
 
                 // 2. Download and save each file as a document
@@ -786,29 +786,29 @@ class DocumentSocket extends Socket {
     enhanceSubmissionsWithFileData(submissions) {
         return submissions.map(submission => {
             let enhancedSubmission = { ...submission };
-
+            
             // If we have the new enhanced data structure from Python
             if (submission.files && Array.isArray(submission.files)) {
                 const files = submission.files;
-
+                
                 // Separate PDFs and ZIPs
-                const pdfFiles = files.filter(file =>
-                    file.mimetype === 'application/pdf' ||
+                const pdfFiles = files.filter(file => 
+                    file.mimetype === 'application/pdf' || 
                     file.filename.toLowerCase().endsWith('.pdf')
                 );
-
-                const zipFiles = files.filter(file =>
-                    file.mimetype === 'application/zip' ||
+                
+                const zipFiles = files.filter(file => 
+                    file.mimetype === 'application/zip' || 
                     file.filename.toLowerCase().endsWith('.zip')
                 );
-
-                const otherFiles = files.filter(file =>
+                
+                const otherFiles = files.filter(file => 
                     !pdfFiles.includes(file) && !zipFiles.includes(file)
                 );
-
+                
                 // Try to associate ZIP files with PDF files
                 enhancedSubmission.fileAssociations = associateFilesForSubmission(pdfFiles, zipFiles);
-
+                
                 // Add file summary
                 enhancedSubmission.fileSummary = {
                     totalFiles: files.length,
@@ -819,21 +819,21 @@ class DocumentSocket extends Socket {
                     hasZip: zipFiles.length > 0,
                     isComplete: pdfFiles.length > 0 && zipFiles.length > 0
                 };
-
+                
                 // Keep the original files array for compatibility
                 enhancedSubmission.categorizedFiles = {
                     pdfs: pdfFiles,
                     zips: zipFiles,
                     others: otherFiles
                 };
-
+                
             } else if (submission.submissionURLs) {
                 // Legacy data structure - enhance what we can
                 const urls = submission.submissionURLs;
-                const pdfUrls = urls.filter(url =>
+                const pdfUrls = urls.filter(url => 
                     url.filename.toLowerCase().endsWith('.pdf')
                 );
-
+                
                 enhancedSubmission.fileSummary = {
                     totalFiles: urls.length,
                     pdfCount: pdfUrls.length,
@@ -844,7 +844,7 @@ class DocumentSocket extends Socket {
                     isComplete: false
                 };
             }
-
+            
             return enhancedSubmission;
         });
     }
@@ -923,8 +923,8 @@ class DocumentSocket extends Socket {
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
                                 ),
                     };
+                }
             }
-        }
         } else {
             // Handle file-based documents (PDF, JSON, etc.)
             const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
@@ -1102,132 +1102,169 @@ class DocumentSocket extends Socket {
 
     /**
      * Preprocess multiple document submissions for NLP grading asynchronously
-     * @param {Object} data - { skillName : string, jsonConfig : object, inputFiles : array }
+     * @param {Object} data - { skill : string, config : object, inputFiles : array }
      * @param {Object} options
      * @returns {Promise<{status: string, count: number}>}
      */
     async preprocessSubmissions(data, options) {
+        
+        // Validate input data
+        if (!data || !data.skill || !data.inputFiles) {
+            return {
+                success: false,
+                message: "Invalid request data: missing skill or inputFiles"
+            };
+        }
+        
+        try {
+            if (await this.isAdmin()) {       
+                const requestIds = [];
+                const preprocessItems = [];
+                this.server.preprocess = this.server.preprocess || {};
+                this.server.preprocess.activeListeners = {};
 
-        if (await this.isAdmin()) {           
-            const requestIds = [];
-            const preprocessItems = [];
-            this.server.preprocess.activeListeners = {};
-
-            for (const subId of data.inputFiles) {
-                let docs;
-                try {
-                    docs = await this.models['document'].findAll({
-                        where: { submissionId: subId },
-                        raw: true
-                    });
-                } catch (err) {
-                    this.logger.error(`Error fetching documents for submission ${subId}: ${err.message}`, err);
-                    continue;
-                }
+                for (const subId of data.inputFiles) {
+                    let docs;
+                    try {
+                        docs = await this.models['document'].findAll({
+                            where: { submissionId: subId },
+                            raw: true
+                        });
+                    } catch (err) {
+                        this.logger.error(`Error fetching documents for submission ${subId}: ${err.message}`, err);
+                        continue;
+                    }
 
                 const docIds = [];
-                const inputFiles = await Promise.all(
-                    docs.map(async (doc) => {
-                        docIds.push(doc.id);
-                        const docType = docTypes[doc.type];
-                        const docTypeKey = Object.keys(docTypes).find(type => docTypes[type] === docType);
-                        let fileExtension = '';
-                        if (docTypeKey) {
-                            fileExtension = '.' + docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
-                        }
-                        const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
-                        if (fs.existsSync(docFilePath)) {
-                            try {
-                                return await fs.promises.readFile(docFilePath);
-                            } catch (readErr) {
-                                this.logger.error(`Error reading file for document ${doc.id} of submission ${subId}: ${readErr.message}`, readErr);
-                                return null;
+                const submissionFiles = {};
+                await Promise.all(
+                        docs.map(async (doc) => {
+                            docIds.push(doc.id);
+                            const docType = docTypes[doc.type];
+                            const docTypeKey = Object.keys(docTypes).find(type => docTypes[type] === docType);
+                            let fileExtension = '';
+                            if (docTypeKey) {
+                                fileExtension = '.' + docTypeKey.replace('DOC_TYPE_', '').toLowerCase();
                             }
-                        } else {
-                            this.logger.error(`File not found for document ${doc.id} of submission ${subId} : ${docFilePath}`);
-                            return null;
-                        }
-                    })
-                );
-
-                const nlpInput = {
-                    submission: inputFiles,
-                    assessment_config: data.config, // TODO: The json will be passed exactly from the frontend, needs implementation
-                };
-
-                const requestId = uuid();
-                requestIds.push(requestId);
-                preprocessItems.push({ requestId, submissionId: subId, docIds, skillName, nlpInput });
-                if (!this.server.preprocess.requests) this.server.preprocess.requests = {};
-                this.server.preprocess.requests[requestId] = { submissionId: subId, docIds, skillName };
-            }
-
-            this.server.preprocess.currentSubmissionsCount = preprocessItems.length;
-
-            for (const item of preprocessItems) {
-                await new Promise((resolve) => {                        
-                    const listener = async () => {
-                        let nlpResults;
-                        try {
-                            // TODO: Remove this if-condition after testing
-                            if (this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
-                                nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
-                            }
-                            const nlpResult = nlpResults ? nlpResults[item.requestId] : null;
-                            if (nlpResult) {
+                            const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
+                            if (fs.existsSync(docFilePath)) {
                                 try {
-                                    await Promise.all(
-                                        item.docIds.map(docId =>
-                                            this.saveData({
-                                                userId: this.userId,
-                                                documentId: docId,
-                                                studySessionId: null,
-                                                studyStepId: null,
-                                                key: `service_nlpGrading_${item.skillName}`,
-                                                value: nlpResult
-                                            }, options)
-                                        )
-                                    );
-                                } catch (saveErr) {
-                                    this.logger.error(`Error saving NLP results for request ${item.requestId}: ${saveErr.message}`, saveErr);
+                                const fileBuffer = await fs.promises.readFile(docFilePath);
+                                if (fileExtension === '.zip') {
+                                    submissionFiles.zip = fileBuffer.toString('base64');
+                                } 
+                                else if (fileExtension === '.pdf') {
+                                    submissionFiles.pdf = fileBuffer.toString('base64');
+                                }
+                                } catch (readErr) {
+                                    this.logger.error(`Error reading file for document ${doc.id} of submission ${subId}: ${readErr.message}`, readErr);
                                 }
                             } else {
-                                this.logger.warn(`No NLP result received for request ${item.requestId}`);
+                                this.logger.error(`File not found for document ${doc.id} of submission ${subId} : ${docFilePath}`);
                             }
-                        } catch (err) {
-                            this.logger.error(`Error processing NLP request ${item.requestId}: ${err.message}`, err);
-                        }
+                        })
+                    );
 
-                        if (this.server.preprocess.currentReqStart) {
-                            delete this.server.preprocess.currentReqStart;
-                        }
-                        if (this.server.preprocess.requests) delete this.server.preprocess.requests[item.requestId];
-                        resolve();
+                    // Filter out null values (failed file reads)
+                    const validFiles = submissionFiles.filter(file => file !== null);
+                    
+                    if (validFiles.length === 0) {
+                        this.logger.error(`No valid files found for submission ${subId}`);
+                        continue; // Skip this submission
+                    }
+                    
+                    const nlpInput = {
+                        submission: validFiles,
+                        assessment_config: data.config, // TODO: The json will be passed exactly from the frontend, needs implementation
                     };
 
-                    if (!this.server.preprocess.currentReqStart) {
-                        this.server.preprocess.currentReqStart = Date.now();
-                    }
+                    const requestId = uuidv4();
+                    requestIds.push(requestId);
+                    preprocessItems.push({ requestId, submissionId: subId, docIds, skill: data.skill, nlpInput });
+                    if (!this.server.preprocess.requests) this.server.preprocess.requests = {};
+                    this.server.preprocess.requests[requestId] = { submissionId: subId, docIds, skill : data.skill};
+                }
 
-                    this.server.preprocess.activeListeners[item.requestId] = listener;
-                    try {
-                        this.socket.once(item.requestId, listener);
-                        this.socket.emit("serviceRequest", {
-                            service: "NLPService",
-                            data: {
-                                id: item.requestId,
-                                name: item.skillName,
-                                data: item.nlpInput
+                this.server.preprocess.currentSubmissionsCount = preprocessItems.length;
+
+                for (const item of preprocessItems) {
+                    await new Promise((resolve) => {
+                    const listener = async () => {
+                        let nlpResults;
+                            try {
+                                // TODO: Remove this if-condition after testing
+                                if (this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
+                                    nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
+                                }
+                                const nlpResult = nlpResults ? nlpResults[item.requestId] : null;
+                                if (nlpResult) {
+                                    try {
+                                        await Promise.all(
+                                            item.docIds.map(docId =>
+                                                this.saveData({
+                                                    userId: this.userId,
+                                                    documentId: docId,
+                                                    studySessionId: null,
+                                                    studyStepId: null,
+                                                    key: `service_nlpGrading_${item.skill}`,
+                                                    value: nlpResult
+                                                }, options)
+                                            )
+                                        );
+                                    } catch (saveErr) {
+                                        this.logger.error(`Error saving NLP results for request ${item.requestId}: ${saveErr.message}`, saveErr);
+                                    }
+                                } else {
+                                    this.logger.warn(`No NLP result received for request ${item.requestId}`);
+                                }
+                            } catch (err) {
+                                this.logger.error(`Error processing NLP request ${item.requestId}: ${err.message}`, err);
                             }
-                        });
-                    } catch (emitErr) {
-                        this.logger.error(`Error emitting NLP service request ${item.requestId}: ${emitErr.message}`, emitErr);
-                        resolve();
-                    }
-                });
-            }
 
-            this.server.preprocess = {};
+                            if (this.server.preprocess.currentReqStart) {
+                                delete this.server.preprocess.currentReqStart;
+                            }
+                            if (this.server.preprocess.requests) delete this.server.preprocess.requests[item.requestId];
+                            resolve();
+                        };
+
+                        if (!this.server.preprocess.currentReqStart) {
+                            this.server.preprocess.currentReqStart = Date.now();
+                        }
+
+                        this.server.preprocess.activeListeners[item.requestId] = listener;
+                        try {
+                            this.socket.once(item.requestId, listener);
+                            // Direct service call instead of socket emit
+                            if (this.server.services['NLPService']) {
+                                this.server.services['NLPService'].request(this, {
+                                    id: item.requestId,
+                                    name: item.skill,
+                                    data: item.nlpInput
+                                });
+                            }
+                            console.log("nlpInput sent.............");
+                        } catch (emitErr) {
+                            this.logger.error(`Error emitting NLP service request ${item.requestId}: ${emitErr.message}`, emitErr);
+                            resolve();
+                        }
+                    });
+                }
+                this.server.preprocess = {};
+                
+                return {
+                    success: true,
+                    count: preprocessItems.length
+                };
+            } else {
+                throw new Error("You do not have permission to preprocess submissions");
+            }
+        } catch (error) {
+            this.logger.error(`Error in preprocessSubmissions: ${error.message}`, error);
+            return {
+                success: false,
+                message: error.message
+            };
         }
     }
 
