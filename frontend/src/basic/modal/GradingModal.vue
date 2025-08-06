@@ -125,6 +125,7 @@ export default {
       preprocess: {}, // Use this for tests: {"requests": {1:{},5:{}}, "currentSubmissionsCount": 10 }
       currentStep: 1,
       elapsedTimer: null,
+      configOptions: [],
     };
   },
   watch: {
@@ -162,8 +163,9 @@ export default {
       };
     },
     stepValid() {
+      const hasValidConfig = this.selectedConfig && this.configOptions.find(config => config.value === this.selectedConfig);
       return [
-        !!this.selectedSkill && !!this.selectedConfig, // Step 1: Both must be selected
+        !!this.selectedSkill && hasValidConfig, // Step 1: Both must be selected and config must be valid
         // TODO: Add check if the file is already processed and saved in document_data
         this.selectedInputRows.length > 0, // Step 2: At least one file selected
       ];
@@ -179,9 +181,8 @@ export default {
       if (!doc) return;
       // TODO: Implement file download logic for .zip/.tex after the application of moodle import submissions
     },
-    // TODO: Replace documents table with "submissions"
     submissions(){
-      return this.$store.getters["table/document/getAll"];
+      return this.$store.getters["table/submission/getAll"];
     },
     // TODO: Replace type to 3(JSON) when implemented and filter ahead by "type"="criteria"
     jsonConfig(){
@@ -189,10 +190,7 @@ export default {
     },
     jsonConfigOptions() {
       return {
-        options: (this.jsonConfig || []).map(doc => ({
-          value: doc.id,
-          name: doc.name,
-        })),
+        options: this.configOptions
       };
     },
     isProcessingActive() {
@@ -240,11 +238,30 @@ export default {
     if (this.isProcessingActive) {
       this.startElapsedTimer();
     }
+    this.fetchConfigOptions();
   },
   beforeUnmount() {
     this.stopElapsedTimer();
   },
   methods: {
+    async fetchConfigOptions() {
+      const docs = this.jsonConfig || [];
+      const options = [];
+      for (const doc of docs) {
+        const res = await this.$socket.emitAsync("documentGet", { documentId: doc.id });
+        if (res && res.file) {
+          try {
+            const jsonContent = JSON.parse(Buffer.from(res.file).toString('utf8'));
+            if (jsonContent.type === "assessment") {
+              options.push({ value: doc.id, name: doc.name, data: jsonContent });
+            }
+          } catch (parseError) {
+            console.error(`Error parsing JSON config for document ${doc.id}:`, parseError);
+          }
+        }
+      }
+      this.configOptions = options;
+    },
     open() {
       this.selectedSkill = '';
       this.$refs.gradingStepper.open();
@@ -290,9 +307,11 @@ export default {
       });
     },
     preprocessing() {
+      const selectedConfigObj = this.configOptions.find(config => config.value === this.selectedConfig);
+      
       this.$socket.emit("submissionsPreprocess", {
         skill: this.selectedSkill,
-        config: this.selectedConfig, // TODO: This will be passed exactly after parsing the JSON, no need to send any extra info; just display the name of the json file and pass the value to the backend
+        config: selectedConfigObj ? selectedConfigObj.data : null,
         inputFiles: this.selectedInputRows
       }, (res) => {
         if (res.success) {
