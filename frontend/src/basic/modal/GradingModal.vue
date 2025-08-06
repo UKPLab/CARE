@@ -314,18 +314,18 @@ export default {
       });
       this.close();
     },
-  },
-  startElapsedTimer() {
-    if (this.elapsedTimer) return;
-    this.elapsedTimer = setInterval(() => {
-      this.$forceUpdate();
-    }, 1000);
-  },
-  stopElapsedTimer() {
-    if (this.elapsedTimer) {
-      clearInterval(this.elapsedTimer);
-      this.elapsedTimer = null;
-    }
+    startElapsedTimer() {
+      if (this.elapsedTimer) return;
+      this.elapsedTimer = setInterval(() => {
+        this.$forceUpdate();
+      }, 1000);
+    },
+    stopElapsedTimer() {
+      if (this.elapsedTimer) {
+        clearInterval(this.elapsedTimer);
+        this.elapsedTimer = null;
+      }
+    },
   },
 };
 </script> 
