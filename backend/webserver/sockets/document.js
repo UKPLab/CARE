@@ -162,7 +162,7 @@ class DocumentSocket extends Socket {
                 fs.writeFileSync(target, file);
             } catch (annotationRpcErr) {
                 errors.push("Error deleting annotations: " + annotationRpcErr.message);
-                fs.writeFileSync(target, data.file);
+        fs.writeFileSync(target, data.file);
             }
 
             if (data["importAnnotations"]) {
@@ -738,9 +738,9 @@ class DocumentSocket extends Socket {
             try {
                 // 1. Create an entry in the submission table
                 const submissionEntry = await this.models["submission"].add({
-                    userId: submission.userId,
+                    userId: submission.userId, 
                     createdByUserId: this.userId,
-                    extId: submission.submissionId,
+                    extId: submission.submissionId, 
                 }, { transaction });
 
                 // 2. Download and save each file as a document
@@ -836,29 +836,29 @@ class DocumentSocket extends Socket {
     enhanceSubmissionsWithFileData(submissions) {
         return submissions.map(submission => {
             let enhancedSubmission = { ...submission };
-
+            
             // If we have the new enhanced data structure from Python
             if (submission.files && Array.isArray(submission.files)) {
                 const files = submission.files;
-
+                
                 // Separate PDFs and ZIPs
-                const pdfFiles = files.filter(file =>
-                    file.mimetype === 'application/pdf' ||
+                const pdfFiles = files.filter(file => 
+                    file.mimetype === 'application/pdf' || 
                     file.filename.toLowerCase().endsWith('.pdf')
                 );
-
-                const zipFiles = files.filter(file =>
-                    file.mimetype === 'application/zip' ||
+                
+                const zipFiles = files.filter(file => 
+                    file.mimetype === 'application/zip' || 
                     file.filename.toLowerCase().endsWith('.zip')
                 );
-
-                const otherFiles = files.filter(file =>
+                
+                const otherFiles = files.filter(file => 
                     !pdfFiles.includes(file) && !zipFiles.includes(file)
                 );
-
+                
                 // Try to associate ZIP files with PDF files
                 enhancedSubmission.fileAssociations = associateFilesForSubmission(pdfFiles, zipFiles);
-
+                
                 // Add file summary
                 enhancedSubmission.fileSummary = {
                     totalFiles: files.length,
@@ -869,21 +869,21 @@ class DocumentSocket extends Socket {
                     hasZip: zipFiles.length > 0,
                     isComplete: pdfFiles.length > 0 && zipFiles.length > 0
                 };
-
+                
                 // Keep the original files array for compatibility
                 enhancedSubmission.categorizedFiles = {
                     pdfs: pdfFiles,
                     zips: zipFiles,
                     others: otherFiles
                 };
-
+                
             } else if (submission.submissionURLs) {
                 // Legacy data structure - enhance what we can
                 const urls = submission.submissionURLs;
-                const pdfUrls = urls.filter(url =>
+                const pdfUrls = urls.filter(url => 
                     url.filename.toLowerCase().endsWith('.pdf')
                 );
-
+                
                 enhancedSubmission.fileSummary = {
                     totalFiles: urls.length,
                     pdfCount: pdfUrls.length,
@@ -894,7 +894,7 @@ class DocumentSocket extends Socket {
                     isComplete: false
                 };
             }
-
+            
             return enhancedSubmission;
         });
     }
@@ -982,8 +982,8 @@ class DocumentSocket extends Socket {
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
                                 ),
                     };
+                }
             }
-        }
         } else {
             // Handle file-based documents (PDF, JSON, etc.)
             const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
@@ -1121,6 +1121,53 @@ class DocumentSocket extends Socket {
         return documentData;
     }
 
+
+    /**
+     * Update the content of a JSON configuration file
+     *
+     * @param {Object} data - The data object containing the document ID and new content
+     * @param {number} data.documentId - The ID of the document to update
+     * @param {Object} data.content - The new JSON content to save
+     * @param {Object} options - The options object containing the transaction
+     * @returns {Promise<void>}
+     */
+    async updateDocumentContent(data, options) {
+        const { documentId, content } = data;
+
+        // Get the document to verify it exists and check access
+        const doc = await this.models['document'].getById(documentId);
+        if (!doc) {
+            throw new Error("Document not found");
+        }
+
+        // Check if user has access to update this document
+        if (!(await this.checkDocumentAccess(doc.id))) {
+            throw new Error("You do not have access to update this document");
+        }
+
+        // Verify it's a configuration file
+        if (doc.type !== this.models['document'].docTypes.DOC_TYPE_CONFIG) {
+            throw new Error("Only configuration files can be updated with this method");
+        }
+
+        // Validate JSON content
+        let jsonContent;
+        try {
+            jsonContent = JSON.stringify(content, null, 2);
+        } catch (error) {
+            throw new Error("Invalid JSON content");
+        }
+
+        const filePath = `${UPLOAD_PATH}/${doc.hash}.json`;
+        await fs.promises.writeFile(filePath, jsonContent, 'utf8');
+
+        const updatedDocument = await this.models['document'].updateById(doc.id, {
+            updatedAt: new Date()
+        }, { transaction: options.transaction });
+
+        return updatedDocument;
+    }
+
     /**
      * Preprocess multiple document submissions for NLP grading asynchronously
      * @param {Object} data - { skill : string, config : object, inputFiles : array }
@@ -1129,27 +1176,16 @@ class DocumentSocket extends Socket {
      */
     async preprocessSubmissions(data, options) {
         
-        if (!data || !data.skill || !data.inputFiles || !data.config) {
+        // Validate input data
+        if (!data || !data.skill || !data.inputFiles) {
             return {
                 success: false,
-                message: "Invalid request data: missing skill, config or inputFiles"
+                message: "Invalid request data: missing skill or inputFiles"
             };
         }
         
         try {
             if (await this.isAdmin()) {       
-                const configDoc = await this.models['document'].getById(data.config);
-                if (!configDoc || configDoc.type !== docTypes.DOC_TYPE_CONFIG) {
-                    return { success: false, message: "Invalid or missing config file." };
-                }
-
-                const configFilePath = path.join(UPLOAD_PATH, `${configDoc.hash}.json`);
-                if (!fs.existsSync(configFilePath)) {
-                    return { success: false, message: "Config file not found on server." };
-                }
-                const configFileContent = await fs.promises.readFile(configFilePath, 'utf8');
-                const assessmentConfig = JSON.parse(configFileContent);
-
                 const requestIds = [];
                 const preprocessItems = [];
                 this.server.preprocess = this.server.preprocess || {};
@@ -1168,7 +1204,8 @@ class DocumentSocket extends Socket {
                     }
 
                     const docIds = [];
-                    const inputFiles = await Promise.all(
+                    const submissionFiles = {};
+                    await Promise.all(
                         docs.map(async (doc) => {
                             docIds.push(doc.id);
                             const docType = docTypes[doc.type];
@@ -1180,15 +1217,18 @@ class DocumentSocket extends Socket {
                             const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
                             if (fs.existsSync(docFilePath)) {
                                 try {
-                                    // return await fs.promises.readFile(docFilePath);
-                                    return (await fs.promises.readFile(docFilePath)).toString('base64');
+                                    const fileBuffer = await fs.promises.readFile(docFilePath);
+                                    if (fileExtension === '.zip') {
+                                        submissionFiles.zip = fileBuffer.toString('base64');
+                                    } 
+                                    else if (fileExtension === '.pdf') {
+                                        submissionFiles.pdf = fileBuffer.toString('base64');
+                                    }
                                 } catch (readErr) {
                                     this.logger.error(`Error reading file for document ${doc.id} of submission ${subId}: ${readErr.message}`, readErr);
-                                    return null;
                                 }
                             } else {
                                 this.logger.error(`File not found for document ${doc.id} of submission ${subId} : ${docFilePath}`);
-                                return null;
                             }
                         })
                     );
@@ -1197,84 +1237,82 @@ class DocumentSocket extends Socket {
                     const validFiles = inputFiles.filter(file => file !== null);
                     
                     if (validFiles.length !== 1) {
-                        this.logger.error(`Expected one valid file for submission ${subId}, but found ${validFiles.length}. Skipping this submission.`);
+                        this.logger.error(`No valid files found for submission ${subId}`);
                         continue; // Skip this submission
                     }
                     
                     const nlpInput = {
-                        submission: {"zip": validFiles[0]}, // TODO: the associated pdf file also needs to be added
-                        assessment_config: assessmentConfig,
+                        submission: submissionFiles,
+                        assessment_config: data.config, // TODO: The json will be passed exactly from the frontend, needs implementation
                     };
 
                     const requestId = uuidv4();
                     requestIds.push(requestId);
-                    preprocessItems.push({ requestId, submissionId: subId, docIds, skillName: data.skill, nlpInput });
+                    preprocessItems.push({ requestId, submissionId: subId, docIds, skill: data.skill, nlpInput });
                     if (!this.server.preprocess.requests) this.server.preprocess.requests = {};
-                    this.server.preprocess.requests[requestId] = { submissionId: subId, docIds, skillName: data.skill };
+                    this.server.preprocess.requests[requestId] = { submissionId: subId, docIds, skill : data.skill};
                 }
 
                 this.server.preprocess.currentSubmissionsCount = preprocessItems.length;
 
-                for (const item of preprocessItems) {
-                    const self = this; // Capture the correct 'this' context
-                    await new Promise((resolve) => {
-                        const listener = async (nlpResult) => {
-                            try {
-                                if (nlpResult) {
-                                    try {
-                                        await Promise.all(
-                                            item.docIds.map(docId =>
-                                                self.saveData({
-                                                    userId: self.userId,
-                                                    documentId: docId,
-                                                    studySessionId: null,
-                                                    studyStepId: null,
-                                                    key: `service_nlpGrading_${item.skillName}`,
-                                                    value: nlpResult
-                                                }, options)
-                                            )
-                                        );
-                                    } catch (saveErr) {
-                                        self.logger.error(`Error saving NLP results for request ${item.requestId}: ${saveErr.message}`, saveErr);
-                                    }
-                                } else {
-                                    self.logger.warn(`No NLP result received for request ${item.requestId}`);
+                const waitForNlpResult = async (server, requestId, timeoutMs = 30000, intervalMs = 200) => {
+                    const start = Date.now();
+                    return await new Promise((resolve) => {
+                        const interval = setInterval(() => {
+                            const result = server.preprocess && server.preprocess.lastBackendNlpResult;
+                            if (result && result.id === requestId) {
+                                clearInterval(interval);
+                                delete server.preprocess.lastBackendNlpResult;
+                                resolve(result);
+                            } else if (Date.now() - start > timeoutMs) {
+                                clearInterval(interval);
+                                if (server.preprocess) {
+                                    if (server.preprocess.requests) delete server.preprocess.requests[requestId];
+                                    if (server.preprocess.activeListeners) delete server.preprocess.activeListeners[requestId];
                                 }
-                            } catch (err) {
-                                self.logger.error(`Error processing NLP request ${item.requestId}: ${err.message}`, err);
+                                resolve(null);
                             }
-
-                            if (self.server.preprocess.currentReqStart) {
-                                delete self.server.preprocess.currentReqStart;
-                            }
-                            if (self.server.preprocess.requests) delete self.server.preprocess.requests[item.requestId];
-                            resolve();
-                        };
-
-                        if (!this.server.preprocess.currentReqStart) {
-                            this.server.preprocess.currentReqStart = Date.now();
-                        }
-
-                        this.server.preprocess.activeListeners[item.requestId] = listener;
-                        try {
-                            this.socket.once(item.requestId, listener);
-                            // Direct service call instead of socket emit
-                            if (this.server.services['NLPService']) {
-                                this.server.services['NLPService'].request(self, { // Use the captured context
-                                    id: item.requestId,
-                                    name: item.skillName,
-                                    data: item.nlpInput
-                                });
-                            }
-                            console.log("nlpInput sent.............");
-                        } catch (emitErr) {
-                            console.log("Error emitting NLP service request", emitErr);
-                            // this.logger.error(`Error emitting NLP service request ${item.requestId}: ${emitErr.message}`, emitErr);
-                            resolve();
-                        }
+                        }, intervalMs);
                     });
-                }
+                };
+                
+                for (const item of preprocessItems) {
+                    if (this.server.services['NLPService']) {
+                        this.server.services['NLPService'].request(this, {
+                            id: item.requestId,
+                            name: item.skill,
+                            data: item.nlpInput,
+                            clientId: 0
+                        });
+                    }
+                    console.log("nlpInput sent.............");
 
+                    const nlpResult = await waitForNlpResult(this.server, item.requestId);
+                    if (nlpResult) {
+                        try {
+                            await Promise.all(
+                                item.docIds.map(docId =>
+                                    this.saveData({
+                                        userId: this.userId,
+                                        documentId: docId,
+                                        studySessionId: null,
+                                        studyStepId: null,
+                                        key: `service_nlpGrading_${item.skill}`,
+                                        value: nlpResult
+                                    }, options)
+                                )
+                            );
+                        } catch (saveErr) {
+                            this.logger.error(`Error saving NLP results for request ${item.requestId}: ${saveErr.message}`, saveErr);
+                        }
+                    } else {
+                        this.logger.warn(`Timeout: No NLP result received for request ${item.requestId}`);
+                    }
+                    
+                    if (this.server.preprocess && this.server.preprocess.requests) {
+                        delete this.server.preprocess.requests[item.requestId];
+                    }
+                }
                 this.server.preprocess = {};
                 
                 return {
@@ -1308,112 +1346,6 @@ class DocumentSocket extends Socket {
     }
 
     init() {
-
-        this.socket.on("documentGetReviews", async (callback) => {
-            try {
-                const reviewDocuments = await this.models["document"].getReviewDocuments();
-                callback({
-                    success: true,
-                    documents: reviewDocuments
-                });
-            } catch (e) {
-                this.logger.error(e);
-                callback({
-                    success: false,
-                    message: "Error retrieving review documents"
-                });
-            }
-        });
-
-
-        this.socket.on("documentClose", async (data) => {
-            try {
-                if (data.studySessionId === null) {
-                    await this.saveDocument(data.documentId);
-                }
-
-                const index = this.socket.openComponents.editor.indexOf(data.documentId);
-                if (index > -1) {
-                    this.socket.openComponents.editor[index] = undefined; // Remove the document ID
-                }
-            } catch (err) {
-                this.logger.error("Error saving document: ", err);
-                this.sendToast("Error saving document!", "Error", "danger");
-            }
-        });
-
-        this.socket.on("documentOpen", async (data) => {
-            try {
-                await this.openDocument(data.documentId);
-            } catch (e) {
-                this.logger.error("Error handling document open request: ", e);
-                this.sendToast("Error handling document open request!", "Error", "danger");
-            }
-        });
-
-        this.socket.on("documentGetAll", async (data) => {
-            try {
-                await this.refreshAllDocuments((data && data.userId) ? data.userId : null);
-            } catch (error) {
-                console.error(error);
-                this.sendToast(error, "Error getting all document data", "Error", "danger");
-            }
-        });
-
-       /*
-        this.socket.on("documentEdit", async (data) => {
-            try {
-                await this.editDocument(data);
-            } catch (error) {
-                const errorDetails = {
-                    timestamp: new Date().toISOString(),
-                    errorMessage: error.message,
-                    errorType: error.constructor.name,
-                    stackTrace: error.stack,
-                    userId: data.userId,
-                    documentId: data.documentId,
-                    operationDetails: JSON.stringify(data.ops),
-                    component: "Document Editor",
-                    errorCode: error.code || "N/A"
-                };
-
-                this.logger.error("Critical error during document edit:", errorDetails);
-
-                this.sendToast("An error occurred while editing the document.", "Error", "danger");
-                this.socket.emit("documentEditResponse", {
-                    success: false,
-                    message: "Internal server error while editing the document.",
-                    errorCode: 500
-                });
-            }
-        });
-        */
-
-        this.socket.on("documentGetMoodleSubmissions", async (data, callback) => {
-            try {
-                if (!(await this.isAdmin())) { 
-                    throw new Error("You do not have permission to access Moodle submissions");
-                }
-                
-                const submissions = await this.documentGetMoodleSubmissions(data);
-                
-                // Enhance submissions with file associations
-                const enhancedSubmissions = this.enhanceSubmissionsWithFileData(submissions);
-                
-                callback({
-                    success: true,
-                    data: enhancedSubmissions
-                });
-            } catch (e) {
-                this.logger.error("Error getting Moodle submissions:", e);
-                callback({
-                    success: false,
-                    message: e.message
-                });
-            }
-        });
-
-
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
         this.createSocket("documentEdit", this.editDocument, {}, true);

@@ -148,10 +148,15 @@ module.exports = class NLPService extends Service {
         });
 
         nlpSocket.on("skillResults", (data) => {
-            const client = self.getClient(data.clientId)
-            delete data.clientId;
-            if (client) {
-                self.send(client, "skillResults", data);
+            if (data.clientId === 0) {
+                self.server.preprocess = self.server.preprocess || {};
+                self.server.preprocess.nlpResult = { ...data };
+            } else {
+                const client = self.getClient(data.clientId);
+                delete data.clientId;
+                if (client) {
+                    self.send(client, "skillResults", data);
+                }
             }
         });
         
