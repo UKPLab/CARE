@@ -640,7 +640,7 @@ module.exports = class Socket {
             let allAttributes = {};
             const filtersAndAttributes = await this.getFiltersAndAttributes(socket.userId, allFilter, allAttributes, tableName)
             if (!filtersAndAttributes.accessAllowed) {
-                return;
+                continue;
             }
             allFilter = filtersAndAttributes.filter;
             allAttributes = filtersAndAttributes.attributes;
