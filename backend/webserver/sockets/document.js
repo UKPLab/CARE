@@ -1187,68 +1187,68 @@ class DocumentSocket extends Socket {
 
                 this.server.preprocess.currentSubmissionsCount = preprocessItems.length;
 
-                for (const item of preprocessItems) {
-                    await new Promise((resolve) => {
-                    const listener = async () => {
-                        let nlpResults;
-                            try {
-                                // TODO: Remove this if-condition after testing
-                                if (this.server.$store && this.server.$store.getters && typeof this.server.$store.getters["service/getResults"] === "function") {
-                                    nlpResults = this.server.$store.getters["service/getResults"]("NLPService");
+                const waitForNlpResult = async (server, requestId, timeoutMs = 30000, intervalMs = 200) => {
+                    const start = Date.now();
+                    return await new Promise((resolve) => {
+                        const interval = setInterval(() => {
+                            const result = server.preprocess && server.preprocess.nlpResult;
+                            if (result && result.id === requestId) {
+                                clearInterval(interval);
+                                delete server.preprocess.nlpResult;
+                                resolve(result);
+                            } else if (Date.now() - start > timeoutMs) {
+                                clearInterval(interval);
+                                if (server.preprocess) {
+                                    if (server.preprocess.requests) delete server.preprocess.requests[requestId];
+                                    if (server.preprocess.activeListeners) delete server.preprocess.activeListeners[requestId];
+                                    if (server.preprocess.nlpResult) delete server.preprocess.nlpResult;
                                 }
-                                const nlpResult = nlpResults ? nlpResults[item.requestId] : null;
-                                if (nlpResult) {
-                                    try {
-                                        await Promise.all(
-                                            item.docIds.map(docId =>
-                                                this.saveData({
-                                                    userId: this.userId,
-                                                    documentId: docId,
-                                                    studySessionId: null,
-                                                    studyStepId: null,
-                                                    key: `service_nlpGrading_${item.skill}`,
-                                                    value: nlpResult
-                                                }, options)
-                                            )
-                                        );
-                                    } catch (saveErr) {
-                                        this.logger.error(`Error saving NLP results for request ${item.requestId}: ${saveErr.message}`, saveErr);
-                                    }
-                                } else {
-                                    this.logger.warn(`No NLP result received for request ${item.requestId}`);
-                                }
-                            } catch (err) {
-                                this.logger.error(`Error processing NLP request ${item.requestId}: ${err.message}`, err);
+                                resolve(null);
                             }
-
-                            if (this.server.preprocess.currentReqStart) {
-                                delete this.server.preprocess.currentReqStart;
-                            }
-                            if (this.server.preprocess.requests) delete this.server.preprocess.requests[item.requestId];
-                            resolve();
-                        };
-
-                        if (!this.server.preprocess.currentReqStart) {
-                            this.server.preprocess.currentReqStart = Date.now();
-                        }
-
-                        this.server.preprocess.activeListeners[item.requestId] = listener;
-                        try {
-                            this.socket.once(item.requestId, listener);
-                            // Direct service call instead of socket emit
-                            if (this.server.services['NLPService']) {
-                                this.server.services['NLPService'].request(this, {
-                                    id: item.requestId,
-                                    name: item.skill,
-                                    data: item.nlpInput
-                                });
-                            }
-                            console.log("nlpInput sent.............");
-                        } catch (emitErr) {
-                            this.logger.error(`Error emitting NLP service request ${item.requestId}: ${emitErr.message}`, emitErr);
-                            resolve();
-                        }
+                        }, intervalMs);
                     });
+                };
+                
+                for (const item of preprocessItems) {
+                    if (this.server.services['NLPService']) {
+                        this.server.services['NLPService'].request(this, {
+                            id: item.requestId,
+                            name: item.skill,
+                            data: item.nlpInput,
+                            clientId: 0
+                        });
+                    }
+                    console.log("nlpInput sent.............");
+
+                    const nlpResult = await waitForNlpResult(this.server, item.requestId);
+                    if (nlpResult) {
+                        try {
+                            await Promise.all(
+                                item.docIds.map(docId =>
+                                    this.saveData({
+                                        userId: this.userId,
+                                        documentId: docId,
+                                        studySessionId: null,
+                                        studyStepId: null,
+                                        key: `service_nlpGrading_${item.skill}`,
+                                        value: nlpResult
+                                    }, options)
+                                )
+                            );
+                        } catch (saveErr) {
+                            this.logger.error(`Error saving NLP results for request ${item.requestId}: ${saveErr.message}`, saveErr);
+                        }
+                    } else {
+                        this.logger.warn(`Timeout: No NLP result received for request ${item.requestId}`);
+                    }
+
+                    if (this.server.preprocess) {
+                        if (this.server.preprocess.requests) delete this.server.preprocess.requests[item.requestId];
+                        if (this.server.preprocess.activeListeners) delete this.server.preprocess.activeListeners[item.requestId];
+                        if (this.server.preprocess.nlpResult && this.server.preprocess.nlpResult.id === item.requestId) {
+                            delete this.server.preprocess.nlpResult;
+                        }
+                    }
                 }
                 this.server.preprocess = {};
                 
