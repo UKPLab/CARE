@@ -1,0 +1,633 @@
+{
+    "description": "the configuration for grading criteria which be used for LLMentor",
+    "version": "0.0.1",
+    "type": "assessment",
+    "rubrics": [
+      {
+        "name": "Language/Quality",
+        "description": "Assessment of language quality and structural coherence of the text",
+        "criteria": [
+          {
+            "name": "Language quality",
+            "description": "Evaluation of linguistic accuracy and sentence clarity",
+            "function": "auto_grading",
+            "maxPoints": 2,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "many linguistic errors (over 10 errors) (e.g. wrong tense, wrong personal pronouns)"
+              },
+              {
+                "points": 1,
+                "description": "few linguistic errors (0-10 errors), clear and comprehensible sentences"
+              },
+              {
+                "points": 2,
+                "description": "no linguistic errors (0 errors), clear and comprehensible sentences with consistent terminology"
+              }
+            ]
+          },
+          {
+            "name": "Common Thread",
+            "description": "Assessment of structural continuity and coherence throughout the text",
+            "function": "auto_grading",
+            "maxPoints": 2,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "No recognizable common thread, the structure is unclear and jumpy"
+              },
+              {
+                "points": 1,
+                "description": "Partly recognizable, but the structure is not continuous"
+              },
+              {
+                "points": 2,
+                "description": "Text has a continuous structure that is easy to follow, common thread is clear and recognizable from beginning to end"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Metadata",
+        "description": "Evaluation of title appropriateness and creativity",
+        "criteria": [
+          {
+            "name": "Preliminary title",
+            "description": "Assessment of how well the title matches and represents the topic",
+            "function": "auto_grading",
+            "maxPoints": 2,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Title does not match the topic"
+              },
+              {
+                "points": 1,
+                "description": "Title fits the topic; similar title to the one in the topic suggestions"
+              },
+              {
+                "points": 2,
+                "description": "Title fits the topic; creative title changed in a novel way and/or fits into the story of the synopsis"
+              }
+            ]
+          },
+          {
+            "name": "Metadata available",
+            "description": "Assessment of proper student identification information",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Name, date and matriculation number are not entered correctly/changed"
+              },
+              {
+                "points": 1,
+                "description": "Name, date, matriculation number are correct and updated"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Form/Structure",
+        "description": "Evaluation of document formatting and structural requirements",
+        "criteria": [
+          {
+            "name": "Template used",
+            "description": "LaTeX template used",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Latex template is not used"
+              },
+              {
+                "points": 1,
+                "description": "Latex template is used"
+              }
+            ]
+          },
+          {
+            "name": "Number of pages",
+            "description": "Page limitation for more focused writing",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "> three pages (motivation + approach only)"
+              },
+              {
+                "points": 1,
+                "description": "<= three sides (motivation + approach only)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Motivation",
+        "description": "Assessment of problem identification, context establishment, and research question formulation",
+        "criteria": [
+          {
+            "name": "Hook existing",
+            "description": "Evaluation of the presence and suitability of an engaging opening",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Hook not available"
+              },
+              {
+                "points": 1,
+                "description": "Hook present and suitable for the topic"
+              }
+            ]
+          },
+          {
+            "name": "Anker",
+            "description": "Assessment of problem statement detail and comprehensiveness",
+            "function": "auto_grading",
+            "maxPoints": 2,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The problem is not mentioned at all."
+              },
+              {
+                "points": 1,
+                "description": "The problem is stated in general terms without specific details. It is recognizable which problem is being addressed, but important information is omitted."
+              },
+              {
+                "points": 2,
+                "description": "The problem is described in detail. All relevant aspects of the problem are mentioned and clarify its scope and possible effects."
+              }
+            ]
+          },
+          {
+            "name": "Domain",
+            "description": "Evaluation of context and domain specification for the problem",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The domain or context in which the problem occurs is not mentioned."
+              },
+              {
+                "points": 1,
+                "description": "The domain or the relevant expert area of the problem is mentioned. It is clear in which environment the problem exists."
+              }
+            ]
+          },
+          {
+            "name": "Problem relevance",
+            "description": "Assessment of how well the importance and impact of the problem is communicated",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The relevance or importance of the problem is not addressed. It remains unclear why this problem is relevant or worth discussing."
+              },
+              {
+                "points": 1,
+                "description": "The importance and relevance of the problem is described. It is made clear why the problem is important and what impact or consequences it could have (e.g. for specific individuals, organisations or society as a whole)."
+              }
+            ]
+          },
+          {
+            "name": "Problem handling",
+            "description": "Evaluation of current approaches or criticisms regarding the problem",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "current handling of the problem or current criticism is not given"
+              },
+              {
+                "points": 1,
+                "description": "current handling of the problem or current criticism is given"
+              }
+            ]
+          },
+          {
+            "name": "Teaser (RQ)",
+            "description": "Assessment of research question clarity and alignment with problem description",
+            "function": "auto_grading",
+            "maxPoints": 2,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "There is no research question available"
+              },
+              {
+                "points": 1,
+                "description": "A research question exists, but it has weaknesses, e.g. due to unclear terminology or vague formulation. It is difficult to recognise what is to be investigated and how the question fits the problem description."
+              },
+              {
+                "points": 2,
+                "description": "The research question is formulated clearly and precisely. It clearly conveys what is to be investigated, and fits thematically with the problem description."
+              }
+            ]
+          },
+          {
+            "name": "RQ Limitation",
+            "description": "Evaluation of research question scope and feasibility for Bachelor's thesis context",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The research question is either too general or too broad, so that it does not seem realistic to answer it within the scope of a Bachelor's thesis, to answer it in the context of a Bachelor's thesis."
+              },
+              {
+                "points": 1,
+                "description": "The research question is precise and clearly defined so that it can realistically be addressed in the context of a Bachelor's thesis. The question is formulated in concrete terms and describes specifically which aspects are to be investigated without deviating from the topic."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Approach",
+        "description": "Assessment of state of the art analysis, theoretical framework, and methodology",
+        "criteria": [
+          {
+            "name": "SOTA",
+            "description": "Evaluation of state of the art presence and proper citation",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "SOTA not available"
+              },
+              {
+                "points": 1,
+                "description": "SOTA present and correctly cited"
+              }
+            ]
+          },
+          {
+            "name": "SOTA Relevance",
+            "description": "Assessment of how well the relevance of state of the art is demonstrated",
+            "function": "auto_grading",
+            "maxPoints": 2,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The relevance of SOTA is not present or unclear."
+              },
+              {
+                "points": 1,
+                "description": "The relevance of SOTA is mentioned, but is only partially comprehensible or weakly presented."
+              },
+              {
+                "points": 2,
+                "description": "It is clearly shown how SOTA is relevant to the topic of the exposé and why it is relevant to the research."
+              }
+            ]
+          },
+          {
+            "name": "SOTA Weaknesses",
+            "description": "Evaluation of identification and explanation of state of the art limitations",
+            "function": "auto_grading",
+            "maxPoints": 2,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "SOTA's weak points are not mentioned"
+              },
+              {
+                "points": 1,
+                "description": "SOTA's weaknesses are mentioned, but only superficially or unclearly described"
+              },
+              {
+                "points": 2,
+                "description": "SOTA's weaknesses are clearly identified and precisely explained; it is clear which weaknesses are relevant for own research"
+              }
+            ]
+          },
+          {
+            "name": "SOTA Delimitation",
+            "description": "Assessment of differentiation between own work and existing research",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "No differentiation of own performance from the current state of research"
+              },
+              {
+                "points": 1,
+                "description": "The own achievement is differentiated from SOTA; it is explicitly emphasized, what is new or unique about your own research"
+              }
+            ]
+          },
+          {
+            "name": "SOTA Combination",
+            "description": "Evaluation of meaningful combination and consolidation of existing material",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "No meaningful combination of existing material (even if reference is made to existing material, but its combination or consolidation is unconvincing or unclear)"
+              },
+              {
+                "points": 1,
+                "description": "Existing material is clearly and meaningfully combined; the added value of the combination is clear."
+              }
+            ]
+          },
+          {
+            "name": "Theoretical Framework",
+            "description": "Assessment of theoretical framework structure and clarity",
+            "function": "auto_grading",
+            "maxPoints": 2,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The theoretical framework does not exist or is completely misleading"
+              },
+              {
+                "points": 1,
+                "description": "The theoretical framework is present, but unclear, poorly structured or difficult to understand"
+              },
+              {
+                "points": 2,
+                "description": "The theoretical framework is clearly and logically structured. The theoretical approaches are presented in a understandable and comprehensible"
+              }
+            ]
+          },
+          {
+            "name": "Relevance of theoretical framework",
+            "description": "Evaluation of theoretical framework connection to research topic",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The theoretical framework shows no connection to the research topic, or the theory is irrelevant"
+              },
+              {
+                "points": 1,
+                "description": "The theoretical framework clearly demonstrates how the selected theories directly relate to the research topic and support the research question"
+              }
+            ]
+          },
+          {
+            "name": "Methodology Availability",
+            "description": "Assessment of methodology presence and suitability for research questions",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Methodology not available"
+              },
+              {
+                "points": 1,
+                "description": "Methodology available and suitable for answering the RQ(s)"
+              }
+            ]
+          },
+          {
+            "name": "Methodology Completeness",
+            "description": "Evaluation of methodology coverage of all research questions",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Methodology is available, but not all RQ(s) are addressed"
+              },
+              {
+                "points": 1,
+                "description": "Methodology is available and addresses all points of the research questions"
+              }
+            ]
+          },
+          {
+            "name": "Methodology Relevance",
+            "description": "Assessment of methodology relevance and contribution to research project",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The relevance of the methodology for the research project is not clear or is unclear"
+              },
+              {
+                "points": 1,
+                "description": "It is clearly and precisely demonstrated why the chosen methodology is relevant to the research project and how it contributes to the research questions"
+              }
+            ]
+          },
+          {
+            "name": "Methodology Target group",
+            "description": "Evaluation of target group specification and relevance",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The target group is not specified or there is no precise differentiation"
+              },
+              {
+                "points": 1,
+                "description": "The target group is clearly and precisely defined and it is clear why it is relevant to the methodology"
+              }
+            ]
+          },
+          {
+            "name": "Methodology Existing Material",
+            "description": "Assessment of appropriate reference to existing material in methodology",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "No reference is made to the existing material or the material is inappropriate"
+              },
+              {
+                "points": 1,
+                "description": "The existing material is appropriately and accurately related to the topic; it is clear that this material is relevant to the methodology"
+              }
+            ]
+          },
+          {
+            "name": "Methodology Difficulties",
+            "description": "Evaluation of identification and solutions for potential implementation challenges",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Potential difficulties in the practical implementation of the methods are not addressed. Potential challenges that could hinder the research process are overlooked."
+              },
+              {
+                "points": 1,
+                "description": "Potential difficulties in the practical implementation of the methods are described clearly and precisely. Concrete solutions or strategies to overcome these difficulties are also presented, in order to organize the research process as efficiently and target-oriented as possible."
+              }
+            ]
+          },
+          {
+            "name": "Methodology Possibilities/restrictions",
+            "description": "Assessment of methodology strengths, limitations, and critical reflection",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The possibilities or limitations of the methods used are not addressed, or they are only mentioned superficially, without concrete details. It remains unclear how these methods contribute to answering the research question and which limitations could possibly influence the validity of the results."
+              },
+              {
+                "points": 1,
+                "description": "The possibilities and limitations of the methods are described clearly and precisely. It is clear what strengths the methods bring to the study and what weaknesses or limitations could possibly influence the results. limitations could possibly influence the results. The choice of methods is critically reflected upon and related to the research project."
+              }
+            ]
+          },
+          {
+            "name": "Methodology Details",
+            "description": "Evaluation of comprehensive methodology explanation and implementation details",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "No additional explanations are given on the methodology or implementation"
+              },
+              {
+                "points": 1,
+                "description": "The methodology is explained comprehensively and precisely with additional explanations (e.g. details on implementation),  so that the procedure is clearly comprehensible"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Schedule",
+        "description": "Assessment of project timeline structure, completeness, and realism",
+        "criteria": [
+          {
+            "name": "Schedule Availability",
+            "description": "Evaluation of tabular schedule presence and chronological organization",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Tabular schedule not available"
+              },
+              {
+                "points": 1,
+                "description": "Tabular schedule in chronological order available"
+              }
+            ]
+          },
+          {
+            "name": "Schedule Completeness",
+            "description": "Assessment of schedule coverage and logical division into work blocks",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Tabular schedule contains gaps"
+              },
+              {
+                "points": 1,
+                "description": "Tabular schedule available from start to finish and reasonably divided into blocks"
+              }
+            ]
+          },
+          {
+            "name": "Schedule Block Description",
+            "description": "Evaluation of detailed descriptions for individual schedule blocks",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "not available or only headlines available"
+              },
+              {
+                "points": 1,
+                "description": "individual blocks described (not only headlines)"
+              }
+            ]
+          },
+          {
+            "name": "Schedule Realistic Relevance",
+            "description": "Assessment of timeline realism and alignment with Bachelor's thesis scope",
+            "function": "auto_grading",
+            "maxPoints": 2,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "The time distribution is obviously unrealistic and important work steps are missing. The research questions are not or only insufficiently addressed"
+              },
+              {
+                "points": 1,
+                "description": "The timeline contains the most important steps, but some of the timelines are unrealistic or unclear. It is partially unclear how the steps contribute to answering the research questions. The timeline does not appear to be fully aligned with the Bachelor's thesis context."
+              },
+              {
+                "points": 2,
+                "description": "The timeline is clearly structured, realistic and aligned with the scope of the Bachelor's thesis. All important work steps are included and organised in a sensible time frame. Each step contributes to answering the research questions, and the entire plan fits coherently into the exposé and the context of the thesis."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Bibliography",
+        "description": "Assessment of bibliography consistency and literature relevance",
+        "criteria": [
+          {
+            "name": "Bibliography Consistency",
+            "description": "Evaluation of citation style consistency and completeness of bibliographic information",
+            "function": "auto_grading",
+            "maxPoints": 1,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Bibliography with different citation styles"
+              },
+              {
+                "points": 1,
+                "description": "Bibliography is standardized ( consistent citation style) and essentially all information on the literature is available"
+              }
+            ]
+          },
+          {
+            "name": "Key literature",
+            "description": "Assessment of literature relevance and quality for the research topic",
+            "function": "auto_grading",
+            "maxPoints": 2,
+            "scoring": [
+              {
+                "points": 0,
+                "description": "Literature does not fit the topic"
+              },
+              {
+                "points": 1,
+                "description": "Literature fits the topic"
+              },
+              {
+                "points": 2,
+                "description": "Literature fits the topic and most of it is highly relevant"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+}
