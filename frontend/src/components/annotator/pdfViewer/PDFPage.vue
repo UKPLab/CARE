@@ -169,12 +169,6 @@ export default {
     },
     annotations() {
       if (this.isRendered) {
-        // Create new anchor instance for current page
-        this.anchor = new Anchoring(this.pdf, this.pageNumber);
-        // Force re-anchoring of all annotations
-        this.annotations.forEach(anno => {
-          anno.anchors = null;
-        });
         this.add_anchors();
       }
     },
@@ -311,6 +305,7 @@ export default {
       this.remove_anchors();
     },
     add_anchors() {
+      console.log("Adding anchors for page", this.pageNumber);  
       this.annotations.filter(anno => anno.anchors == null).forEach(async anno => {
         // Pass the current scale to ensure correct positioning
         anno.anchors = await Promise.all(anno.selectors.target.map((data) => {
