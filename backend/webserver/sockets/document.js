@@ -1175,7 +1175,7 @@ class DocumentSocket extends Socket {
      * @returns {Promise<{status: string, count: number}>}
      */
     async preprocessSubmissions(data, options) {
-        
+
         // Validate input data
         if (!data || !data.skill || !data.inputFiles) {
             return {
@@ -1189,7 +1189,7 @@ class DocumentSocket extends Socket {
                 const requestIds = [];
                 const preprocessItems = [];
                 this.server.preprocess = this.server.preprocess || {};
-                this.server.preprocess.activeListeners = {};
+                this.server.preprocess.cancelled = false;
 
                 for (const subId of data.inputFiles) {
                     let docs;
@@ -1234,7 +1234,7 @@ class DocumentSocket extends Socket {
                     );
 
                     const hasValidFiles = Object.keys(submissionFiles).length > 0;
-                    
+                     
                     if (!hasValidFiles) {
                         this.logger.error(`No valid files found for submission ${subId}`);
                         continue; // Skip this submission
@@ -1258,6 +1258,11 @@ class DocumentSocket extends Socket {
                     const start = Date.now();
                     return await new Promise((resolve) => {
                         const interval = setInterval(() => {
+                            if (server.preprocess && server.preprocess.cancelled) {
+                                clearInterval(interval);
+                                resolve(null);
+                                return;
+                            }
                             const result = server.preprocess && server.preprocess.nlpResult;
                             if (result && result.id === requestId) {
                                 clearInterval(interval);
@@ -1267,7 +1272,6 @@ class DocumentSocket extends Socket {
                                 clearInterval(interval);
                                 if (server.preprocess) {
                                     if (server.preprocess.requests) delete server.preprocess.requests[requestId];
-                                    if (server.preprocess.activeListeners) delete server.preprocess.activeListeners[requestId];
                                 }
                                 resolve(null);
                             }
@@ -1287,7 +1291,7 @@ class DocumentSocket extends Socket {
                     console.log("nlpInput sent.............");
 
                     const nlpResult = await waitForNlpResult(this.server, item.requestId);
-                    if (nlpResult) {
+                    if (!this.server.preprocess.cancelled && nlpResult) {
                         try {
                             await Promise.all(
                                 item.docIds.map(docId =>
@@ -1332,15 +1336,11 @@ class DocumentSocket extends Socket {
 
     async cancelSubmissions(data, options) {
         if (await this.isAdmin()) {
-            if (this.server.preprocess.activeListeners) {
-                Object.entries(this.server.preprocess.activeListeners).forEach(([requestId, listener]) => {
-                    this.socket.removeListener(requestId, listener);
-                });
-                this.server.preprocess.activeListeners = {};
+            if (this.server.preprocess) {
+                this.server.preprocess.cancelled = true;
+                this.server.preprocess.requests = {};
+                this.server.preprocess.currentSubmissionsCount = 0;
             }
-
-            this.server.preprocess.requests = {};
-            this.server.preprocess.currentSubmissionsCount = 0;
         }
     }
 
