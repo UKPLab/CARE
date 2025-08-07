@@ -7,15 +7,17 @@
     <template #header>
       <div class="row">
         <div class="col">
-          <LoadIcon
-            icon-name="check-square"
-            :size="16"
-            :color="collapsed ? '#28a745' : '#6c757d'"
-            cursor="pointer"
-            class="check-icon"
-            style="position: absolute; top: 18px; left: 12px;"
-            @click="collapsed = !collapsed"
-          />
+          <template v-if="!editedByMyself">
+            <LoadIcon
+              icon-name="check-square"
+              :size="16"
+              :color="collapsed ? '#28a745' : '#6c757d'"
+              cursor="pointer"
+              class="check-icon"
+              style="position: absolute; top: 18px; left: 12px;"
+              @click="collapsed = !collapsed"
+            />
+          </template>
           <span style="margin-left: 8;">{{ comment.creator_name }}</span>
           <Collaboration
             ref="collab"
@@ -37,7 +39,18 @@
     </template>
       <template #body>
         <div v-if="editingTag && annotationId" class="d-flex align-items-center">
-          <select v-model="selectedTagId" @change="saveTagChange" class="form-select form-select-md" :style="{ display: 'inline-block', borderLeft: '4px solid #' + color, height: '20px', fontSize: 'small', fontStyle: 'italic' }">
+          <select
+            v-model="selectedTagId"
+            @change="saveTagChange"
+            class="form-select form-select-md"
+            :style="{
+              display: 'inline-block',
+              borderLeft: '4px solid #' + color,
+              height: '20px',
+              fontSize: 'small',
+              fontStyle: 'italic'
+            }"
+          >
             <option  v-for="tag in tagSetTags" :key="tag.id" :value="tag.id">
               {{ tag.name }}
             </option>
