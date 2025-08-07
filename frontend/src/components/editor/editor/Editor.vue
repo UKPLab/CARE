@@ -139,6 +139,16 @@ export default {
         return (a.order || 0) - (b.order || 0);
       });
     },
+    appliedEdits() {
+      return this.$store.getters["table/document_edit/getFiltered"](
+        (e) => e.applied === true
+      ).sort((a, b) => {
+        const timeCompare = new Date(a.createdAt) - new Date(b.createdAt);
+        if (timeCompare !== 0) return timeCompare;
+        return (a.order || 0) - (b.order || 0);
+      });
+    },
+    
     debounceTimeForEdits() {
       return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
     },
@@ -218,6 +228,13 @@ export default {
       },
       deep: true
     },
+    appliedEdits(newEdits, oldEdits) {
+        const appliedEdits = newEdits.filter(newEdit =>
+          !oldEdits.some(oldEdit => oldEdit.id === newEdit.id)
+        )
+        this.processEdits(appliedEdits);
+    },
+    
     readOnly: {
       handler(newReadOnly) {
         this.editor.getEditor().enable(!newReadOnly);
@@ -299,6 +316,8 @@ export default {
     );
 
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
+
+    this.$socket.emit("documentSubscribe", { documentId: this.documentId });
   },
   sockets: {
     connect() {
@@ -329,6 +348,7 @@ export default {
         });
       }
     });
+    this.$socket.emit("documentUnsubscribe", { documentId: this.documentId });
   },
   methods: {
     clearEditor() {
@@ -449,6 +469,15 @@ export default {
         this.deltaBuffer = [];
       }
     },
+    processEdits(edits) {
+      edits.forEach((edit) => {
+              if (!(edit.sender == this.$socket.id)) {
+              const delta = dbToDelta([edit]);
+              this.editor.getEditor().updateContents(delta, "api");
+              }
+            })
+    },
+
     async leave() {
       if (this.document_edits && this.document_edits.length > 0 && this.document_edits.filter(edit => edit.draft).length > 0) {
         return new Promise((resolve, reject) => {
