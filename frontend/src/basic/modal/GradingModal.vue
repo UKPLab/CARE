@@ -23,7 +23,7 @@
           <label class="form-label">Select Config:</label>
           <FormSelect
             v-model="selectedConfig"
-            :options="jsonConfigOptions"
+            :options="{ options: configOptions }"
           />
         </div>
       </template>
@@ -35,7 +35,7 @@
             :data="inputFiles"
             :options="{ ...options, selectableRows: true }"
             :modelValue="selectedInputRows || []"
-            :buttons="buttons"
+            :buttons="buttons()"
             @update:modelValue="onInputFilesChange"
           />
         </div>
@@ -103,7 +103,7 @@ import BasicTable from "@/basic/Table.vue";
 export default {
   name: "GradingModal",
   components: { StepperModal, FormSelect, BasicTable },
-  subscribeTable: ["document"],
+  subscribeTable: ["document","submission"],
   emits: ["submit"],
   data() {
     return {
@@ -127,6 +127,7 @@ export default {
       preprocess: {}, // Use this for tests: {"requests": {1:{},5:{}}, "currentSubmissionsCount": 10 }
       currentStep: 1,
       elapsedTimer: null,
+      configOptions: [],
     };
   },
   watch: {
@@ -165,7 +166,7 @@ export default {
     },
     stepValid() {
       return [
-        !!this.selectedSkill && !!this.selectedConfig, // Step 1: Both must be selected
+        !!this.selectedSkill && !!this.selectedConfig, // Step 1: Both must be selected and config must be valid
         // TODO: Add check if the file is already processed and saved in document_data
         this.selectedInputRows.length > 0, // Step 2: At least one file selected
       ];
@@ -182,21 +183,11 @@ export default {
       if (!submission) return;
       // TODO: Implement file download logic for .zip/.tex after the application of moodle import submissions
     },
-    // Get submissions from the submissions table
     submissions(){
       return this.$store.getters["table/submission/getAll"];
     },
-    // TODO: Replace type to 3(JSON) when implemented and filter ahead by "type"="criteria"
     jsonConfig(){
       return this.$store.getters["table/document/getByKey"]('type', 3);
-    },
-    jsonConfigOptions() {
-      return {
-        options: (this.jsonConfig || []).map(doc => ({
-          value: doc.id,
-          name: doc.name,
-        })),
-      };
     },
     isProcessingActive() {
       return (
@@ -238,6 +229,64 @@ export default {
       }
       return "0s";
     },
+  },
+  mounted() {
+    if (this.isProcessingActive) {
+      this.startElapsedTimer();
+    }
+    this.fetchConfigOptions();
+  },
+  beforeUnmount() {
+    this.stopElapsedTimer();
+  },
+  watch: {
+    jsonConfig: {
+      handler() {
+        this.fetchConfigOptions();
+      },
+      immediate: true,
+      deep: true
+    }
+  },
+  methods: {
+    async fetchConfigOptions() {
+      console.log("jsonConfig", this.jsonConfig)
+      const docs = this.jsonConfig || [];
+      const options = [];
+      for (const config of docs) {
+        await new Promise((resolve) => {
+          this.$socket.emit("documentGet", { documentId: config.id }, (res) => {
+            console.log("Config check 2", res.data.file);
+            if (res && res.data && res.data.file) {
+              let fileContent;
+              if (res.data.file instanceof ArrayBuffer) {
+                fileContent = new TextDecoder().decode(new Uint8Array(res.data.file));
+              } else {
+                fileContent = res.data.file.toString();
+              }
+              try {
+                const jsonContent = JSON.parse(fileContent);
+                console.log("Parsed JSON config", jsonContent);
+                if (jsonContent.type === "assessment") {
+                  options.push({ value: config.id, name: config.name });
+                }
+              } catch (parseError) {
+                console.error(`Error parsing JSON config for document ${config.id}:`, parseError);
+              }
+            }
+            resolve();
+          });
+        });
+      }
+      this.configOptions = options;
+    },
+    open() {
+      this.selectedSkill = '';
+      this.$refs.gradingStepper.open();
+    },
+    close() {
+      this.$refs.gradingStepper.close();
+    },
     buttons() {
       return [
         {
@@ -251,23 +300,6 @@ export default {
         },
       ];
     },
-  },
-  mounted() {
-    if (this.isProcessingActive) {
-      this.startElapsedTimer();
-    }
-  },
-  beforeUnmount() {
-    this.stopElapsedTimer();
-  },
-  methods: {
-    open() {
-      this.selectedSkill = '';
-      this.$refs.gradingStepper.open();
-    },
-    close() {
-      this.$refs.gradingStepper.close();
-        },
     onInputFilesChange(rows) {
       this.selectedInputRows = Array.isArray(rows) ? rows : [];
     },
