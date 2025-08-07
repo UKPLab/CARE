@@ -1208,7 +1208,7 @@ class DocumentSocket extends Socket {
                     await Promise.all(
                         docs.map(async (doc) => {
                             docIds.push(doc.id);
-                            const docType = docTypes[doc.type];
+                            const docType = doc.type;
                             const docTypeKey = Object.keys(docTypes).find(type => docTypes[type] === docType);
                             let fileExtension = '';
                             if (docTypeKey) {
@@ -1233,10 +1233,9 @@ class DocumentSocket extends Socket {
                         })
                     );
 
-                    // Filter out null values (failed file reads)
-                    const validFiles = inputFiles.filter(file => file !== null);
+                    const hasValidFiles = Object.keys(submissionFiles).length > 0;
                     
-                    if (validFiles.length !== 1) {
+                    if (!hasValidFiles) {
                         this.logger.error(`No valid files found for submission ${subId}`);
                         continue; // Skip this submission
                     }
@@ -1255,14 +1254,14 @@ class DocumentSocket extends Socket {
 
                 this.server.preprocess.currentSubmissionsCount = preprocessItems.length;
 
-                const waitForNlpResult = async (server, requestId, timeoutMs = 30000, intervalMs = 200) => {
+                const waitForNlpResult = async (server, requestId, timeoutMs = 3000000, intervalMs = 200) => {
                     const start = Date.now();
                     return await new Promise((resolve) => {
                         const interval = setInterval(() => {
-                            const result = server.preprocess && server.preprocess.lastBackendNlpResult;
+                            const result = server.preprocess && server.preprocess.nlpResult;
                             if (result && result.id === requestId) {
                                 clearInterval(interval);
-                                delete server.preprocess.lastBackendNlpResult;
+                                delete server.preprocess.nlpResult;
                                 resolve(result);
                             } else if (Date.now() - start > timeoutMs) {
                                 clearInterval(interval);
