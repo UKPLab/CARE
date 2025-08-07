@@ -75,45 +75,57 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
-    commentStates() {
-      return this.$store.getters['table/comment_state/getAll'];
-    },
     downloadBeforeStudyClosingAllowed() {
       return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
     },
+    collapsedCommentIds() {
+      const commentIds = this.$store.getters['table/comment_state/getFiltered'](
+        state => state.state === 1 &&
+          state.documentId === this.documentId &&
+          state.studySessionId === this.studySessionId &&
+          state.studyStepId === this.studyStepId
+      ).map(state => state.commentId);
+      return commentIds;
+    },
+    collapsedAnnotationIds() {
+      const annotationIds = this.$store.getters['table/comment/getFiltered'](
+        comment => this.collapsedCommentIds.includes(comment.id)
+      ).map(comment => comment.annotationId);
+      return annotationIds;
+    },
     annotations() {
-      const baseAnnotations = this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
-        && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageId
-        && e.anchors !== null)
-        .filter(anno => {
+      const allAnnotations = this.$store.getters['table/annotation/getAll'].filter(e => {
+        const isDocumentMatch = e.documentId === this.documentId;
+        const isPageMatch = e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageId;
+        const hasAnchors = e.anchors !== null;
+
+        return isDocumentMatch && isPageMatch && hasAnchors;
+      }).filter(anno => {
           if (this.studySessionId && this.studyStepId) {
-            return anno.studySessionId === this.studySessionId && anno.studyStepId === this.studyStepId;
+            const isSessionAndStepMatch = anno.studySessionId === this.studySessionId && anno.studyStepId === this.studyStepId;
+            return isSessionAndStepMatch;
           } else if (this.studySessionIds) {
-            return this.studySessionIds.includes(anno.studySessionId);
+            const isSessionIdIncluded = this.studySessionIds.includes(anno.studySessionId);
+            return isSessionIdIncluded;
           } else {
             if (this.showAll) {
               if (this.downloadBeforeStudyClosingAllowed) {
                 return true;
               } else {
-                return !this.openSessionIds.includes(anno.studySessionId);
+                const isSessionNotOpen = !this.openSessionIds.includes(anno.studySessionId);
+                return isSessionNotOpen;
               }
             } else {
-              return anno.studySessionId === null
+              const isSessionNull = anno.studySessionId === null;
+              return isSessionNull;
             }
           }
         });
-      // Filter by comment_state: only show annotations with state 0 (not collapsed)
-      return baseAnnotations.filter(anno => {
 
-        // Find the comment state for this annotation's comment
-        const commentState = this.$store.getters['table/comment_state/getFiltered'](
-          state => state.commentId === this.getCommentByAnnotationId(anno.id)?.id && state.userId === this.userId && state.documentId === this.documentId
-          && state.studySessionId === this.studySessionId && state.studyStepId === this.studyStepId
-        )[0];
-        // If no state exists, show the annotation (default behavior)
-        // If state exists, only show if state is 0 (not collapsed)
-        return !commentState || commentState.state === 0;
-      });
+      // Filter by collapsedAnnotationIds
+
+      const filteredAnnotations = allAnnotations.filter(anno => !this.collapsedAnnotationIds.includes(anno.id));
+      return filteredAnnotations;
     },
     tags() {
       return this.$store.getters['table/tag/getAll'];
@@ -121,24 +133,33 @@ export default {
   },
   watch: {
     annotations(newVal, oldVal) {
-      //Remove highlights of deleted anchors
+
+      // Remove highlights of deleted anchors
       oldVal.filter(anno => !newVal.includes(anno))
         .forEach(anno => {
           if (anno.anchors != null) {
             anno.anchors.filter(anchor => "highlights" in anchor)
-              .forEach(anchor => this.removeHighlights(anchor.highlights))
+              .forEach(anchor => {
+                this.removeHighlights(anchor.highlights);
+              });
           }
         });
 
+      // Add highlights for new annotations
       newVal.filter(anno => !oldVal.includes(anno))
-        .map(this.highlight)
+        .map(anno => {
+          this.highlight(anno);
+        });
     },
     tags(newVal) {
       if (newVal !== null) {
-        this.annotations.forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor).forEach(
-            anchor => anchor.highlights.forEach(highlightsEl => this.setSVGHighlightColor(anno, highlightsEl.svgHighlight))
-          )
-        );
+        this.annotations.forEach(anno => {
+          anno.anchors.filter(anchor => "highlights" in anchor).forEach(anchor => {
+            anchor.highlights.forEach(highlightsEl => {
+              this.setSVGHighlightColor(anno, highlightsEl.svgHighlight);
+            });
+          });
+        });
       }
     }
   },
