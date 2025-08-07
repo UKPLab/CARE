@@ -1185,7 +1185,19 @@ class DocumentSocket extends Socket {
         }
         
         try {
-            if (await this.isAdmin()) {       
+            if (await this.isAdmin()) {
+                const configDoc = await this.models['document'].getById(data.config);
+                if (!configDoc || configDoc.type !== docTypes.DOC_TYPE_CONFIG) {
+                    return { success: false, message: "Invalid or missing config file." };
+                }
+
+                const configFilePath = path.join(UPLOAD_PATH, `${configDoc.hash}.json`);
+                if (!fs.existsSync(configFilePath)) {
+                    return { success: false, message: "Config file not found on server." };
+                }
+                const configFileContent = await fs.promises.readFile(configFilePath, 'utf8');
+                const assessmentConfig = JSON.parse(configFileContent);
+       
                 const requestIds = [];
                 const preprocessItems = [];
                 this.server.preprocess = this.server.preprocess || {};
@@ -1242,7 +1254,7 @@ class DocumentSocket extends Socket {
                     
                     const nlpInput = {
                         submission: submissionFiles,
-                        assessment_config: data.config, // TODO: The json will be passed exactly from the frontend, needs implementation
+                        assessment_config: assessmentConfig, // TODO: The json will be passed exactly from the frontend, needs implementation
                     };
 
                     const requestId = uuidv4();
@@ -1288,9 +1300,11 @@ class DocumentSocket extends Socket {
                             clientId: 0
                         });
                     }
+                    console.log("Preprocess variable", this.server.preprocess);
                     console.log("nlpInput sent.............");
 
                     const nlpResult = await waitForNlpResult(this.server, item.requestId);
+                    console.log("NLP result received:", nlpResult);
                     if (!this.server.preprocess.cancelled && nlpResult) {
                         try {
                             await Promise.all(

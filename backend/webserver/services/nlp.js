@@ -148,6 +148,7 @@ module.exports = class NLPService extends Service {
         });
 
         nlpSocket.on("skillResults", (data) => {
+            console.log("skillResults received", data.clientId);
             if (data.clientId === 0) {
                 if (self.server.preprocess){
                     if(!("cancelled" in self.server.preprocess) || self.server.preprocess.cancelled) {
@@ -261,8 +262,9 @@ module.exports = class NLPService extends Service {
      */
     async request(client, data) {
         if (this.nlpSocket && this.nlpSocket.connected) {
-            // console.log("the request is sent to the external nlp service", data.name);
-            data["clientId"] = client.socket.id;
+            if (!("clientId" in data)) {
+                data["clientId"] = client.socket.id;
+            }
             this.nlpSocket.emit("skillRequest", data);
         } else if (this.skills && this.skills.find(s => this.#hasConfig(s) && s.name === data.name)) {
             this.logger.info(`The request for skill ${data.name} is sent to the fallback nlp service`);
