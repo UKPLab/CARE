@@ -68,7 +68,10 @@ export default {
   computed: {
     sidebarElements() {
       const groups = this.$store.getters['table/nav_element/getAll']
-        .filter(element => !element.admin || this.isAdmin)
+        .filter(element => {
+          const hasRight = this.$store.getters["auth/checkRight"](`frontend.dashboard.${element.path}.view`);
+          return (!element.admin || this.isAdmin) && hasRight;
+        })
         .reduce((acc, cur) => {
                 if (cur.groupId === 0 || cur.groupId === undefined) {
                     console.error("For navigation element " + cur.name + " the group id " + cur.group + " doesn't exists!");
