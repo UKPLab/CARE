@@ -827,13 +827,12 @@ class DocumentSocket extends Socket {
         }
 
         const schemaPath = path.join(UPLOAD_PATH, `${document.hash}.json`);
-        fs.readFile(schemaPath, "utf8", (err, schemaContent) => {
-            if (err) {
-                console.error("Error reading file:", err);
-                return;
-            }
+        try {
+            const schemaContent = await fs.promises.readFile(schemaPath, "utf8");
             return JSON.parse(schemaContent);
-        });
+        } catch (err) {
+            throw new Error(`Error reading validation schema: ${err.message}`);
+        }
     }
 
     /**
