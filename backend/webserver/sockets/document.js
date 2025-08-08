@@ -1175,7 +1175,7 @@ class DocumentSocket extends Socket {
      * @returns {Promise<{status: string, count: number}>}
      */
     async preprocessSubmissions(data, options) {
-        
+
         // Validate input data
         if (!data || !data.skill || !data.inputFiles) {
             return {
@@ -1185,11 +1185,23 @@ class DocumentSocket extends Socket {
         }
         
         try {
-            if (await this.isAdmin()) {       
+            if (await this.isAdmin()) {
+                const configDoc = await this.models['document'].getById(data.config);
+                if (!configDoc || configDoc.type !== docTypes.DOC_TYPE_CONFIG) {
+                    return { success: false, message: "Invalid or missing config file." };
+                }
+
+                const configFilePath = path.join(UPLOAD_PATH, `${configDoc.hash}.json`);
+                if (!fs.existsSync(configFilePath)) {
+                    return { success: false, message: "Config file not found on server." };
+                }
+                const configFileContent = await fs.promises.readFile(configFilePath, 'utf8');
+                const assessmentConfig = JSON.parse(configFileContent);
+       
                 const requestIds = [];
                 const preprocessItems = [];
                 this.server.preprocess = this.server.preprocess || {};
-                this.server.preprocess.activeListeners = {};
+                this.server.preprocess.cancelled = false;
 
                 for (const subId of data.inputFiles) {
                     let docs;
@@ -1203,12 +1215,12 @@ class DocumentSocket extends Socket {
                         continue;
                     }
 
-                const docIds = [];
-                const submissionFiles = {};
-                await Promise.all(
+                    const docIds = [];
+                    const submissionFiles = {};
+                    await Promise.all(
                         docs.map(async (doc) => {
                             docIds.push(doc.id);
-                            const docType = docTypes[doc.type];
+                            const docType = doc.type;
                             const docTypeKey = Object.keys(docTypes).find(type => docTypes[type] === docType);
                             let fileExtension = '';
                             if (docTypeKey) {
@@ -1217,13 +1229,13 @@ class DocumentSocket extends Socket {
                             const docFilePath = path.join(UPLOAD_PATH, `${doc.hash}${fileExtension}`);
                             if (fs.existsSync(docFilePath)) {
                                 try {
-                                const fileBuffer = await fs.promises.readFile(docFilePath);
-                                if (fileExtension === '.zip') {
-                                    submissionFiles.zip = fileBuffer.toString('base64');
-                                } 
-                                else if (fileExtension === '.pdf') {
-                                    submissionFiles.pdf = fileBuffer.toString('base64');
-                                }
+                                    const fileBuffer = await fs.promises.readFile(docFilePath);
+                                    if (fileExtension === '.zip') {
+                                        submissionFiles.zip = fileBuffer.toString('base64');
+                                    } 
+                                    else if (fileExtension === '.pdf') {
+                                        submissionFiles.pdf = fileBuffer.toString('base64');
+                                    }
                                 } catch (readErr) {
                                     this.logger.error(`Error reading file for document ${doc.id} of submission ${subId}: ${readErr.message}`, readErr);
                                 }
@@ -1233,17 +1245,16 @@ class DocumentSocket extends Socket {
                         })
                     );
 
-                    // Filter out null values (failed file reads)
-                    const validFiles = submissionFiles.filter(file => file !== null);
-                    
-                    if (validFiles.length === 0) {
+                    const hasValidFiles = Object.keys(submissionFiles).length > 0;
+                     
+                    if (!hasValidFiles) {
                         this.logger.error(`No valid files found for submission ${subId}`);
                         continue; // Skip this submission
                     }
                     
                     const nlpInput = {
-                        submission: validFiles,
-                        assessment_config: data.config, // TODO: The json will be passed exactly from the frontend, needs implementation
+                        submission: submissionFiles,
+                        assessment_config: assessmentConfig, // TODO: The json will be passed exactly from the frontend, needs implementation
                     };
 
                     const requestId = uuidv4();
@@ -1255,10 +1266,15 @@ class DocumentSocket extends Socket {
 
                 this.server.preprocess.currentSubmissionsCount = preprocessItems.length;
 
-                const waitForNlpResult = async (server, requestId, timeoutMs = 30000, intervalMs = 200) => {
+                const waitForNlpResult = async (server, requestId, timeoutMs = 3000000, intervalMs = 200) => {
                     const start = Date.now();
                     return await new Promise((resolve) => {
                         const interval = setInterval(() => {
+                            if (server.preprocess && server.preprocess.cancelled) {
+                                clearInterval(interval);
+                                resolve(null);
+                                return;
+                            }
                             const result = server.preprocess && server.preprocess.nlpResult;
                             if (result && result.id === requestId) {
                                 clearInterval(interval);
@@ -1268,8 +1284,6 @@ class DocumentSocket extends Socket {
                                 clearInterval(interval);
                                 if (server.preprocess) {
                                     if (server.preprocess.requests) delete server.preprocess.requests[requestId];
-                                    if (server.preprocess.activeListeners) delete server.preprocess.activeListeners[requestId];
-                                    if (server.preprocess.nlpResult) delete server.preprocess.nlpResult;
                                 }
                                 resolve(null);
                             }
@@ -1286,10 +1300,12 @@ class DocumentSocket extends Socket {
                             clientId: 0
                         });
                     }
+                    console.log("Preprocess variable", this.server.preprocess);
                     console.log("nlpInput sent.............");
 
                     const nlpResult = await waitForNlpResult(this.server, item.requestId);
-                    if (nlpResult) {
+                    console.log("NLP result received:", nlpResult);
+                    if (!this.server.preprocess.cancelled && nlpResult) {
                         try {
                             await Promise.all(
                                 item.docIds.map(docId =>
@@ -1309,13 +1325,9 @@ class DocumentSocket extends Socket {
                     } else {
                         this.logger.warn(`Timeout: No NLP result received for request ${item.requestId}`);
                     }
-
-                    if (this.server.preprocess) {
-                        if (this.server.preprocess.requests) delete this.server.preprocess.requests[item.requestId];
-                        if (this.server.preprocess.activeListeners) delete this.server.preprocess.activeListeners[item.requestId];
-                        if (this.server.preprocess.nlpResult && this.server.preprocess.nlpResult.id === item.requestId) {
-                            delete this.server.preprocess.nlpResult;
-                        }
+                    
+                    if (this.server.preprocess && this.server.preprocess.requests) {
+                        delete this.server.preprocess.requests[item.requestId];
                     }
                 }
                 this.server.preprocess = {};
@@ -1338,15 +1350,11 @@ class DocumentSocket extends Socket {
 
     async cancelSubmissions(data, options) {
         if (await this.isAdmin()) {
-            if (this.server.preprocess.activeListeners) {
-                Object.entries(this.server.preprocess.activeListeners).forEach(([requestId, listener]) => {
-                    this.socket.removeListener(requestId, listener);
-                });
-                this.server.preprocess.activeListeners = {};
+            if (this.server.preprocess) {
+                this.server.preprocess.cancelled = true;
+                this.server.preprocess.requests = {};
+                this.server.preprocess.currentSubmissionsCount = 0;
             }
-
-            this.server.preprocess.requests = {};
-            this.server.preprocess.currentSubmissionsCount = 0;
         }
     }
 

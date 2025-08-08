@@ -148,9 +148,16 @@ module.exports = class NLPService extends Service {
         });
 
         nlpSocket.on("skillResults", (data) => {
+            console.log("skillResults received", data.clientId);
             if (data.clientId === 0) {
-                self.server.preprocess = self.server.preprocess || {};
-                self.server.preprocess.nlpResult = { ...data };
+                if (self.server.preprocess){
+                    if(!("cancelled" in self.server.preprocess) || self.server.preprocess.cancelled) {
+                        return;
+                    }
+                    self.server.preprocess = self.server.preprocess || {};
+                    delete data.clientId;
+                    self.server.preprocess.nlpResult = { ...data };
+                }
             } else {
                 const client = self.getClient(data.clientId);
                 delete data.clientId;
@@ -158,6 +165,10 @@ module.exports = class NLPService extends Service {
                     self.send(client, "skillResults", data);
                 }
             }
+        });
+        
+        nlpSocket.on("error", (data) => {
+            this.logger.error("the error happened in the nlp service", data)
         });
 
         nlpSocket.connect();
@@ -251,9 +262,12 @@ module.exports = class NLPService extends Service {
      */
     async request(client, data) {
         if (this.nlpSocket && this.nlpSocket.connected) {
-            data["clientId"] = client.socket.id;
+            if (!("clientId" in data)) {
+                data["clientId"] = client.socket.id;
+            }
             this.nlpSocket.emit("skillRequest", data);
         } else if (this.skills && this.skills.find(s => this.#hasConfig(s) && s.name === data.name)) {
+            this.logger.info(`The request for skill ${data.name} is sent to the fallback nlp service`);
             await this.send(client, "skillResults", {
                 id: data.id,
                 data: this.skills.find(s => this.#hasConfig(s) && s.name === data.name).config.output.example,

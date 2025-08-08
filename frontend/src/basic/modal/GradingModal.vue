@@ -23,7 +23,7 @@
           <label class="form-label">Select Config:</label>
           <FormSelect
             v-model="selectedConfig"
-            :options="jsonConfigOptions"
+            :options="{ options: configOptions }"
           />
         </div>
       </template>
@@ -35,7 +35,7 @@
             :data="inputFiles"
             :options="{ ...options, selectableRows: true }"
             :modelValue="selectedInputRows || []"
-            :buttons="buttons"
+            :buttons="buttons()"
             @update:modelValue="onInputFilesChange"
           />
         </div>
@@ -103,7 +103,7 @@ import BasicTable from "@/basic/Table.vue";
 export default {
   name: "GradingModal",
   components: { StepperModal, FormSelect, BasicTable },
-  subscribeTable: ["document"],
+  subscribeTable: ["document","submission"],
   emits: ["submit"],
   data() {
     return {
@@ -119,7 +119,9 @@ export default {
         pagination: 10,
       },
       columns: [
-        { key: 'name', label: 'Name' },
+        { key: 'id', name: 'ID' },
+        { key: 'name', name: 'Submission Name' },
+        { key: 'group', name: 'GroupID' },
       ],
       // TODO: This processing is updated with preprocess variable from Server.js
       preprocess: {}, // Use this for tests: {"requests": {1:{},5:{}}, "currentSubmissionsCount": 10 }
@@ -165,33 +167,28 @@ export default {
     stepValid() {
       const hasValidConfig = this.selectedConfig && this.configOptions.find(config => config.value === this.selectedConfig);
       return [
-        !!this.selectedSkill && hasValidConfig, // Step 1: Both must be selected and config must be valid
+        !!this.selectedSkill && !!this.selectedConfig, // Step 1: Both must be selected and config must be valid
         // TODO: Add check if the file is already processed and saved in document_data
         this.selectedInputRows.length > 0, // Step 2: At least one file selected
       ];
     },
     inputFiles() {
-      return (this.submissions || []).map(doc => ({
-        id: doc.id,
-        name: doc.name,
+      return (this.submissions || []).map(submission => ({
+        id: submission.id,
+        name: submission.name || `Submission ${submission.id}`,
+        group: submission.group,
       }));
     },
     downloadFile(row) {
-      const doc = (this.submissions || []).find(d => d.id === row.id);
-      if (!doc) return;
+      const submission = (this.submissions || []).find(s => s.id === row.id);
+      if (!submission) return;
       // TODO: Implement file download logic for .zip/.tex after the application of moodle import submissions
     },
     submissions(){
       return this.$store.getters["table/submission/getAll"];
     },
-    // TODO: Replace type to 3(JSON) when implemented and filter ahead by "type"="criteria"
     jsonConfig(){
-      return this.$store.getters["table/document/getByKey"]('type', 0);
-    },
-    jsonConfigOptions() {
-      return {
-        options: this.configOptions
-      };
+      return this.$store.getters["table/document/getByKey"]('type', 3);
     },
     isProcessingActive() {
       return (
@@ -243,22 +240,44 @@ export default {
   beforeUnmount() {
     this.stopElapsedTimer();
   },
+  watch: {
+    jsonConfig: {
+      handler() {
+        this.fetchConfigOptions();
+      },
+      immediate: true,
+      deep: true
+    }
+  },
   methods: {
     async fetchConfigOptions() {
+      console.log("jsonConfig", this.jsonConfig)
       const docs = this.jsonConfig || [];
       const options = [];
-      for (const doc of docs) {
-        const res = await this.$socket.emitAsync("documentGet", { documentId: doc.id });
-        if (res && res.file) {
-          try {
-            const jsonContent = JSON.parse(Buffer.from(res.file).toString('utf8'));
-            if (jsonContent.type === "assessment") {
-              options.push({ value: doc.id, name: doc.name, data: jsonContent });
+      for (const config of docs) {
+        await new Promise((resolve) => {
+          this.$socket.emit("documentGet", { documentId: config.id }, (res) => {
+            console.log("Config check 2", res.data.file);
+            if (res && res.data && res.data.file) {
+              let fileContent;
+              if (res.data.file instanceof ArrayBuffer) {
+                fileContent = new TextDecoder().decode(new Uint8Array(res.data.file));
+              } else {
+                fileContent = res.data.file.toString();
+              }
+              try {
+                const jsonContent = JSON.parse(fileContent);
+                console.log("Parsed JSON config", jsonContent);
+                if (jsonContent.type === "assessment") {
+                  options.push({ value: config.id, name: config.name });
+                }
+              } catch (parseError) {
+                console.error(`Error parsing JSON config for document ${config.id}:`, parseError);
+              }
             }
-          } catch (parseError) {
-            console.error(`Error parsing JSON config for document ${doc.id}:`, parseError);
-          }
-        }
+            resolve();
+          });
+        });
       }
       this.configOptions = options;
     },
@@ -268,7 +287,7 @@ export default {
     },
     close() {
       this.$refs.gradingStepper.close();
-    },    
+    },
     buttons() {
       return [
         {
@@ -281,7 +300,7 @@ export default {
           action: this.downloadFile,
         },
       ];
-    },    
+    },
     onInputFilesChange(rows) {
       this.selectedInputRows = Array.isArray(rows) ? rows : [];
     },
@@ -311,8 +330,8 @@ export default {
       
       this.$socket.emit("submissionsPreprocess", {
         skill: this.selectedSkill,
-        config: selectedConfigObj ? selectedConfigObj.data : null,
-        inputFiles: this.selectedInputRows
+        config: this.selectedConfig,
+        inputFiles: this.selectedInputRows.map(row => row.id)
       }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
@@ -330,18 +349,18 @@ export default {
       });
       this.close();
     },
-  },
-  startElapsedTimer() {
-    if (this.elapsedTimer) return;
-    this.elapsedTimer = setInterval(() => {
-      this.$forceUpdate();
-    }, 1000);
-  },
-  stopElapsedTimer() {
-    if (this.elapsedTimer) {
-      clearInterval(this.elapsedTimer);
-      this.elapsedTimer = null;
-    }
+    startElapsedTimer() {
+      if (this.elapsedTimer) return;
+      this.elapsedTimer = setInterval(() => {
+        this.$forceUpdate();
+      }, 1000);
+    },
+    stopElapsedTimer() {
+      if (this.elapsedTimer) {
+        clearInterval(this.elapsedTimer);
+        this.elapsedTimer = null;
+      }
+    },
   },
 };
 </script> 
