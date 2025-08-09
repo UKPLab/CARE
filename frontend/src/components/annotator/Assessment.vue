@@ -440,7 +440,7 @@ export default {
       this.error = null;
 
       try {
-        const assessmentConfigDoc = this.$store.getters["table/document/getByKey"]('name', 'assessment_config')
+        const assessmentConfigDoc = this.$store.getters["table/document/getByKey"]('name', 'Assessment Config')
           .find(doc => doc.type === 3);
 
         if (assessmentConfigDoc) {
