@@ -799,15 +799,12 @@ class DocumentSocket extends Socket {
             // 1. Get validation schema
             const validationSchema = await this.getValidationSchema(validationSchemaDocumentId);
             
-            // 2. Categorize files
-            const categorizedFiles = this.categorizeFiles(tempFiles);
-            
-            // 3. Validate against rules
+            // 2. Validate against rules
             const validationResult = await this.validateAgainstRules(
-                categorizedFiles, 
+                tempFiles, 
                 validationSchema.rules
             );
-            
+
             return validationResult;
             
         } catch (error) {
@@ -850,12 +847,14 @@ class DocumentSocket extends Socket {
 
     /**
      * Validate files against validation rules
-     * @param {Object} categorizedFiles - Files categorized by type
+     * @param {Array} tempFiles - Array of temporary file objects
      * @param {Object} rules - Validation rules
      * @returns {Promise<Object>} - Validation result
      */
-    async validateAgainstRules(categorizedFiles, rules) {
-        const { pdfs, zips, others } = categorizedFiles;
+    async validateAgainstRules(tempFiles, rules) {
+        // Categorize files for additional files check
+        const categorizedFiles = this.categorizeFiles(tempFiles);
+        const { others } = categorizedFiles;
 
         // Check additional files policy
         if (!rules.additionalFilesAreAllowed && others.length > 0) {
@@ -867,7 +866,7 @@ class DocumentSocket extends Socket {
 
         // Check each required file type
         for (const fileConfig of rules.requiredFiles) {
-            const result = await this.validateRequiredFile(fileConfig, categorizedFiles);
+            const result = await this.validateRequiredFile(fileConfig, tempFiles);
             if (!result.success) {
                 return result;
             }
@@ -879,21 +878,13 @@ class DocumentSocket extends Socket {
     /**
      * Validate a specific required file type
      * @param {Object} fileConfig - Required file configuration
-     * @param {Object} categorizedFiles - Categorized files
+     * @param {Array} tempFiles - Array of temporary file objects
      * @returns {Promise<Object>} - Validation result
      */
-    async validateRequiredFile(fileConfig, categorizedFiles) {
+    async validateRequiredFile(fileConfig, tempFiles) {
         const { pattern, required, description, includeFiles } = fileConfig;
-
-        // Find matching files
-        let matchingFiles;
-        if (pattern.includes("pdf")) {
-            matchingFiles = categorizedFiles.pdfs.filter((file) => new RegExp(pattern).test(file.fileName));
-        } else if (pattern.includes("zip")) {
-            matchingFiles = categorizedFiles.zips.filter((file) => new RegExp(pattern).test(file.fileName));
-        } else {
-            matchingFiles = categorizedFiles.others.filter((file) => new RegExp(pattern).test(file.fileName));
-        }
+        // Find matching files based on pattern
+        const matchingFiles = tempFiles.filter((file) => new RegExp(pattern).test(file.fileName));
 
         // Check if required file exists
         if (required && matchingFiles.length === 0) {
@@ -903,12 +894,12 @@ class DocumentSocket extends Socket {
             };
         }
 
-        // For ZIP files, validate contents
-        if (pattern.includes("zip") && includeFiles && matchingFiles.length > 0) {
-            for (const zipFile of matchingFiles) {
-                const zipContentResult = await this.validateZipFileContents(zipFile, includeFiles);
-                if (!zipContentResult.success) {
-                    return zipContentResult;
+        // For archive files, validate contents
+        if (includeFiles && matchingFiles.length > 0) {
+            for (const archiveFile of matchingFiles) {
+                const archiveContentResult = await this.validateZipFileContents(archiveFile, includeFiles);
+                if (!archiveContentResult.success) {
+                    return archiveContentResult;
                 }
             }
         }
