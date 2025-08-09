@@ -6,15 +6,19 @@ const userRights = [
     description: "access to view documents in the dashboard",
   },
   {
-    name: "frontend.dashboard.tagset.view",
+    name: "frontend.dashboard.tags.view",
     description: "access to view tagsets in the dashboard",
+  },
+  {
+    name: "frontend.dashboard.home.view",
+    description: "access to view home in the dashboard",
   },
   {
     name: "frontend.dashboard.projects.view",
     description: "access to view projects in the dashboard",
   },
   {
-    name: "frontend.dashboard.studysessions.view",
+    name: "frontend.dashboard.study_sessions.view",
     description: "access to view study sessions in the dashboard",
   },
 ];
