@@ -7,7 +7,11 @@ const roleRights = [
   },
   {
     role: "user",
-    userRightName: "frontend.dashboard.tagset.view",
+    userRightName: "frontend.dashboard.home.view",
+  },
+  {
+    role: "user",
+    userRightName: "frontend.dashboard.tags.view",
   },
   {
     role: "user",
@@ -15,7 +19,7 @@ const roleRights = [
   },
   {
     role: "user",
-    userRightName: "frontend.dashboard.studysessions.view",
+    userRightName: "frontend.dashboard.study_sessions.view",
   },
 ];
 
