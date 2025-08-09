@@ -255,14 +255,14 @@ module.exports = class NLPService extends Service {
     }
 
     /**
-     * Overwrite method to handle incoming requests
+     * Shared logic for handling skill requests
      * @param client
      * @param data
-     * @return {Promise<void>}
+     * @param {boolean} setClientId if true, the clientId is not set in data, but taken from the client
      */
-    async request(client, data) {
+    async _handleSkillRequest(client, data, setClientId = false) {
         if (this.nlpSocket && this.nlpSocket.connected) {
-            if (!("clientId" in data)) {
+            if (!(setClientId && "clientId" in data)) {
                 data["clientId"] = client.socket.id;
             }
             this.nlpSocket.emit("skillRequest", data);
@@ -274,6 +274,26 @@ module.exports = class NLPService extends Service {
                 fallback: true
             });
         }
+    }
+
+    /**
+     * Overwrite method to handle incoming requests
+     * @param client
+     * @param data
+     * @return {Promise<void>}
+     */
+    async request(client, data) {
+        await this._handleSkillRequest(client, data, false);
+    }
+
+    /**
+     * Overwrite method to handle incoming background requests
+     * @param client
+     * @param data
+     * @return {Promise<void>}
+     */
+    async backgroundRequest(client, data) {
+        await this._handleSkillRequest(client, data, true);
     }
 
     /**
