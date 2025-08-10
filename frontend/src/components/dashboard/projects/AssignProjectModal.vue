@@ -30,9 +30,9 @@
         <h6>Select users to assign projects to:</h6>
         <BasicTable
           v-model="userSelection"
-          :columns="columns"
+          :columns="table.columns"
           :data="users"
-          :options="tableOptions"
+          :options="table.options"
         />
         <small class="text-muted"
           >{{ Object.keys(userSelection || {}).length }} user(s) selected</small
@@ -60,7 +60,7 @@
             <h6 class="text-primary">Selected Project:</h6>
             <div v-if="dataSelection.project" class="mb-1">
               <i class="bi bi-folder me-1"></i>
-              {{ getProjectName(dataSelection.project) }}
+              {{ getProject(dataSelection.project).name }}
             </div>
           </div>
           <div class="col-md-6">
@@ -101,22 +101,25 @@ export default {
         { title: "Select Users" },
         { title: "Confirm" },
       ],
-      dataSelection: {},
-      userSelection: {},
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        selectableRows: true,
-        pagination: 10,
+      dataSelection: [],
+      userSelection: [],
+      table: {
+        options: {
+          striped: true,
+          hover: true,
+          bordered: false,
+          borderless: false,
+          small: false,
+          selectableRows: true,
+          pagination: 10,
+        },
+        columns: [
+          { name: "User Id", key: "id", sortable: true },
+          { name: "First Name", key: "firstName", sortable: true },
+          { name: "Last Name", key: "lastName", sortable: true },
+          { name: "Email", key: "email", sortable: true },
+        ],
       },
-      columns: [
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Email", key: "email" },
-      ],
     };
   },
   computed: {
@@ -135,23 +138,10 @@ export default {
           key: "project",
           label: "Select Project",
           type: "select",
+          default: 1,
           options: this.projects.map((project) => ({
             name: project.name,
             value: project.id,
-          })),
-          required: true,
-        },
-      ];
-    },
-    userSelectionFields() {
-      return [
-        {
-          key: "users",
-          label: "Select Users",
-          type: "select",
-          options: this.users.map((user) => ({
-            name: `${user.firstName} ${user.lastName}`,
-            value: user.id,
           })),
           required: true,
         },
@@ -161,15 +151,8 @@ export default {
   methods: {
     open() {
       this.$refs.assignProjectStepper.open();
-      this.dataSelection = {};
-      this.userSelection = {};
-    },
-    handleAssignStepChange(step) {
-      // Handle step change if needed
-      //todo: Implement any logic needed when the step changes
-      console.log("Step changed to:", step);
-      console.log("Current data selection:", this.dataSelection);
-      console.log("Current user selection:", this.userSelection);
+      this.dataSelection = [];
+      this.userSelection = [];
     },
     async handleAssignSubmit() {
       const projectId = this.dataSelection.project;
@@ -182,27 +165,30 @@ export default {
         });
         return;
       }
-      //todo: make project public
-      this.$socket.emit(
-        "appDataUpdate",
-        {
-          table: "project",
-          data: {
-            id: projectId,
-            public: true,
+      // Make project public
+      const project = this.getProject(projectId);
+      if (!project.public) {
+          this.$socket.emit(
+            "appDataUpdate",
+            {
+              table: "project",
+              data: {
+              id: projectId,
+              public: true,
+            },
           },
-        },
-        (result) => {
-          if (!result.success) {
-            this.eventBus.emit("toast", {
-              title: "Project assignment failed",
-              message: result.message,
-              variant: "danger",
-            });
-            return;
+          (result) => {
+            if (!result.success) {
+              this.eventBus.emit("toast", {
+                title: "Project assignment failed",
+                message: result.message,
+                variant: "danger",
+              });
+              return;
+            }
           }
-        }
-      );
+        );
+      }
       // Assign the project to each selected user
       for (const user of this.userSelection) {
         this.$socket.emit(
@@ -234,13 +220,13 @@ export default {
       this.close();
     },
     close() {
-      this.dataSelection = {};
-      this.userSelection = {};
+      this.dataSelection = [];
+      this.userSelection = [];
       this.$refs.assignProjectStepper.close();
     },
-    getProjectName(projectId) {
+    getProject(projectId) {
       const project = this.projects.find((p) => p.id === projectId);
-      return project.name;
+      return project;
     },
   },
 };
