@@ -101,6 +101,7 @@ class DocumentSocket extends Socket {
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: this.userId,
                 projectId: data.projectId,
+                originalFilename: data.name,
             }, {transaction: options.transaction});
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
@@ -131,6 +132,7 @@ class DocumentSocket extends Socket {
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
                 projectId: data.projectId,
+                originalFilename: data.name,
             }, {transaction: options.transaction});
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
             try {
