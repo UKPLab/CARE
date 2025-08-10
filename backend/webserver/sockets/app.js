@@ -411,8 +411,6 @@ class AppSocket extends Socket {
      */
     async sendOverallSetting(data, options) {
         if(this.isAdmin() && data.userId){
-            console.log("Setting user setting for user: " + data.userId);
-            console.log("Setting key: " + data.key + " to value: " + data.value);
             await this.models["user_setting"].set(data.key, data.value, data.userId);
         }
         else{
