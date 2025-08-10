@@ -35,7 +35,15 @@
         />   
         <ul class="navbar-nav">
           <li class="nav-item me-3">
-            <div v-if="!isProjectButtonHidden" style="position:relative; display:flex; align-items:center; height:100%;">
+            <div
+              v-if="!isProjectButtonHidden"
+              style="
+                position: relative;
+                display: flex;
+                align-items: center;
+                height: 100%;
+              "
+            >
               <div
                 @click.stop="toggleProjectDropdown"
                 class="project-box"
