@@ -1293,7 +1293,7 @@ class DocumentSocket extends Socket {
                 
                 for (const item of preprocessItems) {
                     if (this.server.services['NLPService']) {
-                        this.server.services['NLPService'].request(this, {
+                        this.server.services['NLPService'].backgroundRequest(this, {
                             id: item.requestId,
                             name: item.skill,
                             data: item.nlpInput,
@@ -1348,16 +1348,6 @@ class DocumentSocket extends Socket {
         }
     }
 
-    async cancelSubmissions(data, options) {
-        if (await this.isAdmin()) {
-            if (this.server.preprocess) {
-                this.server.preprocess.cancelled = true;
-                this.server.preprocess.requests = {};
-                this.server.preprocess.currentSubmissionsCount = 0;
-            }
-        }
-    }
-
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
@@ -1379,7 +1369,6 @@ class DocumentSocket extends Socket {
         this.createSocket("documentOpen", this.openDocument, {}, false);
         this.createSocket("documentGetAll", this.refreshAllDocuments, {}, false);
         this.createSocket("submissionsPreprocess", this.preprocessSubmissions, {}, true);
-        this.createSocket("submissionsCancel", this.cancelSubmissions, {}, true);
     }
 };
 

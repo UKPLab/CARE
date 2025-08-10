@@ -124,7 +124,7 @@ export default {
         { key: 'group', name: 'GroupID' },
       ],
       // TODO: This processing is updated with preprocess variable from Server.js
-      preprocess: {}, // Use this for tests: {"requests": {1:{},5:{}}, "currentSubmissionsCount": 10 }
+      //preprocess: {}, // Use this for tests: {"requests": {1:{},5:{}}, "currentSubmissionsCount": 10 }
       currentStep: 1,
       elapsedTimer: null,
       configOptions: [],
@@ -140,6 +140,9 @@ export default {
     }
   },
   computed: {
+    preprocess() {
+      return this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate");
+    },
     processingSteps() {
       if (this.isProcessingActive) {
         return [
@@ -232,6 +235,7 @@ export default {
     },
   },
   mounted() {
+    this.$socket.on("backgroundTaskUpdate", (data) => {});
     if (this.isProcessingActive) {
       this.startElapsedTimer();
     }
@@ -308,7 +312,10 @@ export default {
       this.currentStep = step;
     },
     cancelProcessing() {
-      this.$socket.emit("submissionsCancel", {
+      this.$socket.emit("serviceRequest",
+        {
+          service: "BackgroundTaskService",
+          action: "cancelPreprocessing",
       }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
@@ -328,10 +335,15 @@ export default {
     preprocessing() {
       const selectedConfigObj = this.configOptions.find(config => config.value === this.selectedConfig);
       
-      this.$socket.emit("submissionsPreprocess", {
-        skill: this.selectedSkill,
-        config: this.selectedConfig,
-        inputFiles: this.selectedInputRows.map(row => row.id)
+      this.$socket.emit("serviceRequest",
+        {
+          service: "BackgroundTaskService",
+          action: "startPreprocessing",
+          data: {
+            skill: this.selectedSkill,
+            config: this.selectedConfig,
+            inputFiles: this.selectedInputRows.map(row => row.id)
+          }
       }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
