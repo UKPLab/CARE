@@ -9,6 +9,7 @@
         @click="$refs.projectModal.open(0)"
       />
       <BasicButton
+        v-if="isAdmin"
         class="btn-secondary btn-sm"
         title="Assign projects"
         text="Assign projects"
@@ -83,6 +84,9 @@ export default {
   computed: {
     userId() {
       return this.$store.getters["auth/getUserId"];
+    },
+    isAdmin() {
+      return this.$store.getters["auth/isAdmin"];
     },
     buttons() {
       const buttons = [
