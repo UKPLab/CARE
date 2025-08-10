@@ -247,8 +247,28 @@ export default {
       this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
     },
     publishProject(params) {
-      //TODO: Implement
-      console.log("Not implemented yet", params);
+      this.$socket.emit("appDataUpdate", {
+        table: "project",
+        data: {
+          id: params.id,
+          public: true
+        }
+      }, (result) => {
+        if (!result.success) {
+          this.eventBus.emit('toast', {
+            title: "Project publish failed",
+            message: result.message,
+            variant: "danger"
+          });
+        }
+        else {
+          this.eventBus.emit('toast', {
+            title: "Project published",
+            message: "The project has been successfully published.",
+            variant: "success"
+          });
+        }
+      });
     },
     selectProject(projectId) {
         this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
