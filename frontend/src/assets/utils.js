@@ -177,8 +177,12 @@ export function getTimeDiffString(start, end) {
  */
 export function downloadDocument(content, fileName, fileType = "") {
     let typeSet;
-
     switch (fileType) {
+        case "PDF":
+            typeSet = "application/pdf";
+            // Ensure fileName ends with .pdf
+            fileName = fileName.replace(/\.pdf$/i, "") + ".pdf"; // Remove any trailing .pdf and add .pdf
+            break;
         case "html":
             typeSet = "text/html;charset=utf-8";
             break;
@@ -251,4 +255,30 @@ export const sorter = function(arrayToSort, sortList) {
     }
     return sortedList;
 
+}
+
+/**
+ * Extracts text content from a PDF document using PDF.js
+ * @param {Object} pdfDocument - The PDF.js document object
+ * @returns {Promise<string>} A promise that resolves to the extracted text
+ */
+export async function extractTextFromPDF(pdfDocument) {
+    let fullText = '';
+    
+    // Loop through all pages
+    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+        const page = await pdfDocument.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        
+        // Extract text from the page and normalize whitespace
+        const pageText = textContent.items
+            .map(item => item.str)
+            .join(' ')
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .trim();
+            
+        fullText += pageText + '\n';
+    }
+    
+    return fullText;
 }

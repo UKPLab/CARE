@@ -1,4 +1,4 @@
-python-socketio>=5.7.2
+python-socketio>=5.13.0
 requests>=2.31.0
-python-socketio[asyncio]>=5.7.2
+python-socketio[asyncio]>=5.13.0
 gunicorn>=20.1.0
