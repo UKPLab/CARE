@@ -9,8 +9,7 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn("document", "originalFilename", {
-      type: Sequelize.STRING,
-      allowNull: true,
+      type: Sequelize.STRING
     });
   },
 
