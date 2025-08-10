@@ -324,7 +324,6 @@ export default {
           this.$refs.importStepper?.setWaiting(false);
           if (res.success) {
             this.users = res["data"];
-            console.log("Fetched users from Moodle:", this.users);
           } else {
             this.eventBus.emit("toast", {
               title: "Failed to get users from Moodle",
