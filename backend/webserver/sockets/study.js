@@ -12,11 +12,16 @@ const Socket = require("../Socket.js");
 class StudySocket extends Socket {
 
     /**
-     * Save the current study as a template (create a new study with template: true)
-     * @param {object} data
-     * @param {number} data.id - the id of the study to save as template
-     * @param {object} options - the options for the transaction
-     * @returns {Promise<*>}
+     * Creates a new study template based on an existing study.
+     * This operation is restricted to the owner of the original study or an administrator.
+     * 
+     * @socketEvent studySaveAsTemplate
+     * @param {object} data The data object containing the identifier for the source study.
+     * @param {number} data.id the ID of the study to save as template
+     * @param {object} options Configuration for the database operation.
+     * @param {Object} options.transaction A Sequelize DB transaction object.
+     * @returns {Promise<*>} A promise that resolves with the newly created study template object from the database.
+     * @throws {Error} Throws an error if the user does not have permission to access the source study.
      */
     async saveStudyAsTemplate(data, options) {
         const currentStudy = await this.models['study'].getById(data['id']);
@@ -36,13 +41,16 @@ class StudySocket extends Socket {
     }
 
     /**
-     * Close a bulk of studies
-     * @param data
-     * @param data.projectId - the project id of the studies to close
-     * @param data.ignoreClosedState - if true, also close studies that are already closed
-     * @param data.progressId - the id of the progress bar to update
-     * @param options - not used
-     * @returns {Promise<void>}
+     * Closes all studies associated with a given project ID in a loop.
+     * Each study is updated in its own database transaction. Progress is reported to the client after each study is processed.
+     * 
+     * @socketEvent studyCloseBulk
+     * @param data The data required for the bulk close operation.
+     * @param data.projectId the project ID of the studies to close
+     * @param data.ignoreClosedState if true, also close studies that are already closed
+     * @param data.progressId the ID of the progress bar to update
+     * @param options Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} A promise that resolves (with no value) once all studies in the project have been processed.
      */
     async closeBulk(data, options) {
 
