@@ -273,10 +273,11 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Create document (html)
+     * Creates a new HTML-based document record in the database.
+     *
      * @param {Object} data The data for the new document.
      * @param {string} data.name The name of the new document.
-     * @param {number} data.type The type identifier for the document (e.g., HTML).
+     * @param {number} data.type The type identifier for the document (e.g., HTML, MODAL).
      * @param {Object} options The options object containing the transaction.
      * @returns {Promise<Object>} A promise that resolves with the newly created document's database record.
      */
@@ -287,19 +288,7 @@ class DocumentSocket extends Socket {
             userId: this.userId,
             projectId: data.projectId
         }, {transaction: options.transaction});
-                       annotations.push(annotation);
-                                let newComment = {
-    documentId: annotation.documentId,
-    studySessionId: annotation.studySessionId,
-    studyStepId: annotation.studyStepId,
-    annotationId: annotation.id,
-    parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
-    anonymous: data.anonymous !== undefined ? data.anonymous : false,
-    tags: "[]",
-    draft: data.draft !== undefined ? data.draft : true,
-    text: extracted.text !== undefined ? extracted.text : null,
-    userId: data.userId ?? this.userId
-};
+
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         });
