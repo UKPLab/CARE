@@ -27,38 +27,37 @@
           </div>
           {{ comment.creator_name }}
           <Collaboration
-              ref="collab"
-              :target-id="commentId"
-              :document-id="documentId"
-              target-type="comment"
-              @collab-status="toEditMode"
+            ref="collab"
+            :target-id="commentId"
+            :document-id="documentId"
+            target-type="comment"
+            @collab-status="toEditMode"
           />
         </div>
         <div class="col text-end">
-          <div style="display: flex; flex-direction: column; align-items: flex-end;">
-            <div v-if="!editedByMyself" style="position: absolute; top: 5px; right: 8px; z-index: 10;">
-              <LoadIcon
-                icon-name="check-square"
-                :size="16"
-                :color="collapsed ? '#28a745' : '#6c757d'"
-                cursor="pointer"
-                class="check-icon"
-                @click="collapsed = !collapsed"
-              />
-            </div>
-            <span v-if="annotation">
-              {{ new Date(annotation.updatedAt).toLocaleDateString() }}
-            </span>
-            <span v-else>
-              {{ new Date(comment.updatedAt).toLocaleDateString() }}
-            </span>
-          </div>
+          <span v-if="annotation">
+            {{ new Date(annotation.updatedAt).toLocaleDateString() }}
+          </span>
+          <span v-else>
+            {{ new Date(comment.updatedAt).toLocaleDateString() }}
+          </span>
         </div>
       </div>
     </template>
       <template #body>
         <div v-if="editingTag && annotationId" class="d-flex align-items-center">
-          <select v-model="selectedTagId" @change="saveTagChange" class="form-select form-select-md" :style="{ display: 'inline-block', borderLeft: '4px solid #' + color, height: '20px', fontSize: 'small', fontStyle: 'italic' }">
+          <select
+            v-model="selectedTagId"
+            @change="saveTagChange"
+            class="form-select form-select-md"
+            :style="{
+              display: 'inline-block',
+              borderLeft: '4px solid #' + color,
+              height: '20px',
+              fontSize: 'small',
+              fontStyle: 'italic'
+            }"
+          >
             <option  v-for="tag in tagSetTags" :key="tag.id" :value="tag.id">
               {{ tag.name }}
             </option>
@@ -226,6 +225,11 @@ export default {
       type: Number,
       required: true,
     },
+    acceptStats: {
+      type: Boolean,
+      required: false,
+      default: () => false
+    },
     studySessionId: {
       type: Number,
       required: false,
@@ -287,6 +291,15 @@ export default {
           data: {
             id: this.commentState.id,
             state: newValue? 1 : 0,
+          }
+        });
+      }    
+      if(this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "commentToggleCollapse",
+          data: {
+            commentId: this.commentId,
+            state: newValue,
           }
         });
       }
@@ -535,7 +548,6 @@ export default {
     },
     saveTagChange() {
       if (this.selectedTagId !== this.annotation.tagId) {
-        console.log("Tag changed to: " + this.selectedTagId);
         this.$socket.emit('annotationUpdate', {
           annotationId: this.annotation.id,
           tagId: this.selectedTagId,

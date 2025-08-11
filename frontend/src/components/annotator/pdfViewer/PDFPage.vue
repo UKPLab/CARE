@@ -169,12 +169,6 @@ export default {
     },
     annotations() {
       if (this.isRendered) {
-        // Create new anchor instance for current page
-        this.anchor = new Anchoring(this.pdf, this.pageNumber);
-        // Force re-anchoring of all annotations
-        this.annotations.forEach(anno => {
-          anno.anchors = null;
-        });
         this.add_anchors();
       }
     },
