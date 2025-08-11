@@ -11,6 +11,11 @@
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
+          class="btn-secondary btn-sm me-1"
+          title="Templates"
+          @click="saveAsTemplate"
+        />
+        <BasicButton
           v-if="canCloseStudies"
           class="btn-secondary btn-sm me-1"
           title="Close All Studies"
@@ -503,6 +508,9 @@ export default {
     },
     closeStudies() {
       this.$refs.bulkConfirmModal.open();
+    },
+    saveAsTemplate() {
+      this.$refs.saveAsTemplateModal.open();
     },
     async deleteStudy(row) {
       const studySessions = this.$store.getters["table/study_session/getFiltered"](

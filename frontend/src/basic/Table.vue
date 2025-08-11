@@ -245,7 +245,7 @@
     v-if="options && options.pagination && total > 0"
     ref="pagination"
     :current-page="currentPage"
-    :items-per-page="2"
+    :items-per-page="limit"
     :items-per-page-list="itemsPerPageList"
     :pages="pages"
     :show-pages="paginationShowPages"
