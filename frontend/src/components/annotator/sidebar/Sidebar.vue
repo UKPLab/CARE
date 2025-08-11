@@ -256,6 +256,7 @@ export default {
         || this.$store.getters["table/annotation/getFiltered"](e => e.draft).length > 0;
     },
     anonymized() {
+      if (!this.study) return false;
       return this.study.anonymize;
     }
   },

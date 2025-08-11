@@ -11,11 +11,13 @@ class ServiceSocket extends Socket {
 
     /**
      * Connects a service to the client
-     * @param {Object} data - The input data
-     * @param {string} data.service - The name of the service to connect
-     * @param {Object} data.data - Additional data to pass to the service
-     * @param {Object} options - not used
-     * @return {Promise<void>}
+     * 
+     * @socketEvent serviceConnect
+     * @param {Object} data The input data
+     * @param {string} data.service The name of the service to connect
+     * @param {Object} data.data Additional data to pass to the service
+     * @param {Object} options Additional configuration parameters (currently unused).
+     * @return {Promise<void>} A promise that resolves (with no value) once the service connection attempt is complete.
      */
     async connectService(data, options) {
         if (this.server.services[data.service]) {
@@ -25,11 +27,13 @@ class ServiceSocket extends Socket {
 
     /**
      * Disconnects a service from the client
-     * @param {Object} data - The input data
-     * @param {string} data.service - The name of the service to disconnect
-     * @param {Object} data.data - Additional data to pass to the service
-     * @param {Object} options - not used
-     * @returns {Promise<void>}
+     * 
+     * @socketEvent serviceDisconnect
+     * @param {Object} data The input data
+     * @param {string} data.service The name of the service to disconnect
+     * @param {Object} data.data Additional data to pass to the service
+     * @param {Object} options Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} A promise that resolves (with no value) once the service disconnection attempt is complete.
      */
     async disconnectService(data, options) {
         if (this.server.services[data.service]) {
@@ -39,11 +43,13 @@ class ServiceSocket extends Socket {
 
     /**
      * Request a service (with default command)
-     * @param {Object} data - The input data
-     * @param {string} data.service - The name of the service to disconnect
-     * @param {Object} data.data - Additional data to pass to the service
-     * @param {Object} options - not used
-     * @returns {Promise<void>}
+     * 
+     * @socketEvent serviceRequest
+     * @param {Object} data The input data
+     * @param {string} data.service The name of the service to disconnect
+     * @param {Object} data.data Additional data to pass to the service
+     * @param {Object} options Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} A promise that resolves (with no value) once the service request attempt is complete.
      */
     async requestService(data, options) {
         if (this.server.services[data.service]) {
@@ -53,11 +59,13 @@ class ServiceSocket extends Socket {
 
     /**
      * Request a service but with a specific command
-     * @param {Object} data - The input data
-     * @param {string} data.service - The name of the service to disconnect
-     * @param {Object} data.data - Additional data to pass to the service
-     * @param {Object} options - not used
-     * @returns {Promise<void>}
+     * 
+     * @socketEvent serviceCommand
+     * @param {Object} data The input data
+     * @param {string} data.service The name of the service to disconnect
+     * @param {Object} data.data Additional data to pass to the service
+     * @param {Object} options Additional configuration parameters (currently unused).
+     * @returns {Promise<void>} A promise that resolves (with no value) once the service command attempt is complete.
      */
     async serviceCommand(data, options) {
         if (this.server.services[data.service]) {

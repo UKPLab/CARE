@@ -31,6 +31,8 @@ extensions = [
 ]
 autosummary_generate = True  # Turn on sphinx.rpcs.autosummary
 js_source_path = ['../../backend/webserver/sockets']
+jsdoc_config_path = '/docs/jsdoc.config.js'
+
 
 autodoc_default_options = {
     'members': True,
@@ -50,3 +52,4 @@ exclude_patterns = []
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+

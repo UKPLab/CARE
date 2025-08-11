@@ -41,6 +41,7 @@ module.exports = (sequelize, DataTypes) => {
                             }
                         },
                         {type: "byUserId", key: "userId"}
+                        {type:"byProjectId", key: "projectId"}
                     ],
                     additionalOptions: [
                         {

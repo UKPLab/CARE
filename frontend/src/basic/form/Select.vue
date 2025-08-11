@@ -92,6 +92,9 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
+    selectedProjectId() {
+      return parseInt(this.$store.getters["settings/getValue"]("projects.default"));
+    },
     selectOptions() {
       let baseOptions = [];
 
@@ -112,6 +115,8 @@ export default {
                 return sourceValue === this.parentValue[f.value];
               case "byUserId":
                 return sourceValue === this.userId;
+              case "byProjectId":
+                return sourceValue === this.selectedProjectId;
               default:
                 return sourceValue === f.value;
             }
