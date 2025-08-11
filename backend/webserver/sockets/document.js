@@ -1303,7 +1303,7 @@ class DocumentSocket extends Socket {
                                         documentId: docId,
                                         studySessionId: null,
                                         studyStepId: null,
-                                        key: `service_nlpGrading_${item.skill}`,
+                                        key: `service_nlpGrading_${item.skill}`, //TODO: This should service_nlpGrading_typeOfResultParameter and not skill; rather the skill name comes from thw workflow.. we need to figure out a way to track this anyways?
                                         value: nlpResult
                                     }, options)
                                 )
