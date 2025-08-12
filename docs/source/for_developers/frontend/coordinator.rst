@@ -487,6 +487,39 @@ The ``Choice`` component displays a dynamic list of items (choices) where each r
 
 It renders a table layout and allows you to bind form fields per row. You must define a source table and optional filters to determine which choices to show.
 
+.. tip::
+
+    To better understand how the ``Choice`` component fits into a workflow, here’s a minimal example of how workflows are structured in the backend:
+
+    .. code-block:: json
+
+        [
+          {
+            "name": "Peer Review Workflow",
+            "steps": [
+              { "stepType": 1, "allowBackward": false },
+              {
+                "stepType": 2,
+                "allowBackward": true,
+                "configuration": {
+                  "fields": [
+                    { "name": "reviewLink" },
+                    { "name": "reviewText" }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+
+    In this structure:
+    
+    - Each workflow contains multiple ``steps``.
+    - ``stepType`` defines the type of action (e.g., edit, review).
+    - ``allowBackward`` determines if users can return to a step.
+    - ``configuration`` holds extra options or fields for that step.
+
+
 .. code-block:: html
 
     <FormChoice
