@@ -463,16 +463,10 @@ export default {
     handleHeaderClick() {
       if (this.collapsed && !this.editedByMyself) {
         this.collapsed = false;
-        if (this.annotationId && this.collapsed === false) {
-          this.scrollTo(this.annotationId);
-        }
       }
     },
     handleCheckIconClick() {
       this.collapsed = !this.collapsed;
-      if (this.annotationId && this.collapsed === false) {
-        this.scrollTo(this.annotationId);
-      }
     },
     save() {
       if (this.annotationId && this.annotation) {

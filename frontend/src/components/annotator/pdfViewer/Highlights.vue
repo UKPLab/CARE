@@ -133,7 +133,7 @@ export default {
   },
   watch: {
     annotations(newVal, oldVal) {
-
+      console.log('Annotations changed:', newVal, oldVal);
       // Remove highlights of deleted anchors
       oldVal.filter(anno => !newVal.includes(anno))
         .forEach(anno => {
@@ -149,6 +149,11 @@ export default {
       newVal.filter(anno => !oldVal.includes(anno))
         .map(anno => {
           this.highlight(anno);
+          console.log('New annotation highlights added:', anno.id);
+          if(!this.collapsedAnnotationIds.includes(anno.id)) {
+            console.log('Handling scrolling for annotation:', anno.id);
+            this.handleScrolling(anno.id);
+          }
         });
     },
     tags(newVal) {
@@ -167,17 +172,15 @@ export default {
     this.annotations.map(this.highlight);
   },
   methods: {
-    /**
-     * Fetch the annotationId from the comment table using annotation ID
-     * @param {number} annotationId - The annotation ID to look up
-     * @return {Object|null} - The comment object or null if not found
-     */
     getCommentByAnnotationId(annotationId) {
-      const comment = this.$store.getters['table/comment/getFiltered'](
+      return this.$store.getters['table/comment/getFiltered'](
         comment => comment.annotationId === annotationId
       )[0];
-      
-      return comment || null;
+    },
+    getCommentStateByCommentId(commentId) {
+      return this.$store.getters['table/comment_state/getFiltered'](
+        state => state.commentId === commentId
+      )[0];
     },
     getColor(tagId) {
       if (tagId) {
@@ -202,6 +205,30 @@ export default {
         } else {
           return "efea7b";
         }
+      }
+    },
+    handleScrolling(annotationId) {
+      const isRecentlyUpdated = this.isRecentlyUpdated(annotationId);
+      if (isRecentlyUpdated) {
+        this.eventBus.emit('pdfScroll', annotationId);
+      }
+    },
+    isRecentlyUpdated(annotationId) {
+      const commentId = this.getCommentByAnnotationId(annotationId)?.id;
+      if (!commentId) {
+        return false;
+      }
+      const recentCommentState = this.getCommentStateByCommentId(commentId);
+      if(!recentCommentState) {
+        return false;
+      }
+      const now = Date.now();
+      const oneSecondAgo = now - 1000; //check if it was just changed
+      const updatedAtTimestamp = new Date(recentCommentState.updatedAt).getTime();
+      if (updatedAtTimestamp >= oneSecondAgo) {
+        return true;
+      } else {
+        return false;
       }
     },
     highlight(annotation) {
