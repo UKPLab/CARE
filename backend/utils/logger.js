@@ -24,6 +24,53 @@ class SQLTransport extends Transport {
 }
 
 /**
+ * Custom Winston format to add caller information (file, line, column, function)
+ * This helps identify where log messages originated from in the codebase
+ */
+function addCallerinfo() {
+    return winston.format((info) => {
+        const stack = new Error().stack;
+        console.log("Stack trace:", stack);
+        if (stack) {
+            const stackLines = stack.split('\n');
+            // Skip the first few lines which are internal winston/logger calls
+            // Look for the first line that's not from winston internals or this logger file
+            for (let i = 1; i < stackLines.length; i++) {
+                const line = stackLines[i];
+                if (line && 
+                    !line.includes('winston') && 
+                    !line.includes('logger.js') &&
+                    !line.includes('node_modules') &&
+                    line.includes('at ')) {
+                    
+                    // Parse the stack trace line
+                    // Format: "    at functionName (file:line:column)" or "    at file:line:column"
+                    const match = line.match(/at\s+(?:([^(]+)\s+\()?([^:]+):(\d+):(\d+)\)?/);
+                    if (match) {
+                        const [, functionName, filePath, lineNumber, columnNumber] = match;
+                        
+                        // Extract just the filename from the full path
+                        const fileName = filePath ? filePath.split(/[/\\]/).pop() : 'unknown';
+                        
+                        info.caller = {
+                            file: fileName,
+                            line: parseInt(lineNumber, 10),
+                            column: parseInt(columnNumber, 10),
+                            function: functionName ? functionName.trim() : 'anonymous'
+                        };
+                        
+                        // Add a formatted caller string for easy reading
+                        info.callerInfo = `${fileName}:${lineNumber}:${columnNumber}${functionName ? ` (${functionName.trim()})` : ''}`;
+                        break;
+                    }
+                }
+            }
+        }
+        return info;
+    })();
+}
+
+/**
  * This module logs everything into different formats
  * Use:
  * const logger = require("../utils/logger.js")("service");
@@ -45,6 +92,7 @@ exports = module.exports = function (service = "log", db = null) {
         level: process.env.LOGGING_LEVEL,
         format: winston.format.combine(
             winston.format.timestamp(),
+            addCallerinfo(),
             winston.format.json()
         ),
         defaultMeta: {service: service},
