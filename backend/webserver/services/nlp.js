@@ -155,6 +155,10 @@ module.exports = class NLPService extends Service {
             }
         });
 
+        nlpSocket.on("error", (data) => {
+            this.logger.error("The error happened in the nlp service", data)
+        });
+
         nlpSocket.connect();
         return nlpSocket;
     }
