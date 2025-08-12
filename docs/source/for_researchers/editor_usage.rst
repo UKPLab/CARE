@@ -62,8 +62,8 @@ The editor includes a formatting toolbar that supports:
 
 To configure toolbar visibility and tools:
 
-- ``editor.toolbar.visibility`` – Show or hide the toolbar
-- ``editor.toolbar.showHTMLDownload`` – Show download button in the editor
+- ``editor.toolbar.visibility`` – Toggles the entire toolbar
+- ``editor.toolbar.showHTMLDownload`` – Toggles download button of HTML documents in the editor
 - ``editor.toolbar.tools.*`` – Enable or disable individual tools such as bold, italic, lists, etc.
 
 Document Controls
@@ -71,9 +71,9 @@ Document Controls
 
 Dashboard-level settings determine what users can do with documents. These include:
 
-- ``editor.document.showButtonCreate`` – Show a “Create Document” button in the dashboard
-- ``editor.document.showButtonHTMLDownload`` – Enable HTML export/download
-- ``editor.document.showButtonDeltaDownload`` – Enable download of raw delta changes
+- ``editor.document.showButtonCreate`` – Toggles “Create Document” button in the dashboard
+- ``editor.document.showButtonHTMLDownload`` – Toggles download button of HTML documents in the dashboard
+- ``editor.document.showButtonDeltaDownload`` – Toggles download button of raw delta changes
 
 .. tip::
 

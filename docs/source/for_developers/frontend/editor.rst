@@ -70,7 +70,7 @@ The editor captures text changes using Quill's ``text-change`` event.
 The toolbar can be customized based on the study or document context. Its visibility and available tools are managed through centralized settings in the admin dashboard:
 
 - ``editor.toolbar.visibility`` – Toggles the entire toolbar
-- ``editor.toolbar.showHTMLDownload`` – Adds an HTML download button
+- ``editor.toolbar.showHTMLDownload`` – Toggles download button of HTML documents
 - ``editor.toolbar.tools.bold``, ``editor.toolbar.tools.header``, etc. – Enable/disable individual formatting options
 
 For a full list of available settings, refer to the :ref:`Editor Settings <editor-settings-ref>`.
@@ -85,7 +85,7 @@ Delta Files and DB Edits
 CARE’s document system supports **two distinct editing modes**, each optimized for a specific type of workflow:
 
 - **Regular documents** are used for everyday writing and collaborative editing.
-- **Study documents** are used in **controlled research workflows**, such as user studies, where each editing session is tracked per user and step.
+- **Study documents** are used in **controlled research workflows**, such as user studies, where each editing session is tracked per user and study step.
 
 These two document types follow **fundamentally different strategies** for how content is **loaded, edited, and saved**. Both modes use Quill as the editor and Vuex for local state, but the backend logic and sync model differ significantly.
 
@@ -115,7 +115,7 @@ Regular documents use a hybrid model that combines two sources when loading a do
 
 When a regular document is opened, the backend performs two steps:
 
-1. It reads the latest ``.delta`` file from disk.
+1. It checks if a ``.delta`` file already exists for the document; if not (e.g., for a new document), an empty one is created in the configured files directory before proceeding.
 2. It queries the ``document_edit`` table for all draft entries belonging to the document.
 
 The draft entries are then passed through the ``dbToDelta()`` function (from ``editor-delta-conversion``) to convert them into Quill-compatible operations. Both sources, the saved delta and the current drafts, are **merged server-side** into a single Delta. This merged result is then sent to the frontend, where the **Quill editor** renders the complete up-to-date view.
@@ -185,8 +185,6 @@ In study documents, ``applied`` is a **frontend-only flag** managed by Vuex. It 
 - Edits are only applied to Quill if ``applied = false``.
 - After applying, the Vuex store updates the edit's ID to ``applied = true``.
 - Edits received again, for example, through socket re-emission, are ignored.
-
-In regular documents, this ``applied`` logic is less important, because the backend already merges the saved state and draft edits into a single Delta. The frontend receives this complete snapshot and doesn’t need to track individual edit application.
 
 Editor-Deltas and Code Integration
 ----------------------------------
