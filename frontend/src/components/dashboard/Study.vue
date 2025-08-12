@@ -8,12 +8,13 @@
     <BulkAssignmentsModal ref="bulkAssignmentsModal"/>
     <SingleAssignmentModal ref="singleAssignmentModal"/>
     <InformationModal ref="informationModal"/>
+    <SavedTemplatesModal ref="savedTemplatesModal"/>
     <Card title="Studies">
       <template #headerElements>
         <BasicButton
           class="btn-secondary btn-sm me-1"
-          title="Templates"
-          @click="saveAsTemplate"
+          title="Saved Templates"
+          @click="openSavedTemplates"
         />
         <BasicButton
           v-if="canCloseStudies"
@@ -64,6 +65,7 @@ import BulkAssignmentsModal from "./study/BulkAssignmentModal.vue";
 import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
 import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
+import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 
 /**
  * Dashboard component for handling studies
@@ -82,7 +84,8 @@ export default {
     ConfirmModal,
     BulkAssignmentsModal,
     SingleAssignmentModal,
-    InformationModal
+    InformationModal,
+    SavedTemplatesModal
   },
   inject: {
     acceptStats: {
@@ -251,7 +254,7 @@ export default {
             {key: "showTemplateButton", value: true},
           ],
           title: "Save as Template",
-          action: "saveStudyAsTemplate",
+          action: "saveAsTemplate",
           stats: {
             studyId: "id"
           }
@@ -494,6 +497,9 @@ export default {
         });
       }
     },
+    openSavedTemplates() {
+      this.$refs.savedTemplatesModal.open();
+    },
     add() {
       this.$refs.studyCoordinator.open(0);
     },
@@ -561,7 +567,6 @@ export default {
     },
     saveAsTemplate(study) {
       const warningMessage = "Document associations will not be saved in templates, as we do not create study steps.";
-
       this.$refs.confirmModal.open(
         "Save Study as Template",
         "Are you sure you want to save this study as a template?",
