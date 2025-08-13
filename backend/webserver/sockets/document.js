@@ -4,7 +4,6 @@ const Delta = require('quill-delta');
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {getTextPositions} = require("../../utils/text.js");
-const { associateFilesForSubmission } = require("../../utils/fileAssociator.js");
 const yauzl = require("yauzl");
 
 const {dbToDelta} = require("editor-delta-conversion");
