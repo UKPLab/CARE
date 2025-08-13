@@ -32,6 +32,7 @@
   <UploadModal ref="uploadModal"/>
   <CreateModal ref="createModal"/>
   <EditModal ref="editModal"/>
+  <DownloadPDFModal ref="pdfDownloadModal"/>
 </template>
 
 <script>
@@ -45,6 +46,7 @@ import UploadModal from "./documents/UploadModal.vue";
 import CreateModal from "./documents/CreateModal.vue";
 import EditModal from "./documents/EditModal.vue";
 import EditorDownload from "@/components/editor/editor/EditorDownload.vue";
+import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
 
 /**
  * Document list component
@@ -69,6 +71,7 @@ export default {
     EditModal,
     CreateModal,
     EditorDownload,
+    DownloadPDFModal,
   },
   data() {
     return {
@@ -94,7 +97,12 @@ export default {
   },
   computed: {
     documents() {
-      return this.$store.getters["table/document/getAll"];
+      return this.$store.getters["table/document/getFiltered"](
+          (doc) => doc.projectId === this.projectId 
+      );
+    },
+    projectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -252,6 +260,25 @@ export default {
           }
         });
       }
+      if (this.showPDFDownloadButton) {
+        buttons.push({
+          icon: "download",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          filter: [
+            {
+            key: "type",
+            value: 0,
+          }
+        ],
+        title: "Download PDF with annotations",
+        action: "exportWithAnnotations",
+      });
+    }
       return buttons;
     },
     docs() {
@@ -280,7 +307,10 @@ export default {
     },
     showHTMLDownloadButton() {
       return this.$store.getters["settings/getValue"]('editor.document.showButtonHTMLDownload') === 'true';
-    }
+    },
+    showPDFDownloadButton() {
+      return this.$store.getters["settings/getValue"]('editor.document.showButtonPDFDownload') === 'true'
+    },
   },
   methods: {
     action(data) {
@@ -305,6 +335,9 @@ export default {
           break;
         case "exportHTMLDoc":
           this.$refs.editorDownload.exportHTMLDoc(data.params);
+          break;
+        case "exportWithAnnotations":
+          this.$refs.pdfDownloadModal.open(data.params);
           break;
       }
     },

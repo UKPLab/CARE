@@ -108,6 +108,7 @@ import {scrollElement} from "@/assets/anchoring/scroll";
  */
 export default {
   name: "AnnotationSidebar",
+  subscribeTable: ["comment", "annotation"],
   components: {SideCard, AnnoCard, ConfirmModal},
   inject: {
     documentId: {
