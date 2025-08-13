@@ -714,8 +714,8 @@ class DocumentSocket extends Socket {
      * @param {Array<Object>} data.submissions - The submissions from Moodle
      * @param {Object} data.options - The configuration options (e.g., API key, URL) passed to the Moodle RPC service
      * @param {string} data.progressId - The unique ID used for reporting progress back to the frontend.
-     * @param {number} data.validationSchemaDocumentId - The document ID to retrieve validation schema
-     * @param {Object} options - Additional configuration parameters (currently unused)
+     * @param {number} data.validationDocumentId - The document ID to retrieve validation schema
+     * @param {Object} options - Additional configuration parameters
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<Array<T>>} - The results of the processed submissions
      * @throws {Error} - If the download fails, if the assignment ID is invalid, or if saving to server fails
@@ -733,7 +733,7 @@ class DocumentSocket extends Socket {
                 tempFiles = await this.downloadFilesToTemp(submission.files, data.options);
 
                 // 2. Validate files
-                const validationResult = await this.validateSubmissionFiles(tempFiles, data.validationSchemaDocumentId);
+                const validationResult = await this.validateSubmissionFiles(tempFiles, data.validationDocumentId);
 
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
@@ -770,7 +770,6 @@ class DocumentSocket extends Socket {
                     success: true,
                     message: "Submission processed successfully",
                 });
-                await transaction.commit();
             } catch (err) {
                 this.logger.error(err.message);
 
@@ -779,8 +778,6 @@ class DocumentSocket extends Socket {
                     success: false,
                     message: err.message,
                 });
-
-                await transaction.rollback();
             }
 
             // update frontend progress
@@ -829,13 +826,13 @@ class DocumentSocket extends Socket {
     /**
      * Validate submission files against validation schema
      * @param {Array} tempFiles - Array of temporary file objects
-     * @param {string} validationSchemaDocumentId - ID of validation schema document
+     * @param {string} validationDocumentId - ID of validation schema document
      * @returns {Promise<Object>} - Validation result
      */
-    async validateSubmissionFiles(tempFiles, validationSchemaDocumentId = 2) {
+    async validateSubmissionFiles(tempFiles, validationDocumentId) {
         try {
             // 1. Get validation schema
-            const validationSchema = await this.getValidationSchema(validationSchemaDocumentId);
+            const validationSchema = await this.getValidationSchema(validationDocumentId);
             
             // 2. Validate against rules
             const validationResult = await this.validateAgainstRules(
