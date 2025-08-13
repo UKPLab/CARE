@@ -84,7 +84,7 @@ class DocumentSocket extends Socket {
         }
 
         const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
-        if (fileType !== ".pdf" && fileType !== ".delta" && fileType !== ".json") {
+        if (![".pdf", ".delta", ".json", ".zip"].includes(fileType)) {
             throw new Error("Invalid file type");
         }
 
