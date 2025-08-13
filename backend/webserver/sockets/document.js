@@ -101,6 +101,7 @@ class DocumentSocket extends Socket {
                 userId: data.userId ?? this.userId,
                 uploadedByUserId: this.userId,
                 projectId: data.projectId,
+                originalFilename: data.name,
             }, {transaction: options.transaction});
 
             target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
@@ -131,6 +132,7 @@ class DocumentSocket extends Socket {
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
                 projectId: data.projectId,
+                originalFilename: data.name,
             }, {transaction: options.transaction});
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
             try {
@@ -256,23 +258,11 @@ class DocumentSocket extends Socket {
     }
 
     /**
-<<<<<<< HEAD
-     * Create document (html)
-     * @param data // The data object containing the document details.
-     * @param data.projectId {number}
-     * @param data.name {string}
-     * @param data.type {string} - The type of the document (e.g., "html", "modal").
-     * @param options
-     * @returns {Promise<void>}
      * Creates a new HTML-based document record in the database.
      * 
-=======
-     * Creates a new HTML-based document record in the database.
-     *
->>>>>>> c298e2613f751c41b3525c7913d085c73424afc4
      * @param {Object} data The data for the new document.
      * @param {string} data.name The name of the new document.
-     * @param {number} data.type The type identifier for the document (e.g., HTML).
+     * @param {number} data.type The type identifier for the document (e.g., HTML, MODAL).
      * @param {Object} options The options object containing the transaction.
      * @returns {Promise<Object>} A promise that resolves with the newly created document's database record.
      */
@@ -283,19 +273,7 @@ class DocumentSocket extends Socket {
             userId: this.userId,
             projectId: data.projectId
         }, {transaction: options.transaction});
-                       annotations.push(annotation);
-                                let newComment = {
-    documentId: annotation.documentId,
-    studySessionId: annotation.studySessionId,
-    studyStepId: annotation.studyStepId,
-    annotationId: annotation.id,
-    parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
-    anonymous: data.anonymous !== undefined ? data.anonymous : false,
-    tags: "[]",
-    draft: data.draft !== undefined ? data.draft : true,
-    text: extracted.text !== undefined ? extracted.text : null,
-    userId: data.userId ?? this.userId
-};
+        
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         });
