@@ -255,9 +255,27 @@ export default {
       }
     },
     isConfigurationIncomplete(configData) {
-      // If the configData includes services object and it should have placeholders object
+      // Check if configData has services
       if (Object.keys(configData).includes("services")) {
-        return !Object.keys(configData).includes("placeholders");
+        // For extended workflows (Step 1), we only need services and configFile, not placeholders
+        if (Object.keys(configData).includes("configFile")) {
+          // Extended workflow - validate services and configFile
+          const services = configData.services || [];
+          const configFile = configData.configFile;
+          
+          // Check if configFile is selected
+          if (!configFile) {
+            return true;
+          }
+          
+          // Check if all services have skills selected
+          const hasIncompleteServices = services.some(service => !service.skill || service.skill === "");
+          return hasIncompleteServices;
+        } else {
+          // Standard workflow - needs both services and placeholders
+          const hasPlaceholders = Object.keys(configData).includes("placeholders");
+          return !hasPlaceholders;
+        }
       }
       return false;
     },

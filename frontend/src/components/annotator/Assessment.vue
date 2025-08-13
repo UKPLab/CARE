@@ -254,7 +254,7 @@ import LoadIcon from "@/basic/Icon.vue";
 export default {
   name: "AssessmentOutput",
   components: { LoadIcon },
-  subscribeTable: ["document"],
+  subscribeTable: ["document", "study_step"],
   
   inject: {
     documentId: { type: Number, required: true },
@@ -343,6 +343,13 @@ export default {
         if (!this.assessmentOutput) {
           this.loadAssessment();
         }
+      },
+      immediate: true
+    },
+    '$store.getters["table/study_step/refreshCount"]': {
+      handler() {
+        // Reload assessment when study step configuration changes
+        this.loadAssessment();
       },
       immediate: true
     }
@@ -440,13 +447,14 @@ export default {
       this.error = null;
 
       try {
-        const assessmentConfigDoc = this.$store.getters["table/document/getByKey"]('name', 'Assessment Config')
-          .find(doc => doc.type === 3);
+        // Get the study step configuration
+        const studyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
+        const configFileId = studyStep?.configuration?.configFile;
 
-        if (assessmentConfigDoc) {
-          // Fetch the configuration file content
+        if (configFileId) {
+          // Use the configuration file from the study step configuration
           this.$socket.emit("documentGet", {
-            documentId: assessmentConfigDoc.id
+            documentId: configFileId
           }, (response) => {
             if (response && response.success) {
               try {
@@ -476,12 +484,46 @@ export default {
             }
           });
         } else {
-          // No assessment_config document found - try again after a short delay
-          setTimeout(() => {
-            if (!this.assessmentOutput) {
-              this.loadAssessment();
-            }
-          }, 1000);
+          // Fallback to the old method if no configFile is specified
+          const assessmentConfigDoc = this.$store.getters["table/document/getByKey"]('name', 'Assessment Config')
+            .find(doc => doc.type === 3);
+
+          if (assessmentConfigDoc) {
+            // Fetch the configuration file content
+            this.$socket.emit("documentGet", {
+              documentId: assessmentConfigDoc.id
+            }, (response) => {
+              if (response && response.success) {
+                try {
+                  if (response.data && response.data.file) {
+                    let fileContent;
+                    if (response.data.file instanceof ArrayBuffer) {
+                      const uint8Array = new Uint8Array(response.data.file);
+                      fileContent = new TextDecoder().decode(uint8Array);
+                    } else {
+                      fileContent = response.data.file.toString();
+                    }
+                    
+                    // Parse the JSON configuration
+                    const configData = JSON.parse(fileContent);
+                    // Transform rubrics structure to criteriaGroups structure
+                    this.assessmentOutput = this.transformRubricsToCriteriaGroups(configData);
+                  } else {
+                    throw new Error("No file data received from server");
+                  }
+                } catch (error) {
+                  console.error("Error parsing assessment configuration:", error);
+                  this.error = "Failed to parse assessment configuration: " + error.message;
+                }
+              } else {
+                const errorMessage = response && response.message ? response.message : "Failed to load assessment configuration";
+                this.error = errorMessage;
+              }
+            });
+          } else {
+            // No configuration file found
+            this.error = "No assessment configuration file found. Please configure the assessment in the study setup.";
+          }
         }
       } catch (err) {
         this.error = "Failed to load assessment: " + err.message;

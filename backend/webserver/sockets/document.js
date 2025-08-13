@@ -285,19 +285,6 @@ class DocumentSocket extends Socket {
             userId: this.userId,
             projectId: data.projectId
         }, {transaction: options.transaction});
-                       annotations.push(annotation);
-                                let newComment = {
-    documentId: annotation.documentId,
-    studySessionId: annotation.studySessionId,
-    studyStepId: annotation.studyStepId,
-    annotationId: annotation.id,
-    parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
-    anonymous: data.anonymous !== undefined ? data.anonymous : false,
-    tags: "[]",
-    draft: data.draft !== undefined ? data.draft : true,
-    text: extracted.text !== undefined ? extracted.text : null,
-    userId: data.userId ?? this.userId
-};
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
         });

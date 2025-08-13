@@ -5,38 +5,33 @@ const workflows = [
     name: "Peer Review Workflow (Assessment)",
     description: "Peer Review Workflow with Assessment: Review a PDF document, write free text, and select configuration.",
     steps: [
-      { stepType: 1, allowBackward: false, workflowStepDocument: null },
-      { stepType: 2, allowBackward: true, workflowStepDocument: 1,
-        configuration: {
-          fields: [
-            {
-              type: "addLinkEOD",
-              required: false,
-              fields: [
-                {
-                  name: "reviewLink",
-                  help: "The link is added to the end of the document \n `~SESSION_HASH~` will be replace with the current session hash",
-                  default: "https://example.com/document?hash=~SESSION_HASH~",
-                },
-                {
-                  name: "reviewText",
-                  help: "Do you find the feedback helpful?",
-                }
-              ],
-            },
-          ],
-        },
-      },
-      { stepType: 3, allowBackward: false, workflowStepDocument: null,
+      { 
+        stepType: 1, 
+        allowBackward: false, 
+        workflowStepDocument: null,
         configuration: {
           services: [
             {
-              name: "configurationSelection",
-              type: "modalRequest",
-              required: true
+              name: "assessment_service",
+              type: "nlpRequest",
+              required: false,
             }
-          ],
-        },
+          ]
+        }
+      },
+      { 
+        stepType: 2, 
+        allowBackward: true, 
+        workflowStepDocument: 1,
+        configuration: {
+          services: [
+            {
+              name: "nlp_service",
+              type: "nlpRequest",
+              required: false,
+            }
+          ]
+        }
       },
     ],
   },
@@ -44,39 +39,34 @@ const workflows = [
     name: "Peer Review Workflow (Assessment with AI)",
     description: "Peer Review Workflow with Assessment and AI: Review a PDF document, write free text, select configuration, and use AI assessment.",
     steps: [
-      { stepType: 1, allowBackward: false, workflowStepDocument: null },
-      { stepType: 2, allowBackward: false, workflowStepDocument: 1,
-        configuration: {
-          fields: [
-            {
-              type: "addLinkEOD",
-              required: false,
-              fields: [
-                {
-                  name: "reviewLink",
-                  help: "The link is added to the end of the document \n `~SESSION_HASH~` will be replace with the current session hash",
-                  default: "https://example.com/document?hash=~SESSION_HASH~",
-                },
-                {
-                  name: "reviewText",
-                  help: "Do you find the feedback helpful?",
-                }
-              ],
-            },
-          ],
-        },
-      },
-      { stepType: 3, allowBackward: false, workflowStepDocument: null,
+      { 
+        stepType: 1, 
+        allowBackward: false, 
+        workflowStepDocument: null,
         configuration: {
           services: [
             {
-              name: "configurationSelection",
-              type: "modalRequest",
-              required: true
+              name: "assessment_service",
+              type: "nlpRequest",
+              required: false,
             }
-          ],
-        },
-      }
+          ]
+        }
+      },
+      { 
+        stepType: 2, 
+        allowBackward: false, 
+        workflowStepDocument: 1,
+        configuration: {
+          services: [
+            {
+              name: "nlp_service",
+              type: "nlpRequest",
+              required: false,
+            }
+          ]
+        }
+      },
     ],
   },
 ];
@@ -149,31 +139,14 @@ module.exports = {
   async down(queryInterface, Sequelize) {
       const workflowNames = workflows.map(w => w.name);
 
-      // Get workflow IDs for deletion
-      const workflowRecords = await queryInterface.sequelize.query(
-          'SELECT id FROM workflow WHERE name IN (:workflowNames)',
-          {
-              replacements: { workflowNames },
-              type: queryInterface.sequelize.QueryTypes.SELECT
+      await queryInterface.bulkDelete('workflow_step', {
+          workflowId: {
+              [Sequelize.Op.in]: workflowNames.map(name => workflowMap[name])
           }
-      );
+      }, {});
 
-      const workflowIds = workflowRecords.map(w => w.id);
-
-      if (workflowIds.length > 0) {
-          // Delete workflow steps first
-          await queryInterface.bulkDelete('workflow_step', {
-              workflowId: {
-                  [Sequelize.Op.in]: workflowIds
-              }
-          }, {});
-
-          // Delete workflows
-          await queryInterface.bulkDelete('workflow', {
-              id: {
-                  [Sequelize.Op.in]: workflowIds
-              }
-          }, {});
-      }
+      await queryInterface.bulkDelete('workflow', {
+          name: workflowNames
+      }, {});
   }
 };

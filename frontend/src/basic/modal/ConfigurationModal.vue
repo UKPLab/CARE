@@ -12,7 +12,7 @@
     <StepperModal
       ref="configurationStepper"
       name="configurationStepper"
-      :steps="[{ title: 'Services' }, { title: 'Placeholders' }]"
+      :steps="modalSteps"
       :validation="stepValid"
       submit-text="Save Configuration"
       @step-change="handleStepChange"
@@ -21,9 +21,30 @@
       <template #title>
         <h5 class="modal-title text-primary">Configuration</h5>
       </template>
-      <!-- Step 1: NLP Services -->
+      
+      <!-- Step 1: General Settings (Extended Step 1) or Services (Standard) -->
       <template #step-1>
-        <div class="service-config">
+        <div v-if="isExtendedWorkflow && isStep1" class="extended-config">
+          <div class="mb-3">
+            <h6 class="fw-bold">General Settings</h6>
+            <div class="mb-3">
+              <label class="form-label">Configuration File (Type 3):</label>
+              <FormSelect
+                v-model="extendedConfig.configFile"
+                :options="configFileOptions"
+              />
+            </div>
+            
+          </div>
+        </div>
+        <div v-else-if="isExtendedWorkflow && !isStep1" class="extended-config">
+          <!-- Step 2 (Editor) should use a separate modal -->
+          <div class="alert alert-warning">
+            <h6 class="fw-bold">Configuration Error</h6>
+            <p>This configuration modal is for Step 1 (Annotator) only. Step 2 (Editor) should use a separate modal.</p>
+          </div>
+        </div>
+        <div v-else class="service-config">
           <div v-if="stepConfig && stepConfig.services && stepConfig.services.length">
             <div
               v-for="(service, index) in stepConfig.services"
@@ -68,79 +89,98 @@
           </div>
         </div>
       </template>
-      <!-- Step 2: Placeholders -->
+
+      <!-- Step 2: NLP Skills (Extended Step 1) or Placeholders (Standard) -->
       <template #step-2>
-        <div v-if="placeholders.length">
-          <!-- Short Preview with Placeholder Labels -->
-          <div class="short-preview p-3 mb-3 border rounded">
-            <h6 class="text-secondary mb-2">Quick Preview:</h6>
-            <!-- FIXME: Do not use v-html -->
-            <p v-html="shortPreview"></p>
-            <div class="legend mt-2">
-              <span
-                v-for="(placeholder, index) in placeholders"
+        <div v-if="isExtendedWorkflow && isStep1" class="extended-config">
+          <div class="mb-3">
+            <h6 class="fw-bold">NLP Skills Configuration</h6>
+            <div v-if="servicesDefinition && servicesDefinition.length">
+              <div
+                v-for="(service, index) in servicesDefinition"
                 :key="index"
-                :style="{ color: placeholderColors[index] }"
-                class="legend-item"
+                class="service-item mb-4 p-3 border rounded"
               >
-                {{ placeholder.type }} #{{ placeholder.number }}
-              </span>
-            </div>
-          </div>
-          <!-- Placeholder Configuration -->
-          <div class="placeholder-list">
-            <div
-              v-for="(placeholder, index) in placeholders"
-              :key="index"
-              class="placeholder-item mb-3 p-3 border rounded"
-            >
-              <h6 class="mb-2">
-                <span
-                  :style="{
-                    color: placeholderColors[index],
-                    fontWeight: 'bold',
-                  }"
+                <h6 class="fw-bold">Service: {{ service.name }}</h6>
+                <div class="mb-3">
+                  <label class="form-label">Select NLP Skill:</label>
+                  <FormSelect
+                    v-model="selectedSkills[index].skillName"
+                    :options="skillMap"
+                  />
+                </div>
+                <!-- Input Mapping -->
+                <div
+                  v-if="selectedSkills[index].skillName"
+                  class="mb-3"
                 >
-                  {{ placeholder.type }} Placeholder #{{ placeholder.number }}
-                </span>
-              </h6>
-              <!-- Data Source -->
-              <template v-if="placeholder.type === 'comparison'">
-                <div class="mb-3">
-                  <label class="form-label">Data Source:</label>
-                  <FormSelect
-                    v-model="placeholderFormData[index].dataInput[0]"
-                    :value-as-object="true"
-                    :options="{ options: availableDataSources }"
-                  />
+                  <h6 class="text-secondary">Input Mapping</h6>
+                  <div
+                    v-for="input in getSkillInputs(selectedSkills[index].skillName)"
+                    :key="input"
+                    class="mb-2"
+                  >
+                    <label class="form-label">{{ input }}:</label>
+                    <FormSelect
+                      v-model="inputMappings[index][input]"
+                      :options="{ options: availableDataSources }"
+                      :value-as-object="true"
+                    />
+                  </div>
                 </div>
-                <div class="mb-3">
-                  <label class="form-label">Data Source:</label>
-                  <FormSelect
-                    v-model="placeholderFormData[index].dataInput[1]"
-                    :value-as-object="true"
-                    :options="{ options: availableDataSources }"
-                  />
-                </div>
-              </template>
-              <template v-else>
-                <div class="mb-3">
-                  <label class="form-label">Data Source:</label>
-                  <FormSelect
-                    v-model="placeholderFormData[index].dataInput"
-                    :value-as-object="true"
-                    :options="{ options: availableDataSources }"
-                  />
-                </div>
-              </template>
+              </div>
             </div>
           </div>
         </div>
-        <div
-          v-else
-          class="alert alert-info"
-        >
-          <p>No placeholders found in the document.</p>
+        <div v-else>
+          <div v-if="placeholders.length">
+            <!-- Short Preview with Placeholder Labels -->
+            <div class="short-preview p-3 mb-3 border rounded">
+              <h6 class="text-secondary mb-2">Quick Preview:</h6>
+              <!-- FIXME: Do not use v-html -->
+              <p v-html="shortPreview"></p>
+              <div class="legend mt-2">
+                <span
+                  v-for="(placeholder, index) in placeholders"
+                  :key="index"
+                  :style="{ color: placeholderColors[index] }"
+                  class="legend-item"
+                >
+                  {{ placeholder.type }} #{{ placeholder.number }}
+                </span>
+              </div>
+            </div>
+            <!-- Placeholder Configuration -->
+            <div class="placeholder-list">
+              <div
+                v-for="(placeholder, index) in placeholders"
+                :key="index"
+                class="placeholder-item mb-3 p-3 border rounded"
+              >
+                <h6 class="mb-2">
+                  <span
+                    :style="{
+                      color: placeholderColors[index],
+                      fontWeight: 'bold'
+                    }"
+                  >
+                    {{ placeholder.type }} #{{ placeholder.number }}
+                  </span>
+                </h6>
+                <div class="mb-2">
+                  <label class="form-label">Data Source:</label>
+                  <FormSelect
+                    v-model="placeholderFormData[index].dataInput"
+                    :options="{ options: availableDataSources }"
+                    :value-as-object="true"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="alert alert-info">
+            No placeholders found in the document.
+          </div>
         </div>
       </template>
     </StepperModal>
@@ -162,9 +202,16 @@ import Quill from "quill";
  *
  * @author: Juliane Bechert, Linyin Huang
  */
+// Extended workflow names that require special configuration
+const EXTENDED_WORKFLOW_NAMES = [
+  "Peer Review Workflow (Assessment)",
+  "Peer Review Workflow (Assessment with AI)"
+];
+
 export default {
   name: "ConfigurationModal",
   components: { StepperModal, FormSelect },
+  subscribeTable: ["study_step", "study", "workflow", "document", "study_session"],
   props: {
     modelValue: {
       type: Object,
@@ -208,21 +255,64 @@ export default {
       shortPreview: "",
       isUpdateMode: false,
       inputMappings: [],
+      // Configuration for extended workflows (2-step configuration)
+      extendedConfig: {
+        configFile: "",
+      },
     };
   },
   computed: {
+
+    servicesDefinition() {
+      return (this.stepConfig && Array.isArray(this.stepConfig.services)) 
+        ? this.stepConfig.services 
+        : [];
+    },
     stepValid() {
-      return [
-        // Step 1: Check if all services have skill name and data input
-        this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0),
-        // Step 2: Check if all placeholders have non-empty string input
-        this.placeholderFormData.every((data) => {
+      if (this.isExtendedWorkflow) {
+        if (this.isStep1) {
+          // Extended workflow Step 1 (Annotator): 2 steps (General Settings + NLP Skills)
+          const step1Valid = true; // General settings step is always valid
+          const step2Valid = this.servicesDefinition.length === 0 || this.selectedSkills.every((s, index) => {
+            if (!s.skillName) return false;
+            
+            const skillInputs = this.getSkillInputs(s.skillName);
+            if (skillInputs.length === 0) return true; // No inputs required
+            
+            return skillInputs.every(input => {
+              const mapping = this.inputMappings[index]?.[input];
+              return mapping && mapping.value;
+            });
+          });
+          return [step1Valid, step2Valid];
+        } else {
+          // Extended workflow Step 2 (Editor): This modal should not be used
+          console.warn('ConfigurationModal validation called for Step 2 (Editor) - should use separate modal');
+          return [false];
+        }
+      } else {
+        // Standard workflow validation (2 steps)
+        const step1Valid = this.servicesDefinition.length === 0 || this.selectedSkills.every((s, index) => {
+          if (!s.skillName) return false;
+          
+          const skillInputs = this.getSkillInputs(s.skillName);
+          if (skillInputs.length === 0) return true; // No inputs required
+          
+          return skillInputs.every(input => {
+            const mapping = this.inputMappings[index]?.[input];
+            return mapping && mapping.value;
+          });
+        });
+        
+        const step2Valid = this.placeholderFormData.length === 0 || this.placeholderFormData.every((data) => {
           if (data.type === this.placeholderType.comparison) {
             return data.dataInput[0] && data.dataInput[1];
           }
           return !!data.dataInput;
-        }),
-      ];
+        });
+        
+        return [step1Valid, step2Valid];
+      }
     },
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
@@ -239,6 +329,61 @@ export default {
     availableDataSources() {
       return this.getSourcesUpToCurrentStep(this.studyStepId);
     },
+    studySessionId() {
+      return null;
+    },
+    isExtendedWorkflow() {
+      if (!this.workflowSteps || this.workflowSteps.length === 0) {
+        return false;
+      }
+      
+      const workflowId = this.workflowSteps[0].workflowId;
+      if (!workflowId) {
+        return false;
+      }
+      
+      const workflow = this.$store.getters["table/workflow/get"](workflowId);
+      if (!workflow) {
+        return false;
+      }
+      
+      return EXTENDED_WORKFLOW_NAMES.includes(workflow.name);
+    },
+    isStep1() {
+      const currentStep = this.workflowSteps.find(step => step.id === this.studyStepId);
+      return currentStep && currentStep.stepType === 1;
+    },
+    /**
+     * Returns the appropriate step configuration based on workflow type and step type
+     * @returns {Array} Array of step objects with titles
+     */
+    modalSteps() {
+      if (this.isExtendedWorkflow) {
+        if (this.isStep1) {
+          return [
+            { title: "General Settings" },
+            { title: "NLP Skills" },
+          ];
+        } else {
+          console.warn('ConfigurationModal should not be used for Step 2 (Editor) in extended workflows');
+          return [{ title: "NLP Skills" }];
+        }
+      }
+      return [{ title: "Services" }, { title: "Placeholders" }];
+    },
+    /**
+     * Returns configuration file options filtered by document type 3 (JSON configuration files)
+     * @returns {Object} Options object for FormSelect component
+     */
+    configFileOptions() {
+      const configFiles = this.$store.getters["table/document/getByKey"]('type', 3);
+      return {
+        options: configFiles.map(doc => ({
+          value: doc.id,
+          name: doc.name,
+        })),
+      };
+    },
   },
   watch: {
     modelValue: {
@@ -251,7 +396,7 @@ export default {
     },
     documentId: {
       handler(newDocumentId) {
-        if (newDocumentId) {
+        if (!this.isExtendedWorkflow && newDocumentId) {
           this.fetchDocument();
         }
       },
@@ -262,25 +407,57 @@ export default {
 
         newMappings.forEach((mapping, index) => {
           Object.entries(mapping).forEach(([input, source]) => {
-            if (source) {
+            if (source && source.value) {
               this.updateDataInput(index, input, source);
+            } else if (!source) {
+              // Clear the mapping if source is null/undefined
+              this.clearDataInput(index, input);
             }
           });
         });
       },
       deep: true,
     },
+    selectedSkills: {
+      handler(newSkills, oldSkills) {
+        if (newSkills && newSkills.length > 0) {
+          const skillsChanged = newSkills.some((skill, index) => {
+            const oldSkill = oldSkills?.[index];
+            return oldSkill && skill.skillName !== oldSkill.skillName;
+          });
+          
+          if (skillsChanged) {
+            this.initializeInputMappings();
+          }
+        }
+      },
+      deep: true,
+    },
+
   },
   mounted() {
     this.initializeModal();
-    if (this.documentId) {
+    // Only fetch document for standard workflows (extended workflows don't need document content)
+    if (!this.isExtendedWorkflow && this.documentId) {
       this.fetchDocument();
     }
   },
   methods: {
     openModal(evt) {
       evt.preventDefault();
-      if (!this.documentId) {
+      
+      // For extended workflows, this modal should only be used for Step 1 (Annotator)
+      if (this.isExtendedWorkflow && !this.isStep1) {
+        this.eventBus.emit("toast", {
+          title: "Configuration Error",
+          message: "This configuration modal is for Step 1 (Annotator) only. Step 2 (Editor) should use a separate modal.",
+          variant: "warning",
+        });
+        return;
+      }
+      
+      // For standard workflows, we need a document
+      if (!this.isExtendedWorkflow && !this.documentId) {
         this.eventBus.emit("toast", {
           title: "Document Error",
           message: "You need to select a document.",
@@ -288,34 +465,43 @@ export default {
         });
         return;
       }
+      
       this.$refs.configurationStepper.open();
     },
+    /**
+     * Initializes the modal configuration based on workflow type
+     * Handles both extended and standard workflow configurations
+     */
     initializeModal() {
       this.stepConfig = this.modelValue || {};
+      const serviceDefs = this.servicesDefinition;
 
-      // Initialize services
-      if (this.stepConfig?.services?.length) {
+      // Initialize extended config for extended workflows
+      if (this.isExtendedWorkflow && this.isStep1) {
+        this.extendedConfig.configFile = this.stepConfig.configFile || "";
+      }
+
+      // Initialize selectedSkills based on existing config or create empty entries
+      if (Array.isArray(this.stepConfig.services) && this.stepConfig.services.length > 0) {
         this.selectedSkills = this.stepConfig.services.map((service) => {
-          // Handle update case
           if (service.skill) {
             return {
               skillName: service.skill,
               dataInput: service.inputs || {},
             };
           }
-          // Handle create case
           return {
             skillName: "",
             dataInput: {},
           };
         });
-
-        // Initialize inputMappings after selectedSkills is populated
-        this.initializeInputMappings();
+      } else if (serviceDefs && serviceDefs.length > 0) {
+        this.selectedSkills = serviceDefs.map(() => ({ skillName: "", dataInput: {} }));
       } else {
         this.selectedSkills = [];
-        this.inputMappings = [];
       }
+
+      this.initializeInputMappings();
     },
     initializeInputMappings() {
       this.inputMappings = this.selectedSkills.map((skill, idx) => {
@@ -323,13 +509,22 @@ export default {
         if (skill.skillName) {
           const inputs = this.getSkillInputs(skill.skillName);
           inputs.forEach((input) => {
-            mapping[input] = this.getFormattedDataInput(idx, input);
+            const existingDataInput = skill.dataInput?.[input];
+            if (existingDataInput && existingDataInput.stepId && existingDataInput.dataSource) {
+              mapping[input] = this.getFormattedDataInput(idx, input);
+            } else {
+              mapping[input] = null;
+            }
           });
         }
         return mapping;
       });
     },
     fetchDocument() {
+      if (this.isExtendedWorkflow) {
+        return;
+      }
+      
       if (!this.documentId || !this.studyStepId) return;
       const requestData = {
         documentId: this.documentId,
@@ -345,12 +540,9 @@ export default {
             quill.setContents(deltas.ops);
             const docText = quill.getText();
 
-            // Extract placeholders
             this.placeholders = this.extractPlaceholders(docText);
             this.generatePlaceholderColors();
             this.generateShortPreview(docText);
-
-            // Initialize placeholder form data with correct type based on extraction
             this.initializePlaceholderFormData();
           } else {
             console.error("Invalid document content:", response);
@@ -413,7 +605,7 @@ export default {
     getSkillInputs(skillName) {
       // Find the skill in the skills list
       const skill = this.nlpSkills.find((s) => s.name === skillName);
-      if (!skill) return {};
+      if (!skill) return [];
       // Return the input keys (v1, v2, etc.)
       return Object.keys(skill.config.input.data || {});
     },
@@ -507,6 +699,21 @@ export default {
       // Replace the entire array
       this.selectedSkills = updatedSkills;
     },
+    clearDataInput(index, input) {
+      // Deep clone to avoid reference issues
+      const updatedSkills = JSON.parse(JSON.stringify(this.selectedSkills));
+
+      // Ensure dataInput exists
+      if (!updatedSkills[index].dataInput) {
+        updatedSkills[index].dataInput = {};
+      }
+
+      // Remove the input mapping
+      delete updatedSkills[index].dataInput[input];
+
+      // Replace the entire array
+      this.selectedSkills = updatedSkills;
+    },
     getFormattedDataInput(index, input) {
       const dataInput = this.selectedSkills[index]?.dataInput?.[input];
       if (!dataInput) return null;
@@ -515,22 +722,41 @@ export default {
       return this.availableDataSources.find((source) => source.stepId === dataInput.stepId && source.value === dataInput.dataSource);
     },
     submit() {
-      if (!this.stepConfig?.services?.length) return;
-      const { services } = this.stepConfig;
-      const configData = {
-        services: services.map((service, index) => ({
-          name: service.name,
-          type: service.type,
-          skill: this.selectedSkills[index].skillName,
-          inputs: this.selectedSkills[index].dataInput,
-        })),
-        placeholders: {
-          text: this.formatPlaceholder(this.placeholderType.text),
-          chart: this.formatPlaceholder(this.placeholderType.chart),
-          comparison: this.formatPlaceholder(this.placeholderType.comparison),
-        },
-      };
-      this.$emit("update:modelValue", configData);
+      if (this.isExtendedWorkflow) {
+        if (this.isStep1) {
+          const configData = {
+            configFile: this.extendedConfig.configFile,
+            services: this.servicesDefinition.map((service, index) => ({
+              name: service.name,
+              type: service.type,
+              skill: this.selectedSkills[index]?.skillName || "",
+              inputs: this.selectedSkills[index]?.dataInput || {},
+            })),
+          };
+          this.$emit("update:modelValue", configData);
+        } else {
+          console.warn('ConfigurationModal submit called for Step 2 (Editor) - should use separate modal');
+          return;
+        }
+      } else {
+        if (!this.stepConfig?.services?.length) return;
+        const { services } = this.stepConfig;
+        const configData = {
+          services: services.map((service, index) => ({
+            name: service.name,
+            type: service.type,
+            skill: this.selectedSkills[index]?.skillName || "",
+            inputs: this.selectedSkills[index]?.dataInput || {},
+          })),
+          placeholders: {
+            text: this.formatPlaceholder(this.placeholderType.text),
+            chart: this.formatPlaceholder(this.placeholderType.chart),
+            comparison: this.formatPlaceholder(this.placeholderType.comparison),
+          },
+        };
+        this.$emit("update:modelValue", configData);
+      }
+      
       this.$refs.configurationStepper.close();
       this.eventBus.emit("toast", {
         title: "Configuration Updated",
@@ -578,15 +804,21 @@ export default {
       stepCollector.forEach((step, index) => {
         const stepIndex = index + 1;
         switch (step.stepType) {
-          // Editor
-          case 2:
+          case 1: // Annotator
+            if (this.isExtendedWorkflow) {
+              sources.push(
+                { value: "document", name: `Document (Step ${stepIndex})`, stepId: stepIndex },
+                { value: "userInput", name: `User Input (Step ${stepIndex})`, stepId: stepIndex }
+              );
+            }
+            break;
+          case 2: // Editor
             sources.push(
               { value: "firstVersion", name: `First Version (Step ${stepIndex})`, stepId: stepIndex },
               { value: "currentVersion", name: `Current Version (Step ${stepIndex})`, stepId: stepIndex }
             );
             break;
-          // Modal
-          case 3:
+          case 3: // Modal
             if (step.id < this.studyStepId || this.currentStepperStep === 1) {
               sources.push(...this.getSkillSources(stepIndex));
             }
@@ -606,7 +838,7 @@ export default {
 
       if (!this.selectedSkills.length) return sources;
 
-      const { services } = this.stepConfig;
+      const services = this.stepConfig?.services || [];
 
       services.forEach((service) => {
         this.selectedSkills.forEach(({ skillName }) => {
