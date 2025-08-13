@@ -10,10 +10,6 @@ const userRights = [
     description: "access to view tagsets in the dashboard",
   },
   {
-    name: "frontend.dashboard.home.view",
-    description: "access to view home in the dashboard",
-  },
-  {
     name: "frontend.dashboard.projects.view",
     description: "access to view projects in the dashboard",
   },
