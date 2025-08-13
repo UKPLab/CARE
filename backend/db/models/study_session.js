@@ -175,6 +175,21 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 }
             },
+            afterUpdate: async (studySession, options) => {
+                // If the study session is deleted, we should also delete the associated db columns
+                if (studySession.deleted && !studySession._previousDataValues.deleted) {
+                    // delete associated comments
+                    const comments = await sequelize.models.comment.getAllByKey("studySessionId", studySession.id);
+                    for (const comment of comments) {
+                        await sequelize.models.comment.deleteById(comment.id, {transaction: options.transaction});
+                    }
+                    // delete associated annotations
+                    const annotations = await sequelize.models.annotation.getAllByKey("studySessionId", studySession.id);
+                    for (const annotation of annotations) {
+                        await sequelize.models.annotation.deleteById(annotation.id, {transaction: options.transaction});
+                    }
+                }
+            }
         }
     });
     return StudySession;
