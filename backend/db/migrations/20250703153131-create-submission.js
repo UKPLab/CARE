@@ -71,6 +71,17 @@ module.exports = {
         type: Sequelize.JSONB,
         allowNull: true,
       },
+      validationDocumentId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+        references: {
+          model: 'document',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
+      },
       deleted: {
         type: Sequelize.BOOLEAN,
         allowNull: false,

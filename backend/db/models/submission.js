@@ -17,6 +17,11 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "parentSubmissionId",
                 as: "parentSubmission",
             });
+
+            Submission.belongsTo(models["document"], {
+                foreignKey: "validationDocumentId",
+                as: "validationDocument",
+            });
         }
     }
 
@@ -29,6 +34,7 @@ module.exports = (sequelize, DataTypes) => {
             extId: DataTypes.INTEGER,
             group: DataTypes.INTEGER,
             additionalSettings: DataTypes.JSONB,
+            validationDocumentId: DataTypes.INTEGER,
             deleted: DataTypes.BOOLEAN,
             deletedAt: DataTypes.DATE,
             createdAt: DataTypes.DATE,
