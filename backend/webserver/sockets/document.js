@@ -125,6 +125,20 @@ class DocumentSocket extends Socket {
             };
 
             await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
+        } else if (fileType === ".zip") {
+            doc = await this.models["document"].add(
+                {
+                    type: docTypes.DOC_TYPE_ZIP,
+                    name: data.name.replace(/.zip$/, ""),
+                    userId: data.userId ?? this.userId,
+                    uploadedByUserId: this.userId,
+                    readyForReview: data.isUploaded ?? false,
+                },
+                { transaction: options.transaction }
+            );
+
+            target = path.join(UPLOAD_PATH, `${doc.hash}.zip`);
+            fs.writeFileSync(target, data.file);
         } else if (fileType === ".json") {
             // Handle JSON configuration files
             doc = await this.models["document"].add(
