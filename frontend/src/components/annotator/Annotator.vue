@@ -148,7 +148,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 
 export default {
   name: "AnnotatorView",
-  subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session'],
+  subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation'],
   components: {
     LoadIcon,
     PDFViewer,
