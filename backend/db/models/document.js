@@ -142,6 +142,7 @@ module.exports = (sequelize, DataTypes) => {
         hideInFrontend: DataTypes.BOOLEAN,
         projectId: DataTypes.INTEGER,
         submissionId: DataTypes.INTEGER,
+        originalFilename: DataTypes.STRING,
     }, {
         sequelize: sequelize,
         modelName: 'document',
