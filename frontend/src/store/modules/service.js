@@ -7,7 +7,7 @@
  * messages.
  *
  * @module store/service
- * @author Nils Dycke, Dennis Zyska
+ * @author Nils Dycke, Dennis Zyska, Marina Sakharova
  */
 
 const getDefaultState = () => {
@@ -159,13 +159,8 @@ export default {
                     }
 
                     if (data.data.length > 0) {
-                        const skillNames = data.data.map(s => s.name);
-
-                        skillNames.forEach(n => {
-                            if(state.services[service][serviceType][n]) {
-                                delete state.services[service][serviceType][n]
-                            }
-                        });
+                        // display only the skills that were passed in data
+                        state.services[service][serviceType] = {};
                         state.services[service][serviceType] = {...state.services[service][serviceType],
                                                                 ...Object.fromEntries(data.data.map(s => [s.name, s]))}
                     }
