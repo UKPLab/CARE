@@ -43,6 +43,7 @@ module.exports = class Socket {
         this.autoTables = Object.values(this.models)
             .filter((model) => model.autoTable)
             .map((model) => model.tableName);
+        this.usersRoleMapping = [];
     }
 
     /**
@@ -207,10 +208,29 @@ module.exports = class Socket {
     async isAdmin() {
         try {
             if (this.isUserAdmin === null) {
-                const roleIds = await this.getUserRoles();
-                this.isUserAdmin = await this.models["user_role_matching"].isAdminInUserRoles(roleIds);
+                this.isUserAdmin = this.isAdminForId(userId);
             }
             return this.isUserAdmin;
+        } catch (error) {
+            this.logger.error(error);
+            return false;
+        }
+    }
+
+    /**
+     * Checks and caches whether the user is an admin.
+     *
+     * Note: This method has side effects as it caches the admin status in `this.isUserAdmin`
+     * and calls `this.getUserRoles()`, which has its own caching behavior.
+     * This can be problematic if the user's admin status changes
+     * during their session, as the cached value won't automatically update.
+     *
+     * @returns {Promise<boolean>} True if the user is an admin.
+     */
+    async isAdminForId(userId) {
+        try {
+            const roleIds = await this.models["user_role_matching"].getUserRolesById(userId);
+            return await this.models["user_role_matching"].isAdminInUserRoles(roleIds);
         } catch (error) {
             this.logger.error(error);
             return false;
@@ -224,7 +244,7 @@ module.exports = class Socket {
      */
     async hasAccess(right, userId = this.userId) {
         // admin has full rights, so return true directly
-        if (userId ===this.userId && await this.isAdmin()) return true;
+        if ((userId === this.userId && await this.isAdmin()) || this.isAdminForId(userId)) return true;
         const roleIds = await this.models["user_role_matching"].getUserRolesById(userId);
         return await this.models["user_role_matching"].hasAccessByUserRoles(roleIds, right);
     }
@@ -235,7 +255,7 @@ module.exports = class Socket {
      * @return {Promise<boolean>} If the user has access
      */
     async checkUserAccess(userId) {
-        if (await this.isAdmin()) {
+        if (await this.isAdminForId(userId)) {
             return true;
         }
         if (this.userId !== userId) {
@@ -355,7 +375,7 @@ module.exports = class Socket {
         );
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
         const accessRights = relevantAccessMap.map(item => item.access);
-        if (await this.isAdmin(userId) || this.models[tableName].publicTable) { // is allowed to see everything
+        if (await (userId === this.userId && this.isAdmin(userId)) || this.isAdminForId(userId) || this.models[tableName].publicTable) { // is allowed to see everything
         // no adaption of the filter or attributes needed
         } else if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes() && accessRights.length === 0) {
             // is allowed to see only his data and possible if there is a public attribute
@@ -630,9 +650,8 @@ module.exports = class Socket {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             }
-            const roleIds = await this.models["user_role_matching"].getUserRolesById(socket.userId);
             // if socket is admin or table is public, also just send
-             if (await this.models["user_role_matching"].isAdminInUserRoles(roleIds) || this.models[tableName].publicTable) {
+             if (await this.isAdminForId(socket.userId) || this.models[tableName].publicTable) {
                 this.io.to(socket.id).emit(tableName + "Refresh", data);
                 continue
             } 
