@@ -183,7 +183,6 @@ export default {
       this.selectedRanges = [range];
 
       this.show(event.clientX, event.clientY);
-      console.log("range", range);
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "onTextSelect",
