@@ -704,6 +704,7 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * TODO: Rewrite the parameters' description
      * Downloads multiple submission files from Moodle URLs, creating a local document record for each one.
      * Each file is processed in its own database transaction to ensure atomicity. Progress is reported
      * to the client via a socket event after each file is processed.
