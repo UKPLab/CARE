@@ -81,9 +81,7 @@ export default {
     collapsedCommentIds() {
       const commentIds = this.$store.getters['table/comment_state/getFiltered'](
         state => state.state === 1 &&
-          state.documentId === this.documentId &&
-          state.studySessionId === this.studySessionId &&
-          state.studyStepId === this.studyStepId
+          state.documentId === this.documentId
       ).map(state => state.commentId);
       return commentIds;
     },
@@ -133,7 +131,6 @@ export default {
   },
   watch: {
     annotations(newVal, oldVal) {
-      console.log('Annotations changed:', newVal, oldVal);
       // Remove highlights of deleted anchors
       oldVal.filter(anno => !newVal.includes(anno))
         .forEach(anno => {
@@ -149,9 +146,7 @@ export default {
       newVal.filter(anno => !oldVal.includes(anno))
         .map(anno => {
           this.highlight(anno);
-          console.log('New annotation highlights added:', anno.id);
           if(!this.collapsedAnnotationIds.includes(anno.id)) {
-            console.log('Handling scrolling for annotation:', anno.id);
             this.handleScrolling(anno.id);
           }
         });
