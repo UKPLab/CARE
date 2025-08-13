@@ -1342,7 +1342,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentUpdateContent", this.updateDocumentContent, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
-        this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
+        this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, true);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);
         this.createSocket("documentDataSave", this.saveData, {}, true);
         this.createSocket("documentClose", this.closeDocument, {}, true);
