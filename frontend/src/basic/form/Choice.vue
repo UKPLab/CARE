@@ -268,8 +268,14 @@ export default {
           const hasIncompleteServices = services.some(service => !service.skill || service.skill === "");
           return hasIncompleteServices;
         } else {
-          const hasPlaceholders = Object.keys(configData).includes("placeholders");
-          return !hasPlaceholders;
+          if (Object.keys(configData).includes("placeholders")) {
+            const hasPlaceholders = Object.keys(configData).includes("placeholders");
+            return !hasPlaceholders;
+          } else {
+            const services = configData.services || [];
+            const hasIncompleteServices = services.some(service => !service.skill || service.skill === "");
+            return hasIncompleteServices;
+          }
         }
       }
       return false;

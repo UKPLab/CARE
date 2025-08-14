@@ -38,10 +38,48 @@
           </div>
         </div>
         <div v-else-if="isExtendedWorkflow && !isStep1" class="extended-config">
-          <!-- Step 2 (Editor) should use a separate modal -->
-          <div class="alert alert-warning">
-            <h6 class="fw-bold">Configuration Error</h6>
-            <p>This configuration modal is for Step 1 (Annotator) only. Step 2 (Editor) should use a separate modal.</p>
+          <!-- Step 2 (Editor): NLP Skills Only -->
+          <div class="mb-3">
+            <h6 class="fw-bold">NLP Skills Configuration</h6>
+            <p class="text-muted mb-3">Configure NLP skills for the next step.</p>
+            <div v-if="servicesDefinition && servicesDefinition.length">
+              <div
+                v-for="(service, index) in servicesDefinition"
+                :key="index"
+                class="service-item mb-4 p-3 border rounded"
+              >
+                <h6 class="fw-bold">Service: {{ service.name }}</h6>
+                <div class="mb-3">
+                  <label class="form-label">Select NLP Skill:</label>
+                  <FormSelect
+                    v-model="selectedSkills[index].skillName"
+                    :options="skillMap"
+                  />
+                </div>
+                <!-- Input Mapping -->
+                <div
+                  v-if="selectedSkills[index].skillName"
+                  class="mb-3"
+                >
+                  <h6 class="text-secondary">Input Mapping</h6>
+                  <div
+                    v-for="input in getSkillInputs(selectedSkills[index].skillName)"
+                    :key="input"
+                    class="mb-2"
+                  >
+                    <label class="form-label">{{ input }}:</label>
+                    <FormSelect
+                      v-model="inputMappings[index][input]"
+                      :options="{ options: availableDataSources }"
+                      :value-as-object="true"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="alert alert-info">
+              No service configurations found for this step.
+            </div>
           </div>
         </div>
         <div v-else class="service-config">
@@ -199,6 +237,10 @@ import Quill from "quill";
  * It supports placeholders for NLP models, links, and other custom fields.
  * Users can provide data that will be processed and stored as part of the workflow configuration.
  * It handles both creation and update scenarios.
+ * 
+ * For Extended Workflows:
+ * - Step 1 (Annotator): General Settings + NLP Skills
+ * - Step 2 (Editor): NLP Skills only
  *
  * @author: Juliane Bechert, Linyin Huang
  */
@@ -264,6 +306,20 @@ export default {
   computed: {
 
     servicesDefinition() {
+      // For extended workflows, get services from workflow step definition
+      if (this.isExtendedWorkflow) {
+        // Find the current study step to get its stepType
+        const currentStudyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
+        if (currentStudyStep) {
+          // Find the workflow step with matching stepType
+          const currentWorkflowStep = this.workflowSteps.find(step => step.stepType === currentStudyStep.stepType);
+          if (currentWorkflowStep && currentWorkflowStep.configuration && currentWorkflowStep.configuration.services) {
+            return currentWorkflowStep.configuration.services;
+          }
+        }
+      }
+      
+      // Fallback to stepConfig.services for standard workflows or if no workflow step services found
       return (this.stepConfig && Array.isArray(this.stepConfig.services)) 
         ? this.stepConfig.services 
         : [];
@@ -286,9 +342,19 @@ export default {
           });
           return [step1Valid, step2Valid];
         } else {
-          // Extended workflow Step 2 (Editor): This modal should not be used
-          console.warn('ConfigurationModal validation called for Step 2 (Editor) - should use separate modal');
-          return [false];
+          // Extended workflow Step 2 (Editor): Only validate NLP skills
+          const step1Valid = this.servicesDefinition.length === 0 || this.selectedSkills.every((s, index) => {
+            if (!s.skillName) return false;
+            
+            const skillInputs = this.getSkillInputs(s.skillName);
+            if (skillInputs.length === 0) return true; // No inputs required
+            
+            return skillInputs.every(input => {
+              const mapping = this.inputMappings[index]?.[input];
+              return mapping && mapping.value;
+            });
+          });
+          return [step1Valid];
         }
       } else {
         // Standard workflow validation (2 steps)
@@ -365,7 +431,7 @@ export default {
             { title: "NLP Skills" },
           ];
         } else {
-          console.warn('ConfigurationModal should not be used for Step 2 (Editor) in extended workflows');
+          // Step 2 (Editor): Only NLP Skills
           return [{ title: "NLP Skills" }];
         }
       }
@@ -444,16 +510,8 @@ export default {
   },
   methods: {
     openModal(evt) {
-      evt.preventDefault();
-      
-      // For extended workflows, this modal should only be used for Step 1 (Annotator)
-      if (this.isExtendedWorkflow && !this.isStep1) {
-        this.eventBus.emit("toast", {
-          title: "Configuration Error",
-          message: "This configuration modal is for Step 1 (Annotator) only. Step 2 (Editor) should use a separate modal.",
-          variant: "warning",
-        });
-        return;
+      if (evt && evt.preventDefault) {
+        evt.preventDefault();
       }
       
       // For standard workflows, we need a document
@@ -476,7 +534,7 @@ export default {
       this.stepConfig = this.modelValue || {};
       const serviceDefs = this.servicesDefinition;
 
-      // Initialize extended config for extended workflows
+      // Initialize extended config for extended workflows Step 1 only
       if (this.isExtendedWorkflow && this.isStep1) {
         this.extendedConfig.configFile = this.stepConfig.configFile || "";
       }
@@ -735,8 +793,16 @@ export default {
           };
           this.$emit("update:modelValue", configData);
         } else {
-          console.warn('ConfigurationModal submit called for Step 2 (Editor) - should use separate modal');
-          return;
+          // Step 2 (Editor): Only submit services (no configFile)
+          const configData = {
+            services: this.servicesDefinition.map((service, index) => ({
+              name: service.name,
+              type: service.type,
+              skill: this.selectedSkills[index]?.skillName || "",
+              inputs: this.selectedSkills[index]?.dataInput || {},
+            })),
+          };
+          this.$emit("update:modelValue", configData);
         }
       } else {
         if (!this.stepConfig?.services?.length) return;
