@@ -32,49 +32,23 @@ module.exports = class BackgroundTaskService extends Service {
                 timer = setTimeout(() => fn.apply(this, args), delay);
             };
         }
-        this.emitUpdate = debounce(target => {
-            this.sendAll("backgroundTaskUpdate", target);
+
+        this.emitData = () => {
+            this.sendAll("backgroundTaskUpdate", server.preprocess);
             return true;
-        }, 100);
-
-        function makeReactive(obj, callback) {
-            function createProxy(target) {
-                return new Proxy(target, {
-                    get(target, key, receiver) {
-                        const value = Reflect.get(target, key, receiver);
-                        if (typeof value === 'object' && value !== null) {
-                            return createProxy(value);
-                        }
-                        return value;
-                    },
-                    set(target, key, value, receiver) {
-                        const result = Reflect.set(target, key, value, receiver);
-                        callback(target);
-                        return result;
-                    },
-                    deleteProperty(target, key) {
-                        const result = Reflect.deleteProperty(target, key);
-                        callback(target);
-                        return result;
-                    }
-                });
-            }
-            return createProxy(obj);
-        }
-
-        this.makeReactive = makeReactive;
-        this.setPreprocess = (newObj) => {
-            if (!newObj || !newObj.__isReactiveProxy) {
-                const proxy = this.makeReactive(newObj || {}, this.emitUpdate);
-                Object.defineProperty(proxy, '__isReactiveProxy', { value: true, enumerable: false });
-                server.preprocess = proxy;
-                this.emitUpdate(server.preprocess);
-            } else {
-                server.preprocess = newObj;
-                this.emitUpdate(server.preprocess);
-            }
         };
+        this.emitUpdate = debounce(this.emitData, 100);
+
+        this.setPreprocess = (newObj) => {
+            server.preprocess = newObj || {};
+            this.emitData();
+            this.emitUpdate();
+        };
+
         this.setPreprocess(server.preprocess || {});
+        setInterval(() => {
+            this.emitUpdate();
+        }, 100);
     }
 
      /**
@@ -98,6 +72,7 @@ module.exports = class BackgroundTaskService extends Service {
                 this.server.preprocess.cancelled = true;
                 this.server.preprocess.requests = {};
                 this.server.preprocess.currentSubmissionsCount = 0;
+                this.emitData();
             } else {
                 this.logger.error(`CancelPreprocessing failed: missing DocumentSocket, admin rights, or preprocess object.`);
             }
