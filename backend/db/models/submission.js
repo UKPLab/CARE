@@ -17,11 +17,6 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "parentSubmissionId",
                 as: "parentSubmission",
             });
-
-            Submission.belongsTo(models["document"], {
-                foreignKey: "validationDocumentId",
-                as: "validationDocument",
-            });
         }
     }
 
