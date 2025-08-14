@@ -141,7 +141,7 @@ export default {
   },
   computed: {
     preprocess() {
-      return this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate");
+      return this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
     },
     processingSteps() {
       if (this.isProcessingActive) {
@@ -235,7 +235,6 @@ export default {
     },
   },
   mounted() {
-    this.$socket.on("backgroundTaskUpdate", (data) => {});
     if (this.isProcessingActive) {
       this.startElapsedTimer();
     }
@@ -335,29 +334,10 @@ export default {
     preprocessing() {
       const selectedConfigObj = this.configOptions.find(config => config.value === this.selectedConfig);
       
-      this.$socket.emit("serviceRequest",
-        {
-          service: "BackgroundTaskService",
-          action: "startPreprocessing",
-          data: {
-            skill: this.selectedSkill,
-            config: this.selectedConfig,
-            inputFiles: this.selectedInputRows.map(row => row.id)
-          }
-      }, (res) => {
-        if (res.success) {
-          this.eventBus.emit("toast", {
-            title: "LLMentor Grading Triggered",
-            message: "Grading has been started for all review documents.",
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: "LLMentor Grading Failed",
-            message: res.message,
-            variant: "danger",
-          });
-        }
+      this.$socket.emit("submissionsPreprocess", {
+        skill: this.selectedSkill,
+        config: this.selectedConfig,
+        inputFiles: this.selectedInputRows.map(row => row.id)
       });
       this.close();
     },

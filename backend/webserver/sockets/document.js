@@ -1289,7 +1289,6 @@ class DocumentSocket extends Socket {
                             clientId: 0
                         });
                     }
-                    console.log("Preprocess variable", this.server.preprocess);
                     console.log("nlpInput sent.............");
 
                     const nlpResult = await waitForNlpResult(this.server, item.requestId);

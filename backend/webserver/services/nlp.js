@@ -151,7 +151,7 @@ module.exports = class NLPService extends Service {
             console.log("skillResults received", data.clientId);
             if (data.clientId === 0) {
                 if (self.server.preprocess){
-                    if(!("cancelled" in self.server.preprocess) || self.server.preprocess.cancelled) {
+                    if("cancelled" in self.server.preprocess && self.server.preprocess.cancelled) {
                         return;
                     }
                     self.server.preprocess = self.server.preprocess || {};
