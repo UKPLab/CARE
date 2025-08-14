@@ -1238,7 +1238,7 @@ class DocumentSocket extends Socket {
                      
                     if (!hasValidFiles) {
                         this.logger.error(`No valid files found for submission ${subId}`);
-                        continue; // Skip this submission
+                        continue;
                     }
                     
                     const nlpInput = {
@@ -1302,7 +1302,7 @@ class DocumentSocket extends Socket {
                                         documentId: docId,
                                         studySessionId: null,
                                         studyStepId: null,
-                                        key: `service_nlpGrading_${item.skill}`, //TODO: This should service_nlpGrading_typeOfResultParameter and not skill; rather the skill name comes from thw workflow.. we need to figure out a way to track this anyways?
+                                        key: `service_nlpGrading_${item.skill}`, 
                                         value: nlpResult
                                     }, options)
                                 )

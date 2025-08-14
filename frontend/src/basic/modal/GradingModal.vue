@@ -333,7 +333,15 @@ export default {
     },
     preprocessing() {
       const selectedConfigObj = this.configOptions.find(config => config.value === this.selectedConfig);
-      
+      /** TODO: Later use this.$socket.emit("serviceCommand", {
+        service: "BackgroundTaskService",
+        command: "startPreprocessing",
+        data: {
+          skill: this.selectedSkill,
+          config: this.selectedConfig,
+          inputFiles: this.selectedInputRows.map(row => row.id)
+        }
+      }); */
       this.$socket.emit("submissionsPreprocess", {
         skill: this.selectedSkill,
         config: this.selectedConfig,
