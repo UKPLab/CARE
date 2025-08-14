@@ -218,77 +218,76 @@ Import this component if you need a modal prompted to the user. You can customiz
 Multiple Modals
 ---------------
 
-In certain workflows, you may need to display a modal *from within another modal*. For example, to add reviewers while assigning a document, or to edit nested content inside a form.
+In certain workflows, you may need to display a modal *from within another modal*.  
+For example, opening a “Select User” dialog from inside a “Configure Project” dialog.
 
-To prevent modals from stacking visibly or creating interaction conflicts, we support **modal swapping**, where the first modal is temporarily hidden and restored after the second modal closes.
+To avoid visual stacking issues and focus conflicts, CARE uses **modal swapping**:
 
-.. tip::
+- The **parent modal** is temporarily hidden when the **child modal** opens.
+- The **parent modal** is restored when the child closes.
 
-    When a child modal is opened, the parent modal should be hidden using ``mainModal?.hide()``, and restored with ``mainModal?.show()`` when the child closes. This keeps the experience intuitive and avoids modal stacking issues.
+Generic Example 
+~~~~~~~~~~~~~~~
 
-**Example**
+1. **Parent modal** opens normally.
+2. The user triggers an action that requires another modal.
+3. Before opening the **child modal**, hide the parent:
 
-This example demonstrates how to temporarily hide one modal and show another, using `ref` and `inject`.
+    .. code-block:: javascript
 
-.. code-block:: html
+        openChildModal() {
+            this.childModal.open();
+            this.parentModal?.hide();
+        }
 
-    <!-- Parent Modal (e.g., Configuration) -->
-    <BasicModal ref="parentModal" name="main-modal" @hide="onHide">
-      <template #body>
-        <button @click="openChild">Add Reviewer</button>
-      </template>
-    </BasicModal>
+4. When the child modal closes, re-show the parent:
 
-    <!-- Child Modal (e.g., Add Reviewer) -->
-    <AddAssignmentModal ref="childModal" :main-modal="getParentModalRef()" />
+    .. code-block:: javascript
+
+        closeChildModal() {
+            this.parentModal?.show();
+        }
+
+Passing the Parent Reference
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Since ``$refs`` are only available after mount, pass the parent modal reference via a **method** or **prop**:
 
 .. code-block:: javascript
 
-    methods: {
-        openChild() {
-            this.$refs.childModal.open(this.studyId);
-        },
-        getParentModalRef() {
-            return this.$refs.parentModal;
-        },
+    getParentModalRef() {
+        return this.$refs.parentModal;
     }
 
+Bind it to the child:
+
 .. code-block:: html
 
-    <!-- AddAssignmentModal.vue -->
-    <BasicModal
-      ref="assignmentModal"
-      name="add-assignment-modal"
-      @hide="resetModal"
-    >
-      <template #title>
-        <span>Add Reviewer</span>
-      </template>
-    </BasicModal>
+    <ChildModal :main-modal="getParentModalRef()" />
+
+Inside the child modal:
 
 .. code-block:: javascript
 
-    inject: {
-        mainModal: { default: null }
+    props: {
+        mainModal: { type: Object, default: null }
     },
 
     methods: {
-        open(id) {
-            this.$refs.assignmentModal.open();
+        open() {
+            this.modalRef.open();
             this.mainModal?.hide();  // hide parent
-            this.studyId = id;
         },
-        resetModal() {
-            this.selectedReviewer = [];
-            this.mainModal?.show();  // re-show parent
-        },
+        close() {
+            this.modalRef.close();
+            this.mainModal?.show();  // restore parent
+        }
     }
 
-**Where It’s Used**
+**Why not Use ``this.$refs.parentModal`` Directly?**
 
-You can see this modal-handling approach in:
-
-- ``dashboard/modal/AddAssignmentModal.vue``
+You can’t bind ``$refs`` directly in the template because they are **not available** during the initial render.  
+Using a method ensures the reference is only accessed **when it exists**.
 
 StepperModal
 ------------
