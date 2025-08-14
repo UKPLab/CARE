@@ -87,11 +87,11 @@ CARE’s document system supports **two distinct editing modes**, each optimized
 - **Regular documents** are used for everyday writing and collaborative editing.
 - **Study documents** are used in **controlled research workflows**, such as user studies, where each editing session is tracked per user and study step.
 
-These two document types follow **fundamentally different strategies** for how content is **loaded, edited, and saved**. Both modes use Quill as the editor and Vuex for local state, but the backend logic and sync model differ significantly.
+These two document types follow **fundamentally different strategies** for how content is **loaded, edited, and saved**. Both modes use Quill as the editor and Vuex for local state, but the backend logic and sync model differ.
 
 CARE combines two types of persistent data storage:
 
-- **Delta files** (``.delta``): contain the **most recently saved full document**. Used only by regular documents.
+- **Delta files** (``.delta``): contain the **most recently saved full document**, enabling faster loading and efficient caching. Used only by regular documents.
 - **Database edits** (``document_edit`` table): contain **atomic operations** like inserts or deletions — along with metadata such as ``userId``, ``draft``, and optionally ``studySessionId`` and ``studyStepId``.
 
 The diagram below shows the complete flow of how these layers interact, with **backend logic at the top**, **frontend (main user)** in the left, and **collaborative users** at the right:
@@ -120,13 +120,45 @@ When a regular document is opened, the backend performs two steps:
 
 The draft entries are then passed through the ``dbToDelta()`` function (from ``editor-delta-conversion``) to convert them into Quill-compatible operations. Both sources, the saved delta and the current drafts, are **merged server-side** into a single Delta. This merged result is then sent to the frontend, where the **Quill editor** renders the complete up-to-date view.
 
-During editing, every change made in the Quill editor is emitted as a Delta. Before sending these to the backend, the system converts them using ``deltaToDb()`` to generate a set of database-friendly atomic operations. These edits are transmitted via WebSocket (``editDocument`` event) and stored in the ``document_edit`` table with ``draft = true``. At the same time, the frontend Vuex store (``table/document_edit``) updates its local state to reflect these new changes.
+During editing, every change made in the Quill editor is first captured as a Delta.  
+Before sending anything to the backend, the system converts this Delta using ``deltaToDb()`` into a set of database-friendly atomic operations.  
+These operations are then transmitted via WebSocket (``editDocument`` event) to the backend.  
+After storing them in the ``document_edit`` table with ``draft = true``, the backend broadcasts the change back to all connected clients, where the frontend Vuex store (``table/document_edit``) updates its local state accordingly.
+
+Collaboration and Self-Edit Filtering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In collaborative editing, the frontend listens for edits coming from the backend via WebSocket.  
+To avoid applying your own changes twice, the backend includes the **socket ID** of the sender along with each edit.
+
+When an edit is created by the current user, it is **immediately stored in Vuex with** ``applied = true`` for that sender.  
+This ensures that if the same edit is broadcast back from the backend (e.g., to another browser tab), it will be applied there, but skipped in the current tab.
+
+When an edit is received from the backend:
+
+1. The editor checks if the incoming sender ID matches the current client’s ``this.$socket.id``.
+2. If it **matches**, the edit is ignored locally because it is already present in the current editor state.
+3. If it **does not match**, the edit is converted with ``dbToDelta()`` and applied to the Quill instance using the ``processEdits`` function.
+4. After applying, the edit is marked ``applied = true`` in Vuex so it won’t be reprocessed later.
+
+This mechanism ensures that:
+
+- Your own edits are never re-applied from the socket.
+- Other users’ edits (or the same user in another browser tab) are applied exactly once.
+- Both regular and study documents benefit from the same collaboration logic.
+
+This logic is implemented in:
+  - ``Editor.vue`` – subscribing to document changes in ``mounted`` and unsubscribing in ``unmounted``.
+  - ``document.js`` – emitting edits along with the sender’s socket ID.
 
 .. tip::
-   In the regular document flow, the editor always receives a **single merged Delta**, combining saved content and draft changes.
-   This logic is visualized in the **upper left part of the diagram**.
+   In the regular document flow, the editor always receives a **single merged Delta**.  
+   This corresponds to the part of the diagram where the **red .delta file** is merged with the **blue document_edit database entries** (after they pass through **editor-delta-conversion**) to form the final document state in the **Regular Document** editor.
 
-To persist in-progress edits, the system uses **autosave** (see :ref:`Debounce Behaviour <debounce-ref>`). Autosave runs periodically and:
+
+To persist in-progress edits, the system uses **autosave** (see :ref:`Debounce Behaviour <debounce-ref>`).  
+Autosave runs at defined intervals **and** on certain events, such as when the editor component is unmounted or the WebSocket connection closes while a document is still open.  
+This ensures that the backend always has the latest state, even if the user leaves the page or loses connection unexpectedly.
 
 - Merges all ``draft: true`` edits with the current ``.delta`` file.
 - Writes a new ``.delta`` to disk, reflecting the latest saved state.
@@ -136,7 +168,7 @@ This separation ensures durability while allowing users to work with unsaved con
 
 **Draft State: draft = true vs draft = false**
 
-- Entries marked ``draft: true`` are temporary and unsaved. They exist only in the database and are editable or reversible.
+- Entries marked ``draft: true`` are temporary and unsaved. 
 - Entries marked ``draft: false`` have already been saved to the disk via the ``.delta`` file.
 - On load, regular documents pull only ``draft: true`` edits from the database and combine them with the saved ``.delta`` state.
 
@@ -150,41 +182,41 @@ All edits are stored in the ``document_edit`` table and grouped by:
 - ``studySessionId``, identifying the unique editing session for a user.
 - ``studyStepId``, representing a step in the study workflow (e.g., step 1, step 2).
 
-When a study document is opened, the backend queries the ``document_edit`` table for all entries that match the current ``studySessionId`` and ``studyStepId``. These edits, whether draft or not, are passed through ``dbToDelta()``, ordered by creation time and sequence, and sent to the frontend. The Quill editor then renders this isolated document state for the user.
+When a study document is opened, the backend queries the ``document_edit`` table for all entries that match the current ``studySessionId`` and ``studyStepId``.  
+These edits, whether draft or not, are **merged in the backend** by passing them through the ``dbToDelta()`` function (from ``utils/modules/editor-delta-conversion/index.js``), which combines the ordered atomic operations into a single Quill-compatible Delta.  
+This Delta is then sent to the frontend, where the Quill editor renders the isolated document state for the user.
 
-During editing, the system functions similarly to regular documents in terms of change tracking:
+During editing, the workflow is as follows:
 
-- The Quill editor emits change Deltas.
-- These are converted via ``deltaToDb()`` and sent via WebSocket (``editDocument``).
-- The backend stores each new operation in ``document_edit`` with the associated ``studySessionId``, ``studyStepId``, and ``draft: true``.
+1. The Quill editor emits a change Delta whenever the user makes an edit.
+2. This Delta is converted into a set of database-friendly atomic operations using ``deltaToDb()``.
+3. The converted operations are sent to the backend via the ``editDocument`` WebSocket event.
+4. The backend stores each operation in the ``document_edit`` table with the associated ``studySessionId``, ``studyStepId``, and ``draft: true``.
+5. The backend broadcasts the new edit to other connected clients working on the same session and step.
 
-On the frontend, each edit is also added to the Vuex store (``table/document_edit``) and marked with ``applied = false`` by default. This is where the **applied logic** comes into play.
+Synchronize: Receiving and Applying Edits
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The frontend listens for incoming edits (e.g., from other collaborative users via WebSocket). When an edit arrives:
+On the frontend, each local edit is added to the Vuex store (``table/document_edit``) with ``applied = false`` by default.  
+However, when an edit is sent by the current user, the Vuex store immediately sets its ``applied`` flag to ``true`` for that sender, so that if the same edit comes back through WebSocket (e.g., in another browser tab), it will still be applied there.
 
-1. The Vuex store checks whether the edit has already been applied (based on its ID).
-2. If not applied, the edit is converted using ``dbToDelta()`` and injected into the Quill editor.
-3. The system then marks the edit as ``applied = true`` in the local Vuex state.
-4. If the edit **was already applied**, it is skipped — ensuring no duplicate content.
+The frontend listens for incoming edits from the backend (e.g., via WebSocket) and processes them as follows:
 
-This ensures that each edit is applied **exactly once**, even if received multiple times due to socket replays or network latency. As a result, multiple collaborators can work on the same study session without duplicating each other's input. Each participant only sees the edits associated with their session and step, keeping the workflow isolated and consistent.
+1. **Receive Edit:** The Vuex store gets a new edit from the backend (via WebSocket).
+2. **Check for Sender:** If the edit originated from the current client, it already has ``applied = true`` locally to prevent re-applying in the same tab.
+3. **Check Application State:** For all other cases, the store checks whether ``applied = true`` (based on the edit ID).
+4. **Apply Edit:** If ``applied = false``, the edit is passed through ``dbToDelta()`` and inserted into the Quill editor.
+5. **Mark as Applied:** After applying, the edit’s flag in Vuex is set to ``applied = true`` so it’s skipped in future.
+6. **Skip Duplicates:** If ``applied = true`` already, the edit is ignored , this is avoiding duplicate insertions due to socket replays or network latency.
 
 .. tip::
-   This edit coordination is visualized in the **bottom right part of the diagram**, where multiple clients apply edits without duplication.
+   This edit coordination is visualized in the **bottom right part of the diagram**, where multiple clients apply edits exactly once.
 
 The ``editDocument`` socket route is used identically in both modes. It:
 
 - Accepts Deltas from the frontend (converted via ``deltaToDb()``).
 - Stores each atomic operation in ``document_edit`` with ``draft: true``.
 - Broadcasts the edit to other connected users viewing the same document (or in studies, the same session/step).
-
-**Role of applied**
-
-In study documents, ``applied`` is a **frontend-only flag** managed by Vuex. It determines whether a given edit has already been processed:
-
-- Edits are only applied to Quill if ``applied = false``.
-- After applying, the Vuex store updates the edit's ID to ``applied = true``.
-- Edits received again, for example, through socket re-emission, are ignored.
 
 Editor-Deltas and Code Integration
 ----------------------------------
