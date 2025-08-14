@@ -24,7 +24,7 @@ class DocumentSocket extends Socket {
 
     constructor(socket, server, models) {
         super(socket, server, models);
-        this.validator = new Validator(server, models);
+        this.validator = new Validator(this.server, this.models);
     }
 
     /**
