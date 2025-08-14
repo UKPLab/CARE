@@ -483,9 +483,18 @@ Additional options:
 Choice
 ^^^^^^
 
-The ``Choice`` component displays a dynamic list of items (choices) where each row can be configured individually. This component is useful when you want to collect structured data per entry—especially in workflows or assignments where each step or entity may have different options or linked configurations.
+The ``Choice`` component displays a dynamic list of items (choices) where each row can be configured individually.
+This component is useful when you want to collect structured data per entry—especially in workflows or assignments where each step or entity may have different options or linked configurations.
 
-It renders a table layout and allows you to bind form fields per row. You must define a source table and optional filters to determine which choices to show.
+It renders a table layout and allows you to bind form fields per row.
+
+While the ``options`` object often points to backend tables and filters (similar to how workflows are stored in the database),
+it’s important to understand that **in the context of the Choice component, these keys control what is shown, editable, and validated in the UI**:
+
+- ``table`` – Defines where the component stores and reads the selected/configured entries.
+- ``choices.table`` – Defines the source from which the list of available rows is loaded.
+- ``choices.filter`` – Controls which rows appear at all (static or dynamic rules).
+- ``choices.disabled`` – Prevents specific rows from being selectable or editable while keeping them visible if needed.
 
 .. tip::
 
@@ -513,12 +522,17 @@ It renders a table layout and allows you to bind form fields per row. You must d
         ]
 
     In this structure:
-    
+
     - Each workflow contains multiple ``steps``.
     - ``stepType`` defines the type of action (e.g., edit, review).
     - ``allowBackward`` determines if users can return to a step.
     - ``configuration`` holds extra options or fields for that step.
 
+    **However**, when using the Choice component, you are not editing this structure directly.
+    Instead, you are **selecting and configuring rows** from a source list (``choices.table``) based on filters (``choices.filter``),
+    and binding the results to your form via ``v-model``.
+
+Example usage:
 
 .. code-block:: html
 
@@ -552,7 +566,7 @@ It renders a table layout and allows you to bind form fields per row. You must d
         },
         methods: {
             handleStatus(status) {
-                console.log(\"Config status:\", status);
+                console.log("Config status:", status);
             },
         },
     };
@@ -565,11 +579,13 @@ It renders a table layout and allows you to bind form fields per row. You must d
       - Type
       - Required
     * - modelValue
-      - Two-way bound data array for all choices
+      - Two-way bound data array for all choices (stores the selected/configured rows).
       - Array
       - False
     * - options
-      - Configuration object (must define target table and filtering logic)
+      - Configuration object that defines both:
+        - The target table for storing selection/configuration.
+        - The source and filtering logic for available choices.
       - Object
       - True
 
@@ -579,16 +595,20 @@ It renders a table layout and allows you to bind form fields per row. You must d
     * - Key
       - Description
     * - table
-      - The table from which the choices are retrieved (e.g. ``workflow_step``)
+      - Backend table from which the component **loads available choices** to display in the list.
     * - filter
-      - A list of conditions to filter the items (can be based on form data)
+      - Rules controlling **which rows are visible**.
+        Can be based on static values or dynamic form data.
     * - disabled
-      - Optional rules to hide excluded entries
+      - Optional rules to **hide or lock** certain rows without removing them.
 
 .. tip::
 
     The component emits ``@update:config-status`` whenever one or more of the rows has incomplete configuration.
     It also provides a ``validate()`` method which can be called from the parent via a ref to ensure all required inputs are set.
+
+    While the backend table/field names come from the database model,
+    **their effect inside the Choice component is purely about what gets rendered, how it can be interacted with, and what gets sent back when saving**.
 
 Default
 ^^^^^^^

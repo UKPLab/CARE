@@ -391,7 +391,8 @@ Ideal for configuration workflows, uploads, or integrations like Moodle (see :re
 
 .. note::
 
-    The number and order of elements in ``validation`` must match the number of items in ``steps``.
+    The number and order of elements in ``validation`` must match the number of items in ``steps``.  
+    Whenever possible, ``validation`` should be provided via a computed property to ensure it stays in sync automatically.
 
 **Slots:** Each step must have a corresponding named slot using the syntax ``#step-n`` where ``n`` is the 1-based index. You can also customize the modal's title and footer.
 
@@ -462,7 +463,7 @@ This is commonly used in Moodle integration scenarios (see: ``ImportModal.vue``)
 
 .. code-block:: javascript
 
-    handleStepZero() {
+    handleStepOne() {
         this.$refs.importStepper.setWaiting(true);
         this.$socket.emit("documentGetMoodleSubmissions", { options: this.moodleOptions }, (res) => {
             this.$refs.importStepper.setWaiting(false);
