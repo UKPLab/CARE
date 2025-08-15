@@ -19,6 +19,12 @@
         text="Import via Moodle"
         @click="$refs.importModal.open()"
       />
+      <BasicButton
+        class="btn-success btn-sm ms-1"
+        text="Preprocess Grading"
+        title="Preprocess Grading"
+        @click="preprocessGrades" 
+      />
     </template>
     <template #body>
       <BasicTable
@@ -34,6 +40,9 @@
   <ConfirmModal ref="deleteConf" />
   <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
+  <GradingModal
+    ref="gradingModal"
+  />
 </template>
 
 <script>
@@ -151,7 +160,7 @@ export default {
           firstName: user ? user.firstName : "Unknown",
           lastName: user ? user.lastName : "Unknown",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
-          type: mainDoc.type === 0 ? "PDF" : (mainDoc.type === 1 ? "HTML" : "—"),
+          type: mainDoc.type === 0 ? "PDF" : mainDoc.type === 1 ? "HTML" : mainDoc.type === 4 ? "ZIP" : "—",
           hash: mainDoc.hash || null,              // for accessDoc()
         };
       });
@@ -205,6 +214,9 @@ export default {
     },
     accessDoc(row) {
       this.$router.push(`/document/${row.hash}`);
+    },
+    preprocessGrades() {
+      this.$refs.gradingModal.open();
     },
   },
 };

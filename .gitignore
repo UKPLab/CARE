@@ -2,7 +2,10 @@
 # files dir
 files/*.pdf
 files/*.delta
+files/*.json
 !files/8852a746-360e-4c31-add2-4d1c75bfb96d.pdf
+!files/1c784430-6ef0-4958-9451-c1960866135e.json
+!files/d8ef6767-39bc-44ea-9a7a-1356d9200871.json
 
 # database dumps
 db_dumps/
@@ -17,6 +20,7 @@ backend/coverage
 dist/
 frontend/node_modules
 node_modules
+package-lock.json
 
 #modules
 utils/modules/editor-delta-conversion/node_modules

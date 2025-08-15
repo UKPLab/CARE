@@ -13,7 +13,7 @@
     />
   </div>
   <div v-if="requireAuth">
-    <TopBar v-if="!hideTopbar" />
+    <TopBar v-if="!hideTopbar && appLoaded" />
     <div
       v-if="!appLoaded"
       class="pageLoader"
