@@ -112,6 +112,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
+// TODO: To be removed later.
 import { mockAssignments, mockValidators } from "./mockData";
 
 /**
@@ -127,6 +128,7 @@ export default {
       steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Validate" }, { title: "Confirm" }, { title: "Result" }],
       moodleOptions: {},
       selectedValidatorId: 0,
+      // TODO: To be removed later.
       validators: mockValidators || [],
       tableOptions: {
         striped: true,
@@ -220,6 +222,7 @@ export default {
           // this.$refs.importStepper.setWaiting(false);
           break;
         case 3:
+          // TODO: To be implemented later.
           // Validator selection step
           break;
         case 4:
@@ -251,6 +254,7 @@ export default {
         {
           files: this.selectedAssignments,
           options: this.moodleOptions,
+          // TODO: This validator Id will be a documentId.
           validator: this.selectedValidatorId,
           // progressId: this.$refs.importStepper.startProgress(),
         },
