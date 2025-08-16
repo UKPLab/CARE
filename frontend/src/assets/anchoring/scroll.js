@@ -100,3 +100,44 @@ export async function scrollElementIntoView(
     scrollIntoView(element, { time: maxDuration }, resolve)
   );
 }
+/**
+ * Scroll the PDF viewer container to a given page.
+ *
+ *
+ *
+ * @param {HTMLElement} container - Scrollable container (e.g., this.$refs.viewer)
+ * @param {number} pageNumber - 1-based page number to scroll to (0 or falsy treated as 1)
+ * @param {object} [options]
+ * @param {number} [options.maxDuration=500] - Max animation duration in ms
+ * @param {"start"|"center"|"end"} [options.align="start"] - Alignment of page in viewport
+ * @param {number} [options.offset=0] - Extra offset in px applied after alignment
+ * @returns {Promise<HTMLElement|null>} Resolves with the target page element (or null on failure)
+ */
+export async function scrollToPage(
+  container,
+  pageNumber,
+  { maxDuration = 10, align = 'start', offset = 0 } = {}
+) {
+  const pages = container.querySelectorAll('.scrolling-page');
+  if (!pages || pages.length === 0) {
+    console.warn('[scrollToPage] No elements with class .scrolling-page found in container.');
+    return null;
+  }
+  const index = Math.max(0, Math.min((pageNumber || 1) - 1, pages.length - 1));
+  const target = /** @type {HTMLElement} */ (pages[index]);
+  const baseOffset = offsetRelativeTo(target, container);
+
+  let targetOffset = baseOffset;
+  if (align === 'center') {
+    targetOffset = baseOffset - (container.clientHeight - target.clientHeight) / 2;
+  } else if (align === 'end') {
+    targetOffset = baseOffset - (container.clientHeight - target.clientHeight);
+  }
+  targetOffset += offset;
+
+  const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+  targetOffset = Math.max(0, Math.min(targetOffset, maxScrollTop));
+
+  await scrollElement(container, targetOffset, { maxDuration });
+  return target;
+}

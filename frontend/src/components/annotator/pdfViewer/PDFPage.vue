@@ -68,6 +68,7 @@ import {toRaw} from 'vue';
 
 export default {
   name: 'PDFPage',
+  subscribe: ["comment_state"],
   components: {Loader, Highlights},
   directives: {
     ObserveVisibility,
@@ -124,8 +125,22 @@ export default {
   },
   computed: {
     annotations() {
-      return this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
-        && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageNumber);
+      const allAnnotations = this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
+        && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageNumber)
+      return allAnnotations.filter(anno => !this.collapsedAnnotationIds.includes(anno.id));
+    },
+    collapsedCommentIds() {
+      const commentIds = this.$store.getters['table/comment_state/getFiltered'](
+        state => state.state === 1 &&
+          state.documentId === this.documentId
+      ).map(state => state.commentId);
+      return commentIds;
+    },
+    collapsedAnnotationIds() {
+      const annotationIds = this.$store.getters['table/comment/getFiltered'](
+        comment => this.collapsedCommentIds.includes(comment.id)
+      ).map(comment => comment.annotationId);
+      return annotationIds;
     },
     anchors() {
       return [].concat(

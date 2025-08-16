@@ -132,7 +132,7 @@
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
 import Loader from "@/basic/Loading.vue";
-import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
+import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
@@ -479,10 +479,11 @@ export default {
       this.logScroll();
     },
     async scrollTo(annotationId) {
-      const annotation = this.$store.getters['table/annotation/get'](annotationId)
-
-      if ("anchors" in annotation) {
-        const anchor = annotation.anchors[0]
+      const annotation = this.$store.getters['table/annotation/get'](annotationId);
+      const scrollContainer = this.$refs.viewer || document.getElementById('viewerContainer');
+      const hasAnchors = Array.isArray(annotation.anchors) && annotation.anchors.length > 0;
+      if (hasAnchors) {
+        const anchor = annotation.anchors[0];
         const range = resolveAnchor(anchor);
         if (!range) {
           return;
@@ -493,12 +494,8 @@ export default {
         if (offset === null) {
           return;
         }
-
-        const scrollContainer = document.getElementById('viewerContainer');
         // Correct offset since we have a fixed top
-        offset -= 52.5; // see css class padding-top
-
-
+        offset -= 106; // see css class padding-top
         // nb. We only compute the scroll offset once at the start of scrolling.
         // This is important as the highlight may be removed from the document during
         // the scroll due to a page transitioning from rendered <-> un-rendered.
@@ -512,13 +509,25 @@ export default {
           if (!anchor) {
             return;
           }
-          const offset = this._anchorOffset(anchor);
+          let offset = this._anchorOffset(anchor);
           if (offset === null) {
             return;
           }
           await scrollElement(scrollContainer, offset);
         }
-
+      } else {
+        await scrollToPage(scrollContainer, annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number, { align: 'start', maxDuration: 10 });
+        await this._waitForAnnotationToBeAnchored(annotation, 2000);
+        if (annotation.anchors === null) {
+          console.error('[scrollTo] No anchors found after paging', annotation);
+          return;
+        }
+        let offset = this._anchorOffset(annotation.anchors[0]);
+        if (offset === null) {
+          return;
+        }
+        offset -= 106;
+        await scrollElement(scrollContainer, offset);
       }
     },
     anchorIsInPlaceholder(anchor) {
