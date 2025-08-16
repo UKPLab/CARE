@@ -141,7 +141,8 @@ export default {
   },
   computed: {
     preprocess() {
-      return this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
+      const bgTask = this.$store.getters["service/get"]("BackgroundTaskService", "backgroundTaskUpdate") || {};
+      return bgTask.preprocess || {};
     },
     processingSteps() {
       if (this.isProcessingActive) {
@@ -204,7 +205,7 @@ export default {
     processedCount() {
       if (!this.isProcessingActive) return 0;
       const total = this.preprocess?.currentSubmissionsCount || 0;
-      const remaining = Object.keys(this.preprocess.requests).length;
+      const remaining = Object.keys(this.preprocess.requests || {}).length;
       return total - remaining;
     },
     progressPercent() {
@@ -311,10 +312,10 @@ export default {
       this.currentStep = step;
     },
     cancelProcessing() {
-      this.$socket.emit("serviceRequest",
-        {
-          service: "BackgroundTaskService",
-          action: "cancelPreprocessing",
+      this.$socket.emit("serviceCommand", {
+        service: "BackgroundTaskService",
+        command: "cancelPreprocessing",
+        data: {}
       }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
@@ -330,10 +331,12 @@ export default {
           });
         }
       });
+      this.stopElapsedTimer();
+      this.close();
     },
     preprocessing() {
       const selectedConfigObj = this.configOptions.find(config => config.value === this.selectedConfig);
-      /** TODO: Later use this.$socket.emit("serviceCommand", {
+      this.$socket.emit("serviceCommand", {
         service: "BackgroundTaskService",
         command: "startPreprocessing",
         data: {
@@ -341,11 +344,6 @@ export default {
           config: this.selectedConfig,
           inputFiles: this.selectedInputRows.map(row => row.id)
         }
-      }); */
-      this.$socket.emit("submissionsPreprocess", {
-        skill: this.selectedSkill,
-        config: this.selectedConfig,
-        inputFiles: this.selectedInputRows.map(row => row.id)
       });
       this.close();
     },

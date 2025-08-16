@@ -1,11 +1,8 @@
-
 const Service = require("../Service.js");
-const {io: io_client} = require("socket.io-client");
 const fs = require("fs");
 const path = require("path");
-const yaml = require('js-yaml');
-
-const UPLOAD_PATH = path.resolve(__dirname, '../../files');
+const UPLOAD_PATH = `${__dirname}/../../../files`;
+const backgroundTask = {};
 
 /**
  * BackgroundTaskService - manages background tasks and status
@@ -20,38 +17,18 @@ module.exports = class BackgroundTaskService extends Service {
             cmdTypes: [
                 "getBackgroundTask",
                 "startPreprocessing",
-                "cancelPreprocessing"
+                "cancelPreprocessing",
+                "setResult"
             ],
             resTypes: [
                 "backgroundTaskUpdate"
             ]
         });
 
-        this.tasks = server.preprocess;
-        function debounce(fn, delay) {
-            let timer = null;
-            return function(...args) {
-                clearTimeout(timer);
-                timer = setTimeout(() => fn.apply(this, args), delay);
-            };
-        }
-
         this.emitData = () => {
-            this.sendAll("backgroundTaskUpdate", server.preprocess);
+            this.sendAll("backgroundTaskUpdate", backgroundTask);
             return true;
         };
-        this.emitUpdate = debounce(this.emitData, 100);
-
-        this.setPreprocess = (newObj) => {
-            server.preprocess = newObj || {};
-            this.emitData();
-            this.emitUpdate();
-        };
-
-        this.setPreprocess(server.preprocess || {});
-        setInterval(() => {
-            this.emitUpdate();
-        }, 100);
     }
 
      /**
@@ -61,6 +38,12 @@ module.exports = class BackgroundTaskService extends Service {
      * @param {object} data
      */
     async command(client, command, data) {
+        // Send the current backgroundTask value to all clients
+        if (command === "getBackgroundTask") {
+            this.emitData();
+        }
+
+        // Start preprocessing of submissions by sending requests to NLPService, receiving results, and saving them to the database asynchronously
         if (command === "startPreprocessing") {
             const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
             if (!documentSocket) {
@@ -76,22 +59,26 @@ module.exports = class BackgroundTaskService extends Service {
             try {
                 if (await documentSocket.isAdmin()) {
                     const configDoc = await this.server.db.models['document'].getById(data.config);
-                    console.log("Config Document:", configDoc);
                     if (!configDoc || configDoc.type !== this.server.db.models['document'].docTypes["DOC_TYPE_CONFIG"]) {
-                        return { success: false, message: "Invalid or missing config file." };
+                        this.server.logger.error(`Invalid config document: ${data.config}`);
+                        return { success: false, message: "Invalid config document."};
                     }
-                    const configFilePath = path.join(UPLOAD_PATH, `${configDoc.hash}.json`); //TODO: Error Point to resolve
+                    const configFilePath = path.join(UPLOAD_PATH, `${configDoc.hash}.json`);
                     if (!fs.existsSync(configFilePath)) {
+                        this.server.logger.error(`Config file not found: ${configFilePath}`);
                         return { success: false, message: "Config file not found on server." };
                     }
 
-                    console.log("Reached mid-way in startPreprocessing");
                     const configFileContent = await fs.promises.readFile(configFilePath, 'utf8');
                     const assessmentConfig = JSON.parse(configFileContent);
                     const requestIds = [];
                     const preprocessItems = [];
-                    this.server.preprocess = this.server.preprocess || {};
-                    this.server.preprocess.cancelled = false;
+                    backgroundTask.preprocess = {
+                        cancelled: false,
+                        requests: {},
+                        currentSubmissionsCount: 0
+                    };
+                    this.emitData();
                     for (const subId of data.inputFiles) {
                         let docs;
                         try {
@@ -134,7 +121,7 @@ module.exports = class BackgroundTaskService extends Service {
                         const hasValidFiles = Object.keys(submissionFiles).length > 0;
                         if (!hasValidFiles) {
                             this.server.logger.error(`No valid files found for submission ${subId}`);
-                            continue; // Skip this submission
+                            continue;
                         }
                         const nlpInput = {
                             submission: submissionFiles,
@@ -143,29 +130,31 @@ module.exports = class BackgroundTaskService extends Service {
                         const requestId = this.server.uuidv4 ? this.server.uuidv4() : require('uuid').v4();
                         requestIds.push(requestId);
                         preprocessItems.push({ requestId, submissionId: subId, docIds, skill: data.skill, nlpInput });
-                        if (!this.server.preprocess.requests) this.server.preprocess.requests = {};
-                        this.server.preprocess.requests[requestId] = { submissionId: subId, docIds, skill: data.skill };
+                        backgroundTask.preprocess.requests[requestId] = { submissionId: subId, docIds, skill: data.skill };
                     }
-                    this.server.preprocess.currentSubmissionsCount = preprocessItems.length;
-                    const waitForNlpResult = async (server, requestId, timeoutMs = 3000000, intervalMs = 200) => {
+                    backgroundTask.preprocess.currentSubmissionsCount = preprocessItems.length;
+                    this.emitData();
+                    const waitForNlpResult = async (requestId, timeoutMs = 3000000, intervalMs = 200) => {
                         const start = Date.now();
                         return await new Promise((resolve) => {
                             const interval = setInterval(() => {
-                                if (server.preprocess && server.preprocess.cancelled) {
+                                if (backgroundTask.preprocess && backgroundTask.preprocess.cancelled) {
                                     clearInterval(interval);
                                     resolve(null);
                                     return;
                                 }
-                                const result = server.preprocess && server.preprocess.nlpResult;
+                                const result = backgroundTask?.preprocess?.nlpResult;
                                 if (result && result.id === requestId) {
                                     clearInterval(interval);
-                                    delete server.preprocess.nlpResult;
+                                    delete backgroundTask.preprocess.nlpResult;
                                     resolve(result);
                                 } else if (Date.now() - start > timeoutMs) {
                                     clearInterval(interval);
-                                    if (server.preprocess) {
-                                        if (server.preprocess.requests) delete server.preprocess.requests[requestId];
+                                    // TODO: What is to be done if there is a timeout? Should this case be omitted?
+                                    if (backgroundTask.preprocess && backgroundTask.preprocess.requests) {
+                                        delete backgroundTask.preprocess.requests[requestId];
                                     }
+                                    this.emitData();
                                     resolve(null);
                                 }
                             }, intervalMs);
@@ -180,8 +169,8 @@ module.exports = class BackgroundTaskService extends Service {
                                 clientId: 0
                             });
                         }
-                        const nlpResult = await waitForNlpResult(this.server, item.requestId);
-                        if (!this.server.preprocess.cancelled && nlpResult) {
+                        const nlpResult = await waitForNlpResult(item.requestId);
+                        if (!backgroundTask.preprocess.cancelled && nlpResult) {
                             try {
                                 await Promise.all(
                                     item.docIds.map(docId =>
@@ -190,7 +179,7 @@ module.exports = class BackgroundTaskService extends Service {
                                             documentId: docId,
                                             studySessionId: null,
                                             studyStepId: null,
-                                            key: `service_nlpGrading_${item.skill}`,
+                                            key: `service_nlpGrading_${item.skill}`, // TODO: "key" for saving should be discussed, because it doesn't contain information about the skill
                                             value: nlpResult
                                         }, {})
                                     )
@@ -201,11 +190,15 @@ module.exports = class BackgroundTaskService extends Service {
                         } else {
                             this.server.logger.warn(`Timeout: No NLP result received for request ${item.requestId}`);
                         }
-                        if (this.server.preprocess && this.server.preprocess.requests) {
-                            delete this.server.preprocess.requests[item.requestId];
+                        if (backgroundTask.preprocess && backgroundTask.preprocess.requests) {
+                            delete backgroundTask.preprocess.requests[item.requestId];
+                            this.emitData();
                         }
                     }
-                    this.server.preprocess = {};
+                    if (!Object.keys(backgroundTask.preprocess.requests).length) {
+                        delete backgroundTask.preprocess;
+                    }
+                    this.emitData();
                     return {
                         success: true,
                         count: preprocessItems.length
@@ -220,19 +213,40 @@ module.exports = class BackgroundTaskService extends Service {
                     message: error.message
                 };
             }
-        } else if (command === "cancelPreprocessing") {
-            // TODO: Needs logic check
+        }
+        
+        // Cancel preprocessing by setting the cancelled flag to true
+        if (command === "cancelPreprocessing") {
             const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
-            if (documentSocket && await documentSocket.isAdmin() && this.server.preprocess) {
-                this.server.preprocess.cancelled = true;
-                this.server.preprocess.requests = {};
-                this.server.preprocess.currentSubmissionsCount = 0;
+            if (documentSocket && await documentSocket.isAdmin() && backgroundTask.preprocess) {
+                backgroundTask.preprocess.cancelled = true;
+                backgroundTask.preprocess.requests = {};
+                backgroundTask.preprocess.currentSubmissionsCount = 0;
                 this.emitData();
+                return { 
+                    success: true,
+                    message: "Preprocessing cancelled successfully." };
             } else {
-                this.logger.error(`CancelPreprocessing failed: missing DocumentSocket, admin rights, or preprocess object.`);
+                this.logger.error(`CancelPreprocessing failed: missing admin rights, or preprocess key in backgroundTask.`);
             }
-        } else {
+        }
+        else {
             await super.command(client, command, data);
+        }
+    }
+
+    /**
+     * Handles incoming results from the NLP and updates backgroundTask.preprocess
+     * @param state
+     * @param {object} data - The data forwarded by the NLPService
+     */
+    async setResult(data) {
+        if (backgroundTask.preprocess && backgroundTask.preprocess.requests && !backgroundTask.preprocess.cancelled) {
+            if (data) {
+                backgroundTask.preprocess.nlpResult = {...data} ;
+            } else {
+                this.logger.error("setResult command received without result data.");
+            }
         }
     }
 

@@ -148,16 +148,9 @@ module.exports = class NLPService extends Service {
         });
 
         nlpSocket.on("skillResults", (data) => {
-            console.log("skillResults received", data.clientId);
             if (data.clientId === 0) {
-                if (self.server.preprocess){
-                    if("cancelled" in self.server.preprocess && self.server.preprocess.cancelled) {
-                        return;
-                    }
-                    self.server.preprocess = self.server.preprocess || {};
-                    delete data.clientId;
-                    self.server.preprocess.nlpResult = { ...data };
-                }
+                delete data.clientId;
+                this.server.services['BackgroundTaskService'].setResult(data);
             } else {
                 const client = self.getClient(data.clientId);
                 delete data.clientId;
