@@ -281,6 +281,7 @@ export default {
     },
     columns() {
       let cols = [
+        {name: "ID", key: "id"},
         {name: "Name", key: "name"},
         {
           name: "Status",
