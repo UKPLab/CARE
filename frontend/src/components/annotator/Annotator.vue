@@ -260,13 +260,16 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
-    previousScroll() {
-      const data = this.$store.getters['table/user_environment/getFiltered'](e => e.userId === this.userId && e.documentId === this.documentId && e.studySessionId === this.studySessionId && e.studyStepId === this.studyStepId && e.key === "scroll")[0];
-      return data
-    },
     savedScroll() {
-      const data = this.$store.getters['table/user_environment/getFiltered'](e => e.userId === this.userId && e.documentId === this.documentId && e.studySessionId === this.studySessionId && e.studyStepId === this.studyStepId && e.key === "scroll")[0];
-      return data ? parseInt(data.value, 10) : 0;
+      // Normalize to a single record or null for simpler consumers
+      const data = this.$store.getters['table/user_environment/getAll'].filter(
+        e => e.userId === this.userId &&
+          e.documentId === this.documentId &&
+          e.studySessionId === this.studySessionId &&
+          e.studyStepId === this.studyStepId &&
+          e.key === "scroll"
+      );
+      return data[0] || null;
     },
     anchors() {
       return [].concat(
@@ -335,6 +338,14 @@ export default {
     },
   },
   watch: {
+    // React to external changes to the saved scroll value (e.g., from store updates)
+    async savedScroll(newVal, oldVal) {
+      // Scroll the viewer container to the saved scroll position
+      if (this.$refs.viewer && newVal) {
+        await this.delay(1000);
+        scrollElement(this.$refs.viewer, parseFloat(newVal.value));
+      }
+      },
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
         this.$socket.emit("documentGetData", {
@@ -400,13 +411,14 @@ export default {
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     document.addEventListener('copy', this.onCopy);
     // Scroll the viewer container to the saved scroll position
-   this.$nextTick(() => {
-    // Scroll the viewer container to the saved scroll position
-     // Ensure the viewer is available before setting scrollTop
-    if (this.$refs.viewer && this.savedScroll) {
-      scrollElement(this.$refs.viewer, this.savedScroll);
-    }
-  });
+    this.$nextTick(async () => {
+      // Ensure the viewer is available before setting scrollTop
+      if (this.$refs.viewer && this.savedScroll) {
+        // Add a short delay instead of waiting for anchors
+        await this.delay(300);
+        scrollElement(this.$refs.viewer, parseFloat(this.savedScroll.value));
+      }
+    });
 
   },
   beforeUnmount() {
@@ -416,7 +428,7 @@ export default {
     document.removeEventListener('copy', this.onCopy);
     window.removeEventListener('resize', this.handleResize);
     
-     if (!this.previousScroll) {
+     if (!this.savedScroll) {
       this.$socket.emit("appDataUpdate", {
         table: "user_environment",
         data: {
@@ -428,11 +440,11 @@ export default {
           value: this.$refs.viewer.scrollTop
         }
       });
-    }else{
+    } else {
       this.$socket.emit("appDataUpdate", {
         table: "user_environment",
         data: {
-          id: this.previousScroll.id,
+          id: this.savedScroll.id,
           value: this.$refs.viewer.scrollTop
         }
       });
