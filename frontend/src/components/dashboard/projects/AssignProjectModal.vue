@@ -189,35 +189,32 @@ export default {
           }
         );
       }
-      // Assign the project to each selected user
-      for (const user of this.userSelection) {
-        this.$socket.emit(
-          "appSettingSet",
-          {
-            key: "projects.default",
-            value: projectId,
-            userId: user.id,
-          },
-          (result) => {
-            if (!result.success) {
-              this.eventBus.emit("toast", {
-                title: "Assignment failed",
-                message: `Failed to assign project to user ${userId}: ${
-                  result?.message || "Unknown error"
-                }`,
-                variant: "danger",
-              });
-            }
+      // Bulk-assign the project to all selected users
+      const userIds = this.userSelection.map((u) => u.id);
+      this.$socket.emit(
+        "appSettingSet",
+        {
+          key: "projects.default",
+          value: projectId,
+          userIds,
+        },
+        (result) => {
+          if (!result || !result.success) {
+            this.eventBus.emit("toast", {
+              title: "Assignment failed",
+              message: result?.message || "Unknown error",
+              variant: "danger",
+            });
+            return;
           }
-        );
-      }
-      this.eventBus.emit("toast", {
-        title: "Project assigned",
-        message: `The project has been successfully assigned to ${this.userSelection.length} user(s).`,
-        variant: "success",
-      });
-
-      this.close();
+          this.eventBus.emit("toast", {
+            title: "Project assigned",
+            message: `The project has been successfully assigned to ${userIds.length} user(s).`,
+            variant: "success",
+          });
+          this.close();
+        }
+      );
     },
     close() {
       this.dataSelection = [];

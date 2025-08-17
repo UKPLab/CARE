@@ -410,13 +410,20 @@ class AppSocket extends Socket {
      * @return {Promise<void>} A promise that resolves after the setting is saved and the new configuration is sent
      */
     async sendOverallSetting(data, options) {
-        if(this.isAdmin() && data.userId){
-            await this.models["user_setting"].set(data.key, data.value, data.userId);
-        }
-        else{
-            await this.models["user_setting"].set(data.key, data.value, this.userId);
+        const { key, value } = data;
+        // Admin can set settings for other users (single or bulk)
+        if (Array.isArray(data.userIds) && data.userIds.length > 0 && await this.isAdmin()) {
+            for (const uid of data.userIds) {
+                await this.models["user_setting"].set(key, value, uid);
+            }
+        } else if (data.userId && await this.isAdmin()) {
+            await this.models["user_setting"].set(key, value, data.userId);
+        } else {
+            // Default: set for current user and refresh their settings
+            console.log(`Setting ${key} for user ${this.userId} to ${value}`);
+            await this.models["user_setting"].set(key, value, this.userId);
             await this.sendSettings();
-        }
+        }   
     }
 
     init() {
