@@ -236,6 +236,11 @@ export default {
     },
   },
   mounted() {
+    this.$sockets.emit("serviceCommand", {
+      service: "BackgroundTaskService",
+      command: "getBackgroundTask",
+      data: {}
+    });
     if (this.isProcessingActive) {
       this.startElapsedTimer();
     }
