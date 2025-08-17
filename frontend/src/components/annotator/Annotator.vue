@@ -340,12 +340,10 @@ export default {
   watch: {
     // React to external changes to the saved scroll value (e.g., from store updates)
     async savedScroll(newVal, oldVal) {
-      // Scroll the viewer container to the saved scroll position
-      if (this.$refs.viewer && newVal) {
-        await this.delay(1000);
-        scrollElement(this.$refs.viewer, parseFloat(newVal.value));
+      if (newVal) {
+        await this.scrollToSavedValue(newVal.value, 1000);
       }
-      },
+    },
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
         this.$socket.emit("documentGetData", {
@@ -412,11 +410,8 @@ export default {
     document.addEventListener('copy', this.onCopy);
     // Scroll the viewer container to the saved scroll position
     this.$nextTick(async () => {
-      // Ensure the viewer is available before setting scrollTop
-      if (this.$refs.viewer && this.savedScroll) {
-        // Add a short delay instead of waiting for anchors
-        await this.delay(300);
-        scrollElement(this.$refs.viewer, parseFloat(this.savedScroll.value));
+      if (this.savedScroll) {
+        await this.scrollToSavedValue(this.savedScroll.value, 300);
       }
     });
 
@@ -428,6 +423,9 @@ export default {
     document.removeEventListener('copy', this.onCopy);
     window.removeEventListener('resize', this.handleResize);
     
+     const currentPage = this.getCurrentPageNumber();
+     const payload = JSON.stringify({ page: currentPage, value: this.$refs.viewer.scrollTop });
+     console.log(payload);
      if (!this.savedScroll) {
       this.$socket.emit("appDataUpdate", {
         table: "user_environment",
@@ -437,7 +435,7 @@ export default {
           studySessionId: this.studySessionId,
           studyStepId: this.studyStepId,
           key: "scroll",
-          value: this.$refs.viewer.scrollTop
+          value: payload
         }
       });
     } else {
@@ -445,12 +443,48 @@ export default {
         table: "user_environment",
         data: {
           id: this.savedScroll.id,
-          value: this.$refs.viewer.scrollTop
+          value: payload
         }
       });
     }
   },
   methods: {
+    async scrollToSavedValue(value, delayMs) {
+      const data = JSON.parse(value);
+      const container = this.$refs.viewer;
+      await this.delay(delayMs);
+      if (!this.isPdfPageLoaded(parseInt(data.page))) {
+        scrollToPage(container, data.page, { align: 'start', offset: 0 });
+        await this.delay(300);
+      }
+      await scrollElement(container, parseFloat(data.value));
+    },
+    getCurrentPageNumber() {
+      //Todo get current page in a better way
+      const container = this.$refs.viewer;
+      if (!container) return 1;
+      const pages = container.querySelectorAll('.scrolling-page');
+      if (!pages || pages.length === 0) return 1;
+      let bestIndex = 0;
+      let bestDist = Infinity;
+      const currentTop = container.scrollTop;
+      pages.forEach((el, idx) => {
+        const relTop = offsetRelativeTo(el, container);
+        const dist = Math.abs(relTop - currentTop);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIndex = idx;
+        }
+      });
+      return bestIndex + 1; // pages are 1-based
+    },
+     isPdfPageLoaded(pageNumber) {
+        const canvas = document.getElementById('pdf-canvas-' + pageNumber);
+        const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
+        const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
+        const loaded = (visible && hasDimensions);
+        return loaded;
+    },
     handleResize() {
       if (window.innerWidth <= 900) {
         this.isSidebarVisible = false;
