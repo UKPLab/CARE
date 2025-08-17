@@ -1,4 +1,4 @@
-# CARE - Collaborative AI-Assisted Reading Environment
+git# CARE - Collaborative AI-Assisted Reading Environment
 
 CARE is a collaborative reading environment that allows users to read and annotate documents together.
 
