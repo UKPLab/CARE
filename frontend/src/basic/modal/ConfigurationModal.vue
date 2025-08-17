@@ -22,9 +22,9 @@
         <h5 class="modal-title text-primary">Configuration</h5>
       </template>
       
-      <!-- Step 1: General Settings (Extended Step 1) or Services (Standard) -->
+      <!-- Step 1: General Settings (Config Services) or Services (Standard) -->
       <template #step-1>
-        <div v-if="isExtendedWorkflow && isStep1" class="extended-config">
+        <div v-if="hasConfigServices && servicesDefinition.some(service => service.type === 'configSelect' || service.type === 'nlpAssessment')" class="config-service">
           <div class="mb-3">
             <h6 class="fw-bold">General Settings</h6>
             <div class="mb-3">
@@ -34,14 +34,11 @@
                 :options="configFileOptions"
               />
             </div>
-            
           </div>
         </div>
-        <div v-else-if="isExtendedWorkflow && !isStep1" class="extended-config">
-          <!-- Step 2 (Editor): NLP Skills Only -->
+        <div v-else-if="hasConfigServices && servicesDefinition.some(service => service.type === 'textualFeedback')" class="config-service">
           <div class="mb-3">
             <h6 class="fw-bold">NLP Skills Configuration</h6>
-            <p class="text-muted mb-3">Configure NLP skills for the next step.</p>
             <div v-if="servicesDefinition && servicesDefinition.length">
               <div
                 v-for="(service, index) in servicesDefinition"
@@ -76,9 +73,6 @@
                   </div>
                 </div>
               </div>
-            </div>
-            <div v-else class="alert alert-info">
-              No service configurations found for this step.
             </div>
           </div>
         </div>
@@ -128,9 +122,9 @@
         </div>
       </template>
 
-      <!-- Step 2: NLP Skills (Extended Step 1) or Placeholders (Standard) -->
+      <!-- Step 2: NLP Skills (Config Services) or Placeholders (Standard) -->
       <template #step-2>
-        <div v-if="isExtendedWorkflow && isStep1" class="extended-config">
+        <div v-if="hasConfigServices && servicesDefinition.some(service => service.type === 'nlpAssessment')" class="config-service">
           <div class="mb-3">
             <h6 class="fw-bold">NLP Skills Configuration</h6>
             <div v-if="servicesDefinition && servicesDefinition.length">
@@ -244,11 +238,8 @@ import Quill from "quill";
  *
  * @author: Juliane Bechert, Linyin Huang
  */
-// Extended workflow names that require special configuration
-const EXTENDED_WORKFLOW_NAMES = [
-  "Peer Review Workflow (Assessment)",
-  "Peer Review Workflow (Assessment with AI)"
-];
+// Service types that require special configuration
+const CONFIG_SERVICE_TYPES = ["configSelect", "nlpAssessment", "textualFeedback"];
 
 export default {
   name: "ConfigurationModal",
@@ -306,30 +297,30 @@ export default {
   computed: {
 
     servicesDefinition() {
-      // For extended workflows, get services from workflow step definition
-      if (this.isExtendedWorkflow) {
-        // Find the current study step to get its stepType
-        const currentStudyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
-        if (currentStudyStep) {
-          // Find the workflow step with matching stepType
-          const currentWorkflowStep = this.workflowSteps.find(step => step.stepType === currentStudyStep.stepType);
-          if (currentWorkflowStep && currentWorkflowStep.configuration && currentWorkflowStep.configuration.services) {
-            return currentWorkflowStep.configuration.services;
-          }
+      // Get services from workflow step definition or stepConfig
+      const currentStudyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
+      if (currentStudyStep) {
+        // Find the workflow step with matching stepType
+        const currentWorkflowStep = this.workflowSteps.find(step => step.stepType === currentStudyStep.stepType);
+        if (currentWorkflowStep && currentWorkflowStep.configuration && currentWorkflowStep.configuration.services) {
+          return currentWorkflowStep.configuration.services;
         }
       }
       
-      // Fallback to stepConfig.services for standard workflows or if no workflow step services found
+      // Fallback to stepConfig.services
       return (this.stepConfig && Array.isArray(this.stepConfig.services)) 
         ? this.stepConfig.services 
         : [];
     },
     stepValid() {
-      if (this.isExtendedWorkflow) {
-        if (this.isStep1) {
-          // Extended workflow Step 1 (Annotator): 2 steps (General Settings + NLP Skills)
+      if (this.hasConfigServices) {
+        // Handle config service types
+        const configServices = this.servicesDefinition.filter(service => CONFIG_SERVICE_TYPES.includes(service.type));
+        
+        if (configServices.some(service => service.type === "nlpAssessment")) {
+          // nlpAssessment service: 2 steps (General Settings + NLP Skills)
           const step1Valid = true; // General settings step is always valid
-          const step2Valid = this.servicesDefinition.length === 0 || this.selectedSkills.every((s, index) => {
+          const step2Valid = this.selectedSkills.every((s, index) => {
             if (!s.skillName) return false;
             
             const skillInputs = this.getSkillInputs(s.skillName);
@@ -341,9 +332,9 @@ export default {
             });
           });
           return [step1Valid, step2Valid];
-        } else {
-          // Extended workflow Step 2 (Editor): Only validate NLP skills
-          const step1Valid = this.servicesDefinition.length === 0 || this.selectedSkills.every((s, index) => {
+        } else if (configServices.some(service => service.type === "textualFeedback")) {
+          // textualFeedback service: 1 step (NLP Skills only)
+          const step1Valid = this.selectedSkills.every((s, index) => {
             if (!s.skillName) return false;
             
             const skillInputs = this.getSkillInputs(s.skillName);
@@ -355,7 +346,13 @@ export default {
             });
           });
           return [step1Valid];
+        } else if (configServices.some(service => service.type === "configSelect")) {
+          // configSelect service: 1 step (General Settings only)
+          const step1Valid = true; // General settings step is always valid
+          return [step1Valid];
         }
+        // Default fallback for config services
+        return [true];
       } else {
         // Standard workflow validation (2 steps)
         const step1Valid = this.servicesDefinition.length === 0 || this.selectedSkills.every((s, index) => {
@@ -398,42 +395,36 @@ export default {
     studySessionId() {
       return null;
     },
-    isExtendedWorkflow() {
-      if (!this.workflowSteps || this.workflowSteps.length === 0) {
-        return false;
-      }
-      
-      const workflowId = this.workflowSteps[0].workflowId;
-      if (!workflowId) {
-        return false;
-      }
-      
-      const workflow = this.$store.getters["table/workflow/get"](workflowId);
-      if (!workflow) {
-        return false;
-      }
-      
-      return EXTENDED_WORKFLOW_NAMES.includes(workflow.name);
+    hasConfigServices() {
+      return this.servicesDefinition.some(service => CONFIG_SERVICE_TYPES.includes(service.type));
     },
     isStep1() {
       const currentStep = this.workflowSteps.find(step => step.id === this.studyStepId);
       return currentStep && currentStep.stepType === 1;
     },
     /**
-     * Returns the appropriate step configuration based on workflow type and step type
+     * Returns the appropriate step configuration based on service types
      * @returns {Array} Array of step objects with titles
      */
     modalSteps() {
-      if (this.isExtendedWorkflow) {
-        if (this.isStep1) {
+      if (this.hasConfigServices) {
+        const configServices = this.servicesDefinition.filter(service => CONFIG_SERVICE_TYPES.includes(service.type));
+        
+        if (configServices.some(service => service.type === "nlpAssessment")) {
+          // nlpAssessment service: 2 steps (General Settings + NLP Skills)
           return [
             { title: "General Settings" },
             { title: "NLP Skills" },
           ];
-        } else {
-          // Step 2 (Editor): Only NLP Skills
+        } else if (configServices.some(service => service.type === "textualFeedback")) {
+          // textualFeedback service: 1 step (NLP Skills only)
           return [{ title: "NLP Skills" }];
+        } else if (configServices.some(service => service.type === "configSelect")) {
+          // configSelect service: 1 step (General Settings only)
+          return [{ title: "General Settings" }];
         }
+        // Default fallback for config services
+        return [{ title: "General Settings" }];
       }
       return [{ title: "Services" }, { title: "Placeholders" }];
     },
@@ -442,12 +433,27 @@ export default {
      * @returns {Object} Options object for FormSelect component
      */
     configFileOptions() {
-      const configFiles = this.$store.getters["table/document/getByKey"]('type', 3);
+      // Get the current project ID from the study step
+      const currentStudyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
+      const study = currentStudyStep ? this.$store.getters["table/study/get"](currentStudyStep.studyId) : null;
+      const projectId = study ? study.projectId : null;
+      
+      // If no project ID from study, try to get it from settings
+      const fallbackProjectId = projectId || parseInt(this.$store.getters["settings/getValue"]("projects.default"), 10);
+      
+      // Filter config files by project and type 3
+      const configFiles = this.$store.getters["table/document/getFiltered"](doc => 
+        doc.type === 3 && !doc.hideInFrontend && (doc.projectId === fallbackProjectId || !doc.projectId)
+      );
+      
       return {
-        options: configFiles.map(doc => ({
-          value: doc.id,
-          name: doc.name,
-        })),
+        options: [
+          { value: null, name: "Select Configuration File..." },
+          ...configFiles.map(doc => ({
+            value: doc.id,
+            name: doc.name,
+          }))
+        ],
       };
     },
   },
@@ -462,7 +468,7 @@ export default {
     },
     documentId: {
       handler(newDocumentId) {
-        if (!this.isExtendedWorkflow && newDocumentId) {
+        if (!this.hasConfigServices && newDocumentId) {
           this.fetchDocument();
         }
       },
@@ -503,8 +509,8 @@ export default {
   },
   mounted() {
     this.initializeModal();
-    // Only fetch document for standard workflows (extended workflows don't need document content)
-    if (!this.isExtendedWorkflow && this.documentId) {
+    // Only fetch document for standard workflows (config services don't need document content)
+    if (!this.hasConfigServices && this.documentId) {
       this.fetchDocument();
     }
   },
@@ -515,7 +521,7 @@ export default {
       }
       
       // For standard workflows, we need a document
-      if (!this.isExtendedWorkflow && !this.documentId) {
+      if (!this.hasConfigServices && !this.documentId) {
         this.eventBus.emit("toast", {
           title: "Document Error",
           message: "You need to select a document.",
@@ -527,15 +533,15 @@ export default {
       this.$refs.configurationStepper.open();
     },
     /**
-     * Initializes the modal configuration based on workflow type
-     * Handles both extended and standard workflow configurations
+     * Initializes the modal configuration based on service types
+     * Handles both config services and standard workflow configurations
      */
     initializeModal() {
       this.stepConfig = this.modelValue || {};
       const serviceDefs = this.servicesDefinition;
 
-      // Initialize extended config for extended workflows Step 1 only
-      if (this.isExtendedWorkflow && this.isStep1) {
+      // Initialize extended config for config services
+      if (this.hasConfigServices) {
         this.extendedConfig.configFile = this.stepConfig.configFile || "";
       }
 
@@ -579,7 +585,7 @@ export default {
       });
     },
     fetchDocument() {
-      if (this.isExtendedWorkflow) {
+      if (this.hasConfigServices) {
         return;
       }
       
@@ -780,8 +786,11 @@ export default {
       return this.availableDataSources.find((source) => source.stepId === dataInput.stepId && source.value === dataInput.dataSource);
     },
     submit() {
-      if (this.isExtendedWorkflow) {
-        if (this.isStep1) {
+      if (this.hasConfigServices) {
+        const configServices = this.servicesDefinition.filter(service => CONFIG_SERVICE_TYPES.includes(service.type));
+        
+        if (configServices.some(service => service.type === "nlpAssessment")) {
+          // nlpAssessment service: Include both configFile and services
           const configData = {
             configFile: this.extendedConfig.configFile,
             services: this.servicesDefinition.map((service, index) => ({
@@ -792,8 +801,8 @@ export default {
             })),
           };
           this.$emit("update:modelValue", configData);
-        } else {
-          // Step 2 (Editor): Only submit services (no configFile)
+        } else if (configServices.some(service => service.type === "textualFeedback")) {
+          // textualFeedback service: Only include services (no configFile)
           const configData = {
             services: this.servicesDefinition.map((service, index) => ({
               name: service.name,
@@ -801,6 +810,12 @@ export default {
               skill: this.selectedSkills[index]?.skillName || "",
               inputs: this.selectedSkills[index]?.dataInput || {},
             })),
+          };
+          this.$emit("update:modelValue", configData);
+        } else if (configServices.some(service => service.type === "configSelect")) {
+          // configSelect service: Only include configFile
+          const configData = {
+            configFile: this.extendedConfig.configFile,
           };
           this.$emit("update:modelValue", configData);
         }
@@ -871,7 +886,7 @@ export default {
         const stepIndex = index + 1;
         switch (step.stepType) {
           case 1: // Annotator
-            if (this.isExtendedWorkflow) {
+            if (this.hasConfigServices) {
               sources.push(
                 { value: "document", name: `Document (Step ${stepIndex})`, stepId: stepIndex },
                 { value: "userInput", name: `User Input (Step ${stepIndex})`, stepId: stepIndex }

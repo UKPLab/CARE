@@ -101,17 +101,6 @@
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
     
-    <!-- Configuration Modal for Extended Workflow Step 2 -->
-    <ConfigurationModal
-      v-if="showStep2ConfigModal && !readOnlyComputed"
-      ref="step2ConfigModal"
-      :model-value="nextStepConfiguration"
-      :study-step-id="nextStudyStep?.id"
-      :step-number="nextStudyStep ? studySteps.findIndex(step => step.id === nextStudyStep.id) + 1 : 0"
-      :document-id="nextStudyStep?.documentId || 0"
-      :workflow-steps="workflowSteps"
-      @update:model-value="handleStep2ConfigUpdate"
-    />
   </div>
 </template>
 
@@ -132,12 +121,12 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import { computed } from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
-import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
+
 import { nextTick } from "vue";
 
 export default {
   name: "StudyRoute",
-  components: { LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, StepModal, ConfigurationModal },
+  components: { LoadIcon, FinishModal, StudyModal, Annotator, Editor, TopBarButton, StepModal },
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
@@ -170,9 +159,7 @@ export default {
       timerInterval: null,
       localStudyStepId: 0,
       studyData: [], // Data from all the study steps
-      showStep2ConfigModal: false,
-      nextStepConfiguration: {},
-      pendingNextStep: null,
+      
     };
   },
   computed: {
@@ -288,30 +275,7 @@ export default {
       return false;
     },
     
-    // Extended workflow detection
-    isExtendedWorkflow() {
-      if (!this.study) return false;
-      const workflow = this.$store.getters["table/workflow/get"](this.study.workflowId);
-      if (!workflow) return false;
-      
-      const EXTENDED_WORKFLOW_NAMES = [
-        "Peer Review Workflow (Assessment)",
-        "Peer Review Workflow (Assessment with AI)"
-      ];
-      
-      return EXTENDED_WORKFLOW_NAMES.includes(workflow.name);
-    },
-    workflowSteps() {
-      if (!this.study) return [];
-      return this.$store.getters["table/workflow_step/getAll"].filter((step) => step.workflowId === this.study.workflowId);
-    },
-    needsStep2Configuration() {
-      // Check if we're moving from Step 1 (Annotator) to Step 2 (Editor) in extended workflow
-      if (!this.isExtendedWorkflow) return false;
-      if (!this.currentStudyStep || !this.nextStudyStep) return false;
-      
-      return this.currentStudyStep.stepType === 1 && this.nextStudyStep.stepType === 2;
-    },
+    
   },
   watch: {
     studySession() {
@@ -453,108 +417,32 @@ export default {
         }
       }
     },
-    updateStep(step) {
-      // Check if we need to show Step 2 configuration modal for extended workflow
-      if (this.needsStep2Configuration && step === this.nextStudyStep?.id) {
-        // In read-only mode, skip configuration and go directly to next step
-        if (this.readOnlyComputed) {
-          this.localStudyStepId = step;
-          return;
-        }
-        
-        // In normal mode, show configuration modal
-        this.pendingNextStep = step;
-        this.nextStepConfiguration = this.nextStudyStep?.configuration || {};
-        this.showStep2ConfigModal = true;
-        this.$nextTick(() => {
-          this.$refs.step2ConfigModal?.openModal();
-        });
-        return;
-      }
-      
-      if (this.readOnlyComputed) {
-        this.localStudyStepId = step;
-      } else {
-        this.$socket.emit(
-          "appDataUpdate",
-          {
-            table: "study_session",
-            data: {
-              id: this.studySessionId,
-              studyStepId: step,
-            },
-          },
-          (result) => {
-            if (!result.success) {
-              this.eventBus.emit("toast", {
-                title: "Study Step update failed",
-                message: result.message,
-                variant: "danger",
-              });
-            }
-          }
-        );
-      }
-    },
-    handleStep2ConfigUpdate(configData) {
-      // Update the next step configuration
-      if (this.pendingNextStep) {
-        const nextStepId = this.pendingNextStep; // Store the step ID before clearing
-        
-        // Get the next study step to include documentId
-        const nextStudyStep = this.$store.getters["table/study_step/get"](this.pendingNextStep);
-        
-        this.$socket.emit(
-          "appDataUpdate",
-          {
-            table: "study_step",
-            data: {
-              id: this.pendingNextStep,
-              configuration: configData,
-              documentId: nextStudyStep?.documentId || null,
-            },
-          },
-          (result) => {
-            if (result.success) {
-              // Now proceed to the next step
-              this.showStep2ConfigModal = false;
-              this.pendingNextStep = null;
-              this.nextStepConfiguration = {};
-              
-              if (this.readOnlyComputed) {
-                this.localStudyStepId = nextStepId;
-              } else {
-                this.$socket.emit(
-                  "appDataUpdate",
-                  {
-                    table: "study_session",
-                    data: {
-                      id: this.studySessionId,
-                      studyStepId: nextStepId,
-                    },
-                  },
-                  (result) => {
-                    if (!result.success) {
-                      this.eventBus.emit("toast", {
-                        title: "Study Step update failed",
-                        message: result.message,
-                        variant: "danger",
-                      });
-                    }
-                  }
-                );
-              }
-            } else {
-              this.eventBus.emit("toast", {
-                title: "Configuration update failed",
-                message: result.message,
-                variant: "danger",
-              });
-            }
-          }
-        );
-      }
-    },
+         updateStep(step) {
+       if (this.readOnlyComputed) {
+         this.localStudyStepId = step;
+       } else {
+         this.$socket.emit(
+           "appDataUpdate",
+           {
+             table: "study_session",
+             data: {
+               id: this.studySessionId,
+               studyStepId: step,
+             },
+           },
+           (result) => {
+             if (!result.success) {
+               this.eventBus.emit("toast", {
+                 title: "Study Step update failed",
+                 message: result.message,
+                 variant: "danger",
+               });
+             }
+           }
+         );
+       }
+     },
+    
   },
 };
 </script>

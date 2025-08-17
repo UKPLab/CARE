@@ -382,6 +382,8 @@ export default {
           const { skill, inputs: inputs, name } = service;
           this.request(skill, inputs, ("service_" + name));
         }
+        // Skip configSelect, nlpAssessment, and textualFeedback services as they don't make NLP requests
+        // These services are handled by the ConfigurationModal
       }
     }
     

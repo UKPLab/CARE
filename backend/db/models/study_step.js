@@ -38,6 +38,7 @@ module.exports = (sequelize, DataTypes) => {
                                 [sequelize.models.document.docTypes.DOC_TYPE_PDF]: stepTypes.STEP_TYPE_ANNOTATOR,
                                 [sequelize.models.document.docTypes.DOC_TYPE_HTML]: stepTypes.STEP_TYPE_EDITOR,
                                 [sequelize.models.document.docTypes.DOC_TYPE_MODAL]: stepTypes.STEP_TYPE_MODAL,
+                                [sequelize.models.document.docTypes.DOC_TYPE_CONFIG]: stepTypes.STEP_TYPE_EDITOR,
                             }
                         },
                         {type:"byProjectId", key: "projectId"}
@@ -94,9 +95,26 @@ module.exports = (sequelize, DataTypes) => {
             if (data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR || data.stepType === StudyStep.stepTypes.STEP_TYPE_MODAL) {
                 const study = options.context;
 
-                const expectedDocType = data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR
-                    ? sequelize.models.document.docTypes.DOC_TYPE_HTML
-                    : sequelize.models.document.docTypes.DOC_TYPE_MODAL;
+                // Check if this is a textualFeedback workflow (step 2 should accept config files)
+                let expectedDocType;
+                if (data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR) {
+                    // For Editor steps, check if this is a textualFeedback workflow
+                    if (data.workflowStepId) {
+                        const workflowStep = await sequelize.models.workflow_step.getById(data.workflowStepId, {transaction: options.transaction});
+                        if (workflowStep && workflowStep.configuration && workflowStep.configuration.services) {
+                            const hasTextualFeedback = workflowStep.configuration.services.some(service => service.type === "textualFeedback");
+                            expectedDocType = hasTextualFeedback 
+                                ? sequelize.models.document.docTypes.DOC_TYPE_CONFIG 
+                                : sequelize.models.document.docTypes.DOC_TYPE_HTML;
+                        } else {
+                            expectedDocType = sequelize.models.document.docTypes.DOC_TYPE_HTML;
+                        }
+                    } else {
+                        expectedDocType = sequelize.models.document.docTypes.DOC_TYPE_HTML;
+                    }
+                } else {
+                    expectedDocType = sequelize.models.document.docTypes.DOC_TYPE_MODAL;
+                }
 
                 if (data.documentId === null) { // Create a new document
 
@@ -179,45 +197,56 @@ module.exports = (sequelize, DataTypes) => {
                     }
                     // Check document mismatch
                     if (document.type !== expectedDocType) {
-                        throw new Error(`Document type mismatch: step ${data.workflowStepId} expects an Editor document (type 1), but found type ${document.type}.`);
+                        throw new Error(`Document type mismatch: step ${data.workflowStepId} expects document type ${expectedDocType}, but found type ${document.type}.`);
                     }
 
-                    const newDocument = await sequelize.models.document.add({
-                        name: `${document.name}_study`,
-                        type: document.type,
-                        userId: study.userId,
-                        parentDocumentId: document.id,
-                        hideInFrontend: true
-                    }, {transaction: options.transaction});
-
-                    const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta`);
-                    const newFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
-
-                    await fs.copyFile(originalFilePath, newFilePath);
-
-                    // Copy data from `document_edit` table
-                    const existingEdits = await sequelize.models.document_edit.findAll({
-                        where: {documentId: document.id},
-                        raw: true
-                    });
-
-                    if (existingEdits.length > 0) {
-                        const newEdits = existingEdits.map(edit => ({
-                            ...edit,
-                            id: undefined,
-                            documentId: newDocument.id,
-                            updatedAt: new Date(),
-                            studySessionId: null,
-                            studyStepId: null,
-                        }));
-
-                        await sequelize.models.document_edit.bulkCreate(newEdits, {transaction: options.transaction});
-                        console.log(`Copied ${newEdits.length} edits from document ${document.id} to new study document ${newDocument.id}`);
+                    // For config files, don't create a study copy - use the original document
+                    if (document.type === sequelize.models.document.docTypes.DOC_TYPE_CONFIG) {
+                        data.documentId = document.id;
                     } else {
-                        console.log(`No edits found for document ${document.id}, skipping edit copy.`);
-                    }
+                        // For other document types, create a study copy
+                        const newDocument = await sequelize.models.document.add({
+                            name: `${document.name}_study`,
+                            type: document.type,
+                            userId: study.userId,
+                            parentDocumentId: document.id,
+                            hideInFrontend: true
+                        }, {transaction: options.transaction});
 
-                    data.documentId = newDocument.id;
+                        // Only copy .delta files for HTML documents (type 1)
+                        if (document.type === sequelize.models.document.docTypes.DOC_TYPE_HTML) {
+                            const originalFilePath = path.join(UPLOAD_PATH, `${document.hash}.delta`);
+                            const newFilePath = path.join(UPLOAD_PATH, `${newDocument.hash}.delta`);
+
+                            await fs.copyFile(originalFilePath, newFilePath);
+
+                            // Copy data from `document_edit` table
+                            const existingEdits = await sequelize.models.document_edit.findAll({
+                                where: {documentId: document.id},
+                                raw: true
+                            });
+
+                            if (existingEdits.length > 0) {
+                                const newEdits = existingEdits.map(edit => ({
+                                    ...edit,
+                                    id: undefined,
+                                    documentId: newDocument.id,
+                                    updatedAt: new Date(),
+                                    studySessionId: null,
+                                    studyStepId: null,
+                                }));
+
+                                await sequelize.models.document_edit.bulkCreate(newEdits, {transaction: options.transaction});
+                                console.log(`Copied ${newEdits.length} edits from document ${document.id} to new study document ${newDocument.id}`);
+                            } else {
+                                console.log(`No edits found for document ${document.id}, skipping edit copy.`);
+                            }
+                        } else {
+                            console.log(`Skipping .delta file copy for non-HTML document type ${document.type}`);
+                        }
+
+                        data.documentId = newDocument.id;
+                    }
                 }
             }
             return await super.add(data, options);

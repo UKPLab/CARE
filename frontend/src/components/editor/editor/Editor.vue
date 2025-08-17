@@ -222,6 +222,16 @@ export default {
       const document = this.$store.getters["table/document/get"](this.documentId);
       return document && document.type === 3; // DOC_TYPE_CONFIG
     },
+    isTextualFeedbackWorkflow() {
+      // Check if this is a textualFeedback workflow step
+      if (this.studyStepId) {
+        const studyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
+        if (studyStep && studyStep.configuration && studyStep.configuration.services) {
+          return studyStep.configuration.services.some(service => service.type === "textualFeedback");
+        }
+      }
+      return false;
+    },
   },
   watch: {
     unappliedEdits: {
@@ -301,8 +311,14 @@ export default {
       },
       (res) => {
         if (res.success) {
-          if (this.isConfigurationFile) {
-            // Handle configuration files (JSON) differently
+          if (this.isConfigurationFile && this.isTextualFeedbackWorkflow) {
+            // For textualFeedback workflows with config files, don't display JSON content
+            // Instead, initialize with empty content - the NLP service will handle the processing
+            this.initializeEditorWithContent([{insert: ''}]);
+            this.documentLoaded = true;
+            this.emitContentForPlaceholders();
+          } else if (this.isConfigurationFile) {
+            // Handle other configuration files (JSON) differently
             this.initializeConfigurationFile(res['data']);
           } else {
             // Handle regular documents with deltas

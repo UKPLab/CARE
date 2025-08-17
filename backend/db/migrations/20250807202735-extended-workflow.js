@@ -12,8 +12,8 @@ const workflows = [
         configuration: {
           services: [
             {
-              name: "assessment_service",
-              type: "nlpRequest",
+              name: "configSelect",
+              type: "configSelect",
               required: false,
             }
           ]
@@ -23,15 +23,6 @@ const workflows = [
         stepType: 2, 
         allowBackward: true, 
         workflowStepDocument: 1,
-        configuration: {
-          services: [
-            {
-              name: "nlp_service",
-              type: "nlpRequest",
-              required: false,
-            }
-          ]
-        }
       },
     ],
   },
@@ -46,8 +37,8 @@ const workflows = [
         configuration: {
           services: [
             {
-              name: "assessment_service",
-              type: "nlpRequest",
+              name: "nlpAssessment",
+              type: "nlpAssessment",
               required: false,
             }
           ]
@@ -60,8 +51,8 @@ const workflows = [
         configuration: {
           services: [
             {
-              name: "nlp_service",
-              type: "nlpRequest",
+              name: "textualFeedback",
+              type: "textualFeedback",
               required: false,
             }
           ]
