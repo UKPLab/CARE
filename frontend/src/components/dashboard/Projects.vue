@@ -1,12 +1,21 @@
 <template>
   <Card title="Projects">
     <template #headerElements>
+      <div class="btn-group gap-2">
       <BasicButton
         class="btn-primary btn-sm"
         title="Create project"
         text="Create"
         @click="$refs.projectModal.open(0)"
       />
+      <BasicButton
+        v-if="isAdmin"
+        class="btn-secondary btn-sm"
+        title="Assign projects"
+        text="Assign projects"
+        @click="$refs.assignProjectModal.open()"
+      />
+      </div>
     </template>
     <template #body>
       <BasicTable
@@ -21,6 +30,8 @@
   <ProjectModal ref="projectModal"/>
   <ExportModal ref="exportModal"/>
   <ConfirmModal ref="deleteConf"/>
+  <AssignProjectModal ref="assignProjectModal"/>
+
 </template>
 
 <script>
@@ -30,6 +41,7 @@ import BasicButton from "@/basic/Button.vue";
 import ProjectModal from "./coordinator/Project.vue";
 import ExportModal from "./projects/ExportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import AssignProjectModal from "./projects/AssignProjectModal.vue";
 
 /**
  * Project list component
@@ -48,6 +60,7 @@ export default {
     BasicButton,
     ProjectModal,
     ConfirmModal,
+    AssignProjectModal,
   },
   data() {
     return {
@@ -71,6 +84,9 @@ export default {
   computed: {
     userId() {
       return this.$store.getters["auth/getUserId"];
+    },
+    isAdmin() {
+      return this.$store.getters["auth/isAdmin"];
     },
     buttons() {
       const buttons = [
@@ -235,8 +251,28 @@ export default {
       this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
     },
     publishProject(params) {
-      //TODO: Implement
-      console.log("Not implemented yet", params);
+      this.$socket.emit("appDataUpdate", {
+        table: "project",
+        data: {
+          id: params.id,
+          public: true
+        }
+      }, (result) => {
+        if (!result.success) {
+          this.eventBus.emit('toast', {
+            title: "Project publish failed",
+            message: result.message,
+            variant: "danger"
+          });
+        }
+        else {
+          this.eventBus.emit('toast', {
+            title: "Project published",
+            message: "The project has been successfully published.",
+            variant: "success"
+          });
+        }
+      });
     },
     selectProject(projectId) {
         this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
