@@ -599,8 +599,6 @@ export default {
           } else {
             // Check if the row is already selected
 
-            console.log(row);
-            console.log(!this.currentData.includes(row));
             if (!this.currentData.includes(row)) {
               this.currentData.push(row);
             }
