@@ -36,13 +36,13 @@ module.exports = {
       },
       projectId: {
         type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
+        defaultValue: 1,
         references: {
           model: 'project',
           key: 'id',
         },
-        onDelete: 'SET NULL',
+        onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
       parentSubmissionId: {

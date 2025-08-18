@@ -68,21 +68,6 @@ export default {
     {
       table: "submission",
     },
-    {
-      table: "document",
-      filter: [
-        {
-          key: "readyForReview",
-          value: true,
-        },
-      ],
-      include: [
-        {
-          table: "user",
-          by: "userId",
-        },
-      ],
-    },
   ],
   components: {
     UploadModal,
