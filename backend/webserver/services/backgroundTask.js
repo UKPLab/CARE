@@ -162,6 +162,8 @@ module.exports = class BackgroundTaskService extends Service {
                     };
                     for (const item of preprocessItems) {
                         if (this.server.services['NLPService']) {
+                            backgroundTask.preprocess.requests[item.requestId].startTime = Date.now();
+                            this.emitData();
                             this.server.services['NLPService'].backgroundRequest(documentSocket, {
                                 id: item.requestId,
                                 name: item.skill,
