@@ -107,6 +107,9 @@ export default {
           },
           title: "Access document...",
           action: "accessDoc",
+          stats: {
+            documentId: "id",
+          }
         },
         {
           icon: "trash",
@@ -118,6 +121,9 @@ export default {
           },
           title: "Delete document...",
           action: "deleteDoc",
+          stats: {
+            documentId: "id",
+          }
         },
       ]
     };
