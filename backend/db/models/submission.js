@@ -29,6 +29,7 @@ module.exports = (sequelize, DataTypes) => {
             extId: DataTypes.INTEGER,
             group: DataTypes.INTEGER,
             additionalSettings: DataTypes.JSONB,
+            validationDocumentId: DataTypes.INTEGER,
             deleted: DataTypes.BOOLEAN,
             deletedAt: DataTypes.DATE,
             createdAt: DataTypes.DATE,
