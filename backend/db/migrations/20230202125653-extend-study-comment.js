@@ -16,6 +16,6 @@ module.exports = {
         )
     },
     async down(queryInterface, Sequelize) {
-        await queryInterface.removeColumn('comment', "studyId");
+        await queryInterface.removeColumn('comment', "studySessionId");
     }
 };

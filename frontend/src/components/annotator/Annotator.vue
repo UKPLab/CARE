@@ -65,6 +65,7 @@
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
             @click="toggleSidebar"
+            :class="{ 'sidebar-highlight': sidebarIconHighlight }"
         >
           <LoadIcon
               :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
@@ -131,7 +132,7 @@
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
 import Loader from "@/basic/Loading.vue";
-import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
+import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
@@ -145,7 +146,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 
 export default {
   name: "AnnotatorView",
-  subscribeTable: ['tag', 'tag_set', 'study', 'study_session', 'comment', 'annotation'],
+  subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation'],
   components: {
     LoadIcon,
     PDFViewer,
@@ -214,6 +215,7 @@ export default {
     return {
       downloading: false,
       isSidebarVisible: true,
+      sidebarIconHighlight: false,
       logScroll: debounce(function () {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
@@ -225,10 +227,50 @@ export default {
             }
           })
         }
+      }, 500),
+      logHideSidebar: debounce(function () {
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "hideSidebar",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+          }
+        });
+      }
+    }, 500),
+      logResize: debounce(function (windowWidth, sidebarVisible) {
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "sidebarResize",
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
+              windowWidth: windowWidth,
+              sidebarVisible: sidebarVisible
+            }
+          });
+        }
       }, 500)
     }
   },
   computed: {
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    savedScroll() {
+      // Normalize to a single record or null for simpler consumers
+      const data = this.$store.getters['table/user_environment/getAll'].filter(
+        e => e.userId === this.userId &&
+          e.documentId === this.documentId &&
+          e.studySessionId === this.studySessionId &&
+          e.studyStepId === this.studyStepId &&
+          e.key === "scroll"
+      );
+      return data[0] || null;
+    },
     anchors() {
       return [].concat(
           this.annotations.filter(a => a.anchors !== null)
@@ -296,6 +338,12 @@ export default {
     },
   },
   watch: {
+    // React to external changes to the saved scroll value (e.g., from store updates)
+    async savedScroll(newVal, oldVal) {
+      if (newVal) {
+        await this.scrollToSavedValue(newVal.value, 1000);
+      }
+    },
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
         this.$socket.emit("documentGetData", {
@@ -331,6 +379,9 @@ export default {
       }
     });
 
+    this.handleResize();
+    window.addEventListener('resize', this.handleResize);
+
     // get tagsets
     /*this.$socket.emit("tagSetGetAll", {}, (result) => {
       if (!result.success) {
@@ -357,6 +408,12 @@ export default {
     // scrolling
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     document.addEventListener('copy', this.onCopy);
+    // Scroll the viewer container to the saved scroll position
+    this.$nextTick(async () => {
+      if (this.savedScroll) {
+        await this.scrollToSavedValue(this.savedScroll.value, 300);
+      }
+    });
 
   },
   beforeUnmount() {
@@ -364,8 +421,86 @@ export default {
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
     document.removeEventListener('copy', this.onCopy);
+    window.removeEventListener('resize', this.handleResize);
+    
+     const currentPage = this.getCurrentPageNumber();
+     const payload = JSON.stringify({ page: currentPage, value: this.$refs.viewer.scrollTop });
+     console.log(payload);
+     if (!this.savedScroll) {
+      this.$socket.emit("appDataUpdate", {
+        table: "user_environment",
+        data: {
+          userId: this.userId,
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+          key: "scroll",
+          value: payload
+        }
+      });
+    } else {
+      this.$socket.emit("appDataUpdate", {
+        table: "user_environment",
+        data: {
+          id: this.savedScroll.id,
+          value: payload
+        }
+      });
+    }
   },
   methods: {
+    async scrollToSavedValue(value, delayMs) {
+      const data = JSON.parse(value);
+      const container = this.$refs.viewer;
+      await this.delay(delayMs);
+      if (!this.isPdfPageLoaded(parseInt(data.page))) {
+        scrollToPage(container, data.page, { align: 'start', offset: 0 });
+        await this.delay(300);
+      }
+      await scrollElement(container, parseFloat(data.value));
+    },
+    getCurrentPageNumber() {
+      //Todo get current page in a better way
+      const container = this.$refs.viewer;
+      if (!container) return 1;
+      const pages = container.querySelectorAll('.scrolling-page');
+      if (!pages || pages.length === 0) return 1;
+      let bestIndex = 0;
+      let bestDist = Infinity;
+      const currentTop = container.scrollTop;
+      pages.forEach((el, idx) => {
+        const relTop = offsetRelativeTo(el, container);
+        const dist = Math.abs(relTop - currentTop);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIndex = idx;
+        }
+      });
+      return bestIndex + 1; // pages are 1-based
+    },
+     isPdfPageLoaded(pageNumber) {
+        const canvas = document.getElementById('pdf-canvas-' + pageNumber);
+        const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
+        const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
+        const loaded = (visible && hasDimensions);
+        return loaded;
+    },
+    handleResize() {
+      if (window.innerWidth <= 900) {
+        this.isSidebarVisible = false;
+        this.sidebarIconHighlight = true;
+        setTimeout(() => {
+          this.sidebarIconHighlight = false;
+        }, 1000);
+        this.logHideSidebar();
+      }
+      else {
+        this.isSidebarVisible = true;
+      }
+      
+      // Log resize event with debouncing
+      this.logResize(window.innerWidth, this.isSidebarVisible);
+    },
     ...mapMutations({
       setSetting: "settings/set",
     }),
@@ -390,10 +525,11 @@ export default {
       this.logScroll();
     },
     async scrollTo(annotationId) {
-      const annotation = this.$store.getters['table/annotation/get'](annotationId)
-
-      if ("anchors" in annotation) {
-        const anchor = annotation.anchors[0]
+      const annotation = this.$store.getters['table/annotation/get'](annotationId);
+      const scrollContainer = this.$refs.viewer || document.getElementById('viewerContainer');
+      const hasAnchors = Array.isArray(annotation.anchors) && annotation.anchors.length > 0;
+      if (hasAnchors) {
+        const anchor = annotation.anchors[0];
         const range = resolveAnchor(anchor);
         if (!range) {
           return;
@@ -404,12 +540,8 @@ export default {
         if (offset === null) {
           return;
         }
-
-        const scrollContainer = document.getElementById('viewerContainer');
         // Correct offset since we have a fixed top
-        offset -= 52.5; // see css class padding-top
-
-
+        offset -= 106; // see css class padding-top
         // nb. We only compute the scroll offset once at the start of scrolling.
         // This is important as the highlight may be removed from the document during
         // the scroll due to a page transitioning from rendered <-> un-rendered.
@@ -423,13 +555,25 @@ export default {
           if (!anchor) {
             return;
           }
-          const offset = this._anchorOffset(anchor);
+          let offset = this._anchorOffset(anchor);
           if (offset === null) {
             return;
           }
           await scrollElement(scrollContainer, offset);
         }
-
+      } else {
+        await scrollToPage(scrollContainer, annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number, { align: 'start', maxDuration: 10 });
+        await this._waitForAnnotationToBeAnchored(annotation, 2000);
+        if (annotation.anchors === null) {
+          console.error('[scrollTo] No anchors found after paging', annotation);
+          return;
+        }
+        let offset = this._anchorOffset(annotation.anchors[0]);
+        if (offset === null) {
+          return;
+        }
+        offset -= 106;
+        await scrollElement(scrollContainer, offset);
       }
     },
     anchorIsInPlaceholder(anchor) {
@@ -566,10 +710,11 @@ IconBoostrap[disabled] {
   display: none;
 }
 
-@media screen and (max-width: 900px) {
-  #sidebarContainer {
-    display: none;
-  }
+.sidebar-highlight {
+  border: 2px solid #ff9800 !important;
+  box-shadow: 0 0 8px #ff9800;
+  border-radius: 4px;
+  transition: border 0.2s, box-shadow 0.2s;
 }
 
 </style>

@@ -7,6 +7,7 @@
       :icon="b.icon"
       :options="b.options"
       :params="params"
+      :stats="b.stats"
       :title="b.title"
       @action="actionEmitter"
     />

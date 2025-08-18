@@ -137,6 +137,9 @@ export default {
             {key: "showEditButton", value: true},
           ],
           action: "editStudy",
+          stats: {
+            studyId: "id"
+          }
         },
         {
           icon: "trash",
@@ -151,6 +154,9 @@ export default {
           ],
           title: "Delete study",
           action: "deleteStudy",
+          stats: {
+            studyId: "id"
+          }
         },
         {
           icon: "box-arrow-in-right",
@@ -162,6 +168,9 @@ export default {
           },
           title: "Open study",
           action: "openStudy",
+          stats: {
+            studyId: "id"
+          }
         },
         {
           icon: "link-45deg",
@@ -172,7 +181,10 @@ export default {
             }
           },
           title: "Copy link to study",
-          action: "linkStudy",
+          action: "copyStudyLink",
+          stats: {
+            studyId: "id"
+          }
         },
         {
           icon: "card-list",
@@ -183,7 +195,10 @@ export default {
             }
           },
           title: "Inspect sessions",
-          action: "inspectSessions",
+          action: "inspectStudySessions",
+          stats: {
+            studyId: "id"
+          },
         },
         {
           icon: "x-octagon",
@@ -198,6 +213,9 @@ export default {
           ],
           title: "Close study",
           action: "closeStudy",
+          stats: {
+            studyId: "id"
+          }
         },
         {
           icon: "save",
@@ -211,7 +229,10 @@ export default {
             {key: "showTemplateButton", value: true},
           ],
           title: "Save as Template",
-          action: "saveAsTemplate",
+          action: "saveStudyAsTemplate",
+          stats: {
+            studyId: "id"
+          }
         }
 
       ];
@@ -226,6 +247,9 @@ export default {
           },
           title: "Show information",
           action: "showInformation",
+          stats:{
+            studyId:"id"
+          }
         });
       }
       return buttons;
@@ -355,22 +379,18 @@ export default {
   methods: {
     action(data) {
       if (data.action === "editStudy") {
-        this.$socket.emit("stats", {action: "editStudy", data: {studyId: data.params.id}});
         this.studyCoordinator(data.params);
       } else if (data.action === "deleteStudy") {
-        this.deleteStudy(data.params);
+                this.deleteStudy(data.params);
       } else if (data.action === "openStudy") {
         this.$router.push("/study/" + data.params.hash);
       } else if (data.action === "linkStudy") {
-        this.$socket.emit("stats", {action: "copyStudyLink", data: {studyId: data.params.id}});
 
         this.copyLink(data.params.id);
       } else if (data.action === "inspectSessions") {
-        this.$socket.emit("stats", {action: "inspectSessions", data: {studyId: data.params.id}});
 
         this.$refs.studySessionModal.open(data.params.id);
       } else if (data.action === "closeStudy") {
-        this.$socket.emit("stats", {action: "closeStudy", data: {studyId: data.params.id}});
 
         this.$socket.emit("appDataUpdate", {
           table: "study",
