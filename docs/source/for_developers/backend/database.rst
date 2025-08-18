@@ -186,6 +186,7 @@ In case you need more specific functions, you may simply add static access metho
         //... initialization etc.
     };
 
+For how model data is synchronized in real time to the frontend, see :doc:`Data Transfer <data_transfer>`.
 
 Populating a Table
 ~~~~~~~~~~~~~~~~~~
@@ -267,6 +268,8 @@ You can use the `afterUpdate` hook to detect when the `deleted` flag changes, an
 .. note::
 
    By comparing the current value (`instance.deleted`) to the previous one (`instance._previousDataValues.deleted`), you ensure the logic only runs when the value actually changes.
+
+Updates triggered by hooks can also be propagated to subscribed frontend components. For details, see :doc:`Data Transfer <data_transfer>`.
 
 Handling `individualHooks`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
