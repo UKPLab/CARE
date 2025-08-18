@@ -304,7 +304,7 @@ export default {
     },
   },
   mounted() {
-    this.$sockets.emit("serviceCommand", {
+    this.$socket.emit("serviceCommand", {
       service: "BackgroundTaskService",
       command: "getBackgroundTask",
       data: {}

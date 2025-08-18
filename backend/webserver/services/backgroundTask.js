@@ -40,7 +40,7 @@ module.exports = class BackgroundTaskService extends Service {
     async command(client, command, data) {
         // Send the current backgroundTask value to all clients
         if (command === "getBackgroundTask") {
-            this.emitData();
+            this.send(client, "backgroundTaskUpdate", backgroundTask);
         }
 
         // Start preprocessing of submissions by sending requests to NLPService, receiving results, and saving them to the database asynchronously
