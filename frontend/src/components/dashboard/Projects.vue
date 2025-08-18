@@ -100,6 +100,9 @@ export default {
           },
           title: "Copy project",
           action: "copy",
+          stats: {
+            projectId: "id",
+          }
         },
         {
           icon: "pencil",
@@ -114,6 +117,9 @@ export default {
           ],
           title: "Edit project",
           action: "edit",
+          stats: {
+            projectId: "id",
+          }
         },
         {
           icon: "trash",
@@ -128,6 +134,9 @@ export default {
           ],
           title: "Delete project",
           action: "delete",
+          stats: {
+            projectId: "id",
+          }
         },
         {
           icon: "share",
@@ -143,6 +152,9 @@ export default {
           ],
           title: "Share project",
           action: "publish",
+          stats: {
+            projectId: "id",
+          }
         },
         {
           options: {
@@ -153,7 +165,10 @@ export default {
           },
           title: "Export data",
           icon: "download",
-          action: "export",
+          action: "exportProject",
+          stats: {
+            projectId: "id",
+          }
         }
       ];
       return buttons;
