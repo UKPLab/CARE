@@ -31,6 +31,11 @@ Additionally, the following attributes are added to each table:
 - ``updatedAt``: The time when the entry was last updated.
 - ``deletedAt``: The time when the entry was deleted.
 
+.. seealso::
+   Auto tables are mirrored to the frontend and live-synced. For the full pipeline and requirements,
+   see :ref:`Requirements (autoTable & Subscription) <autotable-subscription-reqs>` and
+   :doc:`Data Transfer <data_transfer>`.
+
 Migrations
 ----------
 
@@ -186,7 +191,9 @@ In case you need more specific functions, you may simply add static access metho
         //... initialization etc.
     };
 
-For how model data is synchronized in real time to the frontend, see :doc:`Data Transfer <data_transfer>`.
+.. seealso::
+   Runtime update semantics (e.g., timestamping ``closed``, soft-deletes) are implemented in the shared MetaModel.
+   See :ref:`What is behind the MetaModel <metamodel-behavior>`.
 
 Populating a Table
 ~~~~~~~~~~~~~~~~~~
@@ -270,6 +277,10 @@ You can use the `afterUpdate` hook to detect when the `deleted` flag changes, an
    By comparing the current value (`instance.deleted`) to the previous one (`instance._previousDataValues.deleted`), you ensure the logic only runs when the value actually changes.
 
 Updates triggered by hooks can also be propagated to subscribed frontend components. For details, see :doc:`Data Transfer <data_transfer>`.
+
+.. seealso::
+   After commits, changes on ``autoTable`` models are broadcast to subscribers.
+   See :ref:`Store Updates & <table>Refresh> Events <table-refresh-events>` and :ref:`Data Flow <data-flow>`.
 
 Handling `individualHooks`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
