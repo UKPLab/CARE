@@ -88,6 +88,9 @@ export default {
           },
           title: "Copy tag set",
           action: "copyTagSet",
+          stats: {
+            tagSetId: "id",
+          }
         },
         {
           icon: "pencil",
@@ -102,6 +105,9 @@ export default {
           ],
           title: "Edit tag set",
           action: "editTagSet",
+          stats: {
+            tagSetId: "id",
+          }
         },
         {
           icon: "trash",
@@ -116,6 +122,9 @@ export default {
           ],
           title: "Delete tag set",
           action: "deleteTagSet",
+          stats: {
+            tagSetId: "id",
+          }
         },
         {
           icon: "share",
@@ -131,6 +140,9 @@ export default {
           ],
           title: "Share tag set",
           action: "publishTagSet",
+          stats: {
+            tagSetId: "id",
+          }
         }
       ];
       return buttons;

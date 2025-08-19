@@ -26,7 +26,7 @@ module.exports = {
       },
       createdByUserId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: 'user',
           key: 'id',
@@ -36,13 +36,13 @@ module.exports = {
       },
       projectId: {
         type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
+        defaultValue: 1,
         references: {
           model: 'project',
           key: 'id',
         },
-        onDelete: 'SET NULL',
+        onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
       parentSubmissionId: {
@@ -70,6 +70,17 @@ module.exports = {
       additionalSettings: {
         type: Sequelize.JSONB,
         allowNull: true,
+      },
+      validationDocumentId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+        references: {
+          model: 'document',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
       },
       deleted: {
         type: Sequelize.BOOLEAN,
