@@ -9,7 +9,7 @@ const yaml = require('js-yaml')
  * Hold connection and data for external NLP service
  *
  * @class
- * @author Dennis Zyska, Nils Dycke
+ * @author Dennis Zyska, Nils Dycke, Marina Sakharova
  * @classdesc A service that connects to an external NLP service via socket.io.
  * @extends Service
  */
@@ -119,13 +119,26 @@ module.exports = class NLPService extends Service {
             self.logger.info(`Connection to NLP server established: ${self.nlpSocket.connected}`);
 
             // if connection established, get information about the NLP Service
-            this.skills = [];
+            self.skills = [];
             self.nlpSocket.emit("skillGetAll");
         });
 
         // deal with broken connection
-        nlpSocket.on("disconnect", function () {
+        nlpSocket.on("disconnect", async () => {
             self.logger.error(`Connection to NLP server disrupted: ${!self.nlpSocket.connected}`);
+            if (this.fallback === "true") {
+                // wait for self.skills to populate and then send updated skills to the frontend
+                await new Promise(resolve => {
+                    self.loadFallbacks();
+                    const checkInterval = setInterval(() => {
+                        if (self.skills.length > 0) {
+                            clearInterval(checkInterval);
+                            resolve();
+                        }
+                    }, 50);
+                });
+                self.sendAll("skillUpdate", self.skills);
+            }
         });
 
         // receives a list of objects, where each indicates a skill name and the number of nodes that provide it
@@ -153,6 +166,10 @@ module.exports = class NLPService extends Service {
             if (client) {
                 self.send(client, "skillResults", data);
             }
+        });
+
+        nlpSocket.on("error", (data) => {
+            this.logger.error("The error happened in the nlp service", data)
         });
 
         nlpSocket.connect();

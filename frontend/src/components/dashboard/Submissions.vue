@@ -68,21 +68,6 @@ export default {
     {
       table: "submission",
     },
-    {
-      table: "document",
-      filter: [
-        {
-          key: "readyForReview",
-          value: true,
-        },
-      ],
-      include: [
-        {
-          table: "user",
-          by: "userId",
-        },
-      ],
-    },
   ],
   components: {
     UploadModal,
@@ -121,6 +106,9 @@ export default {
           },
           title: "Access document...",
           action: "accessDoc",
+          stats: {
+            documentId: "id",
+          }
         },
         {
           icon: "trash",
@@ -132,6 +120,9 @@ export default {
           },
           title: "Delete document...",
           action: "deleteDoc",
+          stats: {
+            documentId: "id",
+          }
         },
       ]
     };

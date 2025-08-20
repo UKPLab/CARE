@@ -41,6 +41,7 @@ import {scrollElement} from "@/assets/anchoring/scroll";
 
 export default {
   name: "AnnotationSidebar",
+  subscribeTable: ["comment", "annotation"],
   components: {EditsSection, AnnotationsList},
   inject: ['documentId', 'studySessionId', 'studyStepId', 'acceptStats'],
   props: {
@@ -461,11 +462,6 @@ export default {
   display: none;
 }
 
-@media screen and (max-width: 900px) {
-  #sidebarContainer {
-    display: none;
-  }
-}
 
 #hoverHotZone {
   position: fixed;

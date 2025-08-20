@@ -86,6 +86,7 @@
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
             @click="toggleSidebar"
+            :class="{ 'sidebar-highlight': sidebarIconHighlight }"
         >
           <LoadIcon
               :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
@@ -150,6 +151,10 @@ import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
 import Assessment from "./Assessment.vue";
 import Loader from "@/basic/Loading.vue";
+import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/scroll";
+import {isInPlaceholder} from "@/assets/anchoring/placeholder";
+import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
+import debounce from 'lodash.debounce';
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
@@ -164,7 +169,7 @@ import debounce from 'lodash.debounce';
 
 export default {
   name: "AnnotatorView",
-  subscribeTable: ['tag', 'tag_set', 'study', 'study_session'],
+  subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation'],
   components: {
     PDFViewer,
     Sidebar,
@@ -234,6 +239,7 @@ export default {
     return {
       downloading: false,
       isSidebarVisible: true,
+      sidebarIconHighlight: false,
       showAssessment: false,
       assessmentState: {},
       logScroll: debounce(function () {
@@ -247,10 +253,50 @@ export default {
             }
           })
         }
+      }, 500),
+      logHideSidebar: debounce(function () {
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "hideSidebar",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+          }
+        });
+      }
+    }, 500),
+      logResize: debounce(function (windowWidth, sidebarVisible) {
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "sidebarResize",
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
+              windowWidth: windowWidth,
+              sidebarVisible: sidebarVisible
+            }
+          });
+        }
       }, 500)
     }
   },
   computed: {
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    savedScroll() {
+      // Normalize to a single record or null for simpler consumers
+      const data = this.$store.getters['table/user_environment/getAll'].filter(
+        e => e.userId === this.userId &&
+          e.documentId === this.documentId &&
+          e.studySessionId === this.studySessionId &&
+          e.studyStepId === this.studyStepId &&
+          e.key === "scroll"
+      );
+      return data[0] || null;
+    },
     anchors() {
       return [].concat(
           this.annotations.filter(a => a.anchors !== null)
@@ -323,6 +369,12 @@ export default {
     },
   },
   watch: {
+    // React to external changes to the saved scroll value (e.g., from store updates)
+    async savedScroll(newVal, oldVal) {
+      if (newVal) {
+        await this.scrollToSavedValue(newVal.value, 1000);
+      }
+    },
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
         this.loadDocumentData();
@@ -477,10 +529,11 @@ export default {
     },
     
     async scrollTo(annotationId) {
-      const annotation = this.$store.getters['table/annotation/get'](annotationId)
-
-      if ("anchors" in annotation) {
-        const anchor = annotation.anchors[0]
+      const annotation = this.$store.getters['table/annotation/get'](annotationId);
+      const scrollContainer = this.$refs.viewer || document.getElementById('viewerContainer');
+      const hasAnchors = Array.isArray(annotation.anchors) && annotation.anchors.length > 0;
+      if (hasAnchors) {
+        const anchor = annotation.anchors[0];
         const range = resolveAnchor(anchor);
         if (!range) {
           return;
@@ -491,10 +544,11 @@ export default {
         if (offset === null) {
           return;
         }
-
-        const scrollContainer = document.getElementById('viewerContainer');
-        offset -= 52.5;
-
+        // Correct offset since we have a fixed top
+        offset -= 106; // see css class padding-top
+        // nb. We only compute the scroll offset once at the start of scrolling.
+        // This is important as the highlight may be removed from the document during
+        // the scroll due to a page transitioning from rendered <-> un-rendered.
         await scrollElement(scrollContainer, offset);
 
         if (inPlaceholder) {
@@ -502,12 +556,25 @@ export default {
           if (!anchor) {
             return;
           }
-          const offset = this._anchorOffset(anchor);
+          let offset = this._anchorOffset(anchor);
           if (offset === null) {
             return;
           }
           await scrollElement(scrollContainer, offset);
         }
+      } else {
+        await scrollToPage(scrollContainer, annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number, { align: 'start', maxDuration: 10 });
+        await this._waitForAnnotationToBeAnchored(annotation, 2000);
+        if (annotation.anchors === null) {
+          console.error('[scrollTo] No anchors found after paging', annotation);
+          return;
+        }
+        let offset = this._anchorOffset(annotation.anchors[0]);
+        if (offset === null) {
+          return;
+        }
+        offset -= 106;
+        await scrollElement(scrollContainer, offset);
       }
     },
     
@@ -615,5 +682,12 @@ IconBoostrap[disabled] {
   #sidebarContainer {
     display: none;
   }
+
+.sidebar-highlight {
+  border: 2px solid #ff9800 !important;
+  box-shadow: 0 0 8px #ff9800;
+  border-radius: 4px;
+  transition: border 0.2s, box-shadow 0.2s;
 }
+
 </style>
