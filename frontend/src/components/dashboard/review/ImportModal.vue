@@ -137,11 +137,15 @@ export default {
         borderless: false,
         small: false,
         selectableRows: true,
+        groupBy: {
+          key: "submissionId",
+          aggregate: (rows) => rows[0],
+        },
       },
       tableColumns: [
         { name: "First Name", key: "firstName" },
         { name: "Last Name", key: "lastName" },
-        { name: "File Name", key: "fileName" },
+        { name: "Files", key: "fileNames" },
       ],
       downloadedAssignments: [],
       selectedAssignments: [],
@@ -180,24 +184,26 @@ export default {
       return this.downloadedAssignments.filter((a) => a["files"].length > 0 && this.usersExtIds.includes(a["userid"]));
     },
     assignments() {
-      const submission_files = this.userAssignments.flatMap((obj) =>
-        obj["submissionURLs"].map((subItem) => ({
-          ...subItem,
-          extId: obj["userid"],
-        }))
-      );
-      return submission_files
-        .filter((a) => new URL(a["fileurl"]).pathname.toLowerCase().endsWith(".pdf"))
-        .map((a) => {
-          const user = this.users.find((u) => u.extId === a.extId);
-          return {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            userId: user.id,
-            fileUrl: a["fileurl"],
-            fileName: a["filename"],
-          };
-        });
+      // Group rows by submission (one table row per submission)
+      return this.userAssignments.map((submission) => {
+        const user = this.users.find((u) => u.extId === submission.userid);
+        const files = submission.files.map((f) => ({
+          fileName: f.filename,
+          fileUrl: f.fileurl,
+          mimetype: f.mimetype,
+          filesize: f.filesize,
+        }));
+
+        return {
+          submissionId: submission.submissionId,
+          userId: user?.id,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          fileCount: files.length,
+          fileNames: files.map((f) => f.fileName).join(", "),
+          files,
+        };
+      });
     },
   },
   methods: {
@@ -252,7 +258,11 @@ export default {
       this.$socket.emit(
         "documentDownloadMoodleSubmissions",
         {
-          files: this.selectedAssignments,
+          submissions: this.selectedAssignments.map((s) => ({
+            submissionId: s.submissionId,
+            userId: s.userId,
+            files: s.files,
+          })),
           options: this.moodleOptions,
           // TODO: This validator Id will be a documentId.
           validator: this.selectedValidatorId,
