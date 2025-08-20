@@ -70,7 +70,7 @@
           />
         </TopBarButton>
         <TopBarButton
-            v-show="studySessionId && studySessionId !== 0 ? active : true"
+            v-show="(studySessionId && studySessionId !== 0 ? active : true) && hasAssessmentConfig"
             :title="showAssessment ? 'Switch to Annotator Mode' : 'Switch to Assessment Mode'"
             class="btn rounded-circle"
             @click="toggleMode"
@@ -316,6 +316,11 @@ export default {
         return comments;
       }
     },
+    hasAssessmentConfig() {
+      // Check if there's a configuration file in the study step configuration
+      const studyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
+      return studyStep && studyStep.configuration && studyStep.configuration.configFile;
+    },
   },
   watch: {
     studySessionId(newVal, oldVal) {
@@ -343,6 +348,15 @@ export default {
         }
       },
       deep: true
+    },
+    hasAssessmentConfig: {
+      handler(newHasConfig) {
+        // Hide assessment sidebar if configuration file is removed
+        if (!newHasConfig && this.showAssessment) {
+          this.showAssessment = false;
+        }
+      },
+      immediate: true
     }
   },
   mounted() {

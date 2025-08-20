@@ -232,10 +232,6 @@ import Quill from "quill";
  * Users can provide data that will be processed and stored as part of the workflow configuration.
  * It handles both creation and update scenarios.
  * 
- * For Extended Workflows:
- * - Step 1 (Annotator): General Settings + NLP Skills
- * - Step 2 (Editor): NLP Skills only
- *
  * @author: Juliane Bechert, Linyin Huang
  */
 // Service types that require special configuration

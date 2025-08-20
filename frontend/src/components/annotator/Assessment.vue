@@ -540,16 +540,13 @@ export default {
 
       const criteriaGroups = configData.rubrics.map((rubric, groupIndex) => {
         const criteria = rubric.criteria.map((criterion, criterionIndex) => {
-          const highestScoring = criterion.scoring.reduce((max, current) => 
-            current.points > max.points ? current : max, criterion.scoring[0]);
-          
           return {
             id: `${groupIndex + 1}-${criterionIndex + 1}`,
             name: criterion.name,
             description: criterion.description,
             points: 0,
             maxPoints: criterion.maxPoints,
-            assessment: highestScoring.description,
+            assessment: "",
             isEditing: false,
             editedFeedback: "",
             userRating: 0,
