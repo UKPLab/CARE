@@ -177,7 +177,7 @@ export default {
       return this.users.map((u) => u.extId);
     },
     userAssignments() {
-      return this.downloadedAssignments.filter((a) => a["submissionURLs"].length > 0 && this.usersExtIds.includes(a["userid"]));
+      return this.downloadedAssignments.filter((a) => a["files"].length > 0 && this.usersExtIds.includes(a["userid"]));
     },
     assignments() {
       const submission_files = this.userAssignments.flatMap((obj) =>
