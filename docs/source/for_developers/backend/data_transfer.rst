@@ -1,151 +1,89 @@
 Data Transfer
 =============
 
-CARE implements a **data subscription mechanism** between the backend and the frontend, enabling
-real-time collaboration and automatic synchronization of database tables with the Vuex store
-in the frontend application.
-
 .. _data-transfer:
 
-Overview of Data Subscription
-----------------------------
+CARE implements a **data subscription mechanism** between the backend and the frontend, enabling real-time collaboration and automatic synchronization of database tables with the Vuex store in the frontend application.
 
-When a database model in CARE defines the attribute ``autoTable = true``, it becomes
-*subscribable*. Subscribable tables are automatically mirrored into the Vue frontend
-store. Once a component in the frontend subscribes to such a table, the backend
-ensures that:
+.. _data-flow:
 
-- The initial data is sent when the component is mounted  
-- All updates (create, update, delete) to the table are pushed via sockets  
-- Only data the user is allowed to access (according to access rights) is transferred  
+Data Flow
+---------
 
-This allows components to always work with the **latest state of the database** without
-manual refresh calls.
+.. figure:: ./data_flow.drawio.svg
+   :width: 100%
+   :align: center
+   :alt: CARE Data Flow: Component ↔ Sockets ↔ Vuex ↔ Computed
 
-Frontend Subscription
-~~~~~~~~~~~~~~~~~~~~~
+-----
 
-Subscriptions are handled by the Vue plugin ``subscribeTable.js``.  
-This plugin emits socket events when a subscribing component is mounted and
-cleans up the subscription when the component is unmounted.
+**Prerequisites**
 
-.. code-block:: javascript
+- **Model** sets ``autoTable = true`` to be mirrored into Vuex.
+- **Component** declares ``subscribeTable: ["<table>"]`` (or object form) to receive pushes.
 
-    export default {
-        install: (app, options = {namespace: "table"}) => {
-            app.mixin({
-                data() {
-                    return { subscriptionId: null }
-                },
-                mounted() {
-                    if (this.$options.subscribeTable) {
-                        this.$options.subscribeTable.forEach((table) => {
-                            if (typeof table !== "object") {
-                                table = { table: table };
-                            }
-                            this.$socket.emit("subscribeAppData", table, (result) => {
-                                if (result.success) {
-                                    this.$data.subscriptionId = result.data;
-                                }
-                            });
-                        });
-                    }
-                },
-                unmounted() {
-                    if (this.$data.subscriptionId) {
-                        this.$socket.emit("unsubscribeAppData", this.$data.subscriptionId);
-                        this.$data.subscriptionId = null;
-                    }
-                }
-            })
-        }
-    }
-
-Using `subscribeTable` in a Component
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Any Vue component can declare a ``subscribeTable`` option to indicate which
-tables it needs data from. For example, the **Dashboard** view subscribes to
-the ``nav_element`` table:
-
-.. code-block:: javascript
-
-    export default {
-        name: "DashboardRoute",
-        subscribeTable: ["nav_element"],
-        components: { Loading, Sidebar },
-        computed: {
-            navElements() {
-                return this.$store.getters["table/nav_element/getAll"];
-            },
-            settings() {
-                return this.$store.getters["settings/getSettings"];
-            }
-        }
-    }
-
-The data is then accessible via Vuex getters and automatically updated whenever
-the backend broadcasts changes.
-
-Backend Integration
-~~~~~~~~~~~~~~~~~~~
-
-On the backend side, the ``app.js`` socket controller keeps track of all
-subscriptions in ``this.appDataSubscription``.  
-When a user subscribes to a table, the backend:
-
-1. Validates access rights for the user  
-2. Applies filters (e.g., only user-owned or public rows)  
-3. Sends the current snapshot of the table via ``sendTable``  
-4. Registers the subscription so that future updates are pushed  
-
-Whenever a change is made in the database inside a transaction,
-the **afterCommit hook** collects all modified rows of ``autoTable`` models
-and broadcasts them to relevant subscribers.
-
-.. code-block:: javascript
-
-    t.afterCommit(() => {
-        if (t.changes) {
-            const changesMap = t.changes.reduce((acc, entry) => {
-                if (entry.constructor.autoTable) {
-                    const tableName = entry.constructor.tableName;
-                    const entryData = _.omit(entry.dataValues, defaultExcludes);
-                    if (!acc.has(tableName)) acc.set(tableName, []);
-                    acc.get(tableName).push(entryData);
-                }
-                return acc;
-            }, new Map());
-
-            for (const [table, changes] of changesMap) {
-                this.broadcastTable(table, changes);
-            }
-        }
-    });
-
-Collaboration Use Case
+Step-by-step (Backend → Frontend)
 ~~~~~~~~~~~~~~~~~~~~~~
 
-This subscription system enables **real-time collaboration**:
+1. **DB model (top-center “Database”)**: The model sets ``autoTable = true`` to participate in app data sync.
 
-- If one user modifies a row (e.g., adds an annotation),  
-  all other users subscribed to the ``annotation`` table immediately receive
-  the updated data.  
+2. **Subscribe (bottom-left “Example Component” → center “Sockets”)**: On mount, the ``subscribeTable`` plugin emits ``subscribeAppData`` for each table to **Sockets (AppSocket, center)**; the server returns a ``subscriptionId``.
 
-- By maintaining a per-user subscription list, the backend can ensure
-  that **only relevant users** are notified about changes.  
+3. **Access-aware filtering (center “Sockets” ↔ top-center “Database”)**: Before sending any data, **Sockets** applies the model’s ``accessMap`` / ``publicTable`` via ``getFiltersAndAttributes`` so each socket only receives permitted rows/columns.
 
-This approach avoids polling and ensures that all connected clients
-remain synchronized with the authoritative state in the database.
+4. **Initial snapshot (center “Sockets” → bottom-right “Vuex Store”)**: The server calls ``sendTable`` and emits ``<tableName>Refresh`` to the **Vuex Store (right)** with the current rows. The **same event name** is used later for updates.
 
-.. _appdataupdate-socket:
+5. **Socket write (optional; bottom-left “Example Component” → center “Sockets”)**: The frontend emits ``appDataUpdate`` with ``{ table, data }`` to create or update rows.
+
+6. **Backend transaction (center “Sockets” → top-center “Database”)**:``updateData`` validates, applies defaults, and enforces access; inside a transaction it persists changes to the **Database (top-center)**. On **commit** (``afterCommit``) the server aggregates changed rows of ``autoTable`` models.
+
+7. **Broadcast (center “Sockets” → right “Vuex Store”)**: ``broadcastTable`` re-applies per-socket visibility with ``getFiltersAndAttributes`` (admins/public can bypass) and emits ``<tableName>Refresh`` only to relevant subscribers; **Vuex (right)** receives the deltas.
+
+8. **Vuex merge (right “Vuex Store”)**: Each autoTable module handles the ``<tableName>Refresh`` mutation and merges rows (see ``refreshState``); ``refreshCount`` increments.
+
+9. **Computed → Component (lower-left “Computed Getters” → bottom-left “Example Component”)**: Components read via Vuex getters (e.g., ``getAll``, ``getFiltered``); computed properties update and the **Component** re-renders automatically.
+
+.. tip::
+   **Two directions in the diagram**
+
+   - **Downstream:** ``<tableName>Refresh``: (Sockets → Vuex) is used for the **initial snapshot** and all **delta updates**.
+   - **Upstream:** ``appDataUpdate``: (Component → Sockets) performs a write; after commit the server pushes ``<tableName>Refresh`` to keep everyone consistent.
+
+**Unsubscribe (on unmount; bottom-left “Example Component”)**
+
+The component emits ``unsubscribeAppData(subscriptionId)``; the socket removes the subscription so no further ``<tableName>Refresh`` events are delivered.
+
+Subscribe DB in the Frontend (when & where)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use ``subscribeTable`` in route views or components that actively display changing table data; unsubscription happens automatically on unmount.
+
+On mount, the plugin checks for a component option ``subscribeTable`` and emits ``subscribeAppData`` for each entry; on unmount it emits ``unsubscribeAppData(subscriptionId)``. The server tracks subscriptions per socket in ``socket.appDataSubscriptions`` (``ids``, ``tables``, ``merged``) and uses them to decide which clients receive updates.
+
+.. code-block:: javascript
+
+  // Minimal usage (string form)
+  export default {
+    subscribeTable: ["nav_element"]
+  }
+
+.. code-block:: javascript
+
+  // Object form supports optional filter/inject
+  export default {
+    subscribeTable: [
+      "nav_element",
+      { table: "document",
+        filter: [{ projectId: 42 }],
+        inject: [{ type: "count", table: "comment", by: "documentId", as: "comments" }]
+      }
+    ]
+  }
 
 AppDataUpdate Socket
 --------------------
 
-The ``appDataUpdate`` socket is the generic way to **create or update rows** in models with
-``autoTable = true``. It is defined in ``backend/webserver/sockets/app.js`` inside the
-``AppSocket`` class:
+The ``appDataUpdate`` socket is the generic way to **create or update rows** in models with ``autoTable = true``. It is defined in ``backend/webserver/sockets/app.js`` inside the ``AppSocket`` class:
 
 .. code-block:: javascript
 
@@ -164,13 +102,19 @@ The ``appDataUpdate`` socket is the generic way to **create or update rows** in 
      * @returns {Promise<*>} A promise that resolves with the result from updateData
      */
     async updateAppData(data, options) {
-        return await this.updateData(data, options);
+      return await this.updateData(data, options);
     }
 
-This method wraps the internal ``updateData`` logic. It checks access permissions, validates
-required fields, applies defaults, and then either **creates a new row** or **updates an
-existing one**. All operations run inside a transaction, and on commit the modified rows are
-broadcast to subscribed clients (see :ref:`data-transfer`).
+This method wraps the internal ``updateData`` logic. It checks access permissions, validates required fields, applies defaults, and then either **creates a new row** or **updates an existing one**. All operations run inside a transaction, and on commit the modified rows are broadcast to subscribed clients (see :ref:`data-flow`).
+
+When to use 
+~~~~~~~~~~~
+
+- **Create** a new row in an autoTable model — omit ``id`` or set it to ``0``.
+- **Update** an existing row — include ``id`` and the fields to change.
+- **Soft-delete / quick state toggles** — include ``id`` with one of ``deleted``, ``closed``, ``public`` or ``end``; the server updates immediately.
+- **Not for reads** — data is delivered via ``<tableName>Refresh`` after you subscribe with ``subscribeAppData``.
+- **Don’t use** for non-``autoTable`` models or bulk/admin maintenance — use dedicated endpoints instead.
 
 How to use
 ~~~~~~~~~~
@@ -180,14 +124,14 @@ From the frontend you call:
 .. code-block:: javascript
 
     this.$socket.emit("appDataUpdate", {
-        table: "<table_name>",  // must be an autoTable model
-        data: { /* fields */ }  // include id for updates, omit for create
+      table: "<table_name>",  // must be an autoTable model
+      data: { /* fields */ }  // include id for updates, omit for create
     }, (result) => {
-        if (result.success) {
-            // result.data contains the new or updated id
-        } else {
-            // result.message contains a human-readable error
-        }
+      if (result.success) {
+        // result.data contains the new or updated id
+      } else {
+        // result.message contains a human-readable error
+      }
     });
 
 .. tip::
@@ -197,11 +141,9 @@ From the frontend you call:
      the server will update immediately without requiring other fields.
 
 .. reminder::
-   ``appDataUpdate`` only works for models with ``autoTable = true``.  
-   For the definition of models, see :doc:`Database <database>`.
+   ``appDataUpdate`` only works for models with ``autoTable = true``. For the definition of models, see :doc:`Database <database>`.
 
-Example usage in the frontend
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Example usage in the frontend**
 
 A typical usage pattern is emitting the socket event and showing a toast depending on the result.
 
@@ -209,42 +151,52 @@ A typical usage pattern is emitting the socket event and showing a toast dependi
 
     // Close a study (from Study.vue)
     this.$socket.emit("appDataUpdate", {
-        table: "study",
-        data: { id: studyId, closed: true }
+      table: "study",
+      data: { id: studyId, closed: true }
     }, (result) => {
-        if (result.success) {
-            this.eventBus.emit('toast', {
-                title: "Study closed",
-                message: "The study has been closed",
-                variant: "success"
-            });
-        } else {
-            this.eventBus.emit('toast', {
-                title: "Study closing failed",
-                message: result.message,
-                variant: "danger"
-            });
-        }
+      if (result.success) {
+        this.eventBus.emit('toast', {
+          title: "Study closed",
+          message: "The study has been closed",
+          variant: "success"
+        });
+      } else {
+        this.eventBus.emit('toast', {
+          title: "Study closing failed",
+          message: result.message,
+          variant: "danger"
+        });
+      }
     });
 
-.. tip::
-   The server response has the shape:
-   ``{ success: true, data: <id> }`` on success, or  
-   ``{ success: false, message: "<error>" }`` on failure.
+.. important::
+   The server response has the shape: ``{ success: true, data: <id> }`` on success, or  ``{ success: false, message: "<error>" }`` on failure.
 
-Important details
-~~~~~~~~~~~~~~~~~
+   **Fast path:** If ``id`` is present and any of ``deleted``, ``closed``, ``public`` or ``end`` is included, the server updates the row immediately via ``updateById`` (skips required-field checks and nested recursion). ``closed: true`` is stored as a timestamp. After commit, the change is broadcast via ``<tableName>Refresh`` as usual.
+
+Backend Update Logic
+~~~~~~~~~~~~~~~~~~~~
+
+Typical component actions map to small ``appDataUpdate`` calls:
+
+- **Delete** - soft-delete a row:
+
+  .. code-block:: javascript
+
+     this.$socket.emit("appDataUpdate", { table: "user", data: { id, deleted: true } }, cb);
+
+- **Convert to child item**: Create/update a **parent** and send **child** rows in an array field. The server detects ``fields`` of type ``table`` and **recursively** runs updates for each child, injecting the parent’s foreign key.
+
+- **Fast-path updates**: If an entry has an ``id`` and includes one of ``deleted``, ``closed``, ``public`` or ``end``, it is updated immediately without requiring other fields (schema required-field checks are skipped for these toggles).
+
+- **Timestamp semantics for** ``closed``: The backend stores ``closed`` as a **timestamp**. Passing ``{ closed: true }`` sets it to the current time (see ``MetaModel.updateById``).
+
+**Important details**
 
 - **Validation**: on create, required fields are checked and defaults are applied.  
 - **Access control**: if ``userId`` is provided, the server verifies the caller is allowed to update for that user.  
 - **Nested tables**: if the model defines fields of type ``table``, the server recursively calls ``updateData`` to update child rows.  
 - **Broadcasts**: after a successful commit, all subscribed clients receive the updated data automatically.
-
-.. seealso::
-   - :doc:`Database <database>` (model schema, required fields, defaults)
-   - :ref:`Overview of Data Subscription <data-transfer>`
-
-.. _metamodel-behavior:
 
 What is behind the MetaModel
 ----------------------------
@@ -252,61 +204,14 @@ What is behind the MetaModel
 These behaviors are implemented by the shared ``MetaModel``:
 
 - ``updateById``:
+
   - sets ``deletedAt = Date.now()`` when ``deleted`` is truthy
   - sets ``closed = Date.now()`` when ``closed`` is truthy
-  - enables ``individualHooks`` if the model defines ``beforeUpdate``/``afterUpdate`` hooks,
-    so per-row hooks run (e.g., cascade logic)
+  - enables ``individualHooks`` if the model defines ``beforeUpdate``/``afterUpdate`` hooks, so per-row hooks run (e.g., cascade logic)
   - returns the updated row (including soft-deleted ones when requested)
 
 - ``getAutoTable`` / ``getAll``: apply access-aware filtering (e.g., exclude ``deleted``, restrict by ``userId``,
   allow ``public`` rows) before data is sent to the client.
-
-Implementation references:
-
-   - ``backend/db/MetaModel.js`` (``updateById``, ``getAutoTable``)
-   - ``backend/webserver/sockets/app.js`` (``updateData``, fast-path toggles)
-
-.. _data-flow:
-
-Data Flow
----------
-
-This is the complete path a change takes from the database to the UI:
-
-1. **DB model (autoTable)** — Model has ``autoTable = true`` so it participates in app data sync.
-2. **Socket write** — Frontend emits ``appDataUpdate`` with ``{ table, data }``.
-3. **Backend transaction** — ``updateData`` validates, applies defaults, enforces access; on commit the server aggregates changed rows.
-4. **Broadcast** — Server emits ``<tableName>Refresh`` socket events with the changed rows.
-5. **Vuex store** — The table module’s mutation named ``<tableName>Refresh`` runs and merges changes into the store.
-6. **Computed getters** — Components read data via Vuex getters (e.g., ``getAll``, ``getFiltered``).
-7. **Render** — Computed properties update reactive variables; UI re-renders automatically.
-
-.. tip::
-   Use your browser’s Vue devtools to inspect modules under the ``table/`` namespace.
-   (See :doc:`Debugging <debugging>` for setup and tips — adjust the path TODO.)
-
-TODO put drawio diagram here
-
-Backend Update Logic
-~~~~~~~~~~~~~~~~~~~~
-
-Typical UI actions map to small ``appDataUpdate`` calls:
-
-- **Delete** → soft-delete a row:
-
-  .. code-block:: javascript
-
-     this.$socket.emit("appDataUpdate", { table: "user", data: { id, deleted: true } }, cb);
-
-- **Convert to child item** → create/update a **parent** and send **child** rows in an array field.
-  The server detects ``fields`` of type ``table`` and **recursively** runs updates for each child,
-  injecting the parent’s foreign key.
-
-- **Fast-path updates**: if an entry has an ``id`` and includes one of ``deleted``, ``closed``, ``public`` or ``end``,
-  it is updated immediately without requiring other fields (schema required-field checks are skipped for these toggles).
-
-- **Timestamp semantics for ``closed``**: the backend stores ``closed`` as a **timestamp**. Passing
-  ``{ closed: true }`` sets it to the current time (see ``MetaModel.updateById``).
 
 .. _table-refresh-events:
 
@@ -346,11 +251,21 @@ registers a mutation with that exact name and merges incoming rows using ``refre
 
    1) the model has ``autoTable = true``,
    2) the component declared ``subscribeTable: ["<table>"]``,
-   3) a ``<table>Refresh`` mutation exists and is firing (check Vue devtools).
+   3) the same ``<tableName>Refresh`` mutation fires for the **initial snapshot** and later **updates** (check Vue devtools).
 
 Frontend access patterns and the list of available getters are documented in :doc:`Vuex Store <../frontend/vuex_store>`.
+For inspecting Vuex modules, socket messages, and mutations with browser devtools, see :doc:`Debugging <../debugging/index>`.
 
-For inspecting Vuex modules, socket messages, and mutations with browser devtools, see :doc:`Debugging <../frontend/debugging>`.
+sendTable 
+~~~~~~~~~
+
+- **Purpose**: send the current snapshot for a table and emit updates to the client.
+- **Preconditions**: only works for models with ``autoTable = true``; otherwise it no-ops with a log.
+- **Filtering**: starts with ``{ deleted: false }`` and OR-adds any provided ``filter``; then applies per-socket access via ``getFiltersAndAttributes`` (may also add allowed columns).
+- **Attributes**: excludes sensitive fields by default (e.g., ``deleted``, ``deletedAt``, ``updatedAt``, ``rolesUpdatedAt``, ``initialPassword``, ``passwordHash``, ``salt``).
+- **Injects**: supports ``{ type: "count", table, by, as }``; counts related rows and injects the result into each entry as ``as``.
+- **Related tables**: if the model’s ``autoTable.foreignTables`` or ``autoTable.parentTables`` are set, it also fetches those and emits ``<relatedTable>Refresh`` for them.
+- **Emit & return**: always emits ``<tableName>Refresh`` with the rows and returns the same data.
 
 Accessing the Vuex Store in Components
 --------------------------------------
@@ -389,53 +304,15 @@ Available getters per autoTable module:
 - ``refreshCount`` → number of times the table has been refreshed
 - ``hasFields`` / ``getFields`` → schema metadata if available
 
-.. tip::
-   Prefer computed getters over local copies — it keeps your UI reactive to socket updates.
+Collaboration Use Case
+~~~~~~~~~~~~~~~~~~~~~~
 
-.. _autotable-subscription-reqs:
+This subscription system enables **real-time collaboration**:
 
-Requirements (autoTable & Subscription)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- If one user modifies a row (e.g., adds an annotation), all other users subscribed to the same table
+  immediately receive the updated data.
+- By maintaining a per-user subscription list, the backend ensures that **only relevant users** are notified
+  about changes.
 
-- **Model requirement** — The DB model **must** set ``autoTable = true`` to be mirrored into Vuex.
-- **Component requirement** — The component **must** subscribe to the table:
-
-  .. code-block:: javascript
-
-     export default {
-       subscribeTable: ["document", "study"]
-     }
-
-- **Plugin behavior** — The ``subscribeTable`` plugin emits ``subscribeAppData`` on mount and
-  ``unsubscribeAppData`` on unmount (see code below for reference):
-
-  .. code-block:: javascript
-
-     export default {
-       install: (app) => {
-         app.mixin({
-           data: () => ({ subscriptionId: null }),
-           mounted() {
-             const tables = this.$options.subscribeTable || [];
-             tables.forEach((table) => {
-               const req = typeof table === "object" ? table : { table };
-               this.$socket.emit("subscribeAppData", req, (res) => {
-                 if (res.success) this.subscriptionId = res.data;
-               });
-             });
-           },
-           unmounted() {
-             if (this.subscriptionId) {
-               this.$socket.emit("unsubscribeAppData", this.subscriptionId, () => {
-                 this.subscriptionId = null;
-               });
-             }
-           }
-         });
-       }
-     };
-
-.. seealso::
-   ``sendTable`` also supports composed filters and simple injects (e.g., counts) and emits
-   related parent/foreign table refreshes as needed. For details, review
-   ``backend/webserver/sockets/app.js`` (``sendTable``) and the model’s ``autoTable`` options.
+This approach avoids polling and keeps all connected clients synchronized with the authoritative state
+in the database.
