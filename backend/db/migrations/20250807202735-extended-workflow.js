@@ -14,7 +14,7 @@ const workflows = [
             {
               name: "configSelect",
               type: "configSelect",
-              required: false,
+              required: true,
             }
           ]
         }
@@ -39,7 +39,7 @@ const workflows = [
             {
               name: "nlpAssessment",
               type: "nlpAssessment",
-              required: false,
+              required: true,
             }
           ]
         }
@@ -53,7 +53,7 @@ const workflows = [
             {
               name: "textualFeedback",
               type: "textualFeedback",
-              required: false,
+              required: true,
             }
           ]
         }

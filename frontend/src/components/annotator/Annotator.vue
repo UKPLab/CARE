@@ -32,6 +32,7 @@
             class="sidebar-container" 
             :show="isSidebarVisible"
             :saved-state="assessmentState"
+            :readonly="readOnly"
             @state-changed="onAssessmentStateChanged"
         />
       </div>
@@ -160,12 +161,8 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 import {computed} from "vue";
-import {offsetRelativeTo, scrollElement} from "@/assets/anchoring/scroll";
-import {isInPlaceholder} from "@/assets/anchoring/placeholder";
-import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
-import debounce from 'lodash.debounce';
 
 export default {
   name: "AnnotatorView",
@@ -200,6 +197,11 @@ export default {
       type: Array,
       required: false,
       default: () => [],
+    },
+    readOnly: {
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   props: {
@@ -370,7 +372,7 @@ export default {
   },
   watch: {
     // React to external changes to the saved scroll value (e.g., from store updates)
-    async savedScroll(newVal, oldVal) {
+    async savedScroll(newVal) {
       if (newVal) {
         await this.scrollToSavedValue(newVal.value, 1000);
       }
@@ -409,6 +411,15 @@ export default {
         }
       },
       immediate: true
+    },
+    readOnly: {
+      handler(newReadOnly) {
+        // Show assessment view automatically in readonly mode if there's assessment config
+        if (newReadOnly && this.hasAssessmentConfig) {
+          this.showAssessment = true;
+        }
+      },
+      immediate: true
     }
   },
   mounted() {
@@ -416,6 +427,11 @@ export default {
     this.load();
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     document.addEventListener('copy', this.onCopy);
+    
+    // Show assessment view automatically in readonly mode if there's assessment config
+    if (this.readOnly && this.hasAssessmentConfig) {
+      this.showAssessment = true;
+    }
   },
   beforeUnmount() {
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
@@ -682,6 +698,7 @@ IconBoostrap[disabled] {
   #sidebarContainer {
     display: none;
   }
+}
 
 .sidebar-highlight {
   border: 2px solid #ff9800 !important;

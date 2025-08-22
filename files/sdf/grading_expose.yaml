@@ -111,28 +111,29 @@ input:
     }
 output:
   data:
-    type: array
-    required: true
-    items:
-      type: object
-      properties:
-        name:
-          type: string
-          description: The name of the criterion
-        score:
-          type: integer
-          description: The score of the criterion
-        justification:
-          type: string
-          description: The justification of the criterion
-        possible_concerns:
-          type: string
-          description: The possible concerns of the given judgement
+    assessment :
+      type: array
+      required: true
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            description: The name of the criterion
+          score:
+            type: integer
+            description: The score of the criterion
+          justification:
+            type: string
+            description: The justification of the criterion
+          possible_concerns:
+            type: string
+            description: The possible concerns of the given judgement
 
   example:
-    [{
+    { assessment : [{
       "name": Language quality,
       "score": 1,
       "justification": Example justification,
       "possible_concerns": Example possible concerns
-    }]
+    }]}

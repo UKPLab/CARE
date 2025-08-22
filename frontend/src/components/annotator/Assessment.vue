@@ -17,8 +17,9 @@
 
         <div class="assessment-section">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-            <h4 class="mb-0">Assessment Results</h4>
+            <div class="d-flex align-items-center gap-2">
+              <h4 class="mb-0">Assessment Results</h4>
+              <span v-if="readonly" class="badge bg-secondary">Read Only</span>
             </div>
           </div>
 
@@ -126,7 +127,7 @@
                           <div class="assessment-text">
                             <strong>Justification:</strong>
                             <div v-if="!criterion.isEditing" class="assessment-content">
-                              <p class="mb-0 mt-1">{{ criterion.assessment }}</p>
+                              <p class="mb-0 mt-1">{{ criterion.assessment || 'No justification provided' }}</p>
                             </div>
                             <div v-else class="assessment-edit-form">
                               <div class="mb-3">
@@ -135,6 +136,7 @@
                                   class="form-control assessment-textarea"
                                   placeholder="Edit the justification..."
                                   :rows="getTextareaRows(criterion.editedAssessment)"
+                                  :disabled="readonly"
                                   @input="adjustTextareaRows"
                                 ></textarea>
                               </div>
@@ -146,6 +148,7 @@
                             <div v-if="!criterion.isEditing" class="d-flex justify-content-between align-items-center">
                               <div>
                                 <button
+                                  v-if="!readonly"
                                   class="btn btn-outline-primary btn-sm"
                                   title="Edit"
                                   @click="startEdit(groupIndex, criterionIndex)"
@@ -159,6 +162,7 @@
                                   v-model="criterion.currentPoints"
                                   class="form-select form-select-sm score-dropdown"
                                   title="Change score"
+                                  :disabled="readonly"
                                   @change="onScoreChange(groupIndex, criterionIndex)"
                                 >
                                   <option
@@ -171,6 +175,7 @@
                                 </select>
 
                                 <button
+                                  v-if="!readonly"
                                   :class="['btn btn-sm', criterion.isSaved ? 'btn-success' : 'btn-primary']"
                                   :title="criterion.isSaved ? 'Assessment saved' : 'Save assessment'"
                                   @click="saveAssessment(groupIndex, criterionIndex)"
@@ -181,6 +186,7 @@
                             </div>
                             <div v-else class="d-flex gap-2">
                               <button
+                                v-if="!readonly"
                                 class="btn btn-primary btn-sm"
                                 title="Save"
                                 @click="saveEdit(groupIndex, criterionIndex)"
@@ -188,6 +194,7 @@
                                 <LoadIcon icon-name="floppy" :size="14" />
                               </button>
                               <button
+                                v-if="!readonly"
                                 class="btn btn-secondary btn-sm"
                                 title="Cancel"
                                 @click="cancelEdit(groupIndex, criterionIndex)"
@@ -254,7 +261,7 @@ import LoadIcon from "@/basic/Icon.vue";
 export default {
   name: "AssessmentOutput",
   components: { LoadIcon },
-  subscribeTable: ["document", "study_step"],
+  subscribeTable: ["document", "study_step", "document_data", "workflow", "workflow_step" ],
   
   inject: {
     documentId: { type: Number, required: true },
@@ -265,9 +272,10 @@ export default {
   props: {
     show: { type: Boolean, required: false, default: true },
     savedState: { type: Object, required: false, default: () => ({}) },
+    readonly: { type: Boolean, required: false, default: false },
   },
   
-  emits: ['state-changed', 'assessment-saved'],
+  emits: ['state-changed'],
   
   data() {
     return {
@@ -277,9 +285,7 @@ export default {
       maxWidth: 50,
       isFixed: false,
       isDragging: false,
-      sidebarContainerDom: undefined,
       originalWidth: undefined,
-      isHovering: false,
       
       // Assessment data
       error: null,
@@ -310,6 +316,25 @@ export default {
     sidebarClassList() {
       return [this.show || this.isFixed ? "is-active" : "collapsing"];
     },
+
+    // Get current study step data from store
+    currentStudyStep() {
+      return this.$store.getters["table/study_step/get"](this.studyStepId);
+    },
+    currentWorkflowStep() {
+      const step = this.currentStudyStep;
+      if (!step || !step.workflowStepId) return null;
+      return this.$store.getters["table/workflow_step/get"](step.workflowStepId);
+    },
+    currentWorkflow() {
+      const wfStep = this.currentWorkflowStep;
+      if (!wfStep || !wfStep.workflowId) return null;
+      return this.$store.getters["table/workflow/get"](wfStep.workflowId);
+    },
+    isManualAssessmentWorkflow() {
+      const name = this.currentWorkflow?.name || "";
+      return name === "Peer Review Workflow (Assessment)";
+    },
   },
   
   watch: {
@@ -328,30 +353,35 @@ export default {
       deep: true
     },
 
-    mounted() {
-    this.initSidebar();
-    if (!this.assessmentOutput && Object.keys(this.savedState).length === 0) {
-      this.loadAssessment();
-    } else if (Object.keys(this.savedState).length > 0) {
-      this.restoreState();
-    }
-  },
-  
+    // Watch for changes in document table data
     '$store.getters["table/document/refreshCount"]': {
       handler() {
-        // Always try to load assessment when document table refreshes
+        // Reload assessment when document table refreshes
         if (!this.assessmentOutput) {
           this.loadAssessment();
         }
       },
       immediate: true
     },
+    
+    // Watch for changes in study_step table data
     '$store.getters["table/study_step/refreshCount"]': {
       handler() {
         // Reload assessment when study step configuration changes
         this.loadAssessment();
       },
       immediate: true
+    }
+  },
+  
+  mounted() {
+    this.initSidebar();
+    
+    // Load assessment data when component mounts
+    if (!this.assessmentOutput && Object.keys(this.savedState).length === 0) {
+      this.loadAssessment();
+    } else if (Object.keys(this.savedState).length > 0) {
+      this.restoreState();
     }
   },
   
@@ -363,7 +393,7 @@ export default {
   },
   
   methods: {
-    // ===== SIDEBAR MANAGEMENT =====
+    // Sidebar management
     initSidebar() {
       this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth") || 400;
       this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth") || 50;
@@ -410,116 +440,63 @@ export default {
         this.originalWidth = this.width;
       };
 
-        dom.addEventListener("mousedown", handleStart);
+      dom.addEventListener("mousedown", handleStart);
     },
     
     initHoverController() {
       const hoverHotZoneDom = document.querySelector("#assessmentHoverHotZone");
-      this.sidebarContainerDom = document.querySelector("#assessmentContainer");
-      if (!hoverHotZoneDom || !this.sidebarContainerDom) return;
+      const sidebarContainerDom = document.querySelector("#assessmentContainer");
+      if (!hoverHotZoneDom || !sidebarContainerDom) return;
 
       let hoverTimer;
 
-        hoverHotZoneDom.addEventListener("mouseenter", () => {
-          hoverTimer = setTimeout(() => {
-            this.isFixed = true;
-            this.width = this.minWidth;
-            this.isHovering = true;
-            this.sidebarContainerDom.addEventListener("mouseleave", handleMouseleave);
-          }, 500);
-        });
+      hoverHotZoneDom.addEventListener("mouseenter", () => {
+        hoverTimer = setTimeout(() => {
+          this.isFixed = true;
+          this.width = this.minWidth;
+          sidebarContainerDom.addEventListener("mouseleave", handleMouseleave);
+        }, 500);
+      });
 
-        const handleMouseleave = () => {
-          clearTimeout(hoverTimer);
-          this.width = this.originalWidth;
-          this.isFixed = false;
-          this.isHovering = false;
-          this.sidebarContainerDom.removeEventListener("mouseleave", handleMouseleave);
-        };
+      const handleMouseleave = () => {
+        clearTimeout(hoverTimer);
+        this.width = this.originalWidth;
+        this.isFixed = false;
+        sidebarContainerDom.removeEventListener("mouseleave", handleMouseleave);
+      };
 
-        hoverHotZoneDom.addEventListener("mouseleave", () => {
-          clearTimeout(hoverTimer);
-        });
+      hoverHotZoneDom.addEventListener("mouseleave", () => {
+        clearTimeout(hoverTimer);
+      });
     },
     
-    // ===== ASSESSMENT DATA LOADING =====
+    // Assessment data loading
+    refreshAssessment() {
+      // Public method used by parent to (re)load assessment
+      this.error = null;
+      this.assessmentOutput = null;
+      this.expandedGroups = {};
+      this.expandedCriteria = {};
+      this.loadAssessment();
+    },
     async loadAssessment() {
       this.error = null;
 
       try {
-        // Get the study step configuration
-        const studyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
+        // Get the study step configuration using computed property
+        const studyStep = this.currentStudyStep;
         const configFileId = studyStep?.configuration?.configFile;
 
         if (configFileId) {
           // Use the configuration file from the study step configuration
-          this.$socket.emit("documentGet", {
-            documentId: configFileId
-          }, (response) => {
-            if (response && response.success) {
-              try {
-                if (response.data && response.data.file) {
-                  let fileContent;
-                  if (response.data.file instanceof ArrayBuffer) {
-                    const uint8Array = new Uint8Array(response.data.file);
-                    fileContent = new TextDecoder().decode(uint8Array);
-                  } else {
-                    fileContent = response.data.file.toString();
-                  }
-                  
-                  // Parse the JSON configuration
-                  const configData = JSON.parse(fileContent);
-                  // Transform rubrics structure to criteriaGroups structure
-                  this.assessmentOutput = this.transformRubricsToCriteriaGroups(configData);
-                } else {
-                  throw new Error("No file data received from server");
-                }
-              } catch (error) {
-                console.error("Error parsing assessment configuration:", error);
-                this.error = "Failed to parse assessment configuration: " + error.message;
-              }
-            } else {
-              const errorMessage = response && response.message ? response.message : "Failed to load assessment configuration";
-              this.error = errorMessage;
-            }
-          });
+          this.loadConfigFile(configFileId);
         } else {
           // Fallback to the old method if no configFile is specified
           const assessmentConfigDoc = this.$store.getters["table/document/getByKey"]('name', 'Assessment Config')
             .find(doc => doc.type === 3);
 
           if (assessmentConfigDoc) {
-            // Fetch the configuration file content
-            this.$socket.emit("documentGet", {
-              documentId: assessmentConfigDoc.id
-            }, (response) => {
-              if (response && response.success) {
-                try {
-                  if (response.data && response.data.file) {
-                    let fileContent;
-                    if (response.data.file instanceof ArrayBuffer) {
-                      const uint8Array = new Uint8Array(response.data.file);
-                      fileContent = new TextDecoder().decode(uint8Array);
-                    } else {
-                      fileContent = response.data.file.toString();
-                    }
-                    
-                    // Parse the JSON configuration
-                    const configData = JSON.parse(fileContent);
-                    // Transform rubrics structure to criteriaGroups structure
-                    this.assessmentOutput = this.transformRubricsToCriteriaGroups(configData);
-                  } else {
-                    throw new Error("No file data received from server");
-                  }
-                } catch (error) {
-                  console.error("Error parsing assessment configuration:", error);
-                  this.error = "Failed to parse assessment configuration: " + error.message;
-                }
-              } else {
-                const errorMessage = response && response.message ? response.message : "Failed to load assessment configuration";
-                this.error = errorMessage;
-              }
-            });
+            this.loadConfigFile(assessmentConfigDoc.id);
           } else {
             // No configuration file found
             this.error = "No assessment configuration file found. Please configure the assessment in the study setup.";
@@ -530,6 +507,43 @@ export default {
       } finally {
         this.initializeCurrentPoints();
       }
+    },
+
+    // Helper method to load configuration file
+    loadConfigFile(documentId) {
+      this.$socket.emit("documentGet", {
+        documentId: documentId
+      }, (response) => {
+        if (response && response.success) {
+          try {
+            if (response.data && response.data.file) {
+              let fileContent;
+              if (response.data.file instanceof ArrayBuffer) {
+                const uint8Array = new Uint8Array(response.data.file);
+                fileContent = new TextDecoder().decode(uint8Array);
+              } else {
+                fileContent = response.data.file.toString();
+              }
+              
+              // Parse the JSON configuration
+              const configData = JSON.parse(fileContent);
+              // Transform rubrics structure to criteriaGroups structure
+              this.assessmentOutput = this.transformRubricsToCriteriaGroups(configData);
+              
+              // After loading the configuration, try to load saved assessment data
+              this.loadSavedAssessmentData();
+            } else {
+              throw new Error("No file data received from server");
+            }
+          } catch (error) {
+            console.error("Error parsing assessment configuration:", error);
+            this.error = "Failed to parse assessment configuration: " + error.message;
+          }
+        } else {
+          const errorMessage = response && response.message ? response.message : "Failed to load assessment configuration";
+          this.error = errorMessage;
+        }
+      });
     },
     
     transformRubricsToCriteriaGroups(configData) {
@@ -544,27 +558,21 @@ export default {
             id: `${groupIndex + 1}-${criterionIndex + 1}`,
             name: criterion.name,
             description: criterion.description,
-            points: 0,
             maxPoints: criterion.maxPoints,
             assessment: "",
             isEditing: false,
-            editedFeedback: "",
-            userRating: 0,
+            editedAssessment: "",
             currentPoints: 0,
             isSaved: false,
-            scoring: criterion.scoring,
-            function: criterion.function
+            scoring: criterion.scoring
           };
         });
-
-        const totalPoints = criteria.reduce((sum, criterion) => sum + criterion.points, 0);
-        const maxGroupPoints = criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0);
 
         return {
           name: rubric.name,
           description: rubric.description,
-          points: totalPoints,
-          maxPoints: maxGroupPoints,
+          points: 0,
+          maxPoints: criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0),
           criteria: criteria
         };
       });
@@ -577,7 +585,7 @@ export default {
       };
     },
 
-    // ===== INFO PANEL =====
+    // Info panel
     openInfoPanel(group, criterion) {
       this.selectedCriterion = criterion || group;
       this.showInfoPanel = true;
@@ -600,7 +608,7 @@ export default {
       this.selectedCriterion = null;
     },
 
-    // ===== UI INTERACTIONS =====
+    // UI interactions
     toggleGroup(groupIndex) {
       Object.keys(this.expandedGroups).forEach((key) => {
         if (parseInt(key) !== groupIndex) {
@@ -630,7 +638,7 @@ export default {
       });
     },
     
-    // ===== ASSESSMENT EDITING =====
+    // Assessment editing
     startEdit(groupIndex, criterionIndex) {
       const criterion = this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex];
       criterion.isEditing = true;
@@ -661,7 +669,7 @@ export default {
       });
     },
     
-    // ===== SCORING =====
+    // Scoring
     getAvailablePoints(criterion) {
       const maxPoints = criterion.maxPoints || 5;
       const points = [];
@@ -674,12 +682,8 @@ export default {
     onScoreChange(groupIndex, criterionIndex) {
       const criterion = this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex];
       
-      if (criterion.scoring) {
-        const selectedOption = criterion.scoring.find(option => option.points === criterion.currentPoints);
-        if (selectedOption) {
-          criterion.assessment = selectedOption.description;
-        }
-      }
+      // Don't automatically update the assessment field when points change
+      // Let the user keep their own justification text
       
       const updatedCriterion = { ...criterion, isSaved: false };
       this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex] = updatedCriterion;
@@ -702,11 +706,7 @@ export default {
       const updatedCriterion = { ...criterion, isSaved: true };
       this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex] = updatedCriterion;
 
-      this.$emit("assessment-saved", {
-        groupIndex,
-        criterionIndex,
-        criterion: updatedCriterion,
-      });
+      // Emit removed: kept UI state local
       
       this.$nextTick(() => {
         this.saveState();
@@ -726,7 +726,7 @@ export default {
       }
     },
     
-    // ===== UTILITY METHODS =====
+    // Utility methods
     getGroupScore(group) {
       return group.points;
     },
@@ -771,7 +771,7 @@ export default {
       }
     },
 
-    // ===== STATE MANAGEMENT =====
+    // State management
     saveState() {
       const state = {
         expandedGroups: { ...this.expandedGroups },
@@ -799,16 +799,155 @@ export default {
         }
       }
     },
-    
-    async leave() {
-      return Promise.resolve();
+
+    // Load saved assessment data from document_data table
+    async loadSavedAssessmentData() {
+      if (!this.isManualAssessmentWorkflow) {
+        return;
+      }
+      if (!this.documentId || !this.studyStepId) {
+        return;
+      }
+
+      try {
+        // Load saved assessment data from the server using documentDataGet
+        this.$socket.emit("documentDataGet", {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId || null,
+          studyStepId: this.studyStepId,
+          key: "assessment_results"
+        }, (response) => {
+          if (response && response.success && response.data && response.data.value) {
+            this.mergeSavedDataWithConfiguration(response.data.value);
+          } else if (response && response.value) {
+            // Direct response format
+            this.mergeSavedDataWithConfiguration(response.value);
+          }
+        });
+      } catch (error) {
+        console.error("Error loading saved assessment data:", error);
+      }
     },
+
+    // Merge saved data with configuration
+    mergeSavedDataWithConfiguration(savedData) {
+      if (!savedData || !savedData.criteriaGroups || !this.assessmentOutput) {
+        return;
+      }
+
+      // Merge saved data with the configuration structure
+      this.assessmentOutput.criteriaGroups = this.assessmentOutput.criteriaGroups.map(group => {
+        const savedGroup = savedData.criteriaGroups.find(g => g.name === group.name);
+        if (savedGroup) {
+          return {
+            ...group,
+            points: savedGroup.points || 0,
+            criteria: group.criteria.map(criterion => {
+              const savedCriterion = savedGroup.criteria.find(c => c.name === criterion.name);
+              if (savedCriterion) {
+                return {
+                  ...criterion,
+                  assessment: savedCriterion.justification || "",
+                  currentPoints: savedCriterion.points || 0,
+                  points: savedCriterion.points || 0,
+                  isSaved: true
+                };
+              } else {
+                return {
+                  ...criterion,
+                  assessment: "",
+                  currentPoints: 0,
+                  points: 0,
+                  isSaved: false
+                };
+              }
+            })
+          };
+        } else {
+          return {
+            ...group,
+            points: 0,
+            criteria: group.criteria.map(criterion => ({
+              ...criterion,
+              assessment: "",
+              currentPoints: 0,
+              points: 0,
+              isSaved: false
+            }))
+          };
+        }
+      });
+
+      this.initializeCurrentPoints();
+    },
+
+    // Save assessment data to document_data table
+    async saveAssessmentData() {
+      if (!this.isManualAssessmentWorkflow) {
+        return;
+      }
+      if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
+        return;
+      }
+
+      try {
+        // Create hierarchical structure with only the required fields
+        const assessmentData = {
+          criteriaGroups: this.assessmentOutput.criteriaGroups.map(group => ({
+            name: group.name,
+            points: group.points || 0,
+            criteria: group.criteria.map(criterion => ({
+              name: criterion.name,
+              justification: criterion.assessment || "",
+              points: criterion.currentPoints || 0
+            }))
+          }))
+        };
+
+        // Save to document_data table (wrap in Promise so callers can await)
+        await new Promise((resolve, reject) => {
+          this.$socket.emit("documentDataSave", {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            key: "assessment_results",
+            value: assessmentData
+          }, (response) => {
+            if (response && response.success) {
+              // Success: no-op emit cleanup
+              resolve(response);
+            } else {
+              reject(response);
+            }
+          });
+        });
+
+      } catch (error) {
+        console.error("Error saving assessment data:", error);
+      }
+    },
+
+    // Called by parent before navigating away to ensure data is persisted
+    async saveAndProceed() {
+      await this.saveAssessmentData();
+      return true;
+    },
+
+    // Compatibility for Annotator.leave()
+    async leave() {
+      try {
+        await this.saveAssessmentData();
+      } catch (e) {
+        // swallow to not block navigation
+      }
+      return this.saveState();
+    }
   },
 };
 </script>
 
 <style scoped>
-/* ===== LAYOUT ===== */
+/* Layout */
 .assessment-section {
   padding: 1rem;
   height: calc(100vh - 70px);
@@ -823,7 +962,7 @@ export default {
   padding-right: 5px;
 }
 
-/* ===== SCROLLBARS ===== */
+/* Scrollbars */
 .assessment-content-container::-webkit-scrollbar,
 #sidepane::-webkit-scrollbar {
   width: 6px;
@@ -846,7 +985,7 @@ export default {
   background: #a8a8a8;
 }
 
-/* ===== CRITERIA GROUPS ===== */
+/* Criteria Groups */
 .criteria-group-card {
   border: 1px solid #dee2e6;
   border-radius: 8px;
@@ -870,7 +1009,7 @@ export default {
   padding: 0;
 }
 
-/* ===== CRITERIA ITEMS ===== */
+/* Criteria Items */
 .criterion-item {
   background-color: transparent;
   border: none;
@@ -899,7 +1038,7 @@ export default {
   color: #333;
 }
 
-/* ===== BADGES ===== */
+/* Badges */
 .badge {
   background-color: #6c757d !important;
   color: white;
@@ -918,7 +1057,7 @@ export default {
   color: white !important;
 }
 
-/* ===== ASSESSMENT CONTENT ===== */
+/* Assessment Content */
 .criterion-assessment {
   border-top: 1px solid #e9ecef;
   margin-top: 0;
@@ -966,7 +1105,7 @@ export default {
   font-style: italic;
 }
 
-/* ===== BUTTONS ===== */
+/* Buttons */
 .assessment-actions .btn {
   font-size: 0.875rem;
   padding: 6px 12px;
@@ -1015,7 +1154,7 @@ export default {
   border-color: #545b62;
 }
 
-/* ===== FORM ELEMENTS ===== */
+/* Form Elements */
 .score-dropdown {
   min-width: 80px;
   font-size: 0.875rem;
@@ -1032,7 +1171,7 @@ export default {
   outline: 0;
 }
 
-/* ===== INFO ICONS ===== */
+/* Info Icons */
 .info-icon {
   color: #6c757d;
   transition: color 0.2s ease;
@@ -1042,7 +1181,7 @@ export default {
   color: #007bff;
 }
 
-/* ===== FLOATING INFO PANEL ===== */
+/* Floating Info Panel */
 .floating-info-panel {
   background-color: white;
   border: 1px solid #dee2e6;
@@ -1080,7 +1219,7 @@ export default {
   transition: all 0.2s ease;
 }
 
-/* ===== SIDEBAR CONTAINER ===== */
+/* Sidebar Container */
 #assessmentContainer {
   position: relative;
   padding: 0;
@@ -1122,7 +1261,7 @@ export default {
   }
 }
 
-/* ===== HOT ZONES ===== */
+/* Hot Zones */
 .hot-zone {
   width: 3px;
   position: absolute;
@@ -1142,7 +1281,7 @@ export default {
   display: none;
 }
 
-/* ===== SIDEBAR ===== */
+/* Sidebar */
 #sidebar {
   height: 100%;
   width: 100%;

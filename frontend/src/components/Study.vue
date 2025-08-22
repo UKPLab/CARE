@@ -79,6 +79,7 @@
     class="study-container"
   >
     <Annotator
+      ref="annotator"
       v-if="currentStep.stepType === 1 && (studyTrajectory.includes(currentStep.id) || readOnly)"
       :document-id="currentStep.documentId"
       :study-step-id="currentStep.id"
@@ -417,7 +418,16 @@ export default {
         }
       }
     },
-         updateStep(step) {
+         async updateStep(step) {
+       // Save assessment data if we're in assessment mode
+       if (this.currentStep.stepType === 1 && this.$refs.annotator && this.$refs.annotator.$refs.assessment) {
+         try {
+           await this.$refs.annotator.$refs.assessment.saveAndProceed();
+         } catch (error) {
+           console.error("Failed to save assessment data:", error);
+         }
+       }
+
        if (this.readOnlyComputed) {
          this.localStudyStepId = step;
        } else {

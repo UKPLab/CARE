@@ -67,7 +67,7 @@
                     <label class="form-label">{{ input }}:</label>
                     <FormSelect
                       v-model="inputMappings[index][input]"
-                      :options="{ options: availableDataSources }"
+                      :options="getInputOptions(index, input)"
                       :value-as-object="true"
                     />
                   </div>
@@ -106,7 +106,7 @@
                   <label class="form-label">{{ input }}:</label>
                   <FormSelect
                     v-model="inputMappings[index][input]"
-                    :options="{ options: availableDataSources }"
+                    :options="getInputOptions(index, input)"
                     :value-as-object="true"
                   />
                 </div>
@@ -155,7 +155,7 @@
                     <label class="form-label">{{ input }}:</label>
                     <FormSelect
                       v-model="inputMappings[index][input]"
-                      :options="{ options: availableDataSources }"
+                      :options="getInputOptions(index, input)"
                       :value-as-object="true"
                     />
                   </div>
@@ -240,7 +240,7 @@ const CONFIG_SERVICE_TYPES = ["configSelect", "nlpAssessment", "textualFeedback"
 export default {
   name: "ConfigurationModal",
   components: { StepperModal, FormSelect },
-  subscribeTable: ["study_step", "study", "workflow", "document", "study_session"],
+  subscribeTable: ["study_step", "study", "workflow", "document", "study_session", "submission"],
   props: {
     modelValue: {
       type: Object,
@@ -284,6 +284,8 @@ export default {
       shortPreview: "",
       isUpdateMode: false,
       inputMappings: [],
+      assessmentConfigOptionsLoaded: false,
+      assessmentConfigOptions: [],
       // Configuration for extended workflows (2-step configuration)
       extendedConfig: {
         configFile: "",
@@ -385,6 +387,32 @@ export default {
         })),
       };
     },
+    submissionsOptions() {
+      // Build list of submission documents (PDF or ZIP) by joining submissions -> documents
+      const submissions = this.$store.getters["table/submission/getAll"] || [];
+      if (!submissions.length) return { options: [] };
+
+      const submissionIds = new Set(submissions.map(s => s.id));
+      const docs = this.$store.getters["table/document/getAll"] || [];
+
+      const isPdfOrZip = (doc) => {
+        const name = (doc.originalFilename || doc.name || "").toLowerCase();
+        return name.endsWith('.pdf') || name.endsWith('.zip');
+      };
+
+      const options = docs
+        .filter(doc => doc.submissionId && submissionIds.has(doc.submissionId) && isPdfOrZip(doc))
+        .map(doc => ({
+          value: doc.id,
+          name: `Submission ${doc.submissionId}: ${doc.name}`,
+          stepId: 0,
+        }));
+
+      return { options };
+    },
+    assessmentConfigOptionsFormatted() {
+      return { options: this.assessmentConfigOptions };
+    },
     availableDataSources() {
       return this.getSourcesUpToCurrentStep(this.studyStepId);
     },
@@ -425,31 +453,39 @@ export default {
       return [{ title: "Services" }, { title: "Placeholders" }];
     },
     /**
-     * Returns configuration file options filtered by document type 3 (JSON configuration files)
-     * @returns {Object} Options object for FormSelect component
+     * Returns configuration file options. For nlpAssessment/configSelect services,
+     * prefer JSON configs whose content has type === 'assessment'. Otherwise, use all type 3 files.
      */
     configFileOptions() {
-      // Get the current project ID from the study step
       const currentStudyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
       const study = currentStudyStep ? this.$store.getters["table/study/get"](currentStudyStep.studyId) : null;
       const projectId = study ? study.projectId : null;
-      
-      // If no project ID from study, try to get it from settings
       const fallbackProjectId = projectId || parseInt(this.$store.getters["settings/getValue"]("projects.default"), 10);
-      
-      // Filter config files by project and type 3
-      const configFiles = this.$store.getters["table/document/getFiltered"](doc => 
+
+      const shouldFilterAssessment = this.servicesDefinition.some(s => s.type === "nlpAssessment" || s.type === "configSelect");
+
+      if (shouldFilterAssessment && this.assessmentConfigOptions && this.assessmentConfigOptions.length > 0) {
+        const filtered = this.assessmentConfigOptions.filter(opt => {
+          const doc = this.$store.getters["table/document/get"](opt.value);
+          return doc && (doc.projectId === fallbackProjectId || !doc.projectId);
+        });
+        return {
+          options: [
+            { value: null, name: "Select Configuration File..." },
+            ...filtered
+          ]
+        };
+      }
+
+      // Fallback: list all config files (type 3)
+      const configFiles = this.$store.getters["table/document/getFiltered"](doc =>
         doc.type === 3 && !doc.hideInFrontend && (doc.projectId === fallbackProjectId || !doc.projectId)
       );
-      
       return {
         options: [
           { value: null, name: "Select Configuration File..." },
-          ...configFiles.map(doc => ({
-            value: doc.id,
-            name: doc.name,
-          }))
-        ],
+          ...configFiles.map(doc => ({ value: doc.id, name: doc.name }))
+        ]
       };
     },
   },
@@ -527,6 +563,8 @@ export default {
       }
       
       this.$refs.configurationStepper.open();
+      // Preload assessment config options for grading_expose mapping
+      this.loadAssessmentConfigOptions();
     },
     /**
      * Initializes the modal configuration based on service types
@@ -936,6 +974,54 @@ export default {
       });
 
       return sources;
+    },
+    getInputOptions(index, input) {
+      const skillName = this.selectedSkills[index]?.skillName || "";
+      if (skillName === "grading_expose") {
+        if (input === "submission") {
+          return this.submissionsOptions;
+        }
+        if (input === "assessment_config") {
+          return this.assessmentConfigOptionsFormatted;
+        }
+      }
+      return { options: this.availableDataSources };
+    },
+    loadAssessmentConfigOptions() {
+      if (this.assessmentConfigOptionsLoaded) return;
+      // Load config files (type 3) and filter by JSON content type === 'assessment'
+      const configDocs = (this.$store.getters["table/document/getAll"] || [])
+        .filter(doc => doc.type === 3 && !doc.hideInFrontend);
+
+      if (!configDocs.length) {
+        this.assessmentConfigOptionsLoaded = true;
+        return;
+      }
+
+      let remaining = configDocs.length;
+      configDocs.forEach((doc) => {
+        this.$socket.emit("documentGet", { documentId: doc.id }, (response) => {
+          try {
+            if (response && response.success && response.data && response.data.file) {
+              let text;
+              if (response.data.file instanceof ArrayBuffer) {
+                text = new TextDecoder().decode(new Uint8Array(response.data.file));
+              } else {
+                text = response.data.file.toString();
+              }
+              const json = JSON.parse(text);
+              if (json && json.type === "assessment") {
+                this.assessmentConfigOptions.push({ value: doc.id, name: doc.name, stepId: 0 });
+              }
+            }
+          } catch (e) {
+            // ignore malformed json
+          } finally {
+            remaining -= 1;
+            if (remaining === 0) this.assessmentConfigOptionsLoaded = true;
+          }
+        });
+      });
     },
   },
 };
