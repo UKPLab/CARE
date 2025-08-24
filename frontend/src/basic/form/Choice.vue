@@ -382,8 +382,8 @@ export default {
           
           let docType;
           if (choice.stepNumber === 2 && isTextualFeedbackWorkflow) {
-            // Step 2 with textualFeedback service: Filter only config files (type 3)
-            docType = 3;
+            // Step 2 with textualFeedback service: Filter only HTML files (type 1)
+            docType = 1;
           } else {
             // Step 2 and 4 (other cases): Filter only modal files (type 2)
             docType = 2;
@@ -395,7 +395,7 @@ export default {
           
           return {
             options: [
-              { value: null, name: choice.stepNumber === 2 && isTextualFeedbackWorkflow ? "Select Config File..." : "Select Modal File..." },
+              { value: null, name: choice.stepNumber === 2 && isTextualFeedbackWorkflow ? "New Empty Document" : "Select Modal File..." },
               ...filteredDocs.map(doc => ({
                 value: doc.id,
                 name: doc.name,

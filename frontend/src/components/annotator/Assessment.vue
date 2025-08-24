@@ -335,6 +335,12 @@ export default {
       const name = this.currentWorkflow?.name || "";
       return name === "Peer Review Workflow (Assessment)";
     },
+    // Whether the current study step enforces saving every criterion
+    forcedAssessmentEnabled() {
+      if (!this.isManualAssessmentWorkflow) return false;
+      const cfg = this.currentStudyStep?.configuration || {};
+      return cfg.forcedAssessment === true;
+    },
   },
   
   watch: {
@@ -738,6 +744,16 @@ export default {
       }
       return false;
     },
+    // Check if all criteria across all groups are saved
+    areAllCriteriaSaved() {
+      if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
+        return false;
+      }
+      return this.assessmentOutput.criteriaGroups.every((group) => {
+        if (!group.criteria || group.criteria.length === 0) return true;
+        return group.criteria.every((criterion) => criterion.isSaved === true);
+      });
+    },
     
     getTextareaRows(text) {
       if (!text) return 3;
@@ -931,6 +947,17 @@ export default {
     async saveAndProceed() {
       await this.saveAssessmentData();
       return true;
+    },
+
+    // Gatekeeper used by parent before navigating to next step
+    async canProceed() {
+      // If not manual assessment workflow or no forced rule, allow
+      if (!this.isManualAssessmentWorkflow || !this.forcedAssessmentEnabled) {
+        return true;
+      }
+      // Ensure current state reflects saved flags
+      // Saving is already user-driven; just validate completeness
+      return this.areAllCriteriaSaved();
     },
 
     // Compatibility for Annotator.leave()

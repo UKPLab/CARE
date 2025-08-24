@@ -34,6 +34,33 @@
                 :options="configFileOptions"
               />
             </div>
+            <div class="mb-3">
+              <label class="form-label">Forced Assessment:</label>
+              <div class="form-check">
+                <input
+                  v-model="extendedConfig.forcedAssessment"
+                  class="form-check-input"
+                  type="radio"
+                  :value="true"
+                  id="forcedAssessmentYes"
+                />
+                <label class="form-check-label" for="forcedAssessmentYes">
+                  Yes - User must check all criteria to proceed
+                </label>
+              </div>
+              <div class="form-check">
+                <input
+                  v-model="extendedConfig.forcedAssessment"
+                  class="form-check-input"
+                  type="radio"
+                  :value="false"
+                  id="forcedAssessmentNo"
+                />
+                <label class="form-check-label" for="forcedAssessmentNo">
+                  No - User can proceed without checking all criteria
+                </label>
+              </div>
+            </div>
           </div>
         </div>
         <div v-else-if="hasConfigServices && servicesDefinition.some(service => service.type === 'textualFeedback')" class="config-service">
@@ -289,23 +316,29 @@ export default {
       // Configuration for extended workflows (2-step configuration)
       extendedConfig: {
         configFile: "",
+        forcedAssessment: false,
       },
     };
   },
   computed: {
 
     servicesDefinition() {
-      // Get services from workflow step definition or stepConfig
+      // Prefer reading from the workflow step by id (during study creation we pass workflow_step.id)
+      const workflowStepById = this.workflowSteps && this.workflowSteps.find(step => step.id === this.studyStepId);
+      if (workflowStepById && workflowStepById.configuration && workflowStepById.configuration.services) {
+        return workflowStepById.configuration.services;
+      }
+
+      // Fallback: when running inside a study, try resolving by current study step type
       const currentStudyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
       if (currentStudyStep) {
-        // Find the workflow step with matching stepType
         const currentWorkflowStep = this.workflowSteps.find(step => step.stepType === currentStudyStep.stepType);
         if (currentWorkflowStep && currentWorkflowStep.configuration && currentWorkflowStep.configuration.services) {
           return currentWorkflowStep.configuration.services;
         }
       }
       
-      // Fallback to stepConfig.services
+      // Final fallback to persisted stepConfig
       return (this.stepConfig && Array.isArray(this.stepConfig.services)) 
         ? this.stepConfig.services 
         : [];
@@ -577,6 +610,7 @@ export default {
       // Initialize extended config for config services
       if (this.hasConfigServices) {
         this.extendedConfig.configFile = this.stepConfig.configFile || "";
+        this.extendedConfig.forcedAssessment = this.stepConfig.forcedAssessment || false;
       }
 
       // Initialize selectedSkills based on existing config or create empty entries
@@ -827,6 +861,7 @@ export default {
           // nlpAssessment service: Include both configFile and services
           const configData = {
             configFile: this.extendedConfig.configFile,
+            forcedAssessment: this.extendedConfig.forcedAssessment,
             services: this.servicesDefinition.map((service, index) => ({
               name: service.name,
               type: service.type,
@@ -850,6 +885,7 @@ export default {
           // configSelect service: Only include configFile
           const configData = {
             configFile: this.extendedConfig.configFile,
+            forcedAssessment: this.extendedConfig.forcedAssessment,
           };
           this.$emit("update:modelValue", configData);
         }
@@ -982,6 +1018,19 @@ export default {
           return this.submissionsOptions;
         }
         if (input === "assessment_config") {
+          return this.assessmentConfigOptionsFormatted;
+        }
+      }
+      if (skillName === "generating_feedback") {
+        if (input === "submission") {
+          return this.submissionsOptions;
+        }
+        if (input === "grading_results") {
+          // Filter availableDataSources to only step 1 sources
+          const step1Sources = this.availableDataSources.filter(source => source.stepId === 1);
+          return { options: step1Sources };
+        }
+        if (input === "feedback_grading_criteria") {
           return this.assessmentConfigOptionsFormatted;
         }
       }

@@ -422,6 +422,18 @@ export default {
        // Save assessment data if we're in assessment mode
        if (this.currentStep.stepType === 1 && this.$refs.annotator && this.$refs.annotator.$refs.assessment) {
          try {
+          // Enforce forced assessment rule if enabled in the assessment component
+          if (typeof this.$refs.annotator.$refs.assessment.canProceed === 'function') {
+            const canProceed = await this.$refs.annotator.$refs.assessment.canProceed();
+            if (!canProceed) {
+              this.eventBus.emit("toast", {
+                title: "Complete Assessment",
+                message: "Please save all criteria before proceeding.",
+                variant: "warning",
+              });
+              return; // Block navigation
+            }
+          }
            await this.$refs.annotator.$refs.assessment.saveAndProceed();
          } catch (error) {
            console.error("Failed to save assessment data:", error);
