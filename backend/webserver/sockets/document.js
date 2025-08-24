@@ -892,19 +892,25 @@ class DocumentSocket extends Socket {
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
                                 ),
                     };
+                }
             }
-        }
         } else {
             // Handle file-based documents (PDF, JSON, etc.)
             const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
             const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
-
+            
             if (!fs.existsSync(filePath)) {
                 throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
 
-            const file = fs.readFileSync(filePath);
-            return { document: document, file: file };
+            const file = fs.readFileSync(filePath); // Buffer
+            // For JSON files, return the content as a string; for others, return as Buffer
+            if (document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG) {
+                const fileContent = file.toString('utf8');
+                return { document: document, file: fileContent };
+            } else {
+                return { document: document, file: file };
+            }
         }
     }
 
