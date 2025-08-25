@@ -13,7 +13,7 @@ const Socket = require("../Socket.js");
  * @type {StatisticSocket}
  * @class StatisticSocket
  */
-module.exports = class StatisticSocket extends Socket {
+class StatisticSocket extends Socket {
     constructor(server, io, socket) {
         super(server, io, socket);
         // Simple in-memory batching; batch size configurable via setting 'statistic.batch.size' or env fallback
