@@ -18,6 +18,7 @@ const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const Socket = require(path.resolve(__dirname, "./Socket.js"));
 const Service = require(path.resolve(__dirname, "./Service.js"));
 const RPC = require(path.resolve(__dirname,"./RPC.js"));
+const statsScheduler = require('../db/stats');
 /**
  * Defines Express Webserver of Content Server
  *
@@ -84,6 +85,25 @@ module.exports = class Server {
         this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
         this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
         this.#discoverComponents("./services", Service, this.addService.bind(this));
+
+        // Graceful shutdown: flush all stats buffers on kill signals
+        const handleShutdown = async (signal) => {
+            try {
+                this.logger.info(`Received ${signal}. Flushing statistics and shutting down...`);
+                await this.flushAllStats();
+            } catch (e) {
+                this.logger.warn("Error during stats flush on shutdown: " + e);
+            } finally {
+                try {
+                    this.stop();
+                } catch (e2) {
+                    this.logger.warn("Error during server stop on shutdown: " + e2);
+                }
+                process.exit(0);
+            }
+        };
+        process.on('SIGINT', handleShutdown);
+        process.on('SIGTERM', handleShutdown);
     }
 
     /**
@@ -266,11 +286,19 @@ module.exports = class Server {
                             await this.availSockets[socket.id]['DocumentSocket'].saveDocument(documentId);
                         }
                     }
+                    // Flush pending statistics before cleanup
+                    try {
+                        const statSock = this.availSockets[socket.id]['StatisticSocket'];
+                        await statSock._flushStats();
+                    } catch (e) {
+                        this.logger.warn("Failed to flush stats on disconnect: " + e);
+                    }
+
                     // delete table subscriptions on disconnect (in case unmounted is not called)
                     Object.entries(socket.appDataSubscriptions).forEach(([key, value]) => {
                         this.io.appDataSubscriptions[value.table].delete(key);
                     });
-
+                    
                     delete this.availSockets[socket.id];
                 } catch (err) {
                     this.logger.error("Error on socket disconnect: " + err);
@@ -345,6 +373,13 @@ module.exports = class Server {
         this.http = this.httpServer.listen(port, () => {
             this.logger.info("Server started on port " + port);
         });
+        // Start DB stats scheduler
+        try {
+            statsScheduler.start(this.db.sequelize, this.logger);
+            this._statsScheduler = statsScheduler;
+        } catch (e) {
+            this.logger.warn('Failed to start DB stats scheduler: ' + e.message);
+        }
         return this.http;
     }
 
@@ -358,6 +393,30 @@ module.exports = class Server {
         this.io.close();
         if (this.http) {
             this.http.close();
+        }
+        if (this._statsScheduler) {
+            this._statsScheduler.stop(this.logger);
+            }
+        }
+
+    /**
+     * Flush statistics buffers for all connected sockets.
+     * Ensures no pending stats are lost during shutdown.
+     * @returns {Promise<void>}
+     */
+    async flushAllStats() {
+        try {
+            const sockets = this.availSockets || {};
+            for (const [sid, sockMap] of Object.entries(sockets)) {
+                try {
+                    const statSock = sockMap && sockMap['StatisticSocket'];
+                    await statSock._flushStats();
+                } catch (e) {
+                    this.logger.warn(`Failed to flush stats for socket ${sid}: ${e}`);
+                }
+            }
+        } catch (e) {
+            this.logger.error("flushAllStats encountered an error: " + e);
         }
     }
 

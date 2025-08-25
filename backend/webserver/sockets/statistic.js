@@ -13,7 +13,43 @@ const Socket = require("../Socket.js");
  * @type {StatisticSocket}
  * @class StatisticSocket
  */
-class StatisticSocket extends Socket {
+module.exports = class StatisticSocket extends Socket {
+    constructor(server, io, socket) {
+        super(server, io, socket);
+        // Simple in-memory batching; batch size configurable via setting 'statistic.batch.size' or env fallback
+        this.statsBuffer = [];
+        this.statsFlushing = false;
+        // Start with a safe default; load real value asynchronously
+        this.statsBatchSize = null;
+        this._loadBatchSize()
+            .then(size => {
+                if (size) {
+                    this.statsBatchSize = size;
+                }
+            })
+            .catch(e => {
+                this.logger && this.logger.warn("Failed to load statistic.batch.size setting: " + e.message);
+            });
+    }
+
+    /**
+     * Load the batch size from the settings or use the default value.
+     * @private
+     * @returns {Promise<number>} - The batch size
+     */
+    async _loadBatchSize() {
+        try {
+            const setting = await this.models['setting'].findOne({ where: { key: 'statistic.batch.size' }, raw: true });
+            if (!setting) {
+                this.logger.error("Setting 'statistic.batch.size' not found, using default batch size: 50 (you need to run make db)");
+                return 50;
+            }
+            return parseInt(setting.value, 10);
+        } catch (err) {
+            this.logger.error("Couldn't fetch batch size due to error: " + err.message);
+        }
+    }
+
 
     /**
      * Send statistics to the user
@@ -77,17 +113,71 @@ class StatisticSocket extends Socket {
      */
     async addStats(data, options) {
         try {
-            if (this.user.acceptStats) {
-                await this.models["statistic"].add({
-                    action: data.action,
-                    data: JSON.stringify(data.data),
-                    userId: this.userId,
-                    session: this.socket.id,
-                    timestamp: new Date(),
-                })
+            if (!this.user.acceptStats) return;
+            this.statsBuffer.push({
+                action: data.action,
+                data: JSON.stringify(data.data || {}),
+                userId: this.userId,
+                session: this.socket.id,
+                timestamp: new Date(),
+            });
+            if (this.statsBuffer.length >= this.statsBatchSize && !this.statsFlushing) {
+                await this._flushStats();
             }
         } catch (e) {
             this.logger.error("Can't add statistics: " + JSON.stringify(data) + " due to error " + e.toString());
+        }
+    }
+
+    /**
+     * Flush the in-memory statistics buffer to the database in a single bulk insert.
+     *
+     * Concurrency / safety:
+     * - Guarded by the statsFlushing flag so only one flush runs at a time.
+     * - If buffer is empty or a flush is already running, returns immediately.
+     *
+     * Behavior:
+     * - Uses bulkCreate for efficiency (reduced round trips).
+     * - On success: clears the buffer.
+     * - On failure: logs error and still clears buffer to avoid perpetual retry / duplication.
+     *
+     * @private
+     * @returns {Promise<void>}
+     */
+    async _flushStats() {
+        if (this.statsFlushing || this.statsBuffer.length === 0) {
+            return;
+        }
+        this.statsFlushing = true;
+        try {
+            await this.models["statistic"].bulkCreate(this.statsBuffer);
+        } catch (e) {
+            this.logger.error("Failed to flush statistics batch: " + e.toString());
+        } finally {
+            this.statsFlushing = false;
+            this.statsBuffer = [];
+        }
+    }
+
+    /**
+     * Get a user's statistics
+     *
+     * @param {Object} data - The data object containing the userId
+     * @param {Number} data.userId - The user's ID
+     * @param {Object} options - not used
+     *
+     * @returns {Promise<void>} - The statistics data
+     */
+    async getStatsByUser(data, options) {
+        try {
+            await this.sendStatsByUser(data.userId);
+        } catch (e) {
+            this.socket.emit("statsData", {
+                success: false,
+                userId: data.userId,
+                message: "Failed to retrieve stats for users"
+            });
+            this.logger.error("Can't load statistics due to error " + e.toString());
         }
     }
 
