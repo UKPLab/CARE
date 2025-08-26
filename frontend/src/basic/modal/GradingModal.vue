@@ -105,7 +105,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import BasicTable from "@/basic/Table.vue";
-import { fetchJsonWithKey } from "@/assets/utils";
+import { fetchJsonOptions } from "@/assets/utils";
 
 export default {
   name: "GradingModal",
@@ -332,7 +332,7 @@ export default {
       if (!Array.isArray(this.jsonConfig) || this.jsonConfig.length === 0) {
         return;
       }
-      this.configOptions = await fetchJsonWithKey(this.$socket, this.jsonConfig, "assessment") || [];
+      this.configOptions = await fetchJsonOptions(this.$socket, this.jsonConfig, "assessment") || [];
     },
     open() {
       this.selectedSkill = '';
