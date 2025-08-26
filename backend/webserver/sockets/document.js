@@ -6,8 +6,8 @@ const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {Op} = require("sequelize");
 const {getTextPositions} = require("../../utils/text.js");
-const {compileSchema, validateZip, validateZipWithSchema} = require("../../utils/zipValidator.js");
-const { associateFilesForSubmission } = require("../../utils/fileAssociator.js");
+const {compileSchema, validateZip, validateZipWithSchema} = require("../../utils/validator.js");
+// const { associateFilesForSubmission } = require("../../utils/fileAssociator.js");
 const {v4: uuidv4} = require("uuid");
 
 
@@ -817,78 +817,6 @@ class DocumentSocket extends Socket {
         }
     }
 
-    /**
-     * TODO: Check if we need this function.
-     * @author Yiwei Wang
-     * Enhance submission data with file associations and categorization
-     * @param {Array} submissions - Raw submission data from Moodle
-     * @returns {Array} Enhanced submissions with file categorization
-     */
-    enhanceSubmissionsWithFileData(submissions) {
-        return submissions.map(submission => {
-            let enhancedSubmission = { ...submission };
-            
-            // If we have the new enhanced data structure from Python
-            if (submission.files && Array.isArray(submission.files)) {
-                const files = submission.files;
-                
-                // Separate PDFs and ZIPs
-                const pdfFiles = files.filter(file => 
-                    file.mimetype === 'application/pdf' || 
-                    file.filename.toLowerCase().endsWith('.pdf')
-                );
-                
-                const zipFiles = files.filter(file => 
-                    file.mimetype === 'application/zip' || 
-                    file.filename.toLowerCase().endsWith('.zip')
-                );
-                
-                const otherFiles = files.filter(file => 
-                    !pdfFiles.includes(file) && !zipFiles.includes(file)
-                );
-                
-                // Try to associate ZIP files with PDF files
-                enhancedSubmission.fileAssociations = associateFilesForSubmission(pdfFiles, zipFiles);
-                
-                // Add file summary
-                enhancedSubmission.fileSummary = {
-                    totalFiles: files.length,
-                    pdfCount: pdfFiles.length,
-                    zipCount: zipFiles.length,
-                    otherCount: otherFiles.length,
-                    hasPdf: pdfFiles.length > 0,
-                    hasZip: zipFiles.length > 0,
-                    isComplete: pdfFiles.length > 0 && zipFiles.length > 0
-                };
-                
-                // Keep the original files array for compatibility
-                enhancedSubmission.categorizedFiles = {
-                    pdfs: pdfFiles,
-                    zips: zipFiles,
-                    others: otherFiles
-                };
-                
-            } else if (submission.submissionURLs) {
-                // Legacy data structure - enhance what we can
-                const urls = submission.submissionURLs;
-                const pdfUrls = urls.filter(url => 
-                    url.filename.toLowerCase().endsWith('.pdf')
-                );
-                
-                enhancedSubmission.fileSummary = {
-                    totalFiles: urls.length,
-                    pdfCount: pdfUrls.length,
-                    zipCount: 0,
-                    otherCount: urls.length - pdfUrls.length,
-                    hasPdf: pdfUrls.length > 0,
-                    hasZip: false,
-                    isComplete: false
-                };
-            }
-            
-            return enhancedSubmission;
-        });
-    }
 
     /**
      * Send a document to the client

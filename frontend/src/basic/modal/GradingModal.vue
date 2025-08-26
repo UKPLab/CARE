@@ -5,7 +5,7 @@
       ref="gradingStepper"
       :steps="[{ title: 'Select Skill' }, { title: 'Select input file' }]"
       :validation="stepValid"
-      submit-text="Start Grading"
+      submit-text="Apply Skill"
       @submit="preprocessing"
     >
       <template #title>
@@ -35,7 +35,6 @@
             :data="inputFiles"
             :options="{ ...options, selectableRows: true }"
             :modelValue="selectedInputRows || []"
-            :buttons="buttons()"
             @update:modelValue="onInputFilesChange"
           />
         </div>
@@ -80,6 +79,9 @@
           <div class="mt-2 text-muted">
             Current request running since <strong>{{ elapsedTime }}</strong>
           </div>
+          <div class="mt-2 text-muted">
+            Estimated time remaining: <strong>{{ estimatedTimeRemainingFormatted }}</strong>
+          </div>
 
           <h6 class="mt-4">Submissions in Queue</h6>
           <BasicTable
@@ -116,6 +118,7 @@ export default {
       selectedSkill: '',
       selectedConfig: '',
       selectedInputRows: [],
+      now: Date.now(),
       options: {
         striped: true,
         hover: true,
@@ -137,6 +140,13 @@ export default {
       } else {
         this.stopElapsedTimer();
       }
+    },
+    jsonConfig: {
+      handler() {
+        this.fetchConfigOptions();
+      },
+      immediate: true,
+      deep: true
     }
   },
   computed: {
@@ -193,7 +203,7 @@ export default {
       });
       return Array.from(options)
         .sort()
-        .map((val) => ({ key: val, name: val.charAt(0).toUpperCase() + val.slice(1) }));
+        .map((val) => ({ key: val, name: val }));
     },
     processingSteps() {
       if (this.isProcessingActive) {
@@ -222,7 +232,7 @@ export default {
     stepValid() {
       return [
         !!this.selectedSkill && !!this.selectedConfig, // Step 1: Both must be selected and config must be valid
-        this.selectedInputRows.length > 0 && this.selectedInputRows.some(row => !row.data_existing), // Step 2: At least one file selected
+        this.selectedInputRows.length > 0, // Step 2: At least one file selected
       ];
     },
     inputFiles() {
@@ -231,13 +241,8 @@ export default {
         name: submission.name || `Submission ${submission.id}`,
         group: submission.group,
         userName: submission.userName,
-        data_existing: submission.data_existing || false,
+        data_existing: (submission.data_existing || false) ? 'Yes' : 'No',
       }));
-    },
-    downloadFile(row) {
-      const submission = (this.submissions || []).find(s => s.id === row.id);
-      if (!submission) return;
-      // TODO: Implement file download logic for .zip/.tex after the application of moodle import submissions
     },
     submissions(){
         return this.$store.getters["table/submission/getAll"].map(submission => {
@@ -277,16 +282,20 @@ export default {
       return Math.round((processed / total) * 100);
     },
     currentRequestStartTime() {
+      return this.preprocess?.batchStartTime || null;
+    },
+    activeRequestStartTime() {
       const requests = this.preprocess?.requests || {};
-      const requestIds = Object.keys(requests);
-      if (requestIds.length === 0) return null;
-      const currentRequest = requests[requestIds[0]];
-      return currentRequest?.startTime || null;
+      const startTimes = Object.values(requests)
+        .map(r => r && r.startTime)
+        .filter(t => typeof t === 'number' && !Number.isNaN(t));
+      if (startTimes.length === 0) return null;
+      return Math.max(...startTimes);
     },
     elapsedTime() {
       const start = this.currentRequestStartTime;
       if (start) {
-        const diff = Math.floor((Date.now() - start) / 1000);
+        const diff = Math.max(0, Math.floor((this.now - start) / 1000));
         if (diff < 60) {
           return `${diff}s`;
         } else if (diff < 3600) {
@@ -307,6 +316,37 @@ export default {
       const remainingIds = new Set(Object.values(this.preprocess.requests).map(r => r.submissionId));
       return this.inputFiles.filter(s => remainingIds.has(s.id));
     },
+    estimatedTimeRemainingFormatted() {
+      const total = this.preprocess?.currentSubmissionsCount || 0;
+      const remaining = Object.keys(this.preprocess?.requests || {}).length;
+      const processed = total - remaining;
+      const batchStart = this.preprocess?.batchStartTime || null;
+      if (!batchStart || processed <= 0) {
+        return "Calculating...";
+      }
+      const elapsedMs = Math.max(0, this.now - batchStart);
+      const currentStart = this.activeRequestStartTime;
+      const timeOnCurrentMs = currentStart ? Math.max(0, this.now - currentStart) : 0;
+      const completedMs = Math.max(0, elapsedMs - timeOnCurrentMs);
+      const avgPerItemMs = processed > 0 ? (completedMs / processed) : 0;
+      let remainingMs = Math.max(0, Math.round(avgPerItemMs * remaining - timeOnCurrentMs));
+      const diff = Math.round(remainingMs / 1000);
+      if (diff < 1) {
+        return "Almost done...";
+      }
+      if (diff < 60) {
+        return `${diff}s`;
+      }
+      if (diff < 3600) {
+        const mins = Math.floor(diff / 60);
+        const secs = diff % 60;
+        return `${mins}m ${secs}s`;
+      }
+      const hours = Math.floor(diff / 3600);
+      const mins = Math.floor((diff % 3600) / 60);
+      const secs = diff % 60;
+      return `${hours}h ${mins}m ${secs}s`;
+    },
   },
   mounted() {
     if (this.isProcessingActive) {
@@ -316,15 +356,6 @@ export default {
   },
   beforeUnmount() {
     this.stopElapsedTimer();
-  },
-  watch: {
-    jsonConfig: {
-      handler() {
-        this.fetchConfigOptions();
-      },
-      immediate: true,
-      deep: true
-    }
   },
   methods: {
     async fetchConfigOptions() {
@@ -365,19 +396,6 @@ export default {
     close() {
       this.$refs.gradingStepper.close();
     },
-    buttons() {
-      return [
-        {
-          key: 'downloadFile',
-          label: 'Download File',
-          type: 'button',
-          options: { iconOnly: true},
-          title: 'Download File',
-          icon: 'download',
-          action: this.downloadFile,
-        },
-      ];
-    },
     onInputFilesChange(rows) {
       this.selectedInputRows = Array.isArray(rows) ? rows : [];
     },
@@ -406,11 +424,11 @@ export default {
       });
     },
     preprocessing() {
-      const unprocessedFiles = this.selectedInputRows.filter(row => !row.data_existing);
-      if (unprocessedFiles.length === 0) {
+      const filesToProcess = this.selectedInputRows;
+      if (filesToProcess.length === 0) {
         this.eventBus.emit("toast", {
           title: "No Files to Process",
-          message: "All selected files have already been processed.",
+          message: "Please select at least one file to process.",
           variant: "warning",
         });
         return;
@@ -422,15 +440,16 @@ export default {
         data: {
           skill: this.selectedSkill,
           config: this.selectedConfig,
-          inputFiles: unprocessedFiles.map(row => row.id)
+          inputFiles: filesToProcess.map(row => row.id)
         } 
       });
       this.close();
     },
     startElapsedTimer() {
       if (this.elapsedTimer) return;
+      this.now = Date.now();
       this.elapsedTimer = setInterval(() => {
-        this.$forceUpdate();
+        this.now = Date.now();
       }, 1000);
     },
     stopElapsedTimer() {
