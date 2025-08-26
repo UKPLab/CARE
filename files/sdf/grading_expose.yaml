@@ -69,6 +69,11 @@ input:
                           description:
                             type: string
                             description: The description of this scoring option
+        proportion_of_hallucinated_results:
+          type: float
+          description: The proportion of the criteria to be hallucinated. The hallucinated criteria will be selected randomly.
+          required: false
+          default: 0.0
   example:
     {
       "submission": {
@@ -107,7 +112,8 @@ input:
             ]
           }
         ]     
-      }
+      },
+      "proportion_of_hallucinated_results": 0.0
     }
 output:
   data:
@@ -128,6 +134,13 @@ output:
         possible_concerns:
           type: string
           description: The possible concerns of the given judgement
+        thinking:
+          type: string
+          description: The thinking of the criterion
+        hallucinated:
+          type: boolean
+          description: Whether the result is hallucinated
+          required: false
 
   example:
   {
@@ -136,7 +149,9 @@ output:
       "name": Language quality,
       "score": 1,
       "justification": Example justification,
-      "possible_concerns": Example possible concerns
+      "possible_concerns": Example possible concerns,
+      "thinking": Example thinking,
+      "hallucinated": false
     }
     ]
   }
