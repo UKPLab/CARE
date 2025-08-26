@@ -32,36 +32,56 @@
         <p class="text-muted mb-4">Choose a validation schema to verify the content of submitted ZIP files:</p>
         <div class="mb-3">
           <label class="form-label">Validation Schema</label>
-          <select
-            v-model="selectedValidatorId"
-            class="form-select"
-          >
-            <option value="0">Select a validation schema...</option>
-            <option
-              v-for="validator in validators"
-              :key="validator.id"
-              :value="validator.id"
+          <div class="d-flex gap-2">
+            <select
+              v-model="selectedValidatorId"
+              class="form-select"
+              :disabled="isLoadingValidationSchemas"
+              @change="handleValidatorChange"
             >
-              {{ validator.name }}
-            </option>
-          </select>
+              <option value="0">
+                {{ isLoadingValidationSchemas ? "Loading validation schemas..." : "Select a validation schema..." }}
+              </option>
+              <option
+                v-for="validator in validationSchemas"
+                :key="validator.id"
+                :value="validator.id"
+              >
+                {{ validator.name }}
+              </option>
+            </select>
+          </div>
+          <div
+            v-if="isLoadingValidationSchemas"
+            class="form-text text-muted"
+          >
+            <div
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+            >
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            Loading validation schemas...
+          </div>
         </div>
         <div class="alert alert-warning"><strong>Note:</strong> Submissions that don't match the selected schema will not be imported.</div>
         <div class="card bg-light">
           <div class="card-body">
             <h5 class="card-title">Validation Requirements</h5>
             <div
-              v-if="selectedValidatorId"
+              v-if="selectedValidatorData"
               class="validation-preview"
             >
               <div class="mb-3">
-                <p class="text-muted mb-2">{{ selectedValidatorData?.description }}</p>
+                <p class="text-muted mb-2">
+                  {{ selectedValidatorData.description }}
+                </p>
               </div>
               <div class="mb-3">
                 <h6 class="mb-2">Required Files:</h6>
                 <div class="d-flex flex-wrap gap-1">
                   <span
-                    v-for="file in selectedValidatorData?.files"
+                    v-for="file in selectedValidatorData.files"
                     :key="file"
                     class="badge bg-white text-dark border"
                   >
@@ -90,14 +110,26 @@
             <h5 class="card-title">Import Summary</h5>
             <ul class="list-unstyled mb-0">
               <li>• Assignments to import: {{ selectedAssignments.length }}</li>
-              <li>• Validation schema: {{ selectedValidatorData?.name || "None selected" }}</li>
+              <li>
+                • Validation schema:
+                {{ selectedValidatorData?.name || "None selected" }}
+              </li>
               <li>• Total submissions: {{ selectedAssignments.length }}</li>
+              <li v-if="selectedValidatorData">• Required files: {{ selectedValidatorData.files.join(", ") }}</li>
             </ul>
           </div>
         </div>
-        <div class="alert alert-info">This will create submissions in your database and validate ZIP file contents according to the selected schema.</div>
+        <div class="alert alert-info">
+          <strong>Validation Details:</strong><br />
+          <span v-if="selectedValidatorData">
+            This will validate ZIP file contents according to the "<strong>{{ selectedValidatorData.name }}</strong
+            >" schema. Submissions must contain all required files: {{ selectedValidatorData.files.join(", ") }}.
+          </span>
+          <span v-else> No validation schema selected. Submissions will be imported without validation. </span>
+        </div>
         <p>
-          Are you sure you want to import <strong>{{ selectedAssignments.length }}</strong> {{ message }}?
+          Are you sure you want to import
+          <strong>{{ selectedAssignments.length }}</strong> {{ message }}?
         </p>
       </div>
     </template>
@@ -112,8 +144,6 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import MoodleOptions from "@/plugins/moodle/MoodleOptions.vue";
-// TODO: To be removed later.
-import { mockAssignments, mockValidators } from "./mockData";
 
 /**
  * Modal for importing students' submission for a specific assignment from a Moodle course
@@ -122,14 +152,12 @@ import { mockAssignments, mockValidators } from "./mockData";
 export default {
   name: "ImportModal",
   components: { MoodleOptions, BasicTable, StepperModal },
-  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }],
+  subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, { table: "document" }],
   data() {
     return {
       steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Validate" }, { title: "Confirm" }, { title: "Result" }],
       moodleOptions: {},
       selectedValidatorId: 0,
-      // TODO: To be removed later.
-      validators: mockValidators || [],
       tableOptions: {
         striped: true,
         hover: true,
@@ -151,6 +179,9 @@ export default {
       selectedAssignments: [],
       importedAssignments: [],
       importResults: {},
+      validationSchemas: {}, // Cache for validation schemas
+      isLoadingValidationSchemas: false, // Loading state for validation schemas
+      selectedValidatorData: null,
     };
   },
   computed: {
@@ -158,11 +189,9 @@ export default {
       return [
         Object.values(this.moodleOptions).every((v) => v !== ""),
         this.selectedAssignments.length > 0,
+        // Validation step is required only if validation documents exist
         this.selectedValidatorId !== 0,
       ];
-    },
-    selectedValidatorData() {
-      return this.validators.find((v) => v.id === this.selectedValidatorId);
     },
     message() {
       const currentStep = this.$refs.importStepper?.currentStep ?? 0;
@@ -210,13 +239,39 @@ export default {
     open() {
       this.reset();
       this.$refs.importStepper.open();
+      this.loadValidationSchemas();
     },
     reset() {
       this.selectedAssignments = [];
       this.selectedValidatorId = 0;
       this.importResults = {};
+      this.validationSchemas = {};
+      this.isLoadingValidationSchemas = false;
       if (this.importedAssignments.length > 0) {
         this.importedAssignments = [];
+      }
+    },
+    async loadValidationSchemas() {
+      this.isLoadingValidationSchemas = true;
+      try {
+        this.$socket.emit("documentGetConfiguration", { type: "validation" }, (res) => {
+          if (res.success && res.data) {
+            // Convert the response to our validationSchemas format
+            this.validationSchemas = {};
+            res.data.forEach((doc) => {
+              this.validationSchemas[doc.id] = {
+                id: doc.id,
+                name: doc.config.name || doc.name,
+                description: doc.config.description,
+                files: doc.config.rules?.requiredFiles?.map((file) => file.name) || [],
+                schema: doc.config,
+              };
+            });
+          } 
+          this.isLoadingValidationSchemas = false;
+        });
+      } catch (error) {
+        this.isLoadingValidationSchemas = false;
       }
     },
     handleStepChange(step) {
@@ -228,8 +283,7 @@ export default {
           // this.$refs.importStepper.setWaiting(false);
           break;
         case 3:
-          // TODO: To be implemented later.
-          // Validator selection step
+          //NOTE: Validation schemas are already loaded when modal opens
           break;
         case 4:
           this.handleStepThree();
@@ -242,8 +296,7 @@ export default {
       this.$socket.emit("documentGetMoodleSubmissions", { options: this.moodleOptions }, (res) => {
         this.$refs.importStepper.setWaiting(false);
         if (res.success) {
-          // this.downloadedAssignments = res["data"];
-          this.downloadedAssignments = mockAssignments || [];
+          this.downloadedAssignments = res["data"];
         } else {
           this.$refs.importStepper.reset();
           this.eventBus.emit("toast", {
@@ -264,13 +317,13 @@ export default {
             files: s.files,
           })),
           options: this.moodleOptions,
-          // TODO: This validator Id will be a documentId.
-          validator: this.selectedValidatorId,
-          // progressId: this.$refs.importStepper.startProgress(),
+          validationDocumentId: this.selectedValidatorId,
+          progressId: this.$refs.importStepper.startProgress(),
         },
         (res) => {
-          // this.$refs.importStepper.stopProgress();
+          this.$refs.importStepper.stopProgress();
           if (res.success) {
+            console.log({ res });
             this.importedAssignments = res["data"];
             // Process import results for display
             this.processImportResults(res["results"] || {});
@@ -284,8 +337,11 @@ export default {
         }
       );
     },
-    processImportResults(results) {
+    processImportResults() {
       this.importResults = {};
+    },
+    handleValidatorChange() {
+      this.selectedValidatorData = this.validationSchemas[this.selectedValidatorId];
     },
   },
 };
