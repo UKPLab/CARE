@@ -282,3 +282,39 @@ export async function extractTextFromPDF(pdfDocument) {
     
     return fullText;
 }
+
+/**
+ * Fetches JSON documents from the documents table that match a specific key in their content.
+ * @param {string} key - The key to search for in the JSON documents.   
+ * @return {Promise<Array>} A promise that resolves to an array of document IDs and names.
+ */
+export async function fetchJsonWithKey(socket, docs, key) {
+    const documentIds = [];
+    for (const config of docs) {
+        await new Promise((resolve) => {
+          socket.emit("documentGet", { documentId: config.id }, (res) => {
+            if (res && res.data && res.data.file) {
+              let fileContent;
+              if (res.data.file instanceof ArrayBuffer) {
+                fileContent = new TextDecoder().decode(new Uint8Array(res.data.file));
+              } else {
+                fileContent = res.data.file.toString();
+              }
+
+              try {
+                const jsonContent = JSON.parse(fileContent);
+                if (jsonContent.type === key) {
+                  documentIds.push({ value: config.id, name: config.name });
+                }
+              } catch (parseError) {
+                console.error(`Error parsing JSON config for document ${config.id}:`, parseError);
+              }
+            }
+            
+            resolve();
+          });
+        });
+      }
+
+      return documentIds;
+}

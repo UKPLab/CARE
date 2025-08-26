@@ -105,6 +105,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import BasicTable from "@/basic/Table.vue";
+import { fetchJsonWithKey } from "@/assets/utils";
 
 export default {
   name: "GradingModal",
@@ -328,35 +329,10 @@ export default {
   },
   methods: {
     async fetchConfigOptions() {
-      console.log("jsonConfig", this.jsonConfig)
-      const docs = this.jsonConfig || [];
-      const options = [];
-      for (const config of docs) {
-        await new Promise((resolve) => {
-          this.$socket.emit("documentGet", { documentId: config.id }, (res) => {
-            console.log("Config check 2", res.data.file);
-            if (res && res.data && res.data.file) {
-              let fileContent;
-              if (res.data.file instanceof ArrayBuffer) {
-                fileContent = new TextDecoder().decode(new Uint8Array(res.data.file));
-              } else {
-                fileContent = res.data.file.toString();
-              }
-              try {
-                const jsonContent = JSON.parse(fileContent);
-                console.log("Parsed JSON config", jsonContent);
-                if (jsonContent.type === "assessment") {
-                  options.push({ value: config.id, name: config.name });
-                }
-              } catch (parseError) {
-                console.error(`Error parsing JSON config for document ${config.id}:`, parseError);
-              }
-            }
-            resolve();
-          });
-        });
+      if (!Array.isArray(this.jsonConfig) || this.jsonConfig.length === 0) {
+        return;
       }
-      this.configOptions = options;
+      this.configOptions = await fetchJsonWithKey(this.$socket, this.jsonConfig, "assessment") || [];
     },
     open() {
       this.selectedSkill = '';
