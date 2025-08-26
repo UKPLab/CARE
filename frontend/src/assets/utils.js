@@ -285,6 +285,8 @@ export async function extractTextFromPDF(pdfDocument) {
 
 /**
  * Fetches JSON documents from the documents table that match a specific key in their content.
+ * @param {Object} socket - The socket.io client instance for communication with the backend.
+ * @param {Array} docs - An array of document configurations with 'id' and 'name' properties.
  * @param {string} key - The key to search for in the JSON documents.   
  * @return {Promise<Array>} A promise that resolves to an array of document IDs and names.
  */
