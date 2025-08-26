@@ -175,15 +175,17 @@ module.exports = class BackgroundTaskService extends Service {
                         if (!backgroundTask.preprocess.cancelled && nlpResult) {
                             try {
                                 await Promise.all(
-                                    item.docIds.map(docId =>
-                                        documentSocket.saveData({
-                                            userId: documentSocket.userId,
-                                            documentId: docId,
-                                            studySessionId: null,
-                                            studyStepId: null,
-                                            key: `service_nlpGrading_${item.skill}`, // TODO: "key" for saving should be discussed, because it doesn't contain information about the skill
-                                            value: nlpResult
-                                        }, {})
+                                    item.docIds.flatMap(docId =>
+                                        Object.keys(nlpResult).map(key =>
+                                            documentSocket.saveData({
+                                                userId: documentSocket.userId,
+                                                documentId: docId,
+                                                studySessionId: null,
+                                                studyStepId: null,
+                                                key: `${item.skill}_nlpAssessment_${key}`,
+                                                value: nlpResult[key]
+                                            }, {})
+                                        )
                                     )
                                 );
                             } catch (saveErr) {
