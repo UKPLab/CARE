@@ -286,11 +286,12 @@ export async function extractTextFromPDF(pdfDocument) {
 /**
  * Fetches JSON options from the documents table that match a specific key in their content.
  * @param {Object} socket - The socket.io client instance for communication with the backend.
- * @param {Array} docs - An array of document configurations with 'id' and 'name' properties.
- * @param {string} key - The key to search for in the JSON documents.   
+ * @param {Array} docs - Array of documents (preferably JSON configs) from the documents table.
+ * @param {string} key - The key to look for in the JSON content.
+ * @param {string} value - The value that the key-value should match.  
  * @return {Promise<Array>} A promise that resolves to an array of document IDs and names.
  */
-export async function fetchJsonOptions(socket, docs, key) {
+export async function fetchJsonOptions(socket, docs, key, value) {
     const documentIds = [];
     for (const config of docs) {
         await new Promise((resolve) => {
@@ -305,7 +306,7 @@ export async function fetchJsonOptions(socket, docs, key) {
 
               try {
                 const jsonContent = JSON.parse(fileContent);
-                if (jsonContent.type === key) {
+                if (jsonContent[key] === value) {
                   documentIds.push({ value: config.id, name: config.name });
                 }
               } catch (parseError) {

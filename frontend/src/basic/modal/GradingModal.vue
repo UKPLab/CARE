@@ -332,7 +332,7 @@ export default {
       if (!Array.isArray(this.jsonConfig) || this.jsonConfig.length === 0) {
         return;
       }
-      this.configOptions = await fetchJsonOptions(this.$socket, this.jsonConfig, "assessment") || [];
+      this.configOptions = await fetchJsonOptions(this.$socket, this.jsonConfig, "type", "assessment") || [];
     },
     open() {
       this.selectedSkill = '';
