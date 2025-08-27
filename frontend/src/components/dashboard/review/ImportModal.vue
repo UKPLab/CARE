@@ -315,7 +315,6 @@ export default {
           // this.$refs.importStepper.setWaiting(false);
           break;
         case 3:
-          //NOTE: Validation schemas are already loaded when modal opens
           break;
         case 4:
           this.handleStepThree();
