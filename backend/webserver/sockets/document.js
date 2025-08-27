@@ -4,7 +4,6 @@ const Delta = require('quill-delta');
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {getTextPositions} = require("../../utils/text.js");
-const yauzl = require("yauzl");
 
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/validator.js");
@@ -70,6 +69,7 @@ class DocumentSocket extends Socket {
      * @param {string} data.name - The name of the document.
      * @param {Buffer} data.file - The binary content of the document.
      * @param {boolean} data.importAnnotations - indicates whether to import annotations from the PDF (optional).
+     * @param {boolean} data.submissionId - The submission that the document will belong to.
      * @param {number} [data.userId] - The ID of the user who owns the document (optional).
      * @param {number} [data.projectId] - The ID of the project the document belongs to (optional).
      * @param {boolean} [data.isUploaded] - Indicates if the document is uploaded by an admin (optional).
@@ -136,6 +136,7 @@ class DocumentSocket extends Socket {
                     userId: data.userId ?? this.userId,
                     uploadedByUserId: this.userId,
                     readyForReview: data.isUploaded ?? false,
+                    submissionId: data.submissionId
                 },
                 { transaction: options.transaction }
             );
@@ -164,6 +165,7 @@ class DocumentSocket extends Socket {
                 uploadedByUserId: this.userId,
                 readyForReview: data.isUploaded ?? false,
                 projectId: data.projectId,
+                submissionId: data.submissionId,
                 originalFilename: data.name,
             }, {transaction: options.transaction});
             target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
@@ -722,7 +724,6 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * TODO: Rewrite the parameters' description
      * Downloads multiple submission files from Moodle URLs, creating a local document record for each one.
      * Each file is processed in its own database transaction to ensure atomicity. Progress is reported
      * to the client via a socket event after each file is processed.
