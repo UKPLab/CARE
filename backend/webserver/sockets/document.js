@@ -739,7 +739,8 @@ class DocumentSocket extends Socket {
      * @throws {Error} - If the download fails, if the assignment ID is invalid, or if saving to server fails
      */
     async downloadMoodleSubmissions(data, options) {
-        const results = [];
+        const downloadedSubmissions = [];
+        const downloadedErrors = [];
         const submissions = data.submissions || [];
 
         for (const submission of submissions) {
@@ -763,13 +764,14 @@ class DocumentSocket extends Socket {
                         userId: submission.userId,
                         createdByUserId: this.userId,
                         extId: submission.submissionId,
+                        validationDocumentId: data.validationDocumentId,
                     },
                     { transaction }
                 );
 
                 const documentIds = [];
                 for (const file of tempFiles) {
-                    const document = await this.addDocument(
+                    const {doc} = await this.addDocument(
                         {
                             file: file.content,
                             name: file.fileName,
@@ -779,19 +781,16 @@ class DocumentSocket extends Socket {
                         },
                         { transaction }
                     );
-                    documentIds.push(document.id);
+                    documentIds.push(doc.id);
                 }
 
-                results.push({
+                downloadedSubmissions.push({
                     submissionId: submissionEntry.id,
                     documentIds,
-                    success: true,
-                    message: "Submission processed successfully",
                 });
             } catch (err) {
                 this.logger.error(err.message);
-
-                results.push({
+                downloadedErrors.push({
                     submissionId: submission.submissionId,
                     success: false,
                     message: err.message,
@@ -806,7 +805,7 @@ class DocumentSocket extends Socket {
             });
         }
 
-        return results;
+        return {downloadedSubmissions, downloadedErrors};
     }
 
     /**

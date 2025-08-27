@@ -135,7 +135,25 @@
     </template>
     <!-- Result Step -->
     <template #step-5>
-      <div class="result-container"></div>
+      <div class="result-container">
+        <div v-if="importResults && importResults.successCount != null">
+          Successfully imported <strong>{{ importResults.successCount }}</strong> submissions
+          <div
+            v-if="importResults.errors && importResults.errors.length > 0"
+            class="error-container"
+          >
+            Failed to import the following submissions:
+            <ul
+              v-for="(error, index) in importResults.errors"
+              :key="index"
+            >
+              <li>
+                Submission with the external Id <strong>{{ error.extId }}</strong> cannot be imported: {{ error.message }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </template>
   </StepperModal>
 </template>
@@ -170,10 +188,24 @@ export default {
           aggregate: (rows) => rows[0],
         },
       },
+      // TODO: Implement this filter later.
       tableColumns: [
+        {
+          name: "Duplicate",
+          key: "submissionId",
+          type: "badge",
+          typeOptions: {
+            keyMapping: { true: "Yes", default: "No" },
+          },
+          filter: [
+            { key: false, name: "New" },
+            { key: true, name: "Duplicate" },
+          ],
+        },
+        { name: "External ID", key: "submissionId" },
         { name: "First Name", key: "firstName" },
         { name: "Last Name", key: "lastName" },
-        { name: "Files", key: "fileNames" },
+        // { name: "Files", key: "fileNames" },
       ],
       downloadedAssignments: [],
       selectedAssignments: [],
@@ -267,7 +299,7 @@ export default {
                 schema: doc.config,
               };
             });
-          } 
+          }
           this.isLoadingValidationSchemas = false;
         });
       } catch (error) {
@@ -324,9 +356,10 @@ export default {
           this.$refs.importStepper.stopProgress();
           if (res.success) {
             console.log({ res });
-            this.importedAssignments = res["data"];
+            const { downloadedSubmissions = [], downloadedErrors = [] } = res["data"] || {};
+            this.importedAssignments = downloadedSubmissions;
             // Process import results for display
-            this.processImportResults(res["results"] || {});
+            this.processImportResults({ downloadedSubmissions, downloadedErrors });
           } else {
             this.eventBus.emit("toast", {
               title: "Failed to import submission from Moodle",
@@ -337,8 +370,11 @@ export default {
         }
       );
     },
-    processImportResults() {
-      this.importResults = {};
+    processImportResults({ downloadedSubmissions = [], downloadedErrors = [] } = {}) {
+      this.importResults = {
+        successCount: downloadedSubmissions.length,
+        errors: downloadedErrors.map((e) => ({ extId: e.submissionId, message: e.message })),
+      };
     },
     handleValidatorChange() {
       this.selectedValidatorData = this.validationSchemas[this.selectedValidatorId];
@@ -358,10 +394,6 @@ export default {
 .confirm-container,
 .result-container {
   height: 100%;
-  /* display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column; */
 }
 
 .validator-selection-container {
@@ -383,5 +415,14 @@ export default {
 .gap-1 > * {
   margin-right: 0.25rem;
   margin-bottom: 0.25rem;
+}
+
+.error-container {
+  margin: 0.25rem auto 0.5rem;
+  color: firebrick;
+
+  ul {
+    margin-bottom: 0.25rem;
+  }
 }
 </style>
