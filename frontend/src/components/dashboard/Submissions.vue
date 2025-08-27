@@ -23,7 +23,7 @@
         class="btn-success btn-sm ms-1"
         text="Preprocess Grading"
         title="Preprocess Grading"
-        @click="preprocessGrades" 
+        @click="preprocessGrades"
       />
     </template>
     <template #body>
@@ -40,9 +40,7 @@
   <ConfirmModal ref="deleteConf" />
   <ImportModal ref="importModal" />
   <PublishModal ref="publishModal" />
-  <GradingModal
-    ref="gradingModal"
-  />
+  <GradingModal ref="gradingModal" />
 </template>
 
 <script>
@@ -89,11 +87,12 @@ export default {
         pagination: 10,
       },
       tableColumns: [
-        {name: "Title", key: "name"},
-        {name: "First Name", key: "firstName"},
-        {name: "Last Name", key: "lastName"},
-        {name: "Created At", key: "createdAt"},
-        {name: "Type", key: "type"},
+        { name: "ID", key: "id" },
+        { name: "First Name", key: "firstName" },
+        { name: "Last Name", key: "lastName" },
+        { name: "Submission ID", key: "extId" },
+        { name: "Validation DocID", key: "validationDocumentId" },
+        { name: "Created At", key: "createdAt" },
       ],
       tableButtons: [
         {
@@ -108,7 +107,7 @@ export default {
           action: "accessDoc",
           stats: {
             documentId: "id",
-          }
+          },
         },
         {
           icon: "trash",
@@ -122,9 +121,9 @@ export default {
           action: "deleteDoc",
           stats: {
             documentId: "id",
-          }
+          },
         },
-      ]
+      ],
     };
   },
   computed: {
@@ -133,26 +132,15 @@ export default {
       return this.$store.getters["table/submission/getAll"];
     },
     submissionTable() {
-      /* Build one row per submission: pick the main PDF document (if any) to
-       * drive "title", "type" and link/hash.  If none found we still list the
-       * submission but leave document-specific columns blank.
-       */
       return this.submissions.map((s) => {
-        const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === s.id);
-
-        // heuristic: choose first PDF as main document
-        const mainDoc = docs.find((d) => d.type === 0) || docs[0] || {};
-
         const user = this.$store.getters["table/user/get"](s.userId);
-
         return {
           id: s.id,
-          name: mainDoc.name || "—",              // Title column
+          extId: s.extId,
           firstName: user ? user.firstName : "Unknown",
           lastName: user ? user.lastName : "Unknown",
           createdAt: new Date(s.createdAt).toLocaleDateString(),
-          type: mainDoc.type === 0 ? "PDF" : mainDoc.type === 1 ? "HTML" : mainDoc.type === 4 ? "ZIP" : "—",
-          hash: mainDoc.hash || null,              // for accessDoc()
+          validationDocumentId: s.validationDocumentId ?? "-",
         };
       });
     },
@@ -168,13 +156,13 @@ export default {
           break;
       }
     },
+    // TODO: To be implemented
+    downloadSubmission() {},
     async deleteDoc(row) {
       const studies = this.$store.getters["table/study/getFiltered"]((e) => e.documentId === row.id);
       let warning;
       if (studies && studies.length > 0) {
-        warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${studies.length} ${
-          studies.length !== 1 ? "studies" : "study"
-        }
+        warning = ` There ${studies.length !== 1 ? "are" : "is"} currently ${studies.length} ${studies.length !== 1 ? "studies" : "study"}
          running on this document. Deleting it will delete the ${studies.length !== 1 ? "studies" : "study"}!`;
       } else {
         warning = "";
