@@ -19,6 +19,7 @@ module.exports = {
             },
             documentId: {
                 type: Sequelize.INTEGER,
+                primaryKey: true,
                 references: {
                     model: "document",
                     key: "id"
@@ -26,6 +27,7 @@ module.exports = {
             },
             studySessionId: {
                 type: Sequelize.INTEGER,
+                primaryKey: true,
                 references: {
                     model: "study_session",
                     key: "id"
@@ -34,6 +36,7 @@ module.exports = {
             },
             studyStepId: {
                 type: Sequelize.INTEGER,
+                primaryKey: true,
                 references: {
                     model: "study_step",
                     key: "id"
