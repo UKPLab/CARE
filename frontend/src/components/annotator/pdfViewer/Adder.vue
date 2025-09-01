@@ -69,10 +69,11 @@ export default {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
     },
     assignableTags() {
-      if (this.defaultTagSet) {
+      if (this.study.tagSetId) {
+        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.study.tagSetId && !e.deleted);
+      }
+      else {
         return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.defaultTagSet && !e.deleted);
-      } else {
-        return []
       }
 
     },

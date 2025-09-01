@@ -223,20 +223,16 @@ export default {
     openModal() {
       this.waiting = false;
       this.progress = false;
-      // Instead of fully hiding parent (which resets its state), just visually suspend it
       this.suspendParentModal();
-      console.log("Modal shown:", this.name, "parent suspended", this.parentModal ? this.parentModal.name : null);
       this.modal.show();
     },
     close() {
       this.modal.hide();
       this.resumeParentModal();
-      console.log("Modal hidden:", this.name, "parent resumed", this.parentModal ? this.parentModal.name : null);
     },
     hide() {
       this.modal.hide();
       this.resumeParentModal();
-      console.log("Modal hidden:", this.name, "parent resumed", this.parentModal ? this.parentModal.name : null);
     },
     showParentModal(){
       if (this.parentModal) {

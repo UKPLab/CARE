@@ -306,6 +306,15 @@ export default {
     }
   },
   computed: {
+    studySession() {
+      return this.$store.getters["table/study_session/get"](this.studySessionId);
+    },
+    study() {
+      if (!this.studySession) {
+        return null;
+      }
+      return this.$store.getters["table/study/get"](this.studySession.studyId);
+    },
     commentState() {
       return this.$store.getters['table/comment_state/getFiltered'](
         a => a.commentId === this.commentId && a.userId === this.userId
@@ -315,9 +324,14 @@ export default {
       return this.$store.getters["auth/getUserId"];
     },
     tagSetTags() {
-      const defaultTag = parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
-      const currentlySelectedTagId = this.annotation ? this.annotation.tagId : null; //this is important because the current tag on the Id could be added by another user
-      return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag || t.id === currentlySelectedTagId) || [];
+      if ( this.study && this.study.tagSetId) {
+        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.study.tagSetId && !e.deleted);
+      }
+      else{
+        const defaultTag = parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
+        const currentlySelectedTagId = this.annotation ? this.annotation.tagId : null; //this is important because the current tag on the Id could be added by another user
+        return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag || t.id === currentlySelectedTagId) || [];
+      }
     },
     settingResponse() {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
