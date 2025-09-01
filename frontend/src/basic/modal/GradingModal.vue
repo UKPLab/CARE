@@ -77,7 +77,10 @@
           </div>
 
           <div class="mt-2 text-muted">
-            Current request running since <strong>{{ elapsedTime }}</strong>
+            The total running time is <strong>{{ elapsedTime }}</strong>
+          </div>
+          <div class="mt-2 text-muted">
+            Current request time: <strong>{{ currentRequestElapsedTime }}</strong>
           </div>
           <div class="mt-2 text-muted">
             Estimated time remaining: <strong>{{ estimatedTimeRemainingFormatted }}</strong>
@@ -292,24 +295,17 @@ export default {
       if (startTimes.length === 0) return null;
       return Math.max(...startTimes);
     },
+    /**
+     * Time elapsed for the currently active request, formatted as a human-readable string.
+     * @returns {string}
+     */
+    currentRequestElapsedTime() {
+      const start = this.activeRequestStartTime;
+      return this.formatElapsedSince(start);
+    },
     elapsedTime() {
       const start = this.currentRequestStartTime;
-      if (start) {
-        const diff = Math.max(0, Math.floor((this.now - start) / 1000));
-        if (diff < 60) {
-          return `${diff}s`;
-        } else if (diff < 3600) {
-          const mins = Math.floor(diff / 60);
-          const secs = diff % 60;
-          return `${mins}m ${secs}s`;
-        } else {
-          const hours = Math.floor(diff / 3600);
-          const mins = Math.floor((diff % 3600) / 60);
-          const secs = diff % 60;
-          return `${hours}h ${mins}m ${secs}s`;
-        }
-      }
-      return "0s";
+      return this.formatElapsedSince(start);
     },
     remainingSubmissions() {
       if (!this.isProcessingActive) return [];
@@ -334,18 +330,7 @@ export default {
       if (diff < 1) {
         return "Almost done...";
       }
-      if (diff < 60) {
-        return `${diff}s`;
-      }
-      if (diff < 3600) {
-        const mins = Math.floor(diff / 60);
-        const secs = diff % 60;
-        return `${mins}m ${secs}s`;
-      }
-      const hours = Math.floor(diff / 3600);
-      const mins = Math.floor((diff % 3600) / 60);
-      const secs = diff % 60;
-      return `${hours}h ${mins}m ${secs}s`;
+      return this.formatDurationSeconds(diff);
     },
   },
   mounted() {
@@ -358,6 +343,38 @@ export default {
     this.stopElapsedTimer();
   },
   methods: {
+    /**
+     * Format a duration in seconds into a human-readable string like
+     * "45s", "2m 10s", or "1h 3m 5s".
+     * @param {number} totalSeconds
+     * @returns {string}
+     */
+    formatDurationSeconds(totalSeconds) {
+      const seconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+      if (seconds < 60) {
+        return `${seconds}s`;
+      }
+      if (seconds < 3600) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}m ${secs}s`;
+      }
+      const hours = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      return `${hours}h ${mins}m ${secs}s`;
+    },
+    /**
+     * Format the elapsed time since a given start timestamp (in ms) using
+     * the component's reactive `now` clock. Returns "0s" if start is falsy.
+     * @param {number|null} startMs
+     * @returns {string}
+     */
+    formatElapsedSince(startMs) {
+      if (!startMs) return "0s";
+      const diffSeconds = Math.max(0, Math.floor((this.now - startMs) / 1000));
+      return this.formatDurationSeconds(diffSeconds);
+    },
     async fetchConfigOptions() {
       console.log("jsonConfig", this.jsonConfig)
       const docs = this.jsonConfig || [];
