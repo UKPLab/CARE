@@ -162,31 +162,11 @@ function start(sequelize, logger, options = {}) {
 			} catch (eL) {
 				logger.error('pg_locks query failed: ' + eL.message);
 			}
-                
-			// // Third query: pg_stat_statements performance stats (as provided)
-			// let topStatements = [];
-			// try {
-            // const [stmtRows] = await sequelize.query(`
-            //     SELECT substring(query, 1, 100) AS short_query,
-            //         round(total_time::numeric, 2) AS total_time,
-            //         calls,
-            //         rows,
-            //         round(total_time::numeric / NULLIF(calls,0), 2) AS avg_time,
-            //         round((100 * total_time / NULLIF(sum(total_time::numeric) OVER (),0))::numeric, 2) AS percentage_cpu
-            //     FROM pg_stat_statements
-            //     ORDER BY avg_time DESC
-            //     LIMIT 20;`);
-			// topStatements = stmtRows || [];
-			// } catch (e2) {
-			// 	logger.warn('pg_stat_statements query failed: ' + e2.message);
-			// }
 
 			logger.info('pg_stat_activity snapshot', {
 				pg_stat_activity: {
 					counts,
 					oldestActive: oldestRows || [],
-					// topStatements,
-					//intervalMs,
 					dbStats,
 					locks,
 					collectedAt: new Date().toISOString()
