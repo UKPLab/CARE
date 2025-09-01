@@ -18,22 +18,11 @@
               class="rounded border border-1 shadow-sm"
               style="margin:auto"
           />
+
         </div>
-        
         <Sidebar
-            v-show="!sidebarDisabled && !showAssessment"
-            ref="sidebar" 
-            class="sidebar-container" 
-            :show="isSidebarVisible"
-        />
-        <Assessment
-            v-show="!sidebarDisabled && showAssessment"
-            ref="assessment" 
-            class="sidebar-container" 
-            :show="isSidebarVisible"
-            :saved-state="assessmentState"
-            :readonly="readOnly"
-            @state-changed="onAssessmentStateChanged"
+            v-if="!sidebarDisabled"
+            ref="sidebar" class="sidebar-container" :show="isSidebarVisible"
         />
       </div>
     </div>
@@ -58,6 +47,7 @@
         </TopBarButton>
       </li>
       <li class="nav-item">
+
         <TopBarButton
             v-if="studySessionId && studySessionId !== 0 ? active && nlpEnabled : nlpEnabled"
             :title="nlpActive ? 'Deactivate NLP support' : 'Activate NLP support'"
@@ -68,18 +58,6 @@
               :color="(!nlpActive) ?'#777777':'#097969'"
               :size="18"
               icon-name="robot"
-          />
-        </TopBarButton>
-        <TopBarButton
-            v-show="(studySessionId && studySessionId !== 0 ? active : true) && hasAssessmentConfig"
-            :title="showAssessment ? 'Switch to Annotator Mode' : 'Switch to Assessment Mode'"
-            class="btn rounded-circle"
-            @click="toggleMode"
-        >
-          <LoadIcon
-              :color="showAssessment ? '#097969' : '#777777'"
-              :size="18"
-              icon-name="clipboard-check"
           />
         </TopBarButton>
         <TopBarButton
@@ -100,16 +78,13 @@
 
     <!-- If download before study closing disabled and we are in a study session, no download allowed -->
     <Teleport to="#topBarExtendMenuItems">
-      <li>
-        <a
-            :class="annotations.length + comments.length > 0 && !downloading ? '' : 'disabled'"
-            class="dropdown-item"
-            href="#"
-            @click="downloadAnnotations"
-        >
-          Download Annotations
-        </a>
-      </li>
+      <li><a
+          :class="annotations.length + comments.length > 0 && !downloading && (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null)? '' : 'disabled'"
+          class="dropdown-item"
+          href="#"
+          @click="downloadAnnotations"
+      >Download
+        Annotations</a></li>
     </Teleport>
 
     <Teleport to="#topbarCustomPlaceholder">
@@ -118,8 +93,7 @@
             v-if="review"
             class="btn btn-outline-success me-2"
             @click="$refs.reviewSubmit.open()"
-        >
-          Submit Review
+        >Submit Review
         </TopBarButton>
         <TopBarButton
             v-if="approve"
@@ -148,19 +122,25 @@
 </template>
 
 <script>
+/** Annotator Component
+ *
+ * This parent component provides the annotation view, which
+ * currently consists of all elements of the annotator.
+ *
+ * @author Dennis Zyska, Marina Sakharova
+ */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
-import Assessment from "./Assessment.vue";
 import Loader from "@/basic/Loading.vue";
 import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
 import debounce from 'lodash.debounce';
 import LoadIcon from "@/basic/Icon.vue";
-import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import ExpandMenu from "@/basic/navigation/ExpandMenu.vue";
 import {mapMutations} from "vuex";
 import {computed} from "vue";
+import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs} from "@/assets/utils";
 
@@ -168,13 +148,12 @@ export default {
   name: "AnnotatorView",
   subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation'],
   components: {
-    PDFViewer,
-    Sidebar,
-    Assessment,
-    Loader,
     LoadIcon,
-    TopBarButton,
-    ExpandMenu
+    PDFViewer,
+    ExpandMenu,
+    Sidebar,
+    Loader,
+    TopBarButton
   },
   provide() {
     return {
@@ -197,11 +176,6 @@ export default {
       type: Array,
       required: false,
       default: () => [],
-    },
-    readOnly: {
-      type: Boolean,
-      required: false,
-      default: false
     }
   },
   props: {
@@ -242,8 +216,6 @@ export default {
       downloading: false,
       isSidebarVisible: true,
       sidebarIconHighlight: false,
-      showAssessment: false,
-      assessmentState: {},
       logScroll: debounce(function () {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
@@ -364,142 +336,177 @@ export default {
         return comments;
       }
     },
-    hasAssessmentConfig() {
-      // Check if there's a configuration file in the study step configuration
-      const studyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
-      return studyStep && studyStep.configuration && studyStep.configuration.configFile;
-    },
   },
   watch: {
     // React to external changes to the saved scroll value (e.g., from store updates)
-    async savedScroll(newVal) {
+    async savedScroll(newVal, oldVal) {
       if (newVal) {
         await this.scrollToSavedValue(newVal.value, 1000);
       }
     },
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.loadDocumentData();
+        this.$socket.emit("documentGetData", {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId
+        });
       }
     },
     studyStepId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.loadDocumentData();
+        this.$socket.emit("documentGetData", {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId
+        });
       }
-    },
-    annotations: {
-      handler(newAnnotations, oldAnnotations) {
-        if (this.showAssessment && newAnnotations.length > (oldAnnotations?.length || 0)) {
-          this.showAssessment = false;
-        }
-      },
-      deep: true
-    },
-    comments: {
-      handler(newComments, oldComments) {
-        if (this.showAssessment && newComments.length > (oldComments?.length || 0)) {
-          this.showAssessment = false;
-        }
-      },
-      deep: true
-    },
-    hasAssessmentConfig: {
-      handler(newHasConfig) {
-        // Hide assessment sidebar if configuration file is removed
-        if (!newHasConfig && this.showAssessment) {
-          this.showAssessment = false;
-        }
-      },
-      immediate: true
-    },
-    readOnly: {
-      handler(newReadOnly) {
-        // Show assessment view automatically in readonly mode if there's assessment config
-        if (newReadOnly && this.hasAssessmentConfig) {
-          this.showAssessment = true;
-        }
-      },
-      immediate: true
     }
   },
   mounted() {
-    this.setupEventListeners();
+    this.eventBus.on('pdfScroll', (annotationId) => {
+      this.scrollTo(annotationId);
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "pdfScroll",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            annotationId: annotationId
+          }
+        });
+      }
+    });
+
+    this.handleResize();
+    window.addEventListener('resize', this.handleResize);
+
+    // get tagsets
+    /*this.$socket.emit("tagSetGetAll", {}, (result) => {
+      if (!result.success) {
+        this.eventBus.emit('toast', {
+          title: "Tag Set Error",
+          message: result.message,
+          variant: "danger"
+        });
+      }
+    });*/
+    /*this.$socket.emit("tagGetAll", {}, (result) => {
+      if (!result.success) {
+        this.eventBus.emit('toast', {
+          title: "Tag Error",
+          message: result.message,
+          variant: "danger"
+        });
+      }
+    });*/
+
+    // init component
     this.load();
+
+    // scrolling
     this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
     document.addEventListener('copy', this.onCopy);
-    
-    // Show assessment view automatically in readonly mode if there's assessment config
-    if (this.readOnly && this.hasAssessmentConfig) {
-      this.showAssessment = true;
-    }
+    // Scroll the viewer container to the saved scroll position
+    this.$nextTick(async () => {
+      if (this.savedScroll) {
+        await this.scrollToSavedValue(this.savedScroll.value, 300);
+      }
+    });
+
   },
   beforeUnmount() {
+    // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
     document.removeEventListener('copy', this.onCopy);
+    window.removeEventListener('resize', this.handleResize);
+    
+     const currentPage = this.getCurrentPageNumber();
+     const payload = JSON.stringify({ page: currentPage, value: this.$refs.viewer.scrollTop });
+     console.log(payload);
+     if (!this.savedScroll) {
+      this.$socket.emit("appDataUpdate", {
+        table: "user_environment",
+        data: {
+          userId: this.userId,
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+          key: "scroll",
+          value: payload
+        }
+      });
+    } else {
+      this.$socket.emit("appDataUpdate", {
+        table: "user_environment",
+        data: {
+          id: this.savedScroll.id,
+          value: payload
+        }
+      });
+    }
   },
   methods: {
+    async scrollToSavedValue(value, delayMs) {
+      const data = JSON.parse(value);
+      const container = this.$refs.viewer;
+      await this.delay(delayMs);
+      if (!this.isPdfPageLoaded(parseInt(data.page))) {
+        scrollToPage(container, data.page, { align: 'start', offset: 0 });
+        await this.delay(300);
+      }
+      await scrollElement(container, parseFloat(data.value));
+    },
+    getCurrentPageNumber() {
+      //Todo get current page in a better way
+      const container = this.$refs.viewer;
+      if (!container) return 1;
+      const pages = container.querySelectorAll('.scrolling-page');
+      if (!pages || pages.length === 0) return 1;
+      let bestIndex = 0;
+      let bestDist = Infinity;
+      const currentTop = container.scrollTop;
+      pages.forEach((el, idx) => {
+        const relTop = offsetRelativeTo(el, container);
+        const dist = Math.abs(relTop - currentTop);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIndex = idx;
+        }
+      });
+      return bestIndex + 1; // pages are 1-based
+    },
+     isPdfPageLoaded(pageNumber) {
+        const canvas = document.getElementById('pdf-canvas-' + pageNumber);
+        const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
+        const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
+        const loaded = (visible && hasDimensions);
+        return loaded;
+    },
+    handleResize() {
+      if (window.innerWidth <= 900) {
+        this.isSidebarVisible = false;
+        this.sidebarIconHighlight = true;
+        setTimeout(() => {
+          this.sidebarIconHighlight = false;
+        }, 1000);
+        this.logHideSidebar();
+      }
+      else {
+        this.isSidebarVisible = true;
+      }
+      
+      // Log resize event with debouncing
+      this.logResize(window.innerWidth, this.isSidebarVisible);
+    },
     ...mapMutations({
       setSetting: "settings/set",
     }),
-    
-    setupEventListeners() {
-      this.eventBus.on('pdfScroll', (annotationId) => {
-        this.scrollTo(annotationId);
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "pdfScroll",
-            data: {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              annotationId: annotationId
-            }
-          });
-        }
-      });
-    },
-    
-    loadDocumentData() {
-      this.$socket.emit("documentGetData", {
-        documentId: this.documentId,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId
-      });
-    },
-    
-    load() {
-      this.loadDocumentData();
-      this.subscribeToDocument();
-      this.loadNlpSupport();
-    },
-    
-    subscribeToDocument() {
-      this.$socket.emit("documentSubscribe", {documentId: this.documentId}, (res) => {
-        if (!res.success) {
-          this.eventBus.emit("toast", {
-            title: "Document subscribe error",
-            message: res.message,
-            variant: "danger",
-          });
-        }
-      });
-    },
-    
-    loadNlpSupport() {
-      if (this.nlpEnabled) {
-        this.$socket.emit("serviceCommand", {
-          service: "NLPService",
-          command: "skillGetConfig",
-          data: {name: "sentiment_classification"}
-        });
-      }
-    },
-    
     decisionSubmit(decision) {
       this.$refs.decisionSubmit.open(decision)
     },
-    
     toggleNlp() {
       const newNlpActive = !this.nlpActive
       this.setSetting({
@@ -511,39 +518,12 @@ export default {
         value: newNlpActive
       })
     },
-    
     toggleSidebar() {
       this.isSidebarVisible = !this.isSidebarVisible;
     },
-    
-    toggleMode() {
-      if (this.showAssessment && this.$refs.assessment) {
-        this.assessmentState = this.$refs.assessment.saveState();
-      }
-      
-      this.showAssessment = !this.showAssessment;
-      
-      if (!this.showAssessment) {
-        this.isSidebarVisible = true;
-      }
-      
-      if (this.showAssessment && Object.keys(this.assessmentState).length === 0) {
-        this.$nextTick(() => {
-          if (this.$refs.assessment && !this.$refs.assessment.assessmentOutput) {
-            this.$refs.assessment.refreshAssessment();
-          }
-        });
-      }
-    },
-    
-    onAssessmentStateChanged(newState) {
-      this.assessmentState = newState;
-    },
-    
     scrollActivity() {
       this.logScroll();
     },
-    
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['table/annotation/get'](annotationId);
       const scrollContainer = this.$refs.viewer || document.getElementById('viewerContainer');
@@ -568,7 +548,10 @@ export default {
         await scrollElement(scrollContainer, offset);
 
         if (inPlaceholder) {
-          const anchor = await this._waitForAnnotationToBeAnchored(annotation, 3000);
+          const anchor = await this._waitForAnnotationToBeAnchored(
+              annotation,
+              3000
+          );
           if (!anchor) {
             return;
           }
@@ -593,55 +576,86 @@ export default {
         await scrollElement(scrollContainer, offset);
       }
     },
-    
     anchorIsInPlaceholder(anchor) {
       const highlight = anchor.highlights?.[0];
       return highlight && isInPlaceholder(highlight);
     },
-    
     _anchorOffset(anchor) {
       if (!anchor.highlights) {
+        // This anchor was not resolved to a location in the document.
         return null;
       }
       const highlight = anchor.highlights[0];
       return offsetRelativeTo(highlight, document.querySelector('#viewerContainer'));
     },
-    
     async _waitForAnnotationToBeAnchored(annotation, maxWait) {
       const start = Date.now();
       let anchor;
       do {
+        // nb. Re-anchoring might result in a different anchor object for the
+        // same annotation.
         anchor = this.anchors.find(a => a.annotation === annotation);
         if (!anchor || this.anchorIsInPlaceholder(anchor)) {
           anchor = null;
+
+          // If no anchor was found, wait a bit longer and check again to see if
+          // re-anchoring completed.
           await this.delay(20);
         }
       } while (!anchor && Date.now() - start < maxWait);
       return anchor ?? null;
     },
-    
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
-    
-    async leave() {
-      if (this.showAssessment && this.$refs.assessment) {
-        return await this.$refs.assessment.leave();
-      } else if (this.$refs.sidebar) {
-        return await this.$refs.sidebar.leave();
+    load() {
+      this.$socket.emit("documentGetData", {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId
+      });
+
+      // Join Room for document updates
+      this.$socket.emit("documentSubscribe", {documentId: this.documentId}, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: "Document subscribe error",
+            message: res.message,
+            variant: "danger",
+          });
+        }
+      });
+
+      // check for available nlp support (for now hard-coded sentiment analysis)
+      if (this.nlpEnabled) {
+        this.$socket.emit("serviceCommand", {
+          service: "NLPService",
+          command: "skillGetConfig",
+          data: {name: "sentiment_classification"}
+        });
       }
     },
-    
+    async leave() {
+      return await this.$refs.sidebar.leave();
+    },
     downloadAnnotations() {
+
       const attributesToDelete = [
-        "draft", "anonymous", "createdAt", "updatedAt", "deleted", 
-        "deletedAt", "documentId", "studySessionId", "studyStepId", "userId"
+        "draft",
+        "anonymous",
+        "createdAt",
+        "updatedAt",
+        "deleted",
+        "deletedAt",
+        "documentId",
+        "studySessionId",
+        "studyStepId",
+        "userId"
       ];
-      
       const annotations = this.annotations.map(a => {
         return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
       });
-      
+      // change tagId to tagName
       annotations.forEach(a => {
         if (a.tagId) {
           const tag = this.$store.getters["table/tag/get"](a.tagId);
@@ -655,10 +669,11 @@ export default {
       });
 
       const content = mergeAnnotationsAndComments(annotations, comments);
+
       const filename = `annotations_${this.documentId}_${Date.now()}.json`;
       downloadObjectsAs(content, filename, "json");
+
     },
-    
     onCopy() {
       const selection = document.getSelection();
       if (selection && selection.toString().trim() !== '') {
@@ -675,12 +690,13 @@ export default {
           });
         }
       }
-    }
+    },
   }
 }
 </script>
 
 <style scoped>
+
 #sidebarContainer {
   position: relative;
   padding: 0;
@@ -692,12 +708,6 @@ IconBoostrap[disabled] {
 
 #sidebarContainer::-webkit-scrollbar {
   display: none;
-}
-
-@media screen and (max-width: 900px) {
-  #sidebarContainer {
-    display: none;
-  }
 }
 
 .sidebar-highlight {

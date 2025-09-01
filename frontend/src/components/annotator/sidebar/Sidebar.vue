@@ -15,54 +15,137 @@
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
 
-        <EditsSection
-          :edits="edits"
-          :show-edits="showEdits"
-          @edit-click="handleEditClick"
-        />
+        <!-- Edits Section: Only visible when there are edits and no annotations -->
+        <div class="edits-section" v-if="showEdits">
+          <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
+            <h4 class="group-header">{{ dateCategory }}</h4>
 
-        <AnnotationsList
-          ref="annotationsList"
-          :show-annotations="showAnnotations"
-          :read-only="readOnly"
-          :document-comments="documentComments"
-          @create-document-comment="createDocumentComment"
-          @scroll-to-comment="sidebarScrollTo"
-        />
+            <div v-for="(group, exactDate) in dateGroups" :key="exactDate">
+              <h5 class="date-header">{{ exactDate }}</h5>
+
+              <ul class="list-group">
+                <li v-for="edit in group" :key="edit.id" class="list-group-item">
+                  <SideCard>
+                    <template #header>
+                      {{ edit.timeLabel }} - Created by User {{ edit.userId }}
+                    </template>
+                    <template #body>
+                      <p>{{ edit.text }}</p>
+                    </template>
+                    <template #footer>
+                      <button class="btn btn-primary btn-sm" @click="handleEditClick(edit)">
+                        Show
+                      </button>
+                    </template>
+                  </SideCard>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Annotations Section: Always visible unless edits exist -->
+        <ul id="anno-list" class="list-group" v-if="showAnnotations">
+          <li v-if="documentComments.length === 0">
+            <p class="text-center">No elements</p>
+          </li>
+          <li
+            v-for="comment in documentComments"
+            :id="'comment-' + comment.id"
+            :key="'documentComment-' + comment.id"
+            class="list-group-i"
+            @mouseleave="unhover(comment.annotationId)"
+            @mouseover="hover(comment.annotationId)"
+          >
+            <AnnoCard
+              :id="comment.id"
+              :ref="'annocard' + comment.id"
+              :comment-id="comment.id"
+              @focus="sidebarScrollTo"
+            />
+          </li>
+
+          <li v-if="!readOnly" id="addPageNote">
+            <button
+              class="btn btn-light"
+              type="button"
+              @click="createDocumentComment"
+            >
+              <svg
+                class="bi bi-plus-lg"
+                fill="currentColor"
+                height="16"
+                viewBox="0 0 16 16"
+                width="16"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"
+                  fill-rule="evenodd"
+                />
+              </svg>
+              Document Note
+            </button>
+          </li>
+        </ul>
       </div>
     </div>
+    <ConfirmModal ref="leavePageConf"/>
   </div>
 </template>
 
 <script>
-import EditsSection from "./EditsSection.vue";
-import AnnotationsList from "./AnnotationsList.vue";
+import SideCard from "./card/Card.vue";
+import AnnoCard from "./card/AnnoCard.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import {scrollElement} from "@/assets/anchoring/scroll";
 
+/** Sidebar component of the Annotator
+ *
+ * Here the annotations are listed and can be modified, also includes scrolling feature.
+ *
+ * @author Nils Dycke, Dennis Zyska, Marina Sakharova
+ */
 export default {
   name: "AnnotationSidebar",
   subscribeTable: ["comment", "annotation"],
-  components: {EditsSection, AnnotationsList},
-  inject: ['documentId', 'studySessionId', 'studyStepId', 'acceptStats'],
-  props: {
-    show: {
-      type: Boolean,
-      default: false
-    },
-    sidebarWidth: {
+  components: {SideCard, AnnoCard, ConfirmModal},
+  inject: {
+    documentId: {
       type: Number,
-      default: 300
+      required: true,
+    },
+    studySessionId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
+    studyStepId: {
+      type: Number,
+      required: false,
+      default: null,
     },
     readOnly: {
       type: Boolean,
-      default: false
+      required: false,
+      default: false,
+    },
+    acceptStats: {
+      default: () => false
+    },
+  },
+  props: {
+    show: {
+      type: Boolean,
+      required: false,
+      default: true,
     },
     edits: {
-      type: Object,
-      default: () => null
-    }
+      type: Array,
+      required: true,
+      default: () => []
+    },
   },
-  emits: ['add-edit'],
   data() {
     return {
       width: 400,
@@ -79,7 +162,15 @@ export default {
       return this.edits && Object.keys(this.edits).length > 0 && this.documentComments.length === 0;
     },
     showAnnotations() {
-      return !this.showEdits;
+      return !this.showEdits; // Show annotations only if `showEdits` is false
+    },
+    openSessionIds() {
+      return this.$store.getters["table/study_session/getAll"].filter(
+        session => {
+          const study = this.$store.getters["table/study/get"](session.studyId);
+          return study && study.closed == null;
+        }
+      ).map(session => session.id);
     },
     study() {
       if (this.studySession) {
@@ -110,6 +201,7 @@ export default {
     documentComments() {
       return this.$store.getters["table/comment/getFiltered"](comm => comm.documentId === this.documentId && comm.parentCommentId === null)
         .filter(comment => {
+          // if the studySessionId is set, we are in study session mode
           if (this.studySessionId) {
             return comment.studySessionId === this.studySessionId && comment.studyStepId === this.studyStepId;
           } else if (this.studySessionIds) {
@@ -169,7 +261,9 @@ export default {
   },
   watch: {
     hasDrafts(newVal) {
+      // If opened from navigation
       if (this.show) return;
+      // If sidebar is fixed
       if (newVal) {
         this.isFixed = true;
         this.width = this.minWidth;
@@ -186,57 +280,76 @@ export default {
     }
   },
   mounted() {
-    this.initializeSidebar();
-    this.setupEventListeners();
-    this.initDragController();
-    this.initHoverController();
+    this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
+    this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
+    this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
+    this.originalWidth = this.width;
+    this.eventBus.on('sidebarScroll', (annotationId) => {
+      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
+        .find(comm => comm.parentCommentId === null);
+      // in case the comment might not be loaded yet
+      if (!comment) {
+        return;
+      }
+
+      this.sidebarScrollTo(comment.id);
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "sidebarScroll",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            annotationId: annotationId
+          }
+        });
+      }
+    })
+    this.initDragController()
+    this.initHoverController()
   },
   methods: {
-    initializeSidebar() {
-      this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
-      this.maxWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
-      this.width = this.$store.getters["settings/getValue"]("sidebar.width") || this.minWidth;
-      this.originalWidth = this.width;
-    },
-    
-    setupEventListeners() {
-      this.eventBus.on('sidebarScroll', (annotationId) => {
-        const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
-          .find(comm => comm.parentCommentId === null);
-        
-        if (!comment) {
-          return;
-        }
-
-        this.sidebarScrollTo(comment.id);
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "sidebarScroll",
-            data: {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              annotationId: annotationId
-            }
-          });
-        }
-      });
-    },
-    
     handleEditClick(edit) {
       this.$emit("add-edit", edit.text);
     },
-    
+    hover(annotationId) {
+      if (annotationId) {
+        const annotation = this.$store.getters['table/annotation/get'](annotationId);
+        if (annotation && "anchors" in annotation && annotation.anchors != null) {
+          annotation.anchors
+            .filter(anchor => "highlights" in anchor)
+            .forEach(anchor => anchor.highlights.map((highlight) => {
+              if ("svgHighlight" in highlight) {
+                highlight.svgHighlight.classList.add("is-focused");
+              }
+              highlight.classList.add("highlight-focus");
+            }))
+        }
+      }
+    },
+    unhover(annotationId) {
+      if (annotationId) {
+        const annotation = this.$store.getters['table/annotation/get'](annotationId);
+        if (annotation && "anchors" in annotation && annotation.anchors != null) {
+          annotation.anchors
+            .filter(anchor => "highlights" in anchor)
+            .forEach(anchor => anchor.highlights.map((highlight) => {
+              if ("svgHighlight" in highlight) {
+                highlight.svgHighlight.classList.remove("is-focused");
+              }
+              highlight.classList.remove("highlight-focus");
+            }))
+        }
+      }
+    },
     async sidebarScrollTo(commentId) {
       const scrollContainer = this.$refs.sidepane;
       await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
 
-      const annoCardRef = this.$refs.annotationsList?.$refs["annocard" + commentId];
-      if (annoCardRef && annoCardRef[0]) {
-        annoCardRef[0].putFocus();
+      if (this.$refs["annocard" + commentId]) {
+        this.$refs["annocard" + commentId][0].putFocus();
       }
     },
-    
     createDocumentComment() {
       this.$socket.emit('commentUpdate', {
         documentId: this.documentId,
@@ -255,11 +368,28 @@ export default {
         }
       });
     },
-    
     async leave() {
-      return true;
+      if (this.documentComments.filter(c => c.draft).length > 0) {
+        return new Promise((resolve, reject) => {
+          this.$refs.leavePageConf.open(
+            "Unsaved Annotations",
+            "Are you sure you want to leave the annotator? There are unsaved annotations, which will be lost.",
+            null,
+            function (val) {
+              return resolve(val);
+            });
+        });
+      } else {
+        return true;
+      }
     },
-    
+    /**
+     * Initializes the drag controller for the sidebar
+     *
+     * When the mouse is pressed on the hot zone, the sidebar can be resized
+     *
+     * @author Zheyu Zhang
+     */
     initDragController() {
       const dom = document.querySelector('#hotZone');
       const that = this;
@@ -267,8 +397,10 @@ export default {
       let startX, startWidth;
       const handleStart = (e) => {
         that.isDragging = true;
+
         e.preventDefault();
         document.body.style.userSelect = 'none';
+
         startWidth = this.width;
         startX = e.clientX;
         document.addEventListener('mousemove', handleMove);
@@ -286,16 +418,24 @@ export default {
 
       const handleEnd = () => {
         that.isDragging = false;
+
         document.removeEventListener('mousemove', handleMove);
         document.removeEventListener('mouseup', handleEnd);
         document.body.style.userSelect = '';
+
         this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
         this.originalWidth = this.width;
       }
 
       dom.addEventListener('mousedown', handleStart);
     },
-    
+    /**
+     * Initializes the hover controller for the sidebar
+     *
+     * When the mouse enters the hover zone, the sidebar will be fixed
+     *
+     * @author Zheyu Zhang
+     */
     initHoverController() {
       const hoverHotZoneDom = document.querySelector('#hoverHotZone');
       this.sidebarContainerDom = document.querySelector('#sidebarContainer');
@@ -322,7 +462,11 @@ export default {
         clearTimeout(hoverTimer);
       });
     },
-    
+    /**
+     * Registers the sidebar blur event
+     *
+     * @author Zheyu Zhang
+     */
     registerSidebarBlurEvent() {
       const handleSidebarClick = (e) => {
         e.stopPropagation();
@@ -365,27 +509,7 @@ export default {
   background-color: #e6e6e6;
   width: 100%;
   height: 100%;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-#sidepane::-webkit-scrollbar {
-  width: 6px;
-}
-
-#sidepane::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-#sidepane::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-#sidepane::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  overflow-y: scroll;
 }
 
 #anno-list .list-group-i {
@@ -398,10 +522,6 @@ export default {
 
 #anno-list {
   list-style-type: none;
-  flex: 1;
-  overflow-y: auto;
-  padding: 0;
-  margin: 0;
 }
 
 #addPageNote {
@@ -471,5 +591,29 @@ export default {
   right: 0px;
   z-index: 999;
   display: none;
+}
+
+.edits-section {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 10px;
+}
+
+.section-header {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+#edit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-group-item {
+  border: none;
+  background-color: transparent;
+  margin-top: 8px;
 }
 </style>
