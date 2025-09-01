@@ -93,6 +93,8 @@ This is especially important when working with the database, as we use an intern
 
     Refer to `backend/db/models/document_edit.js` and `backend/db/migrations/20240411140804-create-document_edit.js` for detailed schema definitions.
 
+.. _delta-files:
+
 Delta Files on the Hard Disk 
 ----------------------------
 
@@ -108,22 +110,26 @@ For more details, see the Quill Delta documentation: https://quilljs.com/docs/de
 **Purpose of Delta Files on Disk**
 
 1. **Efficient Storage**:
+
    - Delta files store the current document state in a merged delta format.
    This minimizes storage requirements and ensures that only the necessary data is saved.
 
 2. **Optimized Data Transfer**:
+
    - By storing the current state as a merged delta file, only the required changes need to be sent to the frontend.
    This reduces the amount of data transferred over the network and ensures quick updates.
 
 **How Deltas are Used in the Editor and Document Socket**
 
 1. **In the Editor**:
+
    - The editor component captures text changes and converts them into delta objects.
    - These delta objects represent the current state of the document and are used to update the frontend without needing to resend the entire document content.
 
    **Code Reference**: `frontend/src/components/editor/Editor.vue`
 
 2. **In the Document Socket**:
+
    - When a document is edited, the editor sends the changes as deltas to the backend via WebSocket.
    - The backend processes these deltas, merges them with the existing document content, and saves the updated state as a delta file on disk. 
    This ensures that the most recent state of the document is efficiently stored and can be quickly retrieved.
