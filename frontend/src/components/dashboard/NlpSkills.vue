@@ -98,6 +98,7 @@ export default {
           },
           title: "Configure",
           action: "configure",
+          // todo which stats params to pass
         }
       ];
     },

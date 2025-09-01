@@ -240,7 +240,7 @@ export default {
             {key: "showResumeButton", value: true},
           ],
           title: "Resume session",
-          action: "resumeSession",
+          action: "resumeStudySession",
         },
         {
           icon: "box-arrow-in-right",
@@ -255,7 +255,10 @@ export default {
             {key: "showStartButton", value: true}
           ],
           title: "Start session",
-          action: "startSession",
+          action: "startStudySession",
+          stats: {
+            studySessionId: "id",
+          }
         },
         {
           icon: "x-octagon",
@@ -271,6 +274,9 @@ export default {
           ],
           title: "Finish session",
           action: "finishSession",
+          stats: {
+            studySessionId: "id",
+          }
         }
       ]
     },

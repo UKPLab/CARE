@@ -4,6 +4,7 @@
     :size="size"
     :color="color"
     :name="iconName"
+    :cursor="cursor"
   />
 </template>
 
@@ -31,6 +32,11 @@ export default {
       required: false,
     },
     color: {
+      type: String,
+      default: null,
+      required: false
+    },
+    cursor: {
       type: String,
       default: null,
       required: false
