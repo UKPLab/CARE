@@ -5,18 +5,37 @@ const workflows = [
     name: "Peer Review Workflow (Assessment)",
     description: "Peer Review Workflow with Assessment: Review a PDF document, write free text, and select configuration.",
     steps: [
-      { 
-        stepType: 1, 
-        allowBackward: false, 
+      {
+        stepType: 1,
+        allowBackward: false,
         workflowStepDocument: null,
         configuration: {
-          services: [
+          fields: [
             {
-              name: "configSelect",
-              type: "configSelect",
+              key: "configFile",
+              label: "Configuration File (Type 3):",
+              type: "select",
               required: true,
+              options: {
+                table: "document",
+                name: "name",
+                value: "id",
+                filter: {
+                  type: 3,
+                  hideInFrontend: false
+                }
+              },
+              help: "Select the configuration file for this workflow step."
+            },
+            {
+              key: "forcedAssessment",
+              label: "Forced Assessment",
+              type: "switch",
+              required: true,
+              default: false
             }
-          ]
+          ],
+          placeholders: false
         }
       },
       { 
@@ -35,27 +54,54 @@ const workflows = [
         allowBackward: false, 
         workflowStepDocument: null,
         configuration: {
+          fields: [
+            {
+              key: "configFile",
+              label: "Configuration File (Type 3):",
+              type: "select",
+              required: true,
+              options: {
+                table: "document",
+                name: "name",
+                value: "id",
+                filter: {
+                  type: 3,
+                  hideInFrontend: false
+                }
+              },
+              help: "Select the configuration file for this workflow step."
+            },
+            {
+              key: "forcedAssessment",
+              label: "Forced Assessment",
+              type: "switch",
+              required: true,
+              default: false
+            }
+          ],
           services: [
             {
               name: "nlpAssessment",
-              type: "nlpAssessment",
+              type: "nlpRequest",
               required: true,
             }
-          ]
+          ],
+          placeholders: false
         }
       },
       { 
         stepType: 2, 
         allowBackward: true, 
-        workflowStepDocument: 1,
+        workflowStepDocument: null,
         configuration: {
           services: [
             {
               name: "textualFeedback",
-              type: "textualFeedback",
+              type: "nlpRequest",
               required: true,
             }
-          ]
+          ],
+          placeholders: false
         }
       },
     ],

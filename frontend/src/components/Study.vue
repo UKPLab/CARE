@@ -79,7 +79,6 @@
     class="study-container"
   >
     <Annotator
-      ref="annotator"
       v-if="currentStep.stepType === 1 && (studyTrajectory.includes(currentStep.id) || readOnly)"
       :document-id="currentStep.documentId"
       :study-step-id="currentStep.id"
@@ -101,7 +100,6 @@
       @close="handleModalClose"
       @update:data="studyData[studySteps.findIndex(step => step.id === currentStep.id) + 1] = $event"
     />
-    
   </div>
 </template>
 
@@ -122,7 +120,6 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import { computed } from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
-
 import { nextTick } from "vue";
 
 export default {
@@ -160,7 +157,6 @@ export default {
       timerInterval: null,
       localStudyStepId: 0,
       studyData: [], // Data from all the study steps
-      
     };
   },
   computed: {
@@ -194,7 +190,6 @@ export default {
         // Find the next step by looking for a step where `studyStepPrevious` matches `currentStudyStep.id`
         return this.studySteps.find((step) => step.studyStepPrevious === this.currentStudyStep.id);
       }
-      return null;
     },
     lastStep() {
       const previousStepIds = this.studySteps.map((step) => step.studyStepPrevious).filter((id) => id !== null); // Excluding null to avoid the first step
@@ -250,7 +245,6 @@ export default {
       if (this.studySession && this.studySession.studyStepId) {
         return this.studySession.studyStepId;
       }
-      return null;
     },
     studyClosed() {
       if (this.study) {
@@ -275,8 +269,15 @@ export default {
       }
       return false;
     },
-    
-    
+    async populateStudyData() {
+      await nextTick();
+      if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
+        this.studyData = this.studySteps.reduce((acc, step, index) => {
+          acc[index + 1] = {};
+          return acc;
+        }, {});
+      }
+    },
   },
   watch: {
     studySession() {
@@ -296,9 +297,10 @@ export default {
     studyHash() {
       this.getStudyData();
     },
-    studySteps(newSteps) {
+    async studySteps(newSteps) {
       if (newSteps.length > 0) {
-        this.populateStudyData();
+        await nextTick();
+        this.populateStudyData;
       }
     },
   },
@@ -306,7 +308,7 @@ export default {
     this.studySessionId = this.initStudySessionId;
     this.getStudyData();
     await nextTick();
-    this.populateStudyData();
+    this.populateStudyData;
   },
   sockets: {
     studyError: function (data) {
@@ -321,15 +323,7 @@ export default {
       }
     },
   },
-    methods: {
-    populateStudyData() {
-      if (this.studySteps.length > 0 && Object.keys(this.studyData).length === 0) {
-        this.studyData = this.studySteps.reduce((acc, step, index) => {
-          acc[index + 1] = {};
-          return acc;
-        }, {});
-      }
-    },
+  methods: {
     getStudyData() {
       if (this.studyHash) {
         this.$socket.emit(
@@ -418,53 +412,31 @@ export default {
         }
       }
     },
-         async updateStep(step) {
-       // Save assessment data if we're in assessment mode
-       if (this.currentStep.stepType === 1 && this.$refs.annotator && this.$refs.annotator.$refs.assessment) {
-         try {
-          // Enforce forced assessment rule if enabled in the assessment component
-          if (typeof this.$refs.annotator.$refs.assessment.canProceed === 'function') {
-            const canProceed = await this.$refs.annotator.$refs.assessment.canProceed();
-            if (!canProceed) {
+    updateStep(step) {
+      if (this.readOnlyComputed) {
+        this.localStudyStepId = step;
+      } else {
+        this.$socket.emit(
+          "appDataUpdate",
+          {
+            table: "study_session",
+            data: {
+              id: this.studySessionId,
+              studyStepId: step,
+            },
+          },
+          (result) => {
+            if (!result.success) {
               this.eventBus.emit("toast", {
-                title: "Complete Assessment",
-                message: "Please save all criteria before proceeding.",
-                variant: "warning",
+                title: "Study Step update failed",
+                message: result.message,
+                variant: "danger",
               });
-              return; // Block navigation
             }
           }
-           await this.$refs.annotator.$refs.assessment.saveAndProceed();
-         } catch (error) {
-           console.error("Failed to save assessment data:", error);
-         }
-       }
-
-       if (this.readOnlyComputed) {
-         this.localStudyStepId = step;
-       } else {
-         this.$socket.emit(
-           "appDataUpdate",
-           {
-             table: "study_session",
-             data: {
-               id: this.studySessionId,
-               studyStepId: step,
-             },
-           },
-           (result) => {
-             if (!result.success) {
-               this.eventBus.emit("toast", {
-                 title: "Study Step update failed",
-                 message: result.message,
-                 variant: "danger",
-               });
-             }
-           }
-         );
-       }
-     },
-    
+        );
+      }
+    },
   },
 };
 </script>

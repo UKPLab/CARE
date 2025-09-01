@@ -22,7 +22,7 @@
                     :model-value="getFieldValue(index, field.key)"
                     :data-table="true"
                     :parent-value="choice"
-                    :options="getFieldOptions(field, choice)"
+                    :options="{ options: field.options }"
                     :placeholder="field.label"
                     class="flex-grow-1"
                     style="min-width: 200px; max-width: 800px"
@@ -62,7 +62,7 @@
 import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
-import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
+import { defineAsyncComponent } from "vue";
 
 
 /**
@@ -72,7 +72,7 @@ import ConfigurationModal from "@/basic/modal/ConfigurationModal.vue";
  */
 export default {
   name: "FormChoice",
-  components: { FormElement, FormDefault, FormSelect, ConfigurationModal },
+  components: { FormElement, FormDefault, FormSelect, ConfigurationModal: defineAsyncComponent(() => import("@/basic/modal/ConfigurationModal.vue")) },
   inject: {
     formData: {
       default: () => null,
@@ -104,24 +104,6 @@ export default {
       const { workflowId } = this.formData;
       return this.$store.getters["table/workflow_step/getAll"].filter((step) => step.workflowId === workflowId);
     },
-    hasConfigServices() {
-      if (!this.workflowSteps || this.workflowSteps.length === 0) {
-        return false;
-      }
-      
-      // Check if any workflow step has config services
-      return this.workflowSteps.some(step => {
-        if (step.configuration && step.configuration.services) {
-          return step.configuration.services.some(service => 
-            service.type === "configSelect" || service.type === "nlpAssessment" || service.type === "textualFeedback"
-          );
-        }
-        return false;
-      });
-    },
-    selectedProjectId() {
-      return parseInt(this.$store.getters["settings/getValue"]("projects.default"), 10);
-    },
     // TODO: Simplify this
     choices() {
       if (this.options.options.choices) {
@@ -147,24 +129,6 @@ export default {
           return true; 
         });
 
-        // For config services, ensure Step 2 (Editor) is included for workflows with nlpAssessment or textualFeedback service
-        if (this.hasConfigServices) {
-          const step2WorkflowStep = this.workflowSteps.find(step => step.stepType === 2);
-          const hasConfigService = step2WorkflowStep && step2WorkflowStep.configuration && 
-            step2WorkflowStep.configuration.services && 
-            step2WorkflowStep.configuration.services.some(service => 
-              service.type === "nlpAssessment" || service.type === "textualFeedback"
-            );
-          
-          if (hasConfigService && !validChoices.find(choice => choice.id === step2WorkflowStep.id)) {
-            validChoices.push({
-              ...step2WorkflowStep,
-              stepNumber: 2,
-              hasConfiguration: true
-            });
-          }
-        }
-
         // Sort IDs in ascending order and calculate step numbers directly
         let stepCounter = 1;
         let previousId = null;
@@ -178,26 +142,10 @@ export default {
             const stepNumber = stepCounter;
             stepCounter += 1; 
             previousId = item.id; 
-            
-            // Determine hasConfiguration based on service types and step
-            let hasConfiguration = false;
-            if (this.hasConfigServices) {
-              // Check if this step has config services
-              const currentStep = this.workflowSteps.find(step => step.id === item.id);
-              if (currentStep && currentStep.configuration && currentStep.configuration.services) {
-                hasConfiguration = currentStep.configuration.services.some(service => 
-                  service.type === "configSelect" || service.type === "nlpAssessment" || service.type === "textualFeedback"
-                );
-              }
-            } else {
-              // Standard workflows: check if configuration exists and has content
-              hasConfiguration = !!item.configuration && Object.keys(item.configuration).length > 0;
-            }
-            
             return {
               ...item,
               stepNumber, 
-              hasConfiguration,
+              hasConfiguration: !!item.configuration && Object.keys(item.configuration).length > 0,
             };
           });
       }
@@ -307,31 +255,9 @@ export default {
       }
     },
     isConfigurationIncomplete(configData) {
-      // Check if configData has services
+      // If the configData includes services object and it should have placeholders object
       if (Object.keys(configData).includes("services")) {
-        if (Object.keys(configData).includes("configFile")) {
-          // Extended workflow Step 1 (Annotator): needs configFile + services
-          const services = configData.services || [];
-          const configFile = configData.configFile;
-          
-          if (!configFile) {
-            return true;
-          }
-          
-          const hasIncompleteServices = services.some(service => !service.skill || service.skill === "");
-          return hasIncompleteServices;
-        } else {
-          if (Object.keys(configData).includes("placeholders")) {
-            // Standard workflow: needs placeholders
-            const hasPlaceholders = Object.keys(configData).includes("placeholders");
-            return !hasPlaceholders;
-          } else {
-            // Extended workflow Step 2 (Editor): only needs services
-            const services = configData.services || [];
-            const hasIncompleteServices = services.some(service => !service.skill || service.skill === "");
-            return hasIncompleteServices;
-          }
-        }
+        return !Object.keys(configData).includes("placeholders");
       }
       return false;
     },
@@ -343,85 +269,6 @@ export default {
         }
         return false;
       });
-    },
-    getFieldOptions(field, choice) {
-      // Filter documents based on step number and field type
-      if (field.key === 'documentId') {
-        let filteredDocs = [];
-        
-        if (choice.stepNumber === 1) {
-          // Step 1: Check workflow type to determine filtering
-          const workflow = this.$store.getters["table/workflow/get"](this.workflowSteps[0]?.workflowId);
-          const isRuhrUniWorkflow = workflow?.name === "Ruhr-Uni Bochum Project" || workflow?.name === "Ruhr-Uni Bochum Project (Control)";
-          
-          if (isRuhrUniWorkflow) {
-            // Ruhr-Uni projects: Step 1 is Editor, filter HTML files (type 1)
-            filteredDocs = this.$store.getters["table/document/getFiltered"](doc => 
-              doc.type === 1 && !doc.hideInFrontend && doc.projectId === this.selectedProjectId
-            );
-          } else {
-            // Other workflows: Step 1 is Annotator, filter PDF files (type 0)
-            filteredDocs = this.$store.getters["table/document/getFiltered"](doc => 
-              doc.type === 0 && !doc.hideInFrontend && doc.projectId === this.selectedProjectId
-            );
-          }
-          
-          return {
-            options: [
-              { value: null, name: "New Empty Document" },
-              ...filteredDocs.map(doc => ({
-                value: doc.id,
-                name: doc.name,
-              }))
-            ]
-          };
-        } else if (choice.stepNumber === 2 || choice.stepNumber === 4) {
-          // Check if this is a textualFeedback service workflow
-          const workflow = this.$store.getters["table/workflow/get"](this.workflowSteps[0]?.workflowId);
-          const isTextualFeedbackWorkflow = workflow?.name === "Peer Review Workflow (Assessment with AI)";
-          
-          let docType;
-          if (choice.stepNumber === 2 && isTextualFeedbackWorkflow) {
-            // Step 2 with textualFeedback service: Filter only HTML files (type 1)
-            docType = 1;
-          } else {
-            // Step 2 and 4 (other cases): Filter only modal files (type 2)
-            docType = 2;
-          }
-          
-          filteredDocs = this.$store.getters["table/document/getFiltered"](doc => 
-            doc.type === docType && !doc.hideInFrontend && doc.projectId === this.selectedProjectId
-          );
-          
-          return {
-            options: [
-              { value: null, name: choice.stepNumber === 2 && isTextualFeedbackWorkflow ? "New Empty Document" : "Select Modal File..." },
-              ...filteredDocs.map(doc => ({
-                value: doc.id,
-                name: doc.name,
-              }))
-            ]
-          };
-        } else {
-          // For other steps, use default filtering
-          filteredDocs = this.$store.getters["table/document/getFiltered"](doc => 
-            !doc.hideInFrontend && doc.projectId === this.selectedProjectId
-          );
-          
-          return {
-            options: [
-              { value: null, name: "New Empty Document" },
-              ...filteredDocs.map(doc => ({
-                value: doc.id,
-                name: doc.name,
-              }))
-            ]
-          };
-        }
-      }
-      
-      // Default options for all other cases
-      return { options: field.options };
     },
     getConfigurationStatus() {
       return {
