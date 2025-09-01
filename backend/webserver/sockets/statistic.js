@@ -21,35 +21,7 @@ class StatisticSocket extends Socket {
         this.statsFlushing = false;
         // Start with a safe default; load real value asynchronously
         this.statsBatchSize = null;
-        this._loadBatchSize()
-            .then(size => {
-                if (size) {
-                    this.statsBatchSize = size;
-                }
-            })
-            .catch(e => {
-                this.logger && this.logger.warn("Failed to load statistic.batch.size setting: " + e.message);
-            });
     }
-
-    /**
-     * Load the batch size from the settings or use the default value.
-     * @private
-     * @returns {Promise<number>} - The batch size
-     */
-    async _loadBatchSize() {
-        try {
-            const setting = await this.models['setting'].findOne({ where: { key: 'statistic.batch.size' }, raw: true });
-            if (!setting) {
-                this.logger.error("Setting 'statistic.batch.size' not found, using default batch size: 50 (you need to run make db)");
-                return 50;
-            }
-            return parseInt(setting.value, 10);
-        } catch (err) {
-            this.logger.error("Couldn't fetch batch size due to error: " + err.message);
-        }
-    }
-
 
     /**
      * Send statistics to the user
@@ -159,29 +131,8 @@ class StatisticSocket extends Socket {
         }
     }
 
-    /**
-     * Get a user's statistics
-     *
-     * @param {Object} data - The data object containing the userId
-     * @param {Number} data.userId - The user's ID
-     * @param {Object} options - not used
-     *
-     * @returns {Promise<void>} - The statistics data
-     */
-    async getStatsByUser(data, options) {
-        try {
-            await this.sendStatsByUser(data.userId);
-        } catch (e) {
-            this.socket.emit("statsData", {
-                success: false,
-                userId: data.userId,
-                message: "Failed to retrieve stats for users"
-            });
-            this.logger.error("Can't load statistics due to error " + e.toString());
-        }
-    }
-
-    init() {
+    async init() {
+        this.statsBatchSize = parseInt(await this.models['setting'].get("statistics.batch.size"), 10)
         this.createSocket("statsGet", this.getStats, {}, false);
         this.createSocket("stats", this.addStats, {}, false);
         this.createSocket("statsGetByUser", this.sendStatsByUser, {}, false);
