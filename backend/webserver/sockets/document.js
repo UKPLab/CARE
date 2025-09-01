@@ -634,13 +634,14 @@ async editDocument(data, options) {
     const appliedEdits = savedEdits.map(se => ({
         ...se,
         applied: true,
+        sender: this.socket.id
     }));
     if (studySessionId !== null) {
         this.logger.info(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
         return;
     }
 
-    this.emit("document_editRefresh", appliedEdits);
+    this.emitDoc(documentId, "document_editRefresh", appliedEdits);
 }
 
     /**

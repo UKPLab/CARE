@@ -2,7 +2,7 @@
 
 const settings = [{
     key: "statistics.batch.size",
-    value: "10",
+    value: "100",
     type: "number",
     description: "Batch size for buffering statistics events before flushing to DB (requires server restart)"
 }];
