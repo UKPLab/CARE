@@ -1,17 +1,17 @@
 const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
-const database = require("../../db/index.js");
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
-const {Op} = require("sequelize");
 const {getTextPositions} = require("../../utils/text.js");
 const {compileSchema, validateZip, validateZipWithSchema} = require("../../utils/validator.js");
 // const { associateFilesForSubmission } = require("../../utils/fileAssociator.js");
 const {v4: uuidv4} = require("uuid");
 
+const yauzl = require("yauzl");
 
 const {dbToDelta} = require("editor-delta-conversion");
+const Validator = require("../../utils/validator.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -25,6 +25,11 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  * @class DocumentSocket
  */
 class DocumentSocket extends Socket {
+
+    constructor(socket, server, models) {
+        super(socket, server, models);
+        this.validator = new Validator(this.server, this.models);
+    }
 
     /**
      * Check if user has rights to read the document data
@@ -86,7 +91,7 @@ class DocumentSocket extends Socket {
         }
 
         const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
-        if (fileType !== ".pdf" && fileType !== ".delta" && fileType !== ".json") {
+        if (![".pdf", ".delta", ".json", ".zip"].includes(fileType)) {
             throw new Error("Invalid file type");
         }
 
@@ -127,6 +132,20 @@ class DocumentSocket extends Socket {
             };
 
             await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
+        } else if (fileType === ".zip") {
+            doc = await this.models["document"].add(
+                {
+                    type: docTypes.DOC_TYPE_ZIP,
+                    name: data.name.replace(/.zip$/, ""),
+                    userId: data.userId ?? this.userId,
+                    uploadedByUserId: this.userId,
+                    readyForReview: data.isUploaded ?? false,
+                },
+                { transaction: options.transaction }
+            );
+
+            target = path.join(UPLOAD_PATH, `${doc.hash}.zip`);
+            fs.writeFileSync(target, data.file);
         } else if (fileType === ".json") {
             // Handle JSON configuration files
             doc = await this.models["document"].add(
@@ -707,63 +726,80 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * TODO: Rewrite the parameters' description
      * Downloads multiple submission files from Moodle URLs, creating a local document record for each one.
      * Each file is processed in its own database transaction to ensure atomicity. Progress is reported
      * to the client via a socket event after each file is processed.
      *
-     * @param {Object} data The data required for the download operation.
-     * @param {Array<Object>} data.files An array of file objects to be downloaded.
-     * @param {string} data.files.fileUrl The direct download URL for the Moodle file.
-     * @param {string} data.files.fileName The desired name for the saved document.
-     * @param {number} data.files.userId The ID of the user associated with the submission.
-     * @param {Object} data.options The configuration options (e.g., API key, URL) passed to the Moodle RPC service.
-     * @param {string} data.progressId The unique ID used for reporting progress back to the frontend.
-     * @param {Object} options Additional configuration parameters (currently unused).
-     * @returns {Promise<number[]>} A promise that resolves with an array of the newly created document IDs.
+     * @author Linyin Huang, Yiwei Wang
+     * @param {Object} data - The input data from the frontend
+     * @param {Array<Object>} data.submissions - The submissions from Moodle
+     * @param {Object} data.options - The configuration options (e.g., API key, URL) passed to the Moodle RPC service
+     * @param {string} data.progressId - The unique ID used for reporting progress back to the frontend.
+     * @param {number} data.validationDocumentId - The document ID to retrieve validation schema
+     * @param {Object} options - Additional configuration parameters
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<Array<T>>} - The results of the processed submissions
+     * @throws {Error} - If the download fails, if the assignment ID is invalid, or if saving to server fails
      */
     async downloadMoodleSubmissions(data, options) {
         const results = [];
         const submissions = data.submissions || [];
+
         for (const submission of submissions) {
             const transaction = options.transaction;
+            let tempFiles = [];
+
             try {
-                // 1. Create an entry in the submission table
-                const submissionEntry = await this.models["submission"].add({
-                    userId: submission.userId, 
-                    createdByUserId: this.userId,
-                    extId: submission.submissionId, 
-                }, { transaction });
+                // 1. Download files to temporary location
+                tempFiles = await this.validator.downloadFilesToTemp(submission.files, data.options);
 
-                // 2. Download and save each file as a document
-                const documentIds = [];
-                for (const file of (submission.files || [])) {
-                    // Download file from Moodle
-                    const files = await this.server.rpcs["MoodleRPC"].downloadSubmissionsFromUrl({
-                        fileUrls: [file.fileUrl],
-                        options: data.options,
-                    });
-                    // Save as document in DB
-                    const document = await this.addDocument({
-                        file: files[0],
-                        name: file.fileName,
-                        userId: submission.userId,
-                        isUploaded: true,
-                        submissionId: submissionEntry.id,
-                    }, { transaction });
-                    documentIds.push(document.id);
-                }
+                // 2. Validate files
+                const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationDocumentId);
 
-                // 3. Run validation
-                const validationResult = await this.validateSubmissionFiles(documentIds);
                 if (!validationResult.success) {
                     throw new Error(validationResult.message || "Validation failed");
                 }
 
-                results.push({ submissionId: submissionEntry.id, documentIds, success: true });
-                await transaction.commit();
+                // 3. Only if validation passes, create submission and save documents
+                const submissionEntry = await this.models["submission"].add(
+                    {
+                        userId: submission.userId,
+                        createdByUserId: this.userId,
+                        extId: submission.submissionId,
+                    },
+                    { transaction }
+                );
+
+                const documentIds = [];
+                for (const file of tempFiles) {
+                    const document = await this.addDocument(
+                        {
+                            file: file.content,
+                            name: file.fileName,
+                            userId: submission.userId,
+                            isUploaded: true,
+                            submissionId: submissionEntry.id,
+                        },
+                        { transaction }
+                    );
+                    documentIds.push(document.id);
+                }
+
+                results.push({
+                    submissionId: submissionEntry.id,
+                    documentIds,
+                    success: true,
+                    message: "Submission processed successfully",
+                });
             } catch (err) {
                 this.logger.error(err.message);
-                await transaction.rollback();
+
+                results.push({
+                    submissionId: submission.submissionId,
+                    success: false,
+                    message: err.message,
+                });
             }
 
             // update frontend progress
@@ -776,47 +812,6 @@ class DocumentSocket extends Socket {
 
         return results;
     }
-
-    // TODO: Implement validation logic here
-    async validateSubmissionFiles(documentIds) {
-        return { success: true };
-    }
-
-    /**
-     * Validate ZIP content using current database schema or provided schema
-     * @param {Buffer} zipBuffer - The ZIP file buffer
-     * @param {Object} [adhocSchema] - Optional adhoc schema to use instead of database schema
-     * @returns {Promise<Object>} - Validation result object
-     */
-    async validateZipContent(zipBuffer, adhocSchema = null) {
-        try {
-            if (adhocSchema) {
-                // Use provided schema (legacy mode for backwards compatibility)
-                // Convert from legacy format to new format
-                const schema = {
-                    required: adhocSchema.required_files || [],
-                    forbidden: adhocSchema.forbidden_files || [],
-                    allowedExtensions: adhocSchema.allowed_extensions || [],
-                    maxFileCount: adhocSchema.max_file_count || null,
-                    maxTotalSize: adhocSchema.max_total_size || null
-                };
-                return await validateZip(zipBuffer, schema);
-            } else {
-                // Use database-driven schema (new mode)
-                // Fetch schema from settings using the existing settings system
-                const schemaText = await this.models.setting.get("upload.zip.validationSchema");
-                return await validateZipWithSchema(zipBuffer, schemaText);
-            }
-        } catch (error) {
-            this.logger.error("ZIP validation error:", error);
-            return {
-                isValid: false,
-                violations: [`Validation failed: ${error.message}`],
-                summary: {}
-            };
-        }
-    }
-
 
     /**
      * Send a document to the client
@@ -1101,7 +1096,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentUpdateContent", this.updateDocumentContent, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
-        this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
+        this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, true);
         this.createSocket("documentPublishReviewLinks", this.publishReviewLinks, {}, false);
         this.createSocket("documentDataSave", this.saveData, {}, true);
         this.createSocket("documentClose", this.closeDocument, {}, true);
