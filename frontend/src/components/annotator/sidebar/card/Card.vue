@@ -12,7 +12,7 @@
         <slot name="header"/>
       </div>
     </div>
-    <div class="card-body p-1">
+    <div v-if="!collapsed" class="card-body p-1">
       <div
           v-if="!loading"
           class="d-grid gap-1 my-2"
@@ -24,7 +24,7 @@
       </div>
     </div>
     <div
-        v-if="!loading && hasFooterSlot"
+        v-if="!loading && hasFooterSlot && !collapsed"
         class="card-footer"
     >
       <div
@@ -35,7 +35,7 @@
       </div>
     </div>
     <div
-        v-if="!loading && hasThreadSlot"
+        v-if="!loading && hasThreadSlot && !collapsed"
         class="card-body p-1"
     >
       <slot name="thread"/>
@@ -59,6 +59,11 @@ export default {
   name: "SideCard",
   components: {Loader},
   props: {
+    collapsed: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     shake: {
       type: Boolean,
       required: false,

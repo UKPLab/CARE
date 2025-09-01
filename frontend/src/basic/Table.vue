@@ -184,6 +184,7 @@
             <TButton
               v-else-if="c.type === 'button'"
               :action="r[c.key].action"
+              :stats="r[c.key].stats"
               :icon="r[c.key].icon"
               :options="r[c.key].options"
               :params="r"
@@ -416,7 +417,18 @@ export default {
       return this.total;
     },
     pages() {
-      return Math.ceil(this.total / this.limit);
+      if (this.serverSidePagination) {
+        return Math.ceil(this.total / this.limit);
+      }
+      // For client-side pagination, use filtered data length
+      return Math.ceil(this.filteredDataLength / this.limit);
+    },
+    filteredDataLength() {
+      if (this.serverSidePagination) {
+        return this.total;
+      }
+      
+      return this.getFilteredAndSortedData().length;
     },
     sortIcon() {
       return this.sortDirection === "ASC" ? "sort-down" : "sort-up";
@@ -425,71 +437,8 @@ export default {
       if (this.serverSidePagination) {
         return this.data;
       }
-      let data = this.data.map((d) => d);
-
-      if (this.search && this.search !== "") {
-        data = data.filter((d) => {
-          for (const [key, value] of Object.entries(d)) {
-            if (typeof value === "string" && value.toLowerCase().includes(this.search.toLowerCase())) {
-              return true;
-            }
-          }
-          return false;
-        });
-      }
-
-      if (this.sortColumn) {
-        if (this.sortDirection === "ASC") {
-          data = data.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
-        } else {
-          data = data.sort((a, b) => (a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0));
-        }
-      }
-      if (this.filter) {
-        data = data.filter((d) => {
-          for (const [key, filterValue] of Object.entries(this.filter)) {
-            if (typeof filterValue === "object" && "operator" in filterValue) {
-              const value = parseFloat(d[key]);
-              const compareValue = parseFloat(filterValue.value);
-
-              switch (filterValue.operator) {
-                case "gt":
-                  if (!(value > compareValue)) return false;
-                  break;
-                case "lt":
-                  if (!(value < compareValue)) return false;
-                  break;
-                case "gte":
-                  if (!(value >= compareValue)) return false;
-                  break;
-                case "lte":
-                  if (!(value <= compareValue)) return false;
-                  break;
-                case "eq":
-                  if (value !== compareValue) return false;
-                  break;
-              }
-            } else {
-              // only selected filter
-              const filter = Object.entries(filterValue)
-                .filter(([k, v]) => v)
-                .map(([k, v]) => k);
-              if (filter.length > 0) {
-                const dataValues = Array.isArray(d[key]) ? d[key] : String(d[key]).split(/,\s*/);
-                const hasMatch = dataValues.some((val) =>
-                  filter.some((f) => String(val).toLowerCase().trim() === String(f).toLowerCase().trim())
-                );
-
-                if (!hasMatch) {
-                  return false;
-                }
-              }
-            }
-          }
-
-          return true;
-        });
-      }
+      
+      let data = this.getFilteredAndSortedData();
 
       if (this.options && this.options.pagination) {
         data = data.slice((this.currentPage - 1) * this.limit, this.currentPage * this.limit);
@@ -569,6 +518,78 @@ export default {
     );
   },
   methods: {
+    getFilteredAndSortedData() {
+      let data = this.data.map((d) => d);
+
+      // Apply search filter
+      if (this.search && this.search !== "") {
+        data = data.filter((d) => {
+          for (const [key, value] of Object.entries(d)) {
+            if (typeof value === "string" && value.toLowerCase().includes(this.search.toLowerCase())) {
+              return true;
+            }
+          }
+          return false;
+        });
+      }
+
+      // Apply sorting
+      if (this.sortColumn) {
+        if (this.sortDirection === "ASC") {
+          data = data.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
+        } else {
+          data = data.sort((a, b) => (a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0));
+        }
+      }
+
+      // Apply filters
+      if (this.filter) {
+        data = data.filter((d) => {
+          for (const [key, filterValue] of Object.entries(this.filter)) {
+            if (typeof filterValue === "object" && "operator" in filterValue) {
+              const value = parseFloat(d[key]);
+              const compareValue = parseFloat(filterValue.value);
+
+              switch (filterValue.operator) {
+                case "gt":
+                  if (!(value > compareValue)) return false;
+                  break;
+                case "lt":
+                  if (!(value < compareValue)) return false;
+                  break;
+                case "gte":
+                  if (!(value >= compareValue)) return false;
+                  break;
+                case "lte":
+                  if (!(value <= compareValue)) return false;
+                  break;
+                case "eq":
+                  if (value !== compareValue) return false;
+                  break;
+              }
+            } else {
+              // only selected filter
+              const filter = Object.entries(filterValue)
+                .filter(([k, v]) => v)
+                .map(([k, v]) => k);
+              if (filter.length > 0) {
+                const dataValues = Array.isArray(d[key]) ? d[key] : String(d[key]).split(/,\s*/);
+                const hasMatch = dataValues.some((val) =>
+                  filter.some((f) => String(val).toLowerCase().trim() === String(f).toLowerCase().trim())
+                );
+
+                if (!hasMatch) {
+                  return false;
+                }
+              }
+            }
+          }
+          return true;
+        });
+      }
+
+      return data;
+    },
     updateValues(data) {
       return data;
     },
@@ -583,12 +604,22 @@ export default {
     },
     actionEmitter(data) {
       this.$emit("action", data);
-      if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "actionClick",
-          data: data,
-        });
+      let statsParams = {};
+      if (data.stats) {
+        // Only include the stat fields in the stats data
+       Object.entries(data.stats).forEach(([statsKey, paramKey]) => {
+        statsParams[statsKey] = data.params[paramKey];
+      });
       }
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "actionClick",
+            data: {
+              action: data.action,
+              params: statsParams,
+            },
+          });
+        }
     },
     selectRow(row) {
       if (this.selectableRows) {
@@ -599,8 +630,6 @@ export default {
           } else {
             // Check if the row is already selected
 
-            console.log(row);
-            console.log(!this.currentData.includes(row));
             if (!this.currentData.includes(row)) {
               this.currentData.push(row);
             }
@@ -659,6 +688,7 @@ export default {
       if (filteredButtons.length > 0) {
         this.hasButtons = true;
       }
+
 
       return filteredButtons;
     },

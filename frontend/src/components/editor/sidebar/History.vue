@@ -20,7 +20,7 @@
               aria-expanded="false"
             >
               <div class="ms-2 me-auto">
-                <div class="fw-bold">{{ new Date(editGroup[0].createdAt).toLocaleString() }}</div>
+                <div class="fw-bold">{{ constructString(editGroup) }}</div>
                 <div class="text-start">
                   {{ editGroup[0].creator_name || "Anonymous User" }}
                   <span
@@ -211,6 +211,25 @@ export default {
         });
       }
     },
+    constructString(editGroup) {
+      const firstDate = new Date(editGroup[editGroup.length - 1].createdAt);
+      const lastDate = new Date(editGroup[0].createdAt);
+
+      const year1 = firstDate.getFullYear();
+      const year2 = lastDate.getFullYear();
+      const month1 = firstDate.getMonth() + 1;
+      const month2 = lastDate.getMonth() + 1;
+      const day1 = firstDate.getDate();
+      const day2 = lastDate.getDate();
+      const time1 = firstDate.toLocaleString().split(" ")[1];
+      const time2 = lastDate.toLocaleString().split(" ")[1];
+
+      if (year1 !== year2 || month1 !== month2 || day1 !== day2) {
+        return `${firstDate.toLocaleString()} - ${lastDate.toLocaleString()}`;
+      } else {
+        return `${day1}/${month1}/${year1}, ${time1} - ${time2}`;
+      }
+    }
   },
 };
 </script>

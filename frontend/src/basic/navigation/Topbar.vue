@@ -10,7 +10,7 @@
           id="backButton"
           class="btn"
           title="Go back..."
-          @click="$router.go(-1)"
+          @click="toHome()"
         >
           <LoadIcon
             :size="16"
@@ -35,9 +35,17 @@
         />   
         <ul class="navbar-nav">
           <li class="nav-item me-3">
-            <div style="position:relative; display:flex; align-items:center; height:100%;">
-              <div 
-                @click.stop="toggleProjectDropdown" 
+            <div
+              v-if="!isProjectButtonHidden"
+              style="
+                position: relative;
+                display: flex;
+                align-items: center;
+                height: 100%;
+              "
+            >
+              <div
+                @click.stop="toggleProjectDropdown"
                 class="project-box"
                 :title="`Project: ${currentProjectName}`"
               >
@@ -146,6 +154,9 @@ export default {
   computed: {
     allProjects() {
     return this.$store.getters["table/project/getAll"] || [];
+    },
+    isProjectButtonHidden() {
+      return this.$store.getters["settings/getValue"]("topBar.projects.hideProjectButton") === "true"
     },
     currentProject() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");

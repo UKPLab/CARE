@@ -158,6 +158,9 @@ export default {
         {
           title: "Edit User",
           action: "editUser",
+          stats: {
+            userId: "id",
+          },
           icon: "pencil",
           options: {
             iconOnly: true,
@@ -169,6 +172,9 @@ export default {
         {
           title: "View Rights",
           action: "viewRights",
+          stats: {
+            userId: "id",
+          },
           icon: "card-list",
           options: {
             iconOnly: true,
@@ -180,6 +186,9 @@ export default {
         {
           title: "Reset Password",
           action: "resetPassword",
+          stats: {
+            userId: "id",
+          },
           icon: "person-lock",
           options: {
             iconOnly: true,
@@ -191,6 +200,9 @@ export default {
         {
           title: "Delete User",
           action: "deleteUser",
+          stats: {
+            userId: "id",
+          },
           icon: "trash",
           options: {
             iconOnly: true,

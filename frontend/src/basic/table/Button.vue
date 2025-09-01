@@ -22,6 +22,11 @@ export default {
   name: "TableButton",
   components: {LoadIcon},
   props: {
+    stats:{
+      type: Array,
+      required: false,
+      default: () => ([])
+    },
     action: {
       type: String,
       required: true
@@ -55,7 +60,7 @@ export default {
   },
   methods: {
     actionEmitter(){
-      this.$emit('action', {action: this.action, params: this.params});
+      this.$emit('action', {action: this.action, params: this.params, stats: this.stats});
     }
   }
 }
