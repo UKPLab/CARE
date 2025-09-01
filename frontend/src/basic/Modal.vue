@@ -24,7 +24,7 @@
               v-if="!removeClose"
               aria-label="Close"
               class="btn-close"
-              data-bs-dismiss="modal"
+              @click="close"
               type="button"
             />
           </div>
@@ -93,6 +93,9 @@ export default {
   inject: {
     acceptStats: {
       default: () => false
+    },
+    parentModal: {
+      default: () => null
     }
   },
   props: {
@@ -128,6 +131,11 @@ export default {
     }
   },
   emits: ['show', 'hide'],
+  provide() {
+    return {
+      parentModal: this
+    };
+  },
   data() {
     return {
       modal: null,
@@ -135,6 +143,7 @@ export default {
       progress: false,
       progressData: null,
       progressId: null,
+  _suspendedByChild: false,
     }
   },
   computed: {
@@ -153,7 +162,6 @@ export default {
   },
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
-
     this.$refs.Modal.addEventListener('hide.bs.modal', this.hideEvent);
     this.$refs.Modal.addEventListener('show.bs.modal', this.showEvent);
 
@@ -215,17 +223,47 @@ export default {
     openModal() {
       this.waiting = false;
       this.progress = false;
+      // Instead of fully hiding parent (which resets its state), just visually suspend it
+      this.suspendParentModal();
+      console.log("Modal shown:", this.name, "parent suspended", this.parentModal ? this.parentModal.name : null);
       this.modal.show();
     },
     close() {
       this.modal.hide();
+      this.resumeParentModal();
+      console.log("Modal hidden:", this.name, "parent resumed", this.parentModal ? this.parentModal.name : null);
     },
     hide() {
       this.modal.hide();
+      this.resumeParentModal();
+      console.log("Modal hidden:", this.name, "parent resumed", this.parentModal ? this.parentModal.name : null);
     },
-    toggle() {
-      this.modal.toggle();
+    showParentModal(){
+      if (this.parentModal) {
+        this.parentModal.show();
+      }
     },
+    hideParentModal(){
+      if (this.parentModal) {
+        this.parentModal.hide();
+      }
+    },
+    suspendParentModal(){
+      if (!this.parentModal || this.parentModal._suspendedByChild) return;
+      const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
+      if (el) {
+        el.classList.add('nested-suspended');
+      }
+      this.parentModal._suspendedByChild = true;
+    },
+    resumeParentModal(){
+      if (!this.parentModal || !this.parentModal._suspendedByChild) return;
+      const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
+      if (el) {
+        el.classList.remove('nested-suspended');
+      }
+      this.parentModal._suspendedByChild = false;
+    }
   }
 }
 </script>
@@ -233,5 +271,9 @@ export default {
 <style scoped>
 .shake {
   animation: shake-animation 0.5s ease-in-out;
+}
+.nested-suspended {
+  visibility: hidden; /* keep DOM & state, just not visible or interactive */
+  pointer-events: none;
 }
 </style>
