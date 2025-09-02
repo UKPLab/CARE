@@ -193,7 +193,32 @@ In case you need more specific functions, you may simply add static access metho
 
 .. seealso::
    Runtime update semantics (e.g., timestamping ``closed``, soft-deletes) are implemented in the shared MetaModel.
-   See :ref:`What is behind the MetaModel <metamodel-behavior>`.
+   You can find more informations about the MetaModel in the next section.
+
+.. _metamodel-behavior:
+
+MetaModel Behavior
+~~~~~~~~~~~~~~~~~~
+
+The `MetaModel` class in ``backend/db/MetaModel.js`` provides shared behaviors for all Sequelize models in CARE. These simplify database operations and ensure consistent logic across the application.
+
+**Included Behaviors:**
+
+- ``updateById``:
+  
+  - Sets ``deletedAt = Date.now()`` when ``deleted`` is truthy (soft delete)
+  - Sets ``closed = Date.now()`` when ``closed`` is truthy
+  - Enables ``individualHooks`` if the model defines ``beforeUpdate`` or ``afterUpdate`` hooks, ensuring that per-row hooks are executed (used for cascading logic, etc.)
+  - Returns the updated row, even if it has been soft-deleted
+
+- ``getAutoTable`` / ``getAll``:
+
+  - Automatically applies access-aware filters:
+    - Exclude rows marked as ``deleted``
+    - Restrict rows by ``userId``
+    - Include ``public`` rows when applicable
+
+These shared methods reduce the need to repeat logic and ensure consistent query semantics across models.
 
 Populating a Table
 ~~~~~~~~~~~~~~~~~~

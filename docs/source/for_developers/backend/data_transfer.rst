@@ -10,7 +10,7 @@ CARE implements a **data subscription mechanism** between the backend and the fr
 Data Flow
 ---------
 
-.. figure:: ./data_flow.drawio.svg
+.. figure:: ./data_flow.drawio.png
    :width: 100%
    :align: center
    :alt: CARE Data Flow: Component ↔ Sockets ↔ Vuex ↔ Computed
@@ -25,7 +25,7 @@ Data Flow
 Step-by-step (Backend → Frontend)
 ~~~~~~~~~~~~~~~~~~~~~~
 
-1. **DB model (top-center “Database”)**: The model sets ``autoTable = true`` to participate in app data sync.
+1. **DB model (top-center “Database”)**: The model sets ``autoTable = true`` to enable automatic Vuex store table creation and participate in app data sync.
 
 2. **Subscribe (bottom-left “Example Component” → center “Sockets”)**: On mount, the ``subscribeTable`` plugin emits ``subscribeAppData`` for each table to **Sockets (AppSocket, center)**; the server returns a ``subscriptionId``.
 
@@ -35,7 +35,7 @@ Step-by-step (Backend → Frontend)
 
 5. **Socket write (optional; bottom-left “Example Component” → center “Sockets”)**: The frontend emits ``appDataUpdate`` with ``{ table, data }`` to create or update rows.
 
-6. **Backend transaction (center “Sockets” → top-center “Database”)**:``updateData`` validates, applies defaults, and enforces access; inside a transaction it persists changes to the **Database (top-center)**. On **commit** (``afterCommit``) the server aggregates changed rows of ``autoTable`` models.
+6. **Backend transaction (center “Sockets” → top-center “Database”)**: ``updateData`` validates, applies defaults, and enforces access; inside a transaction it persists changes to the **Database (top-center)**. On **commit** (``afterCommit``) the server aggregates changed rows of ``autoTable`` models. See also: :ref:`MetaModel behavior <metamodel-behavior>` for the shared logic used in ``updateData``, including soft-deletion, access filtering, and hook handling.
 
 7. **Broadcast (center “Sockets” → right “Vuex Store”)**: ``broadcastTable`` re-applies per-socket visibility with ``getFiltersAndAttributes`` (admins/public can bypass) and emits ``<tableName>Refresh`` only to relevant subscribers; **Vuex (right)** receives the deltas.
 
@@ -53,32 +53,16 @@ Step-by-step (Backend → Frontend)
 
 The component emits ``unsubscribeAppData(subscriptionId)``; the socket removes the subscription so no further ``<tableName>Refresh`` events are delivered.
 
-Subscribe DB in the Frontend (when & where)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sendTable 
+~~~~~~~~~
 
-Use ``subscribeTable`` in route views or components that actively display changing table data; unsubscription happens automatically on unmount.
-
-On mount, the plugin checks for a component option ``subscribeTable`` and emits ``subscribeAppData`` for each entry; on unmount it emits ``unsubscribeAppData(subscriptionId)``. The server tracks subscriptions per socket in ``socket.appDataSubscriptions`` (``ids``, ``tables``, ``merged``) and uses them to decide which clients receive updates.
-
-.. code-block:: javascript
-
-  // Minimal usage (string form)
-  export default {
-    subscribeTable: ["nav_element"]
-  }
-
-.. code-block:: javascript
-
-  // Object form supports optional filter/inject
-  export default {
-    subscribeTable: [
-      "nav_element",
-      { table: "document",
-        filter: [{ projectId: 42 }],
-        inject: [{ type: "count", table: "comment", by: "documentId", as: "comments" }]
-      }
-    ]
-  }
+- **Purpose**: send the current snapshot for a table and emit updates to the client.
+- **Preconditions**: only works for models with ``autoTable = true``; otherwise it no-ops with a log.
+- **Filtering**: starts with ``{ deleted: false }`` and OR-adds any provided ``filter``; then applies per-socket access via ``getFiltersAndAttributes`` (may also add allowed columns).
+- **Attributes**: excludes sensitive fields by default (e.g., ``deleted``, ``deletedAt``, ``updatedAt``, ``rolesUpdatedAt``, ``initialPassword``, ``passwordHash``, ``salt``).
+- **Injects**: supports ``{ type: "count", table, by, as }``; counts related rows and injects the result into each entry as ``as``.
+- **Related tables**: if the model’s ``autoTable.foreignTables`` or ``autoTable.parentTables`` are set, it also fetches those and emits ``<relatedTable>Refresh`` for them.
+- **Emit & return**: always emits ``<tableName>Refresh`` with the rows and returns the same data.
 
 AppDataUpdate Socket
 --------------------
@@ -193,25 +177,10 @@ Typical component actions map to small ``appDataUpdate`` calls:
 
 **Important details**
 
-- **Validation**: on create, required fields are checked and defaults are applied.  
+- **Validation**: On create, required fields are checked and defaults are applied if not set through the frontend.
 - **Access control**: if ``userId`` is provided, the server verifies the caller is allowed to update for that user.  
 - **Nested tables**: if the model defines fields of type ``table``, the server recursively calls ``updateData`` to update child rows.  
 - **Broadcasts**: after a successful commit, all subscribed clients receive the updated data automatically.
-
-What is behind the MetaModel
-----------------------------
-
-These behaviors are implemented by the shared ``MetaModel``:
-
-- ``updateById``:
-
-  - sets ``deletedAt = Date.now()`` when ``deleted`` is truthy
-  - sets ``closed = Date.now()`` when ``closed`` is truthy
-  - enables ``individualHooks`` if the model defines ``beforeUpdate``/``afterUpdate`` hooks, so per-row hooks run (e.g., cascade logic)
-  - returns the updated row (including soft-deleted ones when requested)
-
-- ``getAutoTable`` / ``getAll``: apply access-aware filtering (e.g., exclude ``deleted``, restrict by ``userId``,
-  allow ``public`` rows) before data is sent to the client.
 
 .. _table-refresh-events:
 
@@ -231,7 +200,12 @@ registers a mutation with that exact name and merges incoming rows using ``refre
      state.refreshCount++;
    }
 
-**Merge helper (``utils.js``):**
+**Merge behavior:**
+
+The helper function ``refreshState`` determines how incoming rows are handled:
+
+- Existing entries with the same ``id`` are **overwritten** with the new data.
+- Entries with ``deleted: true`` are **removed** from the Vuex store (if ``removeDeleted`` is `true`).
 
 .. code-block:: javascript
 
@@ -256,16 +230,32 @@ registers a mutation with that exact name and merges incoming rows using ``refre
 Frontend access patterns and the list of available getters are documented in :doc:`Vuex Store <../frontend/vuex_store>`.
 For inspecting Vuex modules, socket messages, and mutations with browser devtools, see :doc:`Debugging <../debugging/index>`.
 
-sendTable 
-~~~~~~~~~
+Subscribe DB in the Frontend (when & where)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- **Purpose**: send the current snapshot for a table and emit updates to the client.
-- **Preconditions**: only works for models with ``autoTable = true``; otherwise it no-ops with a log.
-- **Filtering**: starts with ``{ deleted: false }`` and OR-adds any provided ``filter``; then applies per-socket access via ``getFiltersAndAttributes`` (may also add allowed columns).
-- **Attributes**: excludes sensitive fields by default (e.g., ``deleted``, ``deletedAt``, ``updatedAt``, ``rolesUpdatedAt``, ``initialPassword``, ``passwordHash``, ``salt``).
-- **Injects**: supports ``{ type: "count", table, by, as }``; counts related rows and injects the result into each entry as ``as``.
-- **Related tables**: if the model’s ``autoTable.foreignTables`` or ``autoTable.parentTables`` are set, it also fetches those and emits ``<relatedTable>Refresh`` for them.
-- **Emit & return**: always emits ``<tableName>Refresh`` with the rows and returns the same data.
+Use ``subscribeTable`` in route views or components that actively display changing table data; unsubscription happens automatically on unmount.
+
+On mount, the plugin checks for a component option ``subscribeTable`` and emits ``subscribeAppData`` for each entry; on unmount it emits ``unsubscribeAppData(subscriptionId)``. The server tracks subscriptions per socket in ``socket.appDataSubscriptions`` (``ids``, ``tables``, ``merged``) and uses them to decide which clients receive updates.
+
+.. code-block:: javascript
+
+  // Minimal usage (string form)
+  export default {
+    subscribeTable: ["nav_element"]
+  }
+
+.. code-block:: javascript
+
+  // Object form supports optional filter/inject
+  export default {
+    subscribeTable: [
+      "nav_element",
+      { table: "document",
+        filter: [{ projectId: 42 }],
+        inject: [{ type: "count", table: "comment", by: "documentId", as: "comments" }]
+      }
+    ]
+  }
 
 Accessing the Vuex Store in Components
 --------------------------------------
