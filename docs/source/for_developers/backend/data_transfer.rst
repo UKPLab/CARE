@@ -37,7 +37,7 @@ Step-by-step (Backend → Frontend)
 
 6. **Backend transaction (center “Sockets” → top-center “Database”)**: ``updateData`` validates, applies defaults, and enforces access; inside a transaction it persists changes to the **Database (top-center)**. On **commit** (``afterCommit``) the server aggregates changed rows of ``autoTable`` models. See also: :ref:`MetaModel behavior <metamodel-behavior>` for the shared logic used in ``updateData``, including soft-deletion, access filtering, and hook handling.
 
-7. **Broadcast (center “Sockets” → right “Vuex Store”)**: ``broadcastTable`` re-applies per-socket visibility with ``getFiltersAndAttributes`` (admins/public can bypass) and emits ``<tableName>Refresh`` only to relevant subscribers; **Vuex (right)** receives the deltas.
+7. **Broadcast (center “Sockets” → right “Vuex Store”)**: ``broadcastTable`` re-applies per-socket visibility with ``getFiltersAndAttributes`` (admins/public can bypass) and emits ``<tableName>Refresh`` only to relevant subscribers; **Vuex (right)** receives the updated data.
 
 8. **Vuex merge (right “Vuex Store”)**: Each autoTable module handles the ``<tableName>Refresh`` mutation and merges rows (see ``refreshState``); ``refreshCount`` increments.
 
@@ -46,7 +46,7 @@ Step-by-step (Backend → Frontend)
 .. tip::
    **Two directions in the diagram**
 
-   - **Downstream:** ``<tableName>Refresh``: (Sockets → Vuex) is used for the **initial snapshot** and all **delta updates**.
+   - **Downstream:** ``<tableName>Refresh``: (Sockets → Vuex) is used for the **initial snapshot** and all **subsequent updates**.
    - **Upstream:** ``appDataUpdate``: (Component → Sockets) performs a write; after commit the server pushes ``<tableName>Refresh`` to keep everyone consistent.
 
 **Unsubscribe (on unmount; bottom-left “Example Component”)**
@@ -202,10 +202,7 @@ registers a mutation with that exact name and merges incoming rows using ``refre
 
 **Merge behavior:**
 
-The helper function ``refreshState`` determines how incoming rows are handled:
-
-- Existing entries with the same ``id`` are **overwritten** with the new data.
-- Entries with ``deleted: true`` are **removed** from the Vuex store (if ``removeDeleted`` is `true`).
+The helper function ``refreshState`` overwrites existing entries with matching ``id`` values using the new incoming data.
 
 .. code-block:: javascript
 
@@ -235,7 +232,7 @@ Subscribe DB in the Frontend (when & where)
 
 Use ``subscribeTable`` in route views or components that actively display changing table data; unsubscription happens automatically on unmount.
 
-On mount, the plugin checks for a component option ``subscribeTable`` and emits ``subscribeAppData`` for each entry; on unmount it emits ``unsubscribeAppData(subscriptionId)``. The server tracks subscriptions per socket in ``socket.appDataSubscriptions`` (``ids``, ``tables``, ``merged``) and uses them to decide which clients receive updates.
+On mount, the plugin checks for a component option ``subscribeTable`` and emits ``subscribeAppData`` for each entry; on unmount it emits ``unsubscribeAppData(subscriptionId)``. The server tracks subscriptions per socket in ``socket.appDataSubscriptions`` and uses them to decide which clients receive updates.
 
 .. code-block:: javascript
 
