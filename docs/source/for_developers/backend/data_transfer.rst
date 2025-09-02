@@ -202,7 +202,10 @@ registers a mutation with that exact name and merges incoming rows using ``refre
 
 **Merge behavior:**
 
-The helper function ``refreshState`` overwrites existing entries with matching ``id`` values using the new incoming data.
+The helper function ``refreshState`` determines how incoming rows are handled:
+
+- Existing entries with the same ``id`` are **overwritten** with the new data.
+- Entries with ``deleted: true`` are **removed** from the Vuex store.
 
 .. code-block:: javascript
 
