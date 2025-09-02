@@ -96,7 +96,7 @@ CARE combines two types of persistent data storage:
 
 The diagram below shows the complete flow of how these layers interact, with **backend logic at the top**, **frontend (main user)** in the left, and **collaborative users** at the right:
 
-.. image:: ./editor_flow_overview.png
+.. image:: ./editor_flow_overview.drawio.png
     :width: 100%
     :align: center
     :alt: Flow of how the editor loads and synchronizes regular and study documents
@@ -141,12 +141,6 @@ When an edit is received from the backend:
 3. If it **does not match**, the edit is converted with ``dbToDelta()`` and applied to the Quill instance using the ``processEdits`` function.
 4. After applying, the edit is marked ``applied = true`` in Vuex so it won’t be reprocessed later.
 
-This mechanism ensures that:
-
-- Your own edits are never re-applied from the socket.
-- Other users’ edits (or the same user in another browser tab) are applied exactly once.
-- Both regular and study documents benefit from the same collaboration logic.
-
 This logic is implemented in:
   - ``Editor.vue`` – subscribing to document changes in ``mounted`` and unsubscribing in ``unmounted``.
   - ``document.js`` – emitting edits along with the sender’s socket ID.
@@ -155,10 +149,11 @@ This logic is implemented in:
    In the regular document flow, the editor always receives a **single merged Delta**.  
    This corresponds to the part of the diagram where the **red .delta file** is merged with the **blue document_edit database entries** (after they pass through **editor-delta-conversion**) to form the final document state in the **Regular Document** editor.
 
-
 To persist in-progress edits, the system uses **autosave** (see :ref:`Debounce Behaviour <debounce-ref>`).  
-Autosave runs at defined intervals **and** on certain events, such as when the editor component is unmounted or the WebSocket connection closes while a document is still open.  
-This ensures that the backend always has the latest state, even if the user leaves the page or loses connection unexpectedly.
+Autosave runs at defined intervals **and** on specific events, such as when the editor component is unmounted or when the WebSocket connection closes while a document is still open.  
+This ensures that the backend always has the latest state, even if the user navigates away or loses connection unexpectedly.
+
+Additionally, when the WebSocket disconnects, the backend triggers a final save of all open documents by calling ``saveDocument``. This is why the list of open components (like editors) is tracked during mount.
 
 - Merges all ``draft: true`` edits with the current ``.delta`` file.
 - Writes a new ``.delta`` to disk, reflecting the latest saved state.
@@ -182,8 +177,12 @@ All edits are stored in the ``document_edit`` table and grouped by:
 - ``studySessionId``, identifying the unique editing session for a user.
 - ``studyStepId``, representing a step in the study workflow (e.g., step 1, step 2).
 
-When a study document is opened, the backend queries the ``document_edit`` table for all entries that match the current ``studySessionId`` and ``studyStepId``.  
-These edits, whether draft or not, are **merged in the backend** by passing them through the ``dbToDelta()`` function (from ``utils/modules/editor-delta-conversion/index.js``), which combines the ordered atomic operations into a single Quill-compatible Delta.  
+When a study document is opened, the backend queries the ``document_edit`` table for:
+
+- **Base edits**, where ``studySessionId`` and ``studyStepId`` are ``null`` — these are shared across all sessions and represent the initial copied content.
+- **Session-specific edits**, where the IDs are set — these are isolated changes applied on top of the base for the active session and step.
+
+All matching edits are **merged in the backend** using ``dbToDelta()`` (from ``utils/modules/editor-delta-conversion/index.js``), combining the ordered atomic operations into a single Quill-compatible Delta.  
 This Delta is then sent to the frontend, where the Quill editor renders the isolated document state for the user.
 
 During editing, the workflow is as follows:
@@ -274,6 +273,9 @@ To reconstruct the document consistently, DB edits are sorted first by timestamp
     });
 
 This is critical when applying a series of granular changes to restore a document’s state.
+
+To improve performance, the system also supports **bulk creation of edits**, allowing multiple operations to be inserted into the database in a single query.  
+This reduces database overhead and speeds up edit processing, especially during fast typing or collaborative editing.
 
 Testing the Editor
 ------------------

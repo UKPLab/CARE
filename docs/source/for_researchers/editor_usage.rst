@@ -43,13 +43,36 @@ The CARE editor can be customized through a range of settings available to admin
 Autosaving and Versioning
 -------------------------
 
-The editor uses a built-in **save buffer** (debounce mechanism). After you stop typing, the system waits briefly before saving your input, reducing unnecessary processing.
+**Autosave configuration:**
+
+The editor uses a built-in **save buffer** (debounce mechanism). After you stop typing, the system waits briefly before saving your input, which reduces unnecessary processing and database writes.
 
 You can control this behavior via:
 
-- ``editor.edits.debounceTime`` – Delay (in milliseconds) before edits are saved
-- ``editor.edits.historyGroupTime`` – Group edits if they occur within a short time window
-- ``editor.edits.showHistoryForUser`` – Allow all users (not just admins) to access the document edit history
+- ``editor.edits.debounceTime`` – Delay (in milliseconds) after the **last keystroke** before sending edits to the backend.
+
+**What happens when you change the debounce time?**
+
+- **Increasing** the debounce time (e.g., from 150ms to 1000ms):
+  - Reduces how often edits are sent to the backend.
+  - Other tabs/users will see delayed updates.
+  - Fewer entries are saved in the database, but each entry may contain more characters.
+
+- **Decreasing** the debounce time (e.g., to 50ms):
+  - Sends updates more frequently, possibly after **every keystroke**.
+  - Other users will see nearly real-time updates.
+  - Can generate a **large number of DB writes**, potentially impacting performance.
+
+Adjust these settings based on your application's needs for real-time collaboration vs. backend load efficiency.
+
+**Edit history configuration:**
+
+You can control this behavior via:
+
+- ``editor.edits.historyGroupTime`` – Groups edits into a single history block if they occur within this time window.
+- ``editor.edits.showHistoryForUser`` – Allow non-admin users to view the edit history.
+
+These settings are useful for providing transparency over changes, simplifying version tracking, and enabling collaborative review of document edits.
 
 Toolbar and Formatting Options
 ------------------------------
