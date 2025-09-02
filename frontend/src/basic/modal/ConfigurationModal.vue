@@ -21,230 +21,34 @@
       <template #title>
         <h5 class="modal-title text-primary">Configuration</h5>
       </template>
-      <!-- Step 1: Either Fields (if defined) or NLP Services -->
-      <template #step-1>
-        <div v-if="hasConfigFields" class="config-fields">
-              <BasicForm
-                v-model="formData"
-            :fields="normalizedFields"
-              />
-            </div>
-        <div v-else class="service-config">
-          <div v-if="stepConfig && stepConfig.services && stepConfig.services.length">
-            <div
-              v-for="(service, index) in stepConfig.services"
-              :key="index"
-                  class="service-item mb-4 p-3 border rounded"
-                >
-              <h6 class="fw-bold">Service Configuration: {{ service.name }}</h6>
-              <div class="mb-3">
-                    <label class="form-label">Select NLP Skill:</label>
-                    <FormSelect
-                  v-model="selectedSkills[index].skillName"
-                      :options="skillMap"
-                    />
-                  </div>
-                  <div
-                v-if="selectedSkills[index].skillName"
-                    class="mb-3"
-                  >
-                    <h6 class="text-secondary">Input Mapping</h6>
-                    <div
-                  v-for="input in getSkillInputs(selectedSkills[index].skillName)"
-                  :key="input"
-                      class="mb-2"
-                    >
-                      <label class="form-label">{{ input }}:</label>
-                      <FormSelect
-                    v-model="inputMappings[index][input]"
-                    :options="{ options: availableDataSources }"
-                        :value-as-object="true"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-          <div v-else class="alert alert-info">
-                No service configurations found for this step.
-          </div>
-        </div>
-      </template>
-      <!-- Step 2: Either NLP Services (if fields exist) or Placeholders -->
-      <template #step-2>
-        <div v-if="hasConfigFields" class="service-config">
-          <div v-if="stepConfig && stepConfig.services && stepConfig.services.length">
-            <div
-              v-for="(service, index) in stepConfig.services"
-              :key="index"
-                  class="service-item mb-4 p-3 border rounded"
-                >
-              <h6 class="fw-bold">Service Configuration: {{ service.name }}</h6>
-              <div class="mb-3">
-                    <label class="form-label">Select NLP Skill:</label>
-                    <FormSelect
-                  v-model="selectedSkills[index].skillName"
-                      :options="skillMap"
-                    />
-                  </div>
-                  <div
-                v-if="selectedSkills[index].skillName"
-                    class="mb-3"
-                  >
-                    <h6 class="text-secondary">Input Mapping</h6>
-                    <div
-                  v-for="input in getSkillInputs(selectedSkills[index].skillName)"
-                  :key="input"
-                      class="mb-2"
-                    >
-                      <label class="form-label">{{ input }}:</label>
-                      <FormSelect
-                    v-model="inputMappings[index][input]"
-                    :options="{ options: availableDataSources }"
-                        :value-as-object="true"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-          <div v-else class="alert alert-info">
-            No service configurations found for this step.
-          </div>
-        </div>
-        <div v-else>
-          <div v-if="placeholders.length">
-            <div class="short-preview p-3 mb-3 border rounded">
-              <h6 class="text-secondary mb-2">Quick Preview:</h6>
-              <p v-html="shortPreview"></p>
-              <div class="legend mt-2">
-                <span
-                  v-for="(placeholder, index) in placeholders"
-                  :key="index"
-                  :style="{ color: placeholderColors[index] }"
-                  class="legend-item"
-                >
-                  {{ placeholder.type }} #{{ placeholder.number }}
-                </span>
-              </div>
-            </div>
-            <div class="placeholder-list">
-              <div
-                v-for="(placeholder, index) in placeholders"
-                :key="index"
-                class="placeholder-item mb-3 p-3 border rounded"
-              >
-                <h6 class="mb-2">
-                  <span
-                    :style="{
-                      color: placeholderColors[index],
-                      fontWeight: 'bold',
-                    }"
-                  >
-                    {{ placeholder.type }} Placeholder #{{ placeholder.number }}
-                  </span>
-                </h6>
-                <template v-if="placeholder.type === 'comparison'">
-                  <div class="mb-3">
-                    <label class="form-label">Data Source:</label>
-                    <FormSelect
-                      v-model="placeholderFormData[index].dataInput[0]"
-                      :value-as-object="true"
-                      :options="{ options: availableDataSources }"
-                    />
-              </div>
-                  <div class="mb-3">
-                    <label class="form-label">Data Source:</label>
-                    <FormSelect
-                      v-model="placeholderFormData[index].dataInput[1]"
-                      :value-as-object="true"
-                      :options="{ options: availableDataSources }"
-                    />
-            </div>
-                </template>
-                <template v-else>
-                  <div class="mb-3">
-                    <label class="form-label">Data Source:</label>
-                    <FormSelect
-                      v-model="placeholderFormData[index].dataInput"
-                      :value-as-object="true"
-                      :options="{ options: availableDataSources }"
-                    />
-                  </div>
-                </template>
-              </div>
-            </div>
-          </div>
-          <div v-else class="alert alert-info">
-            <p>No placeholders found in the document.</p>
-          </div>
-        </div>
-      </template>
-      <!-- Step 3: Placeholders (only when fields exist) -->
-      <template #step-3>
-        <div v-if="placeholders.length">
-          <div class="short-preview p-3 mb-3 border rounded">
-            <h6 class="text-secondary mb-2">Quick Preview:</h6>
-            <p v-html="shortPreview"></p>
-            <div class="legend mt-2">
-              <span
-                v-for="(placeholder, index) in placeholders"
-                :key="index"
-                :style="{ color: placeholderColors[index] }"
-                class="legend-item"
-              >
-                {{ placeholder.type }} #{{ placeholder.number }}
-              </span>
-            </div>
-          </div>
-          <div class="placeholder-list">
-            <div
-              v-for="(placeholder, index) in placeholders"
-              :key="index"
-              class="placeholder-item mb-3 p-3 border rounded"
-            >
-              <h6 class="mb-2">
-                <span
-                  :style="{
-                    color: placeholderColors[index],
-                    fontWeight: 'bold',
-                  }"
-                >
-                  {{ placeholder.type }} Placeholder #{{ placeholder.number }}
-                </span>
-              </h6>
-              <template v-if="placeholder.type === 'comparison'">
-                <div class="mb-3">
-                  <label class="form-label">Data Source:</label>
-                  <FormSelect
-                    v-model="placeholderFormData[index].dataInput[0]"
-                    :value-as-object="true"
-                    :options="{ options: availableDataSources }"
-                  />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Data Source:</label>
-                  <FormSelect
-                    v-model="placeholderFormData[index].dataInput[1]"
-                    :value-as-object="true"
-                    :options="{ options: availableDataSources }"
-                  />
-                </div>
-              </template>
-              <template v-else>
-                <div class="mb-3">
-                  <label class="form-label">Data Source:</label>
-                  <FormSelect
-                    v-model="placeholderFormData[index].dataInput"
-                    :value-as-object="true"
-                    :options="{ options: availableDataSources }"
-                  />
-                </div>
-              </template>
-            </div>
-          </div>
-        </div>
-        <div v-else class="alert alert-info">
-          <p>No placeholders found in the document.</p>
-        </div>
+      <template #step="{ step }">
+        <StepTemplates
+          v-if="step.type === 'general'"
+          v-model="formData"
+          type="general"
+          :fields="normalizedFields"
+        />
+        <StepTemplates
+          v-else-if="step.type === 'services'"
+          v-model:selected-skills="selectedSkills"
+          v-model:input-mappings="inputMappings"
+          type="services"
+          :step-config="stepConfig"
+          :skill-map="skillMap"
+          :available-data-sources="availableDataSources"
+          :get-skill-inputs="getSkillInputs"
+        />
+        <StepTemplates
+          v-else-if="step.type === 'placeholders'"
+          v-model:placeholder-form-data="placeholderFormData"
+          type="placeholders"
+          :placeholders="placeholders"
+          :placeholder-colors="placeholderColors"
+          :placeholder-type="placeholderType"
+          :available-data-sources="availableDataSources"
+          :short-preview="shortPreview"
+        />
+        <div v-else class="alert alert-info">Step not supported.</div>
       </template>
     </StepperModal>
   </div>
@@ -252,8 +56,7 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import FormSelect from "@/basic/form/Select.vue";
-import BasicForm from "@/basic/Form.vue";
+import StepTemplates from "@/basic/modal/StepTemplates.vue";
 import Quill from "quill";
 
 /**
@@ -268,7 +71,7 @@ import Quill from "quill";
  */
 export default {
   name: "ConfigurationModal",
-  components: { StepperModal, FormSelect, BasicForm },
+  components: { StepperModal, StepTemplates },
   props: {
     modelValue: {
       type: Object,
@@ -364,33 +167,33 @@ export default {
     },
     modalSteps() {
       const steps = [];
-      if (this.hasConfigFields) steps.push({ title: "General Settings" });
+      if (this.hasConfigFields) steps.push({ title: "General Settings", type: "general" });
       if (this.hasConfigServices) {
-        steps.push({ title: "Services" });
+        steps.push({ title: "Services", type: "services" });
         if (this.hasPlaceholdersStep) {
-          steps.push({ title: "Placeholders" });
+          steps.push({ title: "Placeholders", type: "placeholders" });
         }
       }
       return steps;
     },
     placeholderStepIndex() {
-      if (!this.hasPlaceholdersStep) return null;
-      return this.hasConfigFields ? 2 : 1;
+      const idx = this.modalSteps.findIndex((s) => s.type === 'placeholders');
+      return idx === -1 ? null : idx;
     },
     stepValid() {
       const servicesValid = this.selectedSkills.every((s) => s.skillName && Object.keys(s.dataInput).length !== 0);
       const placeholdersValid = this.placeholderFormData.every((data) => {
         if (data.type === this.placeholderType.comparison) {
-          return data.dataInput[0] && data.dataInput[1];
+          return data.dataInput && data.dataInput[0] && data.dataInput[1];
         }
         return !!data.dataInput;
       });
-      if (this.hasConfigFields && !this.hasConfigServices) return [true];
-      if (!this.hasConfigFields && this.hasConfigServices && !this.hasPlaceholdersStep) return [servicesValid];
-      if (!this.hasConfigFields && this.hasConfigServices && this.hasPlaceholdersStep) return [servicesValid, placeholdersValid];
-      if (this.hasConfigFields && this.hasConfigServices && !this.hasPlaceholdersStep) return [true, servicesValid];
-      if (this.hasConfigFields && this.hasConfigServices && this.hasPlaceholdersStep) return [true, servicesValid, placeholdersValid];
-      return [];
+      return this.modalSteps.map((s) => {
+        if (s.type === 'general') return true; // no validation enforced for fields step
+        if (s.type === 'services') return servicesValid;
+        if (s.type === 'placeholders') return placeholdersValid;
+        return true;
+      });
     },
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
