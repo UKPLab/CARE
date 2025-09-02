@@ -21,11 +21,13 @@
 
         </div>
         <Sidebar
-            v-if="!sidebarDisabled && (!assessmentEnabled || !assessmentViewActive)"
+            v-if="!sidebarDisabled"
+            v-show="!assessmentEnabled || !assessmentViewActive"
             ref="sidebar" class="sidebar-container" :show="isSidebarVisible"
         />
         <Assessment
-            v-if="assessmentEnabled && assessmentViewActive"
+            v-if="assessmentEnabled"
+            v-show="assessmentViewActive"
             ref="assessment"
             :show="isSidebarVisible"
             :readonly="readOnly"
@@ -497,6 +499,13 @@ export default {
     }
   },
   methods: {
+    async canProceed() {
+      // If assessment sidebar is available and active/enabled, delegate gating
+      if (this.assessmentEnabled && this.$refs.assessment && typeof this.$refs.assessment.canProceed === 'function') {
+        return await this.$refs.assessment.canProceed();
+      }
+      return true;
+    },
     safeParseJSON(value) {
       try { return JSON.parse(value); } catch { return null; }
     },

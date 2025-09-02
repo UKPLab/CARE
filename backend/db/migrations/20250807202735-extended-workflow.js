@@ -31,8 +31,9 @@ const workflows = [
               key: "forcedAssessment",
               label: "Forced Assessment",
               type: "switch",
-              required: true,
-              default: false
+              required: false,
+              default: false,
+              help: "If enabled, reviewers must save a score and justification for every criterion before they can proceed."
             }
           ],
           placeholders: false
@@ -75,8 +76,9 @@ const workflows = [
               key: "forcedAssessment",
               label: "Forced Assessment",
               type: "switch",
-              required: true,
-              default: false
+              required: false,
+              default: false,
+              help: "If enabled, reviewers must save a score and justification for every criterion before they can proceed."
             }
           ],
           services: [

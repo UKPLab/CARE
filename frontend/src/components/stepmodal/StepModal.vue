@@ -166,6 +166,7 @@ export default {
       waiting: false,
       requests: {},
       timeoutError: false,
+      deferredSent: false,
     };
   },
   computed: {
@@ -376,6 +377,10 @@ export default {
 
       for (const service of this.configuration.services) {
         if (service.type === "nlpRequest") {
+          // Defer services configured to run on Next
+          if (service.trigger === "onNext") {
+            continue;
+          }
           if (!service.name || !service.skill || !service.inputs) {
             continue;
           }          
@@ -401,9 +406,54 @@ export default {
       this.data = data;
       this.$refs.modal.open();
     },
-    closeModal(event) {
+    async closeModal(event) {
+      // If user clicks Next and there are deferred NLP services, run them before closing
+      const hasDeferred = Array.isArray(this.configuration?.services)
+        && this.configuration.services.some(s => s?.type === 'nlpRequest' && s.trigger === 'onNext');
+
+      if (event?.nextStep && hasDeferred && !this.deferredSent) {
+        this.deferredSent = true;
+        this.waiting = true;
+
+        for (const service of this.configuration.services) {
+          if (service?.type === 'nlpRequest' && service.trigger === 'onNext') {
+            if (!service.name || !service.skill || !service.inputs) {
+              continue;
+            }
+            const { skill, inputs, name } = service;
+            await this.request(skill, inputs, ("service_" + name));
+          }
+        }
+
+        // Wait for requests to be processed and saved by existing watcher
+        try {
+          await this.waitForRequestsToComplete();
+        } catch (e) {
+          // proceed even on timeout
+        }
+        this.waiting = false;
+      }
+
       this.$emit("close", event);
       this.$refs.modal.close();
+    },
+    async waitForRequestsToComplete() {
+      const timeoutMs = this.nlpRequestTimeout || 30000;
+      const start = Date.now();
+      return await new Promise((resolve, reject) => {
+        const check = () => {
+          if (!this.requests || Object.keys(this.requests).length === 0) {
+            resolve(true);
+            return;
+          }
+          if (Date.now() - start > timeoutMs) {
+            reject(new Error('NLP onNext requests timed out'));
+            return;
+          }
+          setTimeout(check, 200);
+        };
+        check();
+      });
     },
     hasResultsInStudyData(uniqueId) {
       const realStepId = this.studySteps.findIndex(step => step.id === this.studyStepId) + 1;
@@ -419,6 +469,20 @@ export default {
       return false;
     },
     async sendRequest(skill, input, uniqueId, requestId) {
+      // 1) Try to reuse preprocessed results saved with null session/step
+      const preprocessed = await this.getPreprocessedResult(skill);
+      if (preprocessed && Object.keys(preprocessed).length > 0) {
+        // Preprocessed exists: do not save here, just skip NLP and end waiting
+        if (this.requests && this.requests[requestId]) {
+          delete this.requests[requestId];
+        }
+        if (!this.requests || Object.keys(this.requests).length === 0) {
+          this.waiting = false;
+        }
+        return;
+      }
+
+      // 2) If no preprocessed data found, send NLP request as before
       if (!this.hasResultsInStudyData(uniqueId)) {
         await this.$socket.emit("serviceRequest", {
           service: "NLPService",
@@ -440,6 +504,59 @@ export default {
         }, this.nlpRequestTimeout);
       }
     },
+
+
+    // ToDo : do not use the socket emit insted use computed property
+    // search for document data documentId, studySessionId, studyStepId in computed and try to help use key to filter the data and seperate the KEY with _ in 3 parts from the right to left 
+    async getPreprocessedResult(skill) {
+      const getProjectScopedSubmissionDocIds = () => {
+        const currentStudyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
+        const study = currentStudyStep ? this.$store.getters["table/study/get"](currentStudyStep.studyId) : null;
+        const projectId = study ? study.projectId : null;
+        const fallbackProjectId = projectId || parseInt(this.$store.getters["settings/getValue"]("projects.default"), 10);
+        const docs = this.$store.getters["table/document/getAll"] || [];
+        return docs
+          .filter(doc => doc && doc.submissionId && (doc.type === 0 || doc.type === 4) && !doc.hideInFrontend && (doc.projectId === fallbackProjectId || !doc.projectId))
+          .map(doc => doc.id);
+      };
+
+      const candidateDocIds = getProjectScopedSubmissionDocIds();
+      const candidateKeys = [
+        `grading_expose_nlpAssessment_assessment`,
+      ];
+
+      const tryFetch = (documentId, key) => new Promise(resolve => {
+        this.$socket.emit("documentDataGet", {
+          documentId,
+          studySessionId: null,
+          studyStepId: null,
+          key
+        }, (response) => {
+          if (response && response.success && response.data && response.data.value) {
+            const val = response.data.value;
+            resolve(val && typeof val === 'object' && 'data' in val ? val.data : val);
+          } else if (response && response.value) {
+            const val = response.value;
+            resolve(val && typeof val === 'object' && 'data' in val ? val.data : val);
+          } else {
+            resolve(null);
+          }
+        });
+      });
+
+      // Try all candidate docIds and key variants until one returns data
+      for (const docId of candidateDocIds) {
+        /* eslint-disable no-await-in-loop */
+        for (const key of candidateKeys) {
+          const result = await tryFetch(docId, key);
+          if (result && Object.keys(result).length > 0) return result;
+        }
+        /* eslint-enable no-await-in-loop */
+      }
+      return null;
+    },
+
+    // intentionally no saving of preprocessed data here
     // TODO: Replace this with an intermediate component between StepModal and NLPService (like, MultiNLPService)
     async request(skill, inputs, uniqueId) {
       const requestId = uuid();

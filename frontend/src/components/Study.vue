@@ -79,6 +79,7 @@
     class="study-container"
   >
     <Annotator
+      ref="annotator"
       v-if="currentStep.stepType === 1 && (studyTrajectory.includes(currentStep.id) || readOnly)"
       :document-id="currentStep.documentId"
       :study-step-id="currentStep.id"
@@ -412,7 +413,22 @@ export default {
         }
       }
     },
-    updateStep(step) {
+    async updateStep(step) {
+      // Gate navigation for steps that require validation before proceeding (e.g., forced assessment)
+      if (!this.readOnlyComputed && this.currentStep && this.currentStep.stepType === 1) {
+        const annotator = this.$refs.annotator;
+        if (annotator && typeof annotator.canProceed === 'function') {
+          const ok = await annotator.canProceed();
+          if (!ok) {
+            this.eventBus.emit("toast", {
+              title: "Incomplete Assessment",
+              message: "Please save all assessment criteria before proceeding.",
+              variant: "warning",
+            });
+            return;
+          }
+        }
+      }
       if (this.readOnlyComputed) {
         this.localStudyStepId = step;
       } else {

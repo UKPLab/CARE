@@ -66,7 +66,7 @@
                       </span>
                       <span
                         class="badge"
-                        :class="isGroupSaved(groupIndex) ? 'bg-success' : 'bg-secondary'"
+                        :class="(readonly || isGroupSaved(groupIndex)) ? 'bg-success' : 'bg-secondary'"
                       >
                         {{ getGroupScore(group) }} P
                       </span>
@@ -111,10 +111,10 @@
                             </span>
                             <span
                               class="badge"
-                              :class="criterion.isSaved ? 'bg-success' : 'bg-secondary'"
+                              :class="(readonly || criterion.isSaved) ? 'bg-success' : 'bg-secondary'"
                               :title="`isSaved: ${criterion.isSaved}`"
                             >
-                              {{ criterion.currentPoints || 0 }} P
+                              {{ criterion.currentScore || 0 }} P
                             </span>
                           </div>
                         </div>
@@ -157,12 +157,11 @@
                                 </button>
                               </div>
 
-                              <div class="d-flex align-items-center gap-2">
+                              <div v-if="!readonly" class="d-flex align-items-center gap-2">
                                 <select
-                                  v-model="criterion.currentPoints"
+                                  v-model="criterion.currentScore"
                                   class="form-select form-select-sm score-dropdown"
                                   title="Change score"
-                                  :disabled="readonly"
                                   @change="onScoreChange(groupIndex, criterionIndex)"
                                 >
                                   <option
@@ -175,7 +174,6 @@
                                 </select>
 
                                 <button
-                                  v-if="!readonly"
                                   :class="['btn btn-sm', criterion.isSaved ? 'btn-success' : 'btn-primary']"
                                   :title="criterion.isSaved ? 'Assessment saved' : 'Save assessment'"
                                   @click="saveAssessment(groupIndex, criterionIndex)"
@@ -244,7 +242,7 @@
               class="scoring-item p-2 border rounded mb-2 border-secondary"
             >
               <div class="d-flex justify-content-between align-items-start">
-                <span class="badge bg-secondary me-2">{{ option.points }} P</span>
+                <span class="badge bg-secondary me-2">{{ option.score ?? option.points }} P</span>
                 <span class="flex-grow-1">{{ option.description }}</span>
               </div>
             </div>
@@ -297,6 +295,17 @@ export default {
       showInfoPanel: false,
       selectedCriterion: null,
       infoPanelStyle: {},
+      // Event handler references for cleanup
+      dragHandlers: {
+        start: null,
+        move: null,
+        end: null,
+      },
+      hoverHandlers: {
+        enter: null,
+        leave: null,
+        containerLeave: null,
+      },
     };
   },
   
@@ -335,13 +344,24 @@ export default {
       const step = this.currentStudyStep;
       if (!step) return false;
       const cfg = typeof step.configuration === 'string' ? this.safeParseJSON(step.configuration) : step.configuration;
-      return !!(cfg && cfg.configFile);
+      if (!cfg) return false;
+      const hasConfigFile = !!cfg.configFile;
+      const hasNoServices = !cfg.services || (Array.isArray(cfg.services) && cfg.services.length === 0);
+      return hasConfigFile && hasNoServices;
     },
     // Whether the current study step enforces saving every criterion
     forcedAssessmentEnabled() {
       if (!this.isManualAssessmentWorkflow) return false;
-      const cfg = this.currentStudyStep?.configuration || {};
-      return cfg.forcedAssessment === true;
+      const rawCfg = this.currentStudyStep?.configuration || {};
+      const cfg = typeof rawCfg === 'string' ? this.safeParseJSON(rawCfg) : rawCfg;
+      const val = cfg?.forcedAssessment;
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'number') return val === 1;
+      if (typeof val === 'string') {
+        const s = val.trim().toLowerCase();
+        return s === 'true' || s === '1' || s === 'yes' || s === 'on';
+      }
+      return false;
     },
   },
   
@@ -398,6 +418,28 @@ export default {
       this.isDragging = false;
       document.body.style.userSelect = "";
     }
+    // Cleanup event listeners
+    const dragDom = document.querySelector("#assessmentHotZone");
+    if (dragDom && this.dragHandlers.start) {
+      dragDom.removeEventListener("mousedown", this.dragHandlers.start);
+      this.dragHandlers.start = null;
+    }
+    const hoverHotZoneDom = document.querySelector("#assessmentHoverHotZone");
+    const sidebarContainerDom = document.querySelector("#assessmentContainer");
+    if (hoverHotZoneDom) {
+      if (this.hoverHandlers.enter) {
+        hoverHotZoneDom.removeEventListener("mouseenter", this.hoverHandlers.enter);
+        this.hoverHandlers.enter = null;
+      }
+      if (this.hoverHandlers.leave) {
+        hoverHotZoneDom.removeEventListener("mouseleave", this.hoverHandlers.leave);
+        this.hoverHandlers.leave = null;
+      }
+    }
+    if (sidebarContainerDom && this.hoverHandlers.containerLeave) {
+      sidebarContainerDom.removeEventListener("mouseleave", this.hoverHandlers.containerLeave);
+      this.hoverHandlers.containerLeave = null;
+    }
   },
   
   methods: {
@@ -420,16 +462,6 @@ export default {
 
       let startX, startWidth;
       
-      const handleStart = (e) => {
-        this.isDragging = true;
-        e.preventDefault();
-        document.body.style.userSelect = "none";
-        startWidth = this.width;
-        startX = e.clientX;
-        document.addEventListener("mousemove", handleMove);
-        document.addEventListener("mouseup", handleEnd);
-      };
-
       const handleMove = (e) => {
         e.preventDefault();
         let newWidth = startWidth - (e.clientX - startX);
@@ -451,7 +483,20 @@ export default {
         this.originalWidth = this.width;
       };
 
-      dom.addEventListener("mousedown", handleStart);
+      const handleStart = (e) => {
+        this.isDragging = true;
+        e.preventDefault();
+        document.body.style.userSelect = "none";
+        startWidth = this.width;
+        startX = e.clientX;
+        document.addEventListener("mousemove", handleMove);
+        document.addEventListener("mouseup", handleEnd);
+      };
+
+      this.dragHandlers.start = handleStart;
+      this.dragHandlers.move = handleMove;
+      this.dragHandlers.end = handleEnd;
+      dom.addEventListener("mousedown", this.dragHandlers.start);
     },
     
     initHoverController() {
@@ -461,13 +506,14 @@ export default {
 
       let hoverTimer;
 
-      hoverHotZoneDom.addEventListener("mouseenter", () => {
+      const handleMouseenter = () => {
         hoverTimer = setTimeout(() => {
           this.isFixed = true;
           this.width = this.minWidth;
           sidebarContainerDom.addEventListener("mouseleave", handleMouseleave);
+          this.hoverHandlers.containerLeave = handleMouseleave;
         }, 500);
-      });
+      };
 
       const handleMouseleave = () => {
         clearTimeout(hoverTimer);
@@ -476,9 +522,14 @@ export default {
         sidebarContainerDom.removeEventListener("mouseleave", handleMouseleave);
       };
 
-      hoverHotZoneDom.addEventListener("mouseleave", () => {
+      const handleHotzoneLeave = () => {
         clearTimeout(hoverTimer);
-      });
+      };
+
+      this.hoverHandlers.enter = handleMouseenter;
+      this.hoverHandlers.leave = handleHotzoneLeave;
+      hoverHotZoneDom.addEventListener("mouseenter", this.hoverHandlers.enter);
+      hoverHotZoneDom.addEventListener("mouseleave", this.hoverHandlers.leave);
     },
     
     // Assessment data loading
@@ -508,7 +559,7 @@ export default {
       } catch (err) {
         this.error = "Failed to load assessment: " + err.message;
       } finally {
-        this.initializeCurrentPoints();
+        this.initializeCurrentScore();
       }
     },
 
@@ -565,7 +616,7 @@ export default {
             assessment: "",
             isEditing: false,
             editedAssessment: "",
-            currentPoints: 0,
+            currentScore: 0,
             isSaved: false,
             scoring: criterion.scoring
           };
@@ -574,8 +625,8 @@ export default {
         return {
           name: rubric.name,
           description: rubric.description,
-          points: 0,
-          maxPoints: criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0),
+          score: 0,
+          maxScore: criteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0),
           criteria: criteria
         };
       });
@@ -660,6 +711,8 @@ export default {
       this.$nextTick(() => {
         this.saveState();
       });
+      // Persist justification immediately after saving edits
+      this.saveAssessmentData(groupIndex, criterionIndex);
     },
     
     cancelEdit(groupIndex, criterionIndex) {
@@ -674,12 +727,12 @@ export default {
     
     // Scoring
     getAvailablePoints(criterion) {
-      const maxPoints = criterion.maxPoints || 5;
-      const points = [];
-      for (let i = 0; i <= maxPoints; i++) {
-        points.push(i);
+      const max = criterion.maxPoints || criterion.maxScore || 5;
+      const values = [];
+      for (let i = 0; i <= max; i++) {
+        values.push(i);
       }
-      return points;
+      return values;
     },
     
     onScoreChange(groupIndex, criterionIndex) {
@@ -697,11 +750,11 @@ export default {
       });
     },
     
-    saveAssessment(groupIndex, criterionIndex) {
+    async saveAssessment(groupIndex, criterionIndex) {
       const criterion = this.assessmentOutput.criteriaGroups[groupIndex].criteria[criterionIndex];
 
-      if (criterion.currentPoints !== undefined) {
-        criterion.points = criterion.currentPoints;
+      if (criterion.currentScore !== undefined) {
+        criterion.score = criterion.currentScore;
       }
 
       this.updateGroupPoints(groupIndex);
@@ -714,24 +767,26 @@ export default {
       this.$nextTick(() => {
         this.saveState();
       });
+
+      // Persist immediately when user clicks Save on a criterion
+      await this.saveAssessmentData(groupIndex, criterionIndex);
     },
     
     updateGroupPoints(groupIndex) {
-      const group = this.assessmentOutput.criteriaGroups[groupIndex];
-      if (group && group.criteria) {
-        const totalPoints = group.criteria.reduce((sum, criterion) => {
-          const points = criterion.currentPoints !== undefined ? criterion.currentPoints : criterion.points || 0;
-          return sum + points;
-        }, 0);
-
-        group.points = totalPoints;
-        this.$forceUpdate();
-      }
+      const groups = this.assessmentOutput?.criteriaGroups || [];
+      const group = groups[groupIndex];
+      if (!group) return;
+      const total = (group.criteria || []).reduce((sum, criterion) => {
+        const v = criterion.currentScore !== undefined ? criterion.currentScore : (criterion.score || 0);
+        return sum + v;
+      }, 0);
+      const newGroups = groups.map((g, i) => i === groupIndex ? { ...g, score: total } : g);
+      this.assessmentOutput = { ...this.assessmentOutput, criteriaGroups: newGroups };
     },
     
     // Utility methods
     getGroupScore(group) {
-      return group.points;
+      return group.score;
     },
     
     isGroupSaved(groupIndex) {
@@ -767,13 +822,13 @@ export default {
       textarea.rows = newRows;
     },
     
-    initializeCurrentPoints() {
+    initializeCurrentScore() {
       if (this.assessmentOutput && this.assessmentOutput.criteriaGroups) {
         this.assessmentOutput.criteriaGroups.forEach((group) => {
           if (group.criteria) {
             group.criteria.forEach((criterion) => {
-              if (criterion.currentPoints === undefined) {
-                criterion.currentPoints = criterion.points || 0;
+              if (criterion.currentScore === undefined) {
+                criterion.currentScore = criterion.score || 0;
               }
               if (criterion.isSaved === undefined) {
                 criterion.isSaved = false;
@@ -823,18 +878,17 @@ export default {
       }
 
       try {
-        // Load saved assessment data from the server using documentDataGet
         this.$socket.emit("documentDataGet", {
           documentId: this.documentId,
           studySessionId: this.studySessionId || null,
           studyStepId: this.studyStepId,
-          key: "assessment_results"
+          key: "assessment_result"
         }, (response) => {
-          if (response && response.success && response.data && response.data.value) {
-            this.mergeSavedDataWithConfiguration(response.data.value);
-          } else if (response && response.value) {
-            // Direct response format
-            this.mergeSavedDataWithConfiguration(response.value);
+          const value = (response && response.success && response.data && response.data.value)
+            ? response.data.value
+            : response?.value;
+          if (value) {
+            this.mergeSavedDataWithConfiguration(value);
           }
         });
       } catch (error) {
@@ -842,60 +896,36 @@ export default {
       }
     },
 
-    // Merge saved data with configuration
     mergeSavedDataWithConfiguration(savedData) {
-      if (!savedData || !savedData.criteriaGroups || !this.assessmentOutput) {
+      if (!savedData || !this.assessmentOutput) {
         return;
       }
 
-      // Merge saved data with the configuration structure
-      this.assessmentOutput.criteriaGroups = this.assessmentOutput.criteriaGroups.map(group => {
-        const savedGroup = savedData.criteriaGroups.find(g => g.name === group.name);
-        if (savedGroup) {
-          return {
-            ...group,
-            points: savedGroup.points || 0,
-            criteria: group.criteria.map(criterion => {
-              const savedCriterion = savedGroup.criteria.find(c => c.name === criterion.name);
-              if (savedCriterion) {
-                return {
-                  ...criterion,
-                  assessment: savedCriterion.justification || "",
-                  currentPoints: savedCriterion.points || 0,
-                  points: savedCriterion.points || 0,
-                  isSaved: true
-                };
-              } else {
-                return {
-                  ...criterion,
-                  assessment: "",
-                  currentPoints: 0,
-                  points: 0,
-                  isSaved: false
-                };
-              }
-            })
-          };
-        } else {
-          return {
-            ...group,
-            points: 0,
-            criteria: group.criteria.map(criterion => ({
-              ...criterion,
-              assessment: "",
-              currentPoints: 0,
-              points: 0,
-              isSaved: false
-            }))
-          };
-        }
+      const assessmentArray = Array.isArray(savedData)
+        ? savedData
+        : (Array.isArray(savedData.assessment) ? savedData.assessment : null);
+      if (!assessmentArray) return;
+
+      const newGroups = (this.assessmentOutput.criteriaGroups || []).map(group => {
+        const updatedCriteria = (group.criteria || []).map(criterion => {
+          const match = assessmentArray.find(a => (a.criterion === criterion.name) || (a.name === criterion.name));
+          if (match) {
+            const sc = (match.score !== undefined ? Number(match.score) : Number(match.points)) || 0;
+            return { ...criterion, assessment: match.justification || "", currentScore: sc, score: sc, isSaved: true };
+          }
+          return { ...criterion, assessment: "", currentScore: 0, score: 0, isSaved: false };
+        });
+        const total = updatedCriteria.reduce((sum, c) => sum + (c.currentScore || 0), 0);
+        return { ...group, score: total, criteria: updatedCriteria };
       });
 
-      this.initializeCurrentPoints();
+      this.assessmentOutput = { ...this.assessmentOutput, criteriaGroups: newGroups };
+      this.initializeCurrentScore();
     },
 
     // Save assessment data to document_data table
-    async saveAssessmentData() {
+    async saveAssessmentData(groupIndex = null, criterionIndex = null) {
+      if (this.readonly) return;
       if (!this.isManualAssessmentWorkflow) {
         return;
       }
@@ -904,18 +934,50 @@ export default {
       }
 
       try {
-        // Create hierarchical structure with only the required fields
-        const assessmentData = {
-          criteriaGroups: this.assessmentOutput.criteriaGroups.map(group => ({
-            name: group.name,
-            points: group.points || 0,
-            criteria: group.criteria.map(criterion => ({
-              name: criterion.name,
-              justification: criterion.assessment || "",
-              points: criterion.currentPoints || 0
-            }))
+        // Build only changed criterion (if indices provided) or all criteria
+        const buildOne = (c) => ({
+          criterion: c.name,
+          score: c.currentScore || 0,
+          justification: c.assessment || "",
+        });
+
+        let updates = [];
+        if (groupIndex !== null && criterionIndex !== null) {
+          const c = this.assessmentOutput.criteriaGroups?.[groupIndex]?.criteria?.[criterionIndex];
+          if (!c) return;
+          updates = [buildOne(c)];
+        } else {
+          (this.assessmentOutput.criteriaGroups || []).forEach(group => {
+            (group.criteria || []).forEach(c => updates.push(buildOne(c)));
+          });
+        }
+
+        // Merge with existing saved data, updating only provided criteria
+        const existing = await new Promise((resolve) => {
+          this.$socket.emit("documentDataGet", {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            key: "assessment_result",
+          }, (resp) => {
+            const v = (resp && resp.success && resp.data && resp.data.value) ? resp.data.value : resp?.value;
+            resolve(v || null);
+          });
+        });
+
+        const normalize = (arrOrObj) => (Array.isArray(arrOrObj) ? arrOrObj : (Array.isArray(arrOrObj?.assessment) ? arrOrObj.assessment : []))
+          .map(item => ({
+            criterion: item.criterion || item.name,
+            score: (item.score !== undefined ? item.score : (item.points !== undefined ? item.points : 0)) || 0,
+            justification: item.justification || "",
           }))
-        };
+          .filter(i => i && i.criterion);
+
+        const existingArr = normalize(existing);
+        const updatesArr = normalize(updates);
+        const byCriterion = new Map(existingArr.map(i => [i.criterion, i]));
+        updatesArr.forEach(u => byCriterion.set(u.criterion, u));
+        const value = { assessment: Array.from(byCriterion.values()) };
 
         // Save to document_data table (wrap in Promise so callers can await)
         await new Promise((resolve, reject) => {
@@ -923,11 +985,10 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: "assessment_results",
-            value: assessmentData
+            key: "assessment_result", // legacy-compatible key
+            value
           }, (response) => {
             if (response && response.success) {
-              // Success: no-op emit cleanup
               resolve(response);
             } else {
               reject(response);
@@ -954,16 +1015,13 @@ export default {
       }
       // Ensure current state reflects saved flags
       // Saving is already user-driven; just validate completeness
+      // In read-only, don't block
+      if (this.readonly) return true;
       return this.areAllCriteriaSaved();
     },
 
-    // Compatibility for Annotator.leave()
+    // Compatibility for Annotator.leave() - do not save here to avoid duplicate saves
     async leave() {
-      try {
-        await this.saveAssessmentData();
-      } catch (e) {
-        // swallow to not block navigation
-      }
       return this.saveState();
     }
   },

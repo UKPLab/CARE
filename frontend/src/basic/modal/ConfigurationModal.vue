@@ -130,7 +130,7 @@ export default {
       return Array.isArray(localCfg?.fields) ? localCfg.fields : [];
     },
     normalizedFields() {
-      return (this.fieldsDefinition || []).map((field) => {
+      const withNormalizedFilters = (this.fieldsDefinition || []).map((field) => {
         if (!field) return field;
         if (field.type === 'select' && field.options && field.options.filter && !Array.isArray(field.options.filter)) {
           return {
@@ -143,6 +143,7 @@ export default {
         }
         return field;
       });
+      return withNormalizedFilters;
     },
     hasConfigFields() {
       return this.normalizedFields && this.normalizedFields.length > 0;
@@ -188,8 +189,25 @@ export default {
         }
         return !!data.dataInput;
       });
+      // Validate required fields in General step
+      const generalValid = (this.normalizedFields || []).every((field) => {
+        if (!field || field.required !== true) return true;
+        const value = this.formData ? this.formData[field.key] : undefined;
+        if (value === undefined || value === null) return false;
+        if (typeof value === 'string') return value.trim().length > 0;
+        if (typeof value === 'number') return value > 0 || value === 0; // allow 0 for valid switches encoded as 0/1
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === 'object') {
+          // Handle quill delta or option object
+          if (value && value.ops && Array.isArray(value.ops)) {
+            return value.ops.some(op => typeof op.insert === 'string' && op.insert.trim() !== '');
+          }
+          return Object.keys(value).length > 0;
+        }
+        return !!value;
+      });
       return this.modalSteps.map((s) => {
-        if (s.type === 'general') return true; // no validation enforced for fields step
+        if (s.type === 'general') return generalValid;
         if (s.type === 'services') return servicesValid;
         if (s.type === 'placeholders') return placeholdersValid;
         return true;

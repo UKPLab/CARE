@@ -1018,6 +1018,21 @@ class DocumentSocket extends Socket {
      * @returns {Promise<Object>} A promise that resolves with the newly created `document_data` record object from the database.
      */
     async saveData(data, options) {
+        // Perform an upsert instead of unconditional insert to prevent duplicate rows for the same tuple.
+        // Upsert by unique tuple (documentId, studySessionId, studyStepId, key)
+        
+        const whereClause = {
+            documentId: data.documentId,
+            studySessionId: data.studySessionId,
+            studyStepId: data.studyStepId,
+            key: data.key
+        };
+
+        const existing = await this.models['document_data'].findOne({ where: whereClause, transaction: options.transaction });
+        if (existing) {
+            const updated = await this.models['document_data'].updateById(existing.id, { value: data.value, deleted: false }, { transaction: options.transaction });
+            return updated;
+        }
 
         let documentData = await this.models['document_data'].add({
             userId: this.userId,
@@ -1049,8 +1064,10 @@ class DocumentSocket extends Socket {
                 documentId: data.documentId,
                 studySessionId: data.studySessionId,
                 studyStepId: data.studyStepId,
-                key: data.key
+                key: data.key,
+                deleted: false
             },
+            order: [['updatedAt', 'DESC']],
             transaction: options?.transaction
         });
 
