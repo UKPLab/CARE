@@ -490,7 +490,7 @@ File uploads are handled via the ``documentAdd`` method in the ``document.js`` S
 
 **For .delta files:**
 
-- A ``document_edit`` entry is also created using content from the Delta format. See :ref:`delta-files` for more information on how ``.delta`` files are stored and processed.
+- A ``document_edit`` entry is also created using content from the Delta format. See :ref:`delta-overview-ref` for more information on how ``.delta`` files are stored and processed.
 
 **For .pdf files:**
 
