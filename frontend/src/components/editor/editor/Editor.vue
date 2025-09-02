@@ -218,20 +218,6 @@ export default {
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
     },
-    isConfigurationFile() {
-      const document = this.$store.getters["table/document/get"](this.documentId);
-      return document && document.type === 3; // DOC_TYPE_CONFIG
-    },
-    isTextualFeedbackWorkflow() {
-      // Check if this is a textualFeedback workflow step
-      if (this.studyStepId) {
-        const studyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
-        if (studyStep && studyStep.configuration && studyStep.configuration.services) {
-          return studyStep.configuration.services.some(service => service.type === "textualFeedback");
-        }
-      }
-      return false;
-    },
   },
   watch: {
     unappliedEdits: {
@@ -311,30 +297,18 @@ export default {
       },
       (res) => {
         if (res.success) {
-          if (this.isConfigurationFile && this.isTextualFeedbackWorkflow) {
-            // For textualFeedback workflows with config files, don't display JSON content
-            // Instead, initialize with empty content - the NLP service will handle the processing
-            this.initializeEditorWithContent([{insert: ''}]);
-            this.documentLoaded = true;
-            this.emitContentForPlaceholders();
-          } else if (this.isConfigurationFile) {
-            // Handle other configuration files (JSON) differently
-            this.initializeConfigurationFile(res['data']);
-          } else {
-            // Handle regular documents with deltas
-            this.initializeEditorWithContent(res['data']['deltas']);
+          this.initializeEditorWithContent(res['data']['deltas']);
 
-            let quill = new Quill(document.createElement('div'));
-            quill.setContents(res['data']['firstVersion']);
-            this.firstVersion = quill.root.innerHTML;
-            let currentVersion = this.editor.getEditor().root.innerHTML;
+          let quill = new Quill(document.createElement('div'));
+          quill.setContents(res['data']['firstVersion']);
+          this.firstVersion = quill.root.innerHTML;
+          let currentVersion = this.editor.getEditor().root.innerHTML;
 
-            let studyData = {
-              firstVersion: this.firstVersion,
-              currentVersion: currentVersion,
-            };
-            this.$emit("update:data", studyData);
-          }
+          let studyData = {
+            firstVersion: this.firstVersion,
+            currentVersion: currentVersion,
+          };
+          this.$emit("update:data", studyData);
         } else {
           this.handleDocumentError(res.error);
         }
@@ -454,11 +428,6 @@ export default {
       }
     },
     handleTextChange(delta, oldContents, source) {
-      // Don't process text changes for configuration files
-      if (this.isConfigurationFile) {
-        return;
-      }
-      
       if (source === "user") {
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
@@ -467,11 +436,6 @@ export default {
       }
     },
     processDelta() {
-      // Don't process deltas for configuration files
-      if (this.isConfigurationFile) {
-        return;
-      }
-      
       const quill = this.editor.getEditor();
       if (this.deltaBuffer.length > 0) {
         let combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
@@ -538,32 +502,6 @@ export default {
       this.applyAdditionalEdits();
 
       this.emitContentForPlaceholders();
-    },
-    async initializeConfigurationFile(data) {
-      if (this.editor && data.file) {
-        try {
-          let fileContent;
-          if (data.file instanceof ArrayBuffer) {
-            const uint8Array = new Uint8Array(data.file);
-            fileContent = new TextDecoder().decode(uint8Array);
-          } else {
-            fileContent = data.file.toString();
-          }
-          
-          // Parse and format the JSON content
-          const jsonContent = JSON.parse(fileContent);
-          const formattedJson = JSON.stringify(jsonContent, null, 2);
-          
-          // Use setText to set plain text content for JSON
-          this.editor.getEditor().setText(formattedJson);
-          
-          this.documentLoaded = true;
-          this.emitContentForPlaceholders();
-        } catch (error) {
-          console.error("Error parsing configuration JSON:", error);
-          this.handleDocumentError(error);
-        }
-      }
     },
     applyAdditionalEdits() {
       if (this.unappliedEdits.length > 0) {
