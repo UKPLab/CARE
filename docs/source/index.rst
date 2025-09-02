@@ -35,6 +35,7 @@ The project is developed at the `UKP Lab <https://www.informatik.tu-darmstadt.de
    for_researchers/basics
    for_researchers/exporting
    for_researchers/study/study
+   for_researchers/editor_usage
    
    for_researchers/moodle_usage
 
