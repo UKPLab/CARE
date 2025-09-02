@@ -21,8 +21,14 @@
 
         </div>
         <Sidebar
-            v-if="!sidebarDisabled"
+            v-if="!sidebarDisabled && (!assessmentEnabled || !assessmentViewActive)"
             ref="sidebar" class="sidebar-container" :show="isSidebarVisible"
+        />
+        <Assessment
+            v-if="assessmentEnabled && assessmentViewActive"
+            ref="assessment"
+            :show="isSidebarVisible"
+            :readonly="readOnly"
         />
       </div>
     </div>
@@ -61,11 +67,23 @@
           />
         </TopBarButton>
         <TopBarButton
+            v-if="assessmentEnabled"
+            :title="assessmentViewActive ? 'Switch to Annotator' : 'Switch to Assessment'"
+            class="btn rounded-circle ms-2"
+            @click="assessmentViewActive = !assessmentViewActive"
+        >
+          <LoadIcon
+              :color="assessmentViewActive ? '#097969' : '#777777'"
+              :size="18"
+              icon-name="clipboard-check"
+          />
+        </TopBarButton>
+        <TopBarButton
             v-show="studySessionId && studySessionId !== 0 ? active : true"
             :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
             class="btn rounded-circle"
-            @click="toggleSidebar"
             :class="{ 'sidebar-highlight': sidebarIconHighlight }"
+            @click="toggleSidebar"
         >
           <LoadIcon
               :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
@@ -79,7 +97,7 @@
     <!-- If download before study closing disabled and we are in a study session, no download allowed -->
     <Teleport to="#topBarExtendMenuItems">
       <li><a
-          :class="annotations.length + comments.length > 0 && !downloading && (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null)? '' : 'disabled'"
+          :class="annotations.length + comments.length > 0 && !downloading && (downloadBeforeStudyClosingAllowed || studySessionId === null)? '' : 'disabled'"
           class="dropdown-item"
           href="#"
           @click="downloadAnnotations"
@@ -131,6 +149,7 @@
  */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import Sidebar from "./sidebar/Sidebar.vue";
+import Assessment from "./Assessment.vue";
 import Loader from "@/basic/Loading.vue";
 import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/scroll";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
@@ -152,6 +171,7 @@ export default {
     PDFViewer,
     ExpandMenu,
     Sidebar,
+    Assessment,
     Loader,
     TopBarButton
   },
@@ -166,6 +186,11 @@ export default {
       type: Number,
       required: false,
       default: null
+    },
+    readOnly: {
+      type: Boolean,
+      required: false,
+      default: false
     },
     acceptStats: {
       type: Boolean,
@@ -215,6 +240,7 @@ export default {
     return {
       downloading: false,
       isSidebarVisible: true,
+      assessmentViewActive: false,
       sidebarIconHighlight: false,
       logScroll: debounce(function () {
         if (this.acceptStats) {
@@ -336,6 +362,20 @@ export default {
         return comments;
       }
     },
+    currentStudyStep() {
+      return this.studyStepId ? this.$store.getters["table/study_step/get"](this.studyStepId) : null;
+    },
+    currentWorkflowStep() {
+      const step = this.currentStudyStep;
+      if (!step || !step.workflowStepId) return null;
+      return this.$store.getters["table/workflow_step/get"](step.workflowStepId);
+    },
+    assessmentEnabled() {
+      const step = this.currentStudyStep;
+      if (!step) return false;
+      const cfg = typeof step.configuration === 'string' ? this.safeParseJSON(step.configuration) : step.configuration;
+      return !!(cfg && cfg.configFile);
+    },
   },
   watch: {
     // React to external changes to the saved scroll value (e.g., from store updates)
@@ -376,6 +416,14 @@ export default {
             annotationId: annotationId
           }
         });
+      }
+    });
+
+    // When a manual annotation is added, automatically switch to the annotator sidebar
+    this.eventBus.on('annotator:switchToSidebar', () => {
+      if (this.assessmentEnabled && this.assessmentViewActive) {
+        this.assessmentViewActive = false;
+        this.isSidebarVisible = true;
       }
     });
 
@@ -449,6 +497,9 @@ export default {
     }
   },
   methods: {
+    safeParseJSON(value) {
+      try { return JSON.parse(value); } catch { return null; }
+    },
     async scrollToSavedValue(value, delayMs) {
       const data = JSON.parse(value);
       const container = this.$refs.viewer;
@@ -636,7 +687,13 @@ export default {
       }
     },
     async leave() {
-      return await this.$refs.sidebar.leave();
+      if (this.assessmentEnabled && this.assessmentViewActive && this.$refs.assessment && this.$refs.assessment.leave) {
+        return await this.$refs.assessment.leave();
+      }
+      if (this.$refs.sidebar && this.$refs.sidebar.leave) {
+        return await this.$refs.sidebar.leave();
+      }
+      return true;
     },
     downloadAnnotations() {
 

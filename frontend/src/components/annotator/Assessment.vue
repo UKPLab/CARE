@@ -332,8 +332,10 @@ export default {
       return this.$store.getters["table/workflow/get"](wfStep.workflowId);
     },
     isManualAssessmentWorkflow() {
-      const name = this.currentWorkflow?.name || "";
-      return name === "Peer Review Workflow (Assessment)";
+      const step = this.currentStudyStep;
+      if (!step) return false;
+      const cfg = typeof step.configuration === 'string' ? this.safeParseJSON(step.configuration) : step.configuration;
+      return !!(cfg && cfg.configFile);
     },
     // Whether the current study step enforces saving every criterion
     forcedAssessmentEnabled() {
@@ -399,6 +401,9 @@ export default {
   },
   
   methods: {
+    safeParseJSON(value) {
+      try { return JSON.parse(value); } catch { return null; }
+    },
     // Sidebar management
     initSidebar() {
       this.minWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth") || 400;
@@ -497,16 +502,8 @@ export default {
           // Use the configuration file from the study step configuration
           this.loadConfigFile(configFileId);
         } else {
-          // Fallback to the old method if no configFile is specified
-          const assessmentConfigDoc = this.$store.getters["table/document/getByKey"]('name', 'Assessment Config')
-            .find(doc => doc.type === 3);
-
-          if (assessmentConfigDoc) {
-            this.loadConfigFile(assessmentConfigDoc.id);
-          } else {
-            // No configuration file found
-            this.error = "No assessment configuration file found. Please configure the assessment in the study setup.";
-          }
+          // No configuration file specified; disable assessment UI gracefully
+          this.error = "No assessment configuration file set for this step.";
         }
       } catch (err) {
         this.error = "Failed to load assessment: " + err.message;
