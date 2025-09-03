@@ -349,6 +349,15 @@ export default {
       const hasNoServices = !cfg.services || (Array.isArray(cfg.services) && cfg.services.length === 0);
       return hasConfigFile && hasNoServices;
     },
+    isAIAssessmentWorkflow() {
+      const step = this.currentStudyStep;
+      if (!step) return false;
+      const cfg = typeof step.configuration === 'string' ? this.safeParseJSON(step.configuration) : step.configuration;
+      if (!cfg) return false;
+      const hasConfigFile = !!cfg.configFile;
+      const hasServices = Array.isArray(cfg.services) && cfg.services.length > 0;
+      return hasConfigFile && hasServices;
+    },
     // Whether the current study step enforces saving every criterion
     forcedAssessmentEnabled() {
       if (!this.isManualAssessmentWorkflow) return false;
@@ -870,33 +879,91 @@ export default {
 
     // Load saved assessment data from document_data table
     async loadSavedAssessmentData() {
-      if (!this.isManualAssessmentWorkflow) {
-        return;
-      }
       if (!this.documentId || !this.studyStepId) {
         return;
       }
 
       try {
-        this.$socket.emit("documentDataGet", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId || null,
-          studyStepId: this.studyStepId,
-          key: "assessment_result"
-        }, (response) => {
-          const value = (response && response.success && response.data && response.data.value)
-            ? response.data.value
-            : response?.value;
-          if (value) {
-            this.mergeSavedDataWithConfiguration(value);
-          }
+        const keyManual = "assessment_result";
+        const keyAI = "grading_expose_nlpAssessment_assessment";
+        const keyToUse = this.isAIAssessmentWorkflow ? keyAI : keyManual;
+
+        // 1) Try to load already saved data for this step/session
+        const stepScoped = await new Promise((resolve) => {
+          this.$socket.emit("documentDataGet", {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId || null,
+            studyStepId: this.studyStepId,
+            key: keyToUse
+          }, (response) => {
+            const value = (response && response.success && response.data && response.data.value)
+              ? response.data.value
+              : response?.value;
+            resolve(value || null);
+          });
         });
+
+        if (stepScoped) {
+          this.mergeSavedDataWithConfiguration(stepScoped, { markAsSaved: true });
+          return;
+        }
+
+        // 2) If AI workflow, try to import preprocessed data saved with null session/step
+        if (this.isAIAssessmentWorkflow) {
+          const preprocessed = await this.getPreprocessedAssessmentData();
+          if (preprocessed) {
+            this.mergeSavedDataWithConfiguration(preprocessed, { markAsSaved: false });
+          }
+        }
       } catch (error) {
         console.error("Error loading saved assessment data:", error);
       }
     },
 
-    mergeSavedDataWithConfiguration(savedData) {
+    async getPreprocessedAssessmentData() {
+      const getProjectScopedSubmissionDocIds = () => {
+        const currentStudyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
+        const study = currentStudyStep ? this.$store.getters["table/study/get"](currentStudyStep.studyId) : null;
+        const projectId = study ? study.projectId : null;
+        const fallbackProjectId = projectId || parseInt(this.$store.getters["settings/getValue"]("projects.default"), 10);
+        const docs = this.$store.getters["table/document/getAll"] || [];
+        return docs
+          .filter(doc => doc && doc.submissionId && (doc.type === 0 || doc.type === 4) && !doc.hideInFrontend && (doc.projectId === fallbackProjectId || !doc.projectId))
+          .map(doc => doc.id);
+      };
+
+      const candidateDocIds = [this.documentId, ...getProjectScopedSubmissionDocIds()].filter((v, i, a) => v && a.indexOf(v) === i);
+      const key = "grading_expose_nlpAssessment_assessment";
+
+      const tryFetch = (documentId) => new Promise(resolve => {
+        this.$socket.emit("documentDataGet", {
+          documentId,
+          studySessionId: null,
+          studyStepId: null,
+          key
+        }, (response) => {
+          if (response && response.success && response.data && response.data.value) {
+            const val = response.data.value;
+            resolve(val && typeof val === 'object' && 'data' in val ? val.data : val);
+          } else if (response && response.value) {
+            const val = response.value;
+            resolve(val && typeof val === 'object' && 'data' in val ? val.data : val);
+          } else {
+            resolve(null);
+          }
+        });
+      });
+
+      for (const docId of candidateDocIds) {
+        /* eslint-disable no-await-in-loop */
+        const result = await tryFetch(docId);
+        if (result && Object.keys(result).length > 0) return result;
+        /* eslint-enable no-await-in-loop */
+      }
+      return null;
+    },
+
+    mergeSavedDataWithConfiguration(savedData, options = { markAsSaved: true }) {
       if (!savedData || !this.assessmentOutput) {
         return;
       }
@@ -911,7 +978,7 @@ export default {
           const match = assessmentArray.find(a => (a.criterion === criterion.name) || (a.name === criterion.name));
           if (match) {
             const sc = (match.score !== undefined ? Number(match.score) : Number(match.points)) || 0;
-            return { ...criterion, assessment: match.justification || "", currentScore: sc, score: sc, isSaved: true };
+            return { ...criterion, assessment: match.justification || "", currentScore: sc, score: sc, isSaved: options.markAsSaved === true };
           }
           return { ...criterion, assessment: "", currentScore: 0, score: 0, isSaved: false };
         });
@@ -926,7 +993,7 @@ export default {
     // Save assessment data to document_data table
     async saveAssessmentData(groupIndex = null, criterionIndex = null) {
       if (this.readonly) return;
-      if (!this.isManualAssessmentWorkflow) {
+      if (!this.isManualAssessmentWorkflow && !this.isAIAssessmentWorkflow) {
         return;
       }
       if (!this.assessmentOutput || !this.assessmentOutput.criteriaGroups) {
@@ -958,7 +1025,7 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: "assessment_result",
+            key: this.isAIAssessmentWorkflow ? "grading_expose_nlpAssessment_assessment" : "assessment_result",
           }, (resp) => {
             const v = (resp && resp.success && resp.data && resp.data.value) ? resp.data.value : resp?.value;
             resolve(v || null);
@@ -973,7 +1040,16 @@ export default {
           }))
           .filter(i => i && i.criterion);
 
-        const existingArr = normalize(existing);
+        let existingArr = normalize(existing);
+
+        // If AI workflow and nothing saved yet for this step/session, merge preprocessed baseline
+        if (this.isAIAssessmentWorkflow && existingArr.length === 0) {
+          const preprocessed = await this.getPreprocessedAssessmentData();
+          const baseline = normalize(preprocessed);
+          if (baseline.length > 0) {
+            existingArr = baseline;
+          }
+        }
         const updatesArr = normalize(updates);
         const byCriterion = new Map(existingArr.map(i => [i.criterion, i]));
         updatesArr.forEach(u => byCriterion.set(u.criterion, u));
@@ -985,7 +1061,7 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
-            key: "assessment_result", // legacy-compatible key
+            key: this.isAIAssessmentWorkflow ? "grading_expose_nlpAssessment_assessment" : "assessment_result",
             value
           }, (response) => {
             if (response && response.success) {

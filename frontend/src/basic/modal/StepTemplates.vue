@@ -37,7 +37,7 @@
                 <label class="form-label">{{ input }}:</label>
                 <FormSelect
                   v-model="inputMappingsProxy[index][input]"
-                  :options="{ options: availableDataSources }"
+                  :options="{ options: getOptionsForInput(selectedSkillsProxy[index].skillName, input) }"
                   :value-as-object="true"
                 />
               </div>
@@ -139,6 +139,7 @@ export default {
     skillMap: { type: Object, default: () => ({ options: [] }) },
     availableDataSources: { type: Array, default: () => [] },
     getSkillInputs: { type: Function, default: () => [] },
+    provideOptionsForInput: { type: Function, default: null },
     // Placeholders
     placeholders: { type: Array, default: () => [] },
     placeholderColors: { type: Array, default: () => [] },
@@ -204,6 +205,14 @@ export default {
       } catch (e) {
         return null;
       }
+    },
+    getOptionsForInput(skillName, inputName) {
+      if (typeof this.provideOptionsForInput === 'function') {
+        const provided = this.provideOptionsForInput(skillName, inputName, this.availableDataSources);
+        if (Array.isArray(provided)) return provided;
+      }
+      const base = Array.isArray(this.availableDataSources) ? this.availableDataSources : [];
+      return base;
     },
   },
 };

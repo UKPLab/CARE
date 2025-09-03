@@ -37,6 +37,7 @@
           :skill-map="skillMap"
           :available-data-sources="availableDataSources"
           :get-skill-inputs="getSkillInputs"
+          :provide-options-for-input="provideOptionsForInput"
         />
         <StepTemplates
           v-else-if="step.type === 'placeholders'"
@@ -72,6 +73,7 @@ import Quill from "quill";
 export default {
   name: "ConfigurationModal",
   components: { StepperModal, StepTemplates },
+  subscribeTable: ["document", "submission"],
   props: {
     modelValue: {
       type: Object,
@@ -417,6 +419,51 @@ export default {
       if (!skill) return {};
       // Return the input keys (v1, v2, etc.)
       return Object.keys(skill.config.input.data || {});
+    },
+    provideOptionsForInput(skillName, inputName, baseSources) {
+      const base = Array.isArray(baseSources) ? baseSources : [];
+      const isSubmissionInput = (name) => name === 'submission';
+      const isAssessmentConfigInput = (name) => name === 'assessment_config' || name === 'feedback_grading_criteria';
+
+      if (skillName === 'grading_expose') {
+        if (isSubmissionInput(inputName)) {
+          return this.getSubmissionOptions();
+        }
+        if (isAssessmentConfigInput(inputName)) {
+          return this.getConfigOptions();
+        }
+      }
+
+      if (skillName === 'generating_feedback') {
+        if (isSubmissionInput(inputName)) {
+          return this.getSubmissionOptions();
+        }
+        if (inputName === 'grading_results') {
+          return [{ value: 'assessment_output', name: 'Assessment Output', stepId: 0 }];
+        }
+        if (isAssessmentConfigInput(inputName)) {
+          return this.getConfigOptions();
+        }
+      }
+
+      return base;
+    },
+    getSubmissionOptions() {
+      const submissions = (this.$store.getters["table/submission/getAll"]) || [];
+      const submissionIds = submissions.map((s) => s.id);
+      const documents = (this.$store.getters["table/document/getAll"]) || [];
+
+      let docs = documents.filter((d) => d && (d.type === 0 || d.type === 4) && !d.hideInFrontend);
+      if (submissionIds.length > 0) {
+        docs = docs.filter((d) => submissionIds.includes(d.submissionId));
+      }
+      return docs.map((d) => ({ value: `submission_${d.id}`, name: d.name, stepId: 0 }));
+    },
+    getConfigOptions() {
+      const configs = (this.$store.getters["table/document/getByKey"] && this.$store.getters["table/document/getByKey"]('type', 3)) || [];
+      return configs
+        .filter((d) => d && !d.hideInFrontend)
+        .map((d) => ({ value: `config_${d.id}`, name: d.name, stepId: 0 }));
     },
     extractPlaceholders(text) {
       // TODO: Types of placeholders are hard coded. Should rethink its implementation.
