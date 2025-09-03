@@ -51,6 +51,8 @@ import UploadModal from "./review/UploadModal.vue";
 import ImportModal from "./review/ImportModal.vue";
 import PublishModal from "./review/PublishModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import JSZip from "jszip";
+import FileSaver from "file-saver";
 
 /**
  * Submission list component
@@ -95,6 +97,20 @@ export default {
         { name: "Created At", key: "createdAt" },
       ],
       tableButtons: [
+        {
+          icon: "download",
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+            },
+          },
+          title: "Download submission files",
+          action: "downloadSubmission",
+          stats: {
+            submissionId: "id",
+          },
+        },
         {
           icon: "box-arrow-in-right",
           options: {
@@ -148,6 +164,9 @@ export default {
   methods: {
     action(data) {
       switch (data.action) {
+        case "downloadSubmission":
+          this.downloadSubmission(data.params.id);
+          break;
         case "accessDoc":
           this.accessDoc(data.params);
           break;
@@ -156,8 +175,6 @@ export default {
           break;
       }
     },
-    // TODO: To be implemented
-    downloadSubmission() {},
     async deleteDoc(row) {
       const studies = this.$store.getters["table/study/getFiltered"]((e) => e.documentId === row.id);
       let warning;
@@ -196,6 +213,101 @@ export default {
     },
     preprocessGrades() {
       this.$refs.gradingModal.open();
+    },
+    async downloadSubmission(submissionId) {
+      try {
+        // Get all documents for this submission
+        const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === submissionId);
+
+        if (!docs || docs.length === 0) {
+          this.eventBus.emit("toast", {
+            title: "No documents found",
+            message: "This submission has no associated documents to download",
+            variant: "warning",
+          });
+          return;
+        }
+
+        // Create a ZIP file to package all documents
+        const zip = new JSZip();
+
+        // Get submission info for folder naming
+        const submission = this.$store.getters["table/submission/get"](submissionId);
+        const user = this.$store.getters["table/user/get"](submission.userId);
+        const folderName = `submission_${submission.extId}_${user?.firstName}_${user?.lastName}`;
+
+        // Download each document and add to ZIP
+        for (const doc of docs) {
+          try {
+            // Request document content from server
+            const response = await new Promise((resolve, reject) => {
+              this.$socket.emit("documentGet", { documentId: doc.id }, (res) => {
+                if (res.success) {
+                  resolve(res.data);
+                } else {
+                  reject(new Error(res.message || "Failed to get document"));
+                }
+              });
+            });
+
+            // Determine file extension based on document type
+            let fileExtension;
+            let fileName;
+
+            switch (doc.type) {
+              case 3: // JSON/Config
+                fileExtension = ".json";
+                break;
+              case 4: // ZIP
+                fileExtension = ".zip";
+                break;
+              default:
+                fileExtension = ".pdf";
+            }
+
+            fileName = `${doc.name}${fileExtension}`;
+
+            // Add file to ZIP
+            if (response.file) {
+              if (typeof response.file === "string") {
+                // If it's a string (like JSON), add as text
+                zip.file(`${folderName}/${fileName}`, response.file, { binary: false });
+              } else {
+                // For binary data
+                zip.file(`${folderName}/${fileName}`, response.file, { binary: true });
+              }
+            } else {
+              this.eventBus.emit("toast", {
+                title: "Document download issue",
+                message: `Could not download ${doc.name}`,
+                variant: "warning",
+              });
+            }
+          } catch (error) {
+            this.eventBus.emit("toast", {
+              title: "Download error",
+              message: `Failed to download ${doc.name}: ${error.message}`,
+              variant: "danger",
+            });
+          }
+        }
+
+        zip.generateAsync({ type: "blob" }).then((content) => {
+          FileSaver.saveAs(content, `${folderName}.zip`);
+        });
+
+        this.eventBus.emit("toast", {
+          title: "Download complete",
+          message: `Downloaded submission ${submission.extId} with ${docs.length} documents`,
+          variant: "success",
+        });
+      } catch (error) {
+        this.eventBus.emit("toast", {
+          title: "Download failed",
+          message: error.message,
+          variant: "danger",
+        });
+      }
     },
   },
 };

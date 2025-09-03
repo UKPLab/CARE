@@ -855,9 +855,7 @@ class DocumentSocket extends Socket {
 
                 this.emit("document_editRefresh", edits);
             } else {
-
                 if (data['studySessionId'] == null && data['studyStepId'] == null) {
-
                     // Get the edits for the base document
                     const edits = await this.models['document_edit'].findAll({
                         where: {
@@ -895,22 +893,25 @@ class DocumentSocket extends Socket {
                 }
             }
         } else {
-            // Handle file-based documents (PDF, JSON, etc.)
-            const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';
+            const extensionMap = {
+                [docTypes.DOC_TYPE_CONFIG]: ".json",
+                [docTypes.DOC_TYPE_ZIP]: ".zip",
+            }
+            
+            const fileExtension = extensionMap[document.type] || ".pdf";
             const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
             
             if (!fs.existsSync(filePath)) {
                 throw new Error(`File ${document.hash}${fileExtension} not found`);
             }
 
-            const file = fs.readFileSync(filePath); // Buffer
+            let file = fs.readFileSync(filePath); // Buffer
             // For JSON files, return the content as a string; for others, return as Buffer
-            if (document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG) {
-                const fileContent = file.toString('utf8');
-                return { document: document, file: fileContent };
-            } else {
-                return { document: document, file: file };
+            if (document.type === docTypes.DOC_TYPE_CONFIG) {
+                file = file.toString("utf8");
             }
+            
+            return { document, file };
         }
     }
 
