@@ -384,10 +384,10 @@ export default {
                 this.deleteStudy(data.params);
       } else if (data.action === "openStudy") {
         this.$router.push("/study/" + data.params.hash);
-      } else if (data.action === "linkStudy") {
+      } else if (data.action === "copyStudyLink") {
 
         this.copyLink(data.params.id);
-      } else if (data.action === "inspectSessions") {
+      } else if (data.action === "inspectStudySessions") {
 
         this.$refs.studySessionModal.open(data.params.id);
       } else if (data.action === "closeStudy") {
@@ -413,7 +413,7 @@ export default {
             });
           }
         });
-      } else if (data.action === "saveAsTemplate") {
+      } else if (data.action === "saveStudyAsTemplate") {
         this.saveAsTemplate(data.params);
       } else if (data.action === "showInformation") {
         const {deletedAt, createdAt, firstName, lastName, updatedAt, manage, ...filteredParams} = data.params;
