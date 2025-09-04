@@ -153,14 +153,14 @@ You want to implement a new feature, realize a hot fix or make any other non-tri
 There are currently two main branches in the repository:
 
 - `main`: holds only verified, stable and deployable code. Only major pull requests are added to this by repo maintainers. This branch is protected.
-- `dev`: holds current, stable code under development. This branch may include experimental features etc. and is merged to 'main' occasionally, when a milestone is finished. This branch is protected.
+- `dev`: holds current, stable code under development. This branch may include experimental features etc. and is merged to `main` occasionally, when a milestone is finished. This branch is protected.
 
 General Guidelines
 ~~~~~~~~~~~~~~~~~~
 
 **Branch naming**
 
-- Child branches start with the name of their parent branch (excluding 'main' and 'dev' as parents) as a prefix, e.g.
+- Child branches start with the name of their parent branch (excluding `main` and `dev` as parents) as a prefix, e.g.
 
 ::
 
@@ -245,7 +245,7 @@ You want to implement an entirely new feature, which is non-trivial to realize.
 
     git checkout dev
 
-2. To create a new feature branch on 'dev', you first need to define a proper name. The feature has an associated issue number ''FNUM'' and a one-word name ''FNAME''. Then you create a child branch as:
+2. To create a new feature branch on `dev`, you first need to define a proper name. The feature has an associated issue number ``FNUM`` and a one-word name ``FNAME``. Then you create a child branch as:
 
 ::
 
@@ -255,11 +255,11 @@ You want to implement an entirely new feature, which is non-trivial to realize.
 
 **New release**
 
-One or multiple features are finished on their branch, they are stable, tested and ready for release to 'dev' and finally 'main'. A release is associated with a milestone, so if necessary create this milestone first.
+One or multiple features are finished on their branch, they are stable, tested and ready for release to `dev` and finally `main`. A release is associated with a milestone, so if necessary create this milestone first.
 
 1. Make sure the respective feature branches are cleaned and tested to work on their own (as far as this can be tested).
 
-2. Create a pull request for merging the respective feature branches to the 'dev' branch. This may result in code on 'dev' which is not stable and you might need to resolve merge conflicts first. If no code review is necessary, you might as well merge them directly into 'dev' without a pull request:
+2. Create a pull request for merging the respective feature branches to the `dev` branch. This may result in code on `dev` which is not stable and you might need to resolve merge conflicts first. If no code review is necessary, you might as well merge them directly into `dev` without a pull request:
 
 ::
 
@@ -267,7 +267,7 @@ One or multiple features are finished on their branch, they are stable, tested a
     git merge FEATUREBRANCH1
     git merge FEATUREBRANCH2
 
-3. Create a new release branch dedicated to clean up the merged version and resolve an issues. We use RNUM being the milestone number.
+3. Create a new release branch dedicated to clean up the merged version and resolve an issues. We use ``RNUM`` being the milestone number.
 
 ::
 
@@ -275,7 +275,7 @@ One or multiple features are finished on their branch, they are stable, tested a
 
 4. Do the clean up and issue resolution. If necessary you may create sub-branches with the necessary changes here, but typically this should not be necessary. In the end the release branch is stable and could be deployed without an issue. If everything worked well without having to realize fundamental changes to features, you may delete the feature branches at this point.
 
-5. Now merge the release branch back into 'dev' now making it stable again, if no other changes occurred in the meantime.
+5. Now merge the release branch back into `dev` now making it stable again, if no other changes occurred in the meantime.
 
 ::
 
@@ -290,7 +290,7 @@ One or multiple features are finished on their branch, they are stable, tested a
 
 The deployed version has a bug that needs to be fixed ad-hoc. There is an associated issue with an issue number.
 
-1. Create a hot-fix branch from the main branch with issue number INUM.
+1. Create a hot-fix branch from the main branch with issue number ``INUM``.
 
 ::
 
@@ -305,7 +305,7 @@ The deployed version has a bug that needs to be fixed ad-hoc. There is an associ
 
 **Cleanup**
 
-If an issue is closed, the code has to cleaned up and merged into dev
+If an issue is closed, the code has to cleaned up and merged into `dev`
 
 ::
 
