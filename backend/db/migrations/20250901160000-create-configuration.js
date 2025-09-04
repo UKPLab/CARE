@@ -16,26 +16,22 @@ module.exports = {
       },
       name: {
         type: Sequelize.STRING,
-        allowNull: true,
-        defaultValue: '',
+        allowNull: false,
       },
       description: {
         type: Sequelize.TEXT,
         allowNull: true,
-        defaultValue: '',
       },
       userId: {
         type: Sequelize.INTEGER,
-        allowNull: true,
-        defaultValue: null,
+        allowNull: false,
         references: {
           model: 'user',
           key: 'id',
         },
-        onDelete: 'SET NULL',
         onUpdate: 'CASCADE',
       },
-      public: {
+      hideInFrontend: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: false,
@@ -43,7 +39,6 @@ module.exports = {
       type: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 0,
       },
       configContent: {
         type: Sequelize.JSONB,

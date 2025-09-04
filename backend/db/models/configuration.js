@@ -31,12 +31,12 @@ module.exports = (sequelize, DataTypes) => {
                 label: "User ID",
                 placeholder: "#",
                 type: "text",
-                required: false,
-                default: "",
+                required: true,
+
             },
             {
-                key: "public",
-                label: "Public",
+                key: "hideInFrontend",
+                label: "Hide in Frontend",
                 type: "switch",
                 required: false,
                 default: false,
@@ -51,7 +51,6 @@ module.exports = (sequelize, DataTypes) => {
                     { name: "Validation", value: 1 },
                 ],
                 required: true,
-                default: 0,
             },
             {
                 key: "configContent",
@@ -59,7 +58,6 @@ module.exports = (sequelize, DataTypes) => {
                 placeholder: "{ }",
                 type: "json",
                 required: true,
-                default: {},
             },
         ];
 
@@ -72,7 +70,7 @@ module.exports = (sequelize, DataTypes) => {
         name: DataTypes.STRING,
         description: DataTypes.TEXT,
         userId: DataTypes.INTEGER,
-        public: DataTypes.BOOLEAN,
+        hideInFrontend: DataTypes.BOOLEAN,
         type: DataTypes.INTEGER,
         configContent: DataTypes.JSONB,
         deleted: DataTypes.BOOLEAN,
