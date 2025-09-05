@@ -4,10 +4,6 @@ const Delta = require('quill-delta');
 const {docTypes} = require("../../db/models/document.js");
 const path = require("path");
 const {getTextPositions} = require("../../utils/text.js");
-const {compileSchema, validateZip, validateZipWithSchema} = require("../../utils/validator.js");
-// const { associateFilesForSubmission } = require("../../utils/fileAssociator.js");
-const {v4: uuidv4} = require("uuid");
-
 const yauzl = require("yauzl");
 
 const {dbToDelta} = require("editor-delta-conversion");
@@ -183,7 +179,7 @@ class DocumentSocket extends Socket {
                 fs.writeFileSync(target, file);
             } catch (annotationRpcErr) {
                 errors.push("Error deleting annotations: " + annotationRpcErr.message);
-        fs.writeFileSync(target, data.file);
+                fs.writeFileSync(target, data.file);
             }
 
             if (data["importAnnotations"]) {
@@ -896,8 +892,8 @@ class DocumentSocket extends Socket {
                                     (edit.studyStepId === null || edit.studyStepId < data['studyStepId'])))),
                                 ),
                     };
-                }
             }
+        }
         } else {
             // Handle file-based documents (PDF, JSON, etc.)
             const fileExtension = document.type === this.models['document'].docTypes.DOC_TYPE_CONFIG ? '.json' : '.pdf';

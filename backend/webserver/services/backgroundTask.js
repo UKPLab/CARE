@@ -176,34 +176,18 @@ module.exports = class BackgroundTaskService extends Service {
                         if (!backgroundTask.preprocess.cancelled && nlpResult) {
                             try {
                                 await Promise.all(
-                                    item.docIds.map(async (docId) => {
-                                        try {
-                                            const existing = await this.server.db.models['document_data'].findOne({
-                                                where: {
-                                                    userId: documentSocket.userId,
-                                                    documentId: docId,
-                                                    studySessionId: null,
-                                                    studyStepId: null,
-                                                    key: `service_nlpGrading_${item.skill}`,
-                                                    deleted: false
-                                                }
-                                            });
-                                            const payload = {
+                                    item.docIds.flatMap(docId =>
+                                        Object.keys(nlpResult).map(key =>
+                                            documentSocket.saveData({
                                                 userId: documentSocket.userId,
                                                 documentId: docId,
                                                 studySessionId: null,
                                                 studyStepId: null,
-                                                key: `service_nlpGrading_${item.skill}`,
-                                                value: nlpResult
-                                            };
-                                            if (existing && existing.id) {
-                                                payload.id = existing.id;
-                                            }
-                                            await this.server.db.models['document_data'].upsert(payload);
-                                        } catch (singleErr) {
-                                            this.server.logger.error(`Error upserting NLP results for docId ${docId} in request ${item.requestId}: ${singleErr.message}`, singleErr);
-                                        }
-                                    })
+                                                key: `${item.skill}_nlpAssessment_${key}`,
+                                                value: nlpResult[key]
+                                            }, {})
+                                        )
+                                    )
                                 );
                             } catch (saveErr) {
                                 this.server.logger.error(`Error saving NLP results for request ${item.requestId}: ${saveErr.message}`, saveErr);
