@@ -40,7 +40,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
-      configContent: {
+      content: {
         type: Sequelize.JSONB,
         allowNull: true,
       },

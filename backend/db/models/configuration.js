@@ -53,7 +53,7 @@ module.exports = (sequelize, DataTypes) => {
                 required: true,
             },
             {
-                key: "configContent",
+                key: "content",
                 label: "Config (JSON)",
                 placeholder: "{ }",
                 type: "json",
@@ -72,7 +72,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         hideInFrontend: DataTypes.BOOLEAN,
         type: DataTypes.INTEGER,
-        configContent: DataTypes.JSONB,
+        content: DataTypes.JSONB,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
