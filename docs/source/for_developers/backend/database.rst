@@ -31,6 +31,11 @@ Additionally, the following attributes are added to each table:
 - ``updatedAt``: The time when the entry was last updated.
 - ``deletedAt``: The time when the entry was deleted.
 
+.. seealso::
+   Auto tables are mirrored to the frontend and live-synced. For the full pipeline and requirements,
+   see :ref:`Requirements (autoTable & Subscription) <autotable-subscription-reqs>` and
+   :doc:`Data Transfer <data_transfer>`.
+
 Migrations
 ----------
 
@@ -186,6 +191,34 @@ In case you need more specific functions, you may simply add static access metho
         //... initialization etc.
     };
 
+.. seealso::
+   Runtime update semantics (e.g., timestamping ``closed``, soft-deletes) are implemented in the shared MetaModel.
+   You can find more informations about the MetaModel in the next section.
+
+.. _metamodel-behavior:
+
+MetaModel Behavior
+~~~~~~~~~~~~~~~~~~
+
+The `MetaModel` class in ``backend/db/MetaModel.js`` provides shared behaviors for all Sequelize models in CARE. These simplify database operations and ensure consistent logic across the application.
+
+**Included Behaviors:**
+
+- ``updateById``:
+  
+  - Sets ``deletedAt = Date.now()`` when ``deleted`` is truthy (soft delete)
+  - Sets ``closed = Date.now()`` when ``closed`` is truthy
+  - Enables ``individualHooks`` if the model defines ``beforeUpdate`` or ``afterUpdate`` hooks, ensuring that per-row hooks are executed (used for cascading logic, etc.)
+  - Returns the updated row, even if it has been soft-deleted
+
+- ``getAutoTable`` / ``getAll``:
+
+  - Automatically applies access-aware filters:
+    - Exclude rows marked as ``deleted``
+    - Restrict rows by ``userId``
+    - Include ``public`` rows when applicable
+
+These shared methods reduce the need to repeat logic and ensure consistent query semantics across models.
 
 Populating a Table
 ~~~~~~~~~~~~~~~~~~
@@ -267,6 +300,12 @@ You can use the `afterUpdate` hook to detect when the `deleted` flag changes, an
 .. note::
 
    By comparing the current value (`instance.deleted`) to the previous one (`instance._previousDataValues.deleted`), you ensure the logic only runs when the value actually changes.
+
+Updates triggered by hooks can also be propagated to subscribed frontend components. For details, see :doc:`Data Transfer <data_transfer>`.
+
+.. seealso::
+   After commits, changes on ``autoTable`` models are broadcast to subscribers.
+   See :ref:`Store Updates & <table>Refresh> Events <table-refresh-events>` and :ref:`Data Flow <data-flow>`.
 
 Handling `individualHooks`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
