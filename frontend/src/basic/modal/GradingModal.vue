@@ -1,128 +1,45 @@
 <template>
   <div>
-    <StepperModal
+    <ApplySkillSetupStepper
       v-if="!isProcessingActive"
-      ref="gradingStepper"
-      :steps="[{ title: 'Select Skill' }, { title: 'Select input file' }]"
-      :validation="stepValid"
+      ref="setupStepper"
+      title="Preprocess Grading"
+      :skills-options="skillMap.options"
+      :config-options="configOptions"
+      :input-files="inputFiles"
+      :columns="columns"
+      :options="options"
       submit-text="Apply Skill"
-      @submit="preprocessing"
-    >
-      <template #title>
-        <h5 class="modal-title text-primary">Preprocess Grading</h5>
-      </template>
-      <template #step-1>
-        <div class="mb-3">
-          <label class="form-label">Select NLP Skill:</label>
-          <FormSelect
-            v-model="selectedSkill"
-            :options="skillMap"
-          />
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Select Config:</label>
-          <FormSelect
-            v-model="selectedConfig"
-            :options="{ options: configOptions }"
-          />
-        </div>
-      </template>
-      <template #step-2>
-        <div>
-          <h6 class="mb-3">Input file selection</h6>
-          <BasicTable
-            :columns="columns"
-            :data="inputFiles"
-            :options="{ ...options, selectableRows: true }"
-            :modelValue="selectedInputRows || []"
-            @update:modelValue="onInputFilesChange"
-          />
-        </div>
-      </template>
-    </StepperModal>
+      @submit="onSetupSubmit"
+    />
 
-    <StepperModal
+    <ApplySkillProcessStepper
       v-else
-      ref="gradingStepper"
-      :steps="processingSteps"
-      :validation="[true, true]"
+      ref="processStepper"
+      title="Preprocess Grading"
+      :preprocess="preprocess"
+      :input-files="inputFiles"
+      :options="options"
       :current-step="currentStep"
-      :show-footer="false"
-      :next-text="currentStep === 1 ? 'Cancel Preprocess' : 'Next'"
-      submit-text="Confirm"
       :show-close="true"
-      @submit="cancelProcessing"
-    >
-      <template #title>
-        <h5 class="modal-title text-primary">Preprocess Grading</h5>
-      </template>
-
-      <template #step-1>
-        <div class="mb-3">
-          <div class="d-flex align-items-center mb-2">
-            <span class="me-2">Processed:</span>
-            <strong>{{ processedCount }} / {{ preprocess?.currentSubmissionsCount || 0 }}</strong>
-          </div>
-          <div class="progress mb-3" style="height: 20px;">
-            <div
-              class="progress-bar"
-              role="progressbar"
-              :style="{ width: progressPercent + '%' }"
-              :aria-valuenow="processedCount"
-              :aria-valuemin="0"
-              :aria-valuemax="preprocess.currentSubmissionsCount || 0"
-            >
-              {{ progressPercent }}%
-            </div>
-          </div>
-
-          <div class="mt-2 text-muted">
-            The total running time is <strong>{{ elapsedTime }}</strong>
-          </div>
-          <div class="mt-2 text-muted">
-            Current request time: <strong>{{ currentRequestElapsedTime }}</strong>
-          </div>
-          <div class="mt-2 text-muted">
-            Estimated time remaining: <strong>{{ estimatedTimeRemainingFormatted }}</strong>
-          </div>
-
-          <h6 class="mt-4">Submissions in Queue</h6>
-          <BasicTable
-            :columns="remainingColumns"
-            :data="remainingSubmissions"
-            :options="{ ...options, pagination: 5 }"
-          />
-        </div>
-      </template>
-
-      <template #step-2>
-        <div class="mb-3">
-          <h5>Cancel Processing</h5>
-          <p>Are you sure you want to cancel the remaining requests?</p>
-        </div>
-      </template>
-
-    </StepperModal>
+      cancel-next-text="Cancel Preprocess"
+      @cancel="cancelProcessing"
+    />
   </div>
 </template>
 
 <script>
-import StepperModal from "@/basic/modal/StepperModal.vue";
-import FormSelect from "@/basic/form/Select.vue";
-import BasicTable from "@/basic/Table.vue";
-import { fetchJsonOptions } from "@/assets/utils";
+import ApplySkillSetupStepper from "@/basic/modal/ApplySkillSetupStepper.vue";
+import ApplySkillProcessStepper from "@/basic/modal/ApplySkillProcessStepper.vue";
 
 export default {
   name: "GradingModal",
-  components: { StepperModal, FormSelect, BasicTable },
+  components: { ApplySkillSetupStepper, ApplySkillProcessStepper },
   subscribeTable: ["document","submission", "document_data", "user"],
   emits: ["submit"],
   data() {
     return {
-      selectedSkill: '',
-      selectedConfig: '',
-      selectedInputRows: [],
-      now: Date.now(),
+      
       options: {
         striped: true,
         hover: true,
@@ -133,18 +50,10 @@ export default {
       },
       //preprocess: {}, // Use this for tests: {cancelled: false, requests: {{'f737b280-e11b-47ff-b56f-6320876a1633':{submissionId: 1, docIds: [1], skill: 'grading_expose'},  '30170c9c-233d-4e27-a07b-d70312971428':{submissionId: 2, docIds: [2], skill: 'grading_expose'}}, currentSubmissionsCount: 3}
       currentStep: 1,
-      elapsedTimer: null,
       configOptions: [],
     };
   },
   watch: {
-    isProcessingActive(newVal) {
-      if (newVal) {
-        this.startElapsedTimer();
-      } else {
-        this.stopElapsedTimer();
-      }
-    },
     jsonConfig: {
       handler() {
         this.fetchConfigOptions();
@@ -171,13 +80,6 @@ export default {
         { key: 'name', name: 'Submission Name' },
         { key: 'group', name: 'GroupID', filter: this.groupFilterOptions },
         { key: 'data_existing', name: 'Data Existing', filter: this.dataExistingFilterOptions },
-      ];
-    },
-    remainingColumns() {
-      return [
-        { key: 'id', name: 'ID' },
-        { key: 'name', name: 'Submission Name' },
-        { key: 'userName', name: 'User' },
       ];
     },
     /**
@@ -209,18 +111,6 @@ export default {
         .sort()
         .map((val) => ({ key: val, name: val }));
     },
-    processingSteps() {
-      if (this.isProcessingActive) {
-        return [
-          { title: 'Processing Progress' },
-          { title: 'Confirm Cancellation' }
-        ];
-      }
-      return [
-        { title: 'Select Skill' },
-        { title: 'Select input file' }
-      ];
-    },
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return skills && typeof skills === "object" ? Object.values(skills) : [];
@@ -232,12 +122,6 @@ export default {
           name: skill.name,
         })),
       };
-    },
-    stepValid() {
-      return [
-        !!this.selectedSkill && !!this.selectedConfig, // Step 1: Both must be selected and config must be valid
-        this.selectedInputRows.length > 0, // Step 2: At least one file selected
-      ];
     },
     inputFiles() {
       return (this.submissions || []).map(submission => ({
@@ -272,110 +156,14 @@ export default {
         Object.keys(this.preprocess.requests).length > 0
       );
     },
-    processedCount() {
-      if (!this.isProcessingActive) return 0;
-      const total = this.preprocess?.currentSubmissionsCount || 0;
-      const remaining = Object.keys(this.preprocess.requests).length;
-      return total - remaining;
-    },
-    progressPercent() {
-      if (!this.isProcessingActive) return 0;
-      const total = this.preprocess?.currentSubmissionsCount || 0;
-      if (!total) return 0;
-      const processed = this.processedCount;
-      return Math.round((processed / total) * 100);
-    },
-    currentRequestStartTime() {
-      return this.preprocess?.batchStartTime || null;
-    },
-    activeRequestStartTime() {
-      const requests = this.preprocess?.requests || {};
-      const startTimes = Object.values(requests)
-        .map(r => r && r.startTime)
-        .filter(t => typeof t === 'number' && !Number.isNaN(t));
-      if (startTimes.length === 0) return null;
-      return Math.max(...startTimes);
-    },
-    /**
-     * Time elapsed for the currently active request, formatted as a human-readable string.
-     * @returns {string}
-     */
-    currentRequestElapsedTime() {
-      const start = this.activeRequestStartTime;
-      return this.formatElapsedSince(start);
-    },
-    elapsedTime() {
-      const start = this.currentRequestStartTime;
-      return this.formatElapsedSince(start);
-    },
-    remainingSubmissions() {
-      if (!this.isProcessingActive) return [];
-      const remainingIds = new Set(Object.values(this.preprocess.requests).map(r => r.submissionId));
-      return this.inputFiles.filter(s => remainingIds.has(s.id));
-    },
-    estimatedTimeRemainingFormatted() {
-      const total = this.preprocess?.currentSubmissionsCount || 0;
-      const remaining = Object.keys(this.preprocess?.requests || {}).length;
-      const processed = total - remaining;
-      const batchStart = this.preprocess?.batchStartTime || null;
-      if (!batchStart || processed <= 0) {
-        return "Calculating...";
-      }
-      const elapsedMs = Math.max(0, this.now - batchStart);
-      const currentStart = this.activeRequestStartTime;
-      const timeOnCurrentMs = currentStart ? Math.max(0, this.now - currentStart) : 0;
-      const completedMs = Math.max(0, elapsedMs - timeOnCurrentMs);
-      const avgPerItemMs = processed > 0 ? (completedMs / processed) : 0;
-      let remainingMs = Math.max(0, Math.round(avgPerItemMs * remaining - timeOnCurrentMs));
-      const diff = Math.round(remainingMs / 1000);
-      if (diff < 1) {
-        return "Almost done...";
-      }
-      return this.formatDurationSeconds(diff);
-    },
   },
   mounted() {
-    if (this.isProcessingActive) {
-      this.startElapsedTimer();
-    }
     this.fetchConfigOptions();
   },
   beforeUnmount() {
-    this.stopElapsedTimer();
+    
   },
   methods: {
-    /**
-     * Format a duration in seconds into a human-readable string like
-     * "45s", "2m 10s", or "1h 3m 5s".
-     * @param {number} totalSeconds
-     * @returns {string}
-     */
-    formatDurationSeconds(totalSeconds) {
-      const seconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
-      if (seconds < 60) {
-        return `${seconds}s`;
-      }
-      if (seconds < 3600) {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}m ${secs}s`;
-      }
-      const hours = Math.floor(seconds / 3600);
-      const mins = Math.floor((seconds % 3600) / 60);
-      const secs = seconds % 60;
-      return `${hours}h ${mins}m ${secs}s`;
-    },
-    /**
-     * Format the elapsed time since a given start timestamp (in ms) using
-     * the component's reactive `now` clock. Returns "0s" if start is falsy.
-     * @param {number|null} startMs
-     * @returns {string}
-     */
-    formatElapsedSince(startMs) {
-      if (!startMs) return "0s";
-      const diffSeconds = Math.max(0, Math.floor((this.now - startMs) / 1000));
-      return this.formatDurationSeconds(diffSeconds);
-    },
     async fetchConfigOptions() {
       if (!Array.isArray(this.jsonConfig) || this.jsonConfig.length === 0) {
         return;
@@ -383,17 +171,43 @@ export default {
       this.configOptions = await fetchJsonOptions(this.$socket, this.jsonConfig, "type", "assessment") || [];
     },
     open() {
-      this.selectedSkill = '';
-      this.$refs.gradingStepper.open();
+      if (!this.isProcessingActive) {
+        this.$refs.setupStepper.open();
+      } else {
+        this.$refs.processStepper.open();
+      }
     },
     close() {
-      this.$refs.gradingStepper.close();
-    },
-    onInputFilesChange(rows) {
-      this.selectedInputRows = Array.isArray(rows) ? rows : [];
+      if (!this.isProcessingActive) {
+        this.$refs.setupStepper.close();
+      } else {
+        this.$refs.processStepper.close();
+      }
     },
     goToStep(step) {
       this.currentStep = step;
+    },
+    onSetupSubmit(payload) {
+      const filesToProcess = payload.inputRows || [];
+      if (filesToProcess.length === 0) {
+        this.eventBus.emit("toast", {
+          title: "No Files to Process",
+          message: "Please select at least one file to process.",
+          variant: "warning",
+        });
+        return;
+      }
+
+      this.$socket.emit("serviceCommand", {
+        service: "BackgroundTaskService",
+        command: "startPreprocessing",
+        data: {
+          skill: payload.skill,
+          config: payload.config,
+          inputFiles: payload.inputIds,
+        } 
+      });
+      this.close();
     },
     cancelProcessing() {
       this.$socket.emit("serviceCommand", {
@@ -415,41 +229,6 @@ export default {
           });
         }
       });
-    },
-    preprocessing() {
-      const filesToProcess = this.selectedInputRows;
-      if (filesToProcess.length === 0) {
-        this.eventBus.emit("toast", {
-          title: "No Files to Process",
-          message: "Please select at least one file to process.",
-          variant: "warning",
-        });
-        return;
-      }
-
-      this.$socket.emit("serviceCommand", {
-        service: "BackgroundTaskService",
-        command: "startPreprocessing",
-        data: {
-          skill: this.selectedSkill,
-          config: this.selectedConfig,
-          inputFiles: filesToProcess.map(row => row.id)
-        } 
-      });
-      this.close();
-    },
-    startElapsedTimer() {
-      if (this.elapsedTimer) return;
-      this.now = Date.now();
-      this.elapsedTimer = setInterval(() => {
-        this.now = Date.now();
-      }, 1000);
-    },
-    stopElapsedTimer() {
-      if (this.elapsedTimer) {
-        clearInterval(this.elapsedTimer);
-        this.elapsedTimer = null;
-      }
     },
   },
 };
