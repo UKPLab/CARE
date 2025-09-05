@@ -2,17 +2,29 @@
   <SideCard
       :loading="loading()"
       :shake="shake"
+      :collapsed="collapsed"
   >
     <template #header>
       <div class="row">
         <div class="col">
-          {{ comment.creator_name }}
+          <template v-if="!editedByMyself">
+            <LoadIcon
+              icon-name="check-square"
+              :size="16"
+              :color="collapsed ? '#28a745' : '#6c757d'"
+              cursor="pointer"
+              class="check-icon"
+              style="position: absolute; top: 18px; left: 12px;"
+              @click="collapsed = !collapsed"
+            />
+          </template>
+          <span style="margin-left: 8;">{{ comment.creator_name }}</span>
           <Collaboration
-              ref="collab"
-              :target-id="commentId"
-              :document-id="documentId"
-              target-type="comment"
-              @collab-status="toEditMode"
+            ref="collab"
+            :target-id="commentId"
+            :document-id="documentId"
+            target-type="comment"
+            @collab-status="toEditMode"
           />
         </div>
         <div class="col text-end">
@@ -25,129 +37,161 @@
         </div>
       </div>
     </template>
-
-    <template #body>
-      <div
-          v-if="annotationId"
-          :style="'border-color:#' + color"
-          :title="tagName"
-          class="blockquote card-text annoBlockquote"
-          data-placement="top"
-          data-toogle="tooltip"
-          @click="scrollTo(annotationId)"
-      >
-        <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
-      </div>
-      <Comment
-          ref="main_comment"
-          :comment-id="commentId"
-          :edit="editedByMyself"
-          :level="0"
-          @save-card="save()"
-      />
-    </template>
-
-    <template #footer>
-      <div class="ms-auto">
-        <div
-            v-if="editedByMyself"
-            class="row"
-        >
-          <div class="col text-end">
-            <SidebarButton
-                :loading="false"
-                :props="$props"
-                icon="save-fill"
-                title="Save"
-                @click="save"
-            />
-            <SidebarButton
-                :loading="false"
-                :props="$props"
-                icon="x-square-fill"
-                title="Cancel"
-                @click="cancel"
-            />
-          </div>
+      <template #body>
+        <div v-if="editingTag && annotationId" class="d-flex align-items-center">
+          <select
+            v-model="selectedTagId"
+            @change="saveTagChange"
+            class="form-select form-select-md"
+            :style="{
+              display: 'inline-block',
+              borderLeft: '4px solid #' + color,
+              height: '20px',
+              fontSize: 'small',
+              fontStyle: 'italic'
+            }"
+          >
+            <option  v-for="tag in tagSetTags" :key="tag.id" :value="tag.id">
+              {{ tag.name }}
+            </option>
+          </select>
+          <SidebarButton
+                  :loading="false"
+                  :props="$props"
+                  icon="x-square-fill"
+                  title="Cancel"
+                  @click="editingTag = false"
+          />
         </div>
         <div
-            v-else
-            class="row"
+            v-else-if="annotationId && !editingTag"
+            :style="'border-color:#' + color"
+            :title="tagName"
+            class="blockquote card-text annoBlockquote"
+            data-placement="top"
+            data-toogle="tooltip"
+            @click="scrollTo(annotationId)"
         >
-          <div class="col">
-            <button
-                v-if="numberReplies > 0"
-                class="btn btn-sm"
-                data-placement="top"
-                data-toggle="tooltip"
-                title="Reply"
-                type="button"
-                @click="showReplies = !showReplies"
-            >
-              <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
-              <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
-            </button>
+          <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
+        </div>
+        <Comment
+            ref="main_comment"
+            :comment-id="commentId"
+            :edit="editedByMyself"
+            :level="0"
+            @save-card="save()"
+        />
+      </template>
+
+      <template #footer>
+        <div class="ms-auto">
+          <div
+              v-if="editedByMyself"
+              class="row"
+          >
+            <div class="col text-end">
+              <SidebarButton
+                  :loading="false"
+                  :props="$props"
+                  icon="save-fill"
+                  title="Save"
+                  @click="save"
+              />
+              <SidebarButton
+                  :loading="false"
+                  :props="$props"
+                  icon="x-square-fill"
+                  title="Cancel"
+                  @click="cancel"
+              />
+            </div>
           </div>
           <div
-              class="col text-end"
+              v-else
+              class="row"
           >
-            <SidebarButton
-                v-if="settingResponse && !readonly"
+            <div class="col">
+              <button
+                  v-if="numberReplies > 0"
+                  class="btn btn-sm"
+                  data-placement="top"
+                  data-toggle="tooltip"
+                  title="Reply"
+                  type="button"
+                  @click="showReplies = !showReplies"
+              >
+                <!--<LoadIcon :size="16" :iconName="showReplies ? 'arrow-down-short': 'arrow-right-short'"></LoadIcon>-->
+                <span>{{ showReplies ? 'Hide' : 'Show' }} Replies ({{ numberReplies }})</span>
+              </button>
+            </div>
+            <div
+                class="col text-end"
+            >
+              <SidebarButton
+                  v-if="settingResponse && !readonly"
+                  :loading="false"
+                  :props="$props"
+                  icon="reply-fill"
+                  title="Reply"
+                  @click="$refs.main_comment.reply();showReplies = true"
+              />
+              <NLPService
+                  v-if="summarizationAvailable && comment.userId === userId && !readonly"
+                  :data="summarizationRequestData"
+                  :skill="summarizationSkillName"
+                  icon-name="file-text"
+                  title="Summarize"
+                  type="button"
+                  @response="summarizeResponse"
+              />
+              <VoteButtons :comment="comment"/>
+              <SidebarButton
+                  v-if="comment.userId === userId && !readonly"
+                  :loading="false"
+                  :props="$props"
+                  icon="pencil-square"
+                  title="Edit"
+                  @click="edit"
+              />
+              <SidebarButton
+                v-if="comment.userId === userId && !readonly && annotationId"
                 :loading="false"
                 :props="$props"
-                icon="reply-fill"
-                title="Reply"
-                @click="$refs.main_comment.reply();showReplies = true"
+                icon="tag"
+                title="Edit main tag"
+                @click="toggleEditTag"
             />
-            <NLPService
-                v-if="summarizationAvailable && comment.userId === userId && !readonly"
-                :data="summarizationRequestData"
-                :skill="summarizationSkillName"
-                icon-name="file-text"
-                title="Summarize"
-                type="button"
-                @response="summarizeResponse"
-            />
-            <VoteButtons :comment="comment"/>
-            <SidebarButton
-                v-if="comment.userId === userId && !readonly"
-                :loading="false"
-                :props="$props"
-                icon="pencil-square"
-                title="Edit"
-                @click="edit"
-            />
-            <SidebarButton
-                v-if="comment.userId === userId && !readonly"
-                :loading="false"
-                :props="$props"
-                icon="trash3"
-                title="Delete"
-                @click="remove"
-            />
+              <SidebarButton
+                  v-if="comment.userId === userId && !readonly"
+                  :loading="false"
+                  :props="$props"
+                  icon="trash3"
+                  title="Delete"
+                  @click="remove"
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </template>
+      </template>
 
-    <template #thread>
-      <div
-          v-if="showReplies"
-          class="d-grid gap-1 my-2"
-      >
-        <span
-            v-for="c in childComments"
-            :key="c.id"
+      <template #thread>
+        <div
+            v-if="showReplies"
+            class="d-grid gap-1 my-2"
         >
-          <Comment
-              :comment-id="c.id"
-              :level="1"
-          />
-        </span>
-      </div>
-    </template>
-  </SideCard>
-</template>
+          <span
+              v-for="c in childComments"
+              :key="c.id"
+          >
+            <Comment
+                :comment-id="c.id"
+                :level="1"
+            />
+          </span>
+        </div>
+      </template>
+    </SideCard>
+  </template>
 
 <script>
 import SideCard from "./Card.vue";
@@ -156,6 +200,7 @@ import Collaboration from "@/basic/Collaboration.vue"
 import SidebarButton from "./Button.vue"
 import NLPService from "@/basic/NLPService.vue";
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 /** Annotation elements
  *
@@ -166,11 +211,17 @@ import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
  */
 export default {
   name: "AnnoCard",
-  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton},
+  subscribeTable: ['tag', 'tag_set', 'comment_state'],
+  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton, LoadIcon},
   inject: {
     documentId: {
       type: Number,
       required: true,
+    },
+    acceptStats: {
+      type: Boolean,
+      required: false,
+      default: () => false
     },
     studySessionId: {
       type: Number,
@@ -200,11 +251,65 @@ export default {
       shake: false,
       showReplies: false,
       edit_mode: false,
+      editingTag: false, 
+      selectedTagId: null,
+      collapsed: false,
+    }
+  },
+  watch: {
+    commentState: {
+    immediate: true,
+    handler(newVal) {
+      if (newVal) {
+        this.collapsed = newVal.state === 1 ? true : false;
+      }
+    }
+  },
+    collapsed(newValue) {
+      if(!this.commentState){
+        this.$socket.emit("appDataUpdate", {
+          table: "comment_state",
+          data: {
+            userId: this.userId,
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            commentId: this.commentId,
+            state: newValue? 1 : 0,
+          }
+        });
+      } else {
+        this.$socket.emit("appDataUpdate", {
+          table: "comment_state",
+          data: {
+            id: this.commentState.id,
+            state: newValue? 1 : 0,
+          }
+        });
+      }    
+      if(this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "commentToggleCollapse",
+          data: {
+            commentId: this.commentId,
+            state: newValue,
+          }
+        });
+      }
     }
   },
   computed: {
+    commentState() {
+      return this.$store.getters['table/comment_state/getFiltered'](
+        a => a.commentId === this.commentId && a.userId === this.userId
+      )[0] || null;
+    },
     userId() {
       return this.$store.getters["auth/getUserId"];
+    },
+    tagSetTags() {
+      const defaultTag = this.$store.getters["settings/getValueAsInt"]("tags.tagSet.default");
+      return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag) || [];
     },
     settingResponse() {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
@@ -359,12 +464,12 @@ export default {
               message: res.message,
               variant: "danger",
             });
+            return //to ensure we dont save the comment if the annotation update fails
           }
         });
-
-        this.$refs.main_comment.save();
-        this.$refs.collab.removeCollab();
       }
+      this.$refs.main_comment.save();
+      this.$refs.collab.removeCollab();
     },
     cancel() {
       if (this.annotationId) {
@@ -405,6 +510,36 @@ export default {
       }
       this.$refs.collab.removeCollab();
       this.edit_mode = null;
+    },
+    toggleEditTag() {
+      this.editingTag = !this.editingTag;
+      if (this.editingTag) {
+        this.selectedTagId = this.annotation.tagId;
+      } else {
+        this.selectedTagId = null;
+      }
+      this.$nextTick(() => {
+        // Focus the select for better UX
+        const select = this.$el.querySelector('select[autofocus]');
+        if (select) select.focus();
+      });
+    },
+    saveTagChange() {
+      if (this.selectedTagId !== this.annotation.tagId) {
+        this.$socket.emit('annotationUpdate', {
+          annotationId: this.annotation.id,
+          tagId: this.selectedTagId,
+        }, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: "Tag Update Failed",
+              message: res.message,
+              variant: "danger",
+            });
+          }
+        });
+      }
+      this.editingTag = false;
     },
     remove() {
       if (this.annotationId) {
@@ -548,5 +683,9 @@ export default {
 
 .annoBlockquote:hover {
   color: #000000;
+}
+
+.check-icon:hover {
+  color: #28a745 !important;
 }
 </style>

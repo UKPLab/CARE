@@ -14,10 +14,11 @@ import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
  *
  * Adapted from Hypothes.is
  *
- * @author Dennis Zyska, Nils Dycke
+ * @author Dennis Zyska, Nils Dycke, Marina Sakharova
  */
 export default {
   name: "PDFHighlights",
+  subscribeTable: ['comment_state', 'comment'],
   inject: {
     documentId: {
       type: Number,
@@ -59,52 +60,103 @@ export default {
         return null;
       }
     },
+    openSessionIds() {
+      return this.$store.getters["table/study_session/getAll"].filter(
+        session => {
+          const study = this.$store.getters["table/study/get"](session.studyId);
+          return study && study.closed === null;
+        }
+      ).map(session => session.id);
+    },
     showAll() {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
       return (showAllComments !== undefined && showAllComments);
     },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    downloadBeforeStudyClosingAllowed() {
+      return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
+    },
+    collapsedCommentIds() {
+      const commentIds = this.$store.getters['table/comment_state/getFiltered'](
+        state => state.state === 1 &&
+          state.documentId === this.documentId
+      ).map(state => state.commentId);
+      return commentIds;
+    },
+    commentStates() {
+      return this.$store.getters['table/comment_state/getAll'].filter(state => state.documentId === this.documentId && this.filterBySessionAndSettings(state)).filter(state => this.getAnnotationByCommentState(state)?.anchors === null);
+    },
+    collapsedAnnotationIds() {
+      const annotationIds = this.$store.getters['table/comment/getFiltered'](
+        comment => this.collapsedCommentIds.includes(comment.id)
+      ).map(comment => comment.annotationId);
+      return annotationIds;
+    },
     annotations() {
-      return this.$store.getters['table/annotation/getFiltered'](e => e.documentId === this.documentId
-        && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageId
-        && e.anchors !== null)
-        .filter(anno => {
-          if (this.studySessionId && this.studyStepId) {
-            return anno.studySessionId === this.studySessionId && anno.studyStepId === this.studyStepId;
-          } else if (this.studySessionIds) {
-            return this.studySessionIds.includes(anno.studySessionId);
-          } else {
-            if (this.showAll) {
-              return true;
-            } else {
-              return anno.studySessionId === null
-            }
-          }
-        })
+      const allAnnotations = this.$store.getters['table/annotation/getAll']
+        .filter(e => {
+          const isDocumentMatch = e.documentId === this.documentId;
+          const hasAnchors = e.anchors !== null
+          // const isPageMatch = e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageId;
+          return isDocumentMatch && hasAnchors
+        }).filter(anno => this.filterBySessionAndSettings(anno));
+
+      // Filter by collapsedAnnotationIds
+      const filteredAnnotations = allAnnotations.filter(anno => !this.collapsedAnnotationIds.includes(anno.id));
+      return filteredAnnotations;
     },
     tags() {
       return this.$store.getters['table/tag/getAll'];
     },
   },
   watch: {
+    commentStates(newVal, oldVal) {
+      newVal.filter(s => !oldVal.includes(s)).forEach(state => {
+        const annotation = this.getAnnotationByCommentState(state);
+        const annotationPage = annotation?.selectors?.target?.[0]?.selector?.find(s => s.type === 'PagePositionSelector').number;
+        const isCollapsed = this.collapsedAnnotationIds.includes(annotation.id);
+        const isPageLoaded = this.isPdfPageLoaded(annotationPage);
+        if (!isPageLoaded && !isCollapsed) {
+          this.handleScrolling(annotation.id);
+        }
+      });
+    },
     annotations(newVal, oldVal) {
-      //Remove highlights of deleted anchors
+      // Remove highlights of deleted anchors
       oldVal.filter(anno => !newVal.includes(anno))
         .forEach(anno => {
           if (anno.anchors != null) {
             anno.anchors.filter(anchor => "highlights" in anchor)
-              .forEach(anchor => this.removeHighlights(anchor.highlights))
+              .forEach(anchor => {
+                this.removeHighlights(anchor.highlights);      
+              });
+              anno.anchors = null;
           }
         });
 
-      newVal.filter(anno => !oldVal.includes(anno))
-        .map(this.highlight)
+      // Add highlights for new annotations
+       newVal.filter(anno => !oldVal.includes(anno) && anno.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageId)
+        .map(anno => {
+          this.highlight(anno);
+          if(!this.collapsedAnnotationIds.includes(anno.id)) {
+            this.handleScrolling(anno.id);
+          }
+        });
     },
     tags(newVal) {
       if (newVal !== null) {
-        this.annotations.forEach(anno => anno.anchors.filter(anchor => "highlights" in anchor).forEach(
-            anchor => anchor.highlights.forEach(highlightsEl => this.setSVGHighlightColor(anno, highlightsEl.svgHighlight))
-          )
-        );
+        this.annotations.forEach(anno => {
+          if (!anno.anchors) {
+            return;
+          }
+          anno.anchors.filter(anchor => "highlights" in anchor).forEach(anchor => {
+            anchor.highlights.forEach(highlightsEl => {
+              this.setSVGHighlightColor(anno, highlightsEl.svgHighlight);
+            });
+          });
+        });
       }
     }
   },
@@ -112,6 +164,45 @@ export default {
     this.annotations.map(this.highlight);
   },
   methods: {
+    // Check if a given PDF page is loaded/rendered
+    isPdfPageLoaded(pageNumber) {
+        const canvas = document.getElementById('pdf-canvas-' + pageNumber);
+        const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
+        const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
+        const loaded = (visible && hasDimensions);
+        return loaded;
+    },
+    filterBySessionAndSettings(anno) {
+      if (this.studySessionId && this.studyStepId) {
+        const isSessionAndStepMatch = anno.studySessionId === this.studySessionId && anno.studyStepId === this.studyStepId;
+        return isSessionAndStepMatch;
+      } else if (this.studySessionIds) {
+        const isSessionIdIncluded = this.studySessionIds.includes(anno.studySessionId);
+        return isSessionIdIncluded;
+      } else {
+        if (this.showAll) {
+          if (this.downloadBeforeStudyClosingAllowed) {
+            return true;
+          } else {
+            const isSessionNotOpen = !this.openSessionIds.includes(anno.studySessionId);
+            return isSessionNotOpen;
+          }
+        } else {
+          const isSessionNull = anno.studySessionId === null;
+          return isSessionNull;
+        }
+      }
+    },
+    getCommentByAnnotationId(annotationId) {
+      return this.$store.getters['table/comment/getFiltered'](
+        comment => comment.annotationId === annotationId
+      )[0];
+    },
+    getCommentStateByCommentId(commentId) {
+      return this.$store.getters['table/comment_state/getFiltered'](
+        state => state.commentId === commentId
+      )[0];
+    },
     getColor(tagId) {
       if (tagId) {
         const tag = this.$store.getters['table/tag/get'](tagId);
@@ -137,15 +228,41 @@ export default {
         }
       }
     },
+    handleScrolling(annotationId) {
+      const isRecentlyUpdated = this.isRecentlyUpdated(annotationId);
+      if (isRecentlyUpdated) {
+        this.eventBus.emit('pdfScroll', annotationId);
+      }
+    },
+    isRecentlyUpdated(annotationId) {
+      const commentId = this.getCommentByAnnotationId(annotationId)?.id;
+      if (!commentId) {
+        return false;
+      }
+      const recentCommentState = this.getCommentStateByCommentId(commentId);
+      if(!recentCommentState) {
+        return false;
+      }
+      const now = Date.now();
+      const oneSecondAgo = now - 1000; //check if it was just changed
+      const updatedAtTimestamp = new Date(recentCommentState.updatedAt).getTime();
+      if (updatedAtTimestamp >= oneSecondAgo) {
+        return true;
+      } else {
+        return false;
+      }
+    },
     highlight(annotation) {
-      for (let anchor of annotation.anchors) {
-        const range = resolveAnchor(anchor);
-        if (!range) {
-          return;
+      if( annotation.anchors != null) { 
+        for (let anchor of annotation.anchors) {
+          const range = resolveAnchor(anchor);
+          if (!range) {
+            return;
+          }
+          anchor.highlights = (
+            this.highlightRange(annotation, anchor, range)
+          );
         }
-        anchor.highlights = (
-          this.highlightRange(annotation, anchor, range)
-        );
       }
     },
     update_highlights(anchors) {
@@ -389,7 +506,12 @@ export default {
       }
 
       return textNodes;
-    }
+    },
+    getAnnotationByCommentState(state) {
+      let comment = this.$store.getters['table/comment/get'](state.commentId);
+      let annotation = this.$store.getters['table/annotation/get'](comment.annotationId);
+      return annotation;
+    },
   }
 }
 </script>

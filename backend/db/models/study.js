@@ -306,28 +306,6 @@ module.exports = (sequelize, DataTypes) => {
                 return;
             }
              */
-            // For now (EiwA project), we set is manually for all steps of type 2 (editor)
-            const selectedStudySteps = studySteps.filter(step => step.stepType === 2);
-            const studyLink = 'https://docs.google.com/forms/d/e/1FAIpQLSf8ktLZZBmcyGmGlxTMwuoJ0aiJ7z2kSWmN-iwVUCL0w55iJQ/viewform?usp=pp_url&entry.433727748=~SESSION_HASH~';
-
-            // We will do it for each session in the study
-            const studySessions = await sequelize.models.study_session.getAllByKey("studyId", study.id, {transaction: transaction});
-            if (!studySessions.length) {
-                return;
-            }
-
-            for (const session of studySessions) {
-                for (const step of selectedStudySteps) {
-                    await sequelize.models.document_edit.addLinkToStudySessionStep(
-                        session.id,
-                        step.id,
-                        studyLink.replace("~SESSION_HASH~", session.hash),
-                        "Do you find the feedback helpful?",
-                        transaction
-                    );
-
-                }
-            }
         }
 
         static associate(models) {
@@ -390,6 +368,14 @@ module.exports = (sequelize, DataTypes) => {
         }
     }, {
         sequelize: sequelize, modelName: 'study', tableName: 'study', hooks: {
+            beforeCreate: async (study, options) => {
+            // Set default projectId from user settings if not provided
+                const userId = study.dataValues.userId;
+                const defaultProjectId = await sequelize.models.user_setting.get('projects.default', userId);        
+                if (defaultProjectId) {
+                    study.dataValues.projectId = parseInt(defaultProjectId);
+                }
+            },
             afterCreate: async (study, options) => {
                 // Skip step creation for template studies
                 if (study.template) {

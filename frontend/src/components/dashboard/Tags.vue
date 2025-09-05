@@ -88,6 +88,9 @@ export default {
           },
           title: "Copy tag set",
           action: "copyTagSet",
+          stats: {
+            tagSetId: "id",
+          }
         },
         {
           icon: "pencil",
@@ -102,6 +105,9 @@ export default {
           ],
           title: "Edit tag set",
           action: "editTagSet",
+          stats: {
+            tagSetId: "id",
+          }
         },
         {
           icon: "trash",
@@ -116,6 +122,9 @@ export default {
           ],
           title: "Delete tag set",
           action: "deleteTagSet",
+          stats: {
+            tagSetId: "id",
+          }
         },
         {
           icon: "share",
@@ -131,12 +140,17 @@ export default {
           ],
           title: "Share tag set",
           action: "publishTagSet",
+          stats: {
+            tagSetId: "id",
+          }
         }
       ];
       return buttons;
     },
     tagSets() {
-      return this.$store.getters["table/tag_set/getAll"].map(d => {
+      return this.$store.getters["table/tag_set/getAll"]
+        .filter(d => d.projectId === this.projectId) // Filter by selected project
+        .map(d => {
           let newD = {...d};
           newD.published = {
             text: newD.public || newD.userId === null ? "Yes" : "No",
@@ -159,6 +173,9 @@ export default {
           return newD;
         }
       );
+    },
+    projectId() {
+      return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     tags() {
       return this.$store.getters["table/tag/getAll"];

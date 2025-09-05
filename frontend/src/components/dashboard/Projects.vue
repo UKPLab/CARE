@@ -1,12 +1,21 @@
 <template>
   <Card title="Projects">
     <template #headerElements>
+      <div class="btn-group gap-2">
       <BasicButton
         class="btn-primary btn-sm"
         title="Create project"
         text="Create"
         @click="$refs.projectModal.open(0)"
       />
+      <BasicButton
+        v-if="isAdmin"
+        class="btn-secondary btn-sm"
+        title="Assign projects"
+        text="Assign projects"
+        @click="$refs.assignProjectModal.open()"
+      />
+      </div>
     </template>
     <template #body>
       <BasicTable
@@ -20,6 +29,9 @@
   </Card>
   <ProjectModal ref="projectModal"/>
   <ExportModal ref="exportModal"/>
+  <ConfirmModal ref="deleteConf"/>
+  <AssignProjectModal ref="assignProjectModal"/>
+
 </template>
 
 <script>
@@ -28,6 +40,8 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import ProjectModal from "./coordinator/Project.vue";
 import ExportModal from "./projects/ExportModal.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import AssignProjectModal from "./projects/AssignProjectModal.vue";
 
 /**
  * Project list component
@@ -45,6 +59,8 @@ export default {
     BasicTable,
     BasicButton,
     ProjectModal,
+    ConfirmModal,
+    AssignProjectModal,
   },
   data() {
     return {
@@ -69,6 +85,9 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
+    isAdmin() {
+      return this.$store.getters["auth/isAdmin"];
+    },
     buttons() {
       const buttons = [
         {
@@ -81,6 +100,9 @@ export default {
           },
           title: "Copy project",
           action: "copy",
+          stats: {
+            projectId: "id",
+          }
         },
         {
           icon: "pencil",
@@ -95,6 +117,9 @@ export default {
           ],
           title: "Edit project",
           action: "edit",
+          stats: {
+            projectId: "id",
+          }
         },
         {
           icon: "trash",
@@ -109,6 +134,9 @@ export default {
           ],
           title: "Delete project",
           action: "delete",
+          stats: {
+            projectId: "id",
+          }
         },
         {
           icon: "share",
@@ -124,6 +152,9 @@ export default {
           ],
           title: "Share project",
           action: "publish",
+          stats: {
+            projectId: "id",
+          }
         },
         {
           options: {
@@ -134,7 +165,10 @@ export default {
           },
           title: "Export data",
           icon: "download",
-          action: "export",
+          action: "exportProject",
+          stats: {
+            projectId: "id",
+          }
         }
       ];
       return buttons;
@@ -152,17 +186,16 @@ export default {
             class: newD.closed ? "bg-danger" : "bg-success",
           };
           newD.select = {
-            icon: (newD.id === this.selectedProject) ? "star-fill" : "star",
+            icon: (newD.id === this.projectId) ? "star-fill" : "star",
             title: "Select project as default",
             action: "select",
-            selected: newD.id === this.selectedProject,
+            selected: newD.id === this.projectId,
           };
           return newD;
         });
     },
-    selectedProject() {
-      return 1; // TODO: get from store
-      return this.$store.getters['settings/getValueAsInt']("tags.tagSet.default");
+    projectId() {
+      return this.$store.getters['settings/getValueAsInt']("projects.default");
     },
   },
   methods: {
@@ -188,17 +221,76 @@ export default {
           break;
       }
     },
-    deleteProject(params) {
-      //TODO: Implement
-      console.log("Not implemented yet", params);
+   async deleteProject(params) {
+      // Get all studies and documents related to this project
+      const studies = this.$store.getters["table/study/getFiltered"](
+        (e) => e.projectId === params.id
+      );
+      const documents = this.$store.getters["table/document/getFiltered"](
+        (d) => d.projectId === params.id
+      );
+
+      // Build warning message
+      let warning = "";
+      if (studies && studies.length > 0) {
+        warning += `There ${studies.length !== 1 ? "are" : "is"} currently ${studies.length} ${studies.length !== 1 ? "studies" : "study"} linked to this project. Deleting the project will also delete the ${studies.length !== 1 ? "studies" : "study"}.\n`;
+      }
+      if (documents && documents.length > 0) {
+        warning += `There ${documents.length !== 1 ? "are" : "is"} currently ${documents.length} ${documents.length !== 1 ? "documents" : "document"} linked to this project. Deleting the project will also delete the ${documents.length !== 1 ? "documents" : "document"}.\n`;
+      }
+
+      this.$refs.deleteConf.open(
+        "Delete Project",
+        "Are you sure you want to delete this project?",
+        warning,
+        (val) => {
+          if (val) {
+            this.$socket.emit("appDataUpdate", {
+              table: "project",
+              data: {
+                id: params.id,
+                deleted: true
+              }
+            }, (result) => {
+              if (!result.success) {
+                this.eventBus.emit('toast', {
+                  title: "Project delete failed",
+                  message: result.message,
+                  variant: "danger"
+                });
+              }
+            });
+          }
+        }
+      );
+      this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
     },
     publishProject(params) {
-      //TODO: Implement
-      console.log("Not implemented yet", params);
+      this.$socket.emit("appDataUpdate", {
+        table: "project",
+        data: {
+          id: params.id,
+          public: true
+        }
+      }, (result) => {
+        if (!result.success) {
+          this.eventBus.emit('toast', {
+            title: "Project publish failed",
+            message: result.message,
+            variant: "danger"
+          });
+        }
+        else {
+          this.eventBus.emit('toast', {
+            title: "Project published",
+            message: "The project has been successfully published.",
+            variant: "success"
+          });
+        }
+      });
     },
-    selectProject(id) {
-      //TODO: Implement
-      console.log("Not implemented yet", id);
+    selectProject(projectId) {
+        this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
     },
   },
 };
