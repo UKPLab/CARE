@@ -112,15 +112,15 @@ export default {
           },
         },
         {
-          icon: "box-arrow-in-right",
+          icon: "check-square",
           options: {
             iconOnly: true,
             specifiers: {
               "btn-outline-secondary": true,
             },
           },
-          title: "Access document...",
-          action: "accessDoc",
+          title: "Validate Submission",
+          action: "validateSubmission",
           stats: {
             documentId: "id",
           },
@@ -167,9 +167,6 @@ export default {
         case "downloadSubmission":
           this.downloadSubmission(data.params.id);
           break;
-        case "accessDoc":
-          this.accessDoc(data.params);
-          break;
         case "deleteDoc":
           this.deleteDoc(data.params);
           break;
@@ -207,9 +204,6 @@ export default {
           });
         }
       });
-    },
-    accessDoc(row) {
-      this.$router.push(`/document/${row.hash}`);
     },
     preprocessGrades() {
       this.$refs.gradingModal.open();
