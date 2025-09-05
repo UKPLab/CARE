@@ -188,11 +188,10 @@ export default {
           aggregate: (rows) => rows[0],
         },
       },
-      // TODO: Implement this filter later.
       tableColumns: [
         {
           name: "Duplicate",
-          key: "submissionId",
+          key: "exists",
           type: "badge",
           typeOptions: {
             keyMapping: { true: "Yes", default: "No" },
@@ -205,7 +204,7 @@ export default {
         { name: "External ID", key: "submissionId" },
         { name: "First Name", key: "firstName" },
         { name: "Last Name", key: "lastName" },
-        // { name: "Files", key: "fileNames" },
+        { name: "File Count", key: "fileCount" },
       ],
       downloadedAssignments: [],
       selectedAssignments: [],
@@ -257,6 +256,7 @@ export default {
 
         return {
           submissionId: submission.submissionId,
+          exists: submission.exists,
           userId: user?.id,
           firstName: user?.firstName,
           lastName: user?.lastName,

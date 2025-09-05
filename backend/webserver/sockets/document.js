@@ -2,6 +2,7 @@ const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
 const {docTypes} = require("../../db/models/document.js");
+const {inject} = require("../../utils/generic");
 const path = require("path");
 const {getTextPositions} = require("../../utils/text.js");
 
@@ -711,16 +712,30 @@ class DocumentSocket extends Socket {
      * @returns {Promise<Object[]>} A promise that resolves with an array of submission objects returned from the Moodle service.
      */
     async documentGetMoodleSubmissions(data, options) {
-        return await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment(
-            {
-                options: {
-                    courseID: Number(data.options.courseID),
-                    assignmentID: Number(data.options.assignmentID),
-                    apiKey: data.options.apiKey,
-                    apiUrl: data.options.apiUrl,
-                }
-            }
-        );
+        const submissions = await this.server.rpcs["MoodleRPC"].getSubmissionInfosFromAssignment({
+            options: {
+                courseID: Number(data.options.courseID),
+                assignmentID: Number(data.options.assignmentID),
+                apiKey: data.options.apiKey,
+                apiUrl: data.options.apiUrl,
+            },
+        });
+
+        return await this.checkSubmissionsExist(submissions);
+    }
+
+    /**
+     * Check a list of submissions if they have already existed in the database by extId
+     * 
+     * @param data The data object containing the submissions to check at least extId key is required
+     * @param options The options object
+     * @returns {Promise<Array<Object>>} An array of objects containing the status of the submissions
+     */
+    async checkSubmissionsExist(data, options) {
+        const extIds = data.map((s) => s.submissionId);
+        const existingExtIds = await this.models["submission"].filterExistingExtIds(extIds);
+        const duplicateExtIds = existingExtIds.map((item) => item.extId);
+        return await inject(data, (extId) => duplicateExtIds.includes(extId), "exists", "submissionId");
     }
 
     /**

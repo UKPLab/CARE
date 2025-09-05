@@ -1,5 +1,6 @@
 "use strict";
 const MetaModel = require("../MetaModel.js");
+const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class Submission extends MetaModel {
@@ -16,6 +17,22 @@ module.exports = (sequelize, DataTypes) => {
             Submission.belongsTo(models["submission"], {
                 foreignKey: "parentSubmissionId",
                 as: "parentSubmission",
+            });
+        }
+
+        /**
+         * Filter and return existing extIds from a given list
+         * @param {number[]} extIds a list of external ids to check
+         * @returns {Promise<array>} a list of extIds
+         */
+        static async filterExistingExtIds(extIds) {
+            return await Submission.findAll({
+                where: {
+                    extId: { [Op.in]: extIds },
+                    deleted: false,
+                },
+                attributes: ["extId"],
+                raw: true,
             });
         }
     }
