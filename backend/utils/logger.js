@@ -30,7 +30,6 @@ class SQLTransport extends Transport {
 function addCallerinfo() {
     return winston.format((info) => {
         const stack = new Error().stack;
-        console.log("Stack trace:", stack);
         if (stack) {
             const stackLines = stack.split('\n');
             // Skip the first few lines which are internal winston/logger calls
@@ -44,23 +43,26 @@ function addCallerinfo() {
                     line.includes('at ')) {
                     
                     // Parse the stack trace line
-                    // Format: "    at functionName (file:line:column)" or "    at file:line:column"
-                    const match = line.match(/at\s+(?:([^(]+)\s+\()?([^:]+):(\d+):(\d+)\)?/);
+                    // Formats:
+                    //  "at functionName (C:\\path\\file.js:line:column)"
+                    //  "at C:\\path\\file.js:line:column"
+                    let match = line.trim().match(/^at\s+(?:([^(]+)\s+\()?(.*):(\d+):(\d+)\)?$/);
                     if (match) {
-                        const [, functionName, filePath, lineNumber, columnNumber] = match;
+                        const functionName = match[1] ? match[1].trim() : '';
+                        const filePath = match[2];
+                        const lineNumber = match[3];
+                        const columnNumber = match[4];
                         
                         // Extract just the filename from the full path
                         const fileName = filePath ? filePath.split(/[/\\]/).pop() : 'unknown';
                         
                         info.caller = {
                             file: fileName,
+                            filePath: filePath,
                             line: parseInt(lineNumber, 10),
                             column: parseInt(columnNumber, 10),
                             function: functionName ? functionName.trim() : 'anonymous'
                         };
-                        
-                        // Add a formatted caller string for easy reading
-                        info.callerInfo = `${fileName}:${lineNumber}:${columnNumber}${functionName ? ` (${functionName.trim()})` : ''}`;
                         break;
                     }
                 }
@@ -93,7 +95,7 @@ exports = module.exports = function (service = "log", db = null) {
         format: winston.format.combine(
             winston.format.timestamp(),
             addCallerinfo(),
-            winston.format.json()
+            winston.format.json(),
         ),
         defaultMeta: {service: service},
         exitOnError: false,

@@ -365,11 +365,11 @@ export default {
       if (data.action === "finishSession") {
         this.$emit("finish", {studySessionId: data.params.id});
       }
-      if (data.action === "resumeSession") {
+      if (data.action === "resumeStudySession") {
         this.$emit("start", {studySessionId: data.params.id});
         this.$refs.modal.close();
       }
-      if (data.action === "startSession") {
+      if (data.action === "startStudySession") {
         this.$emit("start", {studySessionId: data.params.id});
         this.$refs.modal.close();
       }
