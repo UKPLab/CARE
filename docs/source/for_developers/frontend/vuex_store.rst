@@ -42,6 +42,10 @@ key ``static autoTable = true;``. It is also possible to publish a complete tabl
 
     To edit data for auto tables, we recommend to use the basic :doc:`form component <./coordinator>`.
 
+.. seealso::
+   For subscription setup and how socket refreshes update the store, see
+   :doc:`Data Transfer <../backend/data_transfer>`.
+
 Loading Data for Auto Tables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -73,5 +77,25 @@ The following getters are supported for auto tables:
 - ``getFields``: Returns the fields definition defined in the backend (used for forms), if available (check before with hasFields).
 - ``refreshCount``: Returns the count how often the data was refreshed from the backend.
 
+Live Updates via Subscriptions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+For **real-time** updates (no manual reload), components can subscribe to auto tables.
+Use the frontend plugin option ``subscribeTable`` to establish a socket subscription. On mount,
+the plugin emits ``subscribeAppData``; on unmount, it sends ``unsubscribeAppData``. The backend
+then broadcasts ``<tableName>Refresh`` events that update the Vuex module.
+
+.. code-block:: javascript
+
+   export default {
+       name: "MyComponent",
+       subscribeTable: ["document", "study"],  // keep this table live-synced
+       // ...
+   }
+
+.. tip::
+   If your project still uses ``fetchData`` for initial loads, you can use **both**:
+   ``fetchData`` for the first snapshot and ``subscribeTable`` for ongoing updates.
+
+For the full backend–frontend pipeline (sockets, broadcasts, refresh logic), see :doc:`Data Transfer <../backend/data_transfer>`.
 
