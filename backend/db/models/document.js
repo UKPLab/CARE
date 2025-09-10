@@ -66,7 +66,7 @@ module.exports = (sequelize, DataTypes) => {
             if (newDocument.type === this.docTypes.DOC_TYPE_HTML || newDocument.type === this.docTypes.DOC_TYPE_MODAL) {
                 fs.writeFileSync(path.join(UPLOAD_PATH, `${newDocument.hash}.delta`), JSON.stringify({}));
             }
-            // TODO: what if transaction failes? --> need to delete the file again
+            // TODO: what if transaction fails? --> need to delete the file again
 
             return newDocument;
         }
